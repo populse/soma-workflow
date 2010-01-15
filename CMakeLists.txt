@@ -2,14 +2,15 @@ cmake_minimum_required( VERSION 2.6 )
 find_package( brainvisa-cmake REQUIRED )
 BRAINVISA_PROJECT()
 
-BRAINVISA_FIND_PACKAGE( soma-base REQUIRED )
-
-BRAINVISA_DEPENDENCY( DEV DEPENDS "${BRAINVISA_PACKAGE_NAME}" RUN "= ${${BRAINVISA_PACKAGE_NAME}_VERSION}" )
-BRAINVISA_DEPENDENCY( RUN DEPENDS soma-base RUN ">= ${soma-base_VERSION_MAJOR}.${soma-base_VERSION_MINOR}" )
-
+BRAINVISA_FIND_PACKAGE( aims-free )
 BRAINVISA_COPY_PYTHON_DIRECTORY( "${CMAKE_CURRENT_SOURCE_DIR}/python"
-                            ${PROJECT_NAME} )
-BRAINVISA_GENERATE_EPYDOC_DOC( "${CMAKE_BINARY_DIR}/python/soma/pipeline"
-  "share/doc/${PROJECT_NAME}-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}/epydoc/html" )
+                                 ${PROJECT_NAME} )
+add_subdirectory( src/jobs )
+if( AIMS-FREE_FOUND )
+  include_directories( "${SIP_INCLUDE_DIR}" )
+  add_subdirectory( src/sip )
+else()
+  message( "WARNING: sip wrapping of soma-pipeline not built because aims-free has not been found" )
+endif()
 
 BRAINVISA_CREATE_CMAKE_CONFIG_FILES()
