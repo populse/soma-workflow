@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <stddef.h>
 #include <unistd.h>
-#include <soma/pipeline/drmaa.h>
+#include <soma/pipeline/drmaa/drmaa.h>
 
 #include <list>
 #include <string>

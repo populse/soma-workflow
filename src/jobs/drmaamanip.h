@@ -2,7 +2,7 @@
 #define DRMAAMANIP_H
 
 #include <stddef.h>
-#include <soma/pipeline/drmaa.h>
+#include <soma/pipeline/drmaa/drmaa.h>
 
 class DrmaaManip
 {
