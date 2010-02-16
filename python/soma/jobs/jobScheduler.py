@@ -36,11 +36,11 @@ class JobScheduler( object ):
    '''
 
    def __del__( self ):
-   '''
-   Closes the connection with the pool and the data server L{JobServer}. 
-   It doesn't have any impact on the submitted jobs or file transfer. 
-   Job and transfer information remains stored on the data server.
-   '''
+     '''
+     Closes the connection with the pool and the data server L{JobServer}. 
+     It doesn't have any impact on the submitted jobs or file transfer. 
+     Job and transfer information remains stored on the data server.
+     '''
 
 
   ########## REGISTRATION ###############################################
@@ -57,7 +57,7 @@ class JobScheduler( object ):
     @return: series of job identifiers
     '''
     
- .def transfers( self ):
+  def transfers( self ):
     '''
     Returns the identifier of the current user's file transfers via the 
     L{createTransfer}.
@@ -178,7 +178,6 @@ class JobScheduler( object ):
               stderrPath,
               jointStdErrOut=False,
               stdin=None,
-              jointStdErrOut=False,
               disposalTimeout=168):
     '''
     Customized submission. All the files involved belong to the user and must 
@@ -217,7 +216,7 @@ class JobScheduler( object ):
     Regular submission. If stdout and stderr are set to C{True}, the standard output 
     and error files are created on a directory shared by the machine of the pool. 
     These files will be deleted when the job will be disposed (after the disposal 
-    timeout or when calling the L{kill} and L{forget} methods).  
+    timeout or when calling the L{kill} and L{dispose} methods).  
     All the path must refer to shared files or directory on the pool.
     
     @type  command: sequence
