@@ -35,121 +35,93 @@ class JobScheduler( object ):
    underlying DRMS.
    '''
 
-   def __del__( self ):
+  def __del__( self ):
      '''
      Closes the connection with the pool and the data server L{JobServer}. 
      It doesn't have any impact on the submitted jobs or file transfer. 
      Job and transfer information remains stored on the data server.
      '''
-
-
-  ########## REGISTRATION ###############################################
-
-
-  def jobs( self, all=False ):
-    '''
-    Returns the identifier of the submitted and not diposed jobs.
-
-    @type  all: bool
-    @param all: If C{all=False} (the default), only the jobs submitted by the
-      current user are returned. If C{all=True} all jobs are returned.
-    @rtype:  sequence of C{JobIdentifier}
-    @return: series of job identifiers
-    '''
-    
-  def transfers( self ):
-    '''
-    Returns the identifier of the current user's file transfers via the 
-    L{createTransfer}.
-
-    @rtype:  sequence of C{TransferIdentifier}
-    @return: series of transfer identifiers 
-    '''
   
-  
-  def dispose( self, job_id ):
-    '''
-    Frees all the resources allocated to the submitted job on the data server
-    L{JobServer}. After this call, the C{job_id} becomes invalid and
-    cannot be used anymore. 
-    To avoid that jobs create non handled files, L{dispose} kills the job if 
-    it's running.
-
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{jobs} or the submission 
-    methods L{submit}, L{customSubmit} or L{submitWithTransfer})
-    '''
-
-  def cancelTransfer(self, transfer_id):
-    '''
-    Delete the files associated to the transfer on the directory shared by the 
-    machines of the pool. The output files are deleted as well and the transfer 
-    id becomes invalid.
-    
-    @type transfer_id: C{TransferIdentifier}
-    @param transfer_id: The transfer identifier (returned by L{createTransfer})
-    '''
-
 
   ########## FILE TRANSFER ###############################################
   
-  def createTransfer( self,
-                      remote_input_files, 
-                      remote_output_files, 
-                      remote_stdin = None,
-                      disposalTimeout = 168 ):
+  '''
+  The main purpose of file transfer is the submission of job from a remote 
+  machine. However it can also be used by user who has access to directory 
+  shared by the machine of the pool, to make sure that all the machine of 
+  the pool will have access to his files and take advantage of the file life 
+  management services.
+  
+  For the following methods:
+    Local means that it is located on a directory shared by the machine of the pool
+    Remote means that it is located on a remote machine or on any directory 
+    owned by the user. 
+    A transfer will associate remote file path to unique local file path.
+  '''
+
+  
+  def transferInputFile(self, remote_input_file, disposal_timeout=168):
     '''
-    Transfers input files and saves the correspondences between files location on the 
-    remote machine and their copy on a directory shared by the machine of the pool. 
-    Return a transfer id. The correspondences are stored via the Job Server. 
+    For each remote input file, an unique local path is generated 
+    and associated with the remote path. 
+    Each remote files is copied to its associated local location.
+    When the disposal timout will be past, and no exisiting job will 
+    declare using the file as input, the files will be disposed. 
     
-    @type  remote_input_files: sequence
-    @param remote_input_files: paths of input files on the remote machine
-    @type  remote_output_files: sequence
-    @param remote_output_files: paths of output files on the remote machine
+    @type  remote_input_file: string or sequence of string
+    @param remote_input_file: remote path(s) of input file(s)
     @type  disposalTimeout: int
-    @param disposalTimeout: Number of hours before the files copied on the shared 
-    directory is considered to have been forgotten by the submitter. Passed that delay, 
-    all the files and information related to the transfer are disposed and the transfer 
-    id become invalid (as if L{cancelTransfer} was called). 
+    @param disposalTimeout: Number of hours before each local file is considered 
+    to have been forgotten by the user. Passed that delay, and if no existing job 
+    declares using the file as input, the local file and information 
+    related to the transfer are disposed. 
     Default delay is 168 hours (7 days).
-    @rtype: C{TransferIdentifier}
-    @return: The transfer identifier.
+    @rtype: string or sequence of string
+    @return: local file path(s) where the file(s) were copied 
     '''
 
-  def getLocalInputFiles(self, transfer_id):
+  def allocateLocalOutputFile(self, remote_output_file_path, disposal_timeout=168):
     '''
-    Gives the paths of input files on the directory shared by the machines of the pool.
-    The job must use exclusively these input files when running on the pool.
+    For each remote output file path, an unique local path is generated and 
+    associated with the remote path. 
+    When the disposal timout will be past, and no exisiting job will declare using 
+    the file as output or input, the files will be disposed. 
+    Once created and filled by a job, the local file can be transfered to the
+    remote machine via the L{transferOutputFile} method
     
-    @type  transfer_id: C{TransferIdentifier}
-    @param transfer_id: The transfer identifier (returned by L{createTransfer})
-    @rtype: sequence of string
-    @return: paths of input files on the directory shared by the machines of the pool.
+    @type  remote_output_file_paths: string of sequence of string
+    @param remote_output_file_paths: remote path for output file.
+    @type  disposalTimeout: int
+    @param disposalTimeout: Number of hours before each local file is considered 
+    to have been forgotten by the user. Passed that delay, and if no existing job 
+    declares using the file as output or input, the local file and information 
+    related to the transfer are disposed. 
+    Default delay is 168 hours (7 days).
+    @rtype: string or sequence of string
+    @return: local file path(s) associated to specified the remote file path(s).
+    
     '''
 
-  def getLocalOutputFiles(self, transfer_id):
+  def transferOutputFile(self, local_file);
     '''
-    Gives the paths of output files on the directory shared by the machines of the pool.
-    The job must write exclusively these output files when running on the pool.
+    Copy the local file to the associated remote file path. 
+    The local file path must belong to the user's transfered files (ie belong to 
+    the sequence returned by the L{getTransfers} method). 
     
-    @type  transfer_id: C{TransferIdentifier}
-    @param transfer_id: The transfer identifier (returned by L{createTransfer})
-    @rtype: sequence of string
-    @return: paths of output files on the directory shared by the machines of the pool.
-    '''
-  
-  
-  def transferOutputFiles(self, transfer_id):
-    '''
-    Transfers the output files from the directory shared by the machine of the pool 
-    to the remote machine. The method raises an exception if the file doesn't exist.
-    Thus it must be used when the associated job is finished.
-    
-    @type transfer_id: C{TransferIdentifier}
-    @param transfer_id: The transfer identifier (returned by L{createTransfer})
+    @type  local_file: string or sequence of string
+    @param local_file: local file path(s) 
     '''
 
+  def cancelTransfer(self, local_file_path):
+    '''
+    Delete each specified local file unless a job has declared to use it as input 
+    or output. In the former case, the file will only be deleted after all its 
+    associated jobs are disposed. (set its disposal date to now).
+    
+    @type local_file_path: string or sequence of string
+    @param local_file_path: local file path(s) associated with a transfer (ie 
+    belong(s) to the list returned by L{getTransfers}    
+    '''
 
   ########## JOB SUBMISSION ##################################################
 
@@ -244,44 +216,113 @@ class JobScheduler( object ):
     @return:  the identifier of the submitted job
     '''
 
-
   def submitWithTransfer( self,
                           command,
-                          transfer_id,
+                          required_local_input_files,
+                          required_local_output_file,
                           stdout=False, 
               	          stderr=False, 
+	  		  stdin=None,
                           disposalTimeout=168):
     '''
     Submission with file transfer (well suited for remote submission). Submission 
-    of a job for which all needed files (stdin and input files) were already copied 
-    to the pool shared directory using the L{createTransfer} method. Once the job has 
-    run, the output files can be recovered using the L{transferOutputFiles} method.
-    The life of files created on the pool shared directory correspond to the life of 
-    the associated transfer_id (deleted automatically after a timeout or via the 
-    L{cancelTransfer} method).
+    of a job for which all input files (stdin and input files) were already copied 
+    to the pool shared directory using the L{transferInputFile} method. A local path
+    for output file were also obtained via the L{allocateLocalOutputFile} method.
+    Once the job will have run, it will be possible to transfer the files back to the
+    remote machine using the L{transferOutputFile} method.
+    The list of involved local input and output file must be specified here to 
+    guarantee that the files will exist during the whole job life. 
+    All the path must refer to shared files or directory on the pool.
     
     @type  command: sequence
     @param command: The command to execute
-    @type  transfer_id: C{TransferIdentifier}
-    @param transfer_id: The transfer identifier (returned by L{createTransfer})
+    @type  required_local_input_file: sequence of string
+    @param required_local_input_file: local files which are required for the job to run 
+    @type  required_local_output_file: sequence of string
+    @param required_local_output_file: local files the job will created and filled
     @type  stdout: bool
     @param stdout: C{True} if the job's standard output stream must be recorded.
     @type  stderr: bool or string
     @param stderr: C{True} if the job's standard output stream must be recorded. 
       The error output stream will be stored in the same file as the standard output 
       stream.
+    @type  stdin: string
+    @param stdin: job's standard inpout as a path to a file. C{None} if the 
+    job doesn't require an input stream.
     @type  disposalTimeout: int
     @param disposalTimeout: Number of hours before the job is considered to have been 
       forgotten by the submitter. Passed that delay, the job is destroyed and its
       resources released as if the submitter had called L{kill} and L{dispose}.
-      Default delay is 168 hours (7 days). !!! The files associated to the transfer 
-      (input, output, executable files) won't be deleted. !!!
+      Default delay is 168 hours (7 days). 
+      The local files associated with the job won't be deleted unless their own 
+      disposal timeout is past and no other existing job has declared to use them 
+      as input or output.
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
     ''' 
 
+
+  def dispose( self, job_id ):
+    '''
+    Frees all the resources allocated to the submitted job on the data server
+    L{JobServer}. After this call, the C{job_id} becomes invalid and
+    cannot be used anymore. 
+    To avoid that jobs create non handled files, L{dispose} kills the job if 
+    it's running.
+
+    @type  job_id: C{JobIdentifier}
+    @param job_id: The job identifier (returned by L{jobs} or the submission 
+    methods L{submit}, L{customSubmit} or L{submitWithTransfer})
+    '''
+
+
+  ########## SERVER STATE MONITORING ########################################
+
+
+  def jobs( self, all=False ):
+    '''
+    Returns the identifier of the submitted and not diposed jobs.
+
+    @type  all: bool
+    @param all: If C{all=False} (the default), only the jobs submitted by the
+      current user are returned. If C{all=True} all jobs are returned.
+    @rtype:  sequence of C{JobIdentifier}
+    @return: series of job identifiers
+    '''
+
+ def getJobsBindToLocalFile(self, local_file_path):
+    '''
+    Returns a sequence of the the jobs which have declare to user the local file
+    as input or output.  
+    The local file path must belong to the user's transfered files (ie belong to 
+    the sequence returned by the L{getTransfers} method).
+    
+    @type local_file_path: string
+    @param local_file_path: local file path 
+    @rtype: sequence of tuple (C{JobIdentifier}, isInput)
+    @return: sequence of jobs using the local file associated to C{True} 
+    if the job uses it as input or C{False} if it uses it as output.
+    '''
+    
+    
+  def getTransfers( self ):
+    '''
+    Returns the information related to the user's file transfers created via the 
+    L{transferInputFile} and L{allocateFilesForTransfer} methods
+
+    @rtype: sequence of tuple (local_file_path, remote_file_path, expiration_date)
+    @return: For each transfer
+        -local_file_path: path of the file on the directory shared by the machines
+        of the pool
+	-remote_file_path: path of the file on the remote machine 
+	-expiration_date: after this date the local file will be deleted, unless an
+	existing job has declared this file as output or input.
+    '''
+
+
   
-  ########### MONITORING ################################################
+  ########### DRMS MONITORING ################################################
 
   def status( self, job_id ):
     '''
@@ -333,7 +374,7 @@ class JobScheduler( object ):
     @return: file object containing the job's error output.
     '''
 
-  ########## CONTROL #################################################
+  ########## JOB CONTROL VIA DRMS ########################################
   
   
   def wait( self, job_ids ):
