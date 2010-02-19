@@ -10,6 +10,12 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 '''
 __docformat__ = "epytext en"
 
+from somaDrmaaJobsSip import DrmaaJobs
+import Pyro.naming, Pyro.core
+from Pyro.errors import NamingError
+from datetime import date
+
+
 class JobScheduler( object ):
   '''
   Instances of this class give access to a set of machines linked together
@@ -28,19 +34,37 @@ class JobScheduler( object ):
   submit jobs by the DRMS.
   '''
   def __init__( self ):
-   '''
-   Opens a connection to the pool of machines and to the data server L{JobServer}.
-   In case of the implementation using the DRMAA API: A L{JobScheduler} instance 
-   can only be created from a machine that is allowed to submit jobs by the 
-   underlying DRMS.
-   '''
+    '''
+    Opens a connection to the pool of machines and to the data server L{JobServer}.
+    In case of the implementation using the DRMAA API: A L{JobScheduler} instance 
+    can only be created from a machine that is allowed to submit jobs by the 
+    underlying DRMS.
+    '''
+    
+    self.drmaa = DrmaaJobs()
+    
+    locator = Pyro.naming.NameServerLocator()
+    print 'searching for Name Server...'
+    ns = locator.getNS()
+    try:
+        URI=ns.resolve('JobServer')
+        print 'URI:',URI
+    except NamingError,x:
+        print 'Couldn\'t find object, nameserver says:',x
+        raise SystemExit
+    
+    # create a proxy for the Pyro object, and return that
+    self.jobServer = Pyro.core.getAttrProxyForURI(URI)
+    
+    userLogin = "sl225510" #TBI: get user login or id
+    self.user_id = self.jobServer.registerUser(userLogin)
 
   def __del__( self ):
-     '''
-     Closes the connection with the pool and the data server L{JobServer}. 
-     It doesn't have any impact on the submitted jobs or file transfer. 
-     Job and transfer information remains stored on the data server.
-     '''
+    '''
+    Closes the connection with the pool and the data server L{JobServer}. 
+    It doesn't have any impact on the submitted jobs or file transfer. 
+    Job and transfer information remains stored on the data server.
+    '''
   
 
   ########## FILE TRANSFER ###############################################
@@ -79,6 +103,13 @@ class JobScheduler( object ):
     @rtype: string or sequence of string
     @return: local file path(s) where the file(s) were copied 
     '''
+    
+    local_input_file_path = self.jobServer.getLocalFilePath(self.userid, remote_input_file)
+    #TBI: cp remote_input_file local_input_file_path
+    expirationDate = date.today() + timedelta(hours=disposal_timeout) 
+    self.jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.user_id)
+    return local_input_file_path
+    
 
   def allocateLocalOutputFile(self, remote_output_file_path, disposal_timeout=168):
     '''
@@ -101,6 +132,11 @@ class JobScheduler( object ):
     @return: local file path(s) associated to specified the remote file path(s).
     
     '''
+    local_output_file_path = self.jobServer.getLocalFilePath(self.user_id, remote_output_file_path)
+    expirationDate = date.today() + timedelta(hours=disposal_timeout) 
+    self.jobServer.addTransfer(local_output_file_path, remote_output_file_path, expirationDate, self.user_id)
+    return local_output_file_path
+    
 
   def transferOutputFile(self, local_file);
     '''
@@ -111,6 +147,9 @@ class JobScheduler( object ):
     @type  local_file: string or sequence of string
     @param local_file: local file path(s) 
     '''
+    
+    remote_file_path = self.jobServer.getRemoteFile(local_file)
+    #TBI cp local_file_path remote_file_path
 
   def cancelTransfer(self, local_file_path):
     '''
@@ -122,6 +161,13 @@ class JobScheduler( object ):
     @param local_file_path: local file path(s) associated with a transfer (ie 
     belong(s) to the list returned by L{getTransfers}    
     '''
+    
+    if(!self.jobServer.isUserTransfer(local_file_path, self.user_id))
+      # raise TBI
+      pass
+    else
+      self.jobServer.removeTransferASAP(local_file_path)t
+    
 
   ########## JOB SUBMISSION ##################################################
 
@@ -176,6 +222,14 @@ class JobScheduler( object ):
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
     '''
+
+    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
+    self.drmaa.setCommand(jobTempateDrmaaId, command)
+    
+    drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
+    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    
+    
 
   def submit( self,
               command,
