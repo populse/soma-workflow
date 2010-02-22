@@ -36,28 +36,28 @@ def create(database_file):
   connection = connect(database_file)
   cursor = connection.cursor()
   cursor.execute('CREATE TABLE users (id VARCHAR(50) PRIMARY KEY NOT NULL)')
-  cursor.execute('''CREATE TABLE jobs (id               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-                                     submission_date  DATE,
-                                     expiration_date  DATE NOT NULL,
-                                     user_id          VARCHAR(50) NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                     uses_stdout      BOOLEAN NOT NULL,
-                                     uses_stderr      BOOLEAN NOT NULL,
-                                     stdout_file      VARCHAR(255),
-                                     stderr_file      VARCHAR(255),
-                                     stdin_file       VARCHAR(255),
-                                     name_description VARCHAR(255),
-                                     drmaa_id         VARCHAR (255))''')
+  cursor.execute('''CREATE TABLE jobs (id                INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+                                       submission_date   DATE,
+                                       user_id           VARCHAR(50) NOT NULL CONSTRAINT known_user REFERENCES users (id),
+                                       expiration_date   DATE NOT NULL,
+                                       stdout_file       VARCHAR(255),
+                                       stderr_file       VARCHAR(255),
+                                       join_errout       BOOLEAN NOT NULL,
+                                       stdin_file        VARCHAR(255),
+                                       name_description  VARCHAR(255),
+                                       drmaa_id          VARCHAR(255),
+                                       working_directory VARCHAR(255))''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  VARCHAR(255) PRIMARY KEY NOT NULL, 
-                                          remote_file_path VARCHAR(255) NOT NULL,
+                                          remote_file_path VARCHAR(255),
                                           transfer_date    DATE,
                                           expiration_date  DATE NOT NULL,
                                           user_id          VARCHAR(50) NOT NULL CONSTRAINT known_user REFERENCES users (id))''')
 
   cursor.execute('''CREATE TABLE ios (job_id          INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
-                                            local_file_path VARCHAR(255) NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
-                                            isInput         BOOLEAN NOT NULL,
-                                            PRIMARY KEY (job_id, local_file_path))''')
+                                      local_file_path VARCHAR(255) NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
+                                      isInput         BOOLEAN NOT NULL,
+                                      PRIMARY KEY (job_id, local_file_path))''')
   connection.commit()
   connection.close()
 

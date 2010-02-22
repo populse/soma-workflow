@@ -104,7 +104,7 @@ class JobScheduler( object ):
     @return: local file path(s) where the file(s) were copied 
     '''
     
-    local_input_file_path = self.jobServer.getLocalFilePath(self.userid, remote_input_file)
+    local_input_file_path = self.jobServer.generateLocalFilePath(self.userid, remote_input_file)
     #TBI: cp remote_input_file local_input_file_path
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
     self.jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.user_id)
@@ -132,8 +132,8 @@ class JobScheduler( object ):
     @return: local file path(s) associated to specified the remote file path(s).
     
     '''
-    local_output_file_path = self.jobServer.getLocalFilePath(self.user_id, remote_output_file_path)
-    expirationDate = date.today() + timedelta(hours=disposal_timeout) 
+    local_output_file_path = self.jobServer.generateLocalFilePath(self.user_id, remote_output_file_path)
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     self.jobServer.addTransfer(local_output_file_path, remote_output_file_path, expirationDate, self.user_id)
     return local_output_file_path
     
@@ -148,7 +148,7 @@ class JobScheduler( object ):
     @param local_file: local file path(s) 
     '''
     
-    remote_file_path = self.jobServer.getRemoteFile(local_file)
+    local_file_path, remote_file_path, expiration_date = self.jobServer.getTransferInformation(local_file)
     #TBI cp local_file_path remote_file_path
 
   def cancelTransfer(self, local_file_path):
@@ -162,7 +162,7 @@ class JobScheduler( object ):
     belong(s) to the list returned by L{getTransfers}    
     '''
     
-    if(!self.jobServer.isUserTransfer(local_file_path, self.user_id))
+    if not(self.jobServer.isUserTransfer(local_file_path, self.user_id)):
       # raise TBI
       pass
     else
@@ -190,13 +190,12 @@ class JobScheduler( object ):
   '''
 
   def customSubmit( self,
-              command,
-              workingDirectory,
-              stdoutPath,
-              stderrPath,
-              jointStdErrOut=False,
-              stdin=None,
-              disposalTimeout=168):
+                    command,
+                    working_directory,
+                    stdout_path,
+                    stderr_path=None,
+                    stdin=None,
+                    disposal_timeout=168):
     '''
     Customized submission. All the files involved belong to the user and must 
     be specified. They are never disposed automatically and are not deleted when 
@@ -205,17 +204,18 @@ class JobScheduler( object ):
     
     @type  command: sequence
     @param command: The command to execute
-    @type  workingDirectory: string
-    @param workingDirectory: path to a directory where the job will be executed.
-    @type  stdout: string
-    @param stdout: the job's standard output will be directed to this file. 
-    @type  stderr: string 
-    @param stderr: the job's standard error will be directed to this file. 
+    @type  working_directory: string
+    @param working_directory: path to a directory where the job will be executed.
+    @type  stdout_path: string
+    @param stdout_path: the job's standard output will be directed to this file. 
+    @type  stderr_path: string 
+    @param stderr_path: the job's standard error will be directed to this file. If C{None}
+    the error output stream will be stored in the same file as the standard output stream.
     @type  stdin: string
     @param stdin: job's standard input as a path to a file. C{None} if the 
     job doesn't require an input stream.
-    @type  disposalTimeout: int
-    @param disposalTimeout: Number of hours before the job is considered to have been 
+    @type  disposal_timeout: int
+    @param disposal_timeout: Number of hours before the job is considered to have been 
       forgotten by the submitter. Passed that delay, the job is destroyed and its
       resources released as if the submitter had called L{kill} and L{dispose}.
       Default delay is 168 hours (7 days).
@@ -225,19 +225,35 @@ class JobScheduler( object ):
 
     drmaaJobTemplateId = self.drmaa.allocateJobTempate()
     self.drmaa.setCommand(jobTempateDrmaaId, command)
+    #TBI set stdout stderr stdin join working directory
     
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
     self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
     
-    
+    join_stderrout = (stderr == None)
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    job_id = self.jobServer.addJob(self.user_id, 
+                                   expiration_date, 
+                                   stdout_path,
+                                   stderr_path,
+                                   join_stderrout
+                                   stdin, 
+                                   None,  # Name_description
+                                   drmaaSubmittedJobId,
+                                   working_directory)
+    return job_id
+  
+  
+  
+
+
 
   def submit( self,
               command,
               workingDirectory=None,
-              stdout=False, 
-              stderr=False, 
+              join_stderrout=False,
               stdin=None,
-              disposalTimeout=168):
+              disposal_timeout=168):
     '''
     Regular submission. If stdout and stderr are set to C{True}, the standard output 
     and error files are created on a directory shared by the machine of the pool. 
@@ -251,17 +267,14 @@ class JobScheduler( object ):
     @param workingDirectory: path to a directory where the job will be executed.
     If C{None}, a default working directory will be used (its value depends on 
     the DRMS installed on the pool).
-    @type  stdout: bool
-    @param stdout: C{True} if the job's standard output stream must be recorded.
-    @type  stderr: bool or string
-    @param stderr: C{True} if the job's standard output stream must be recorded. 
-      The error output stream will be stored in the same file as the standard 
-      output stream.
+    @type  join_stderrout: bool
+    @param join_stderrout: C{True}  if the standard error should be redirect in the 
+    same file as the standard output.
     @type  stdin: string
     @param stdin: job's standard inpout as a path to a file. C{None} if the 
     job doesn't require an input stream.
-    @type  disposalTimeout: int
-    @param disposalTimeout: Number of hours before the job is considered to have been 
+    @type  disposal_timeout: int
+    @param disposal_timeout: Number of hours before the job is considered to have been 
       forgotten by the submitter. Passed that delay, the job is destroyed and its
       resources released (including standard output and error files) as if the 
       user had called L{kill} and L{dispose}.
@@ -269,15 +282,45 @@ class JobScheduler( object ):
     @rtype:   C{JobIdentifier} 
     @return:  the identifier of the submitted job
     '''
+    
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    stdout_file = self.jobServer.generateLocalFilePath(self.userId)
+    stderr_file = self.jobServer.generateLocalFilePath(self.userId)
+    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.userId)
+    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.userId)
+    
+    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
+    self.drmaa.setCommand(jobTempateDrmaaId, command)
+    #TBI set stdout stderr stdin join working directory
+    
+    drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
+    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    
+    join_stderrout = (stderr == None)
+    job_id = self.jobServer.addJob(self.user_id, 
+                                   expiration_date, 
+                                   stdout_file,
+                                   stderr_file,
+                                   join_stderrout
+                                   stdin, 
+                                   None,  # Name_description
+                                   drmaaSubmittedJobId,
+                                   working_directory)
+    return job_id 
+
+
+
+
+
+
 
   def submitWithTransfer( self,
                           command,
                           required_local_input_files,
                           required_local_output_file,
-                          stdout=False, 
-              	          stderr=False, 
-	  		  stdin=None,
-                          disposalTimeout=168):
+                          join_stderrout=False,
+                          stdin=None,
+                          disposal_timeout=168):
     '''
     Submission with file transfer (well suited for remote submission). Submission 
     of a job for which all input files (stdin and input files) were already copied 
@@ -295,12 +338,9 @@ class JobScheduler( object ):
     @param required_local_input_file: local files which are required for the job to run 
     @type  required_local_output_file: sequence of string
     @param required_local_output_file: local files the job will created and filled
-    @type  stdout: bool
-    @param stdout: C{True} if the job's standard output stream must be recorded.
-    @type  stderr: bool or string
-    @param stderr: C{True} if the job's standard output stream must be recorded. 
-      The error output stream will be stored in the same file as the standard output 
-      stream.
+    @type  join_stderrout: bool
+    @param join_stderrout: C{True}  if the standard error should be redirect in the 
+    same file as the standard output.
     @type  stdin: string
     @param stdin: job's standard inpout as a path to a file. C{None} if the 
     job doesn't require an input stream.
@@ -316,6 +356,36 @@ class JobScheduler( object ):
     @return:  the identifier of the submitted job 
     ''' 
 
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    stdout_file = self.jobServer.generateLocalFilePath(self.userId)
+    stderr_file = self.jobServer.generateLocalFilePath(self.userId)
+    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.userId)
+    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.userId)
+    
+    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
+    self.drmaa.setCommand(jobTempateDrmaaId, command)
+    #TBI set stdout stderr stdin join working directory
+    
+    drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
+    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    
+    join_stderrout = (stderr == None)
+    job_id = self.jobServer.addJob(self.user_id, 
+                                   expiration_date, 
+                                   stdout_file,
+                                   stderr_file,
+                                   join_stderrout
+                                   stdin, 
+                                   None,  # Name_description
+                                   drmaaSubmittedJobId)
+    
+    self.jobServer.registerInputs(required_local_input_files)
+    self.jobServer.registerOnputs(required_local_output_file)
+    
+    return job_id
+
+
+
 
   def dispose( self, job_id ):
     '''
@@ -329,35 +399,29 @@ class JobScheduler( object ):
     @param job_id: The job identifier (returned by L{jobs} or the submission 
     methods L{submit}, L{customSubmit} or L{submitWithTransfer})
     '''
+    
+    if not(self.jobServer.isUserJob(self, job_id, self.user_id)) :
+      #TBI raise ...
+      pass
+    else
+      drmaaJobId=self.jobServer.getDrmaaJobId(job_id)
+      self.drmaa.terminate(drmaaJobId)
+      self.jobServer.deleteJob(job_id)
 
 
   ########## SERVER STATE MONITORING ########################################
 
 
-  def jobs( self, all=False ):
+  def jobs(self):
     '''
     Returns the identifier of the submitted and not diposed jobs.
 
-    @type  all: bool
-    @param all: If C{all=False} (the default), only the jobs submitted by the
-      current user are returned. If C{all=True} all jobs are returned.
     @rtype:  sequence of C{JobIdentifier}
     @return: series of job identifiers
     '''
-
- def getJobsBindToLocalFile(self, local_file_path):
-    '''
-    Returns a sequence of the the jobs which have declare to user the local file
-    as input or output.  
-    The local file path must belong to the user's transfered files (ie belong to 
-    the sequence returned by the L{getTransfers} method).
     
-    @type local_file_path: string
-    @param local_file_path: local file path 
-    @rtype: sequence of tuple (C{JobIdentifier}, isInput)
-    @return: sequence of jobs using the local file associated to C{True} 
-    if the job uses it as input or C{False} if it uses it as output.
-    '''
+    return self.jobServer.getJobs(self, self.user_id)
+    
     
     
   def getTransfers( self ):
@@ -373,10 +437,27 @@ class JobScheduler( object ):
 	-expiration_date: after this date the local file will be deleted, unless an
 	existing job has declared this file as output or input.
     '''
-
+    
+    result = []
+    for info in self.jobServer.getTransfers(self.user_id):
+      result.append(info)
+    return result
 
   
   ########### DRMS MONITORING ################################################
+
+
+  UNDETERMINED="undetermined"
+  QUEUED_ACTIVE="queued and active"
+  SYSTEM_ON_HOLD="queued and in system hold"
+  USER_ON_HOLD="queued and in user hold"
+  USER_SYSTEM_ON_HOLD="queued and in user and system hold"
+  RUNNING="running"
+  SYSTEM_SUSPENDED="system suspended"
+  USER_SUSPENDED="user suspended"
+  USER_SYSTEM_SUSPENDED="user and system suspended"
+  DONE="finished normally"
+  FAILED="finished but failed"
 
   def status( self, job_id ):
     '''
@@ -385,8 +466,14 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     @rtype:  C{JobStatus}
-    @return: the status of the job.
+    @return: the status of the job. The possible values are UNDETERMINED, 
+    QUEUED_ACTIVE, SYSTEM_ON_HOLD, USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING,
+    SYSTEM_SUSPENDED, USER_SUSPENDED, USER_SYSTEM_SUSPENDED, DONE, FAILED
     '''
+    
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    return self.drmaa.jobStatus(drmaaJobId) #add conversion if needed
+    
 
   def returnValue( self, job_id ):
     '''
@@ -400,6 +487,9 @@ class JobScheduler( object ):
     @return: job exit value, it may be C{None} if the job is not finished or
     exited abnormally (for instance on a signal).
     '''
+  
+    #TBI
+
 
   def output( self, job_id ):
     '''
@@ -413,6 +503,11 @@ class JobScheduler( object ):
     @rtype:  file object or None
     @return: file object containing the job's output.
     '''
+
+    stdout_path, stderr_path = self.jobServer.getStdOutErrFilePath(job_id)
+    output = open(stdout_path)
+    return output
+    #NOT SAFE !!!
 
   def errorOutput( self, job_id ):
     '''
@@ -428,6 +523,12 @@ class JobScheduler( object ):
     @return: file object containing the job's error output.
     '''
 
+    stdout_path, stderr_path = self.jobServer.getStdOutErrFilePath(job_id)
+    error = open(stderr_path)
+    return error
+    #NOT SAFE !!!
+    
+    
   ########## JOB CONTROL VIA DRMS ########################################
   
   
