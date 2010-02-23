@@ -14,6 +14,7 @@ from somaDrmaaJobsSip import DrmaaJobs
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 from datetime import date
+from datetime import timedelta
 import shutil
 
 

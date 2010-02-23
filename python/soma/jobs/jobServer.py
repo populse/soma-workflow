@@ -10,8 +10,9 @@ linked together via a distributed resource management systems (DRMS).
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from sqlite3 *
-
+from sqlite3 import *
+from datetime import date
+from datetime import timedelta
 
 __docformat__ = "epytext en"
 
@@ -21,6 +22,11 @@ class JobServer ( object ):
   
   
   '''
+  
+  tmpFileDirPath="/neurospin/tmp/Soizic/jobFiles/"
+  file_num=0 #TMP add to database ??
+  
+  
   
   def __init__(self, database_file):
     '''
@@ -34,6 +40,12 @@ class JobServer ( object ):
     self.connection = connect(self.database_file) #Question: Is that better to do a connect in each JobServer method using the database ??
     
     
+    
+  def __del__(self):
+    self.connection.close()
+    
+    
+    
   
   def registerUser(self, login):
     '''
@@ -42,10 +54,15 @@ class JobServer ( object ):
     @rtype: C{UserIdentifier}
     @return: user identifier
     '''
+    
     cursor = self.connection.cursor()
     cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
     id, = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()
+    
+    self.connection.commit()
     return id
+  
+  
   
   def generateLocalFilePath(self, user_id, remote_file_path=None):
     '''
@@ -59,6 +76,23 @@ class JobServer ( object ):
     @rtype: string
     @return: free local file path
     '''
+    cursor = self.connection.cursor()
+    login, = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()
+    
+    newFilePath = JobServer.tmpFileDirPath + login + '/'
+    if remote_file_path == None:
+      newFilePath += repr(JobServer.file_num)
+    else:
+      iextention = remote_file_path.rfind(".")
+      if iextention == -1 :
+        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(JobServer.file_num) 
+      else: 
+        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(JobServer.file_num) + remote_file_path[iextention:]
+    JobServer.file_num += 1 #TMP add to database ??
+    return newFilePath
+    
+    
+    
     
   def addTransfer(self, local_file_path, remote_file_path, expiration_date, user_id):
     '''
@@ -70,6 +104,14 @@ class JobServer ( object ):
     @type expiration_date: date
     @type user_id:  C{UserIdentifier}
     '''
+    
+    cursor = self.connection.cursor()
+    cursor.execute('''INSERT INTO transfers 
+                    (local_file_path, remote_file_path, transfer_date, expiration_date, user_id) VALUES (?, ?, ?, ?, ?)''',
+                    (local_file_path, remote_file_path, date.today(), expiration_date, user_id))
+    self.connection.commit()
+
+
 
   def removeTransferASAP(self, local_file_path):
     '''
@@ -80,6 +122,13 @@ class JobServer ( object ):
     @param local_file_path: local file path to identifying the transfer 
     record to delete.
     '''
+    
+    cursor = self.connection.cursor()
+    yesterday = date.today() - timedelta(days=1)
+    cursor.execute('''UPDATE transfers SET expiration_date=? WHERE local_file_path=?''', (yesterday, local_file_path))
+    self.connection.commit()
+
+    self.clean()
 
   def addJob(self, 
                user_id,
@@ -113,6 +162,25 @@ class JobServer ( object ):
     @return: the identifier of the job
     '''
     
+    cursor = self.connection.cursor()
+    cursor.execute('''INSERT INTO jobs 
+                    (submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id, working_directory) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (date.today(), 
+                     user_id,
+                     expiration_date,
+                     stdout_file,
+                     stderr_file,
+                     join_stderrout,
+                     stdin_file,
+                     name_description,
+                     drmaa_id, 
+                     working_directory))
+    self.connection.commit()
+    id, = cursor.execute('''SELECT id FROM jobs ORDER BY id DESC''').next()
+    return id
+   
+    
   def registerInputs(self, job_id, local_input_files):
     '''
     Register associations between a job and input file path.
@@ -122,6 +190,15 @@ class JobServer ( object ):
     @param local_input_files: local input file paths 
     '''
     
+    cursor = self.connection.cursor()
+    for file in local_input_files:
+      cursor.execute('''INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)''',
+                    (job_id, file, True))
+                    
+    self.connection.commit()
+    
+    
+    
   def registerOutputs(self, job_id, local_output_files):
     '''
     Register associations between a job and output file path.
@@ -130,6 +207,14 @@ class JobServer ( object ):
     @type  local_input_files: sequence of string
     @param local_input_files: local output file paths 
     '''
+    cursor = self.connection.cursor()
+    for file in local_output_files:
+      cursor.execute('''INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)''',
+                    (job_id, file, False))
+                    
+    self.connection.commit()
+
+
 
   def deleteJob(self, job_id):
     '''
@@ -139,6 +224,15 @@ class JobServer ( object ):
     @type job_id: 
     '''
     # set expiration date to yesterday + clean() ?
+    
+    cursor = self.connection.cursor()
+    yesterday = date.today() - timedelta(days=1)
+    cursor.execute('''UPDATE jobs SET expiration_date=? WHERE id=?''', (yesterday, job_id))
+    self.connection.commit()
+    
+    self.clean()
+
+
 
   def clean(self) :
     '''
@@ -146,12 +240,24 @@ class JobServer ( object ):
     by valid job.
     '''
     
+    cursor = self.connection.cursor()
+    
+    for row in cursor.execute("SELECT id FROM jobs WHERE expiration_date < ?", [date.today()]):
+      job_id, = row
+      cursor.execute("DELETE FROM ios WHERE job_id=?", [job_id])
+    
+    for row in cursor.execute("SELECT local_file_path FROM transfers WHERE expiration_date < ?", [date.today()]):
+      transfer_id, = row
+      count, = cursor.execute("SELECT count(*) FROM ios WHERE local_file_path=?", [transfer_id]).next()
+      if count == 0 :
+        cursor.execute("DELETE FROM transfers WHERE local_file_path=?", [transfer_id])
+      
     
   ################### DATABASE QUERYING ##############################
   
   #JOBS
  
- def isUserJob(self, job_id, user_id):
+  def isUserJob(self, job_id, user_id):
     '''
     Check that a job is own by a user.
     
@@ -160,6 +266,12 @@ class JobServer ( object ):
     @rtype: bool
     @returns: the job is owned by the user
     '''
+    
+    cursor = self.connection.cursor()
+    owner_id, = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next()
+    return (owner_id==user_id)
+  
+  
   
   def getJobs(self, user_id):
     '''
@@ -169,7 +281,16 @@ class JobServer ( object ):
     @rtype: sequence of C{JobIdentifier}
     @returns: jobs owned by the user
     '''
-  
+   
+    cursor = self.connection.cursor()
+    job_ids = []
+    for row in cursor.execute('SELECT id FROM jobs WHERE user_id=?', [user_id]):
+      id, = row
+      job_ids.append(id)
+    return job_ids
+    
+    
+    
   def getDrmaaJobId(self, job_id):
     '''
     Returns the DRMAA job id associated with the job.
@@ -179,6 +300,12 @@ class JobServer ( object ):
     @return: DRMAA job identifier (job identifier on DRMS if submitted via DRMAA)
     '''
     
+    cursor = self.connection.cursor()
+    drmaa_id, = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next()
+    return drmaa_id
+    
+    
+    
   def getStdOutErrFilePath(self, job_id):
     '''
     Returns the path of the standard output and error files.
@@ -187,6 +314,12 @@ class JobServer ( object ):
     @rtype: tuple
     @return: (stdout_file_path, stderr_file_path)
     '''
+
+    cursor = self.connection.cursor()
+    result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
+    return result
+  
+  
 
   #TRANSFERS
   
@@ -200,6 +333,12 @@ class JobServer ( object ):
     @rtype: bool
     @returns: the local file path match with a transfer owned by the user
     '''
+    
+    cursor = self.connection.cursor()
+    owner_id, = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next()
+    return (owner_id==user_id)
+
+
 
   def getTransfers(self, user_id):
     '''
@@ -209,6 +348,15 @@ class JobServer ( object ):
     @rtype: sequence of local file path
     @returns: local file path associated with a transfer owned by the user
     '''
+    
+    cursor = self.connection.cursor()
+    local_file_paths = []
+    for row in cursor.execute('SELECT local_file_path FROM transfers WHERE user_id=?', [user_id]):
+      local_file, = row
+      local_file_paths.append(local_file)
+    return local_file_paths
+    
+    
 
   def getTransferInformation(self, local_file_path):
     '''
@@ -219,5 +367,6 @@ class JobServer ( object ):
     @returns: (local_file_path, remote_file_path, expiration_date)
     '''
 
-
- 
+    cursor = self.connection.cursor()
+    result = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next()
+    return result
