@@ -10,7 +10,7 @@ linked together via a distributed resource management systems (DRMS).
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-import sqlite3
+from sqlite3 *
 
 
 __docformat__ = "epytext en"
@@ -22,6 +22,19 @@ class JobServer ( object ):
   
   '''
   
+  def __init__(self, database_file):
+    '''
+    The constructor gets as parameter the database information.
+    
+    @type  database_file: string
+    @param database_file: the SQLite database file 
+    '''
+    
+    self.database_file = database_file
+    self.connection = connect(self.database_file) #Question: Is that better to do a connect in each JobServer method using the database ??
+    
+    
+  
   def registerUser(self, login):
     '''
     Register a user so that he can submit job.
@@ -29,6 +42,10 @@ class JobServer ( object ):
     @rtype: C{UserIdentifier}
     @return: user identifier
     '''
+    cursor = self.connection.cursor()
+    cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
+    id, = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()
+    return id
   
   def generateLocalFilePath(self, user_id, remote_file_path=None):
     '''

@@ -14,6 +14,8 @@ from somaDrmaaJobsSip import DrmaaJobs
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 from datetime import date
+import shutil
+
 
 
 class JobScheduler( object ):
@@ -105,7 +107,8 @@ class JobScheduler( object ):
     '''
     
     local_input_file_path = self.jobServer.generateLocalFilePath(self.userid, remote_input_file)
-    #TBI: cp remote_input_file local_input_file_path
+    shutil.copy(remote_input_file,local_input_file_path)#cp remote_input_file local_input_file_path 
+    #TMP: to change for true remote cases. 
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
     self.jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.user_id)
     return local_input_file_path
@@ -149,7 +152,8 @@ class JobScheduler( object ):
     '''
     
     local_file_path, remote_file_path, expiration_date = self.jobServer.getTransferInformation(local_file)
-    #TBI cp local_file_path remote_file_path
+    shutil.copy(local_file_path,remote_file_path)#cp local_file_path remote_file_path 
+    #TMP: to change for true remote cases. 
 
   def cancelTransfer(self, local_file_path):
     '''
@@ -164,9 +168,10 @@ class JobScheduler( object ):
     
     if not(self.jobServer.isUserTransfer(local_file_path, self.user_id)):
       # raise TBI
+      print('Error: the transfer is owned by a different user \n')
       pass
     else
-      self.jobServer.removeTransferASAP(local_file_path)t
+      self.jobServer.removeTransferASAP(local_file_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -243,9 +248,6 @@ class JobScheduler( object ):
                                    working_directory)
     return job_id
   
-  
-  
-
 
 
   def submit( self,
@@ -307,10 +309,6 @@ class JobScheduler( object ):
                                    drmaaSubmittedJobId,
                                    working_directory)
     return job_id 
-
-
-
-
 
 
 
@@ -402,6 +400,7 @@ class JobScheduler( object ):
     
     if not(self.jobServer.isUserJob(self, job_id, self.user_id)) :
       #TBI raise ...
+      print('Error: the job is owned by a different user \n')
       pass
     else
       drmaaJobId=self.jobServer.getDrmaaJobId(job_id)
@@ -488,6 +487,9 @@ class JobScheduler( object ):
     exited abnormally (for instance on a signal).
     '''
   
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    if self.status(job_id)!=self.DONE :
+      return None
     #TBI
 
 
@@ -540,6 +542,10 @@ class JobScheduler( object ):
     @param job_ids: Set of jobs to wait for
     '''
 
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    self.drmaa.wait(drmaaJobId)
+
+
   def stop( self, job_id ):
     '''
     Temporarily stops the job until the method L{restart} is called. The job 
@@ -548,6 +554,13 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
+    
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    if self.status(job_id)==self.RUNNING:
+      self.drmaa.suspend(drmaajobId)
+    else  
+      self.drmaa.hold(drmaaJobId)
+  
   
   def restart( self, job_id ):
     '''
@@ -556,6 +569,13 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
+
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    if self.status(job_id)==self.USER_SUSPENDED:
+      self.drmaa.resume(drmaajobId)
+    else  
+      self.drmaa.realease(drmaaJobId)
+
 
   def kill( self, job_id ):
     '''
@@ -568,3 +588,5 @@ class JobScheduler( object ):
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
 
+    drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
+    self.drmaa.terminate(drmaaJobId)
