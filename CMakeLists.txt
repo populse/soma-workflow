@@ -5,7 +5,7 @@ BRAINVISA_PROJECT()
 BRAINVISA_FIND_PACKAGE( aims-free )
 BRAINVISA_COPY_PYTHON_DIRECTORY( "${CMAKE_CURRENT_SOURCE_DIR}/python"
                                  ${PROJECT_NAME} )
-add_subdirectory( src/jobs )
+add_subdirectory( src/drmaaJobs )
 if( AIMS-FREE_FOUND )
   include_directories( "${SIP_INCLUDE_DIR}" )
   add_subdirectory( src/sip )

@@ -10,9 +10,10 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 '''
 __docformat__ = "epytext en"
 
-from somaDrmaaJobsSip import DrmaaJobs
-import Pyro.naming, Pyro.core
-from Pyro.errors import NamingError
+from soma.pipeline.somadrmaajobssip import DrmaaJobs
+from soma.jobs.jobServer import JobServer
+#import Pyro.naming, Pyro.core
+#from Pyro.errors import NamingError
 from datetime import date
 from datetime import timedelta
 import shutil
@@ -46,18 +47,18 @@ class JobScheduler( object ):
     
     self.drmaa = DrmaaJobs()
     
-    locator = Pyro.naming.NameServerLocator()
-    print 'searching for Name Server...'
-    ns = locator.getNS()
-    try:
-        URI=ns.resolve('JobServer')
-        print 'URI:',URI
-    except NamingError,x:
-        print 'Couldn\'t find object, nameserver says:',x
-        raise SystemExit
+    #locator = Pyro.naming.NameServerLocator()
+    #print 'searching for Name Server...'
+    #ns = locator.getNS()
+    #try:
+        #URI=ns.resolve('JobServer')
+        #print 'URI:',URI
+    #except NamingError,x:
+        #print 'Couldn\'t find object, nameserver says:',x
+        #raise SystemExit
     
     # create a proxy for the Pyro object, and return that
-    self.jobServer = Pyro.core.getAttrProxyForURI(URI)
+    self.jobServer = JobServer("job.db")#Pyro.core.getAttrProxyForURI(URI)
     
     userLogin = "sl225510" #TBI: get user login or id
     self.user_id = self.jobServer.registerUser(userLogin)
@@ -142,7 +143,7 @@ class JobScheduler( object ):
     return local_output_file_path
     
 
-  def transferOutputFile(self, local_file);
+  def transferOutputFile(self, local_file):
     '''
     Copy the local file to the associated remote file path. 
     The local file path must belong to the user's transfered files (ie belong to 
@@ -171,7 +172,7 @@ class JobScheduler( object ):
       # raise TBI
       print('Error: the transfer is owned by a different user \n')
       pass
-    else
+    else:
       self.jobServer.removeTransferASAP(local_file_path)
     
 
@@ -242,7 +243,7 @@ class JobScheduler( object ):
                                    expiration_date, 
                                    stdout_path,
                                    stderr_path,
-                                   join_stderrout
+                                   join_stderrout,
                                    stdin, 
                                    None,  # Name_description
                                    drmaaSubmittedJobId,
@@ -304,7 +305,7 @@ class JobScheduler( object ):
                                    expiration_date, 
                                    stdout_file,
                                    stderr_file,
-                                   join_stderrout
+                                   join_stderrout,
                                    stdin, 
                                    None,  # Name_description
                                    drmaaSubmittedJobId,
@@ -373,7 +374,7 @@ class JobScheduler( object ):
                                    expiration_date, 
                                    stdout_file,
                                    stderr_file,
-                                   join_stderrout
+                                   join_stderrout,
                                    stdin, 
                                    None,  # Name_description
                                    drmaaSubmittedJobId)
@@ -403,7 +404,7 @@ class JobScheduler( object ):
       #TBI raise ...
       print('Error: the job is owned by a different user \n')
       pass
-    else
+    else:
       drmaaJobId=self.jobServer.getDrmaaJobId(job_id)
       self.drmaa.terminate(drmaaJobId)
       self.jobServer.deleteJob(job_id)
@@ -559,7 +560,7 @@ class JobScheduler( object ):
     drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
     if self.status(job_id)==self.RUNNING:
       self.drmaa.suspend(drmaajobId)
-    else  
+    else:
       self.drmaa.hold(drmaaJobId)
   
   
@@ -574,7 +575,7 @@ class JobScheduler( object ):
     drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
     if self.status(job_id)==self.USER_SUSPENDED:
       self.drmaa.resume(drmaajobId)
-    else  
+    else:
       self.drmaa.realease(drmaaJobId)
 
 
