@@ -57,7 +57,7 @@ class JobServer ( object ):
     
     cursor = self.connection.cursor()
     cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
-    id, = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()
+    id, = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()#supposes that the INSERT was successful
     
     self.connection.commit()
     return id
@@ -67,6 +67,7 @@ class JobServer ( object ):
   def generateLocalFilePath(self, user_id, remote_file_path=None):
     '''
     Generates free local file path for transfers. 
+    The user_id must be valid.
     
     @type  user_id: C{UserIdentifier}
     @param user_id: user identifier
@@ -77,7 +78,7 @@ class JobServer ( object ):
     @return: free local file path
     '''
     cursor = self.connection.cursor()
-    login, = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()
+    login, = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next() #supposes that the user_id is valid
     
     newFilePath = JobServer.tmpFileDirPath + login + '/'
     if remote_file_path == None:
@@ -177,7 +178,7 @@ class JobServer ( object ):
                      drmaa_id, 
                      working_directory))
     self.connection.commit()
-    id, = cursor.execute('''SELECT id FROM jobs ORDER BY id DESC''').next()
+    id, = cursor.execute('''SELECT id FROM jobs ORDER BY id DESC''').next() #supposes that the INSERT was successful
     return id
    
     
@@ -226,12 +227,23 @@ class JobServer ( object ):
     # set expiration date to yesterday + clean() ?
     
     cursor = self.connection.cursor()
+    cursor2 = self.connection.cursor()
+    
     yesterday = date.today() - timedelta(days=1)
     cursor.execute('''UPDATE jobs SET expiration_date=? WHERE id=?''', (yesterday, job_id))
+    
+    for row in cursor.execute('''SELECT local_file_path FROM ios WHERE job_id=?''', [job_id]):
+      local_file_path, = row
+      remote_file_path, = cursor2.execute("SELECT remote_file_path FROM transfers WHERE local_file_path=?", [local_file_path]).next() #supposes that all local_file_path of ios correspond to a transfer
+      if remote_file_path == None :
+        cursor2.execute("UPDATE transfers SET expiration_date=? WHERE local_file_path=?", (yesterday, local_file_path))
+    
+    
     self.connection.commit()
     
+    #delete stdout and stderr transfers too ?
+    
     self.clean()
-
 
 
   def clean(self) :
@@ -241,16 +253,21 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
+    cursor2 = self.connection.cursor()
     
     for row in cursor.execute("SELECT id FROM jobs WHERE expiration_date < ?", [date.today()]):
       job_id, = row
-      cursor.execute("DELETE FROM ios WHERE job_id=?", [job_id])
+      cursor2.execute("DELETE FROM ios WHERE job_id=?", [job_id])
     
     for row in cursor.execute("SELECT local_file_path FROM transfers WHERE expiration_date < ?", [date.today()]):
       transfer_id, = row
-      count, = cursor.execute("SELECT count(*) FROM ios WHERE local_file_path=?", [transfer_id]).next()
+      count, = cursor2.execute("SELECT count(*) FROM ios WHERE local_file_path=?", [transfer_id]).next()
       if count == 0 :
-        cursor.execute("DELETE FROM transfers WHERE local_file_path=?", [transfer_id])
+        cursor2.execute("DELETE FROM transfers WHERE local_file_path=?", [transfer_id])
+      
+    cursor.execute("DELETE FROM jobs WHERE expiration_date < ?", [date.today()])
+    
+    self.connection.commit()
       
     
   ################### DATABASE QUERYING ##############################
@@ -260,6 +277,7 @@ class JobServer ( object ):
   def isUserJob(self, job_id, user_id):
     '''
     Check that a job is own by a user.
+    The job_id must be valid.
     
     @type job_id: C{JobIdentifier}
     @type user_id: C{UserIdentifier}
@@ -268,7 +286,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    owner_id, = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next()
+    owner_id, = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next() # suppose that the job_id is valid
     return (owner_id==user_id)
   
   
@@ -294,6 +312,7 @@ class JobServer ( object ):
   def getDrmaaJobId(self, job_id):
     '''
     Returns the DRMAA job id associated with the job.
+    The job_id must be valid.
     
     @type job_id: C{JobIdentifier}
     @rtype: string
@@ -301,7 +320,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    drmaa_id, = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next()
+    drmaa_id, = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next() #supposes that the job_id is valid
     return drmaa_id
     
     
@@ -309,6 +328,7 @@ class JobServer ( object ):
   def getStdOutErrFilePath(self, job_id):
     '''
     Returns the path of the standard output and error files.
+    The job_id must be valid.
     
     @type job_id: C{JobIdentifier}
     @rtype: tuple
@@ -316,7 +336,7 @@ class JobServer ( object ):
     '''
 
     cursor = self.connection.cursor()
-    result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
+    result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
     return result
   
   
@@ -327,6 +347,7 @@ class JobServer ( object ):
     '''
     Check that a local file path match with a transfer and that the transfer 
     is owned by the user.
+    The local_file_path must be associated to a transfer.
     
     @type local_file_path: string
     @type user_id: C{UserIdentifier}
@@ -335,7 +356,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    owner_id, = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next()
+    owner_id, = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
     return (owner_id==user_id)
 
 
@@ -361,6 +382,7 @@ class JobServer ( object ):
   def getTransferInformation(self, local_file_path):
     '''
     Returns the information related to the transfer associated to the local file path.
+    The local_file_path must be associated to a transfer.
     
     @type local_file_path: string
     @rtype: tuple
@@ -368,5 +390,5 @@ class JobServer ( object ):
     '''
 
     cursor = self.connection.cursor()
-    result = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next()
+    result = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
     return result
