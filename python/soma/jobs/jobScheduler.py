@@ -10,7 +10,8 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 '''
 __docformat__ = "epytext en"
 
-from soma.pipeline.somadrmaajobssip import DrmaaJobs
+#from soma.pipeline.somadrmaajobssip import DrmaaJobs
+from somaDrmaaJobsSip import DrmaaJobs
 from soma.jobs.jobServer import JobServer
 #import Pyro.naming, Pyro.core
 #from Pyro.errors import NamingError
@@ -58,7 +59,7 @@ class JobScheduler( object ):
         #raise SystemExit
     
     # create a proxy for the Pyro object, and return that
-    self.jobServer = JobServer("job.db")#Pyro.core.getAttrProxyForURI(URI)
+    self.jobServer = JobServer("/home/sl225510/job.db")#Pyro.core.getAttrProxyForURI(URI)
     
     userLogin = "sl225510" #TBI: get user login or id
     self.user_id = self.jobServer.registerUser(userLogin)
@@ -171,9 +172,9 @@ class JobScheduler( object ):
     if not(self.jobServer.isUserTransfer(local_file_path, self.user_id)):
       # raise TBI
       print('Error: the transfer is owned by a different user \n')
-      pass
-    else:
-      self.jobServer.removeTransferASAP(local_file_path)
+      return
+
+    self.jobServer.removeTransferASAP(local_file_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -209,8 +210,8 @@ class JobScheduler( object ):
     using the L{kill} or L{dispose} methods.
     All the path must refer to shared files or directory on the pool.
     
-    @type  command: sequence
-    @param command: The command to execute
+    @type  command: sequence of string 
+    @param command: The command to execute. Must constain at least one element.
     @type  working_directory: string
     @param working_directory: path to a directory where the job will be executed.
     @type  stdout_path: string
@@ -222,22 +223,44 @@ class JobScheduler( object ):
     @param stdin: job's standard input as a path to a file. C{None} if the 
     job doesn't require an input stream.
     @type  disposal_timeout: int
-    @param disposal_timeout: Number of hours before the job is considered to have been 
+    @param disposal_timeout: Number of hours before the job is consider
+    else:ed to have been 
       forgotten by the submitter. Passed that delay, the job is destroyed and its
       resources released as if the submitter had called L{kill} and L{dispose}.
       Default delay is 168 hours (7 days).
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
     '''
+    
+    if len(command) == 0:
+      #raise TBI
+      print('Error: the command must contain at least one element \n')
+      return
 
-    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
-    self.drmaa.setCommand(jobTempateDrmaaId, command)
-    #TBI set stdout stderr stdin join working directory
-    
+
+    drmaaJobTemplateId = self.drmaa.allocateJobTemplate()
+    self.drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
+  
+    drmaa_stdout_arg = "[void]:" + stdout_path
+    self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", drmaa_stdout_arg)
+
+    if stderr_path != None:
+      drmaa_stderr_arg = "[void]:" + stderr_path
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", drmaa_stderr_arg)
+    else:
+      self.drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
+
+    if stdin != None:
+      drmaa_stdin_arg = "[void]:" + stdin
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", drmaa_stdin_arg)
+      
+    self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
+     
+     
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
-    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    self.drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
-    join_stderrout = (stderr == None)
+    join_stderrout = (stderr_path == None)
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     job_id = self.jobServer.addJob(self.user_id, 
                                    expiration_date, 
@@ -287,18 +310,36 @@ class JobScheduler( object ):
     @return:  the identifier of the submitted job
     '''
     
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    stdout_file = self.jobServer.generateLocalFilePath(self.userId)
-    stderr_file = self.jobServer.generateLocalFilePath(self.userId)
-    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.userId)
-    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.userId)
+    if len(command) == 0:
+      #raise TBI
+      print('Error: the command must contain at least one element \n')
+      return
     
-    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
-    self.drmaa.setCommand(jobTempateDrmaaId, command)
-    #TBI set stdout stderr stdin join working directory
+    
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    stdout_file = self.jobServer.generateLocalFilePath(self.user_id)
+    stderr_file = self.jobServer.generateLocalFilePath(self.user_id)
+    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.user_id)
+    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.user_id)
+    
+    drmaaJobTemplateId = self.drmaa.allocateJobTemplate()
+    self.drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
+    
+    self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
+
+    if join_stderrout:
+      self.drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
+    else:
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
+
+    if stdin != None:
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
+    
+    if working_directory != None:
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
     
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
-    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    self.drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
     join_stderrout = (stderr == None)
     job_id = self.jobServer.addJob(self.user_id, 
@@ -356,15 +397,30 @@ class JobScheduler( object ):
     @return:  the identifier of the submitted job 
     ''' 
 
+    if len(command) == 0:
+      #raise TBI
+      print('Error: the command must contain at least one element \n')
+      return
+
+
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    stdout_file = self.jobServer.generateLocalFilePath(self.userId)
-    stderr_file = self.jobServer.generateLocalFilePath(self.userId)
-    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.userId)
-    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.userId)
+    stdout_file = self.jobServer.generateLocalFilePath(self.user_id)
+    stderr_file = self.jobServer.generateLocalFilePath(self.user_id)
+    self.jobServer.addTransfer(stdout_file, None, expiration_date, self.user_id)
+    self.jobServer.addTransfer(stderr_file, None, expiration_date, self.user_id)
     
-    drmaaJobTemplateId = self.drmaa.allocateJobTempate()
-    self.drmaa.setCommand(jobTempateDrmaaId, command)
-    #TBI set stdout stderr stdin join working directory
+    drmaaJobTemplateId = self.drmaa.allocateJobTemplate()
+    self.drmaa.setCommand(jobTempateDrmaaId, command[0], command[1:])
+    
+    self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
+
+    if join_stderrout:
+      self.drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
+    else:
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
+
+    if stdin != None:
+      self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
     
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
     self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
@@ -400,13 +456,15 @@ class JobScheduler( object ):
     methods L{submit}, L{customSubmit} or L{submitWithTransfer})
     '''
     
-    if not(self.jobServer.isUserJob(self, job_id, self.user_id)) :
+    if not(self.jobServer.isUserJob(job_id, self.user_id)) :
       #TBI raise ...
       print('Error: the job is owned by a different user \n')
       pass
     else:
-      drmaaJobId=self.jobServer.getDrmaaJobId(job_id)
-      self.drmaa.terminate(drmaaJobId)
+      jobStatus = self.status(job_id)
+      if jobStatus != JobScheduler.FAILED and jobStatus != JobScheduler.DONE and jobStatus != JobScheduler.UNDETERMINED :
+        drmaaJobId=self.jobServer.getDrmaaJobId(job_id)
+        self.drmaa.terminate(drmaaJobId)
       self.jobServer.deleteJob(job_id)
 
 
@@ -421,7 +479,7 @@ class JobScheduler( object ):
     @return: series of job identifiers
     '''
     
-    return self.jobServer.getJobs(self, self.user_id)
+    return self.jobServer.getJobs(self.user_id)
     
     
     
@@ -449,16 +507,16 @@ class JobScheduler( object ):
 
 
   UNDETERMINED="undetermined"
-  QUEUED_ACTIVE="queued and active"
-  SYSTEM_ON_HOLD="queued and in system hold"
-  USER_ON_HOLD="queued and in user hold"
-  USER_SYSTEM_ON_HOLD="queued and in user and system hold"
+  QUEUED_ACTIVE="queued_active"
+  SYSTEM_ON_HOLD="system_on_hold"
+  USER_ON_HOLD="user_on_hold"
+  USER_SYSTEM_ON_HOLD="user_system_on_hold"
   RUNNING="running"
-  SYSTEM_SUSPENDED="system suspended"
-  USER_SUSPENDED="user suspended"
-  USER_SYSTEM_SUSPENDED="user and system suspended"
-  DONE="finished normally"
-  FAILED="finished but failed"
+  SYSTEM_SUSPENDED="system_suspended"
+  USER_SUSPENDED="user_suspended"
+  USER_SYSTEM_SUSPENDED="user_system_suspended"
+  DONE="done"
+  FAILED="failed"
 
   def status( self, job_id ):
     '''
@@ -509,9 +567,8 @@ class JobScheduler( object ):
     '''
 
     stdout_path, stderr_path = self.jobServer.getStdOutErrFilePath(job_id)
-    output = open(stdout_path)
-    return output
-    #NOT SAFE !!!
+    outputFile = open(stdout_path)
+    return outputFile
 
   def errorOutput( self, job_id ):
     '''
@@ -527,16 +584,17 @@ class JobScheduler( object ):
     @return: file object containing the job's error output.
     '''
 
+    if self.jobServer.areErrOutJoined(job_id):
+      return None
     stdout_path, stderr_path = self.jobServer.getStdOutErrFilePath(job_id)
-    error = open(stderr_path)
-    return error
-    #NOT SAFE !!!
+    errorFile = open(stderr_path)
+    return errorFile
     
     
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_ids ):
+  def wait( self, job_id ):
     '''
     Waits for all the specified jobs to finish execution or fail. 
     

@@ -1,6 +1,6 @@
 // Define the SIP wrapper to the jobs library.
 
-%Module somadrmaajobssip 0
+%Module somaDrmaaJobsSip 0
 
 class DrmaaJobs {
 
@@ -20,7 +20,6 @@ public:
      const char ** arguments = new const char * [nbArguments];
      for(int i = 0 ; i < nbArguments ; i++) {
         arguments[i] = const_cast<const char *>(PyString_AsString(PyList_GET_ITEM(a2, i)));
-        printf("SIP: Argument %i %s \n", i, arguments[i]);
     }
     Py_BEGIN_ALLOW_THREADS
     sipCpp->setCommand(a0, a1, nbArguments, arguments);
@@ -37,7 +36,6 @@ public:
      const char ** arguments = new const char * [nbArguments];
      for(int i = 0 ; i < nbArguments ; i++) {
          arguments[i] = const_cast<const char *>(PyString_AsString(PyList_GET_ITEM(a2, i)));
-         printf("SIP: Argument %i %s \n", i, arguments[i]);
      }
      Py_BEGIN_ALLOW_THREADS
      sipCpp->setVectorAttribute(a0, a1, nbArguments, arguments);
@@ -45,42 +43,43 @@ public:
      delete[] arguments;
 %End
 
-    int runJob(int jobTemplateId);
-
-/*    void runBulkJobs(int, int, SIP_PYLIST);
+    SIP_PYOBJECT runJob(int jobTemplateId);
 %MethodCode
-    std::list<int> runningJobIds;
+    std::string runningJobId;
     Py_BEGIN_ALLOW_THREADS
-    sipCpp->runBulkJobs(a0, a1, runningJobIds);
+    runningJobId= sipCpp->runJob(a0);
     Py_END_ALLOW_THREADS
-    for(std::list<int>::iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
-        PyList_Append(a2, Py_BuildValue("i",*i));
-    }
+    PyObject * result = PyString_FromStringAndSize(runningJobId.c_str(), runningJobId.size());
+    return result;
 %End
-*/
 
     SIP_PYLIST runBulkJobs(int, int);
 %MethodCode
-    std::list<int> runningJobIds;
+    std::list<std::string> runningJobIds;
     Py_BEGIN_ALLOW_THREADS
     sipCpp->runBulkJobs(a0, a1, runningJobIds);
     Py_END_ALLOW_THREADS
     PyObject* result = PyList_New(0);
-    for(std::list<int>::iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
-        PyList_Append(result, Py_BuildValue("i",*i));
+    for(std::list<std::string>::iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
+        PyList_Append(result, Py_BuildValue("i",PyString_FromString(i->c_str())));
     }
     return result;
 %End
 
-    void wait(int runningJobId);
+    void wait(SIP_PYOBJECT);
+%MethodCode
+    std::string runningJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    sipCpp->wait(runningJobId);
+    Py_END_ALLOW_THREADS
+%End
 
-    //int waitForAnyJob();
 
     void synchronize(SIP_PYLIST);
 %MethodCode
-    std::list<int> runningJobIds;
+    std::list<std::string> runningJobIds;
     for(int i = 0; i < PyList_Size(a0); i++) {
-        runningJobIds.push_back((int)PyInt_AsLong(PyList_GET_ITEM(a0,i)));
+        runningJobIds.push_back(PyString_AsString(PyList_GET_ITEM(a0,i)));
     }
     Py_BEGIN_ALLOW_THREADS
     sipCpp->synchronize(runningJobIds);
@@ -88,89 +87,78 @@ public:
 %End
 
 
-   void synchronizeAllJobs();
 
-
-   /*int*/SIP_PYOBJECT jobStatus(int);
+   SIP_PYOBJECT jobStatus(SIP_PYOBJECT);
 %MethodCode
- //   PyObject * result;
- //   Py_BEGIN_ALLOW_THREADS
- //   result = PyInt_FromLong((long)(sipCpp->jobStatus(a0)));
- //   Py_END_ALLOW_THREADS
- //   return result;
-    DrmaaJobs::JobStatus status;
-    Py_BEGIN_ALLOW_THREADS
-    status = sipCpp->jobStatus(a0);
-    Py_END_ALLOW_THREADS
-    switch (status) {
+   std::string runningJobId(PyString_AsString(a0));
+   DrmaaJobs::JobStatus status;
+   Py_BEGIN_ALLOW_THREADS
+   status = sipCpp->jobStatus(runningJobId);
+   Py_END_ALLOW_THREADS
+   switch (status) {
         case DrmaaJobs::UNDETERMINED:
             return PyString_FromString("undetermined");
         case DrmaaJobs::QUEUED_ACTIVE:
-            return PyString_FromString("queued and active");
+            return PyString_FromString("queued_active");//queued and active");
         case DrmaaJobs::SYSTEM_ON_HOLD:
-            return PyString_FromString("queued and in system hold");
+            return PyString_FromString("system_on_hold);//queued and in system hold");
         case DrmaaJobs::USER_ON_HOLD:
-            return PyString_FromString("queued and in user hold");
+            return PyString_FromString("user_on_hold");//queued and in user hold");
         case DrmaaJobs::USER_SYSTEM_ON_HOLD:
-            return PyString_FromString("queued and in user and system hold");
+            return PyString_FromString("user_system_on_hold");//queued and in user and system hold");
         case DrmaaJobs::RUNNING:
             return PyString_FromString("running");
         case DrmaaJobs::SYSTEM_SUSPENDED:
-            return PyString_FromString("system suspended");
+            return PyString_FromString("system_suspended");
         case DrmaaJobs::USER_SUSPENDED:
-            return PyString_FromString("user suspended");
+            return PyString_FromString("user_suspended");
         case DrmaaJobs::USER_SYSTEM_SUSPENDED:
-            return PyString_FromString("user and system suspended");
+            return PyString_FromString("user_system_suspended");//user and system suspended");
         case DrmaaJobs::DONE:
-            return PyString_FromString("finished normally");
+            return PyString_FromString("done");//finished normally");
         case DrmaaJobs::FAILED:
-            return PyString_FromString("finished but failed");
+            return PyString_FromString("failed");//"finished but failed");
     }
 %End
 
-/*
-    SIP_PYLIST jobStatus(SIP_PYLIST);
-%MethodCode
-    PyObject* result = PyList_New(0);
-    for(int i = 0 ; i < PyList_Size(a0) ; ++i) {
-            PyList_Append(result, sipSelf->jobStatus(PyInt_AsLong(PyList_GET_ITEM(a0, i))));
-    }
-    return result;
-%End
-*/
 
-    void suspend(int);
+    void suspend(SIP_PYOBJECT);
 %MethodCode
+     std::string runningJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(a0, DrmaaJobs::SUSPEND);
+     sipCpp->control(runningJobId, DrmaaJobs::SUSPEND);
      Py_END_ALLOW_THREADS
 %End
 
-    void resume(int);
+    void resume(SIP_PYOBJECT);
 %MethodCode
+     std::string runningJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(a0, DrmaaJobs::RESUME);
+     sipCpp->control(runningJobId, DrmaaJobs::RESUME);
      Py_END_ALLOW_THREADS
 %End
 
-    void hold(int);
+    void hold(SIP_PYOBJECT);
 %MethodCode
+     std::string runningJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(a0, DrmaaJobs::HOLD);
+     sipCpp->control(runningJobId, DrmaaJobs::HOLD);
      Py_END_ALLOW_THREADS
 %End
 
-    void release(int);
+    void release(SIP_PYOBJECT);
 %MethodCode
+     std::string runningJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(a0, DrmaaJobs::RELEASE);
+     sipCpp->control(runningJobId, DrmaaJobs::RELEASE);
      Py_END_ALLOW_THREADS
 %End
 
-    void terminate(int);
+    void terminate(SIP_PYOBJECT);
 %MethodCode
+     std::string runningJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(a0, DrmaaJobs::TERMINATE);
+     sipCpp->control(runningJobId, DrmaaJobs::TERMINATE);
      Py_END_ALLOW_THREADS
 %End
 

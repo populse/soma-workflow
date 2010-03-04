@@ -26,7 +26,6 @@ struct ltint
 class DrmaaJobs {
 
     std::map<int, drmaa_job_template_t *, ltint> mJobTemplatesMap;
-    std::map<int, std::string, ltint> mRunningJobsMap;
 
 public :
 
@@ -78,8 +77,6 @@ public :
 
     // Delete every job template and exit the DRMAA session
     ~DrmaaJobs();
-
-    const std::string & getLastInformation();
 
     void displaySupportedAttributeNames();
 
@@ -141,37 +138,35 @@ public :
     // Run a job which information are given by a job template
     // in: job template id
     // out: runningJobId
-    int runJob(int jobTemplateId);
+    const std::string runJob(int jobTemplateId);
 
     // Run several identical jobs which information are given by a job template (usefull for test purpose)
     // in: job template id
     // in: nbJobs: number of jobs to run
     // out: runningJobIds_out: list of running job ids
-    void runBulkJobs(int jobTemplateId, int nbJobs, std::list<int> & runningJobIds_out) ;
+    void runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & runningJobIds_out) ;
 
     // Wait for a job to finish execution or fail and display its status
     // in: running job id
-    void wait(int runningJobId);
+    void wait(const std::string & runningJobId);
 
     // Wait for any job to finish execution or fail and display its status
     // out: id of ended job
     //int waitForAnyJob();
 
     // Wait until all jobs sepcified by the runningJobIds have finished execution and display their status.
-    void synchronize(const std::list<int> & runningJobIds);
+    void synchronize(const std::list<std::string> & runningJobIds);
 
-    // Wait until all jobs have finished execution or fail and display their status.
-    void synchronizeAllJobs();
 
     // Control a submitted job
-    void control(int runningJobId, Action action);
+    void control(const std::string & runningJobId, Action action);
 
     ////////////////////////////////////
     // RUNNING JOBS IMFORMATION
 
     // Gets the status given a given job id
-    JobStatus jobStatus(int runningJobId);
-    void jobStatus(const std::list<int> & runningJobIds, std::list<JobStatus> & statusList_out);
+    JobStatus jobStatus(const std::string & runningJobId);
+    void jobStatus(const std::list<std::string> & runningJobIds, std::list<JobStatus> & statusList_out);
 
 
 
@@ -181,7 +176,6 @@ protected :
     int getNextId();
 
     bool isJobTemplateIdValid(int jobTemplateId);
-    bool isRunningJobIdValid(int runningJobId);
 
     ExitJobStatus getJobStatus(int drmaa_exitStatus);
 

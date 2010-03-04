@@ -25,10 +25,6 @@ DrmaaJobs::~DrmaaJobs() {
 }
 
 
-const std::string & DrmaaJobs::getLastInformation() {
-    return m_information;
-}
-
 
 void DrmaaJobs::displayJobTemplateAttributeValues(int jobTemplateId) {
     if(!isJobTemplateIdValid(jobTemplateId)) return;
@@ -144,7 +140,6 @@ void DrmaaJobs::exitSession() {
 
     printf("The DRMAA library was shut down \n");
 
-    printf("Running jobs map # : %d \n", mRunningJobsMap.size());
 }
 
 int DrmaaJobs::allocateJobTemplate() {
@@ -267,8 +262,10 @@ void DrmaaJobs::setCommand(int jobTemplateId, const char * remote_command, int n
 }
 
 
-int DrmaaJobs::runJob(int jobTemplateId) {
-    if(!isJobTemplateIdValid(jobTemplateId)) return undefinedId;
+const std::string DrmaaJobs::runJob(int jobTemplateId) {
+
+    std::string runningJobId = "";
+    if(!isJobTemplateIdValid(jobTemplateId)) return runningJobId;
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
@@ -283,16 +280,15 @@ int DrmaaJobs::runJob(int jobTemplateId) {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not submit job: %s\n", error);
-        return undefinedId;
+        return runningJobId;
     }
 
-    int runningJobId = getNextId();
-    mRunningJobsMap[runningJobId] = jobid;
+    runningJobId = jobid;
     printf ("Your job has been submitted with id %s\n", jobid);
     return runningJobId;
 }
 
-void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<int> & runningJobIds_out) {
+void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & runningJobIds_out) {
     if(!isJobTemplateIdValid(jobTemplateId)) return;
 
     char error[DRMAA_ERROR_STRING_BUFFER];
@@ -318,21 +314,18 @@ void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<int> & runn
     runningJobIds_out.clear();
     char jobid[DRMAA_JOBNAME_BUFFER];
     while (drmaa_get_next_job_id (ids, jobid, DRMAA_JOBNAME_BUFFER) == DRMAA_ERRNO_SUCCESS) {
-        int runningJobId = getNextId();
-        mRunningJobsMap[runningJobId] = jobid;
-        runningJobIds_out.push_back(runningJobId);
-        printf ("A job %i has been submitted with id %s\n", runningJobId, jobid);
+        runningJobIds_out.push_back(jobid);
+        printf ("A job has been submitted with id %s\n", jobid);
     }
     drmaa_release_job_ids (ids);
 }
 
-void DrmaaJobs::wait(int runningJobId) {
-    if(!isRunningJobIdValid(runningJobId)) return;
+void DrmaaJobs::wait(const std::string & runningJobId) {
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
-    const char* jobid = mRunningJobsMap[runningJobId].c_str();
+    const char* jobid = runningJobId.c_str();
 
     char jobid_out[DRMAA_JOBNAME_BUFFER];
     int status = 0;
@@ -365,20 +358,15 @@ void DrmaaJobs::wait(int runningJobId) {
 }
 
 
-void DrmaaJobs::synchronize(const std::list<int> & runningJobIds) {
-    for(std::list<int>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
-       if(!isRunningJobIdValid(*i)) return;
-        }
-
+void DrmaaJobs::synchronize(const std::list<std::string> & runningJobIds) {
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
     //const char *jobids[100];
     const char ** jobids = new const char* [runningJobIds.size()+1];
     int index=0;
-    for(std::list<int>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
-        jobids[index] = mRunningJobsMap[*i].c_str();
-        printf("Jobs id: %d drmaa job id: %s \n", *i, mRunningJobsMap[*i].c_str());
+    for(std::list<std::string>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
+        jobids[index] = (*i).c_str();
         index++;
     }
     jobids[runningJobIds.size()] = NULL;
@@ -398,7 +386,7 @@ void DrmaaJobs::synchronize(const std::list<int> & runningJobIds) {
         printf ("Job tasks have finished.\n");
 
         // to get and diplay job status (and delete the job information)
-        for(std::list<int>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
+        for(std::list<std::string>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
             wait(*i);
             //mRunningJobMap.erase[*i];
         }
@@ -407,38 +395,11 @@ void DrmaaJobs::synchronize(const std::list<int> & runningJobIds) {
 }
 
 
-void DrmaaJobs::synchronizeAllJobs() {
-
-    char error[DRMAA_ERROR_STRING_BUFFER];
-    int errnum = 0;
-
-    const char *jobids[2] = {DRMAA_JOB_IDS_SESSION_ALL, NULL};
-
-    errnum = drmaa_synchronize (jobids,
-                                DRMAA_TIMEOUT_WAIT_FOREVER,
-                                0,//means that we keep the jobs information available and will display and delete it later (inside wait())
-                                error,
-                                DRMAA_ERROR_STRING_BUFFER);
-
-    if (errnum != DRMAA_ERRNO_SUCCESS) {
-        fprintf (stderr, "Could not wait for jobs: %s\n", error);
-    }
-    else {
-        printf ("All job tasks have finished.\n");
-
-        // to get and diplay job status (and delete the job information)
-        for(std::map<int, std::string, ltint>::const_iterator i = mRunningJobsMap.begin();i!=mRunningJobsMap.end(); ++i) {
-            wait(i->first);
-        }
-        //mRunningJobMap.clear();
-    }
-}
 
 
 
 
-void DrmaaJobs::control(int runningJobId, Action action) {
-    if(!isRunningJobIdValid(runningJobId)) return;
+void DrmaaJobs::control(const std::string & runningJobId, Action action) {
 
     int drmaa_action = -1;
     switch (action) {
@@ -462,7 +423,7 @@ void DrmaaJobs::control(int runningJobId, Action action) {
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
-    const char * jobId = mRunningJobsMap[runningJobId].c_str();
+    const char * jobId = runningJobId.c_str();
     errnum = drmaa_control(jobId,
                            drmaa_action,
                            error,
@@ -483,13 +444,6 @@ bool DrmaaJobs::isJobTemplateIdValid(int jobTemplateId) {
     } else return true;
 }
 
-
-bool DrmaaJobs::isRunningJobIdValid(int runningJobId) {
-    if(mRunningJobsMap.count(runningJobId) == 0) {
-        fprintf (stderr, "running job with id %d doesn't exit\n", runningJobId);
-        return false;
-    } else return true;
-}
 
 
 DrmaaJobs::ExitJobStatus DrmaaJobs::getJobStatus(int drmaa_exit_status) {
@@ -536,16 +490,15 @@ int DrmaaJobs::getNextId() {
 }
 
 
-DrmaaJobs::JobStatus DrmaaJobs::jobStatus(int runningJobId) {
-    if(!isRunningJobIdValid(runningJobId)) return UNDETERMINED;
+DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
 
-    printf("drmaa job id %s \n", mRunningJobsMap[runningJobId].c_str());
+    printf("drmaa job id %s \n", runningJobId.c_str());
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
     int status = 0;
-    const char* jobid = mRunningJobsMap[runningJobId].c_str();
+    const char* jobid = runningJobId.c_str();
     errnum = drmaa_job_ps(jobid,
                           &status,
                           error,
@@ -556,7 +509,7 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(int runningJobId) {
         return UNDETERMINED;
     }
 
-    printf("job %d ", runningJobId);
+    printf("job %s ", runningJobId.c_str());
 
     switch (status) {
     case DRMAA_PS_UNDETERMINED:
@@ -597,9 +550,9 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(int runningJobId) {
 }
 
 
-void DrmaaJobs::jobStatus(const std::list<int> & runningJobIds, std::list<JobStatus> & statusList_out) {
+void DrmaaJobs::jobStatus(const std::list<std::string> & runningJobIds, std::list<JobStatus> & statusList_out) {
     statusList_out.clear();
-    for(std::list<int>::const_iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
+    for(std::list<std::string>::const_iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
         statusList_out.push_back(jobStatus(*i));
     }
 }

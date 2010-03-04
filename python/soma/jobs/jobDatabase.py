@@ -59,6 +59,10 @@ def create(database_file):
                                       local_file_path VARCHAR(255) NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
                                       is_input         BOOLEAN NOT NULL,
                                       PRIMARY KEY (job_id, local_file_path))''')
+                                      
+  cursor.execute('''CREATE TABLE fileCounter (count INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                              foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
+  
   connection.commit()
   connection.close()
 

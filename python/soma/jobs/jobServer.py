@@ -13,6 +13,7 @@ linked together via a distributed resource management systems (DRMS).
 from sqlite3 import *
 from datetime import date
 from datetime import timedelta
+import os
 
 __docformat__ = "epytext en"
 
@@ -24,7 +25,6 @@ class JobServer ( object ):
   '''
   
   tmpFileDirPath="/neurospin/tmp/Soizic/jobFiles/"
-  file_num=0 #TMP add to database ??
   
   
   
@@ -56,8 +56,13 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
-    id, = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()#supposes that the INSERT was successful
+
+    count = cursor.execute("SELECT count(*) FROM users WHERE login=?", [login]).next()[0]
+    if count==0:
+      cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
+      os.mkdir(JobServer.tmpFileDirPath + login)
+    
+    id = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()[0]#supposes that the INSERT was successful
     
     self.connection.commit()
     return id
@@ -80,16 +85,18 @@ class JobServer ( object ):
     cursor = self.connection.cursor()
     login, = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next() #supposes that the user_id is valid
     
+    cursor.execute("INSERT INTO fileCounter (foo) VALUES (?)", [0])
+    file_num = cursor.execute('''SELECT count FROM fileCounter ORDER BY count DESC''').next()[0]
+    
     newFilePath = JobServer.tmpFileDirPath + login + '/'
     if remote_file_path == None:
-      newFilePath += repr(JobServer.file_num)
+      newFilePath += repr(file_num)
     else:
       iextention = remote_file_path.rfind(".")
       if iextention == -1 :
-        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(JobServer.file_num) 
+        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(file_num) 
       else: 
-        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(JobServer.file_num) + remote_file_path[iextention:]
-    JobServer.file_num += 1 #TMP add to database ??
+        newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + remote_file_path[iextention:]
     return newFilePath
     
     
@@ -272,6 +279,7 @@ class JobServer ( object ):
     
   ################### DATABASE QUERYING ##############################
   
+  
   #JOBS
  
   def isUserJob(self, job_id, user_id):
@@ -339,7 +347,20 @@ class JobServer ( object ):
     result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
     return result
   
+  def areErrOutJoined(self, job_id):
+    '''
+    Tells if the standard error and output are joined in the same file.
+    
+    @type job_id: C{JobIdentifier}
+    @rtype: boolean
+    @return: value of join_errout 
+    '''
+    
+    cursor = self.connection.cursor()
+    join_errout = cursor.execute('SELECT join_errout FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+    return join_errout
   
+    
 
   #TRANSFERS
   
