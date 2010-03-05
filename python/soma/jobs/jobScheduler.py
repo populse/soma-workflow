@@ -109,9 +109,8 @@ class JobScheduler( object ):
     @return: local file path(s) where the file(s) were copied 
     '''
     
-    local_input_file_path = self.jobServer.generateLocalFilePath(self.userid, remote_input_file)
-    shutil.copy(remote_input_file,local_input_file_path)#cp remote_input_file local_input_file_path 
-    #TMP: to change for true remote cases. 
+    local_input_file_path = self.jobServer.generateLocalFilePath(self.user_id, remote_input_file)
+    shutil.copy(remote_input_file,local_input_file_path)#To change for remote case
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
     self.jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.user_id)
     return local_input_file_path
@@ -140,7 +139,7 @@ class JobScheduler( object ):
     '''
     local_output_file_path = self.jobServer.generateLocalFilePath(self.user_id, remote_output_file_path)
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    self.jobServer.addTransfer(local_output_file_path, remote_output_file_path, expirationDate, self.user_id)
+    self.jobServer.addTransfer(local_output_file_path, remote_output_file_path, expiration_date, self.user_id)
     return local_output_file_path
     
 
@@ -155,8 +154,8 @@ class JobScheduler( object ):
     '''
     
     local_file_path, remote_file_path, expiration_date = self.jobServer.getTransferInformation(local_file)
-    shutil.copy(local_file_path,remote_file_path)#cp local_file_path remote_file_path 
-    #TMP: to change for true remote cases. 
+    shutil.copy(local_file_path,remote_file_path)#To change for remote case
+
 
   def cancelTransfer(self, local_file_path):
     '''
@@ -277,7 +276,7 @@ class JobScheduler( object ):
 
   def submit( self,
               command,
-              workingDirectory=None,
+              working_directory=None,
               join_stderrout=False,
               stdin=None,
               disposal_timeout=168):
@@ -290,8 +289,8 @@ class JobScheduler( object ):
     
     @type  command: sequence
     @param command: The command to execute
-    @type  workingDirectory: string
-    @param workingDirectory: path to a directory where the job will be executed.
+    @type  working_directory: string
+    @param working_directory: path to a directory where the job will be executed.
     If C{None}, a default working directory will be used (its value depends on 
     the DRMS installed on the pool).
     @type  join_stderrout: bool
@@ -341,7 +340,7 @@ class JobScheduler( object ):
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
     self.drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
-    join_stderrout = (stderr == None)
+    join_stderrout = join_stderrout
     job_id = self.jobServer.addJob(self.user_id, 
                                    expiration_date, 
                                    stdout_file,
@@ -351,6 +350,8 @@ class JobScheduler( object ):
                                    None,  # Name_description
                                    drmaaSubmittedJobId,
                                    working_directory)
+    self.jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
+    
     return job_id 
 
 
@@ -410,7 +411,7 @@ class JobScheduler( object ):
     self.jobServer.addTransfer(stderr_file, None, expiration_date, self.user_id)
     
     drmaaJobTemplateId = self.drmaa.allocateJobTemplate()
-    self.drmaa.setCommand(jobTempateDrmaaId, command[0], command[1:])
+    self.drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
     self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
 
@@ -423,9 +424,8 @@ class JobScheduler( object ):
       self.drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
     
     drmaaSubmittedJobId = self.drmaa.runJob(drmaaJobTemplateId)
-    self.drmaa.deleteJobtemplate(drmaaJobTemplateId)
+    self.drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
-    join_stderrout = (stderr == None)
     job_id = self.jobServer.addJob(self.user_id, 
                                    expiration_date, 
                                    stdout_file,
@@ -434,9 +434,10 @@ class JobScheduler( object ):
                                    stdin, 
                                    None,  # Name_description
                                    drmaaSubmittedJobId)
-    
-    self.jobServer.registerInputs(required_local_input_files)
-    self.jobServer.registerOnputs(required_local_output_file)
+                                   
+    self.jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
+    self.jobServer.registerInputs(job_id, required_local_input_files)
+    self.jobServer.registerOutputs(job_id, required_local_output_file)
     
     return job_id
 
@@ -498,8 +499,8 @@ class JobScheduler( object ):
     '''
     
     result = []
-    for info in self.jobServer.getTransfers(self.user_id):
-      result.append(info)
+    for transfer in self.jobServer.getTransfers(self.user_id):
+      result.append(self.jobServer.getTransferInformation(transfer))
     return result
 
   
@@ -617,7 +618,7 @@ class JobScheduler( object ):
     
     drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
     if self.status(job_id)==self.RUNNING:
-      self.drmaa.suspend(drmaajobId)
+      self.drmaa.suspend(drmaaJobId)
     else:
       self.drmaa.hold(drmaaJobId)
   
@@ -632,9 +633,9 @@ class JobScheduler( object ):
 
     drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
     if self.status(job_id)==self.USER_SUSPENDED:
-      self.drmaa.resume(drmaajobId)
+      self.drmaa.resume(drmaaJobId)
     else:
-      self.drmaa.realease(drmaaJobId)
+      self.drmaa.release(drmaaJobId)
 
 
   def kill( self, job_id ):

@@ -40,7 +40,6 @@ class JobServer ( object ):
     self.connection = connect(self.database_file) #Question: Is that better to do a connect in each JobServer method using the database ??
     
     
-    
   def __del__(self):
     self.connection.close()
     
@@ -57,12 +56,12 @@ class JobServer ( object ):
     
     cursor = self.connection.cursor()
 
-    count = cursor.execute("SELECT count(*) FROM users WHERE login=?", [login]).next()[0]
+    count = cursor.execute('SELECT count(*) FROM users WHERE login=?', [login]).next()[0]
     if count==0:
       cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
       os.mkdir(JobServer.tmpFileDirPath + login)
     
-    id = cursor.execute('SELECT id FROM users WHERE login=?',  [login]).next()[0]#supposes that the INSERT was successful
+    id = cursor.execute('SELECT id FROM users WHERE login=?', [login]).next()[0]
     
     self.connection.commit()
     return id
@@ -83,10 +82,11 @@ class JobServer ( object ):
     @return: free local file path
     '''
     cursor = self.connection.cursor()
-    login, = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next() #supposes that the user_id is valid
+    login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[0]#supposes that the user_id is valid
+    login = login.encode('utf-8')
     
-    cursor.execute("INSERT INTO fileCounter (foo) VALUES (?)", [0])
-    file_num = cursor.execute('''SELECT count FROM fileCounter ORDER BY count DESC''').next()[0]
+    cursor.execute('INSERT INTO fileCounter (foo) VALUES (?)', [0])
+    file_num = cursor.lastrowid
     
     newFilePath = JobServer.tmpFileDirPath + login + '/'
     if remote_file_path == None:
@@ -133,7 +133,7 @@ class JobServer ( object ):
     
     cursor = self.connection.cursor()
     yesterday = date.today() - timedelta(days=1)
-    cursor.execute('''UPDATE transfers SET expiration_date=? WHERE local_file_path=?''', (yesterday, local_file_path))
+    cursor.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
     self.connection.commit()
 
     self.clean()
@@ -185,7 +185,7 @@ class JobServer ( object ):
                      drmaa_id, 
                      working_directory))
     self.connection.commit()
-    id, = cursor.execute('''SELECT id FROM jobs ORDER BY id DESC''').next() #supposes that the INSERT was successful
+    id = cursor.lastrowid
     return id
    
     
@@ -200,7 +200,7 @@ class JobServer ( object ):
     
     cursor = self.connection.cursor()
     for file in local_input_files:
-      cursor.execute('''INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)''',
+      cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
                     (job_id, file, True))
                     
     self.connection.commit()
@@ -217,7 +217,7 @@ class JobServer ( object ):
     '''
     cursor = self.connection.cursor()
     for file in local_output_files:
-      cursor.execute('''INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)''',
+      cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
                     (job_id, file, False))
                     
     self.connection.commit()
@@ -237,19 +237,15 @@ class JobServer ( object ):
     cursor2 = self.connection.cursor()
     
     yesterday = date.today() - timedelta(days=1)
-    cursor.execute('''UPDATE jobs SET expiration_date=? WHERE id=?''', (yesterday, job_id))
+    cursor.execute('UPDATE jobs SET expiration_date=? WHERE id=?', (yesterday, job_id))
     
-    for row in cursor.execute('''SELECT local_file_path FROM ios WHERE job_id=?''', [job_id]):
+    for row in cursor.execute('SELECT local_file_path FROM ios WHERE job_id=?', [job_id]):
       local_file_path, = row
-      remote_file_path, = cursor2.execute("SELECT remote_file_path FROM transfers WHERE local_file_path=?", [local_file_path]).next() #supposes that all local_file_path of ios correspond to a transfer
+      remote_file_path = cursor2.execute('SELECT remote_file_path FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0] #supposes that all local_file_path of ios correspond to a transfer
       if remote_file_path == None :
-        cursor2.execute("UPDATE transfers SET expiration_date=? WHERE local_file_path=?", (yesterday, local_file_path))
-    
+        cursor2.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
     
     self.connection.commit()
-    
-    #delete stdout and stderr transfers too ?
-    
     self.clean()
 
 
@@ -262,17 +258,19 @@ class JobServer ( object ):
     cursor = self.connection.cursor()
     cursor2 = self.connection.cursor()
     
-    for row in cursor.execute("SELECT id FROM jobs WHERE expiration_date < ?", [date.today()]):
+    for row in cursor.execute('SELECT id FROM jobs WHERE expiration_date < ?', [date.today()]):
       job_id, = row
-      cursor2.execute("DELETE FROM ios WHERE job_id=?", [job_id])
+      cursor2.execute('DELETE FROM ios WHERE job_id=?', [job_id])
     
-    for row in cursor.execute("SELECT local_file_path FROM transfers WHERE expiration_date < ?", [date.today()]):
-      transfer_id, = row
-      count, = cursor2.execute("SELECT count(*) FROM ios WHERE local_file_path=?", [transfer_id]).next()
+    for row in cursor.execute('SELECT local_file_path FROM transfers WHERE expiration_date < ?', [date.today()]):
+      local_file_path, = row
+      count = cursor2.execute('SELECT count(*) FROM ios WHERE local_file_path=?', [local_file_path]).next()[0]
       if count == 0 :
-        cursor2.execute("DELETE FROM transfers WHERE local_file_path=?", [transfer_id])
+        cursor2.execute('DELETE FROM transfers WHERE local_file_path=?', [local_file_path])
+        if os.path.isfile(local_file_path):
+          os.remove(local_file_path)
       
-    cursor.execute("DELETE FROM jobs WHERE expiration_date < ?", [date.today()])
+    cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
     
     self.connection.commit()
       
@@ -294,7 +292,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    owner_id, = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next() # suppose that the job_id is valid
+    owner_id = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next()[0] # suppose that the job_id is valid
     return (owner_id==user_id)
   
   
@@ -328,7 +326,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    drmaa_id, = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next() #supposes that the job_id is valid
+    drmaa_id = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next()[0] #supposes that the job_id is valid
     return drmaa_id
     
     
@@ -377,7 +375,7 @@ class JobServer ( object ):
     '''
     
     cursor = self.connection.cursor()
-    owner_id, = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
+    owner_id = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next()[0] #supposes that the local_file_path is associated to a transfer
     return (owner_id==user_id)
 
 
