@@ -1,6 +1,6 @@
 // Define the SIP wrapper to the jobs library.
 
-%Module somaDrmaaJobsSip 0
+%Module soma.pipeline.somadrmaajobssip 0
 
 class DrmaaJobs {
 
