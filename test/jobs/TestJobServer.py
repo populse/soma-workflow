@@ -1,9 +1,11 @@
-from jobServer import *
-import jobDatabase
+from soma.jobs.jobServer import JobServer
+from datetime import date
+from datetime import timedelta
+from soma.jobs.jobDatabase import *
 
 db = "job.db"
-jobDatabase.create(db)
-#jobDatabase.fillWithExampleData(db)
+create(db)
+fillWithExampleData(db)
 
 
 expiration_date = date.today() + timedelta(days=7)
@@ -48,7 +50,7 @@ js.registerOutputs(job1_id, [l_file11, l_file12])
 js.registerOutputs(job1_id, [l_stdout1, l_stderr1])
 
 
-jobDatabase.printTables(db)
+printTables(db)
 print "####################JOB1######################"
 raw_input()
 
@@ -85,7 +87,7 @@ js.registerInputs(job2_id, [l_file0, l_file11, l_script2, l_stdin2])
 js.registerOutputs(job2_id, [l_file2])
 js.registerOutputs(job2_id, [l_stdout2, l_stderr2])
 
-jobDatabase.printTables(db)
+printTables(db)
 print "####################JOB2######################"
 raw_input()
 
@@ -121,7 +123,7 @@ js.registerInputs(job3_id, [l_file12, l_script3, l_stdin3])
 js.registerOutputs(job3_id, [l_file3])
 js.registerOutputs(job3_id, [l_stdout3, l_stderr3])
 
-jobDatabase.printTables(db)
+printTables(db)
 print "####################JOB3######################"
 raw_input()
 
@@ -131,12 +133,12 @@ js.removeTransferASAP(l_stdin1)
 js.removeTransferASAP(l_file11)
 js.removeTransferASAP(l_file12)
 
-jobDatabase.printTables(db)
+printTables(db)
 print "###########DELETE TRANSFERS RELATED TO JOB1######################"
 raw_input()
 
 js.deleteJob(job1_id)
-jobDatabase.printTables(db)
+printTables(db)
 print "####################DELETE JOB1######################"
 raw_input()
 
@@ -149,18 +151,18 @@ js.removeTransferASAP(l_script3)
 js.removeTransferASAP(l_stdin3)
 js.removeTransferASAP(l_file3)
 
-jobDatabase.printTables(db)
+printTables(db)
 print "###########DELETE TRANSFERS RELATED TO JOB2&3######################"
 raw_input()
 
 js.deleteJob(job2_id)
-jobDatabase.printTables(db)
+printTables(db)
 print "####################DELETE JOB2######################"
 raw_input()
 
 
 js.deleteJob(job3_id)
-jobDatabase.printTables(db)
+printTables(db)
 print "####################DELETE JOB3######################"
 raw_input()
 

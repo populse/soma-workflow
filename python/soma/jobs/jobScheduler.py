@@ -10,8 +10,8 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 '''
 __docformat__ = "epytext en"
 
-#from soma.pipeline.somadrmaajobssip import DrmaaJobs
-from somaDrmaaJobsSip import DrmaaJobs
+from soma.pipeline.somadrmaajobssip import DrmaaJobs
+#from somaDrmaaJobsSip import DrmaaJobs
 from soma.jobs.jobServer import JobServer
 #import Pyro.naming, Pyro.core
 #from Pyro.errors import NamingError
