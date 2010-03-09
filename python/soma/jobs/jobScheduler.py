@@ -11,14 +11,14 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 __docformat__ = "epytext en"
 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
-#from somaDrmaaJobsSip import DrmaaJobs
 from soma.jobs.jobServer import JobServer
 #import Pyro.naming, Pyro.core
 #from Pyro.errors import NamingError
 from datetime import date
 from datetime import timedelta
 import shutil
-
+import pwd
+import os
 
 
 class JobScheduler( object ):
@@ -46,7 +46,7 @@ class JobScheduler( object ):
     underlying DRMS.
     '''
     
-    self.drmaa = DrmaaJobs()
+    self.drmaa = self.__runDrmaa()
     
     #locator = Pyro.naming.NameServerLocator()
     #print 'searching for Name Server...'
@@ -61,7 +61,7 @@ class JobScheduler( object ):
     # create a proxy for the Pyro object, and return that
     self.jobServer = JobServer("/home/sl225510/job.db")#Pyro.core.getAttrProxyForURI(URI)
     
-    userLogin = "sl225510" #TBI: get user login or id
+    userLogin = self.__getLogin()
     self.user_id = self.jobServer.registerUser(userLogin)
 
   def __del__( self ):
@@ -110,7 +110,7 @@ class JobScheduler( object ):
     '''
     
     local_input_file_path = self.jobServer.generateLocalFilePath(self.user_id, remote_input_file)
-    shutil.copy(remote_input_file,local_input_file_path)#To change for remote case
+    self.__copyRemoteToLocal(remote_input_file, local_input_file_path)
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
     self.jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.user_id)
     return local_input_file_path
@@ -154,7 +154,7 @@ class JobScheduler( object ):
     '''
     
     local_file_path, remote_file_path, expiration_date = self.jobServer.getTransferInformation(local_file)
-    shutil.copy(local_file_path,remote_file_path)#To change for remote case
+    self.__copyLocalToRemote(local_file_path, remote_file_path)
 
 
   def cancelTransfer(self, local_file_path):
@@ -651,3 +651,18 @@ class JobScheduler( object ):
 
     drmaaJobId = self.jobServer.getDrmaaJobId(job_id)
     self.drmaa.terminate(drmaaJobId)
+    
+    
+  def __runDrmaa(self):
+    return  DrmaaJobs()
+  
+  def __getLogin(self):
+    return pwd.getpwuid(os.getuid())[0]
+    
+  def __copyRemoteToLocal(self, remote_file, local_file_path):
+    shutil.copy(remote_file,local_file_path)
+    
+  def __copyLocalToRemote(self, local_file, remote_file_path):
+    shutil.copy(local_file,remote_file_path)
+    
+  
