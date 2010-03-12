@@ -126,4 +126,9 @@ def printTables(database_file):
     print '| job_id=', repr(job_id).rjust(2), '| local_file_path=', repr(local_file_path).ljust(25), '| is_input=', repr(is_input).rjust(2), ' |'
   
   
+  #print "==== file counter table: ========="
+  #for row in cursor.execute('SELECT * FROM fileCounter'):
+    #count, foo = row
+    #print '| count=', repr(count).rjust(2), '| foo=', repr(foo).ljust(2), ' |'
+  
   connection.close()
