@@ -34,6 +34,7 @@ def main():
 
   # connect new object implementation
   daemon.connect(JobServer(database_file, tmp_file_dir_path),'JobServer')
+  print "port = " + repr(daemon.port)
   
   # enter the server loop.
   print 'Server object "JobServer" ready.'

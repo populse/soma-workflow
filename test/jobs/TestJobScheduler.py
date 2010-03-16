@@ -1,5 +1,39 @@
-from soma.jobs.jobScheduler import JobScheduler
+import sys
 from datetime import datetime
+
+# arguments:
+#   - 'local': (default) if run on a submitting machine of the pool
+#   - 'remote': if run from a machine whichis not a submitting machine of the pool 
+# and doesn't share a file system with these machines
+
+mode = 'local'
+if len(sys.argv) == 2 and sys.argv[1] == 'remote':
+  mode = 'remote'
+
+
+
+
+global jsc
+####### local case #######################################
+if mode == 'local':
+  from soma.jobs.jobScheduler import JobScheduler
+  jsc = JobScheduler()
+  
+####### remote case ######################################
+if mode == 'remote':
+  import remoteJobScheduler 
+  import sys
+  import getpass
+  
+  sys.stdout.write("login: ")
+  _login = "sl225510" 
+  print _login
+  _password = getpass.getpass()
+  
+  jsc = remoteJobScheduler.getJobScheduler(_login, _password)
+  
+  
+
 
 path = "/home/sl225510/projets/jobExamples/complete/"
 #job1########################################################
@@ -52,7 +86,6 @@ stdin4  = path + "stdin4"
 file4 = path + "file4"
 
 
-jsc = JobScheduler()
 
 #CUSTOM SUBMISSION#############################################
 #jobId = jsc.customSubmit(["python", script1, file0, file11, file12], 
@@ -84,6 +117,7 @@ jsc = JobScheduler()
 python = "python" #SGE
 
 def submitWTjob1():
+  global jsc
   global script1, stdin1, file0, file11, file12
   global l_file0, l_file11, l_file12, l_script1, l_stdin1, job1id
   
@@ -103,6 +137,7 @@ def submitWTjob1():
   return job1id
 
 def submitWTjob2():
+  global jsc
   global script2, stdin2, file2
   global l_file0, l_file11
   global l_file2, l_script2, l_stdin2, job2id
@@ -122,6 +157,7 @@ def submitWTjob2():
   return job2id
 
 def submitWTjob3():
+  global jsc
   global script3, stdin3, file3
   global l_file12
   global l_file3, l_script3, l_stdin3, job3id
@@ -139,6 +175,7 @@ def submitWTjob3():
   return job3id
 
 def submitWTjob4():
+  global jsc
   global script4, stdin4, file4
   global l_file2, l_file3
   global l_file4, l_script4, l_stdin4, job4id
