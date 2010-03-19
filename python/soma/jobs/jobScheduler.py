@@ -172,8 +172,8 @@ class JobScheduler( object ):
     
     # TBI if not a transfer raise exception.
     
-    if not self.__fileToWrite or not self._fileToWrite.name == local_file_path:
-      self.__fileToWrite.name = open(local_file_path, 'wt')
+    if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
+      self.__fileToWrite = open(local_file_path, 'wt')
    
     self.__fileToWrite.write(line)
    
@@ -228,8 +228,8 @@ class JobScheduler( object ):
     '''
     # TBI if not a transfer raise exception.
     
-    if not self.__fileToRead or not self._fileToRead.name == local_file_path:
-      self._fileToRead.name = open(local_file_path, 'rt')
+    if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
+      self.__fileToRead = open(local_file_path, 'rt')
       
     return self.__fileToRead.readline()
 

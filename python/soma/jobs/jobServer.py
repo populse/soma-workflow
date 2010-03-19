@@ -416,7 +416,8 @@ class JobServer ( object ):
     cursor = connection.cursor()
     local_file_paths = []
     for row in cursor.execute('SELECT local_file_path FROM transfers WHERE user_id=?', [user_id]):
-      local_file, = row
+      local_file = row[0]
+      local_file = local_file.encode('utf-8')
       local_file_paths.append(local_file)
     return local_file_paths
     
@@ -433,5 +434,6 @@ class JobServer ( object ):
     '''
     connection = connect(self.__database_file)
     cursor = connection.cursor()
-    result = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
+    info = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
+    result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'))
     return result

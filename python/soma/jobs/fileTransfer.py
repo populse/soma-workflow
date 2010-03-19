@@ -82,10 +82,10 @@ class RemoteFileTransfer(FileTransfer):
       local_input_file_path = self.jobScheduler.registerTransfer(remote_input_file, disposal_timeout)
       
       infile = open(remote_input_file)
-      line = readline(infile)
+      line = infile.readline()
       while line:
-          self.jobScheduler.writeLine(line, local_infile_path)
-          line = readline(infile)
+          self.jobScheduler.writeLine(line, local_input_file_path)
+          line = infile.readline()
   
       return local_input_file_path
     
@@ -98,7 +98,7 @@ class RemoteFileTransfer(FileTransfer):
       line = self.jobScheduler.readline(local_file_path)
       while line:
           outfile.write(line)
-          line = jobSchedulerProxy.readline(local_file_path)
+          line = self.jobScheduler.readline(local_file_path)
 
 
 

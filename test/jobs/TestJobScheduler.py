@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime
-
+#import Pyro.naming, Pyro.core
+#from Pyro.errors import NamingError
 '''
 2 modes:
 @type  mode: 'local' or 'remote'
@@ -10,17 +11,19 @@ from datetime import datetime
   and doesn't share a file system with these machines
 '''
 
-mode = 'local'
+mode = 'test'
 
 if mode == 'local':
   from soma.jobs.jobScheduler import JobScheduler
   from soma.jobs.fileTransfer import LocalFileTransfer
   jsc = JobScheduler()
   ft = LocalFileTransfer(jsc)
+  inpath = "/home/sl225510/projets/jobExamples/complete/"
+  outpath = "/home/sl225510/"
   
 if mode == 'remote':
   import remoteJobScheduler 
-  from soma.jobs.fileTransfer import RemoteFileTransfer
+  from fileTransfer import RemoteFileTransfer
   import sys
   import getpass
   
@@ -31,50 +34,71 @@ if mode == 'remote':
   
   jsc = remoteJobScheduler.getJobScheduler(_login, _password)
   ft = RemoteFileTransfer(jsc)
-  
+  inpath = "/home/laguitton/jobExamples/complete/"
+  outpath = "/home/laguitton/"
 
 
-path = "/home/sl225510/projets/jobExamples/complete/"
+if mode == 'test':
+  from soma.jobs.fileTransfer import RemoteFileTransfer
+  from soma.jobs.jobScheduler import JobScheduler
+  #locator = Pyro.naming.NameServerLocator()
+  #print 'Searching Name Server...',
+  #ns = locator.getNS(host='localhost')
+  #print 'finding object ' + 'jobScheduler'
+  #try:
+          #URI=ns.resolve('jobScheduler')
+          #print 'URI:',URI
+  #except NamingError,x:
+          #print 'Couldn\'t find object, nameserver says:',x
+          #raise SystemExit
+
+  #jsc = Pyro.core.getAttrProxyForURI(URI)
+  jsc = JobScheduler()
+  ft = RemoteFileTransfer(jsc)
+  inpath = "/home/sl225510/projets/jobExamples/complete/"
+  outpath = "/home/sl225510/"
+
+
 #job1########################################################
 
 #input files
-script1 = path + "job1.py"
-stdin1  = path + "stdin1"
-file0   = path + "file0"
+script1 = inpath + "job1.py"
+stdin1  = inpath + "stdin1"
+file0   = inpath + "file0"
 
 #output files
-file11 = path + "file11"
-file12 = path + "file12"
+file11 = outpath + "file11"
+file12 = outpath + "file12"
 
 
 #job2########################################################
 #input files
-script2 = path + "job2.py"
-stdin2  = path + "stdin2"
+script2 = inpath + "job2.py"
+stdin2  = inpath + "stdin2"
 #file0
 #file11
 
 #output files
-file2 = path + "file2"
+file2 = outpath + "file2"
 
 #job3########################################################
 #input files
-script3 = path + "job3.py"
-stdin3  = path + "stdin3"
+script3 = inpath + "job3.py"
+stdin3  = inpath + "stdin3"
 #file12
 
 #output files
-file3 = path + "file3"
+file3 = outpath + "file3"
 
 #job4########################################################
 #input files
-script4 = path + "job4.py"
-stdin4  = path + "stdin4"
+script4 = inpath + "job4.py"
+stdin4  = inpath + "stdin4"
 #file2
 #file4
 
 #output files
-file4 = path + "file4"
+file4 = outpath + "file4"
 
 
 #CUSTOM SUBMISSION#############################################

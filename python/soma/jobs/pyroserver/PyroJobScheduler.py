@@ -1,15 +1,15 @@
 import Pyro.naming
 import Pyro.core
 from Pyro.errors import PyroError,NamingError
-import soma.jobs.pickleableJobScheduler
+import soma.jobs.jobScheduler
 import sys
 
 ###### DrmaaJobs pyro object
 
-class JobScheduler(Pyro.core.ObjBase, soma.jobs.pickleableJobScheduler.JobScheduler):
+class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
   def __init__(self):
     Pyro.core.ObjBase.__init__(self)
-    soma.jobs.pickleableJobScheduler.JobScheduler.__init__(self)
+    soma.jobs.jobScheduler.JobScheduler.__init__(self)
   pass
 
 ###### main server program
