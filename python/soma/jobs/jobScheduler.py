@@ -8,7 +8,6 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
-
 __docformat__ = "epytext en"
 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
@@ -20,6 +19,8 @@ from datetime import date
 from datetime import timedelta
 import pwd
 import os
+import shutil
+
 
 
 class JobScheduler( object ):
@@ -39,22 +40,13 @@ class JobScheduler( object ):
   JobScheduler must be created on one of the machines which is allowed to 
   submit jobs by the DRMS.
   '''
-  def __init__( self, file_copier=None ):
+  def __init__( self ):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
     In case of the implementation using the DRMAA API: A L{JobScheduler} instance 
     can only be created from a machine that is allowed to submit jobs by the 
     underlying DRMS.
-    
-    @type  fileCopier: C{FileCopier} (2 methods: L{copyRemoteToLocal} and L{copyLocalToRemote})
-    @param fileCopier: file transfer module. The default module (if C{None}) assumes that 
-    all the path are defined on the local file system. 
     '''
-    
-    if file_copier:
-      self.__file_copier = file_copier
-    else: 
-      self.__file_copier = LocalFileCopier()
     
     self.__drmaa = DrmaaJobs()
     
@@ -69,12 +61,15 @@ class JobScheduler( object ):
         print 'Couldn\'t find object, nameserver says:',x
         raise SystemExit
     
-    # create a proxy for the Pyro object, and return that
-    #self.__jobServer=JobServer("/home/sl225510/job.db", "/neurospin/tmp/Soizic/jobFiles/")
     self.__jobServer=Pyro.core.getAttrProxyForURI(URI)
     
     userLogin = pwd.getpwuid(os.getuid())[0]
     self.__user_id = self.__jobServer.registerUser(userLogin)
+
+    self.__fileToRead = None
+    self.__fileToWrite = None
+    
+    
 
   def __del__( self ):
     '''
@@ -98,19 +93,24 @@ class JobScheduler( object ):
     Remote means that it is located on a remote machine or on any directory 
     owned by the user. 
     A transfer will associate remote file path to unique local file path.
+  
+  Use L{registerTransfer} then L{writeLine} or scp or 
+  shutil.copy to tranfer input file from the remote to the local 
+  environment.
+  Use L{registerTransfer} and once the job has run use L{readline} or scp or
+  shutil.copy to transfer the output file from the local to the remote environment.
+  
+  
   '''
 
-  
-  def transferInputFile(self, remote_input_file, disposal_timeout=168):
+  def registerTransfer(self, remote_file_path, disposal_timeout=168): 
     '''
-    For each remote input file, an unique local path is generated 
-    and associated with the remote path. 
-    Each remote files is copied to its associated local location.
+    An unique local path is generated and associated with the remote path. 
     When the disposal timout will be past, and no exisiting job will 
     declare using the file as input, the files will be disposed. 
     
-    @type  remote_input_file: string or sequence of string
-    @param remote_input_file: remote path(s) of input file(s)
+    @type  remote_file_path: string
+    @param remote_file_path: remote path of file
     @type  disposalTimeout: int
     @param disposalTimeout: Number of hours before each local file is considered 
     to have been forgotten by the user. Passed that delay, and if no existing job 
@@ -118,66 +118,133 @@ class JobScheduler( object ):
     related to the transfer are disposed. 
     Default delay is 168 hours (7 days).
     @rtype: string or sequence of string
-    @return: local file path(s) where the file(s) were copied 
+    @return: local file path associated with the remote file
     '''
-    
-    local_input_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_input_file)
-    self.__file_copier.copyRemoteToLocal(remote_input_file, local_input_file_path)
+      
+    local_input_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_file_path)
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
-    self.__jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.__user_id)
+    self.__jobServer.addTransfer(local_input_file_path, remote_file_path, expirationDate, self.__user_id)
     return local_input_file_path
-    
 
-  def allocateLocalOutputFile(self, remote_output_file_path, disposal_timeout=168):
-    '''
-    For each remote output file path, an unique local path is generated and 
-    associated with the remote path. 
-    When the disposal timout will be past, and no exisiting job will declare using 
-    the file as output or input, the files will be disposed. 
-    Once created and filled by a job, the local file can be transfered to the
-    remote machine via the L{transferOutputFile} method
-    
-    @type  remote_output_file_paths: string of sequence of string
-    @param remote_output_file_paths: remote path for output file.
-    @type  disposalTimeout: int
-    @param disposalTimeout: Number of hours before each local file is considered 
-    to have been forgotten by the user. Passed that delay, and if no existing job 
-    declares using the file as output or input, the local file and information 
-    related to the transfer are disposed. 
-    Default delay is 168 hours (7 days).
-    @rtype: string or sequence of string
-    @return: local file path(s) associated to specified the remote file path(s).
-    
-    '''
-    local_output_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_output_file_path)
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    self.__jobServer.addTransfer(local_output_file_path, remote_output_file_path, expiration_date, self.__user_id)
-    return local_output_file_path
-    
 
-  def transferOutputFile(self, local_file):
-    '''
-    Copy the local file to the associated remote file path. 
-    The local file path must belong to the user's transfered files (ie belong to 
-    the sequence returned by the L{getTransfers} method). 
-    
-    @type  local_file: string or sequence of string
-    @param local_file: local file path(s) 
-    '''
-    
-    local_file_path, remote_file_path, expiration_date = self.__jobServer.getTransferInformation(local_file)
-    self.__file_copier.copyLocalToRemote(local_file_path, remote_file_path)
+  '''
+  Transfer of input files
+  
+  Example :
+     
+  local_infile_path = jobSchedulerProxy.registerTransfer(remote_infile_path)
+  infile = open(remote_infile_path)
+  line = readline(infile)
+  while line:
+      jobSchedulerProxy.writeLine(line, local_infile_path)
+      line = readline(infile)
+  
+  => For larger files its possible to use scp (faster transfer but a connection is 
+  needed):
+  
+  import pexpect
+  local_infile_path = jobSchedulerProxy.registerTransfer(remote_infile_path)
+  command = "scp %s %s@%s:%s" %(remote_input_file,
+                                login,
+                                server_address,
+                                local_infile_path)
+  child = pexpect.spawn(command) 
+  child.expect('.ssword:*')
+  child.sendline(password)
+  time.sleep(2)
+  
+  => For files on the local file system:
+  
+  import shutil
+  local_infile_path = jobScheduler.registerTransfer(remote_infile_path)
+  shutil.copy(remote_infile_path,local_infile_path)
+  '''
 
+  def writeLine(self, line, local_file_path):
+    '''
+    Write a line to the local file. The path of the local input file
+    must have been generated using the L{beginTransferInputFile} method.
+    
+    @type  line: string
+    @param line: line to write in the local input file
+    @type  local_file_path: string
+    @param local_file_path: local file path to fill up
+    '''
+    
+    # TBI if not a transfer raise exception.
+    
+    if not self.__fileToWrite or not self._fileToWrite.name == local_file_path:
+      self.__fileToWrite.name = open(local_file_path, 'wt')
+   
+    self.__fileToWrite.write(line)
+   
+  '''
+  Transfer of output files
+  
+  Example :
+ 
+  local_outfile_path =  registerTransfer(remote_outfile_path, 168)
+  # job submission
+  # when the job has run:
+  ofile = open(remote_outfile_path, "w")
+  line = jobSchedulerProxy.readline(local_outfile_path)
+  while line
+      outfile.write(line)
+      line = jobSchedulerProxy.readline(local_outfile_path)
+ 
+  => For larger files its possible to use scp (faster transfer but a potentially 
+  slow new connection is needed):
+  
+  import pexpect
+  local_outfile = registerTransfer(remote_outfile_path, 168)
+  # job submission
+  # when the job has run:
+  command = "scp %s@%s:%s %s" %(login,
+                                server_address,
+                                local_outfile_path,
+                                remote_outfile_path)
+  child = pexpect.spawn(command) 
+  child.expect('.ssword:*')
+  child.sendline(password)
+  time.sleep(2)
+  
+  
+  => For files on the local file system:
+  import shutil
+  local_outfile_path =  registerTransfer(remote_outfile_path, 168)
+  # job submission
+  # when the job has run:
+  shutil.copy(remote_infile_path,local_infile_path)
+  '''
+  
+  def readline(self, local_file_path):
+    '''
+    Read a line from the local file. The path of the local input file
+    must have been generated using the L{beginTransferInputFile} method.
+    
+    @type  line: string
+    @param line: line to write in the local input file
+    @type: string
+    @param: local file path to fill up
+    '''
+    # TBI if not a transfer raise exception.
+    
+    if not self.__fileToRead or not self._fileToRead.name == local_file_path:
+      self._fileToRead.name = open(local_file_path, 'rt')
+      
+    return self.__fileToRead.readline()
+
+  
 
   def cancelTransfer(self, local_file_path):
     '''
-    Delete each specified local file unless a job has declared to use it as input 
+    Delete the specified local file unless a job has declared to use it as input 
     or output. In the former case, the file will only be deleted after all its 
     associated jobs are disposed. (set its disposal date to now).
     
-    @type local_file_path: string or sequence of string
-    @param local_file_path: local file path(s) associated with a transfer (ie 
-    belong(s) to the list returned by L{getTransfers}    
+    @type local_file_path: string
+    @param local_file_path: local file path associated with a transfer (ie 
+    belongs to the list returned by L{getTransfers}    
     '''
     
     if not(self.__jobServer.isUserTransfer(local_file_path, self.__user_id)):
@@ -378,10 +445,8 @@ class JobScheduler( object ):
     '''
     Submission with file transfer (well suited for remote submission). Submission 
     of a job for which all input files (stdin and input files) were already copied 
-    to the pool shared directory using the L{transferInputFile} method. A local path
-    for output file were also obtained via the L{allocateLocalOutputFile} method.
-    Once the job will have run, it will be possible to transfer the files back to the
-    remote machine using the L{transferOutputFile} method.
+    to the pool shared directory. A local path
+    for output file were also obtained via the L{registerTransfer} method.
     The list of involved local input and output file must be specified here to 
     guarantee that the files will exist during the whole job life. 
     All the path must refer to shared files or directory on the pool.
@@ -494,26 +559,55 @@ class JobScheduler( object ):
     
     return self.__jobServer.getJobs(self.__user_id)
     
-    
-    
-  def getTransfers( self ):
+  def getTransfers(self):
     '''
-    Returns the information related to the user's file transfers created via the 
-    L{transferInputFile} and L{allocateFilesForTransfer} methods
+    Returns the transfers currently owned by the user as a sequece of local file path 
+    returned by the L{registerTransfer} method. 
+    
+    @rtype: sequence of string
+    @return: local_file_path : path of the file on the directory shared by the machines
+    of the pool
+    '''
 
-    @rtype: sequence of tuple (local_file_path, remote_file_path, expiration_date)
-    @return: For each transfer
+    return self.__jobServer.getTransfers(self.__user_id)
+
+    
+  def getTransferInformation(self, local_file_path):
+    '''
+    The local_file_path must belong to the list of paths returned by L{getTransfers}.
+    Returns the information related to the file transfer corresponding to the 
+    local_file_path.
+
+    @rtype: tuple (local_file_path, remote_file_path, expiration_date)
+    @return:
         -local_file_path: path of the file on the directory shared by the machines
         of the pool
-	-remote_file_path: path of the file on the remote machine 
-	-expiration_date: after this date the local file will be deleted, unless an
-	existing job has declared this file as output or input.
+        -remote_file_path: path of the file on the remote machine 
+        -expiration_date: after this date the local file will be deleted, unless an
+        existing job has declared this file as output or input.
     '''
+    #TBI raise an exception if local_file_path is not valid transfer??
+    return self.__jobServer.getTransferInformation(local_file_path)
     
-    result = []
-    for transfer in self.__jobServer.getTransfers(self.__user_id):
-      result.append(self.__jobServer.getTransferInformation(transfer))
-    return result
+    
+  #def getTransfers( self ):
+    #'''
+    #Returns the information related to the user's file transfers created via the 
+    #L{registerTransfer} method
+
+    #@rtype: sequence of tuple (local_file_path, remote_file_path, expiration_date)
+    #@return: For each transfer
+        #-local_file_path: path of the file on the directory shared by the machines
+        #of the pool
+	#-remote_file_path: path of the file on the remote machine 
+	#-expiration_date: after this date the local file will be deleted, unless an
+	#existing job has declared this file as output or input.
+    #'''
+    
+    #result = []
+    #for transfer in self.__jobServer.getTransfers(self.__user_id):
+      #result.append(self.__jobServer.getTransferInformation(transfer))
+    #return result
 
   
   ########### DRMS MONITORING ################################################

@@ -166,3 +166,49 @@ def getJobScheduler(login,
 
   return jobScheduler
 
+
+#### TO ADD
+
+
+ #def transferInputFile(self, remote_input_file, disposal_timeout=168):
+    #'''
+    #For each remote input file, an unique local path is generated 
+    #and associated with the remote path. 
+    #Each remote files is copied to its associated local location.
+    #When the disposal timout will be past, and no exisiting job will 
+    #declare using the file as input, the files will be disposed. 
+    
+    #@type  remote_input_file: string or sequence of string
+    #@param remote_input_file: remote path(s) of input file(s)
+    #@type  disposalTimeout: int
+    #@param disposalTimeout: Number of hours before each local file is considered 
+    #to have been forgotten by the user. Passed that delay, and if no existing job 
+    #declares using the file as input, the local file and information 
+    #related to the transfer are disposed. 
+    #Default delay is 168 hours (7 days).
+    #@rtype: string or sequence of string
+    #@return: local file path(s) where the file(s) were copied 
+    #'''
+    
+    #local_input_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_input_file)
+    #self.__file_copier.copyRemoteToLocal(remote_input_file, local_input_file_path)
+    #expirationDate = date.today() + timedelta(hours=disposal_timeout) 
+    #self.__jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.__user_id)
+    #return local_input_file_path
+ 
+ 
+   #def transferOutputFile(self, local_file):
+    #'''
+    #Copy the local file to the associated remote file path. 
+    #The local file path must belong to the user's transfered files (ie belong to 
+    #the sequence returned by the L{getTransfers} method). 
+    
+    #@type  local_file: string or sequence of string
+    #@param local_file: local file path(s) 
+    #'''
+    
+    #local_file_path, remote_file_path, expiration_date = self.__jobServer.getTransferInformation(local_file)
+    #self.__file_copier.copyLocalToRemote(local_file_path, remote_file_path)
+
+ 
+

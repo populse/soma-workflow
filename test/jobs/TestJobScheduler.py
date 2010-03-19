@@ -1,27 +1,26 @@
 import sys
 from datetime import datetime
 
-# arguments:
-#   - 'local': (default) if run on a submitting machine of the pool
-#   - 'remote': if run from a machine whichis not a submitting machine of the pool 
-# and doesn't share a file system with these machines
+'''
+2 modes:
+@type  mode: 'local' or 'remote'
+@param mode: 
+  'local': (default) if run on a submitting machine of the pool
+  'remote': if run from a machine whichis not a submitting machine of the pool 
+  and doesn't share a file system with these machines
+'''
 
 mode = 'local'
-if len(sys.argv) == 2 and sys.argv[1] == 'remote':
-  mode = 'remote'
 
-
-
-
-global jsc
-####### local case #######################################
 if mode == 'local':
   from soma.jobs.jobScheduler import JobScheduler
+  from soma.jobs.fileTransfer import LocalFileTransfer
   jsc = JobScheduler()
+  ft = LocalFileTransfer(jsc)
   
-####### remote case ######################################
 if mode == 'remote':
   import remoteJobScheduler 
+  from soma.jobs.fileTransfer import RemoteFileTransfer
   import sys
   import getpass
   
@@ -31,14 +30,12 @@ if mode == 'remote':
   _password = getpass.getpass()
   
   jsc = remoteJobScheduler.getJobScheduler(_login, _password)
-  
+  ft = RemoteFileTransfer(jsc)
   
 
 
 path = "/home/sl225510/projets/jobExamples/complete/"
 #job1########################################################
-global script1, stdin1, file0, file11, file12
-global l_script1, l_stdin1, l_file0, l_file11, l_file12, job1id
 
 #input files
 script1 = path + "job1.py"
@@ -51,8 +48,6 @@ file12 = path + "file12"
 
 
 #job2########################################################
-global script2, stdin2, file2
-global l_script2, l_stdin2, l_file2, job2id
 #input files
 script2 = path + "job2.py"
 stdin2  = path + "stdin2"
@@ -63,8 +58,6 @@ stdin2  = path + "stdin2"
 file2 = path + "file2"
 
 #job3########################################################
-global script3, stdin3, file3
-global l_script3, l_stdin3, l_file3, job3id
 #input files
 script3 = path + "job3.py"
 stdin3  = path + "stdin3"
@@ -74,8 +67,6 @@ stdin3  = path + "stdin3"
 file3 = path + "file3"
 
 #job4########################################################
-global script4, stdin4, file4
-global l_script4, l_stdin4, l_file4, job4id
 #input files
 script4 = path + "job4.py"
 stdin4  = path + "stdin4"
@@ -84,7 +75,6 @@ stdin4  = path + "stdin4"
 
 #output files
 file4 = path + "file4"
-
 
 
 #CUSTOM SUBMISSION#############################################
@@ -116,76 +106,72 @@ file4 = path + "file4"
 #python = "/i2bm/research/Mandriva-2008.0-i686/bin/python" #condor
 python = "python" #SGE
 
-def submitWTjob1():
-  global jsc
+def submitWTjob1(jobScheduler, fileTransfer):
   global script1, stdin1, file0, file11, file12
   global l_file0, l_file11, l_file12, l_script1, l_stdin1, job1id
   
-  l_file0 = jsc.transferInputFile(file0, -24) 
+  l_file0 = fileTransfer.transferInputFile(file0, -24) 
 
-  l_file11 = jsc.allocateLocalOutputFile(file11, -24) 
-  l_file12 = jsc.allocateLocalOutputFile(file12, -24) 
+  l_file11 = jobScheduler.registerTransfer(file11, -24) 
+  l_file12 = jobScheduler.registerTransfer(file12, -24) 
 
-  l_script1 = jsc.transferInputFile(script1, -24) 
-  l_stdin1 = jsc.transferInputFile(stdin1, -24) 
+  l_script1 = fileTransfer.transferInputFile(script1, -24) 
+  l_stdin1 = fileTransfer.transferInputFile(stdin1, -24) 
 
-  job1id = jsc.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12], 
+  job1id = jobScheduler.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12], 
                                    [l_file0, l_script1, l_stdin1], 
                                    [l_file11, l_file12], 
                                    True, l_stdin1, 1) 
 
   return job1id
 
-def submitWTjob2():
-  global jsc
+def submitWTjob2(jobScheduler, fileTransfer):
   global script2, stdin2, file2
   global l_file0, l_file11
   global l_file2, l_script2, l_stdin2, job2id
   
-  l_file2 = jsc.allocateLocalOutputFile(file2, -24) 
+  l_file2 = jobScheduler.registerTransfer(file2, -24) 
 
   print "l_file2: " + l_file2
 
-  l_script2 = jsc.transferInputFile(script2, -24) 
-  l_stdin2 = jsc.transferInputFile(stdin2, -24) 
+  l_script2 = fileTransfer.transferInputFile(script2, -24) 
+  l_stdin2 = fileTransfer.transferInputFile(stdin2, -24) 
 
-  job2id = jsc.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "15"], 
+  job2id = jobScheduler.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "15"], 
                                    [l_file0, l_file11, l_script2, l_stdin2], 
                                    [l_file2], 
                                    True, l_stdin2, 1) 
 
   return job2id
 
-def submitWTjob3():
-  global jsc
+def submitWTjob3(jobScheduler, fileTransfer):
   global script3, stdin3, file3
   global l_file12
   global l_file3, l_script3, l_stdin3, job3id
   
-  l_file3 = jsc.allocateLocalOutputFile(file3, -24) 
+  l_file3 = jobScheduler.registerTransfer(file3, -24) 
 
-  l_script3 = jsc.transferInputFile(script3, -24) 
-  l_stdin3 = jsc.transferInputFile(stdin3, -24) 
+  l_script3 = fileTransfer.transferInputFile(script3, -24) 
+  l_stdin3 = fileTransfer.transferInputFile(stdin3, -24) 
 
-  job3id = jsc.submitWithTransfer( [python, l_script3, l_file12, l_file3, "15"], 
+  job3id = jobScheduler.submitWithTransfer( [python, l_script3, l_file12, l_file3, "15"], 
                                    [l_file12, l_script3, l_stdin3], 
                                    [l_file3], 
                                    True, l_stdin3, 1) 
 
   return job3id
 
-def submitWTjob4():
-  global jsc
+def submitWTjob4(jobScheduler, fileTransfer):
   global script4, stdin4, file4
   global l_file2, l_file3
   global l_file4, l_script4, l_stdin4, job4id
   
-  l_file4 = jsc.allocateLocalOutputFile(file4, -24) 
+  l_file4 = jobScheduler.registerTransfer(file4, -24) 
 
-  l_script4 = jsc.transferInputFile(script4, -24) 
-  l_stdin4 = jsc.transferInputFile(stdin4, -24) 
+  l_script4 = fileTransfer.transferInputFile(script4, -24) 
+  l_stdin4 = fileTransfer.transferInputFile(stdin4, -24) 
 
-  job4id = jsc.submitWithTransfer( [python, l_script4, l_file2, l_file3, l_file4], 
+  job4id = jobScheduler.submitWithTransfer( [python, l_script4, l_file2, l_file3, l_file4], 
                                    [l_file2, l_file3, l_script4, l_stdin4], 
                                    [l_file4], 
                                    True, l_stdin4, 1) 

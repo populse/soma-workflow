@@ -1,13 +1,13 @@
 import Pyro.naming
 import Pyro.core
 from Pyro.errors import PyroError,NamingError
-import jobServer
+import soma.jobs.jobServer
 
 ###### JobServer pyro object
-class JobServer(Pyro.core.ObjBase, jobServer.JobServer):
+class JobServer(Pyro.core.ObjBase, soma.jobs.jobServer.JobServer):
   def __init__(self, database_file, tmp_file_dir_path):
     Pyro.core.ObjBase.__init__(self)
-    jobServer.JobServer.__init__(self, database_file, tmp_file_dir_path)
+    soma.jobs.jobServer.JobServer.__init__(self, database_file, tmp_file_dir_path)
   pass
 
 
@@ -19,7 +19,7 @@ def main():
   
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
-  # locate the NS
+  # locate the NS 
   locator = Pyro.naming.NameServerLocator()
   print 'searching for Name Server...'
   ns = locator.getNS(host='is143016')
