@@ -12,14 +12,13 @@ __docformat__ = "epytext en"
 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
 from soma.jobs.jobServer import JobServer
-from soma.jobs.fileCopier import LocalFileCopier
+from soma.pyro import ThreadSafeProxy
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 from datetime import date
 from datetime import timedelta
 import pwd
 import os
-import shutil
 
 
 
@@ -49,11 +48,11 @@ class JobScheduler( object ):
     '''
     
     self.__drmaa = DrmaaJobs()
-    
+    Pyro.core.initClient()
     locator = Pyro.naming.NameServerLocator()
     print 'Searching Name Server...',
     ns = locator.getNS(host='is143016')
-    
+  
     try:
         URI=ns.resolve('JobServer')
         print 'URI:',URI
@@ -61,11 +60,11 @@ class JobScheduler( object ):
         print 'Couldn\'t find object, nameserver says:',x
         raise SystemExit
     
-    self.__jobServer=Pyro.core.getAttrProxyForURI(URI)
+    self.__jobServer= ThreadSafeProxy( Pyro.core.getProxyForURI( URI ) )
     
     userLogin = pwd.getpwuid(os.getuid())[0]
     self.__user_id = self.__jobServer.registerUser(userLogin)
-
+   
     self.__fileToRead = None
     self.__fileToWrite = None
     
