@@ -50,14 +50,13 @@ class JobScheduler( object ):
     self.__drmaa = DrmaaJobs()
     Pyro.core.initClient()
     locator = Pyro.naming.NameServerLocator()
-    print 'Searching Name Server...',
     ns = locator.getNS(host='is143016')
   
     try:
         URI=ns.resolve('JobServer')
         print 'URI:',URI
     except NamingError,x:
-        print 'Couldn\'t find object, nameserver says:',x
+        print 'Couldn\'t find JobServer, nameserver says:',x
         raise SystemExit
     
     self.__jobServer= ThreadSafeProxy( Pyro.core.getProxyForURI( URI ) )

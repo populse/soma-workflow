@@ -87,63 +87,24 @@ def getJobScheduler(login,
 
   pyro_objet_name = "jobScheduler_" + _login
 
-  #########################################
-  # port fowarding for the name server    #
-  #########################################
+  #################################################
+  # run jobScheduler server and get back its port #
+  #################################################
 
-  pyro_ns_tunnel_child = createTunnel(port = client_pyro_ns_port, 
-                                      host = pyro_ns_address, 
-                                      hostport = server_pyro_ns_port, 
-                                      login = _login, 
-                                      server_address = pyro_ns_address, 
-                                      password = _password)
-
-  #######################################
-  # get the pyro nameserver             #
-  #######################################
-  locator = Pyro.naming.NameServerLocator()
-  print 'Searching Name Server...',
-  ns = locator.getNS(host='localhost')
-  
-
-  #######################################
-  # creation of pyro server instance    #
-  #######################################
-
-  try:
-    ns.unregister(pyro_objet_name)
-  except NamingError:
-    pass
-  
-
-  command = "ssh %s@%s python %s/PyroJobScheduler.py %s %s" %(_login, 
-                                                              server_address, 
-                                                              src_server_path, 
-                                                              pyro_objet_name, 
-                                                              pyro_ns_address) 
+  command = "ssh %s@%s python %s/PyroJobScheduler.py %s" %(_login, 
+                                                           server_address, 
+                                                           src_server_path, 
+                                                           pyro_objet_name) 
   print command
   pyro_server_child = pexpect.spawn(command)
   pyro_server_child.expect('.ssword:*')
   pyro_server_child.sendline(password)
+  pyro_server_child.expect(pyro_objet_name + " URI: ")
+  server_pyro_object_uri = pyro_server_child.readline()
 
-  time.sleep(2)
-
-  #######################################
-  # get the proxy and pyro objet port   #
-  #######################################
-  
-  print 'finding object ' + pyro_objet_name
-  try:
-          URI=ns.resolve(pyro_objet_name)
-          print 'URI:',URI
-  except NamingError,x:
-          print 'Couldn\'t find object, nameserver says:',x
-          raise SystemExit
-
-  # create a proxy for the Pyro object, and return that
-  jobScheduler = Pyro.core.getAttrProxyForURI(URI)#.getProxyForURI(URI)
-  server_pyro_object_port = jobScheduler.URI.port 
+  server_pyro_object_port = Pyro.core.processStringURI(server_pyro_object_uri).port
   print "Pyro object port: " + repr(server_pyro_object_port)
+ 
 
   #######################################
   # find an available port              #
@@ -152,6 +113,7 @@ def getJobScheduler(login,
   client_pyro_object_port = searchAvailablePort()
   print "client pyro object port: " + repr(client_pyro_object_port)
 
+  
   ########################################
   # port forwarding for the pyro objet   #
   ########################################
@@ -163,6 +125,15 @@ def getJobScheduler(login,
                                           server_address, 
                                           _password)
   
+ 
+  #######################################
+  # get the proxy                       #
+  #######################################
+
+  # create a proxy for the Pyro object, and return that
+  jobScheduler = Pyro.core.getProxyForURI(server_pyro_object_uri)#.getProxyForURI(URI)
+  
+ 
   ########################################
   # setting the proxy to use the tunnel  #
   ########################################
@@ -173,48 +144,4 @@ def getJobScheduler(login,
   return jobScheduler
 
 
-#### TO ADD
-
-
- #def transferInputFile(self, remote_input_file, disposal_timeout=168):
-    #'''
-    #For each remote input file, an unique local path is generated 
-    #and associated with the remote path. 
-    #Each remote files is copied to its associated local location.
-    #When the disposal timout will be past, and no exisiting job will 
-    #declare using the file as input, the files will be disposed. 
-    
-    #@type  remote_input_file: string or sequence of string
-    #@param remote_input_file: remote path(s) of input file(s)
-    #@type  disposalTimeout: int
-    #@param disposalTimeout: Number of hours before each local file is considered 
-    #to have been forgotten by the user. Passed that delay, and if no existing job 
-    #declares using the file as input, the local file and information 
-    #related to the transfer are disposed. 
-    #Default delay is 168 hours (7 days).
-    #@rtype: string or sequence of string
-    #@return: local file path(s) where the file(s) were copied 
-    #'''
-    
-    #local_input_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_input_file)
-    #self.__file_copier.copyRemoteToLocal(remote_input_file, local_input_file_path)
-    #expirationDate = date.today() + timedelta(hours=disposal_timeout) 
-    #self.__jobServer.addTransfer(local_input_file_path, remote_input_file, expirationDate, self.__user_id)
-    #return local_input_file_path
- 
- 
-   #def transferOutputFile(self, local_file):
-    #'''
-    #Copy the local file to the associated remote file path. 
-    #The local file path must belong to the user's transfered files (ie belong to 
-    #the sequence returned by the L{getTransfers} method). 
-    
-    #@type  local_file: string or sequence of string
-    #@param local_file: local file path(s) 
-    #'''
-    
-    #local_file_path, remote_file_path, expiration_date = self.__jobServer.getTransferInformation(local_file)
-    #self.__file_copier.copyLocalToRemote(local_file_path, remote_file_path)
-
- 
 
