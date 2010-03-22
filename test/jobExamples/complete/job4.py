@@ -1,8 +1,8 @@
 import sys
 import time
 
-if len(sys.argv) < 3 or len(sys.argv) > 4:
-  sys.stdout.write("The program takes 2 or 3 arguments! \n")
+if len(sys.argv) < 4 or len(sys.argv) > 5:
+  sys.stdout.write("The program takes 3 or 4 arguments! \n")
   sys.exit()
 
 sys.stdout.write("Job4: What should we add to the end of the output file ?")
@@ -19,8 +19,8 @@ sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
 sys.stdout.write("Output file = " + filePathOut + "\n")
 
 timeToSleep=0
-if len(sys.argv) == 4:
-  timeToSleep = int(sys.argv[3])
+if len(sys.argv) == 5:
+  timeToSleep = int(sys.argv[4])
 for i in range(1,timeToSleep+1):
   time.sleep(1)
   sys.stdout.write(repr(i)+" ")
