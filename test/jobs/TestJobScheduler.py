@@ -41,18 +41,6 @@ if mode == 'remote':
 if mode == 'test':
   from soma.jobs.fileTransfer import RemoteFileTransfer
   from soma.jobs.jobScheduler import JobScheduler
-  #locator = Pyro.naming.NameServerLocator()
-  #print 'Searching Name Server...',
-  #ns = locator.getNS(host='localhost')
-  #print 'finding object ' + 'jobScheduler'
-  #try:
-          #URI=ns.resolve('jobScheduler')
-          #print 'URI:',URI
-  #except NamingError,x:
-          #print 'Couldn\'t find object, nameserver says:',x
-          #raise SystemExit
-
-  #jsc = Pyro.core.getAttrProxyForURI(URI)
   jsc = JobScheduler()
   ft = RemoteFileTransfer(jsc)
   inpath = "/home/sl225510/projets/jobExamples/complete/"
