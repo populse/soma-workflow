@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 #import Pyro.naming, Pyro.core
 #from Pyro.errors import NamingError
+import time
 '''
 2 modes:
 @type  mode: 'local' or 'remote'
@@ -11,10 +12,10 @@ from datetime import datetime
   and doesn't share a file system with these machines
 '''
 
-mode = 'test'
+mode = 'local'
 
 if mode == 'local':
-  from soma.jobs.jobScheduler import JobScheduler
+  from soma.jobs.newJobScheduler import JobScheduler
   from soma.jobs.fileTransfer import LocalFileTransfer
   jsc = JobScheduler()
   ft = LocalFileTransfer(jsc)
@@ -149,7 +150,7 @@ def submitWTjob2(jobScheduler, fileTransfer):
   l_script2 = fileTransfer.transferInputFile(script2, -24) 
   l_stdin2 = fileTransfer.transferInputFile(stdin2, -24) 
 
-  job2id = jobScheduler.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "15"], 
+  job2id = jobScheduler.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "2"], 
                                    [l_file0, l_file11, l_script2, l_stdin2], 
                                    [l_file2], 
                                    True, l_stdin2, 1) 
@@ -166,7 +167,7 @@ def submitWTjob3(jobScheduler, fileTransfer):
   l_script3 = fileTransfer.transferInputFile(script3, -24) 
   l_stdin3 = fileTransfer.transferInputFile(stdin3, -24) 
 
-  job3id = jobScheduler.submitWithTransfer( [python, l_script3, l_file12, l_file3, "15"], 
+  job3id = jobScheduler.submitWithTransfer( [python, l_script3, l_file12, l_file3, "2"], 
                                    [l_file12, l_script3, l_stdin3], 
                                    [l_file3], 
                                    True, l_stdin3, 1) 
@@ -216,6 +217,68 @@ def submitWTjob4(jobScheduler, fileTransfer):
 #jsc.dispose(job3id)
 #jsc.dispose(job4id)
 
+
+for i in range(1, 10):
+  startTime = datetime.now()
+
+  file4 =  outpath + "file4_2_" + repr(i) 
+
+  job1id = submitWTjob1(jsc, ft)
+
+  #jsc.wait(job1id)
+  status = jsc.status(job1id)
+  print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+  while status == "undetermined" or status == "queued_active" or status == "running":
+    time.sleep(1)
+    status = jsc.status(job1id)
+    print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+
+
+
+
+  job2id = submitWTjob2(jsc, ft)
+  job3id = submitWTjob3(jsc, ft)
+
+  #jsc.wait(job2id)
+  status = jsc.status(job2id)
+  while  status == "undetermined" or status == "queued_active" or status == "running":
+    time.sleep(1)
+    status = jsc.status(job2id)
+
+  #jsc.wait(job3id)
+  status = jsc.status(job3id)
+  while  status == "undetermined" or status == "queued_active" or status == "running":
+    time.sleep(1)
+    status = jsc.status(job3id)
+
+
+
+  job4id = submitWTjob4(jsc, ft)
+
+  #jsc.wait(job4id)
+  status = jsc.status(job4id)
+  while  status == "undetermined" or status == "queued_active" or status == "running":
+    time.sleep(1)
+    status = jsc.status(job4id)
+
+
+
+
+  delta = datetime.now()-startTime
+  print "time: " + repr(delta.seconds) + " seconds."
+  print "jobs : " + repr(jsc.jobs())
+
+  job_ids = jsc.jobs()
+  for job_id in job_ids:
+    print "job " + repr(job_id) + " : " + jsc.status(job_id) 
+  ft.transferOutputFile(l_file4)
+
+  jsc.dispose(job1id)
+  jsc.dispose(job2id)
+  jsc.dispose(job3id)
+  jsc.dispose(job4id)
+
+  time.sleep(1)
 
 
 

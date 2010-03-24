@@ -492,7 +492,7 @@ int DrmaaJobs::getNextId() {
 
 DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
 
-    printf("drmaa job id %s \n", runningJobId.c_str());
+    //printf("drmaa job id %s \n", runningJobId.c_str());
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
@@ -505,45 +505,45 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
                           DRMAA_ERROR_STRING_BUFFER);
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
-        fprintf (stderr, "Could not get job' status: %s\n", error);
+        //fprintf (stderr, "Could not get job' status: %s\n", error);
         return UNDETERMINED;
     }
 
-    printf("job %s ", runningJobId.c_str());
+    //printf("job %s ", runningJobId.c_str());
 
     switch (status) {
     case DRMAA_PS_UNDETERMINED:
-        printf ("Job status cannot be determined\n");
+        //printf ("Job status cannot be determined\n");
         return UNDETERMINED;
     case DRMAA_PS_QUEUED_ACTIVE:
-        printf ("Job is queued and active\n");
+        //printf ("Job is queued and active\n");
         return QUEUED_ACTIVE;
     case DRMAA_PS_SYSTEM_ON_HOLD:
-        printf ("Job is queued and in system hold\n");
+        //printf ("Job is queued and in system hold\n");
         return SYSTEM_ON_HOLD;
     case DRMAA_PS_USER_ON_HOLD:
-        printf ("Job is queued and in user hold\n");
+        //printf ("Job is queued and in user hold\n");
         return USER_ON_HOLD;
     case DRMAA_PS_USER_SYSTEM_ON_HOLD:
-        printf ("Job is queued and in user and system hold\n");
+        //printf ("Job is queued and in user and system hold\n");
         return USER_SYSTEM_ON_HOLD;
     case DRMAA_PS_RUNNING:
-        printf ("Job is running\n");
+        //printf ("Job is running\n");
         return RUNNING;
     case DRMAA_PS_SYSTEM_SUSPENDED:
-        printf ("Job is system suspended\n");
+        //printf ("Job is system suspended\n");
         return SYSTEM_SUSPENDED;
     case DRMAA_PS_USER_SUSPENDED:
-        printf ("Job is user suspended\n");
+        //printf ("Job is user suspended\n");
         return USER_SUSPENDED;
     case DRMAA_PS_USER_SYSTEM_SUSPENDED:
-        printf ("Job is user and system suspended\n");
+        //printf ("Job is user and system suspended\n");
         return USER_SYSTEM_SUSPENDED;
     case DRMAA_PS_DONE:
-        printf ("Job finished normally\n");
+        //printf ("Job finished normally\n");
         return DONE;
     case DRMAA_PS_FAILED:
-        printf ("Job finished, but failed\n");
+        //printf ("Job finished, but failed\n");
         return FAILED;
     }
 

@@ -53,7 +53,9 @@ def create(database_file):
                                        stdin_file        VARCHAR(255),
                                        name_description  VARCHAR(255),
                                        drmaa_id          VARCHAR(255),
-                                       working_directory VARCHAR(255))''')
+                                       working_directory VARCHAR(255),
+                                       status            VARCHAR(255),
+                                       returned_value     INTEGER)''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  VARCHAR(255) PRIMARY KEY NOT NULL, 
                                             remote_file_path VARCHAR(255),

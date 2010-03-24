@@ -13,7 +13,8 @@ linked together via a distributed resource management systems (DRMS).
 from sqlite3 import *
 from datetime import date
 from datetime import timedelta
-import soma.jobs.jobDatabase
+import soma.jobs.jobDatabase 
+
 import os
 
 __docformat__ = "epytext en"
@@ -24,6 +25,19 @@ class JobServer ( object ):
   
   
   '''
+
+  UNDETERMINED="undetermined"
+  QUEUED_ACTIVE="queued_active"
+  SYSTEM_ON_HOLD="system_on_hold"
+  USER_ON_HOLD="user_on_hold"
+  USER_SYSTEM_ON_HOLD="user_system_on_hold"
+  RUNNING="running"
+  SYSTEM_SUSPENDED="system_suspended"
+  USER_SUSPENDED="user_suspended"
+  USER_SYSTEM_SUSPENDED="user_system_suspended"
+  DONE="done"
+  FAILED="failed"
+
     
   def __init__(self, database_file, tmp_file_dir_path):
     '''
@@ -62,18 +76,22 @@ class JobServer ( object ):
     cursor = connection.cursor()
 
     count = cursor.execute('SELECT count(*) FROM users WHERE login=?', [login]).next()[0]
-    if count==0:
-      cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
-      personal_path = self.__tmp_file_dir_path + "/" + login
-      if os.path.isdir(personal_path):
-        #TO DO remove everything in the existing personal_path?
-        pass
-      else:
-        os.mkdir(personal_path)
-      
-    id = cursor.execute('SELECT id FROM users WHERE login=?', [login]).next()[0]
-    
-    connection.commit()
+    try:
+      if count==0:
+        cursor.execute('INSERT INTO users (login) VALUES (?)', [login])
+        personal_path = self.__tmp_file_dir_path + "/" + login
+        if os.path.isdir(personal_path):
+          #TO DO remove everything in the existing personal_path?
+          pass
+        else:
+          os.mkdir(personal_path)
+        
+      id = cursor.execute('SELECT id FROM users WHERE login=?', [login]).next()[0]
+    except:
+      connection.rollback()
+    else:
+      connection.commit()
+    cursor.close()
     connection.close()
     return id
   
@@ -109,6 +127,7 @@ class JobServer ( object ):
         newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(file_num) 
       else: 
         newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + remote_file_path[iextention:]
+    cursor.close()
     connection.commit()
     connection.close()
     return newFilePath
@@ -131,6 +150,7 @@ class JobServer ( object ):
     cursor.execute('''INSERT INTO transfers 
                     (local_file_path, remote_file_path, transfer_date, expiration_date, user_id) VALUES (?, ?, ?, ?, ?)''',
                     (local_file_path, remote_file_path, date.today(), expiration_date, user_id))
+    cursor.close()
     connection.commit()
     connection.close()
 
@@ -149,6 +169,7 @@ class JobServer ( object ):
     yesterday = date.today() - timedelta(days=1)
     cursor.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
     connection.commit()
+    cursor.close()
     connection.close()
     self.clean()
 
@@ -186,8 +207,8 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     cursor.execute('''INSERT INTO jobs 
-                    (submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id, working_directory) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id, working_directory, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                     (date.today(), 
                      user_id,
                      expiration_date,
@@ -197,13 +218,39 @@ class JobServer ( object ):
                      stdin_file,
                      name_description,
                      drmaa_id, 
-                     working_directory))
+                     working_directory,
+                     JobServer.UNDETERMINED))
     connection.commit()
     id = cursor.lastrowid
+    cursor.close()
     connection.close()
     return id
    
-    
+
+  def setJobStatus(self, job_id, status):
+    '''
+    Updates the job status in the database.
+    The status must be valid (ie a string among the job status 
+    string defined in L{JobServer}.
+
+    @type job_id: C{JobIdentifier}
+    @type status: status string as defined in L{JobServer}
+    '''
+
+    # TBI if the status is not valid raise an exception ??
+    connection = connect(self.__database_file)
+    cursor = connection.cursor()
+    try:
+      cursor.execute('UPDATE jobs SET status=? WHERE id=?', (status, job_id))
+    except:
+      connection.rollback()
+    else:
+      connection.commit()
+    cursor.close()
+    connection.commit()
+    connection.close()
+
+
   def registerInputs(self, job_id, local_input_files):
     '''
     Register associations between a job and input file path.
@@ -217,7 +264,8 @@ class JobServer ( object ):
     for file in local_input_files:
       cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
                     (job_id, file, True))
-                    
+    
+    cursor.close()
     connection.commit()
     connection.close()
     
@@ -231,11 +279,13 @@ class JobServer ( object ):
     @param local_input_files: local output file paths 
     '''
     connection = connect(self.__database_file)
+
     cursor = connection.cursor()
     for file in local_output_files:
       cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
                     (job_id, file, False))
                     
+    cursor.close()
     connection.commit()
     connection.close()
 
@@ -261,6 +311,8 @@ class JobServer ( object ):
       if remote_file_path == None :
         cursor2.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
     
+    cursor.close()
+    cursor2.close()
     connection.commit()
     connection.close()
     self.clean()
@@ -289,6 +341,8 @@ class JobServer ( object ):
       
     cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
     
+    cursor.close()
+    cursor2.close()
     connection.commit()
     connection.close()
       
@@ -311,6 +365,7 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     owner_id = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next()[0] # suppose that the job_id is valid
+    cursor.close()
     connection.close()
     return (owner_id==user_id)
   
@@ -330,6 +385,7 @@ class JobServer ( object ):
     for row in cursor.execute('SELECT id FROM jobs WHERE user_id=?', [user_id]):
       id, = row
       job_ids.append(id)
+    cursor.close()
     connection.close()
     return job_ids
     
@@ -347,10 +403,9 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     drmaa_id = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next()[0] #supposes that the job_id is valid
+    cursor.close()
     connection.close()
     return drmaa_id
-    
-    
     
   def getStdOutErrFilePath(self, job_id):
     '''
@@ -364,6 +419,7 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
+    cursor.close()
     connection.close()
     return result
   
@@ -378,10 +434,35 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     join_errout = cursor.execute('SELECT join_errout FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+    cursor.close()
     connection.close()
     return join_errout
   
-    
+
+  def getJobStatus(self, job_id):
+    '''
+    Returns the job status sored in the database (updated by L{DrmaaJobScheduler}).
+    '''
+    connection = connect(self.__database_file)
+    cursor = connection.cursor()
+    status = cursor.execute('SELECT status FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+    status = status.encode('utf-8')
+    cursor.close()
+    connection.close()
+    return status
+  
+
+  def getReturnedValue(self, job_id):
+    '''
+    Returns the job returned value sored in the database (by L{DrmaaJobScheduler}).
+    '''
+    connection = connect(self.__database_file)
+    cursor = connection.cursor()
+    retured_value = cursor.execute('SELECT returned_value FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+    cursor.close()
+    connection.close()
+    return status
+
 
   #TRANSFERS
   
@@ -399,6 +480,7 @@ class JobServer ( object ):
     connection = connect(self.__database_file)
     cursor = connection.cursor()
     owner_id = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next()[0] #supposes that the local_file_path is associated to a transfer
+    cursor.close()
     connection.close()
     return (owner_id==user_id)
 
@@ -419,6 +501,8 @@ class JobServer ( object ):
       local_file = row[0]
       local_file = local_file.encode('utf-8')
       local_file_paths.append(local_file)
+    cursor.close()
+    connection.close()
     return local_file_paths
     
     
@@ -436,4 +520,6 @@ class JobServer ( object ):
     cursor = connection.cursor()
     info = cursor.execute('SELECT local_file_path, remote_file_path, expiration_date FROM transfers WHERE local_file_path=?', [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
     result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'))
+    cursor.close()
+    connection.close()
     return result
