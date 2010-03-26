@@ -39,7 +39,7 @@ Tables:
 
 
 def create(database_file):
-  connection = connect(database_file)
+  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
   cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                       login VARCHAR(50) NOT NULL UNIQUE)''')
@@ -70,7 +70,7 @@ def create(database_file):
                                       
   cursor.execute('''CREATE TABLE fileCounter (count INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                               foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
-  
+  cursor.close()
   connection.commit()
   connection.close()
 
@@ -96,12 +96,13 @@ def fillWithExampleData(database_file):
                    (1, '/local/file11_l', True),
                    (1, '/local/file12_l', False) ]
   
-  connection = connect(database_file)
+  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
   cursor.executemany('INSERT INTO users (login) VALUES (?)', myUsers)
   cursor.executemany('INSERT INTO transfers (local_file_path, remote_file_path, expiration_date, user_id) VALUES (?, ?, ?, ?)', myTransfers)
   cursor.executemany('INSERT INTO jobs (name_description, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, drmaa_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', myJobs)
   cursor.executemany('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)', myInputOutputs)
+  cursor.close()
   connection.commit()
   connection.close()
 
@@ -109,7 +110,7 @@ def fillWithExampleData(database_file):
 
 def printTables(database_file):
   
-  connection = connect(database_file)
+  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
   
   print "==== users table: ========"
@@ -139,4 +140,5 @@ def printTables(database_file):
     #count, foo = row
     #print '| count=', repr(count).rjust(2), '| foo=', repr(foo).ljust(2), ' |'
   
+  cursor.close()
   connection.close()

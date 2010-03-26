@@ -14,7 +14,7 @@ class JobServer(Pyro.core.ObjBase, soma.jobs.jobServer.JobServer):
 ###### main server program
 def main():
   
-  database_file = "/home/sl225510/job.db"
+  database_file = "/volatile/laguitton/job.db"#"/home/sl225510/job.db"
   tmp_file_dir_path = "/neurospin/tmp/Soizic/jobFiles/"
   
   Pyro.core.initServer()
