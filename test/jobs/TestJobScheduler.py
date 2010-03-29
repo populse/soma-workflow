@@ -13,6 +13,7 @@ import time
 '''
 
 mode = 'local'
+testNum = 3
 
 if mode == 'local':
   from soma.jobs.newJobScheduler import JobScheduler
@@ -221,7 +222,7 @@ def submitWTjob4(jobScheduler, fileTransfer):
 for i in range(1, 10):
   startTime = datetime.now()
 
-  file4 =  outpath + "file4_2_" + repr(i) 
+  file4 =  outpath + "file4_" + repr(testNum) +"_" + repr(i) 
 
   job1id = submitWTjob1(jsc, ft)
 
