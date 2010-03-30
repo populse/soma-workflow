@@ -3,6 +3,7 @@ from datetime import datetime
 #import Pyro.naming, Pyro.core
 #from Pyro.errors import NamingError
 import time
+import os
 '''
 2 modes:
 @type  mode: 'local' or 'remote'
@@ -13,7 +14,7 @@ import time
 '''
 
 mode = 'local'
-testNum = 3
+testNum = 1
 
 if mode == 'local':
   from soma.jobs.newJobScheduler import JobScheduler
@@ -124,13 +125,25 @@ def submitWTjob1(jobScheduler, fileTransfer):
   global script1, stdin1, file0, file11, file12
   global l_file0, l_file11, l_file12, l_script1, l_stdin1, job1id
   
-  l_file0 = fileTransfer.transferInputFile(file0, -24) 
+  l_file0 = fileTransfer.transferInputFile(file0, 1) 
 
-  l_file11 = jobScheduler.registerTransfer(file11, -24) 
-  l_file12 = jobScheduler.registerTransfer(file12, -24) 
+  l_file11 = jobScheduler.registerTransfer(file11, 1) 
+  l_file12 = jobScheduler.registerTransfer(file12, 1) 
 
-  l_script1 = fileTransfer.transferInputFile(script1, -24) 
-  l_stdin1 = fileTransfer.transferInputFile(stdin1, -24) 
+  l_script1 = fileTransfer.transferInputFile(script1, 1) 
+  l_stdin1 = fileTransfer.transferInputFile(stdin1, 1) 
+  
+  #control 
+  if not os.path.isfile(l_file0):
+    print l_file0 + " was not transfered."
+    sys.exit()
+  if not os.path.isfile(l_script1):
+    print l_script1 + " was not transfered."
+    sys.exit()
+  if not os.path.isfile(l_stdin1):
+    print l_stdin1 + " was not transfered." 
+    sys.exit()
+  #########
 
   job1id = jobScheduler.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12], 
                                    [l_file0, l_script1, l_stdin1], 
@@ -144,12 +157,21 @@ def submitWTjob2(jobScheduler, fileTransfer):
   global l_file0, l_file11
   global l_file2, l_script2, l_stdin2, job2id
   
-  l_file2 = jobScheduler.registerTransfer(file2, -24) 
+  l_file2 = jobScheduler.registerTransfer(file2, 1) 
 
   print "l_file2: " + l_file2
 
-  l_script2 = fileTransfer.transferInputFile(script2, -24) 
-  l_stdin2 = fileTransfer.transferInputFile(stdin2, -24) 
+  l_script2 = fileTransfer.transferInputFile(script2, 1) 
+  l_stdin2 = fileTransfer.transferInputFile(stdin2, 1) 
+  
+  #control 
+  if not os.path.isfile(l_script2):
+    print l_script2 + " was not transfered."
+    sys.exit()
+  if not os.path.isfile(l_stdin2):
+    print l_stdin2 + " was not transfered." 
+    sys.exit()
+  #########
 
   job2id = jobScheduler.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "2"], 
                                    [l_file0, l_file11, l_script2, l_stdin2], 
@@ -163,10 +185,19 @@ def submitWTjob3(jobScheduler, fileTransfer):
   global l_file12
   global l_file3, l_script3, l_stdin3, job3id
   
-  l_file3 = jobScheduler.registerTransfer(file3, -24) 
+  l_file3 = jobScheduler.registerTransfer(file3, 1) 
 
-  l_script3 = fileTransfer.transferInputFile(script3, -24) 
-  l_stdin3 = fileTransfer.transferInputFile(stdin3, -24) 
+  l_script3 = fileTransfer.transferInputFile(script3, 1) 
+  l_stdin3 = fileTransfer.transferInputFile(stdin3, 1) 
+  
+  #control 
+  if not os.path.isfile(l_script3):
+    print l_script3 + " was not transfered."
+    sys.exit()
+  if not os.path.isfile(l_stdin3):
+    print l_stdin3 + " was not transfered." 
+    sys.exit()
+  #########
 
   job3id = jobScheduler.submitWithTransfer( [python, l_script3, l_file12, l_file3, "2"], 
                                    [l_file12, l_script3, l_stdin3], 
@@ -180,10 +211,20 @@ def submitWTjob4(jobScheduler, fileTransfer):
   global l_file2, l_file3
   global l_file4, l_script4, l_stdin4, job4id
   
-  l_file4 = jobScheduler.registerTransfer(file4, -24) 
+  l_file4 = jobScheduler.registerTransfer(file4, 1) 
 
-  l_script4 = fileTransfer.transferInputFile(script4, -24) 
-  l_stdin4 = fileTransfer.transferInputFile(stdin4, -24) 
+  l_script4 = fileTransfer.transferInputFile(script4, 1) 
+  l_stdin4 = fileTransfer.transferInputFile(stdin4, 1) 
+  
+  #control 
+  if not os.path.isfile(l_script4):
+    print l_script4 + " was not transfered."
+    sys.exit()
+  if not os.path.isfile(l_stdin4):
+    print l_stdin4 + " was not transfered." 
+    sys.exit()
+  
+  #########
 
   job4id = jobScheduler.submitWithTransfer( [python, l_script4, l_file2, l_file3, l_file4], 
                                    [l_file2, l_file3, l_script4, l_stdin4], 
@@ -228,13 +269,14 @@ for i in range(1, 10):
 
   #jsc.wait(job1id)
   status = jsc.status(job1id)
-  print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+  #print "job " + repr(job1id) + " : " + jsc.status(job1id) 
   while status == "undetermined" or status == "queued_active" or status == "running":
     time.sleep(1)
     status = jsc.status(job1id)
-    print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+  print "job " + repr(job1id) + " : " + jsc.status(job1id) 
 
-
+  if status == "failed":
+      sys.exit()
 
 
   job2id = submitWTjob2(jsc, ft)
@@ -245,13 +287,20 @@ for i in range(1, 10):
   while  status == "undetermined" or status == "queued_active" or status == "running":
     time.sleep(1)
     status = jsc.status(job2id)
-
+  print "job " + repr(job2id) + " : " + jsc.status(job2id) 
+  
+  if status == "failed":
+    sys.exit()
+    
   #jsc.wait(job3id)
   status = jsc.status(job3id)
   while  status == "undetermined" or status == "queued_active" or status == "running":
     time.sleep(1)
     status = jsc.status(job3id)
+  print "job " + repr(job3id) + " : " + jsc.status(job3id) 
 
+  if status == "failed":
+    sys.exit()
 
 
   job4id = submitWTjob4(jsc, ft)
@@ -261,23 +310,40 @@ for i in range(1, 10):
   while  status == "undetermined" or status == "queued_active" or status == "running":
     time.sleep(1)
     status = jsc.status(job4id)
+  print "job " + repr(job4id) + " : " + jsc.status(job4id) 
 
-
+  if status == "failed":
+    sys.exit()
 
 
   delta = datetime.now()-startTime
   print "time: " + repr(delta.seconds) + " seconds."
   print "jobs : " + repr(jsc.jobs())
 
-  job_ids = jsc.jobs()
-  for job_id in job_ids:
-    print "job " + repr(job_id) + " : " + jsc.status(job_id) 
+  #job_ids = jsc.jobs()
+  #for job_id in job_ids:
+    #print "job " + repr(job_id) + " : " + jsc.status(job_id) => pb because the jobs can be delete by other processes
   ft.transferOutputFile(l_file4)
 
   jsc.dispose(job1id)
   jsc.dispose(job2id)
   jsc.dispose(job3id)
   jsc.dispose(job4id)
+  
+  jsc.cancelTransfer(l_file0)
+  jsc.cancelTransfer(l_file11) 
+  jsc.cancelTransfer(l_file12)
+  jsc.cancelTransfer(l_script1) 
+  jsc.cancelTransfer(l_stdin1) 
+  jsc.cancelTransfer(l_file2)  
+  jsc.cancelTransfer(l_script2)
+  jsc.cancelTransfer(l_stdin2)
+  jsc.cancelTransfer(l_file3)
+  jsc.cancelTransfer(l_script3)
+  jsc.cancelTransfer(l_stdin3)
+  jsc.cancelTransfer(l_file4)
+  jsc.cancelTransfer(l_script4)
+  jsc.cancelTransfer(l_stdin4)
 
   time.sleep(1)
 
