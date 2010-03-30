@@ -8,7 +8,7 @@ __docformat__ = "epytext en"
 
 
 
-
+class FileTransferError( Exception ): pass
 
 class FileTransfer( object ):
 
@@ -51,7 +51,8 @@ class FileTransfer( object ):
   
   
 import shutil
-  
+import os
+
 class LocalFileTransfer(FileTransfer):
   
   
@@ -59,8 +60,15 @@ class LocalFileTransfer(FileTransfer):
      
       local_input_file_path = self.jobScheduler.registerTransfer(remote_input_file, disposal_timeout)
       
-      shutil.copy(remote_input_file,local_input_file_path)
+      try:
+        shutil.copy(remote_input_file,local_input_file_path)
+      except IOError, e:
+        raise FileTransferError("The input file was not transfered. %s: %s" %(type(e), e) )
       
+      #if not os.path.isfile(local_input_file_path):
+        #raise FileTransferError("The input file was %s not transfered." %remote_input_file )
+      #else:
+        #print local_input_file_path+ " exists."
       return local_input_file_path
     
     
@@ -69,10 +77,15 @@ class LocalFileTransfer(FileTransfer):
     
       local_file_path, remote_file_path, expiration_date = self.jobScheduler.getTransferInformation(local_file)
       
-      shutil.copy(local_file_path,remote_file_path)
+      try:
+        shutil.copy(local_file_path,remote_file_path)
+      except IOError, e:
+        raise FileTransferError("The output file was not transfered back. %s: %s" %(type(e), e) )
     
-    
-    
+      #if not os.path.isfile(remote_file_path):
+        #raise FileTransferError("The input file was %s not transfered." %local_file_path )
+      #else:
+        #print remote_file_path+ " exists."
 
 class RemoteFileTransfer(FileTransfer):
   
