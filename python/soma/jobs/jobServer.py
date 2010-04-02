@@ -415,7 +415,6 @@ class JobServer ( object ):
           cursor.execute('DELETE FROM transfers WHERE local_file_path=?', [local_file_path])
           if os.path.isfile(local_file_path):
             os.remove(local_file_path)
-            #print "remove " + local_file_path
         
         cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
         

@@ -41,27 +41,36 @@ class JobScheduler( object ):
   JobScheduler must be created on one of the machines which is allowed to 
   submit jobs by the DRMS.
   '''
-  def __init__( self ):
+  def __init__( self, drmaa_job_scheduler = None):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
     In case of the implementation using the DRMAA API: A L{JobScheduler} instance 
     can only be created from a machine that is allowed to submit jobs by the 
     underlying DRMS.
+    
+    @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
+    @param drmaa_job_scheduler: object of type L{DrmaaJobScheduler} to delegate all the tasks related to the DRMS. If None a new instance is created.
     '''
     
-    self.__drmaaJS = DrmaaJobScheduler()
-    
     Pyro.core.initClient()
+
+    
+    # Drmaa Job Scheduler
+    if drmaa_job_scheduler:
+      self.__drmaaJS = drmaa_job_scheduler
+    else:
+      self.__drmaaJS = DrmaaJobScheduler()
+    
+    # Job Server
     locator = Pyro.naming.NameServerLocator()
-    ns = locator.getNS(host='is143016') 
-  
+    ns = locator.getNS(host='is143016')
     try:
-        URI=ns.resolve('JobServer')
-        print 'URI:',URI
-    except NamingError,e:
+        job_server_URI=ns.resolve('JobServer')
+        print "The job server was found"
+    except NamingError,x:
         raise JobSchedulerError("Couldn't find JobServer, Pyro nameserver says: %s \n" % e )
     
-    self.__jobServer= Pyro.core.getProxyForURI( URI )#ThreadSafeProxy( Pyro.core.getProxyForURI( URI ) )
+    self.__jobServer= ThreadSafeProxy(Pyro.core.getProxyForURI( job_server_URI ))
     
     try:
       userLogin = pwd.getpwuid(os.getuid())[0]
@@ -322,7 +331,6 @@ class JobScheduler( object ):
       raise JobSchedulerError("Submission error: the command must contain at least one element \n")
     
     # check working_directory and stdin ? what about stdout_path stderr_path ?
-    
     job_id = self._drmaaJS.customSubmit(command,
                                         working_directory, 
                                         stdout_path,
@@ -428,7 +436,6 @@ class JobScheduler( object ):
       raise JobSchedulerError("Submission error: the command must contain at least one element \n")
 
     # check the required_local_input_files, required_local_output_file and stdin ?
-
     job_id = self.__drmaaJS.submitWithTransfer( command,
                                                 required_local_input_files,
                                                 required_local_output_file,
@@ -627,7 +634,7 @@ class JobScheduler( object ):
     @type job_ids: set of C{JobIdentifier}
     @param job_ids: Set of jobs to wait for
     '''
-    if not self.__jobserver.isUserJob(job_id, self.__user_id):
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
       raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
     self.__drmaaJS.wait(job_id)
@@ -641,7 +648,7 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
-    if not self.__jobserver.isUserJob(job_id, self.__user_id):
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
       raise JobSchedulerError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
     self.__drmaaJS.stop(job_id)
@@ -656,7 +663,7 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
-    if not self.__jobserver.isUserJob(job_id, self.__user_id):
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
       raise JobSchedulerError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
     self.__drmaaJS.restart(job_id)
@@ -674,7 +681,7 @@ class JobScheduler( object ):
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
 
-    if not self.__jobserver.isUserJob(job_id, self.__user_id):
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
       raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
     self.__drmaaJS.kill(job_id)

@@ -66,6 +66,8 @@ class DrmaaJobScheduler( object ):
     self.__jobs = set([])
     self.__lock = threading.RLock()
     
+    self.__jobsEnded = False
+    
     def startJobStatusUpdateLoop( self, interval ):
       #logfilepath = "/home/sl225510/statusUpdateThreadLog"
       #if os.path.isfile(logfilepath):
@@ -78,11 +80,16 @@ class DrmaaJobScheduler( object ):
           self.__jobs = self.__jobs.intersection(serverJobs)
           jobs = self.__jobs
           #if len(jobs) == 0 && 
-            
+          
+          allJobsEnded = True
           for job_id in jobs:
             status = self.__status(job_id)
             #print >> logFile, "job " + repr(job_id) + " : " + status
             self.__jobServer.setJobStatus(job_id, status)
+            if not status == JobServer.DONE and not status == JobServer.FAILED:
+              allJobsEnded = False
+          self.__jobsEnded = allJobsEnded
+          #print " all jobs done : " + repr(self.__jobsEnded)
         #logFile.flush()
         time.sleep(interval)
     
@@ -91,7 +98,7 @@ class DrmaaJobScheduler( object ):
     self.__job_status_thread = threading.Thread(name = "job_status_loop", 
                                                 target = startJobStatusUpdateLoop, 
                                                 args = (self, 1))
-    self.__job_status_thread.daemon = True
+    self.__job_status_thread.setDaemon(True)
     self.__job_status_thread.start()
 
 
@@ -236,13 +243,11 @@ class DrmaaJobScheduler( object ):
 
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     
-    
     with self.__lock:
       stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
       stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
       self.__jobServer.addTransfer(stdout_file, None, expiration_date, self.__user_id)
       self.__jobServer.addTransfer(stderr_file, None, expiration_date, self.__user_id)
-    
     
     drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
     self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
@@ -300,8 +305,6 @@ class DrmaaJobScheduler( object ):
   ########### DRMS MONITORING ################################################
 
 
-
-
   def __status( self, job_id ):
     '''
     Returns the status of a submitted job. => add a converstion from DRMAA job 
@@ -339,6 +342,9 @@ class DrmaaJobScheduler( object ):
       return None
     #TBI
 
+
+  def areJobsDone(self):
+    return self.__jobsEnded
     
   ########## JOB CONTROL VIA DRMS ########################################
   
@@ -386,3 +392,5 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
       self.__drmaa.terminate(drmaaJobId)
+      
+      

@@ -100,10 +100,10 @@ void DrmaaJobs::initSession(const char * contactString) {
     int errnum = 0;
 
     if(std::string(contactString) == "NULL") {
-        printf("case 1 \n");
+        //printf("case 1 \n");
         errnum = drmaa_init (NULL, error, DRMAA_ERROR_STRING_BUFFER);
     } else {
-        printf("case 2 \n");
+        //printf("case 2 \n");
         char contact[DRMAA_CONTACT_BUFFER];
         errnum = drmaa_init (contact, error, DRMAA_ERROR_STRING_BUFFER);
     }
@@ -206,10 +206,10 @@ void DrmaaJobs::setVectorAttribute(int jobTemplateId, const char* name, int nbAr
 
     const char ** args = new const char* [nbArguments+1];
 
-    printf("DrmaaJobs::setVectorAttribute: nbArguments = %d \n", nbArguments);
+    //printf("DrmaaJobs::setVectorAttribute: nbArguments = %d \n", nbArguments);
     for(int i = 0 ; i < nbArguments ; i++) {
         args[i] = arguments[i];
-        printf("DrmaaJobs::setVectorAttribute: argument num %d = %s \n", i, args[i]);
+        //printf("DrmaaJobs::setVectorAttribute: argument num %d = %s \n", i, args[i]);
     }
     args[nbArguments] = NULL;
 
@@ -230,9 +230,9 @@ void DrmaaJobs::setVectorAttribute(int jobTemplateId, const char* name, int nbAr
 void DrmaaJobs::setCommand(int jobTemplateId, const char * remote_command, int nbArguments, const char ** arguments) {
     if(!isJobTemplateIdValid(jobTemplateId)) return;
 
-    printf("DrmaaJobs::setCommand remote_command = %s, nbArguments = %d \n", remote_command, nbArguments);
+    //printf("DrmaaJobs::setCommand remote_command = %s, nbArguments = %d \n", remote_command, nbArguments);
     for(int i = 0; i < nbArguments ; i++) {
-        printf("DrmaaJobs::setCommand: argument num %d = %s \n", i, arguments[i]);
+        //printf("DrmaaJobs::setCommand: argument num %d = %s \n", i, arguments[i]);
     }
 
     setAttribute(jobTemplateId, DRMAA_REMOTE_COMMAND, remote_command);
