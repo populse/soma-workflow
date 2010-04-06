@@ -20,7 +20,7 @@ mode = 'remote'
 testNum = 3
 
 if mode == 'local':
-  from soma.jobs.newJobScheduler import JobScheduler
+  from soma.jobs.jobScheduler import JobScheduler
   from soma.jobs.fileTransfer import LocalFileTransfer
   jsc = JobScheduler()
   ft = LocalFileTransfer(jsc)

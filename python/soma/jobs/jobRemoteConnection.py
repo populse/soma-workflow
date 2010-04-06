@@ -15,7 +15,9 @@ from connectionCheck import ConnectionHolder
 __docformat__ = "epytext en"
 
 '''
-The L{JobRemoteConnection} class makes it possible to sumbit jobs from a machine which is not a submitting machine of the pool and possibly doesn't share a file system with these machines. The fonction L{getJobScheduler} gets back a proxy of a L{JobScheduler} object. 
+The L{JobRemoteConnection} class makes it possible to sumbit jobs from a machine which is
+not a submitting machine of the pool and possibly doesn't share a file system with these 
+machines. The fonction L{getJobScheduler} gets back a proxy of a L{JobScheduler} object. 
 The connection between the remote machine and the pool is done via ssh using port 
 forwarding (tunneling).
 The protocol used inside the tunnel is Pyro's protocol.
