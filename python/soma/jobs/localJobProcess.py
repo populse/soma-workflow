@@ -2,7 +2,7 @@
 import Pyro.naming
 import Pyro.core
 from Pyro.errors import PyroError,NamingError
-import soma.jobs.newJobScheduler
+import soma.jobs.jobScheduler
 from soma.jobs.drmaaJobScheduler import DrmaaJobScheduler
 import soma.jobs.connectionCheck
 import sys
@@ -10,17 +10,19 @@ import threading
 import time 
 
 
+import os
 
+#os.environ["PYTHONPATH"] = "/home/sl225510/Pyro-3.10/build/lib:"+os.environ["PYTHONPATH"]
 
       
   
         
 ###### JobScheduler pyro object
 
-class JobScheduler(Pyro.core.ObjBase, soma.jobs.newJobScheduler.JobScheduler):
+class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
   def __init__(self, drmaa_job_scheduler):
     Pyro.core.ObjBase.__init__(self)
-    soma.jobs.newJobScheduler.JobScheduler.__init__(self, drmaa_job_scheduler)
+    soma.jobs.jobScheduler.JobScheduler.__init__(self, drmaa_job_scheduler)
   pass
   
 class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connectionCheck.ConnectionChecker):
@@ -45,13 +47,13 @@ def main(jobScheduler_name):
   
   # connection to the pyro daemon and output its URI 
   ## >> for test purpose only:
-  locator = Pyro.naming.NameServerLocator()
-  ns = locator.getNS(host='is143016')
-  daemon.useNameServer(ns)
-  try:
-    ns.unregister(jobScheduler_name)
-  except NamingError:
-    pass
+  #locator = Pyro.naming.NameServerLocator()
+  #ns = locator.getNS(host='is143016')
+  #daemon.useNameServer(ns)
+  #try:
+    #ns.unregister(jobScheduler_name)
+  #except NamingError:
+    #pass
   ## << end for test purpose only
   uri_jsc = daemon.connect(jobScheduler,jobScheduler_name)
   sys.stdout.write(jobScheduler_name+ " URI: " + str(uri_jsc) + "\n")
@@ -61,10 +63,10 @@ def main(jobScheduler_name):
   
   # connection check
   ## >> for test purpose only:
-  try:
-    ns.unregister('connectionChecker')
-  except NamingError:
-    pass
+  #try:
+    #ns.unregister('connectionChecker')
+  #except NamingError:
+    #pass
   ## << end for test purpose only
   connectionChecker = ConnectionChecker()
   uri_cc = daemon.connect(connectionChecker, 'connectionChecker')
@@ -85,10 +87,12 @@ def main(jobScheduler_name):
   
   print "******** before client connection ******************"
   client_connected = False
-  while not client_connected:
+  timeout = 40
+  while not client_connected and timeout > 0:
     client_connected = connectionChecker.isConnected()
+    timeout = timeout - 1
     time.sleep(1)
-  
+    
   print "******** first mode: client connection *************"
   while client_connected:
     client_connected = connectionChecker.isConnected()

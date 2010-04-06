@@ -10,7 +10,8 @@ Condor, SGE, LSF, etc. It requires a instance of L{JobServer} to be available.
 '''
 __docformat__ = "epytext en"
 
-from soma.pipeline.somadrmaajobssip import DrmaaJobs
+
+from soma.jobs.drmaaJobScheduler import DrmaaJobScheduler
 from soma.jobs.jobServer import JobServer
 from soma.pyro import ThreadSafeProxy
 import Pyro.naming, Pyro.core
@@ -21,6 +22,7 @@ import pwd
 import os
 
 
+class JobSchedulerError( Exception ): pass
 
 class JobScheduler( object ):
   '''
@@ -39,29 +41,42 @@ class JobScheduler( object ):
   JobScheduler must be created on one of the machines which is allowed to 
   submit jobs by the DRMS.
   '''
-  def __init__( self ):
+  def __init__( self, drmaa_job_scheduler = None):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
     In case of the implementation using the DRMAA API: A L{JobScheduler} instance 
     can only be created from a machine that is allowed to submit jobs by the 
     underlying DRMS.
+    
+    @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
+    @param drmaa_job_scheduler: object of type L{DrmaaJobScheduler} to delegate all the tasks related to the DRMS. If None a new instance is created.
     '''
     
-    self.__drmaa = DrmaaJobs()
     Pyro.core.initClient()
+
+    
+    # Drmaa Job Scheduler
+    if drmaa_job_scheduler:
+      self.__drmaaJS = drmaa_job_scheduler
+    else:
+      self.__drmaaJS = DrmaaJobScheduler()
+    
+    # Job Server
     locator = Pyro.naming.NameServerLocator()
     ns = locator.getNS(host='is143016')
-  
     try:
-        URI=ns.resolve('JobServer')
-        print 'URI:',URI
+        job_server_URI=ns.resolve('JobServer')
+        print "The job server was found"
     except NamingError,x:
-        print 'Couldn\'t find JobServer, nameserver says:',x
-        raise SystemExit
+        raise JobSchedulerError("Couldn't find JobServer, Pyro nameserver says: %s \n" % e )
     
-    self.__jobServer= ThreadSafeProxy( Pyro.core.getProxyForURI( URI ) )
+    self.__jobServer= ThreadSafeProxy(Pyro.core.getProxyForURI( job_server_URI ))
     
-    userLogin = pwd.getpwuid(os.getuid())[0]
+    try:
+      userLogin = pwd.getpwuid(os.getuid())[0]
+    except Exception, e:
+      raise JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e))
+    
     self.__user_id = self.__jobServer.registerUser(userLogin)
    
     self.__fileToRead = None
@@ -161,7 +176,7 @@ class JobScheduler( object ):
   def writeLine(self, line, local_file_path):
     '''
     Write a line to the local file. The path of the local input file
-    must have been generated using the L{beginTransferInputFile} method.
+    must have been generated using the L{registerTransfer} method.
     
     @type  line: string
     @param line: line to write in the local input file
@@ -169,7 +184,8 @@ class JobScheduler( object ):
     @param local_file_path: local file path to fill up
     '''
     
-    # TBI if not a transfer raise exception.
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
     
     if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
       self.__fileToWrite = open(local_file_path, 'wt')
@@ -218,7 +234,7 @@ class JobScheduler( object ):
   def readline(self, local_file_path):
     '''
     Read a line from the local file. The path of the local input file
-    must have been generated using the L{beginTransferInputFile} method.
+    must have been generated using the L{registerTransfer} method.
     
     @type  line: string
     @param line: line to write in the local input file
@@ -226,6 +242,10 @@ class JobScheduler( object ):
     @param: local file path to fill up
     '''
     # TBI if not a transfer raise exception.
+    
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
+    
     
     if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
       self.__fileToRead = open(local_file_path, 'rt')
@@ -245,9 +265,8 @@ class JobScheduler( object ):
     belongs to the list returned by L{getTransfers}    
     '''
     
-    if not(self.__jobServer.isUserTransfer(local_file_path, self.__user_id)):
-      # raise TBI
-      print('Error: the transfer is owned by a different user \n')
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
+      print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_file_path
       return
 
     self.__jobServer.removeTransferASAP(local_file_path)
@@ -309,46 +328,18 @@ class JobScheduler( object ):
     '''
     
     if len(command) == 0:
-      #raise TBI
-      print('Error: the command must contain at least one element \n')
-      return
-
-
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-  
-    drmaa_stdout_arg = "[void]:" + stdout_path
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", drmaa_stdout_arg)
-
-    if stderr_path != None:
-      drmaa_stderr_arg = "[void]:" + stderr_path
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", drmaa_stderr_arg)
-    else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-
-    if stdin != None:
-      drmaa_stdin_arg = "[void]:" + stdin
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", drmaa_stdin_arg)
-      
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
-     
-     
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
+      raise JobSchedulerError("Submission error: the command must contain at least one element \n")
     
-    join_stderrout = (stderr_path == None)
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    job_id = self.__jobServer.addJob(self.__user_id, 
-                                   expiration_date, 
-                                   stdout_path,
-                                   stderr_path,
-                                   join_stderrout,
-                                   stdin, 
-                                   None,  # Name_description
-                                   drmaaSubmittedJobId,
-                                   working_directory)
+    # check working_directory and stdin ? what about stdout_path stderr_path ?
+    job_id = self._drmaaJS.customSubmit(command,
+                                        working_directory, 
+                                        stdout_path,
+                                        stderr_path,
+                                        stdin,
+                                        disposal_timeout)
+
     return job_id
-  
+   
 
 
   def submit( self,
@@ -387,48 +378,16 @@ class JobScheduler( object ):
     '''
     
     if len(command) == 0:
-      #raise TBI
-      print('Error: the command must contain at least one element \n')
-      return
+      raise JobSchedulerError("Submission error: the command must contain at least one element \n")
     
+     # check working_directory and stdin ?
     
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-    stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-    self.__jobServer.addTransfer(stdout_file, None, expiration_date, self.__user_id)
-    self.__jobServer.addTransfer(stderr_file, None, expiration_date, self.__user_id)
-    
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-    
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
-
-    if join_stderrout:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-    else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
-
-    if stdin != None:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
-    
-    if working_directory != None:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
-    
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
-    
-    join_stderrout = join_stderrout
-    job_id = self.__jobServer.addJob(self.__user_id, 
-                                   expiration_date, 
-                                   stdout_file,
-                                   stderr_file,
-                                   join_stderrout,
-                                   stdin, 
-                                   None,  # Name_description
-                                   drmaaSubmittedJobId,
-                                   working_directory)
-    self.__jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
-    
+    job_id = self._drmaaJS.submit(command,
+                                  working_directory,
+                                  join_stderrout,
+                                  stdin,
+                                  disposal_timeout)
+                          
     return job_id 
 
 
@@ -474,45 +433,15 @@ class JobScheduler( object ):
     ''' 
 
     if len(command) == 0:
-      #raise TBI
-      print('Error: the command must contain at least one element \n')
-      return
+      raise JobSchedulerError("Submission error: the command must contain at least one element \n")
 
-
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-    stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-    self.__jobServer.addTransfer(stdout_file, None, expiration_date, self.__user_id)
-    self.__jobServer.addTransfer(stderr_file, None, expiration_date, self.__user_id)
-    
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-    
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
-
-    if join_stderrout:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-    else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
-
-    if stdin != None:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
-    
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
-    
-    job_id = self.__jobServer.addJob(self.__user_id, 
-                                   expiration_date, 
-                                   stdout_file,
-                                   stderr_file,
-                                   join_stderrout,
-                                   stdin, 
-                                   None,  # Name_description
-                                   drmaaSubmittedJobId)
-                                   
-    self.__jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
-    self.__jobServer.registerInputs(job_id, required_local_input_files)
-    self.__jobServer.registerOutputs(job_id, required_local_output_file)
+    # check the required_local_input_files, required_local_output_file and stdin ?
+    job_id = self.__drmaaJS.submitWithTransfer( command,
+                                                required_local_input_files,
+                                                required_local_output_file,
+                                                join_stderrout,
+                                                stdin,
+                                                disposal_timeout)
     
     return job_id
 
@@ -532,16 +461,11 @@ class JobScheduler( object ):
     methods L{submit}, L{customSubmit} or L{submitWithTransfer})
     '''
     
-    if not(self.__jobServer.isUserJob(job_id, self.__user_id)) :
-      #TBI raise ...
-      print('Error: the job is owned by a different user \n')
-      pass
-    else:
-      jobStatus = self.status(job_id)
-      if jobStatus != JobScheduler.FAILED and jobStatus != JobScheduler.DONE and jobStatus != JobScheduler.UNDETERMINED :
-        drmaaJobId=self.__jobServer.getDrmaaJobId(job_id)
-        self.__drmaa.terminate(drmaaJobId)
-      self.__jobServer.deleteJob(job_id)
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Couldn't dispose job %d. It doesn't exist or is not owned by the current user \n" % job_id
+      return
+    
+    self.__drmaaJS.dispose(job_id)
 
 
   ########## SERVER STATE MONITORING ########################################
@@ -566,7 +490,7 @@ class JobScheduler( object ):
     @return: local_file_path : path of the file on the directory shared by the machines
     of the pool
     '''
-
+ 
     return self.__jobServer.getTransfers(self.__user_id)
 
     
@@ -585,6 +509,11 @@ class JobScheduler( object ):
         existing job has declared this file as output or input.
     '''
     #TBI raise an exception if local_file_path is not valid transfer??
+    
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_file_path
+      return
+      
     return self.__jobServer.getTransferInformation(local_file_path)
     
     
@@ -610,34 +539,24 @@ class JobScheduler( object ):
   
   ########### DRMS MONITORING ################################################
 
-
-  UNDETERMINED="undetermined"
-  QUEUED_ACTIVE="queued_active"
-  SYSTEM_ON_HOLD="system_on_hold"
-  USER_ON_HOLD="user_on_hold"
-  USER_SYSTEM_ON_HOLD="user_system_on_hold"
-  RUNNING="running"
-  SYSTEM_SUSPENDED="system_suspended"
-  USER_SUSPENDED="user_suspended"
-  USER_SYSTEM_SUSPENDED="user_system_suspended"
-  DONE="done"
-  FAILED="failed"
-
   def status( self, job_id ):
     '''
     Returns the status of a submitted job.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype:  C{JobStatus}
-    @return: the status of the job. The possible values are UNDETERMINED, 
-    QUEUED_ACTIVE, SYSTEM_ON_HOLD, USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING,
-    SYSTEM_SUSPENDED, USER_SUSPENDED, USER_SYSTEM_SUSPENDED, DONE, FAILED
+    @rtype:  C{JobStatus} or None
+    @return: the status of the job, if its valid and own by the current user, None 
+    otherwise. The possible values are UNDETERMINED, QUEUED_ACTIVE, SYSTEM_ON_HOLD, 
+    USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING, SYSTEM_SUSPENDED, USER_SUSPENDED,
+    USER_SYSTEM_SUSPENDED, DONE, FAILED
     '''
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return 
     
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    return self.__drmaa.jobStatus(drmaaJobId) #add conversion if needed
-    
+    return self.__jobServer.getJobStatus(job_id)
+        
 
   def returnValue( self, job_id ):
     '''
@@ -648,15 +567,21 @@ class JobScheduler( object ):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     @rtype:  int or None
-    @return: job exit value, it may be C{None} if the job is not finished or
-    exited abnormally (for instance on a signal).
+    @return: job exit value, it may be C{None} if the job is not valid or its status
+    is not DONE. 
     '''
   
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    if self.status(job_id)!=self.DONE :
-      return None
-    #TBI
-
+    if not self.__jobserver.isUserJob(job_id, self.__user_id):
+      print "Could get the retured value of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return
+      
+    if not self.__jobServer.getJobStatus(job_id) == JobServer.DONE:
+      print "Could get the retured value of job %d. Its status is not %s.\n" %(job_id, JobServer.DONE)
+      return
+  
+    return self.__jobServer.getReturnedValue(job_id)
+    
+   
 
   def output( self, job_id ):
     '''
@@ -671,6 +596,7 @@ class JobScheduler( object ):
     @return: file object containing the job's output.
     '''
 
+    # doesn't work in the remote case !!! TBI properly !!!
     stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
     outputFile = open(stdout_path)
     return outputFile
@@ -689,6 +615,7 @@ class JobScheduler( object ):
     @return: file object containing the job's error output.
     '''
 
+    # doesn't work in the remote case !!! TBI properly !!!
     if self.__jobServer.areErrOutJoined(job_id):
       return None
     stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
@@ -702,44 +629,44 @@ class JobScheduler( object ):
   def wait( self, job_id ):
     '''
     Waits for all the specified jobs to finish execution or fail. 
+    The job_id must be valid.
     
     @type job_ids: set of C{JobIdentifier}
     @param job_ids: Set of jobs to wait for
     '''
-
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    self.__drmaa.wait(drmaaJobId)
-
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %job_id )
+    
+    self.__drmaaJS.wait(job_id)
 
   def stop( self, job_id ):
     '''
     Temporarily stops the job until the method L{restart} is called. The job 
     is held if it was waiting in a queue and suspended if was running. 
+    The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      raise JobSchedulerError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    if self.status(job_id)==self.RUNNING:
-      self.__drmaa.suspend(drmaaJobId)
-    else:
-      self.__drmaa.hold(drmaaJobId)
+    self.__drmaaJS.stop(job_id)
+   
   
   
   def restart( self, job_id ):
     '''
     Restarts a job previously stopped by the L{stop} method.
+    The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
-
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    if self.status(job_id)==self.USER_SUSPENDED:
-      self.__drmaa.resume(drmaaJobId)
-    else:
-      self.__drmaa.release(drmaaJobId)
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      raise JobSchedulerError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id )
+    
+    self.__drmaaJS.restart(job_id)
 
 
   def kill( self, job_id ):
@@ -748,11 +675,13 @@ class JobScheduler( object ):
     the list returned by L{jobs} and it can still be inspected by methods like
     L{status} or L{output}. To completely erase a job, it is necessary to call
     the L{dispose} method.
+    The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     '''
 
-    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    self.__drmaa.terminate(drmaaJobId)
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id )
     
+    self.__drmaaJS.kill(job_id)

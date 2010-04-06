@@ -31,7 +31,7 @@ class ConnectionChecker(object):
       
   def signalConnectionExist(self):
     with self.lock:
-      #print "ConnectionChecker <= a signa was received"
+      #print "ConnectionChecker <= a signal was received"
       self.lastSignal = datetime.now()
 
   def isConnected(self):
