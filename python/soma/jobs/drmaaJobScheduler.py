@@ -16,7 +16,6 @@ __docformat__ = "epytext en"
 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
 from soma.jobs.jobServer import JobServer
-from soma.pyro import ThreadSafeProxy
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 from datetime import date
@@ -53,7 +52,7 @@ class DrmaaJobScheduler( object ):
         print 'Couldn\'t find JobServer, nameserver says:',x
         raise SystemExit
     
-    self.__jobServer= ThreadSafeProxy( Pyro.core.getProxyForURI( URI ) )
+    self.__jobServer= Pyro.core.getProxyForURI( URI )
     
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
