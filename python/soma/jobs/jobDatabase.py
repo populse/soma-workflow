@@ -10,19 +10,33 @@ from sqlite3 import *
 Job database construction.
 Tables:
   Users
+    id
     login or other userId
 
   Jobs
-    jobId
-    expiration date
-    submission date
-    user id
-    is stdout requested
-    is stderr requested
-    stdout file local path
-    stdin file local path
-    name/description
-    drmaa job id
+    => identification:
+      id
+      user_id
+    
+    => used by the job system (JobScheduler, DrmaaJobScheduler, JobServer)
+      drmaa_id 
+      expiration_date
+      status  
+      stdin_file
+      join_errout
+      stdout_file
+      stderr_file 
+      working_directory 
+                  
+    => for user and administrator usage
+      name_description 
+      command           
+      submission_date  
+      exit_status
+      exit_value    
+      terminating_signal
+      ressource_usage_file
+
   
   Transfer
     local file path
@@ -43,20 +57,27 @@ def create(database_file):
   cursor = connection.cursor()
   cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                       login VARCHAR(50) NOT NULL UNIQUE)''')
-  cursor.execute('''CREATE TABLE jobs (id                INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-                                       submission_date   DATE,
-                                       user_id           INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                       expiration_date   DATE NOT NULL,
-                                       stdout_file       VARCHAR(255),
-                                       stderr_file       VARCHAR(255),
-                                       join_errout       BOOLEAN NOT NULL,
-                                       stdin_file        VARCHAR(255),
-                                       name_description  VARCHAR(255),
-                                       drmaa_id          VARCHAR(255),
-                                       working_directory VARCHAR(255),
-                                       status            VARCHAR(255),
-                                       returned_value     INTEGER,
-                                       command           VARCHAR(255))''')
+  cursor.execute('''CREATE TABLE jobs (
+                                       id                   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                       user_id              INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
+                                       
+                                       drmaa_id             VARCHAR(255),
+                                       expiration_date      DATE NOT NULL,
+                                       status               VARCHAR(255),
+                                       stdin_file           VARCHAR(255),
+                                       join_errout          BOOLEAN NOT NULL,
+                                       stdout_file          VARCHAR(255),
+                                       stderr_file          VARCHAR(255),
+                                       working_directory    VARCHAR(255),
+                                       
+                                       name_description     VARCHAR(255),
+                                       command              VARCHAR(255),
+                                       submission_date      DATE,
+                                       exit_status          VARCHAR(255),
+                                       exit_value           INTEGER,
+                                       terminating_signal   VARCHAR(255),
+                                       ressource_usage_file VARCHAR(255)
+                                       )''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  VARCHAR(255) PRIMARY KEY NOT NULL, 
                                             remote_file_path VARCHAR(255),

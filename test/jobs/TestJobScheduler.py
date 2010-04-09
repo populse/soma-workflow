@@ -16,17 +16,31 @@ import os
   and doesn't share a file system with these machines
 '''
 
-mode = 'remote'
-testNum = 3
+mode = 'local'
+testNum = 1
 
 if mode == 'local':
-  from soma.jobs.jobScheduler import JobScheduler
-  from soma.jobs.fileTransfer import LocalFileTransfer
-  jsc = JobScheduler()
-  ft = LocalFileTransfer(jsc)
   inpath = "/home/sl225510/projets/jobExamples/complete/"
+  #"/home/soizic/projets/jobExamples/complete/"
   outpath = "/home/sl225510/"
+  #"/home/soizic/output/"
+  srcLocalJobProcess = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/python/soma/jobs/localJobProcess.py"
+  #"/home/soizic/projets/jobsdev/python/soma/jobs/localJobProcess.py"
   
+  
+  #from soma.jobs.jobScheduler import JobScheduler
+  #from soma.jobs.fileTransfer import LocalFileTransfer
+  #jsc = JobScheduler()
+  #ft = LocalFileTransfer(jsc)
+
+  from soma.jobs.jobLocalConnection import JobLocalConnection 
+  from soma.jobs.fileTransfer import LocalFileTransfer
+  connection = JobLocalConnection(srcLocalJobProcess)
+  jsc = connection.getJobScheduler()
+  ft = LocalFileTransfer(jsc)
+
+
+
 if mode == 'remote':
   from jobRemoteConnection import JobRemoteConnection 
   from fileTransfer import RemoteFileTransfer
@@ -179,7 +193,7 @@ def submitWTjob1():
   l_script1 = ft.transferInputFile(script1, tr_time_out) 
   l_stdin1 = ft.transferInputFile(stdin1, tr_time_out) 
   
-  job1id = jsc.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12, "1"], 
+  job1id = jsc.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12, "30"], 
                                    [l_file0, l_script1, l_stdin1], 
                                    [l_file11, l_file12], 
                                    True, l_stdin1, jobs_time_out) 
@@ -268,7 +282,7 @@ def wait(jobid):
 #startTime = datetime.now()
 
 #job1id = submitWTjob1()
-##jsc.wait(job1id)
+#jsc.wait(job1id)
 #wait(job1id)
 
 #job2id = submitWTjob2()
@@ -295,99 +309,99 @@ def wait(jobid):
 
 #########################################
 
-for i in range(1, 3):
+#for i in range(1, 3):
   
  
-  startTime = datetime.now()
+  #startTime = datetime.now()
 
-  file4 =  outpath + "file4_" + repr(testNum) +"_" + repr(i) 
-
-
-  job1id = submitWTjob1()
-  print "job1 submitted \n"
-
-  #jsc.wait(job1id)
-  status = jsc.status(job1id)
-  print "job " + repr(job1id) + " : " + jsc.status(job1id) 
-  while status == "undetermined" or status == "queued_active" or status == "running":
-    print "job " + repr(job1id) + " : " + jsc.status(job1id) 
-    time.sleep(1)
-    status = jsc.status(job1id)
-  print "job " + repr(job1id) + " : " + jsc.status(job1id) 
-
-  if status == "failed":
-      sys.exit()
+  #file4 =  outpath + "file4_" + repr(testNum) +"_" + repr(i) 
 
 
-  job2id = submitWTjob2()
-  print "job2 submitted \n"
-  job3id = submitWTjob3()
-  print "job3 submitted \n"
+  #job1id = submitWTjob1()
+  #print "job1 submitted \n"
 
-  #jsc.wait(job2id)
-  status = jsc.status(job2id)
-  while  status == "undetermined" or status == "queued_active" or status == "running":
-    time.sleep(1)
-    status = jsc.status(job2id)
-  print "job " + repr(job2id) + " : " + jsc.status(job2id) 
+  ##jsc.wait(job1id)
+  #status = jsc.status(job1id)
+  #print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+  #while status == "undetermined" or status == "queued_active" or status == "running":
+    #print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+    #time.sleep(1)
+    #status = jsc.status(job1id)
+  #print "job " + repr(job1id) + " : " + jsc.status(job1id) 
+
+  #if status == "failed":
+      #sys.exit()
+
+
+  #job2id = submitWTjob2()
+  #print "job2 submitted \n"
+  #job3id = submitWTjob3()
+  #print "job3 submitted \n"
+
+  ##jsc.wait(job2id)
+  #status = jsc.status(job2id)
+  #while  status == "undetermined" or status == "queued_active" or status == "running":
+    #time.sleep(1)
+    #status = jsc.status(job2id)
+  #print "job " + repr(job2id) + " : " + jsc.status(job2id) 
   
-  if status == "failed":
-    sys.exit()
+  #if status == "failed":
+    #sys.exit()
     
-  #jsc.wait(job3id)
-  status = jsc.status(job3id)
-  while  status == "undetermined" or status == "queued_active" or status == "running":
-    time.sleep(1)
-    status = jsc.status(job3id)
-  print "job " + repr(job3id) + " : " + jsc.status(job3id) 
+  ##jsc.wait(job3id)
+  #status = jsc.status(job3id)
+  #while  status == "undetermined" or status == "queued_active" or status == "running":
+    #time.sleep(1)
+    #status = jsc.status(job3id)
+  #print "job " + repr(job3id) + " : " + jsc.status(job3id) 
 
-  if status == "failed":
-    sys.exit()
-
-
-  job4id = submitWTjob4()
-
-  #jsc.wait(job4id)
-  status = jsc.status(job4id)
-  while  status == "undetermined" or status == "queued_active" or status == "running":
-    time.sleep(1)
-    status = jsc.status(job4id)
-  print "job " + repr(job4id) + " : " + jsc.status(job4id) 
-
-  if status == "failed":
-    sys.exit()
+  #if status == "failed":
+    #sys.exit()
 
 
-  delta = datetime.now()-startTime
-  print "time: " + repr(delta.seconds) + " seconds."
-  print "jobs : " + repr(jsc.jobs())
+  #job4id = submitWTjob4()
 
-  #job_ids = jsc.jobs()
-  #for job_id in job_ids:
-    #print "job " + repr(job_id) + " : " + jsc.status(job_id) => pb because the jobs can be delete by other processes
-  ft.transferOutputFile(l_file4)
+  ##jsc.wait(job4id)
+  #status = jsc.status(job4id)
+  #while  status == "undetermined" or status == "queued_active" or status == "running":
+    #time.sleep(1)
+    #status = jsc.status(job4id)
+  #print "job " + repr(job4id) + " : " + jsc.status(job4id) 
 
-  jsc.dispose(job1id)
-  jsc.dispose(job2id)
-  jsc.dispose(job3id)
-  jsc.dispose(job4id)
+  #if status == "failed":
+    #sys.exit()
+
+
+  #delta = datetime.now()-startTime
+  #print "time: " + repr(delta.seconds) + " seconds."
+  #print "jobs : " + repr(jsc.jobs())
+
+  ##job_ids = jsc.jobs()
+  ##for job_id in job_ids:
+    ##print "job " + repr(job_id) + " : " + jsc.status(job_id) => pb because the jobs can be delete by other processes
+  #ft.transferOutputFile(l_file4)
+
+  #jsc.dispose(job1id)
+  #jsc.dispose(job2id)
+  #jsc.dispose(job3id)
+  #jsc.dispose(job4id)
   
-  jsc.cancelTransfer(l_file0)
-  jsc.cancelTransfer(l_file11) 
-  jsc.cancelTransfer(l_file12)
-  jsc.cancelTransfer(l_script1) 
-  jsc.cancelTransfer(l_stdin1) 
-  jsc.cancelTransfer(l_file2)  
-  jsc.cancelTransfer(l_script2)
-  jsc.cancelTransfer(l_stdin2)
-  jsc.cancelTransfer(l_file3)
-  jsc.cancelTransfer(l_script3)
-  jsc.cancelTransfer(l_stdin3)
-  jsc.cancelTransfer(l_file4)
-  jsc.cancelTransfer(l_script4)
-  jsc.cancelTransfer(l_stdin4)
+  #jsc.cancelTransfer(l_file0)
+  #jsc.cancelTransfer(l_file11) 
+  #jsc.cancelTransfer(l_file12)
+  #jsc.cancelTransfer(l_script1) 
+  #jsc.cancelTransfer(l_stdin1) 
+  #jsc.cancelTransfer(l_file2)  
+  #jsc.cancelTransfer(l_script2)
+  #jsc.cancelTransfer(l_stdin2)
+  #jsc.cancelTransfer(l_file3)
+  #jsc.cancelTransfer(l_script3)
+  #jsc.cancelTransfer(l_stdin3)
+  #jsc.cancelTransfer(l_file4)
+  #jsc.cancelTransfer(l_script4)
+  #jsc.cancelTransfer(l_stdin4)
 
-  time.sleep(1)
+  #time.sleep(1)
 
 
 

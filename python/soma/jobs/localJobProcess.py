@@ -11,10 +11,6 @@ import time
 
 
 import os
-
-#os.environ["PYTHONPATH"] = "/home/sl225510/Pyro-3.10/build/lib:"+os.environ["PYTHONPATH"]
-
-      
   
         
 ###### JobScheduler pyro object

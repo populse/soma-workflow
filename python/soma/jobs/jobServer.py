@@ -23,11 +23,10 @@ __docformat__ = "epytext en"
 class JobServerError( Exception): pass
 
 class JobServer ( object ):
-  '''
-  
-  
-  '''
 
+  '''
+  Job status:
+  '''
   UNDETERMINED="undetermined"
   QUEUED_ACTIVE="queued_active"
   SYSTEM_ON_HOLD="system_on_hold"
@@ -39,7 +38,15 @@ class JobServer ( object ):
   USER_SYSTEM_SUSPENDED="user_system_suspended"
   DONE="done"
   FAILED="failed"
-
+  '''
+  Exit job status:
+  '''
+  EXIT_UNDETERMINED="exit_status_undetermined"
+  EXIT_ABORTED="aborted"
+  FINISHED_REGULARLY="finished_regularly"
+  FINISHED_TERM_SIG="finished_signal"
+  FINISHED_UNCLEAR_CONDITIONS="finished_unclear_condition"
+  USER_KILLED="killed_by_user"
     
   def __init__(self, database_file, tmp_file_dir_path):
     '''
@@ -211,7 +218,8 @@ class JobServer ( object ):
                stdin_file=None,
                name_description=None,
                drmaa_id=None,
-               working_directory=None):
+               working_directory=None, 
+               command_info=None):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -230,6 +238,8 @@ class JobServer ( object ):
     @type  drmaa_id: string
     @param drmaa_id: job identifier on DRMS if submitted via DRMAA
     @type  working_directory: string
+    @type  command_info: string
+    @param command_info: job command for user information only
     @rtype: C{JobIdentifier}
     @return: the identifier of the job
     '''
@@ -238,19 +248,40 @@ class JobServer ( object ):
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO jobs 
-                        (submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id, working_directory, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (date.today(), 
-                        user_id,
-                        expiration_date,
+                        (
+                         user_id,
+                         
+                         drmaa_id,
+                         expiration_date,
+                         status,
+                         stdin_file,
+                         join_errout,
+                         stdout_file,
+                         stderr_file,
+                         working_directory,
+                  
+                         name_description,
+                         command,
+                         submission_date, 
+                         exit_status)
+                        VALUES (?, ?, ?, ?, ?,
+                                ?, ?, ?, ?, ?, 
+                                ?, ?, ?)''',
+                        (user_id,
+                        
+                        drmaa_id,
+                        expiration_date, 
+                        JobServer.UNDETERMINED,
+                        stdin_file,
+                        join_stderrout,
                         stdout_file,
                         stderr_file,
-                        join_stderrout,
-                        stdin_file,
-                        name_description,
-                        drmaa_id, 
                         working_directory,
-                        JobServer.UNDETERMINED))
+
+                        name_description,
+                        command_info,
+                        date.today(), 
+                        JobServer.EXIT_UNDETERMINED))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -260,7 +291,20 @@ class JobServer ( object ):
       job_id = cursor.lastrowid
       cursor.close()
       connection.close()
-    
+
+    # create standard output files (not mandatory but useful for "tail -f" kind of function)
+    try:  
+      tmp = open(stdout_file, 'w')
+      tmp.close()
+    except IOError, e:
+      raise JobServerError("Could not create the standard output file %s: %s \n"  %(type(e), e))
+    if stderr_file:
+      try:
+        tmp = open(stderr_file, 'w')
+        tmp.close()
+      except IOError, e:
+        raise JobServerError("Could not create the standard error file %s: %s \n"  %(type(e), e))
+
     return job_id
    
 
@@ -284,6 +328,52 @@ class JobServer ( object ):
         cursor.close()
         connection.close()
         raise JobServerError('Error setJobStatus %s: %s \n' %(type(e), e)) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+
+
+  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, ressource_usage_file):
+    '''
+    Record the job exit status in the database.
+    The status must be valid (ie a string among the exit job status 
+    string defined in L{JobServer}.
+
+    @type  job_id: C{JobIdentifier}
+    @param job_id: job identifier
+    @type  exit_status: string 
+    @param exit_status: exit status string as defined in L{JobServer}
+    @type  exit_value: int or None
+    @param exit_value: if the status is FINISHED_REGULARLY, it contains the operating 
+    system exit code of the job.
+    @type  terminating_signal: string or None
+    @param terminating_signal: if the status is FINISHED_TERM_SIG, it contain a representation 
+    of the signal that caused the termination of the job.
+    @type  ressource_usage: string 
+    @param ressource_usage: path to a file containing the ressource usage information of
+    the job.
+    '''
+    with self.__lock:
+      # TBI if the status is not valid raise an exception ??
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        cursor.execute('''UPDATE jobs SET exit_status=?, 
+                                        exit_value=?,    
+                                        terminating_signal=?, 
+                                        ressource_usage_file=? 
+                                        WHERE id=?''', 
+                        (exit_status, 
+                         exit_value,
+                         terminating_signal,
+                         ressource_usage_file,
+                         job_id)
+                      )
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error setJobExitInfo %s: %s \n' %(type(e), e)) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -525,7 +615,7 @@ class JobServer ( object ):
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        result = cursor.execute('SELECT getStdOutErrFilePath stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
+        result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
         connection.close()
@@ -577,23 +667,32 @@ class JobServer ( object ):
     return status
   
 
-  def getReturnedValue(self, job_id):
+  def getExitInformation(self, job_id):
     '''
-    Returns the job returned value sored in the database (by L{DrmaaJobScheduler}).
+    Returns the job exit information sored in the database (by L{DrmaaJobScheduler}).
     The job_id must be valid.
     '''
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        retured_value = cursor.execute('SELECT returned_value FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+        exit_st, exit_v, term_sig, rusage = cursor.execute('''SELECT  
+                                              exit_status, 
+                                              exit_value,    
+                                              terminating_signal, 
+                                              ressource_usage_file 
+                                    FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getReturnedValue %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getExitInformation %s: %s \n' %(type(e), e)) 
       cursor.close()
       connection.close()
-    return status
+      
+    exit_st = exit_st.encode('utf-8')
+    if term_sig: term_sig = term_sig.encode('utf-8') 
+    if rusage: rusage = rusage.encode('utf-8')
+    return (exit_st, exit_v, term_sig, rusage)
 
 
   #TRANSFERS

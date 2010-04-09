@@ -40,8 +40,10 @@ public :
 
 //public :
 
+
+
    typedef enum {
-        UNDETERMINED_JOB,           // The job doesn't exist
+        EXIT_UNDETERMINED,          // The exit job status cannot be determined
         EXIT_ABORTED,               // The job never ran
         FINISHED_REGULARLY,         // The job finished regularly
         FINISHED_TERM_SIG,          // The job finished due to a signal
@@ -69,6 +71,14 @@ public :
         RELEASE,    // release the hold on the job
         TERMINATE   // kill the job
     } Action;
+
+
+    struct ExitJobInfo {
+        std::list<std::string> ressourceUsage;
+        ExitJobStatus status;
+        int           exitValue;
+        std::string   termSignal;
+    };
 
     static const int undefinedId = -1;
 
@@ -136,38 +146,46 @@ public :
     // RUNNING JOBS
 
     // Run a job which information are given by a job template
+    // !!! The wait function has to be called for every job to get back 
+    // the exit status and clean after the job. Otherwise it will creates
+    // memory leaks. !!!
     // in: job template id
-    // out: runningJobId
+    // out: submittedJobId
     const std::string runJob(int jobTemplateId);
 
     // Run several identical jobs which information are given by a job template (usefull for test purpose)
     // in: job template id
     // in: nbJobs: number of jobs to run
-    // out: runningJobIds_out: list of running job ids
-    void runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & runningJobIds_out) ;
+    // out: submittedJobIds_out: list of running job ids
+    void runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & submittedJobIds_out) ;
 
-    // Wait for a job to finish execution or fail and display its status
+    // Wait for a job to finish execution or fail and returns its exit information
+    // or return after timeout second. 
+    // !!! It's the only way to get back the ExitJobInfo and clean 
+    // after the job !!!
     // in: running job id
-    void wait(const std::string & runningJobId);
+    // in: the call exits before timout seconds. a negative value means 
+    // to wait indefinetely for the result. 0 means to return immediately
+    ExitJobInfo wait(const std::string & submittedJobId, int timeout = -1);
 
-    // Wait for any job to finish execution or fail and display its status
-    // out: id of ended job
-    //int waitForAnyJob();
-
-    // Wait until all jobs sepcified by the runningJobIds have finished execution and display their status.
-    void synchronize(const std::list<std::string> & runningJobIds);
+    // Wait until all jobs sepcified by the submittedJobIds have finished 
+    // execution or after timeout seconds.
+    // !!! It doesn't return the exist status nor clean after the job 
+    // use the wait function for each job.!!!
+    // in: ids of job to wait for
+    // in: the call exits before timout seconds. a negative value means 
+    // to wait indefinetely for the result. 0 means to return immediately
+    void synchronize(const std::list<std::string> & submittedJobIds, int timeout = -1);
 
 
     // Control a submitted job
-    void control(const std::string & runningJobId, Action action);
+    void control(const std::string & submittedJobId, Action action);
 
     ////////////////////////////////////
     // RUNNING JOBS IMFORMATION
 
     // Gets the status given a given job id
-    JobStatus jobStatus(const std::string & runningJobId);
-    void jobStatus(const std::list<std::string> & runningJobIds, std::list<JobStatus> & statusList_out);
-
+    JobStatus jobStatus(const std::string & submittedJobId);
 
 
 protected :
@@ -176,8 +194,6 @@ protected :
     int getNextId();
 
     bool isJobTemplateIdValid(int jobTemplateId);
-
-    ExitJobStatus getJobStatus(int drmaa_exitStatus);
 
     std::string m_information;
 

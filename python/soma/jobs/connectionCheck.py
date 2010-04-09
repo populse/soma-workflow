@@ -42,6 +42,7 @@ class ConnectionChecker(object):
 
   def isConnected(self):
     return self.connected
+  
 
 
 class ConnectionHolder(threading.Thread):

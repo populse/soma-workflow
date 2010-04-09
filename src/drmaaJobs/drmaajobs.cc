@@ -264,8 +264,8 @@ void DrmaaJobs::setCommand(int jobTemplateId, const char * remote_command, int n
 
 const std::string DrmaaJobs::runJob(int jobTemplateId) {
 
-    std::string runningJobId = "";
-    if(!isJobTemplateIdValid(jobTemplateId)) return runningJobId;
+    std::string submittedJobId = "";
+    if(!isJobTemplateIdValid(jobTemplateId)) return submittedJobId;
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
@@ -280,15 +280,15 @@ const std::string DrmaaJobs::runJob(int jobTemplateId) {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not submit job: %s\n", error);
-        return runningJobId;
+        return submittedJobId;
     }
 
-    runningJobId = jobid;
+    submittedJobId = jobid;
     printf ("Your job has been submitted with id %s\n", jobid);
-    return runningJobId;
+    return submittedJobId;
 }
 
-void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & runningJobIds_out) {
+void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string> & submittedJobIds_out) {
     if(!isJobTemplateIdValid(jobTemplateId)) return;
 
     char error[DRMAA_ERROR_STRING_BUFFER];
@@ -311,69 +311,120 @@ void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string
         return;
     }
 
-    runningJobIds_out.clear();
+    submittedJobIds_out.clear();
     char jobid[DRMAA_JOBNAME_BUFFER];
     while (drmaa_get_next_job_id (ids, jobid, DRMAA_JOBNAME_BUFFER) == DRMAA_ERRNO_SUCCESS) {
-        runningJobIds_out.push_back(jobid);
+        submittedJobIds_out.push_back(jobid);
         printf ("A job has been submitted with id %s\n", jobid);
     }
     drmaa_release_job_ids (ids);
 }
 
-void DrmaaJobs::wait(const std::string & runningJobId) {
+DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int timeout) {
+
+    ExitJobInfo jobInfo;
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
-    const char* jobid = runningJobId.c_str();
+    const char* jobid = submittedJobId.c_str();
 
     char jobid_out[DRMAA_JOBNAME_BUFFER];
     int status = 0;
     drmaa_attr_values_t *rusage = NULL;
 
+    if ( timeout < 0 ) 
+      timeout = DRMAA_TIMEOUT_WAIT_FOREVER;
+    else if (timeout == 0 )
+      timeout = DRMAA_TIMEOUT_NO_WAIT;
+    
+
     errnum = drmaa_wait (jobid,
                           jobid_out,
                           DRMAA_JOBNAME_BUFFER,
                           &status,
-                          DRMAA_TIMEOUT_WAIT_FOREVER,
+                          timeout,
                           &rusage,
                           error,
                           DRMAA_ERROR_STRING_BUFFER);
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not wait for job: %s\n", error);
-        return;
+        jobInfo.status = EXIT_UNDETERMINED;
+        return jobInfo;
     }
 
-    printf("~~~ Job %s status: ~~~~~~~ \n", jobid);
-    ExitJobStatus exitStatus = getJobStatus(status);
 
+    ////////////////////////////////////////////////////////
+    printf("~~~ Job %s status: ~~~~~~~ \n", jobid);
+    
+    int aborted = 0;
+    drmaa_wifaborted(&aborted, status, NULL, 0);
+
+    if (aborted == 1) {
+        printf("Job never ran\n");
+        jobInfo.status = EXIT_ABORTED;
+    } else {
+      int exited = 0;
+      drmaa_wifexited(&exited, status, NULL, 0);
+      if (exited == 1) {
+        int exit_status = 0;
+        drmaa_wexitstatus(&exit_status, status, NULL, 0);
+        printf("Job finished regularly with exit status %d\n", exit_status);
+        jobInfo.status = FINISHED_REGULARLY;
+        jobInfo.exitValue = exit_status; 
+      } else {  
+        int signaled = 0;
+        drmaa_wifsignaled(&signaled, status, NULL, 0);
+        if (signaled == 1) {
+            char termsig[DRMAA_SIGNAL_BUFFER+1];
+            drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, status, NULL, 0);
+            printf("Job finished due to signal %s\n", termsig);
+            jobInfo.status = FINISHED_TERM_SIG;
+            jobInfo.termSignal = termsig;
+        } else {
+          printf("Job finished with unclear conditions\n");
+          jobInfo.status = FINISHED_UNCLEAR_CONDITIONS;
+        }
+      }
+    }
+
+    ////////////////////////////////////////////////////////////
     printf("~~~ Job %s Usage: ~~~~~~~~ \n", jobid);
     char usage[DRMAA_ERROR_STRING_BUFFER];
     while (drmaa_get_next_attr_value (rusage, usage, DRMAA_ERROR_STRING_BUFFER) == DRMAA_ERRNO_SUCCESS) {
         printf ("  %s\n", usage);
+        jobInfo.ressourceUsage.push_back(usage);
     }
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~ \n");
     drmaa_release_attr_values (rusage);
+
+    return jobInfo;
 }
 
 
-void DrmaaJobs::synchronize(const std::list<std::string> & runningJobIds) {
+void DrmaaJobs::synchronize(const std::list<std::string> & submittedJobIds, int timeout) {
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
     //const char *jobids[100];
-    const char ** jobids = new const char* [runningJobIds.size()+1];
+    const char ** jobids = new const char* [submittedJobIds.size()+1];
     int index=0;
-    for(std::list<std::string>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
+    for(std::list<std::string>::const_iterator i = submittedJobIds.begin();i!=submittedJobIds.end(); ++i) {
         jobids[index] = (*i).c_str();
         index++;
     }
-    jobids[runningJobIds.size()] = NULL;
+    jobids[submittedJobIds.size()] = NULL;
+    
+    if ( timeout < 0 ) 
+      timeout = DRMAA_TIMEOUT_WAIT_FOREVER;
+    else if (timeout == 0 )
+      timeout = DRMAA_TIMEOUT_NO_WAIT;
+    
 
     errnum = drmaa_synchronize (jobids,
-                                DRMAA_TIMEOUT_WAIT_FOREVER,
-                                0,//means that we keep the jobs information available and will display and delete it later (inside wait())
+                                timeout,
+                                0,//means that we keep the jobs information available and will get and delete it later (inside wait())
                                 error,
                                 DRMAA_ERROR_STRING_BUFFER);
 
@@ -382,15 +433,8 @@ void DrmaaJobs::synchronize(const std::list<std::string> & runningJobIds) {
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not wait for jobs: %s\n", error);
     }
-    else {
+    else 
         printf ("Job tasks have finished.\n");
-
-        // to get and diplay job status (and delete the job information)
-        for(std::list<std::string>::const_iterator i = runningJobIds.begin();i!=runningJobIds.end(); ++i) {
-            wait(*i);
-            //mRunningJobMap.erase[*i];
-        }
-    }
 
 }
 
@@ -399,7 +443,7 @@ void DrmaaJobs::synchronize(const std::list<std::string> & runningJobIds) {
 
 
 
-void DrmaaJobs::control(const std::string & runningJobId, Action action) {
+void DrmaaJobs::control(const std::string & submittedJobId, Action action) {
 
     int drmaa_action = -1;
     switch (action) {
@@ -423,7 +467,7 @@ void DrmaaJobs::control(const std::string & runningJobId, Action action) {
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
-    const char * jobId = runningJobId.c_str();
+    const char * jobId = submittedJobId.c_str();
     errnum = drmaa_control(jobId,
                            drmaa_action,
                            error,
@@ -446,59 +490,20 @@ bool DrmaaJobs::isJobTemplateIdValid(int jobTemplateId) {
 
 
 
-DrmaaJobs::ExitJobStatus DrmaaJobs::getJobStatus(int drmaa_exit_status) {
-
-    int aborted = 0;
-    drmaa_wifaborted(&aborted, drmaa_exit_status, NULL, 0);
-
-    if (aborted == 1) {
-        printf("Job never ran\n");
-        return EXIT_ABORTED;
-    }
-
-    int exited = 0;
-    drmaa_wifexited(&exited, drmaa_exit_status, NULL, 0);
-
-    if (exited == 1) {
-        int exit_status = 0;
-
-        drmaa_wexitstatus(&exit_status, drmaa_exit_status, NULL, 0);
-        printf("Job finished regularly with exit status %d\n", exit_status);
-        return FINISHED_REGULARLY;
-     }
-
-    int signaled = 0;
-    drmaa_wifsignaled(&signaled, drmaa_exit_status, NULL, 0);
-
-    if (signaled == 1) {
-        char termsig[DRMAA_SIGNAL_BUFFER+1];
-
-        drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, drmaa_exit_status, NULL, 0);
-        printf("Job finished due to signal %s\n", termsig);
-
-        return FINISHED_TERM_SIG;
-    }
-
-    printf("Job finished with unclear conditions\n");
-    return FINISHED_UNCLEAR_CONDITIONS;
-
-}
-
-
 int DrmaaJobs::getNextId() {
     return m_currentId++;
 }
 
 
-DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
+DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & submittedJobId) {
 
-    //printf("drmaa job id %s \n", runningJobId.c_str());
+    //printf("drmaa job id %s \n", submittedJobId.c_str());
 
     char error[DRMAA_ERROR_STRING_BUFFER];
     int errnum = 0;
 
     int status = 0;
-    const char* jobid = runningJobId.c_str();
+    const char* jobid = submittedJobId.c_str();
     errnum = drmaa_job_ps(jobid,
                           &status,
                           error,
@@ -509,7 +514,7 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
         return UNDETERMINED;
     }
 
-    //printf("job %s ", runningJobId.c_str());
+    //printf("job %s ", submittedJobId.c_str());
 
     switch (status) {
     case DRMAA_PS_UNDETERMINED:
@@ -549,12 +554,5 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & runningJobId) {
 
 }
 
-
-void DrmaaJobs::jobStatus(const std::list<std::string> & runningJobIds, std::list<JobStatus> & statusList_out) {
-    statusList_out.clear();
-    for(std::list<std::string>::const_iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
-        statusList_out.push_back(jobStatus(*i));
-    }
-}
 
 

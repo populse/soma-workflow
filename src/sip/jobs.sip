@@ -45,44 +45,103 @@ public:
 
     SIP_PYOBJECT runJob(int jobTemplateId);
 %MethodCode
-    std::string runningJobId;
+    std::string submittedJobId;
     Py_BEGIN_ALLOW_THREADS
-    runningJobId= sipCpp->runJob(a0);
+    submittedJobId= sipCpp->runJob(a0);
     Py_END_ALLOW_THREADS
-    PyObject * result = PyString_FromStringAndSize(runningJobId.c_str(), runningJobId.size());
+    PyObject * result = PyString_FromStringAndSize(submittedJobId.c_str(), submittedJobId.size());
     return result;
 %End
 
     SIP_PYLIST runBulkJobs(int, int);
 %MethodCode
-    std::list<std::string> runningJobIds;
+    std::list<std::string> submittedJobIds;
     Py_BEGIN_ALLOW_THREADS
-    sipCpp->runBulkJobs(a0, a1, runningJobIds);
+    sipCpp->runBulkJobs(a0, a1, submittedJobIds);
     Py_END_ALLOW_THREADS
     PyObject* result = PyList_New(0);
-    for(std::list<std::string>::iterator i = runningJobIds.begin(); i != runningJobIds.end(); ++i) {
+    for(std::list<std::string>::iterator i = submittedJobIds.begin(); i != submittedJobIds.end(); ++i) {
         PyList_Append(result, Py_BuildValue("i",PyString_FromString(i->c_str())));
     }
     return result;
 %End
 
-    void wait(SIP_PYOBJECT);
+    // wait method
+    // @type  a0: string
+    // @param a0: job id
+    // @type  a1: int
+    // @param a1: timeout in second (-1 means to wait indefinitely and 0 
+    // to return immediately) 
+    // @rtype: tuple (string, int, string, list of string)
+    // @return: (exitStatus, exitValue, termSignal, ressourceUsage)
+    SIP_PYOBJECT wait(SIP_PYOBJECT, int=-1);
 %MethodCode
-    std::string runningJobId(PyString_AsString(a0));
+    std::string submittedJobId(PyString_AsString(a0));
+    DrmaaJobs::ExitJobInfo jobInfo;
     Py_BEGIN_ALLOW_THREADS
-    sipCpp->wait(runningJobId);
+    jobInfo = sipCpp->wait(submittedJobId, a1);
     Py_END_ALLOW_THREADS
+
+    PyObject * status; 
+    PyObject* exitValue;
+    PyObject* termSig;
+    switch (jobInfo.status) {
+        case DrmaaJobs::EXIT_UNDETERMINED:
+            status=PyString_FromString("exit_status_undetermined");
+            exitValue=Py_None;
+            termSig= Py_None;
+            break;
+        case DrmaaJobs::EXIT_ABORTED:
+            status=PyString_FromString("aborted");
+            exitValue=Py_None;
+            termSig= Py_None;
+            break;
+        case DrmaaJobs::FINISHED_REGULARLY:
+            status=PyString_FromString("finished_regularly");
+            exitValue=PyInt_FromSsize_t(jobInfo.exitValue);
+            termSig= Py_None;
+            break;
+        case DrmaaJobs::FINISHED_TERM_SIG:
+            status=PyString_FromString("finished_signal");
+            exitValue=Py_None;
+            termSig= PyString_FromString(jobInfo.termSignal.c_str());
+            break;
+        default:
+            status=PyString_FromString("finished_unclear_condition");
+            exitValue=Py_None;
+            termSig= Py_None;
+            break;
+    }
+    
+    PyObject* ressourceUsage = PyList_New(0);
+    for(std::list<std::string>::iterator i = jobInfo.ressourceUsage.begin(); i != jobInfo.ressourceUsage.end(); ++i) {
+        PyList_Append(ressourceUsage, PyString_FromString(i->c_str()));
+    }
+
+    PyObject* result = PyTuple_New(4);
+    PyTuple_SET_ITEM(result, 0, status);
+    PyTuple_SET_ITEM(result, 1, exitValue);
+    PyTuple_SET_ITEM(result, 2, termSig);
+    PyTuple_SET_ITEM(result, 3, ressourceUsage);
+    
+    return result;
+    
 %End
 
-
-    void synchronize(SIP_PYLIST);
+    // synchronize method
+    // @type  a0: sequence of strings
+    // @param a0: job id to wait for
+    // @type  a1: int
+    // @param a1: timeout in second (-1 means to wait indefinitely and 0 
+    // to return immediately) 
+    void synchronize(SIP_PYLIST, int=-1);
 %MethodCode
-    std::list<std::string> runningJobIds;
+    std::list<std::string> submittedJobIds;
     for(int i = 0; i < PyList_Size(a0); i++) {
-        runningJobIds.push_back(PyString_AsString(PyList_GET_ITEM(a0,i)));
+        submittedJobIds.push_back(PyString_AsString(PyList_GET_ITEM(a0,i)));
     }
     Py_BEGIN_ALLOW_THREADS
-    sipCpp->synchronize(runningJobIds);
+    sipCpp->synchronize(submittedJobIds, a1);
     Py_END_ALLOW_THREADS
 %End
 
@@ -90,10 +149,10 @@ public:
 
    SIP_PYOBJECT jobStatus(SIP_PYOBJECT);
 %MethodCode
-   std::string runningJobId(PyString_AsString(a0));
+   std::string submittedJobId(PyString_AsString(a0));
    DrmaaJobs::JobStatus status;
    Py_BEGIN_ALLOW_THREADS
-   status = sipCpp->jobStatus(runningJobId);
+   status = sipCpp->jobStatus(submittedJobId);
    Py_END_ALLOW_THREADS
    switch (status) {
         case DrmaaJobs::UNDETERMINED:
@@ -124,41 +183,41 @@ public:
 
     void suspend(SIP_PYOBJECT);
 %MethodCode
-     std::string runningJobId(PyString_AsString(a0));
+     std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(runningJobId, DrmaaJobs::SUSPEND);
+     sipCpp->control(submittedJobId, DrmaaJobs::SUSPEND);
      Py_END_ALLOW_THREADS
 %End
 
     void resume(SIP_PYOBJECT);
 %MethodCode
-     std::string runningJobId(PyString_AsString(a0));
+     std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(runningJobId, DrmaaJobs::RESUME);
+     sipCpp->control(submittedJobId, DrmaaJobs::RESUME);
      Py_END_ALLOW_THREADS
 %End
 
     void hold(SIP_PYOBJECT);
 %MethodCode
-     std::string runningJobId(PyString_AsString(a0));
+     std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(runningJobId, DrmaaJobs::HOLD);
+     sipCpp->control(submittedJobId, DrmaaJobs::HOLD);
      Py_END_ALLOW_THREADS
 %End
 
     void release(SIP_PYOBJECT);
 %MethodCode
-     std::string runningJobId(PyString_AsString(a0));
+     std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(runningJobId, DrmaaJobs::RELEASE);
+     sipCpp->control(submittedJobId, DrmaaJobs::RELEASE);
      Py_END_ALLOW_THREADS
 %End
 
     void terminate(SIP_PYOBJECT);
 %MethodCode
-     std::string runningJobId(PyString_AsString(a0));
+     std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(runningJobId, DrmaaJobs::TERMINATE);
+     sipCpp->control(submittedJobId, DrmaaJobs::TERMINATE);
      Py_END_ALLOW_THREADS
 %End
 

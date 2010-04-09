@@ -80,6 +80,8 @@ class JobScheduler( object ):
    
     self.__fileToRead = None
     self.__fileToWrite = None
+    self.__stdoutFileToRead = None
+    self.__stderrFileToRead = None
     
     
 
@@ -174,7 +176,7 @@ class JobScheduler( object ):
 
   def writeLine(self, line, local_file_path):
     '''
-    Write a line to the local file. The path of the local input file
+    Writes a line to the local file. The path of the local input file
     must have been generated using the L{registerTransfer} method.
     
     @type  line: string
@@ -232,15 +234,14 @@ class JobScheduler( object ):
   
   def readline(self, local_file_path):
     '''
-    Read a line from the local file. The path of the local input file
+    Reads a line from the local file. The path of the local input file
     must have been generated using the L{registerTransfer} method.
     
-    @type  line: string
-    @param line: line to write in the local input file
     @type: string
     @param: local file path to fill up
+    @rtype: string
+    return: read line
     '''
-    # TBI if not a transfer raise exception.
     
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
       raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
@@ -297,7 +298,8 @@ class JobScheduler( object ):
                     stdout_path,
                     stderr_path=None,
                     stdin=None,
-                    disposal_timeout=168):
+                    disposal_timeout=168,
+                    name_description=None):
     '''
     Customized submission. All the files involved belong to the user and must 
     be specified. They are never disposed automatically and are not deleted when 
@@ -322,6 +324,8 @@ class JobScheduler( object ):
       forgotten by the submitter. Passed that delay, the job is destroyed and its
       resources released as if the submitter had called L{kill} and L{dispose}.
       Default delay is 168 hours (7 days).
+    @type  name_description: string
+    @param name_description: optional job name or description for user usage only
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
     '''
@@ -335,7 +339,8 @@ class JobScheduler( object ):
                                         stdout_path,
                                         stderr_path,
                                         stdin,
-                                        disposal_timeout)
+                                        disposal_timeout,
+                                        name_description)
 
     return job_id
    
@@ -346,7 +351,8 @@ class JobScheduler( object ):
               working_directory=None,
               join_stderrout=False,
               stdin=None,
-              disposal_timeout=168):
+              disposal_timeout=168,
+              name_description=None):
     '''
     Regular submission. If stdout and stderr are set to C{True}, the standard output 
     and error files are created on a directory shared by the machine of the pool. 
@@ -372,6 +378,8 @@ class JobScheduler( object ):
       resources released (including standard output and error files) as if the 
       user had called L{kill} and L{dispose}.
       Default delay is 168 hours (7 days).
+    @type  name_description: string
+    @param name_description: optional job name or description for user usage only
     @rtype:   C{JobIdentifier} 
     @return:  the identifier of the submitted job
     '''
@@ -385,7 +393,8 @@ class JobScheduler( object ):
                                   working_directory,
                                   join_stderrout,
                                   stdin,
-                                  disposal_timeout)
+                                  disposal_timeout,
+                                  name_description)
                           
     return job_id 
 
@@ -397,7 +406,8 @@ class JobScheduler( object ):
                           required_local_output_file,
                           join_stderrout=False,
                           stdin=None,
-                          disposal_timeout=168):
+                          disposal_timeout=168,
+                          name_description=None):
     '''
     Submission with file transfer (well suited for remote submission). Submission 
     of a job for which all input files (stdin and input files) were already copied 
@@ -427,6 +437,8 @@ class JobScheduler( object ):
       The local files associated with the job won't be deleted unless their own 
       disposal timeout is past and no other existing job has declared to use them 
       as input or output.
+    @type  name_description: string
+    @param name_description: optional job name or description for user usage only
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
     ''' 
@@ -440,7 +452,8 @@ class JobScheduler( object ):
                                                 required_local_output_file,
                                                 join_stderrout,
                                                 stdin,
-                                                disposal_timeout)
+                                                disposal_timeout,
+                                                name_description)
     
     return job_id
 
@@ -514,27 +527,7 @@ class JobScheduler( object ):
       return
       
     return self.__jobServer.getTransferInformation(local_file_path)
-    
-    
-  #def getTransfers( self ):
-    #'''
-    #Returns the information related to the user's file transfers created via the 
-    #L{registerTransfer} method
-
-    #@rtype: sequence of tuple (local_file_path, remote_file_path, expiration_date)
-    #@return: For each transfer
-        #-local_file_path: path of the file on the directory shared by the machines
-        #of the pool
-	#-remote_file_path: path of the file on the remote machine 
-	#-expiration_date: after this date the local file will be deleted, unless an
-	#existing job has declared this file as output or input.
-    #'''
-    
-    #result = []
-    #for transfer in self.__jobServer.getTransfers(self.__user_id):
-      #result.append(self.__jobServer.getTransferInformation(transfer))
-    #return result
-
+   
   
   ########### DRMS MONITORING ################################################
 
@@ -557,30 +550,85 @@ class JobScheduler( object ):
     return self.__jobServer.getJobStatus(job_id)
         
 
-  def returnValue( self, job_id ):
+  def exitInformation( self, job_id ):
     '''
-    Gives the value returned by the job if it has finished normally. In case
+    Gives the information related to the end of the job.
+    It returns a tuple with the exit status, exit value and terminating signal.
+    The exit value is set if the job has finished normally. In case
     of a job running a C program, this value is typically the one given to the
     C{exit()} system call.
+    if the job terminated due to the receipt of a signal, the terminating signal
+    contains a representation of the signal that caused the termination of the job.
+
+    @type  job_id: C{JobIdentifier}
+    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @rtype:  tuple or
+    @return: (exit_status, exit_value, term_signal) it may be C{None} if the job is not valid. 
+    '''
+  
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Could get the retured value of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return
+  
+    exit_status, exit_value, terminating_signal, ressource_usage_file = self.__jobServer.getExitInformation(job_id)
+    
+    return (exit_status, exit_value, terminating_signal)
+    
+ 
+  
+
+
+
+  def stdoutReadLine(self, job_id):
+    '''
+    Reads a line from the file where the job standard output stream is written.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype:  int or None
-    @return: job exit value, it may be C{None} if the job is not valid or its status
-    is not DONE. 
+    @rtype: string
+    return: read line
     '''
-  
-    if not self.__jobserver.isUserJob(job_id, self.__user_id):
-      print "Could get the retured value of job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return
-      
-    if not self.__jobServer.getJobStatus(job_id) == JobServer.DONE:
-      print "Could get the retured value of job %d. Its status is not %s.\n" %(job_id, JobServer.DONE)
-      return
-  
-    return self.__jobServer.getReturnedValue(job_id)
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return   
+
+    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
     
-   
+    if not self.__stdoutFileToRead or not self.__stdoutFileToRead.name == stdout_path:
+      self.__stdoutFileToRead = open(stdout_path, 'rt')
+      
+    return self.__stdoutFileToRead.readline()
+
+  
+
+
+  def stderrReadLine(self, job_id):
+    '''
+    Reads a line from the file where the job standard error stream is written.
+    
+    @type  job_id: C{JobIdentifier}
+    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @rtype: string
+    return: read line
+    '''
+    if self.__jobserver.isUserJob(job_id, self.__user_id):
+      self.__stderrFileToRead = None
+      print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return   
+
+    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
+    
+    if not stderr_path:
+      self.__stderrFileToRead = None
+      return 
+
+    if not self.__stderrFileToRead or not self.__stderrFileToRead.name == stderr_path:
+      self.__stderrFileToRead = open(stderr_path, 'rt')
+      
+    return self.__stderrFileToRead.readline()
+
+
+
 
   def output( self, job_id ):
     '''
@@ -625,18 +673,23 @@ class JobScheduler( object ):
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_id ):
+  def wait( self, job_ids, timeout = -1):
     '''
     Waits for all the specified jobs to finish execution or fail. 
     The job_id must be valid.
     
-    @type job_ids: set of C{JobIdentifier}
+    @type  job_ids: set of C{JobIdentifier}
     @param job_ids: Set of jobs to wait for
+    @type  timeout: int
+    @param timeout: the call exits before timout seconds. a negative value 
+    means to wait indefinetely for the result. 0 means to return immediately
+
     '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %job_id )
-    
-    self.__drmaaJS.wait(job_id)
+    for jid in job_ids:
+      if not self.__jobServer.isUserJob(jid, self.__user_id):
+        raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid )
+      
+    self.__drmaaJS.wait(job_ids, timeout)
 
   def stop( self, job_id ):
     '''
