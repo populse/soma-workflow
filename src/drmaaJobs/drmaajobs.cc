@@ -394,7 +394,7 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
     char usage[DRMAA_ERROR_STRING_BUFFER];
     while (drmaa_get_next_attr_value (rusage, usage, DRMAA_ERROR_STRING_BUFFER) == DRMAA_ERRNO_SUCCESS) {
         printf ("  %s\n", usage);
-        jobInfo.ressourceUsage.push_back(usage);
+        jobInfo.resourceUsage.push_back(usage);
     }
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~ \n");
     drmaa_release_attr_values (rusage);

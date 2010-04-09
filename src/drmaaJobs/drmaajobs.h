@@ -74,7 +74,7 @@ public :
 
 
     struct ExitJobInfo {
-        std::list<std::string> ressourceUsage;
+        std::list<std::string> resourceUsage;
         ExitJobStatus status;
         int           exitValue;
         std::string   termSignal;

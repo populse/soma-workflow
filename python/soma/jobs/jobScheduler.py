@@ -570,7 +570,7 @@ class JobScheduler( object ):
       print "Could get the retured value of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
   
-    exit_status, exit_value, terminating_signal, ressource_usage_file = self.__jobServer.getExitInformation(job_id)
+    exit_status, exit_value, terminating_signal, resource_usage_file = self.__jobServer.getExitInformation(job_id)
     
     return (exit_status, exit_value, terminating_signal)
     
@@ -611,9 +611,8 @@ class JobScheduler( object ):
     @rtype: string
     return: read line
     '''
-    if self.__jobserver.isUserJob(job_id, self.__user_id):
-      self.__stderrFileToRead = None
-      print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Could get not read std error for the job %d. It doesn't exist or is owned by a different user \n" %job_id
       return   
 
     stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
@@ -627,48 +626,6 @@ class JobScheduler( object ):
       
     return self.__stderrFileToRead.readline()
 
-
-
-
-  def output( self, job_id ):
-    '''
-    Opens a file containing what had been written on the job standard 
-    output stream. It may return C{None} if the process is not terminated
-    or if recording of standard output had not been requested by the 
-    submission methods (L{customSubmit}, L{submit} or L{submitWithTransfer}).
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype:  file object or None
-    @return: file object containing the job's output.
-    '''
-
-    # doesn't work in the remote case !!! TBI properly !!!
-    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
-    outputFile = open(stdout_path)
-    return outputFile
-
-  def errorOutput( self, job_id ):
-    '''
-    Opens a file containing what had been written on the job error 
-    output stream. It may return C{None} if the process is not terminated,
-    if recording of standard output had not been requested by L{submit} or
-    L{submitWithTransfer}, or if the user has specified his own standard 
-    output files using L{customSubmit}.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype:  file object or None
-    @return: file object containing the job's error output.
-    '''
-
-    # doesn't work in the remote case !!! TBI properly !!!
-    if self.__jobServer.areErrOutJoined(job_id):
-      return None
-    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
-    errorFile = open(stderr_path)
-    return errorFile
-    
     
   ########## JOB CONTROL VIA DRMS ########################################
   

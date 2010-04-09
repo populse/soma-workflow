@@ -174,7 +174,7 @@ file4 = outpath + "file4"
 
 #python = "/i2bm/research/Mandriva-2008.0-i686/bin/python" #condor
 python = "python" #SGE
-tr_time_out = 1
+tr_time_out = -24
 jobs_time_out = 1
 
 def submitWTjob1():

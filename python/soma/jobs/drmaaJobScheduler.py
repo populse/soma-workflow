@@ -169,6 +169,7 @@ class DrmaaJobScheduler( object ):
 
     with self.__lock:
       job_id = self.__jobServer.addJob(self.__user_id, 
+                                    True, #the std out and err file won't be removed with the job
                                     expiration_date, 
                                     stdout_path,
                                     stderr_path,
@@ -200,8 +201,6 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
       stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-      self.__jobServer.addTransfer(stdout_file, None, expiration_date, self.__user_id)
-      self.__jobServer.addTransfer(stderr_file, None, expiration_date, self.__user_id)
     
     drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
     self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
@@ -232,6 +231,7 @@ class DrmaaJobScheduler( object ):
 
     with self.__lock:
       job_id = self.__jobServer.addJob(self.__user_id, 
+                                   False, #the std out and err file will be removed with the job
                                    expiration_date, 
                                    stdout_file,
                                    stderr_file,
@@ -241,7 +241,6 @@ class DrmaaJobScheduler( object ):
                                    drmaaSubmittedJobId,
                                    working_directory,
                                    command_info)
-      self.__jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
       self.__jobs.add(job_id)
     
     
@@ -266,8 +265,6 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
       stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-      self.__jobServer.addTransfer(stdout_file, None, expiration_date, self.__user_id)
-      self.__jobServer.addTransfer(stderr_file, None, expiration_date, self.__user_id)
     
     drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
     self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
@@ -292,6 +289,7 @@ class DrmaaJobScheduler( object ):
     
     with self.__lock:
       job_id = self.__jobServer.addJob(self.__user_id, 
+                                    False, #the std out and err file will be removed with the job
                                     expiration_date, 
                                     stdout_file,
                                     stderr_file,
@@ -302,7 +300,6 @@ class DrmaaJobScheduler( object ):
                                     None,
                                     command_info)
                                     
-      self.__jobServer.registerOutputs(job_id, [stdout_file, stderr_file])
       self.__jobServer.registerInputs(job_id, required_local_input_files)
       self.__jobServer.registerOutputs(job_id, required_local_output_file)
 
@@ -355,8 +352,8 @@ class DrmaaJobScheduler( object ):
     '''
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    exit_status, exit_value, term_sig, ressource_usage = self.__drmaa.wait(drmaaJobId, 0)
-    # TBI: store the ressource_usage in a file
+    exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
+    # TBI: store the resource_usage in a file
     with self.__lock:
       self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, None)
       self.__jobs.discard(job_id)

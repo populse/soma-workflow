@@ -37,23 +37,23 @@ time.sleep(2)
 
 #printJobStatus()
 
-exitStatus, returned_value, term_sig, ressource_usage = drmaajobs.wait(jobIds[0], 0)
+exitStatus, returned_value, term_sig, resource_usage = drmaajobs.wait(jobIds[0], 0)
 
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "exitStatus = " + exitStatus
 print "returnedValue = " + repr(returned_value)
 print "term_sig = " + repr(term_sig)
-print "ressource_usage " + repr(ressource_usage)
+print "resource_usage " + repr(resource_usage)
 
 printJobStatus()
 
-exitStatus, returned_value, term_sig, ressource_usage = drmaajobs.wait(jobIds[0])
+exitStatus, returned_value, term_sig, resource_usage = drmaajobs.wait(jobIds[0])
 
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "exitStatus = " + exitStatus
 print "returnedValue = " + repr(returned_value)
 print "term_sig = " + repr(term_sig)
-print "ressource_usage " + repr(ressource_usage)
+print "resource_usage " + repr(resource_usage)
 
 #drmaajobs.synchronize(jobIds)
 

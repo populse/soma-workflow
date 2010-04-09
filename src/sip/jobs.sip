@@ -73,7 +73,7 @@ public:
     // @param a1: timeout in second (-1 means to wait indefinitely and 0 
     // to return immediately) 
     // @rtype: tuple (string, int, string, list of string)
-    // @return: (exitStatus, exitValue, termSignal, ressourceUsage)
+    // @return: (exitStatus, exitValue, termSignal, resourceUsage)
     SIP_PYOBJECT wait(SIP_PYOBJECT, int=-1);
 %MethodCode
     std::string submittedJobId(PyString_AsString(a0));
@@ -113,16 +113,16 @@ public:
             break;
     }
     
-    PyObject* ressourceUsage = PyList_New(0);
-    for(std::list<std::string>::iterator i = jobInfo.ressourceUsage.begin(); i != jobInfo.ressourceUsage.end(); ++i) {
-        PyList_Append(ressourceUsage, PyString_FromString(i->c_str()));
+    PyObject* resourceUsage = PyList_New(0);
+    for(std::list<std::string>::iterator i = jobInfo.resourceUsage.begin(); i != jobInfo.resourceUsage.end(); ++i) {
+        PyList_Append(resourceUsage, PyString_FromString(i->c_str()));
     }
 
     PyObject* result = PyTuple_New(4);
     PyTuple_SET_ITEM(result, 0, status);
     PyTuple_SET_ITEM(result, 1, exitValue);
     PyTuple_SET_ITEM(result, 2, termSig);
-    PyTuple_SET_ITEM(result, 3, ressourceUsage);
+    PyTuple_SET_ITEM(result, 3, resourceUsage);
     
     return result;
     

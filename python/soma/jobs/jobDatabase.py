@@ -35,7 +35,7 @@ Tables:
       exit_status
       exit_value    
       terminating_signal
-      ressource_usage_file
+      resource_usage_file
 
   
   Transfer
@@ -69,6 +69,7 @@ def create(database_file):
                                        stdout_file          VARCHAR(255),
                                        stderr_file          VARCHAR(255),
                                        working_directory    VARCHAR(255),
+                                       custom_submission    BOOLEAN NOT NULL,
                                        
                                        name_description     VARCHAR(255),
                                        command              VARCHAR(255),
@@ -76,7 +77,7 @@ def create(database_file):
                                        exit_status          VARCHAR(255),
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
-                                       ressource_usage_file VARCHAR(255)
+                                       resource_usage_file VARCHAR(255)
                                        )''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  VARCHAR(255) PRIMARY KEY NOT NULL, 

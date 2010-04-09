@@ -39,12 +39,12 @@ def printJobStatus():
     
     
 def printJobInfo(jobInfoTuple):
-  exitStatus, returned_value, term_sig, ressource_usage = jobInfoTuple
+  exitStatus, returned_value, term_sig, resource_usage = jobInfoTuple
   print "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   print "exitStatus = " + exitStatus
   print "returnedValue = " + repr(returned_value)
   print "term_sig = " + repr(term_sig)
-  print "ressource_usage " + repr(ressource_usage)
+  print "resource_usage " + repr(resources_usage)
 
 
 def waitThread():

@@ -211,6 +211,7 @@ class JobServer ( object ):
 
   def addJob(self, 
                user_id,
+               custom_submission,
                expiration_date,
                stdout_file,
                stderr_file,
@@ -225,6 +226,9 @@ class JobServer ( object ):
     
     @type user_id: C{UserIdentifier}
     @type expiration_date: date
+    @type custom_submission: Boolean
+    @type custom_submission: C{True} if it was a custom submission. If C{True} 
+    the standard output files won't be deleted with the job.
     @type  stdout_file: string
     @type  stderr_file: string
     @type  join_stderrout: bool
@@ -259,6 +263,7 @@ class JobServer ( object ):
                          stdout_file,
                          stderr_file,
                          working_directory,
+                         custom_submission,
                   
                          name_description,
                          command,
@@ -266,7 +271,7 @@ class JobServer ( object ):
                          exit_status)
                         VALUES (?, ?, ?, ?, ?,
                                 ?, ?, ?, ?, ?, 
-                                ?, ?, ?)''',
+                                ?, ?, ?, ?)''',
                         (user_id,
                         
                         drmaa_id,
@@ -277,6 +282,7 @@ class JobServer ( object ):
                         stdout_file,
                         stderr_file,
                         working_directory,
+                        custom_submission,
 
                         name_description,
                         command_info,
@@ -333,7 +339,7 @@ class JobServer ( object ):
       connection.close()
 
 
-  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, ressource_usage_file):
+  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, resource_usage_file):
     '''
     Record the job exit status in the database.
     The status must be valid (ie a string among the exit job status 
@@ -349,8 +355,8 @@ class JobServer ( object ):
     @type  terminating_signal: string or None
     @param terminating_signal: if the status is FINISHED_TERM_SIG, it contain a representation 
     of the signal that caused the termination of the job.
-    @type  ressource_usage: string 
-    @param ressource_usage: path to a file containing the ressource usage information of
+    @type  resource_usage: string 
+    @param resource_usage: path to a file containing the resource usage information of
     the job.
     '''
     with self.__lock:
@@ -361,12 +367,12 @@ class JobServer ( object ):
         cursor.execute('''UPDATE jobs SET exit_status=?, 
                                         exit_value=?,    
                                         terminating_signal=?, 
-                                        ressource_usage_file=? 
+                                        resource_usage_file=? 
                                         WHERE id=?''', 
                         (exit_status, 
                          exit_value,
                          terminating_signal,
-                         ressource_usage_file,
+                         resource_usage_file,
                          job_id)
                       )
       except Exception, e:
@@ -447,19 +453,6 @@ class JobServer ( object ):
     
       try:
         cursor.execute('UPDATE jobs SET expiration_date=? WHERE id=?', (yesterday, job_id))
-  
-        transfers = []
-        for row in cursor.execute('SELECT local_file_path FROM ios WHERE job_id=?', [job_id]):
-          transfers.append(row[0])
-          
-        transfersToDelete = []
-        for local_file_path in transfers:
-          remote_file_path = cursor.execute('SELECT remote_file_path FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0] #supposes that all local_file_path of ios correspond to a transfer
-          if remote_file_path == None :
-            transfersToDelete.append(local_file_path)
-            
-        for local_file_path in transfersToDelete :
-          cursor.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
           
       except Exception, e:
         connection.rollback()
@@ -481,32 +474,53 @@ class JobServer ( object ):
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
-      
+        
       try:
+        #########################################################################
+        # Jobs and associated files (std out, std err and ressouce usage file)
         jobsToDelete = []
         for row in cursor.execute('SELECT id FROM jobs WHERE expiration_date < ?', [date.today()]):
           jobsToDelete.append(row[0])
         
         for job_id in jobsToDelete:
           cursor.execute('DELETE FROM ios WHERE job_id=?', [job_id])
+          stdof, stdef, rusagef, custom = cursor.execute('''
+                                                          SELECT 
+                                                          stdout_file, 
+                                                          stderr_file, 
+                                                          resource_usage_file,
+                                                          custom_submission
+                                                          FROM jobs 
+                                                          WHERE id=?''', 
+                                                          [job_id]).next()
+          self.__removeFile(rusagef)
+          if not custom:
+            self.__removeFile(stdof)
+            self.__removeFile(stdef)
         
+        cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
         
+        #########################################################################
+        # Transfers 
+        
+        # get back the expired transfers
         expiredTransfers = []
         for row in cursor.execute('SELECT local_file_path FROM transfers WHERE expiration_date < ?', [date.today()]):
           expiredTransfers.append(row[0])
         
+        # check that they are not currently used (as an input of output of a job)
         transfersToDelete = []
         for local_file_path in expiredTransfers:
           count = cursor.execute('SELECT count(*) FROM ios WHERE local_file_path=?', [local_file_path]).next()[0]
           if count == 0 :
             transfersToDelete.append(local_file_path)
       
+        # delete transfers data and associated local file
         for local_file_path in transfersToDelete:
           cursor.execute('DELETE FROM transfers WHERE local_file_path=?', [local_file_path])
-          if os.path.isfile(local_file_path):
-            os.remove(local_file_path)
+          self.__removeFile(local_file_path)
         
-        cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
+        
         
       except Exception, e:
         connection.rollback()
@@ -518,7 +532,14 @@ class JobServer ( object ):
       connection.commit()
       connection.close()
      
-    
+     
+  def __removeFile(self, file_path):
+    if file_path and os.path.isfile(file_path):
+      try:
+        os.remove(file_path)
+      except OSError,e:
+        print "Could not remove file %s, error %s: %s \n" %(file_path, type(e), e) 
+  
   ################### DATABASE QUERYING ##############################
   
   
@@ -680,7 +701,7 @@ class JobServer ( object ):
                                               exit_status, 
                                               exit_value,    
                                               terminating_signal, 
-                                              ressource_usage_file 
+                                              resource_usage_file 
                                     FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
