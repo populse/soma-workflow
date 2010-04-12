@@ -690,7 +690,7 @@ class JobServer ( object ):
 
   def getExitInformation(self, job_id):
     '''
-    Returns the job exit information sored in the database (by L{DrmaaJobScheduler}).
+    Returns the job exit information stored in the database (by L{DrmaaJobScheduler}).
     The job_id must be valid.
     '''
     with self.__lock:
@@ -714,6 +714,37 @@ class JobServer ( object ):
     if term_sig: term_sig = term_sig.encode('utf-8') 
     if rusage: rusage = rusage.encode('utf-8')
     return (exit_st, exit_v, term_sig, rusage)
+
+
+  def getGeneralInformation(self, job_id):
+    '''
+    Returns the job general information stored in the database,
+    that is: name/description, command and submission date
+    The job_id must be valid.
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        desc, cmd, sub_date = cursor.execute('''SELECT  
+                                              name_description, 
+                                              command,    
+                                              submission_date
+                                    FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getGeneralInformation %s: %s \n' %(type(e), e)) 
+      cursor.close()
+      connection.close()
+      
+    if desc: desc = desc.encode('utf-8')
+    if cmd: cmd = cmd.encode('utf-8') 
+    if sub_date: sub_date = sub_date.encode('utf-8') 
+    return (desc, cmd, sub_date)
+
+
+
 
 
   #TRANSFERS

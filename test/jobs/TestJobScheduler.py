@@ -151,24 +151,18 @@ file4 = outpath + "file4"
                           #"/home/sl225510/", 
                           #"/home/sl225510/stdoutjob1", 
                           #None,
-                          #l_stdin1,
-                          #1)
+                          #stdin1,
+                          #1,
+                          #"job1 custom submission")
                           
-#path2 = "/home/sl225510/projets/jobExamples/simple/"
-#jobId = jsc.customSubmit( [path2+"sh_loop", "30"], 
-                          #"/home/sl225510/", 
-                          #"/home/sl225510/stdoutSh_loop", 
-                          #None,
-                          #None,
-                          #1)
-
 
 #REGULAR SUBMISSION###########################################
-#jobId = jsc.submit( [path2+"sh_loop", "30"], 
+#jobId = jsc.submit( ["python", script1, file0, file11, file12], 
                     #None, 
                     #False, 
-                    #None,
-                    #-24)
+                    #stdin1,
+                    #1,
+                    #"job1 regular submission")
 
 #SUBMISSION WITH TRANSFER#####################################
 
@@ -196,7 +190,7 @@ def submitWTjob1():
   job1id = jsc.submitWithTransfer( [python, l_script1, l_file0, l_file11, l_file12, "30"], 
                                    [l_file0, l_script1, l_stdin1], 
                                    [l_file11, l_file12], 
-                                   True, l_stdin1, jobs_time_out) 
+                                   True, l_stdin1, jobs_time_out, "job1") 
 
   return job1id
 
@@ -222,7 +216,7 @@ def submitWTjob2():
   job2id = jsc.submitWithTransfer( [python, l_script2, l_file11, l_file0, l_file2, "2"], 
                                    [l_file0, l_file11, l_script2, l_stdin2], 
                                    [l_file2], 
-                                   True, l_stdin2, jobs_time_out) 
+                                   True, l_stdin2, jobs_time_out, "job2") 
 
   return job2id
 
@@ -239,7 +233,7 @@ def submitWTjob3( ):
   job3id = jsc.submitWithTransfer( [python, l_script3, l_file12, l_file3, "2"], 
                                    [l_file12, l_script3, l_stdin3], 
                                    [l_file3], 
-                                   True, l_stdin3, jobs_time_out) 
+                                   True, l_stdin3, jobs_time_out, "job3") 
 
   return job3id
 
@@ -265,7 +259,7 @@ def submitWTjob4( ):
   job4id = jsc.submitWithTransfer( [python, l_script4, l_file2, l_file3, l_file4], 
                                    [l_file2, l_file3, l_script4, l_stdin4], 
                                    [l_file4], 
-                                   True, l_stdin4, jobs_time_out) 
+                                   True, l_stdin4, jobs_time_out, "job4") 
   
   return job4id
 
@@ -276,14 +270,18 @@ def wait(jobid):
       print "job " + repr(jobid) + " : " + status 
       time.sleep(1)
       status = jsc.status(jobid)
+      
+
 
 ############################################
 
-#startTime = datetime.now()
+startTime = datetime.now()
 
-#job1id = submitWTjob1()
+job1id = submitWTjob1()
 #jsc.wait(job1id)
 #wait(job1id)
+
+
 
 #job2id = submitWTjob2()
 #job3id = submitWTjob3()

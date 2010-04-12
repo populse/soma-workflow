@@ -192,6 +192,7 @@ class JobScheduler( object ):
       self.__fileToWrite = open(local_file_path, 'wt')
    
     self.__fileToWrite.write(line)
+    self.__fileToWrite.flush()
    
   '''
   Transfer of output files
@@ -249,7 +250,7 @@ class JobScheduler( object ):
     
     if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
       self.__fileToRead = open(local_file_path, 'rt')
-      
+    
     return self.__fileToRead.readline()
 
   
@@ -334,7 +335,7 @@ class JobScheduler( object ):
       raise JobSchedulerError("Submission error: the command must contain at least one element \n")
     
     # check working_directory and stdin ? what about stdout_path stderr_path ?
-    job_id = self._drmaaJS.customSubmit(command,
+    job_id = self.__drmaaJS.customSubmit(command,
                                         working_directory, 
                                         stdout_path,
                                         stderr_path,
@@ -389,7 +390,7 @@ class JobScheduler( object ):
     
      # check working_directory and stdin ?
     
-    job_id = self._drmaaJS.submit(command,
+    job_id = self.__drmaaJS.submit(command,
                                   working_directory,
                                   join_stderrout,
                                   stdin,
@@ -550,7 +551,7 @@ class JobScheduler( object ):
     return self.__jobServer.getJobStatus(job_id)
         
 
-  def exitInformation( self, job_id ):
+  def exitInformation(self, job_id ):
     '''
     Gives the information related to the end of the job.
     It returns a tuple with the exit status, exit value and terminating signal.
@@ -562,12 +563,12 @@ class JobScheduler( object ):
 
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype:  tuple or
+    @rtype:  tuple or None
     @return: (exit_status, exit_value, term_signal) it may be C{None} if the job is not valid. 
     '''
   
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get the retured value of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
   
     exit_status, exit_value, terminating_signal, resource_usage_file = self.__jobServer.getExitInformation(job_id)
@@ -575,8 +576,25 @@ class JobScheduler( object ):
     return (exit_status, exit_value, terminating_signal)
     
  
-  
+  def generalInformation(self, job_id):
+    '''
+    Gives general information about the job: name/description, command and 
+    submission date.
+    
+    @type  job_id: C{JobIdentifier}
+    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @rtype: tuple or None
+    @return: (name_description, command, submission_date) it may be C{None} if the job is not valid. 
+    '''
+    
+    #if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    #print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
+    #return
 
+    info = self.__jobServer.getGeneralInformation(job_id)
+    
+    return info
+    
 
 
   def stdoutReadLine(self, job_id):

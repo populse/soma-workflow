@@ -99,6 +99,7 @@ class RemoteFileTransfer(FileTransfer):
       while line:
           self.jobScheduler.writeLine(line, local_input_file_path)
           line = infile.readline()
+      infile.close()
   
       return local_input_file_path
     
@@ -112,8 +113,7 @@ class RemoteFileTransfer(FileTransfer):
       while line:
           outfile.write(line)
           line = self.jobScheduler.readline(local_file_path)
-
-
+      outfile.close()
 
 import pexpect
 
