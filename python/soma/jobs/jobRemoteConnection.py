@@ -9,7 +9,7 @@ import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 import time
 import socket
-from connectionCheck import ConnectionHolder
+from .connectionCheck import ConnectionHolder
 
 
 __docformat__ = "epytext en"

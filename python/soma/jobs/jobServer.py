@@ -339,7 +339,7 @@ class JobServer ( object ):
       connection.close()
 
 
-  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, resource_usage_file):
+  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
     '''
     Record the job exit status in the database.
     The status must be valid (ie a string among the exit job status 
@@ -356,7 +356,7 @@ class JobServer ( object ):
     @param terminating_signal: if the status is FINISHED_TERM_SIG, it contain a representation 
     of the signal that caused the termination of the job.
     @type  resource_usage: string 
-    @param resource_usage: path to a file containing the resource usage information of
+    @param resource_usage: contain the resource usage information of
     the job.
     '''
     with self.__lock:
@@ -367,12 +367,12 @@ class JobServer ( object ):
         cursor.execute('''UPDATE jobs SET exit_status=?, 
                                         exit_value=?,    
                                         terminating_signal=?, 
-                                        resource_usage_file=? 
+                                        resource_usage=? 
                                         WHERE id=?''', 
                         (exit_status, 
                          exit_value,
                          terminating_signal,
-                         resource_usage_file,
+                         resource_usage,
                          job_id)
                       )
       except Exception, e:
@@ -484,16 +484,15 @@ class JobServer ( object ):
         
         for job_id in jobsToDelete:
           cursor.execute('DELETE FROM ios WHERE job_id=?', [job_id])
-          stdof, stdef, rusagef, custom = cursor.execute('''
+          stdof, stdef, rusage, custom = cursor.execute('''
                                                           SELECT 
                                                           stdout_file, 
                                                           stderr_file, 
-                                                          resource_usage_file,
+                                                          resource_usage,
                                                           custom_submission
                                                           FROM jobs 
                                                           WHERE id=?''', 
                                                           [job_id]).next()
-          self.__removeFile(rusagef)
           if not custom:
             self.__removeFile(stdof)
             self.__removeFile(stdef)
@@ -566,7 +565,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserJob %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e)) 
       cursor.close()
       connection.close()
       return result
@@ -701,7 +700,7 @@ class JobServer ( object ):
                                               exit_status, 
                                               exit_value,    
                                               terminating_signal, 
-                                              resource_usage_file 
+                                              resource_usage 
                                     FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
@@ -709,7 +708,7 @@ class JobServer ( object ):
         raise JobServerError('Error getExitInformation %s: %s \n' %(type(e), e)) 
       cursor.close()
       connection.close()
-      
+    
     exit_st = exit_st.encode('utf-8')
     if term_sig: term_sig = term_sig.encode('utf-8') 
     if rusage: rusage = rusage.encode('utf-8')

@@ -118,170 +118,57 @@ class DrmaaJobScheduler( object ):
     '''
  
     
-  ########## JOB STATUS UPDATE LOOP ########################################
-
- 
+  
 
 
   ########## JOB SUBMISSION #################################################
 
-  def customSubmit( self,
-                    command,
-                    working_directory,
-                    stdout_path,
-                    stderr_path,
-                    stdin,
-                    disposal_timeout,
-                    name_description):
-    '''
-    Implementation of the L{JobScheduler} method.
-    '''
-
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-  
-    drmaa_stdout_arg = "[void]:" + stdout_path
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", drmaa_stdout_arg)
-
-    if stderr_path != None:
-      drmaa_stderr_arg = "[void]:" + stderr_path
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", drmaa_stderr_arg)
-    else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-
-    if stdin != None:
-      drmaa_stdin_arg = "[void]:" + stdin
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", drmaa_stdin_arg)
-      
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
-     
-     
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
-    
-    join_stderrout = (stderr_path == None)
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    
-    # for user information only
-    command_info = ""
-    for command_element in command:
-      command_info = command_info + " " + command_element
-
-    with self.__lock:
-      job_id = self.__jobServer.addJob(self.__user_id, 
-                                    True, #the std out and err file won't be removed with the job
-                                    expiration_date, 
-                                    stdout_path,
-                                    stderr_path,
-                                    join_stderrout,
-                                    stdin, 
-                                    name_description,
-                                    drmaaSubmittedJobId,
-                                    working_directory,
-                                    command_info)
-      self.__jobs.add(job_id)
-  
-    return job_id
-  
-
-
   def submit( self,
-              command,
-              working_directory,
-              join_stderrout,
-              stdin,
-              disposal_timeout,
-              name_description):
+          command,
+          required_local_input_files,
+          required_local_output_files,
+          stdin,
+          join_stderrout,
+          disposal_timeout,
+          name_description,
+          stdout_path,
+          stderr_path,
+          working_directory):
+    
     '''
     Implementation of the L{JobScheduler} method.
     '''
     
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     
-    with self.__lock:
-      stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-      stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
+    if not stdout_path:
+      with self.__lock:
+        stdout_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+        stderr_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+      custom_submit = False #the std out and err file has to be removed with the job
+    else:
+      custom_submit = True #the std out and err file won't to be removed with the job
     
     drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
     self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
+    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
 
     if join_stderrout:
       self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
     else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
+      if stderr_path:
+        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_path)
 
-    if stdin != None:
+    if stdin:
       self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
-    
-    if working_directory != None:
+      
+    if working_directory:
       self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
     
     drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
     self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
-    join_stderrout = join_stderrout
-    
-    # for user information only
-    command_info = ""
-    for command_element in command:
-      command_info = command_info + " " + command_element
-
-
-    with self.__lock:
-      job_id = self.__jobServer.addJob(self.__user_id, 
-                                   False, #the std out and err file will be removed with the job
-                                   expiration_date, 
-                                   stdout_file,
-                                   stderr_file,
-                                   join_stderrout,
-                                   stdin, 
-                                   name_description, 
-                                   drmaaSubmittedJobId,
-                                   working_directory,
-                                   command_info)
-      self.__jobs.add(job_id)
-    
-    
-    return job_id 
-
-
-
-  def submitWithTransfer( self,
-                          command,
-                          required_local_input_files,
-                          required_local_output_file,
-                          join_stderrout,
-                          stdin,
-                          disposal_timeout,
-                          name_description):
-    '''
-    Implementation of the L{JobScheduler} method.
-    ''' 
-
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    
-    with self.__lock:
-      stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-      stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-    
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-    
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_file)
-
-    if join_stderrout:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-    else:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_file)
-
-    if stdin != None:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
-    
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
-    
     # for user information only
     command_info = ""
     for command_element in command:
@@ -289,26 +176,26 @@ class DrmaaJobScheduler( object ):
     
     with self.__lock:
       job_id = self.__jobServer.addJob(self.__user_id, 
-                                    False, #the std out and err file will be removed with the job
-                                    expiration_date, 
-                                    stdout_file,
-                                    stderr_file,
-                                    join_stderrout,
-                                    stdin, 
-                                    name_description, 
-                                    drmaaSubmittedJobId,
-                                    None,
-                                    command_info)
+                                        custom_submit,
+                                        expiration_date, 
+                                        stdout_path,
+                                        stderr_path,
+                                        join_stderrout,
+                                        stdin, 
+                                        name_description, 
+                                        drmaaSubmittedJobId,
+                                        None,
+                                        command_info)
                                     
-      self.__jobServer.registerInputs(job_id, required_local_input_files)
-      self.__jobServer.registerOutputs(job_id, required_local_output_file)
+      if required_local_input_files:
+        self.__jobServer.registerInputs(job_id, required_local_input_files)
+      if required_local_output_files:
+        self.__jobServer.registerOutputs(job_id, required_local_output_files)
 
       self.__jobs.add(job_id)
     
     return job_id
-
-
-
+   
 
   def dispose( self, job_id ):
     '''
@@ -353,9 +240,13 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
-    # TBI: store the resource_usage in a file
+    
+    str_rusage = ''
+    for rusage in resource_usage:
+      str_rusage = str_rusage + rusage + ' '
+    
     with self.__lock:
-      self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, None)
+      self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
       self.__jobs.discard(job_id)
 
 

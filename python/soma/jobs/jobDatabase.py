@@ -56,7 +56,7 @@ def create(database_file):
   connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
   cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                                      login VARCHAR(50) NOT NULL UNIQUE)''')
+                                      login VARCHAR(255) NOT NULL UNIQUE)''')
   cursor.execute('''CREATE TABLE jobs (
                                        id                   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                        user_id              INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
@@ -64,30 +64,30 @@ def create(database_file):
                                        drmaa_id             VARCHAR(255),
                                        expiration_date      DATE NOT NULL,
                                        status               VARCHAR(255),
-                                       stdin_file           VARCHAR(255),
+                                       stdin_file           TEXT,
                                        join_errout          BOOLEAN NOT NULL,
-                                       stdout_file          VARCHAR(255),
-                                       stderr_file          VARCHAR(255),
-                                       working_directory    VARCHAR(255),
+                                       stdout_file          TEXT,
+                                       stderr_file          TEXT,
+                                       working_directory    TEXT,
                                        custom_submission    BOOLEAN NOT NULL,
                                        
-                                       name_description     VARCHAR(255),
-                                       command              VARCHAR(255),
+                                       name_description     TEXT,
+                                       command              TEXT,
                                        submission_date      DATE,
                                        exit_status          VARCHAR(255),
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
-                                       resource_usage_file VARCHAR(255)
+                                       resource_usage       TEXT
                                        )''')
 
-  cursor.execute('''CREATE TABLE transfers (local_file_path  VARCHAR(255) PRIMARY KEY NOT NULL, 
-                                            remote_file_path VARCHAR(255),
+  cursor.execute('''CREATE TABLE transfers (local_file_path  TEXT PRIMARY KEY NOT NULL, 
+                                            remote_file_path TEXT,
                                             transfer_date    DATE,
                                             expiration_date  DATE NOT NULL,
                                             user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id))''')
 
   cursor.execute('''CREATE TABLE ios (job_id          INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
-                                      local_file_path VARCHAR(255) NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
+                                      local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
                                       is_input         BOOLEAN NOT NULL,
                                       PRIMARY KEY (job_id, local_file_path))''')
                                       
