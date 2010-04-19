@@ -13,8 +13,8 @@ sys.stdout.write("Job3: added to the end of the output file : " + comment + "\n"
 filePathIn = sys.argv[1]
 filePathOut = sys.argv[2]
 
-sys.stdout.write("Input file = " + filePathIn + "\n")
-sys.stdout.write("Output file = " + filePathOut + "\n")
+#sys.stdout.write("Input file = " + filePathIn + "\n")
+#sys.stdout.write("Output file = " + filePathOut + "\n")
 
 timeToSleep=0
 if len(sys.argv) == 4:

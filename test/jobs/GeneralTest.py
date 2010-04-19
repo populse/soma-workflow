@@ -14,7 +14,7 @@ import os
   and doesn't share a file system with these machines
 '''
 
-mode = 'remote'
+mode = 'localdebug'
 if len(sys.argv) < 2:
   TestNum = 1
 else:
@@ -36,7 +36,21 @@ if mode == 'local':
   import soma.jobs.jobDatabase
   def printTables():
     soma.jobs.jobDatabase.printTables("/volatile/laguitton/job.db")
+
+if mode == 'localdebug':
+  inpath = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
+  outpath = "/home/sl225510/output/"
+  srcLocalJobProcess = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/python/soma/jobs/localJobProcess.py"
+ 
+  from soma.jobs.fileTransfer import LocalFileTransfer
+  from soma.jobs.jobScheduler import JobScheduler
+  jsc = JobScheduler()
+  ft = LocalFileTransfer(jsc)
   
+  import soma.jobs.jobDatabase
+  def printTables():
+    soma.jobs.jobDatabase.printTables("/volatile/laguitton/job.db")
+
 
 if mode == 'remote':
   from jobRemoteConnection import JobRemoteConnection 
@@ -222,33 +236,68 @@ def checkFile(filename):
 
 ############################################
 
-if mode == 'local':
-  print "######### CUSTOM SUBMISSION TEST #############"
-  jobid = customSubmission()
-  print "job id = " + repr(jobid)
-  print "job information : " + repr(jsc.generalInformation(jobid))
-  jsc.wait([jobid], 2)
-  jsc.stop(jobid)
-  time.sleep(1)
-  print "stopped, status: " + jsc.status(jobid)
-  time.sleep(1)
-  jsc.restart(jobid)
-  time.sleep(1)
-  print "restarted, status: " + jsc.status(jobid)
-  print "waiting..."
-  jsc.wait([jobid])
-  time.sleep(1)
-  print "end, status: " + jsc.status(jobid)
-  print "exit info: " + repr(jsc.exitInformation(jobid))
-  print "checking that files exist"
-  print outpath + "stdoutjob1" + checkFile(outpath + "stdoutjob1")
-  print outpath + "stderrjob1" + checkFile(outpath + "stdoutjob1")
-  print file11 + checkFile(file11)
-  print file12 + checkFile(file12)
-  jsc.dispose(jobid)
+if __name__ =='__main__':
+  
+  if mode == 'local':
+    print "######### CUSTOM SUBMISSION TEST #############"
+    jobid = customSubmission()
+    print "job id = " + repr(jobid)
+    print "job information : " + repr(jsc.generalInformation(jobid))
+    jsc.wait([jobid], 2)
+    jsc.stop(jobid)
+    time.sleep(1)
+    print "stopped, status: " + jsc.status(jobid)
+    time.sleep(1)
+    jsc.restart(jobid)
+    time.sleep(1)
+    print "restarted, status: " + jsc.status(jobid)
+    print "waiting..."
+    jsc.wait([jobid])
+    time.sleep(1)
+    print "end, status: " + jsc.status(jobid)
+    print "exit info: " + repr(jsc.exitInformation(jobid))
+    print "checking that files exist"
+    print outpath + "stdoutjob1" + checkFile(outpath + "stdoutjob1")
+    print outpath + "stderrjob1" + checkFile(outpath + "stdoutjob1")
+    print file11 + checkFile(file11)
+    print file12 + checkFile(file12)
+    jsc.dispose(jobid)
+  
+    print "######### REGULAR SUBMISSION TEST #############"
+    jobid = regularSubmission()
+    print "job id = " + repr(jobid)
+    print "job information : " + repr(jsc.generalInformation(jobid))
+    jsc.wait([jobid], 2)
+    jsc.stop(jobid)
+    time.sleep(1)
+    print "stopped, status: " + jsc.status(jobid)
+    time.sleep(1)
+    jsc.restart(jobid)
+    time.sleep(1)
+    print "restarted, status: " + jsc.status(jobid)
+    print "waiting..."
+    jsc.wait([jobid])
+    time.sleep(1)
+    print "end, status: " + jsc.status(jobid)
+    print "exit info: " + repr(jsc.exitInformation(jobid))
+    print "checking that files exist"
+    print file11 + checkFile(file11)
+    print file12 + checkFile(file12)
+    print "stdout :"
+    line = jsc.stdoutReadLine(jobid)
+    while line:
+      print line,
+      line = jsc.stdoutReadLine(jobid)
+    
 
-  print "######### REGULAR SUBMISSION TEST #############"
-  jobid = regularSubmission()
+  print "########## JOB WITH EXCEPTION TEST #############"
+  
+  l_exceptionScript = ft.transferInputFile(inpath + "simple/exceptionJob.py", -24)
+    
+  jobid = jsc.submitWithTransfer( [python, l_exceptionScript], 
+                                    [l_exceptionScript], 
+                                    [], 
+                                    False, None, jobs_time_out, "job with exception") 
   print "job id = " + repr(jobid)
   print "job information : " + repr(jsc.generalInformation(jobid))
   jsc.wait([jobid], 2)
@@ -264,160 +313,128 @@ if mode == 'local':
   time.sleep(1)
   print "end, status: " + jsc.status(jobid)
   print "exit info: " + repr(jsc.exitInformation(jobid))
-  print "checking that files exist"
-  print file11 + checkFile(file11)
-  print file12 + checkFile(file12)
-  print "stdout :"
-  line = jsc.stdoutReadLine(jobid)
+  print "stderr :"
+  line = jsc.stderrReadLine(jobid)
   while line:
     print line,
-    line = jsc.stdoutReadLine(jobid)
+    line = jsc.stderrReadLine(jobid)
   
   
-#print "########## JOB WITH EXCEPTION TEST #############"
-
-#l_exceptionScript = ft.transferInputFile(inpath + "simple/exceptionJob.py", -24)
   
-#jobid = jsc.submitWithTransfer( [python, l_exceptionScript], 
-                                  #[l_exceptionScript], 
-                                  #[], 
-                                  #False, None, jobs_time_out, "job with exception") 
-#print "job id = " + repr(jobid)
-#print "job information : " + repr(jsc.generalInformation(jobid))
-#jsc.wait([jobid], 2)
-#jsc.stop(jobid)
-#time.sleep(1)
-#print "stopped, status: " + jsc.status(jobid)
-#time.sleep(1)
-#jsc.restart(jobid)
-#time.sleep(1)
-#print "restarted, status: " + jsc.status(jobid)
-#print "waiting..."
-#jsc.wait([jobid])
-#time.sleep(1)
-#print "end, status: " + jsc.status(jobid)
-#print "exit info: " + repr(jsc.exitInformation(jobid))
-#print "stderr :"
-#line = jsc.stderrReadLine(jobid)
-#while line:
-  #print line,
-  #line = jsc.stderrReadLine(jobid)
-
-
-
-print "######### COMPLETE SUBMISSION TEST #############"
-
-startTime = datetime.now()
-
-job1id = submitWTjob1()
-print "submission"
-print "job1 id = " + repr(job1id)
-print "job1 information : " + repr(jsc.generalInformation(job1id))
-print "waiting..."
-jsc.wait([job1id])
-time.sleep(1)
-print "end job1, status: " + jsc.status(job1id)
-print "exit info job1: " + repr(jsc.exitInformation(job1id))
-print "stderr job1:"
-line = jsc.stderrReadLine(job1id)
-while line:
-  print line,
+  print "######### COMPLETE SUBMISSION TEST #############"
+  
+  startTime = datetime.now()
+  
+  job1id = submitWTjob1()
+  print "submission"
+  print "job1 id = " + repr(job1id)
+  print "job1 information : " + repr(jsc.generalInformation(job1id))
+  print "waiting..."
+  jsc.wait([job1id])
+  time.sleep(1)
+  print "end job1, status: " + jsc.status(job1id)
+  print "exit info job1: " + repr(jsc.exitInformation(job1id))
+  print "stderr job1:"
   line = jsc.stderrReadLine(job1id)
-
-
-job2id = submitWTjob2()
-print "submission"
-print "job2 id = " + repr(job2id)
-print "job2 information : " + repr(jsc.generalInformation(job2id))
-job3id = submitWTjob3()
-print "submission"
-print "job3 id = " + repr(job3id)
-print "job3 information : " + repr(jsc.generalInformation(job3id))
-time.sleep(3)
-jsc.kill(job2id)
-time.sleep(1)
-print "kill job2, status: " + jsc.status(job2id)
-print "exit info: " + repr(jsc.exitInformation(job2id))
-print "stderr :"
-line = jsc.stderrReadLine(job2id)
-while line:
-  print line,
+  while line:
+    print line,
+    line = jsc.stderrReadLine(job1id)
+  
+  
+  job2id = submitWTjob2()
+  print "submission"
+  print "job2 id = " + repr(job2id)
+  print "job2 information : " + repr(jsc.generalInformation(job2id))
+  job3id = submitWTjob3()
+  print "submission"
+  print "job3 id = " + repr(job3id)
+  print "job3 information : " + repr(jsc.generalInformation(job3id))
+  time.sleep(3)
+  jsc.kill(job2id)
+  time.sleep(1)
+  print "kill job2, status: " + jsc.status(job2id)
+  print "exit info: " + repr(jsc.exitInformation(job2id))
+  print "stderr :"
   line = jsc.stderrReadLine(job2id)
-print "stdout :"
-line = jsc.stdoutReadLine(job2id)
-while line:
-  print line,
+  while line:
+    print line,
+    line = jsc.stderrReadLine(job2id)
+  print "stdout :"
   line = jsc.stdoutReadLine(job2id)
-jsc.dispose(job2id)
-jsc.stop(job3id)
-time.sleep(1)
-print "stop job3, status: " + jsc.status(job3id)
-jsc.restart(job3id)
-time.sleep(1)
-print "restart job3, status: " + jsc.status(job3id)
-job2id = submitWTjob2()
-print "submission"
-print "job2 id = " + repr(job2id)
-print "job2 information : " + repr(jsc.generalInformation(job2id))
-print "waiting..."
-jsc.wait([job2id, job3id])
-
-time.sleep(1)
-print "end job2, status: " + jsc.status(job2id)
-print "exit info job2: " + repr(jsc.exitInformation(job2id))
-print "stderr job2:"
-line = jsc.stderrReadLine(job2id)
-while line:
-  print line,
+  while line:
+    print line,
+    line = jsc.stdoutReadLine(job2id)
+  jsc.dispose(job2id)
+  jsc.stop(job3id)
+  time.sleep(1)
+  print "stop job3, status: " + jsc.status(job3id)
+  jsc.restart(job3id)
+  time.sleep(1)
+  print "restart job3, status: " + jsc.status(job3id)
+  job2id = submitWTjob2()
+  print "submission"
+  print "job2 id = " + repr(job2id)
+  print "job2 information : " + repr(jsc.generalInformation(job2id))
+  print "waiting..."
+  jsc.wait([job2id, job3id])
+  
+  time.sleep(1)
+  print "end job2, status: " + jsc.status(job2id)
+  print "exit info job2: " + repr(jsc.exitInformation(job2id))
+  print "stderr job2:"
   line = jsc.stderrReadLine(job2id)
-
-time.sleep(1)
-print "end job3, status: " + jsc.status(job3id)
-print "exit info job3: " + repr(jsc.exitInformation(job3id))
-print "stderr job3:"
-line = jsc.stderrReadLine(job3id)
-while line:
-  print line,
+  while line:
+    print line,
+    line = jsc.stderrReadLine(job2id)
+  
+  time.sleep(1)
+  print "end job3, status: " + jsc.status(job3id)
+  print "exit info job3: " + repr(jsc.exitInformation(job3id))
+  print "stderr job3:"
   line = jsc.stderrReadLine(job3id)
-
-
-
-
-
-job4id = submitWTjob4()
-print "submission"
-print "job4 id = " + repr(job4id)
-print "job4 information : " + repr(jsc.generalInformation(job4id))
-print "waiting..."
-jsc.wait([job4id])
-time.sleep(1)
-print "end job4, status: " + jsc.status(job4id)
-print "exit info job4: " + repr(jsc.exitInformation(job4id))
-print "stderr job4:"
-line = jsc.stderrReadLine(job4id)
-while line:
-  print line,
+  while line:
+    print line,
+    line = jsc.stderrReadLine(job3id)
+  
+  
+  
+  
+  
+  job4id = submitWTjob4()
+  print "submission"
+  print "job4 id = " + repr(job4id)
+  print "job4 information : " + repr(jsc.generalInformation(job4id))
+  print "waiting..."
+  jsc.wait([job4id])
+  time.sleep(1)
+  print "end job4, status: " + jsc.status(job4id)
+  print "exit info job4: " + repr(jsc.exitInformation(job4id))
+  print "stderr job4:"
   line = jsc.stderrReadLine(job4id)
-
-
-
-delta = datetime.now()-startTime
-print "time: " + repr(delta.seconds) + " seconds."
-
-#transfers = jsc.getTransfers()
-#print "transfers " + repr(transfers)
-#print "information for " + transfers[1] + " : " + repr(jsc.getTransferInformation(transfers[1]))
-
-print "transfer output file"
-ft.transferOutputFile(l_file4)
-print l_file4 + checkFile(l_file4)
-
-#print "jobs owned by user " + repr(jsc.jobs())
-#print "dispose jobs"
-#jsc.dispose(job1id)
-#jsc.dispose(job2id)
-#jsc.dispose(job3id)
-#jsc.dispose(job4id)
-##for i in jsc.jobs(): jsc.dispose(i)
-#print "jobs owned by user " + repr(jsc.jobs())
+  while line:
+    print line,
+    line = jsc.stderrReadLine(job4id)
+  
+  
+  
+  delta = datetime.now()-startTime
+  print "time: " + repr(delta.seconds) + " seconds."
+  
+  #transfers = jsc.getTransfers()
+  #print "transfers " + repr(transfers)
+  #print "information for " + transfers[1] + " : " + repr(jsc.getTransferInformation(transfers[1]))
+  
+  print "transfer output file"
+  ft.transferOutputFile(l_file4)
+  file4 = jsc.getTransferInformation(l_file4)[1]
+  print file4 + checkFile(file4)
+  
+  #print "jobs owned by user " + repr(jsc.jobs())
+  #print "dispose jobs"
+  #jsc.dispose(job1id)
+  #jsc.dispose(job2id)
+  #jsc.dispose(job3id)
+  #jsc.dispose(job4id)
+  ##for i in jsc.jobs(): jsc.dispose(i)
+  #print "jobs owned by user " + repr(jsc.jobs())
 
