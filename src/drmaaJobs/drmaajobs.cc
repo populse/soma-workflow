@@ -356,7 +356,7 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
 
 
     ////////////////////////////////////////////////////////
-    printf("~~~ Job %s status: ~~~~~~~ \n", jobid);
+    printf(" Job %s status: ", jobid);
     
     int aborted = 0;
     drmaa_wifaborted(&aborted, status, NULL, 0);
@@ -390,13 +390,13 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
     }
 
     ////////////////////////////////////////////////////////////
-    printf("~~~ Job %s Usage: ~~~~~~~~ \n", jobid);
+    //printf("~~~ Job %s Usage: ~~~~~~~~ \n", jobid);
     char usage[DRMAA_ERROR_STRING_BUFFER];
     while (drmaa_get_next_attr_value (rusage, usage, DRMAA_ERROR_STRING_BUFFER) == DRMAA_ERRNO_SUCCESS) {
-        printf ("  %s\n", usage);
+        //printf ("  %s\n", usage);
         jobInfo.resourceUsage.push_back(usage);
     }
-    printf("~~~~~~~~~~~~~~~~~~~~~~~~~ \n");
+    //printf("~~~~~~~~~~~~~~~~~~~~~~~~~ \n");
     drmaa_release_attr_values (rusage);
 
     return jobInfo;
@@ -433,8 +433,8 @@ void DrmaaJobs::synchronize(const std::list<std::string> & submittedJobIds, int 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not wait for jobs: %s\n", error);
     }
-    else 
-        printf ("Job tasks have finished.\n");
+    //else 
+        //printf ("Job tasks have finished.\n");
 
 }
 
