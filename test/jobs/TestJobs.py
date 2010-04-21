@@ -8,13 +8,14 @@ import os
 def checkFiles(files, filesModels, tolerance = 0):
   index = 0
   for file in files:
+    t = tolerance
     (identical, msg) = identicalFiles(file, filesModels[index])
     if not identical: 
-      if tolerance <= 0: 
+      if t <= 0: 
         return (identical, msg)
       else: 
-        tolerance = tolerance -1
-        print "checkFiles: "+ msg
+        t = t -1
+        print "\n checkFiles: "+ msg
     index = index +1
   return (True, None)
 
@@ -33,8 +34,9 @@ def identicalFiles(filepath1, filepath2):
     lineNb = lineNb + 1
     identical = line1 == line2
   
+  if identical: identical = line1 == line2
   if not identical:
-    return (False, "%s and %s are different. line %d: \n%s%s\n" %(filepath1, filepath2, lineNb, line1, line2))
+    return (False, "%s and %s are different. line %d: \n file1: %s file2:%s" %(filepath1, filepath2, lineNb, line1, line2))
   else:
     return (True, None)
 
@@ -59,7 +61,7 @@ class JobExamples(object):
     self.outpath = outpath
     self.tr_timeout = transfer_timeout
     self.jobs_timeout = jobs_timeout
-    self.python = "python" # SGE # "/i2bm/research/Mandriva-2008.0-i686/bin/python" #condor
+    self.python = "/i2bm/research/Mandriva-2008.0-i686/bin/python" #condor"python" # SGE 
     
     self.job1OutputFileModels = [self.inpath + "complete/outputModels/file11",
                                  self.inpath + "complete/outputModels/file12"]
@@ -195,7 +197,8 @@ class JobsTest(unittest.TestCase):
   transfer_timeout = -24 
   jobs_timeout = 1
   resource_id = None
-  mode = 'local_no_disconnection'
+  mode = 'local' 
+  #mode = 'local_no_disconnection'
   login = None
   password = None
 
@@ -233,7 +236,7 @@ class JobsTest(unittest.TestCase):
       status = JobsTest.jobs.status(jid)
       self.failUnless(status == JobServer.DONE or 
                       status == JobServer.FAILED,
-                      'Job status after wait: %s' %status)
+                      'Job %s status after wait: %s' %(jid, status))
    
   def test_stop(self):
     jobid = self.myJobs[len(self.myJobs)-1]
@@ -314,14 +317,14 @@ class LocalCustomSubmission(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(jobid, status))
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(jobid, exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
-                    'Job exit value: %d' %exitValue)
+                    'Job %s exit value: %d' %(jobid,exitValue))
       
     # checking output files
     for file in self.outputFiles:
@@ -359,11 +362,11 @@ class LocalSubmission(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(jobid, status))
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(jobid, exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
@@ -409,11 +412,11 @@ class SubmissionWithTransfer(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(jobid, status))
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(jobid, exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
@@ -461,11 +464,11 @@ class JobPipelineWithTransfer(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[0])
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(self.myJobs[0], status))
     exitInformation = JobsTest.jobs.exitInformation(self.myJobs[0])
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(self.myJobs[0], exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
@@ -484,22 +487,22 @@ class JobPipelineWithTransfer(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[1])
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(self.myJobs[1], status))
     exitInformation = JobsTest.jobs.exitInformation(self.myJobs[1])
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(self.myJobs[1], exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
                     
     status = JobsTest.jobs.status(self.myJobs[2])
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(self.myJobs[2], status))
     exitInformation = JobsTest.jobs.exitInformation(self.myJobs[2])
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(self.myJobs[2], exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
@@ -524,11 +527,11 @@ class JobPipelineWithTransfer(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(jobid, status))
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(jobid, exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
@@ -599,11 +602,11 @@ class ExceptionJobTest(JobsTest):
     time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
-                    'Job status after wait: %s' %status)
+                    'Job %s status after wait: %s' %(jobid, status))
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
-                    'Job exit status: %s' %exitStatus)
+                    'Job %s exit status: %s' %(jobid, exitStatus))
     exitValue = exitInformation[1]
     self.failUnless(exitValue == 1,
                     'Job exit value: %d' %exitValue)
@@ -620,7 +623,6 @@ class ExceptionJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-
   #all = False
   all = True
   
@@ -632,15 +634,15 @@ if __name__ == '__main__':
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
   else:
-    minimal = ['testResult']
+    minimal = ['testResult']#, 'test_wait' ]
 
     tests = minimal
     
     suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
-    suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
-    suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
+    #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
  
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)

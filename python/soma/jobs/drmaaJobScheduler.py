@@ -24,7 +24,7 @@ import pwd
 import os
 import threading
 import time
-
+import logging
 
 class DrmaaJobScheduler( object ):
 
@@ -39,6 +39,7 @@ class DrmaaJobScheduler( object ):
     Opens a connection to the pool of machines and to the data server L{JobServer}.
 
     '''
+    self.logger = logging.getLogger('ljp.drmaajs')
     
     self.__drmaa = DrmaaJobs()
     Pyro.core.initClient()
@@ -47,9 +48,9 @@ class DrmaaJobScheduler( object ):
   
     try:
         URI=ns.resolve('JobServer')
-        print 'URI:',URI
+        self.logger.info('JobServer URI:'+ repr(URI))
     except NamingError,x:
-        print 'Couldn\'t find JobServer, nameserver says:',x
+        self.logger.critical('Couldn\'t find JobServer, nameserver says:',x)
         raise SystemExit
     
     self.__jobServer= Pyro.core.getProxyForURI( URI )
@@ -57,48 +58,49 @@ class DrmaaJobScheduler( object ):
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
     except Exception, e:
-      print JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e))
+      self.logger.critical("Couldn't identify user %s: %s \n" %(type(e), e))
       raise SystemExit
     
     self.__user_id = self.__jobServer.registerUser(userLogin) 
 
     self.__jobs = set([])
-    self.__lock = threading.RLock()
+    self.__drmaa_lock = threading.RLock()
+    self.__jobs_lock = threading.RLock()
     
     self.__jobsEnded = False
     
     def startJobStatusUpdateLoop( self, interval ):
-      #logfilepath = "/home/sl225510/statusUpdateThreadLog"
-      #if os.path.isfile(logfilepath):
-      #  os.remove(logfilepath)
-      #logFile = open(logfilepath, "w")
+      logger_su = logging.getLogger('ljp.drmaajs.su')
       while True:
-        #print >> logFile, " "
-        with self.__lock:
-          # get rid of all the jobs that doesn't exist anymore
-          serverJobs = self.__jobServer.getJobs(self.__user_id)
+        # get rid of all the jobs that doesn't exist anymore
+        serverJobs = self.__jobServer.getJobs(self.__user_id)
+        with self.__jobs_lock:
           self.__jobs = self.__jobs.intersection(serverJobs)
-          #if len(self.__jobs) == 0 && 
-          allJobsEnded = True
-          ended = []
+        allJobsEnded = True
+        ended = []
+        with self.__jobs_lock:
           for job_id in self.__jobs:
             # get back the status from DRMAA
             status = self.__status(job_id)
-            #print >> logFile, "job " + repr(job_id) + " : " + status
-            # update the status on the job server  
-            self.__jobServer.setJobStatus(job_id, status)
-            # get the exit information for terminated jobs abd update the jobServer
+            logger_su.debug("job " + repr(job_id) + " : " + status)
             if status == JobServer.DONE or status == JobServer.FAILED:
-              ended.append(job_id) 
+              # update the exit status and status on the job server 
+              self.__endOfJob(job_id, status)
+              ended.append(job_id)
             else:
-              allJobsEnded = False     
-          self.__jobsEnded = allJobsEnded
-          for job_id in ended:
-            self.__endOfJob(job_id)
-          #print " all jobs done : " + repr(self.__jobsEnded)
-        #logFile.flush()
+              allJobsEnded = False
+              # update the status on the job server 
+              self.__jobServer.setJobStatus(job_id, status)
+        self.__jobsEnded = allJobsEnded
+        
+        # get the exit information for terminated jobs and update the jobServer
+        for job_id in ended:
+          with self.__jobs_lock:
+            self.__jobs.discard(job_id)
+        logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
+      
         time.sleep(interval)
-    
+   
     
     
     self.__job_status_thread = threading.Thread(name = "job_status_loop", 
@@ -111,6 +113,7 @@ class DrmaaJobScheduler( object ):
    
 
   def __del__( self ):
+    pass
     '''
     Closes the connection with the pool and the data server L{JobServer} and
     stops updating the L{JobServer}. (should be called when all the jobs are
@@ -142,56 +145,56 @@ class DrmaaJobScheduler( object ):
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     
     if not stdout_path:
-      with self.__lock:
-        stdout_path = self.__jobServer.generateLocalFilePath(self.__user_id)
-        stderr_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+      stdout_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+      stderr_path = self.__jobServer.generateLocalFilePath(self.__user_id)
       custom_submit = False #the std out and err file has to be removed with the job
     else:
       custom_submit = True #the std out and err file won't to be removed with the job
-    
-    drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-    self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
-    
-    self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
-
-    if join_stderrout:
-      self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
-    else:
-      if stderr_path:
-        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_path)
-
-    if stdin:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
       
-    if working_directory:
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
+    with self.__drmaa_lock:
+      drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
+      self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
-    drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-    self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
+      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
+
+      if join_stderrout:
+        self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
+      else:
+        if stderr_path:
+          self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_path)
+  
+      if stdin:
+        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
+        
+      if working_directory:
+        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
+      
+      drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
+      self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
     # for user information only
     command_info = ""
     for command_element in command:
       command_info = command_info + " " + command_element
     
-    with self.__lock:
-      job_id = self.__jobServer.addJob(self.__user_id, 
-                                        custom_submit,
-                                        expiration_date, 
-                                        stdout_path,
-                                        stderr_path,
-                                        join_stderrout,
-                                        stdin, 
-                                        name_description, 
-                                        drmaaSubmittedJobId,
-                                        None,
-                                        command_info)
+    job_id = self.__jobServer.addJob(self.__user_id, 
+                                      custom_submit,
+                                      expiration_date, 
+                                      stdout_path,
+                                      stderr_path,
+                                      join_stderrout,
+                                      stdin, 
+                                      name_description, 
+                                      drmaaSubmittedJobId,
+                                      None,
+                                      command_info)
                                     
-      if required_local_input_files:
-        self.__jobServer.registerInputs(job_id, required_local_input_files)
-      if required_local_output_files:
-        self.__jobServer.registerOutputs(job_id, required_local_output_files)
+    if required_local_input_files:
+      self.__jobServer.registerInputs(job_id, required_local_input_files)
+    if required_local_output_files:
+      self.__jobServer.registerOutputs(job_id, required_local_output_files)
 
+    with self.__jobs_lock:
       self.__jobs.add(job_id)
     
     return job_id
@@ -201,12 +204,16 @@ class DrmaaJobScheduler( object ):
     '''
     Implementation of the L{JobScheduler} method.
     '''
-    with self.__lock:
-      drmaaJobId=self.__jobServer.getDrmaaJobId(job_id)
+    
+    self.logger.debug("Dispose job %s", job_id)
+    drmaaJobId=self.__jobServer.getDrmaaJobId(job_id)
+    
+    with self.__drmaa_lock:
       self.__drmaa.terminate(drmaaJobId)
-      self.__jobServer.deleteJob(job_id)
+    with self.__jobs_lock:
       self.__jobs.discard(job_id)
     
+    self.__jobServer.deleteJob(job_id)
     
 
   ########### DRMS MONITORING ################################################
@@ -224,30 +231,41 @@ class DrmaaJobScheduler( object ):
     QUEUED_ACTIVE, SYSTEM_ON_HOLD, USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING,
     SYSTEM_SUSPENDED, USER_SUSPENDED, USER_SYSTEM_SUSPENDED, DONE, FAILED
     '''
-    with self.__lock:
-      drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    return self.__drmaa.jobStatus(drmaaJobId) 
-    #add conversion from DRMAA status strings to JobServer status strings if needed
+    
+    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    
+    with self.__drmaa_lock:
+      status = self.__drmaa.jobStatus(drmaaJobId) 
+       #add conversion from DRMAA status strings to JobServer status strings if needed
+      
+    return status
+   
      
 
 
-  def __endOfJob(self, job_id):
+  def __endOfJob(self, job_id, status):
     '''
     The method is called when the job status is JobServer.DONE or FAILED,
     to get the job exit inforation from DRMAA and update the JobServer.
     The job_id is also remove form the job list.
     '''
-    with self.__lock:
-      drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-    exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
+    
+    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    self.logger.debug("End of job %s, drmaaJobId = %s", job_id, drmaaJobId)
+    
+    with self.__drmaa_lock:
+      exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
+      
+    self.logger.debug("job %s, exit_status=%s exit_value =%d", job_id, exit_status, exit_value)
     
     str_rusage = ''
     for rusage in resource_usage:
       str_rusage = str_rusage + rusage + ' '
     
-    with self.__lock:
-      self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
-      self.__jobs.discard(job_id)
+    self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
+    self.__jobServer.setJobStatus(job_id, status)
+    
+    assert(self.__jobServer.getJobStatus(job_id) == status)
 
 
   def areJobsDone(self):
@@ -256,42 +274,44 @@ class DrmaaJobScheduler( object ):
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_ids, timeout = -1):
-    '''
-    Implementation of the L{JobScheduler} method.
-    '''
-    drmaaJobIds = []
-
-    with self.__lock:
-      for jid in job_ids:
-        drmaaJobIds.append(self.__jobServer.getDrmaaJobId(jid))
-
-    self.__drmaa.synchronize(drmaaJobIds, timeout)
+  #def wait( self, job_ids, timeout = -1):
+    #'''
+    #Implementation of the L{JobScheduler} method.
+    #'''
+    #drmaaJobIds = []
+      
+    #for jid in job_ids:
+      #drmaaJobIds.append(self.__jobServer.getDrmaaJobId(jid))
+    #with self.__drmaa_lock:
+    #self.__drmaa.synchronize(drmaaJobIds, timeout)
 
 
   def stop( self, job_id ):
     '''
     Implementation of the L{JobScheduler} method.
     '''
-    with self.__lock:
-      drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      status = self.__status(job_id)
-      if status==JobServer.RUNNING:
+    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    status = self.__status(job_id)
+    if status==JobServer.RUNNING:
+      with self.__drmaa_lock:
         self.__drmaa.suspend(drmaaJobId)
-      if status==JobServer.QUEUED_ACTIVE:
+    if status==JobServer.QUEUED_ACTIVE:
+      with self.__drmaa_lock:
         self.__drmaa.hold(drmaaJobId)
-  
+
   
   def restart( self, job_id ):
     '''
     Implementation of the L{JobScheduler} method.
     '''
-    with self.__lock:
-      drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      status = self.__status(job_id)
-      if status==JobServer.USER_SUSPENDED or status==JobServer.USER_SYSTEM_SUSPENDED:
+    
+    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    status = self.__status(job_id)
+    if status==JobServer.USER_SUSPENDED or status==JobServer.USER_SYSTEM_SUSPENDED:
+      with self.__drmaa_lock:
         self.__drmaa.resume(drmaaJobId)
-      if status==JobServer.USER_ON_HOLD or status==JobServer.USER_SYSTEM_ON_HOLD :
+    if status==JobServer.USER_ON_HOLD or status==JobServer.USER_SYSTEM_ON_HOLD :
+      with self.__drmaa_lock:
         self.__drmaa.release(drmaaJobId)
 
   
@@ -301,14 +321,16 @@ class DrmaaJobScheduler( object ):
     '''
     Implementation of the L{JobScheduler} method.
     '''
-    with self.__lock:
-      drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    
+    drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+    with self.__drmaa_lock:
       self.__drmaa.terminate(drmaaJobId)
-      self.__jobServer.setJobExitInfo(job_id, 
-                                      JobServer.USER_KILLED,
-                                      None,
-                                      None,
-                                      None)
-      self.__jobServer.setJobStatus(job_id, JobServer.FAILED)
+    self.__jobServer.setJobExitInfo(job_id, 
+                                    JobServer.USER_KILLED,
+                                    None,
+                                    None,
+                                    None)
+    self.__jobServer.setJobStatus(job_id, JobServer.FAILED)
+    with self.__jobs_lock:
       self.__jobs.discard(job_id)
       

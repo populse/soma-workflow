@@ -12,6 +12,7 @@ import socket
 from connectionCheck import ConnectionHolder
 import pwd
 import os
+import sys
 
 
 __docformat__ = "epytext en"
@@ -36,6 +37,9 @@ class JobLocalConnection( object ):
     command = "python " + local_process_src + " " + pyro_objet_name
     print command
     self.__job_process_child = pexpect.spawn(command)
+    #fout = file('/neurospin/tmp/Soizic/jobFiles/mylog.txt','w')
+    #self.__job_process_child.logfile = fout
+    self.__job_process_child.logfile = sys.stdout
     self.__job_process_child.expect(pyro_objet_name + " URI: ")
     job_scheduler_uri = self.__job_process_child.readline()
     self.__job_process_child.expect(" connectionChecker URI: ")

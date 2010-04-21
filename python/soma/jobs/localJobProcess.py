@@ -8,7 +8,7 @@ import soma.jobs.connectionCheck
 import sys
 import threading
 import time 
-
+import logging
 
 import os
   
@@ -30,6 +30,13 @@ class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connectionCheck.ConnectionC
 ###### main server program
 
 def main(jobScheduler_name):
+  
+  logging.basicConfig(
+      filename = "/neurospin/tmp/Soizic/jobFiles/log_"+jobScheduler_name+time.strftime("_%d_%b_%I:%M:%S", time.gmtime()),
+      format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s",
+      level = logging.DEBUG)
+  
+  logger = logging.getLogger('ljp')
   
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
@@ -54,7 +61,7 @@ def main(jobScheduler_name):
   uri_jsc = daemon.connect(jobScheduler,jobScheduler_name)
   sys.stdout.write(jobScheduler_name+ " URI: " + str(uri_jsc) + "\n")
   sys.stdout.flush() 
-  print 'Server object ' + jobScheduler_name + ' is ready.'
+  logger.info('Server object ' + jobScheduler_name + ' is ready.')
   
   
   # connection check
@@ -71,7 +78,7 @@ def main(jobScheduler_name):
   
   
   # Daemon request loop thread
-  print "daemon port = " + repr(daemon.port)
+  logger.info("daemon port = " + repr(daemon.port))
   daemonRequestLoopThread = threading.Thread(name = "daemon.requestLoop", 
                               target = daemon.requestLoop) 
 
@@ -80,8 +87,7 @@ def main(jobScheduler_name):
 
   
   
-  
-  print "******** before client connection ******************"
+  logger.info("******** before client connection ******************")
   client_connected = False
   timeout = 40
   while not client_connected and timeout > 0:
@@ -89,24 +95,24 @@ def main(jobScheduler_name):
     timeout = timeout - 1
     time.sleep(1)
     
-  print "******** first mode: client connection *************"
+  logger.info("******** first mode: client connection *************")
   while client_connected:
     client_connected = connectionChecker.isConnected()
     time.sleep(1)
     
-  print "******** client disconnection **********************"
+  logger.info("******** client disconnection **********************")
   daemon.shutdown(disconnect=True) #stop the request loop
   daemon.sock.close() # free the port
   del(daemon) 
   del(jobScheduler)
   
-  print "******** second mode: waiting for jobs to finish****"
+  logger.info("******** second mode: waiting for jobs to finish****")
   jobs_running = True
   while jobs_running:
     jobs_running = not drmaaJobScheduler.areJobsDone()
     time.sleep(1)
   
-  print "******** jobs are done ! ***************************"
+  logger.info("******** jobs are done ! ***************************")
   sys.exit()
   
 

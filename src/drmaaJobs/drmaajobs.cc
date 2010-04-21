@@ -6,6 +6,7 @@
 DrmaaJobs::DrmaaJobs(const char * contactString)
     : m_currentId(1) {
     initSession(contactString);
+    log("/n => New session");
 }
 
 DrmaaJobs::~DrmaaJobs() {
@@ -17,11 +18,14 @@ DrmaaJobs::~DrmaaJobs() {
         errnum = drmaa_delete_job_template (i->second, error, DRMAA_ERROR_STRING_BUFFER);
         if (errnum != DRMAA_ERRNO_SUCCESS) {
             fprintf (stderr, "Could not delete job template: %s\n", error);
+            log("Could not delete job template:" + std::string(error) + "\n");
         }
     }
     mJobTemplatesMap.clear();
 
     exitSession();
+    log("<= Session ended");
+
 }
 
 
@@ -40,6 +44,7 @@ void DrmaaJobs::displayJobTemplateAttributeValues(int jobTemplateId) {
 
     if(errnum != DRMAA_ERRNO_SUCCESS ) {
         fprintf (stderr, "Could not get attribute names : %s\n", error);
+        log("Could not get attribute names :" + std::string(error) + "\n");
         return;
     }
 
@@ -58,6 +63,7 @@ void DrmaaJobs::displayJobTemplateAttributeValues(int jobTemplateId) {
                                       DRMAA_ERROR_STRING_BUFFER);
         if(errnum != DRMAA_ERRNO_SUCCESS ) {
             fprintf (stderr, "Job attribute \"%s\" : %s\n", attributName, error);
+            log("Job attribute :" + std::string(attributName) + " : " + std::string(error) + "\n");
         } else {
             printf ("Job attribute \"%s\" : \"%s\" \n", attributName, attributeValue);
         }
@@ -80,6 +86,7 @@ void DrmaaJobs::displaySupportedAttributeNames() {
 
     if(errnum != DRMAA_ERRNO_SUCCESS ) {
         fprintf (stderr, "Could not get attribute names : %s\n", error);
+        log("Could not get attribute names : " + std::string(error) + "\n");
         return;
     }
 
@@ -110,20 +117,22 @@ void DrmaaJobs::initSession(const char * contactString) {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not initialize the DRMAA library: %s\n", error);
+        log("Could not initialize the DRMAA library: " + std::string(error) + "\n");
         return;
     }
 
-    printf("DRMAA library was started successfully\n");
+    //printf("DRMAA library was started successfully\n");
 
     char contact[DRMAA_CONTACT_BUFFER];
     errnum = drmaa_get_contact(contact, DRMAA_CONTACT_BUFFER, error, DRMAA_ERROR_STRING_BUFFER);
 
     if(errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf(stderr, "Could not get the contact information string: %s\n", error);
+        log("Could not get the contact information string:" + std::string(error) + "\n");
         return;
     }
 
-    printf("Contact information: %s\n", contact);
+    //printf("Contact information: %s\n", contact);
 }
 
 
@@ -135,10 +144,11 @@ void DrmaaJobs::exitSession() {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
        fprintf (stderr, "Could not shut down the DRMAA library: %s\n", error);
+       log("Could not shut down the DRMAA library: " + std::string(error) + "\n");
        return;
     }
 
-    printf("The DRMAA library was shut down \n");
+    //printf("The DRMAA library was shut down \n");
 
 }
 
@@ -151,6 +161,7 @@ int DrmaaJobs::allocateJobTemplate() {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
        fprintf (stderr, "Could not create job template: %s\n", error);
+       log("Could not create job template: " + std::string(error) + "\n");
        return undefinedId;
     }
 
@@ -170,6 +181,7 @@ void DrmaaJobs::deleteJobTemplate(int jobTemplateId) {
 
    if (errnum != DRMAA_ERRNO_SUCCESS) {
        fprintf (stderr, "Could not delete job template: %s\n", error);
+       log("Could not create job template: " + std::string(error) + "\n");
    }
    else {
         mJobTemplatesMap.erase(jobTemplateId);
@@ -191,6 +203,7 @@ void DrmaaJobs::setAttribute(int jobTemplateId, const char *name, const char *va
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not set attribute \"%s\": %s\n",
                  name, error);
+        log("Could not set attribute " + std::string(name) + " : " + std::string(error) + "\n");
         return;
     }
 }
@@ -207,10 +220,10 @@ void DrmaaJobs::setVectorAttribute(int jobTemplateId, const char* name, int nbAr
     const char ** args = new const char* [nbArguments+1];
 
     //printf("DrmaaJobs::setVectorAttribute: nbArguments = %d \n", nbArguments);
-    for(int i = 0 ; i < nbArguments ; i++) {
-        args[i] = arguments[i];
+    //for(int i = 0 ; i < nbArguments ; i++) {
+        //args[i] = arguments[i];
         //printf("DrmaaJobs::setVectorAttribute: argument num %d = %s \n", i, args[i]);
-    }
+    //}
     args[nbArguments] = NULL;
 
     errnum = drmaa_set_vector_attribute (drmaaJT, name, args,
@@ -219,6 +232,7 @@ void DrmaaJobs::setVectorAttribute(int jobTemplateId, const char* name, int nbAr
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not set attribute \"%s\": %s\n",
                  name, error);
+        log("Could not set attribute " + std::string(name) + " : " + std::string(error) + "\n");
         return;
     }
 
@@ -231,9 +245,9 @@ void DrmaaJobs::setCommand(int jobTemplateId, const char * remote_command, int n
     if(!isJobTemplateIdValid(jobTemplateId)) return;
 
     //printf("DrmaaJobs::setCommand remote_command = %s, nbArguments = %d \n", remote_command, nbArguments);
-    for(int i = 0; i < nbArguments ; i++) {
+    //for(int i = 0; i < nbArguments ; i++) {
         //printf("DrmaaJobs::setCommand: argument num %d = %s \n", i, arguments[i]);
-    }
+    //}
 
     setAttribute(jobTemplateId, DRMAA_REMOTE_COMMAND, remote_command);
 
@@ -255,6 +269,7 @@ void DrmaaJobs::setCommand(int jobTemplateId, const char * remote_command, int n
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not set attribute \"%s\": %s\n",
                  DRMAA_V_ARGV, error);
+        log("Could not set attribute " + std::string(DRMAA_V_ARGV) + " : " + std::string(error) + "\n");
         return;
     }
 
@@ -280,6 +295,7 @@ const std::string DrmaaJobs::runJob(int jobTemplateId) {
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not submit job: %s\n", error);
+        log("Could not submit job: " + std::string(error) + "\n");
         return submittedJobId;
     }
 
@@ -307,6 +323,7 @@ void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not submit job: %s\n", error);
+        log("Could not submit job: " + std::string(error) + "\n");
         drmaa_release_job_ids (ids);
         return;
     }
@@ -321,6 +338,8 @@ void DrmaaJobs::runBulkJobs(int jobTemplateId, int nbJobs, std::list<std::string
 }
 
 DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int timeout) {
+
+    //log(" => => wait...");
 
     ExitJobInfo jobInfo;
 
@@ -338,7 +357,7 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
     else if (timeout == 0 )
       timeout = DRMAA_TIMEOUT_NO_WAIT;
     
-
+    //log("before drmaa wait job " + submittedJobId);
     errnum = drmaa_wait (jobid,
                           jobid_out,
                           DRMAA_JOBNAME_BUFFER,
@@ -347,43 +366,59 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
                           &rusage,
                           error,
                           DRMAA_ERROR_STRING_BUFFER);
+    //log("after drmaa wait job " + submittedJobId);
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not wait for job: %s\n", error);
+        log("Could not wait for job: " + std::string(error) + "\n");
         jobInfo.status = EXIT_UNDETERMINED;
         return jobInfo;
     }
 
-
     ////////////////////////////////////////////////////////
-    printf(" Job %s status: ", jobid);
-    
+    //printf(" Job %s status: ", jobid);
+    log(" Job " + submittedJobId + " status :");
+
     int aborted = 0;
+    //log("   >>Before drmaa_wifaborted");
     drmaa_wifaborted(&aborted, status, NULL, 0);
+    //log("   <<After drmaa_wifaborted");
 
     if (aborted == 1) {
-        printf("Job never ran\n");
+        //printf("Job never ran\n");
+        log("Job never ran");
         jobInfo.status = EXIT_ABORTED;
     } else {
       int exited = 0;
+      //log("   >>Before drmaa_wifexited");
       drmaa_wifexited(&exited, status, NULL, 0);
+      //log("   <<After drmaa_wifexited");
       if (exited == 1) {
         int exit_status = 0;
+        //log("   >>Before drmaa_wexitstatus");
         drmaa_wexitstatus(&exit_status, status, NULL, 0);
-        printf("Job finished regularly with exit status %d\n", exit_status);
+        //log("   <<After drmaa_wexitstatus");
+        //printf("Job finished regularly with exit status %d\n", exit_status);
+        log("Job finished regularly");
         jobInfo.status = FINISHED_REGULARLY;
+        //log("1");
         jobInfo.exitValue = exit_status; 
+        //log("2");
       } else {  
         int signaled = 0;
         drmaa_wifsignaled(&signaled, status, NULL, 0);
         if (signaled == 1) {
             char termsig[DRMAA_SIGNAL_BUFFER+1];
+            //log("   >>Before drmaa_wtermsig");
             drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, status, NULL, 0);
-            printf("Job finished due to signal %s\n", termsig);
+            //log("   <<After drmaa_wtermsig");
+            //printf("Job finished due to signal %s\n", termsig);
+            log("Job finished due to signal");
             jobInfo.status = FINISHED_TERM_SIG;
             jobInfo.termSignal = termsig;
-        } else {
-          printf("Job finished with unclear conditions\n");
+        } else {  
+          //printf("Job finished with unclear conditions\n");
+          log("Job finished with unclear conditions");
           jobInfo.status = FINISHED_UNCLEAR_CONDITIONS;
         }
       }
@@ -397,8 +432,12 @@ DrmaaJobs::ExitJobInfo DrmaaJobs::wait(const std::string & submittedJobId, int t
         jobInfo.resourceUsage.push_back(usage);
     }
     //printf("~~~~~~~~~~~~~~~~~~~~~~~~~ \n");
-    drmaa_release_attr_values (rusage);
 
+    //log("   >>Before drmaa_release_attr_values");
+    drmaa_release_attr_values (rusage);
+    //log("   <<After drmaa_release_attr_values");
+
+    //log(" <= <= End of wait" );
     return jobInfo;
 }
 
@@ -432,6 +471,7 @@ void DrmaaJobs::synchronize(const std::list<std::string> & submittedJobIds, int 
 
     if (errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not wait for jobs: %s\n", error);
+        log("Could not wait for job: " + std::string(error) + "\n");
     }
     //else 
         //printf ("Job tasks have finished.\n");
@@ -461,6 +501,7 @@ void DrmaaJobs::control(const std::string & submittedJobId, Action action) {
         break;
     case TERMINATE:
         drmaa_action = DRMAA_CONTROL_TERMINATE;
+        log("terminate job " + std::string(submittedJobId));
         break;
     }
 
@@ -475,6 +516,8 @@ void DrmaaJobs::control(const std::string & submittedJobId, Action action) {
 
     if(errnum != DRMAA_ERRNO_SUCCESS) {
         fprintf (stderr, "Could not control the job: %s\n", error);
+        if( action == TERMINATE)
+          log("Could not terminate job: " + std::string(error) + "\n");
         return;
     }
 
@@ -554,5 +597,13 @@ DrmaaJobs::JobStatus DrmaaJobs::jobStatus(const std::string & submittedJobId) {
 
 }
 
+
+void DrmaaJobs::log(std::string msg) {
+    std::ofstream logFile;
+    logFile.open("/neurospin/tmp/Soizic/jobFiles/drmaaLog", std::ios::out | std::ios::app);
+    logFile << msg << std::endl;
+    logFile.flush();
+    logFile.close();
+}
 
 

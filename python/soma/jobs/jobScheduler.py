@@ -15,9 +15,15 @@ from datetime import date
 from datetime import timedelta
 import pwd
 import os
+import time
+from datetime import datetime
+import logging
 
-
-class JobSchedulerError( Exception ): pass
+class JobSchedulerError( Exception ): 
+  def __init__(self, msg):
+    self.args = (msg,)
+    logger = logging.getLogger('ljp.js')
+    logger.critical('EXCEPTION ' + msg)
 
 class JobScheduler( object ):
   
@@ -27,9 +33,10 @@ class JobScheduler( object ):
     @param drmaa_job_scheduler: object of type L{DrmaaJobScheduler} to delegate all the tasks related to the DRMS. If None a new instance is created.
     '''
     
+    self.logger = logging.getLogger('ljp.js')
+    
     Pyro.core.initClient()
 
-    
     # Drmaa Job Scheduler
     if drmaa_job_scheduler:
       self.__drmaaJS = drmaa_job_scheduler
@@ -41,7 +48,7 @@ class JobScheduler( object ):
     ns = locator.getNS(host='is143016')
     try:
         job_server_URI=ns.resolve('JobServer')
-        print "The job server was found"
+        self.logger.info("The job server was found")
     except NamingError,x:
         raise JobSchedulerError("Couldn't find JobServer, Pyro nameserver says: %s \n" % e )
     
@@ -314,7 +321,22 @@ class JobScheduler( object ):
       if not self.__jobServer.isUserJob(jid, self.__user_id):
         raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid )
       
-    self.__drmaaJS.wait(job_ids, timeout)
+    #self.__drmaaJS.wait(job_ids, timeout)
+    self.logger.debug("        waiting...")
+    
+    waitForever = timeout < 0
+    startTime = datetime.now()
+    for jid in job_ids:
+      status = self.__jobServer.getJobStatus(jid) 
+      self.logger.debug("        job %s status: %s", jid, status)
+      timedelta = datetime.now()-startTime
+      while not status == JobServer.DONE and not status == JobServer.FAILED and (waitForever or timedelta.seconds < timeout):
+        time.sleep(1.5)
+        status = self.__jobServer.getJobStatus(jid) 
+        self.logger.debug("        job %s status: %s", jid, status)
+        timedelta = datetime.now()-startTime
+        
+    
 
   def stop( self, job_id ):
     '''

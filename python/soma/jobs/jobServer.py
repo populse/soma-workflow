@@ -17,10 +17,16 @@ import soma.jobs.jobDatabase
 import threading
 
 import os
+import logging
 
 __docformat__ = "epytext en"
 
-class JobServerError( Exception): pass
+class JobServerError( Exception):
+  def __init__(self, msg):
+    self.args = (msg,)
+    logger = logging.getLogger('jobServer')
+    logger.critical('EXCEPTION ' + msg)
+
 
 class JobServer ( object ):
 
@@ -58,6 +64,12 @@ class JobServer ( object ):
     @param tmp_file_dir_path: place on the file system shared by all the machine of the pool 
     used to stored temporary transfered files.
     '''
+    
+    logging.basicConfig(
+      filename = "/volatile/laguitton/log_jobServer",
+      format = "%(asctime)s => line %(lineno)s: %(message)s",
+      level = logging.DEBUG)
+     
     self.__tmp_file_dir_path = tmp_file_dir_path
     self.__database_file = database_file
      

@@ -14,6 +14,9 @@
 #define CONDOR_CONTACT "Condor"
 //#define SGE_CONTACT
 
+// basic file operations
+#include <iostream>
+#include <fstream>
 
 struct ltint
 {
@@ -25,6 +28,8 @@ struct ltint
 
 class DrmaaJobs {
 
+    void log(std::string msg);
+    
     std::map<int, drmaa_job_template_t *, ltint> mJobTemplatesMap;
 
 public :
