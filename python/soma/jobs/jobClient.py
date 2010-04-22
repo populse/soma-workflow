@@ -37,19 +37,17 @@ class Jobs(object):
     
     self.__mode = mode
     if self.__mode == 'local':
-      from soma.jobs.fileTransfer import LocalFileTransfer
-      from soma.jobs.jobLocalConnection import JobLocalConnection 
+      from soma.jobs.connection import LocalFileTransfer, JobLocalConnection
       self.__connection = JobLocalConnection(src_local_process)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = LocalFileTransfer(self.__js_proxy)
     if self.__mode == 'remote':
-      from fileTransfer import RemoteFileTransfer
-      from jobRemoteConnection import JobRemoteConnection 
+      from soma.jobs.connection import RemoteFileTransfer, JobRemoteConnection
       self.__connection = JobRemoteConnection(login, password, src_local_process)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = RemoteFileTransfer(self.__js_proxy)
     if self.__mode == 'local_no_disconnection':
-      from soma.jobs.fileTransfer import LocalFileTransfer
+      from soma.jobs.connection import LocalFileTransfer
       from soma.jobs.jobScheduler import JobScheduler
       self.__js_proxy  = JobScheduler()
       self.__file_transfer = LocalFileTransfer(self.__js_proxy)

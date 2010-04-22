@@ -1,10 +1,9 @@
 
 import Pyro.naming
 import Pyro.core
-from Pyro.errors import PyroError,NamingError
+from Pyro.errors import PyroError, NamingError
 import soma.jobs.jobScheduler
-from soma.jobs.drmaaJobScheduler import DrmaaJobScheduler
-import soma.jobs.connectionCheck
+import soma.jobs.connection 
 import sys
 import threading
 import time 
@@ -21,10 +20,10 @@ class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
     soma.jobs.jobScheduler.JobScheduler.__init__(self, drmaa_job_scheduler)
   pass
   
-class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connectionCheck.ConnectionChecker):
+class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecker):
   def __init__(self, interval = 1, controlInterval = 3):
     Pyro.core.ObjBase.__init__(self)
-    soma.jobs.connectionCheck.ConnectionChecker.__init__(self, interval, controlInterval)
+    soma.jobs.connection.ConnectionChecker.__init__(self, interval, controlInterval)
   pass
 
 ###### main server program
@@ -42,7 +41,7 @@ def main(jobScheduler_name):
   daemon = Pyro.core.Daemon()
   
   # instance of drmaaJobScheduler
-  drmaaJobScheduler = DrmaaJobScheduler()
+  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler()
   
   # instance of jobScheduler
   jobScheduler = JobScheduler(drmaaJobScheduler)
