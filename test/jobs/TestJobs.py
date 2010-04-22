@@ -3,7 +3,8 @@ import soma.jobs.jobClient
 from soma.jobs.jobServer import JobServer
 import time
 import os
-
+import getpass
+import sys
 
 def checkFiles(files, filesModels, tolerance = 0):
   index = 0
@@ -192,15 +193,26 @@ class JobsTest(unittest.TestCase):
   Abstract class for jobs common tests.
   '''
 
-  inpath = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
-  outpath = "/home/sl225510/output/"
+  
   transfer_timeout = -24 
   jobs_timeout = 1
   resource_id = None
+  #mode = 'remote'
   mode = 'local' 
   #mode = 'local_no_disconnection'
-  login = None
-  password = None
+
+  if mode == 'remote':
+    inpath = "/home/soizic/jobClient/test/jobExamples/"
+    outpath = "/home/soizic/output/"
+    print "login: ",
+    login = raw_input()#sys.stdin.readline()
+    password = getpass.getpass()
+
+  if mode == 'local' or mode == 'local_no_disconnection':
+    inpath = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
+    outpath = "/home/sl225510/output/"
+    login = None
+    password = None
 
   jobs = soma.jobs.jobClient.Jobs(resource_id, 
                                    mode,  
@@ -628,8 +640,8 @@ if __name__ == '__main__':
   
   suite_list = []
   if all:
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
@@ -638,11 +650,11 @@ if __name__ == '__main__':
 
     tests = minimal
     
-    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
-    #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
-    #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
+    suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
  
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)

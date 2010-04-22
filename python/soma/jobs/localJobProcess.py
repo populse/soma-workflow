@@ -30,8 +30,9 @@ class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecke
 
 def main(jobScheduler_name):
   
+  logfilepath = "/neurospin/tmp/Soizic/jobFiles/log_"+jobScheduler_name#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
   logging.basicConfig(
-      filename = "/neurospin/tmp/Soizic/jobFiles/log_"+jobScheduler_name+time.strftime("_%d_%b_%I:%M:%S", time.gmtime()),
+      filename = logfilepath,
       format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s",
       level = logging.DEBUG)
   

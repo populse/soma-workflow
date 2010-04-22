@@ -15,7 +15,11 @@ Definitions:
 
 class Jobs(object):
   
-  def __init__(self, resource_id = None, mode = None, login = None, password = None):
+  def __init__(self, 
+               resource_id = None, 
+               mode = None, 
+               login = None, 
+               password = None):
     '''
     @type  resource_id: C{ResourceIdentifier} or None
     @param resource_id: The name of the resource to use, eg: "NeuroSpin HiPiP" or "CCRT"... if None we suppose that the mode is 'local'.
@@ -34,7 +38,9 @@ class Jobs(object):
     #argument to find the mode
     #TBI read src_local_process from configuration file
     src_local_process = "/neurospin/tmp/Soizic/jobFiles/srcServers/localJobProcess.py"
-    
+    #TBI find/infer submitting machine form configuration 
+    submitting_machine = "is143016"
+
     self.__mode = mode
     if self.__mode == 'local':
       from soma.jobs.connection import LocalFileTransfer, JobLocalConnection
@@ -43,7 +49,7 @@ class Jobs(object):
       self.__file_transfer = LocalFileTransfer(self.__js_proxy)
     if self.__mode == 'remote':
       from soma.jobs.connection import RemoteFileTransfer, JobRemoteConnection
-      self.__connection = JobRemoteConnection(login, password, src_local_process)
+      self.__connection = JobRemoteConnection(login, password, submitting_machine, src_local_process)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = RemoteFileTransfer(self.__js_proxy)
     if self.__mode == 'local_no_disconnection':

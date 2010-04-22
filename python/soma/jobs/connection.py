@@ -42,8 +42,8 @@ class JobRemoteConnection( object ):
   def __init__(self,
                login, 
                password, 
-               submitting_machine = "is143016",
-               local_process_src = "/neurospin/tmp/Soizic/jobFiles/srcServers/localJobProcess.py"):
+               submitting_machine,
+               local_process_src):
     '''
     Run the local job process, create a connection and get back a L(JobScheduler)
     proxy which can be used to submit, monitor and control jobs on the pool.
@@ -57,10 +57,12 @@ class JobRemoteConnection( object ):
     @type  local_process_src: string
     @param local_process_src: path to the localJobProcess.py on the submitting_machine
     '''
+    print 'login ' + login
+    print 'submitting machine ' + submitting_machine
 
     def createTunnel(port, host, hostport, login, server_address, password):
       command = "ssh -N -L %s:%s:%s %s@%s" %(port, host, hostport, login, server_address)
-      print command
+      print "tunnel command: " + command
       child = pexpect.spawn(command) 
       child.expect('.ssword:*')
       child.sendline(password)
@@ -84,7 +86,7 @@ class JobRemoteConnection( object ):
                                           submitting_machine, 
                                           local_process_src, 
                                           pyro_objet_name) 
-    print command
+    print "local processs command: " + command
     self.__job_process_child = pexpect.spawn(command)
     self.__job_process_child.expect('.ssword:*')
     self.__job_process_child.sendline(password)
