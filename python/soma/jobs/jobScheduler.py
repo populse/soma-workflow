@@ -59,21 +59,15 @@ class DrmaaJobScheduler( object ):
     def startJobStatusUpdateLoop( self, interval ):
       logger_su = logging.getLogger('ljp.drmaajs.su')
       while True:
-        logger_su.debug("1")
         # get rid of all the jobs that doesn't exist anymore
         serverJobs = self.__jobServer.getJobs(self.__user_id)
-        logger_su.debug("2")
         with self.__jobs_lock:
           self.__jobs = self.__jobs.intersection(serverJobs)
-        logger_su.debug("3")
         allJobsEnded = True
         ended = []
-        logger_su.debug("4")
         with self.__jobs_lock:
-          logger_su.debug("5")
           for job_id in self.__jobs:
             # get back the status from DRMAA
-            logger_su.debug("6")
             status = self.__status(job_id)
             logger_su.debug("job " + repr(job_id) + " : " + status)
             if status == JobServer.DONE or status == JobServer.FAILED:
@@ -93,7 +87,6 @@ class DrmaaJobScheduler( object ):
         logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
       
         time.sleep(interval)
-        logger_su.debug("7")
     
     
     self.__job_status_thread = threading.Thread(name = "job_status_loop", 

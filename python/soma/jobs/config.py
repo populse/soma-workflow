@@ -48,20 +48,3 @@ with open('jobs.cfg', 'wb') as configfile:
 
 job_client_cfg = ConfigParser.ConfigParser()
 
-#test_job_cfg = ConfigParser.ConfigParser()
-
-#test_job_cfg.add_section('soizic_vaio')
-#test_job_cfg.set('soizic_home', 'in_path',  "/home/soizic/projects/jobsdev/jobExamples/")
-#test_job_cfg.set('soizic_home', 'out_path', "/home/soizic/output/")
-
-#test_job_cfg.add_section('is143016')
-#test_job_cfg.set('is143016', 'in_path',  "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/")
-#test_job_cfg.set('is143016', 'out_path', "/home/sl225510/output/")
-
-#test_job_cfg.add_section('is127646')
-#test_job_cfg.set('is127646', 'in_path',  "/home/soizic/jobClient/test/jobExamples/")
-#test_job_cfg.set('is127646', 'out_path', "/home/soizic/output/")
-
-#with open('jobTest.cfg', 'wb') as configfile:
-    #test_job_cfg.write(configfile)
-

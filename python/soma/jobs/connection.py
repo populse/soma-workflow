@@ -22,6 +22,14 @@ import shutil
 __docformat__ = "epytext en"
 
 
+class DaemonicPexpect(pexpect.spawn):
+  
+  def __del__(self):
+    pass
+
+
+
+
 class JobConnectionError( Exception):
   pass
 
@@ -71,7 +79,7 @@ class JobRemoteConnection( object ):
     def createTunnel(port, host, hostport, login, server_address, password):
       command = "ssh -N -L %s:%s:%s %s@%s" %(port, host, hostport, login, server_address)
       print "tunnel command: " + command
-      child = pexpect.spawn(command) 
+      child = DaemonicPexpect(command)#pexpect.spawn(command) 
       child.expect('.ssword:*')
       child.sendline(password)
       time.sleep(2)
@@ -95,8 +103,8 @@ class JobRemoteConnection( object ):
                                           local_process_src, 
                                           pyro_objet_name,
                                           log) 
-    print "local processs command: " + command
-    self.__job_process_child = pexpect.spawn(command)
+    print "local process command: " + command
+    self.__job_process_child = DaemonicPexpect(command) #pexpect.spawn(command)
     self.__job_process_child.expect('.ssword:*')
     self.__job_process_child.sendline(password)
     self.__job_process_child.expect(pyro_objet_name + " URI: ")
@@ -163,7 +171,7 @@ class JobLocalConnection( object ):
 
     command = "python " + local_process_src + " " + pyro_objet_name + " " + log
     print command
-    self.__job_process_child = pexpect.spawn(command)
+    self.__job_process_child = DaemonicPexpect(command)#pexpect.spawn(command)
     
     #fout = file('/neurospin/tmp/Soizic/jobFiles/mylog.txt','w')
     #self.__job_process_child.logfile = fout
