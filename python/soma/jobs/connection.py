@@ -21,6 +21,10 @@ import shutil
 
 __docformat__ = "epytext en"
 
+
+class JobConnectionError( Exception):
+  pass
+
 '''
 requirements: Pyro must be installed on the remote machine.
 
@@ -43,7 +47,8 @@ class JobRemoteConnection( object ):
                login, 
                password, 
                submitting_machine,
-               local_process_src):
+               local_process_src,
+               log = ""):
     '''
     Run the local job process, create a connection and get back a L(JobScheduler)
     proxy which can be used to submit, monitor and control jobs on the pool.
@@ -57,6 +62,9 @@ class JobRemoteConnection( object ):
     @type  local_process_src: string
     @param local_process_src: path to the localJobProcess.py on the submitting_machine
     '''
+
+    if not login:
+      raise JobConnectionError("Remote connection requires a login")
     print 'login ' + login
     print 'submitting machine ' + submitting_machine
 
@@ -82,10 +90,11 @@ class JobRemoteConnection( object ):
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
 
-    command = "ssh %s@%s python %s %s" %( login, 
+    command = "ssh %s@%s python %s %s %s" %( login, 
                                           submitting_machine, 
                                           local_process_src, 
-                                          pyro_objet_name) 
+                                          pyro_objet_name,
+                                          log) 
     print "local processs command: " + command
     self.__job_process_child = pexpect.spawn(command)
     self.__job_process_child.expect('.ssword:*')
@@ -127,6 +136,12 @@ class JobRemoteConnection( object ):
     self.__connection_holder = ConnectionHolder(connection_checker)
     self.__connection_holder.start()
 
+  def stop(self):
+    '''
+    For test purpose only !
+    '''
+    self.__connection_holder.stop()
+
   def getJobScheduler(self):
     return self.jobScheduler
 
@@ -134,7 +149,8 @@ class JobRemoteConnection( object ):
 class JobLocalConnection( object ):
   
   def __init__(self,
-               local_process_src):
+               local_process_src,
+               log = ""):
     '''
     '''
     
@@ -145,12 +161,13 @@ class JobLocalConnection( object ):
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
 
-    command = "python " + local_process_src + " " + pyro_objet_name
+    command = "python " + local_process_src + " " + pyro_objet_name + " " + log
     print command
     self.__job_process_child = pexpect.spawn(command)
+    
     #fout = file('/neurospin/tmp/Soizic/jobFiles/mylog.txt','w')
     #self.__job_process_child.logfile = fout
-    self.__job_process_child.logfile = sys.stdout
+    #self.__job_process_child.logfile = sys.stdout
     self.__job_process_child.expect(pyro_objet_name + " URI: ")
     job_scheduler_uri = self.__job_process_child.readline()
     self.__job_process_child.expect(" connectionChecker URI: ")
@@ -164,6 +181,12 @@ class JobLocalConnection( object ):
     # a clean disconnection in any case      #
     self.__connection_holder = ConnectionHolder(connection_checker)
     self.__connection_holder.start()
+
+  def stop(self):
+    '''
+    For test purpose only !
+    '''
+    self.__connection_holder.stop()
 
   def getJobScheduler(self):
     return self.jobScheduler
@@ -311,10 +334,15 @@ class ConnectionHolder(threading.Thread):
     self.name = "connectionHolderThread"
     self.connectionChecker = connectionChecker
     self.interval = self.connectionChecker.interval.seconds
-    
+   
   def run(self):
-    while True:
+    self.stopped = False
+    while not self.stopped :
       #print "ConnectionHolder => signal"
       self.connectionChecker.signalConnectionExist()
       time.sleep(self.interval)
+
+  def stop(self):
+    self.stopped = True
+    
       

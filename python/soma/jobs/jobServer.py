@@ -13,13 +13,143 @@ from __future__ import with_statement
 from sqlite3 import *
 from datetime import date
 from datetime import timedelta
-import soma.jobs.jobDatabase 
 import threading
 
 import os
 import logging
 
 __docformat__ = "epytext en"
+
+
+'''
+Job server database tables:
+  Users
+    id
+    login or other userId
+
+  Jobs
+    => identification:
+      id
+      user_id
+    
+    => used by the job system (JobScheduler, DrmaaJobScheduler, JobServer)
+      drmaa_id 
+      expiration_date
+      status  
+      stdin_file
+      join_errout
+      stdout_file
+      stderr_file 
+      working_directory 
+                  
+    => for user and administrator usage
+      name_description 
+      command           
+      submission_date  
+      exit_status
+      exit_value    
+      terminating_signal
+      resource_usage_file
+
+  
+  Transfer
+    local file path
+    remote file path
+    transfer date
+    expiration date
+    userId
+
+  Input/Ouput junction table
+    jobId 
+    local file path (transferid)
+    input or output
+'''
+
+
+def createDatabase(database_file):
+  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
+  cursor = connection.cursor()
+  cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                      login VARCHAR(255) NOT NULL UNIQUE)''')
+  cursor.execute('''CREATE TABLE jobs (
+                                       id                   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                       user_id              INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
+                                       
+                                       drmaa_id             VARCHAR(255),
+                                       expiration_date      DATE NOT NULL,
+                                       status               VARCHAR(255),
+                                       stdin_file           TEXT,
+                                       join_errout          BOOLEAN NOT NULL,
+                                       stdout_file          TEXT,
+                                       stderr_file          TEXT,
+                                       working_directory    TEXT,
+                                       custom_submission    BOOLEAN NOT NULL,
+                                       
+                                       name_description     TEXT,
+                                       command              TEXT,
+                                       submission_date      DATE,
+                                       exit_status          VARCHAR(255),
+                                       exit_value           INTEGER,
+                                       terminating_signal   VARCHAR(255),
+                                       resource_usage       TEXT
+                                       )''')
+
+  cursor.execute('''CREATE TABLE transfers (local_file_path  TEXT PRIMARY KEY NOT NULL, 
+                                            remote_file_path TEXT,
+                                            transfer_date    DATE,
+                                            expiration_date  DATE NOT NULL,
+                                            user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id))''')
+
+  cursor.execute('''CREATE TABLE ios (job_id          INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
+                                      local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
+                                      is_input         BOOLEAN NOT NULL,
+                                      PRIMARY KEY (job_id, local_file_path))''')
+                                      
+  cursor.execute('''CREATE TABLE fileCounter (count INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                              foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
+  cursor.close()
+  connection.commit()
+  connection.close()
+
+
+
+def printTables(database_file):
+  
+  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
+  cursor = connection.cursor()
+  
+  print "==== users table: ========"
+  for row in cursor.execute('SELECT * FROM users'):
+    id, login = row
+    print 'id=', repr(id).rjust(2), 'login=', repr(login).rjust(7)
+    
+  print "==== transfers table: ===="
+  for row in cursor.execute('SELECT * FROM transfers'):
+    local_file_path, remote_file_path, transfer_date, expiration_date, user_id = row
+    print '| local_file_path', repr(local_file_path).ljust(25), '| remote_file_path=', repr(remote_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
+  
+  print "==== jobs table: ========"
+  for row in cursor.execute('SELECT * FROM jobs'):
+    print row
+    #id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id,     working_directory = row
+    #print 'id=', repr(id).rjust(3), 'submission_date=', repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3), 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file', repr(stdout_file).rjust(10), 'stderr_file', repr(stderr_file).rjust(10), 'join_errout', repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10), 'name_description', repr(name_description).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10), 'working_directory', repr(working_directory).rjust(10)
+  
+  print "==== ios table: ========="
+  for row in cursor.execute('SELECT * FROM ios'):
+    job_id, local_file_path, is_input = row
+    print '| job_id=', repr(job_id).rjust(2), '| local_file_path=', repr(local_file_path).ljust(25), '| is_input=', repr(is_input).rjust(2), ' |'
+  
+  
+  #print "==== file counter table: ========="
+  #for row in cursor.execute('SELECT * FROM fileCounter'):
+    #count, foo = row
+    #print '| count=', repr(count).rjust(2), '| foo=', repr(foo).ljust(2), ' |'
+  
+  cursor.close()
+  connection.close()
+
+
+
 
 class JobServerError( Exception):
   def __init__(self, msg):
@@ -64,22 +194,19 @@ class JobServer ( object ):
     @param tmp_file_dir_path: place on the file system shared by all the machine of the pool 
     used to stored temporary transfered files.
     '''
-    
-    logging.basicConfig(
-      filename = "/volatile/laguitton/log_jobServer",
-      format = "%(asctime)s => line %(lineno)s: %(message)s",
-      level = logging.DEBUG)
-     
+        
     self.__tmp_file_dir_path = tmp_file_dir_path
     self.__database_file = database_file
      
     self.__lock = threading.RLock()
    
+    logger = logging.getLogger('jobServer')
     
     with self.__lock:
       if not os.path.isfile(database_file):
         print "Database creation " + database_file
-        soma.jobs.jobDatabase.create(database_file)
+        logger.info("Database creation " + database_file)
+        createDatabase(database_file)
       
       
       
@@ -838,3 +965,68 @@ class JobServer ( object ):
       cursor.close()
       connection.close()
     return result
+
+
+
+if __name__ == '__main__':
+  import Pyro.naming
+  import Pyro.core
+  from Pyro.errors import PyroError,NamingError
+  import ConfigParser
+
+  #########################
+  # reading configuration 
+  config = ConfigParser.ConfigParser()
+  config_file_path = os.environ['SOMA_JOBS_CONFIG']
+  config.read(config_file_path)
+  #section = 'soizic_home_cluster'
+  section = 'neurospin_test_cluster'
+ 
+  ###########
+  # log file 
+  log_file_path = config.get(section, 'job_server_log_file')
+  if not log_file_path != 'None':  
+    logging.basicConfig(
+      filename = log_file_path,
+      format = config.get(section, 'job_server_logging_format', 1),
+      level = eval("logging."+config.get(section, 'job_server_logging_level')))
+  
+  ########################
+  # Pyro server creation 
+  class PyroJobServer(Pyro.core.ObjBase, JobServer):
+    def __init__(self, database_file, tmp_file_dir_path):
+      Pyro.core.ObjBase.__init__(self)
+      JobServer.__init__(self, database_file, tmp_file_dir_path)
+    pass
+
+  Pyro.core.initServer()
+  daemon = Pyro.core.Daemon()
+  # locate the NS 
+  locator = Pyro.naming.NameServerLocator()
+  print 'searching for Name Server...'
+  name_server_host = config.get(section, 'name_server_host')
+  if name_server_host == 'None':
+    ns = locator.getNS()
+  else: 
+    ns = locator.getNS(host= name_server_host )
+  daemon.useNameServer(ns)
+
+  # connect a new object implementation (first unregister previous one)
+  job_server_name = config.get(section, 'job_server_name')
+  try:
+    ns.unregister(job_server_name)
+  except NamingError:
+    pass
+
+  # connect new object implementation
+  jobServer = PyroJobServer(config.get(section, 'database_file') , 
+                            config.get(section, 'tmp_file_dir_path') )
+  daemon.connect(jobServer,job_server_name)
+  print "port = " + repr(daemon.port)
+  
+  # enter the server loop.
+  print 'Server object ' + job_server_name + ' ready.'
+
+  ########################
+  # Request loop
+  daemon.requestLoop()

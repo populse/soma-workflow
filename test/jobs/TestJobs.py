@@ -56,13 +56,13 @@ class JobExamples(object):
   
   
   
-  def __init__(self, jobs, inpath, outpath, transfer_timeout = -24, jobs_timeout = 1):
+  def __init__(self, jobs, inpath, outpath, python, transfer_timeout = -24, jobs_timeout = 1):
     self.jobs = jobs
     self.inpath = inpath
     self.outpath = outpath
     self.tr_timeout = transfer_timeout
     self.jobs_timeout = jobs_timeout
-    self.python = "/i2bm/research/Mandriva-2008.0-i686/bin/python" #condor"python" # SGE 
+    self.python = python
     
     self.job1OutputFileModels = [self.inpath + "complete/outputModels/file11",
                                  self.inpath + "complete/outputModels/file12"]
@@ -82,7 +82,14 @@ class JobExamples(object):
     self.exceptionjobstdouterr = [self.inpath + "simple/outputModels/stdout_exception_job",
                                   self.inpath + "simple/outputModels/stderr_exception_job"]
     
-  def submitJob1(self):
+  def setNewConnection(self, jobs):
+    '''
+    For the disconnection test
+    '''
+    del self.jobs
+    self.jobs = jobs
+  
+  def submitJob1(self, time=2):
     self.l_file11 = self.jobs.registerTransfer(self.outpath + "file11", self.tr_timeout) 
     self.l_file12 = self.jobs.registerTransfer(self.outpath + "file12", self.tr_timeout) 
     
@@ -90,7 +97,7 @@ class JobExamples(object):
     l_script1 = self.jobs.transferInputFile(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
     l_stdin1 = self.jobs.transferInputFile(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
     
-    job1id = self.jobs.submit( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, "2"], 
+    job1id = self.jobs.submit( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, repr(time)], 
                                [self.l_file0, l_script1, l_stdin1], 
                                [self.l_file11, self.l_file12], 
                                l_stdin1, False, self.jobs_timeout, "job1 with transfers") 
@@ -98,26 +105,26 @@ class JobExamples(object):
     return (job1id, [self.l_file11, self.l_file12], None)
   
 
-  def submitJob2(self):
+  def submitJob2(self, time=2):
     self.l_file2 = self.jobs.registerTransfer(self.outpath + "file2", self.tr_timeout) 
 
     l_script2 = self.jobs.transferInputFile(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
     l_stdin2 = self.jobs.transferInputFile(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
   
-    job2id = self.jobs.submit( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, "2"], 
+    job2id = self.jobs.submit( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, repr(time)], 
                                [self.l_file0, self.l_file11, l_script2, l_stdin2], 
                                [self.l_file2], 
                                l_stdin2, False, self.jobs_timeout, "job2 with transfers") 
     return (job2id, [self.l_file2], None)
 
 
-  def submitJob3(self):
+  def submitJob3(self, time=2):
     self.l_file3 = self.jobs.registerTransfer(self.outpath + "file3", self.tr_timeout) 
     
     l_script3 = self.jobs.transferInputFile(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
     l_stdin3 = self.jobs.transferInputFile(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
     
-    job3id = self.jobs.submit( [self.python, l_script3, self.l_file12, self.l_file3, "2"], 
+    job3id = self.jobs.submit( [self.python, l_script3, self.l_file12, self.l_file3, repr(time)], 
                                [self.l_file12, l_script3, l_stdin3], 
                                [self.l_file3], 
                                l_stdin3, False,  self.jobs_timeout, "job3 with transfers") 
@@ -192,38 +199,53 @@ class JobsTest(unittest.TestCase):
   '''
   Abstract class for jobs common tests.
   '''
+  #soizic_vaio
+  #inpath = "/home/soizic/projets/jobExamples/"
+  #outpath = "/home/soizic/output/"
+  #mode = 'local'
+  #resource_id = 'soizic_home_cluster'
+  #python = "python"
 
+  #is143016
+  inpath = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
+  outpath = "/home/sl225510/output/"
+  mode = 'local'
+  resource_id = 'neurospin_test_cluster'
+  python = "/i2bm/research/Mandriva-2008.0-i686/bin/python"
+
+  ##is206464
+  #inpath = "/home/soizic/jobClient/test/jobExamples/"
+  #outpath = "/home/soizic/output/"
+  #mode = 'remote'
+  #resource_id = 'neurospin_test_cluster'
+  #python = "/i2bm/research/Mandriva-2008.0-i686/bin/python" #"python" ?? 
   
+  job_client_config_file = os.environ["SOMA_JOBS_CONFIG"]
+
   transfer_timeout = -24 
   jobs_timeout = 1
-  resource_id = None
-  #mode = 'remote'
-  mode = 'local' 
-  #mode = 'local_no_disconnection'
-
+  
   if mode == 'remote':
-    inpath = "/home/soizic/jobClient/test/jobExamples/"
-    outpath = "/home/soizic/output/"
     print "login: ",
     login = raw_input()#sys.stdin.readline()
     password = getpass.getpass()
 
   if mode == 'local' or mode == 'local_no_disconnection':
-    inpath = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
-    outpath = "/home/sl225510/output/"
     login = None
     password = None
 
-  jobs = soma.jobs.jobClient.Jobs(resource_id, 
-                                   mode,  
-                                   login, 
-                                   password)
+  jobs = soma.jobs.jobClient.Jobs(job_client_config_file,
+                                  resource_id, 
+                                  login, 
+                                  password,
+                                  log="1")
   jobExamples = JobExamples(jobs, 
                             inpath, 
                             outpath, 
+                            python,
                             transfer_timeout, 
                             jobs_timeout)  
-    
+  
                                    
   def setUp(self):
     raise Exception('JobTest is an abstract class. SetUp must be implemented in subclass')
@@ -633,15 +655,166 @@ class ExceptionJobTest(JobsTest):
     self.failUnless(identical, msg)
     
 
+    
+class DisconnectionTest(JobsTest):
+  '''
+  Submission of a job pipeline with transfer
+  '''
+  def setUp(self):
+    self.myJobs = []
+    self.myTransfers = []
+    self.remoteFiles = []
+    self.outputFiles = []
+    
+    # Job1 
+    
+    info1 = JobsTest.jobExamples.submitJob1()
+    self.myJobs.append(info1[0]) 
+    self.outputFiles.extend(info1[1])
+
+    JobsTest.jobs.wait(self.myJobs)
+    time.sleep(1)
+    status = JobsTest.jobs.status(self.myJobs[0])
+    self.failUnless(status == JobServer.DONE,
+                    'Job %s status after wait: %s' %(self.myJobs[0], status))
+    exitInformation = JobsTest.jobs.exitInformation(self.myJobs[0])
+    exitStatus = exitInformation[0]
+    self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
+                    'Job %s exit status: %s' %(self.myJobs[0], exitStatus))
+    exitValue = exitInformation[1]
+    self.failUnless(exitValue == 0,
+                    'Job exit value: %d' %exitValue)
+                    
+    # Job2 & 3
+    
+    info2 = JobsTest.jobExamples.submitJob2(time = 60)
+    self.myJobs.append(info2[0]) 
+    self.outputFiles.extend(info2[1])
+    
+    info3 = JobsTest.jobExamples.submitJob3(time = 30)
+    self.myJobs.append(info3[0]) 
+    self.outputFiles.extend(info3[1])
+
+    time.sleep(10)
+    print "Disconnection...."
+    JobsTest.jobs.disconnect()
+    del JobsTest.jobs
+    time.sleep(20)
+    #print ".... Reconnection"
+    #JobsTest.jobs = soma.jobs.jobClient.Jobs( JobsTest.job_client_config_file,
+                                              #JobsTest.resource_id, 
+                                              #JobsTest.login, 
+                                              #JobsTest.password,
+                                              #log = "2")
+    #JobsTest.jobExamples.setNewConnection(JobsTest.jobs)
+    #time.sleep(1)
+   
+  def tearDown(self):
+    pass
+    #JobsTest.tearDown(self)
+    #for file in self.remoteFiles:
+      #if os.path.isfile(file): os.remove(file)
+      
+  def testResult(self):
+
+    #JobsTest.jobs.wait(self.myJobs)
+    #time.sleep(1)
+    #status = JobsTest.jobs.status(self.myJobs[1])
+    #self.failUnless(status == JobServer.DONE,
+                    #'Job %s status after wait: %s' %(self.myJobs[1], status))
+    #exitInformation = JobsTest.jobs.exitInformation(self.myJobs[1])
+    #exitStatus = exitInformation[0]
+    #self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
+                    #'Job %s exit status: %s' %(self.myJobs[1], exitStatus))
+    #exitValue = exitInformation[1]
+    #self.failUnless(exitValue == 0,
+                    #'Job exit value: %d' %exitValue)
+                    
+    #status = JobsTest.jobs.status(self.myJobs[2])
+    #self.failUnless(status == JobServer.DONE,
+                    #'Job %s status after wait: %s' %(self.myJobs[2], status))
+    #exitInformation = JobsTest.jobs.exitInformation(self.myJobs[2])
+    #exitStatus = exitInformation[0]
+    #self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
+                    #'Job %s exit status: %s' %(self.myJobs[2], exitStatus))
+    #exitValue = exitInformation[1]
+    #self.failUnless(exitValue == 0,
+                    #'Job exit value: %d' %exitValue)
+    
+    ## Job 4
+    
+    #info4 = JobsTest.jobExamples.submitJob4()
+    #self.myJobs.append(info4[0]) 
+    #self.outputFiles.extend(info4[1])
+
+    #jobid = self.myJobs[len(self.myJobs)-1]
+    #JobsTest.jobs.wait(self.myJobs)
+    #time.sleep(1)
+    #status = JobsTest.jobs.status(jobid)
+    #self.failUnless(status == JobServer.DONE,
+                    #'Job %s status after wait: %s' %(jobid, status))
+    #exitInformation = JobsTest.jobs.exitInformation(jobid)
+    #exitStatus = exitInformation[0]
+    #self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
+                    #'Job %s exit status: %s' %(jobid, exitStatus))
+    #exitValue = exitInformation[1]
+    #self.failUnless(exitValue == 0,
+                    #'Job exit value: %d' %exitValue)
+    
+    
+    ## checking output files
+    #for file in self.outputFiles:
+      #remote_file = JobsTest.jobs.getTransferInformation(file)[1]
+      #self.failUnless(remote_file)
+      #JobsTest.jobs.transferOutputFile(file)
+      #self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
+      #self.remoteFiles.append(remote_file)
+    
+    #models = JobsTest.jobExamples.job1OutputFileModels + JobsTest.jobExamples.job2OutputFileModels + JobsTest.jobExamples.job3OutputFileModels + JobsTest.jobExamples.job4OutputFileModels
+    #(correct, msg) = checkFiles(self.remoteFiles, models)
+    #self.failUnless(correct, msg)
+    
+
+    ## checking stdout and stderr
+    #remote_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
+    #remote_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
+    #self.copystdouterr(self.myJobs[0], remote_stdout, remote_stderr)
+    #self.remoteFiles.append(remote_stdout)
+    #self.remoteFiles.append(remote_stderr)
+    
+    #remote_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
+    #remote_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
+    #self.copystdouterr(self.myJobs[1], remote_stdout, remote_stderr)
+    #self.remoteFiles.append(remote_stdout)
+    #self.remoteFiles.append(remote_stderr)
+  
+    #remote_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
+    #remote_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
+    #self.copystdouterr(self.myJobs[2], remote_stdout, remote_stderr)
+    #self.remoteFiles.append(remote_stdout)
+    #self.remoteFiles.append(remote_stderr)
+    
+    #remote_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
+    #remote_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
+    #self.copystdouterr(self.myJobs[3], remote_stdout, remote_stderr)
+    #self.remoteFiles.append(remote_stdout)
+    #self.remoteFiles.append(remote_stderr)
+   
+    #models = JobsTest.jobExamples.job1stdouterrModels + JobsTest.jobExamples.job2stdouterrModels + JobsTest.jobExamples.job3stdouterrModels + JobsTest.jobExamples.job4stdouterrModels
+    #(correct, msg) = checkFiles(self.remoteFiles[5:13], models,1)
+    #self.failUnless(correct, msg)
+    pass
+
+
 if __name__ == '__main__':
   
-  #all = False
-  all = True
+  all = False
+  #all = True
   
   suite_list = []
   if all:
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
@@ -655,6 +828,7 @@ if __name__ == '__main__':
     suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
  
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)

@@ -15,9 +15,9 @@ import os
 ###### JobScheduler pyro object
 
 class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
-  def __init__(self, drmaa_job_scheduler):
+  def __init__(self, job_server, drmaa_job_scheduler):
     Pyro.core.ObjBase.__init__(self)
-    soma.jobs.jobScheduler.JobScheduler.__init__(self, drmaa_job_scheduler)
+    soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
   pass
   
 class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecker):
@@ -28,54 +28,77 @@ class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecke
 
 ###### main server program
 
-def main(jobScheduler_name):
+def main(jobScheduler_name, log = ""):
   
-  logfilepath = "/neurospin/tmp/Soizic/jobFiles/log_"+jobScheduler_name#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
-  logging.basicConfig(
+  import ConfigParser
+
+  #########################
+  # reading configuration 
+  config = ConfigParser.ConfigParser()
+  config_file_path = os.environ['SOMA_JOBS_CONFIG']
+  config.read(config_file_path)
+  section = 'neurospin_test_cluster'
+  #section = 'soizic_home_cluster'  
+  
+  
+  ###########
+  # log file 
+  if not config.get(section, 'job_processes_log_dir_path') == 'None':
+    logfilepath =  config.get(section, 'job_processes_log_dir_path')+ "log_"+jobScheduler_name+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+    logging.basicConfig(
       filename = logfilepath,
-      format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s",
-      level = logging.DEBUG)
+      format = config.get(section, 'job_processes_logging_format', 1),
+      level = eval("logging."+config.get(section, 'job_processes_logging_level')))
   
   logger = logging.getLogger('ljp')
+  logger.info(" ")
+  logger.info("****************************************************")
+  logger.info("****************************************************")
+
+  ###########################
+  # looking for the JobServer
+  Pyro.core.initClient()
+  locator = Pyro.naming.NameServerLocator()
+  name_server_host = config.get(section, 'name_server_host')
+  if name_server_host == 'None':
+    ns = locator.getNS()
+  else: 
+    ns = locator.getNS(host= name_server_host )
+
+  job_server_name = config.get(section, 'job_server_name')
+  try:
+      URI=ns.resolve(job_server_name)
+      logger.info('JobServer URI:'+ repr(URI))
+  except NamingError,x:
+      logger.critical('Couldn\'t find' + job_server_name + ' nameserver says:',x)
+      raise SystemExit
   
+  jobServer= Pyro.core.getProxyForURI( URI )
+  
+  ###########################
+
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
   
   # instance of drmaaJobScheduler
-  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler()
+  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer)
   
   # instance of jobScheduler
-  jobScheduler = JobScheduler(drmaaJobScheduler)
+  jobScheduler = JobScheduler(jobServer, drmaaJobScheduler)
   jsc_lock = threading.Lock()
   
   # connection to the pyro daemon and output its URI 
-  ## >> for test purpose only:
-  #locator = Pyro.naming.NameServerLocator()
-  #ns = locator.getNS(host='is143016')
-  #daemon.useNameServer(ns)
-  #try:
-    #ns.unregister(jobScheduler_name)
-  #except NamingError:
-    #pass
-  ## << end for test purpose only
   uri_jsc = daemon.connect(jobScheduler,jobScheduler_name)
   sys.stdout.write(jobScheduler_name+ " URI: " + str(uri_jsc) + "\n")
   sys.stdout.flush() 
+ 
   logger.info('Server object ' + jobScheduler_name + ' is ready.')
   
-  
   # connection check
-  ## >> for test purpose only:
-  #try:
-    #ns.unregister('connectionChecker')
-  #except NamingError:
-    #pass
-  ## << end for test purpose only
   connectionChecker = ConnectionChecker()
   uri_cc = daemon.connect(connectionChecker, 'connectionChecker')
   sys.stdout.write(jobScheduler_name+ " connectionChecker URI: " + str(uri_cc) + "\n")
   sys.stdout.flush() 
-  
   
   # Daemon request loop thread
   logger.info("daemon port = " + repr(daemon.port))
@@ -85,7 +108,6 @@ def main(jobScheduler_name):
   daemonRequestLoopThread.daemon = True
   daemonRequestLoopThread.start() 
 
-  
   
   logger.info("******** before client connection ******************")
   client_connected = False
@@ -116,11 +138,13 @@ def main(jobScheduler_name):
   sys.exit()
   
 
-
-
 if __name__=="__main__":
-  if not len(sys.argv) == 2 :
+  if not len(sys.argv) == 2 and not len(sys.argv) == 3:
     sys.stdout.write("PyroJobScheduler takes 1 argument: name of the JobScheduler object. \n")
   else:  
-    jobScheduler_name = sys.argv[1]
-    main(jobScheduler_name)
+    if len(sys.argv) == 2:
+      jobScheduler_name = sys.argv[1]
+      main(jobScheduler_name)
+    if len(sys.argv) == 3:
+      jobScheduler_name = sys.argv[1]
+      main(jobScheduler_name, sys.argv[2])

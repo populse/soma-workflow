@@ -30,27 +30,18 @@ class DrmaaJobScheduler( object ):
   The L{DrmaaJobScheduler} must be created on one of the machine which is allowed
   to submit jobs by the DRMS.
   '''
-  def __init__( self ):
+  def __init__( self, job_server ):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
 
+    @type  job_server: L{JobServer}
     '''
     self.logger = logging.getLogger('ljp.drmaajs')
     
     self.__drmaa = DrmaaJobs()
-    Pyro.core.initClient()
-    locator = Pyro.naming.NameServerLocator()
-    ns = locator.getNS(host='is143016')
-  
-    try:
-        URI=ns.resolve('JobServer')
-        self.logger.info('JobServer URI:'+ repr(URI))
-    except NamingError,x:
-        self.logger.critical('Couldn\'t find JobServer, nameserver says:',x)
-        raise SystemExit
     
-    self.__jobServer= Pyro.core.getProxyForURI( URI )
-    
+    self.__jobServer = job_server
+
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
     except Exception, e:
@@ -68,15 +59,21 @@ class DrmaaJobScheduler( object ):
     def startJobStatusUpdateLoop( self, interval ):
       logger_su = logging.getLogger('ljp.drmaajs.su')
       while True:
+        logger_su.debug("1")
         # get rid of all the jobs that doesn't exist anymore
         serverJobs = self.__jobServer.getJobs(self.__user_id)
+        logger_su.debug("2")
         with self.__jobs_lock:
           self.__jobs = self.__jobs.intersection(serverJobs)
+        logger_su.debug("3")
         allJobsEnded = True
         ended = []
+        logger_su.debug("4")
         with self.__jobs_lock:
+          logger_su.debug("5")
           for job_id in self.__jobs:
             # get back the status from DRMAA
+            logger_su.debug("6")
             status = self.__status(job_id)
             logger_su.debug("job " + repr(job_id) + " : " + status)
             if status == JobServer.DONE or status == JobServer.FAILED:
@@ -88,7 +85,7 @@ class DrmaaJobScheduler( object ):
               # update the status on the job server 
               self.__jobServer.setJobStatus(job_id, status)
         self.__jobsEnded = allJobsEnded
-        
+
         # get the exit information for terminated jobs and update the jobServer
         for job_id in ended:
           with self.__jobs_lock:
@@ -96,7 +93,7 @@ class DrmaaJobScheduler( object ):
         logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
       
         time.sleep(interval)
-   
+        logger_su.debug("7")
     
     
     self.__job_status_thread = threading.Thread(name = "job_status_loop", 
@@ -269,18 +266,6 @@ class DrmaaJobScheduler( object ):
     
   ########## JOB CONTROL VIA DRMS ########################################
   
-  
-  #def wait( self, job_ids, timeout = -1):
-    #'''
-    #Implementation of the L{JobScheduler} method.
-    #'''
-    #drmaaJobIds = []
-      
-    #for jid in job_ids:
-      #drmaaJobIds.append(self.__jobServer.getDrmaaJobId(jid))
-    #with self.__drmaa_lock:
-    #self.__drmaa.synchronize(drmaaJobIds, timeout)
-
 
   def stop( self, job_id ):
     '''
@@ -345,8 +330,9 @@ class JobSchedulerError( Exception ):
 
 class JobScheduler( object ):
   
-  def __init__( self, drmaa_job_scheduler = None):
+  def __init__( self, job_server, drmaa_job_scheduler = None):
     ''' 
+    @type  job_server: L{JobServer}
     @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
     @param drmaa_job_scheduler: object of type L{DrmaaJobScheduler} to delegate all the tasks related to the DRMS. If None a new instance is created.
     '''
@@ -362,15 +348,7 @@ class JobScheduler( object ):
       self.__drmaaJS = DrmaaJobScheduler()
     
     # Job Server
-    locator = Pyro.naming.NameServerLocator()
-    ns = locator.getNS(host='is143016')
-    try:
-        job_server_URI=ns.resolve('JobServer')
-        self.logger.info("The job server was found")
-    except NamingError,x:
-        raise JobSchedulerError("Couldn't find JobServer, Pyro nameserver says: %s \n" % e )
-    
-    self.__jobServer= Pyro.core.getProxyForURI( job_server_URI )
+    self.__jobServer= job_server
     
     try:
       userLogin = pwd.getpwuid(os.getuid())[0]

@@ -6,6 +6,11 @@
 
 __docformat__ = "epytext en"
 
+import ConfigParser
+import soma.jobs.connection 
+import random
+import socket
+
 ''' 
 Definitions:
 'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
@@ -16,13 +21,17 @@ Definitions:
 class Jobs(object):
   
   def __init__(self, 
-               resource_id = None, 
-               mode = None, 
+               config_file,
+               resource_id, 
                login = None, 
-               password = None):
+               password = None,
+               log = ""):
     '''
+    @type  config_file: string
+    @param config_file: 
     @type  resource_id: C{ResourceIdentifier} or None
-    @param resource_id: The name of the resource to use, eg: "NeuroSpin HiPiP" or "CCRT"... if None we suppose that the mode is 'local'.
+    @param resource_id: The name of the resource to use, eg: "NeuroSpin HiPiP" or 
+    "CCRT"... the ressource_id config must be inside the config_file.
     @type  mode: string or None
     @param mode: 
        - 'local': (default) if run on a submitting machine of the cluster
@@ -34,32 +43,48 @@ class Jobs(object):
     @param login and password: only required if mode is 'remote'
     '''
     
-    #TBI, read the configuration files and infer from the ressource_id 
-    #argument to find the mode
-    #TBI read src_local_process from configuration file
-    src_local_process = "/neurospin/tmp/Soizic/jobFiles/srcServers/localJobProcess.py"
-    #TBI find/infer submitting machine form configuration 
-    submitting_machine = "is143016"
+    #########################
+    # reading configuration 
+    config = ConfigParser.ConfigParser()
+    config.read(config_file)
+   
+    if not config.has_section(resource_id):
+      raise Exception("Can't find section " + resource_id + " in configuration file: " + config_file)
 
+    submitting_machines = eval(config.get(resource_id, 'submitting_machines'))
+    hostname = socket.gethostname()
+    mode = 'remote'
+    for machine in submitting_machines:
+      if hostname == machine: mode = 'local'
+    print "hostname: " + hostname + " => mode = " + mode
+    src_local_process = config.get(resource_id, 'src_local_process')
+
+    #########################
+    # Connection
     self.__mode = mode
     if self.__mode == 'local':
-      from soma.jobs.connection import LocalFileTransfer, JobLocalConnection
-      self.__connection = JobLocalConnection(src_local_process)
+      self.__connection = soma.jobs.connection.JobLocalConnection(src_local_process, log)
       self.__js_proxy = self.__connection.getJobScheduler()
-      self.__file_transfer = LocalFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
     if self.__mode == 'remote':
-      from soma.jobs.connection import RemoteFileTransfer, JobRemoteConnection
-      self.__connection = JobRemoteConnection(login, password, submitting_machine, src_local_process)
+      sub_machine = submitting_machines[random.randint(0, len(submitting_machines)-1)]
+      print 'submission machine: ' + sub_machine
+      self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, log)
       self.__js_proxy = self.__connection.getJobScheduler()
-      self.__file_transfer = RemoteFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.RemoteFileTransfer(self.__js_proxy)
     if self.__mode == 'local_no_disconnection':
-      from soma.jobs.connection import LocalFileTransfer
       from soma.jobs.jobScheduler import JobScheduler
       self.__js_proxy  = JobScheduler()
-      self.__file_transfer = LocalFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
       self.__connection = None
 
 
+  def disconnect(self):
+    '''
+    Simulates a disconnection for TEST PURPORSE ONLY.
+    !!! The current instance won't be usable anymore after this call !!!!
+    '''
+    self.__connection.stop()
 
   ########## FILE TRANSFER ###############################################
     
