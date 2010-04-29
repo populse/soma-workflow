@@ -7,6 +7,9 @@ import getpass
 import sys
 import ConfigParser
 import socket
+from datetime import datetime
+from datetime import timedelta
+
 
 
 
@@ -242,7 +245,6 @@ class JobsTest(unittest.TestCase):
   def tearDown(self):
     for jid in self.myJobs:
       JobsTest.jobs.dispose(jid)
-    time.sleep(1)
     remainingJobs = frozenset(JobsTest.jobs.jobs())
     self.failUnless(len(remainingJobs.intersection(self.myJobs)) == 0)
      
@@ -253,17 +255,28 @@ class JobsTest(unittest.TestCase):
      
   def test_wait(self):
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     for jid in self.myJobs:
       status = JobsTest.jobs.status(jid)
       self.failUnless(status == JobServer.DONE or 
                       status == JobServer.FAILED,
                       'Job %s status after wait: %s' %(jid, status))
+                      
+  def test_wait2(self):
+    startTime = datetime.now()
+    interval = 5
+    JobsTest.jobs.wait(self.myJobs, interval)
+    delta = datetime.now() - startTime
+    if delta < timedelta(seconds=interval):
+      status = JobsTest.jobs.status(jid)
+      self.failUnless(status == JobServer.DONE or 
+                      status == JobServer.FAILED,
+                      'Job %s status after wait: %s' %(self.myJobs[0], status))
+    else:
+      self.failUnless( abs(delta-timedelta(seconds=interval)) < timedelta(seconds=1))
    
   def test_stop(self):
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.stop(jobid)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.USER_ON_HOLD or 
                     status == JobServer.USER_SYSTEM_ON_HOLD or
@@ -274,9 +287,7 @@ class JobsTest(unittest.TestCase):
   def test_restart(self):
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.stop(jobid)
-    time.sleep(1)
     JobsTest.jobs.restart(jobid)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(not status == JobServer.USER_ON_HOLD and  
                     not status == JobServer.USER_SYSTEM_ON_HOLD and
@@ -287,7 +298,6 @@ class JobsTest(unittest.TestCase):
   def test_kill(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.kill(jobid)
-    time.sleep(1)
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     status = JobsTest.jobs.status(jobid)
@@ -336,7 +346,6 @@ class LocalCustomSubmission(JobsTest):
   def testResult(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -381,7 +390,6 @@ class LocalSubmission(JobsTest):
   def testResult(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -431,7 +439,6 @@ class SubmissionWithTransfer(JobsTest):
   def testResult(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -483,7 +490,6 @@ class JobPipelineWithTransfer(JobsTest):
     self.outputFiles.extend(info1[1])
 
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[0])
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
@@ -506,7 +512,6 @@ class JobPipelineWithTransfer(JobsTest):
     self.outputFiles.extend(info3[1])
 
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[1])
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
@@ -546,7 +551,6 @@ class JobPipelineWithTransfer(JobsTest):
   def testResult(self):
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -621,7 +625,6 @@ class ExceptionJobTest(JobsTest):
   def testResult(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -661,7 +664,6 @@ class DisconnectionTest(JobsTest):
     self.outputFiles.extend(info1[1])
 
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[0])
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
@@ -698,7 +700,7 @@ class DisconnectionTest(JobsTest):
 
 
     JobsTest.jobExamples.setNewConnection(JobsTest.jobs)
-    time.sleep(1)
+    #time.sleep(1)
    
   def tearDown(self):
     #pass
@@ -709,7 +711,6 @@ class DisconnectionTest(JobsTest):
   def testResult(self):
 
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(self.myJobs[1])
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
@@ -740,7 +741,6 @@ class DisconnectionTest(JobsTest):
 
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.wait(self.myJobs)
-    time.sleep(1)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == JobServer.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -804,14 +804,14 @@ if __name__ == '__main__':
   
   suite_list = []
   if all:
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
   else:
-    minimal = ['testResult']#, 'test_wait' ]
+    minimal = ['test_wait2'] #'testResult']#, 'test_wait' ]
 
     tests = minimal
     

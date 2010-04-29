@@ -13,12 +13,21 @@ from __future__ import with_statement
 from sqlite3 import *
 from datetime import date
 from datetime import timedelta
+from datetime import datetime
 import threading
 
 import os
 import logging
 
 __docformat__ = "epytext en"
+
+
+strtime_format = '%Y-%m-%d %H:%M:%S'
+
+def adapt_datetime(ts):
+    return ts.strftime(strtime_format)
+
+register_adapter(datetime, adapt_datetime)
 
 
 '''
@@ -36,6 +45,7 @@ Job server database tables:
       drmaa_id 
       expiration_date
       status  
+      last_status_update
       stdin_file
       join_errout
       stdout_file
@@ -65,7 +75,6 @@ Job server database tables:
     input or output
 '''
 
-
 def createDatabase(database_file):
   connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
@@ -78,6 +87,7 @@ def createDatabase(database_file):
                                        drmaa_id             VARCHAR(255),
                                        expiration_date      DATE NOT NULL,
                                        status               VARCHAR(255),
+                                       last_status_update   DATE NOT NULL,
                                        stdin_file           TEXT,
                                        join_errout          BOOLEAN NOT NULL,
                                        stdout_file          TEXT,
@@ -397,6 +407,7 @@ class JobServer ( object ):
                          drmaa_id,
                          expiration_date,
                          status,
+                         last_status_update,
                          stdin_file,
                          join_errout,
                          stdout_file,
@@ -410,12 +421,13 @@ class JobServer ( object ):
                          exit_status)
                         VALUES (?, ?, ?, ?, ?,
                                 ?, ?, ?, ?, ?, 
-                                ?, ?, ?, ?)''',
+                                ?, ?, ?, ?, ?)''',
                         (user_id,
                         
                         drmaa_id,
                         expiration_date, 
                         JobServer.UNDETERMINED,
+                        datetime.now(),
                         stdin_file,
                         join_stderrout,
                         stdout_file,
@@ -467,7 +479,7 @@ class JobServer ( object ):
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('UPDATE jobs SET status=? WHERE id=?', (status, job_id))
+        cursor.execute('UPDATE jobs SET status=?, last_status_update=? WHERE id=?', (status, datetime.now(), job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -808,22 +820,24 @@ class JobServer ( object ):
 
   def getJobStatus(self, job_id):
     '''
-    Returns the job status sored in the database (updated by L{DrmaaJobScheduler}).
+    Returns the job status sored in the database (updated by L{DrmaaJobScheduler}) and 
+    the date of its last update.
     The job_id must be valid.
     '''
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        status = cursor.execute('SELECT status FROM jobs WHERE id=?', [job_id]).next()[0]#supposes that the job_id is valid
+        (status, strdate) = cursor.execute('SELECT status, last_status_update FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
         connection.close()
         raise JobServerError('Error getJobStatus %s: %s \n' %(type(e), e)) 
       status = status.encode('utf-8')
+      date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
       cursor.close()
       connection.close()
-    return status
+    return (status, date)
   
 
   def getExitInformation(self, job_id):
@@ -985,7 +999,7 @@ if __name__ == '__main__':
   ###########
   # log file 
   log_file_path = config.get(section, 'job_server_log_file')
-  if not log_file_path != 'None':  
+  if log_file_path != 'None':  
     logging.basicConfig(
       filename = log_file_path,
       format = config.get(section, 'job_server_logging_format', 1),

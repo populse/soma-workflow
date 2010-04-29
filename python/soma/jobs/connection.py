@@ -22,14 +22,6 @@ import shutil
 __docformat__ = "epytext en"
 
 
-class DaemonicPexpect(pexpect.spawn):
-  
-  def __del__(self):
-    pass
-
-
-
-
 class JobConnectionError( Exception):
   pass
 
@@ -79,7 +71,7 @@ class JobRemoteConnection( object ):
     def createTunnel(port, host, hostport, login, server_address, password):
       command = "ssh -N -L %s:%s:%s %s@%s" %(port, host, hostport, login, server_address)
       print "tunnel command: " + command
-      child = DaemonicPexpect(command)#pexpect.spawn(command) 
+      child = pexpect.spawn(command) 
       child.expect('.ssword:*')
       child.sendline(password)
       time.sleep(2)
@@ -104,7 +96,7 @@ class JobRemoteConnection( object ):
                                           pyro_objet_name,
                                           log) 
     print "local process command: " + command
-    self.__job_process_child = DaemonicPexpect(command) #pexpect.spawn(command)
+    self.__job_process_child = pexpect.spawn(command)
     self.__job_process_child.expect('.ssword:*')
     self.__job_process_child.sendline(password)
     self.__job_process_child.expect(pyro_objet_name + " URI: ")
@@ -162,6 +154,7 @@ class JobLocalConnection( object ):
     '''
     '''
     
+    
     login = pwd.getpwuid(os.getuid())[0] 
 
     pyro_objet_name = "jobScheduler_" + login
@@ -171,7 +164,7 @@ class JobLocalConnection( object ):
 
     command = "python " + local_process_src + " " + pyro_objet_name + " " + log
     print command
-    self.__job_process_child = DaemonicPexpect(command)#pexpect.spawn(command)
+    self.__job_process_child = pexpect.spawn(command)
     
     #fout = file('/neurospin/tmp/Soizic/jobFiles/mylog.txt','w')
     #self.__job_process_child.logfile = fout
@@ -180,6 +173,7 @@ class JobLocalConnection( object ):
     job_scheduler_uri = self.__job_process_child.readline()
     self.__job_process_child.expect(" connectionChecker URI: ")
     connection_checker_uri = self.__job_process_child.readline()  
+    self.__job_process_child.terminated = True
     
     # create the proxies                     #
     self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
@@ -280,7 +274,7 @@ class RemoteFileTransfer(FileTransfer):
           self.jobScheduler.writeLine(line, local_input_file_path)
           line = infile.readline()
       infile.close()
-  
+      self.jobScheduler.endTransfers()
       return local_input_file_path
     
     
@@ -293,7 +287,7 @@ class RemoteFileTransfer(FileTransfer):
           outfile.write(line)
           line = self.jobScheduler.readline(local_file_path)
       outfile.close()
-
+      self.jobScheduler.endTransfers()
 
 
 

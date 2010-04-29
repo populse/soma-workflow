@@ -22,6 +22,17 @@ import logging
 
 __docformat__ = "epytext en"
 
+
+refreshment_interval = 1 #seconds
+
+class JobSchedulerError( Exception ): 
+  def __init__(self, msg):
+    self.args = (msg,)
+    logger = logging.getLogger('ljp.js')
+    logger.critical('EXCEPTION ' + msg)
+
+
+
 class DrmaaJobScheduler( object ):
 
   '''
@@ -91,7 +102,7 @@ class DrmaaJobScheduler( object ):
     
     self.__job_status_thread = threading.Thread(name = "job_status_loop", 
                                                 target = startJobStatusUpdateLoop, 
-                                                args = (self, 1))
+                                                args = (self, refreshment_interval))
     self.__job_status_thread.setDaemon(True)
     self.__job_status_thread.start()
 
@@ -127,7 +138,7 @@ class DrmaaJobScheduler( object ):
     '''
     Implementation of the L{JobScheduler} method.
     '''
-    
+        
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     
     if not stdout_path:
@@ -142,13 +153,13 @@ class DrmaaJobScheduler( object ):
       self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
       self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
-
+     
       if join_stderrout:
         self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
       else:
         if stderr_path:
           self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_path)
-  
+     
       if stdin:
         self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
         
@@ -251,7 +262,7 @@ class DrmaaJobScheduler( object ):
     self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
     self.__jobServer.setJobStatus(job_id, status)
     
-    assert(self.__jobServer.getJobStatus(job_id) == status)
+    assert(self.__jobServer.getJobStatus(job_id)[0] == status)
 
 
   def areJobsDone(self):
@@ -273,7 +284,9 @@ class DrmaaJobScheduler( object ):
       with self.__drmaa_lock:
         self.__drmaa.hold(drmaaJobId)
 
-  
+    self.__waitForStatusUpdate(job_id)
+    
+    
   def restart( self, job_id ):
     '''
     Implementation of the L{JobScheduler} method.
@@ -287,7 +300,8 @@ class DrmaaJobScheduler( object ):
     if status==JobServer.USER_ON_HOLD or status==JobServer.USER_SYSTEM_ON_HOLD :
       with self.__drmaa_lock:
         self.__drmaa.release(drmaaJobId)
-
+    
+    self.__waitForStatusUpdate(job_id)
   
 
 
@@ -310,13 +324,18 @@ class DrmaaJobScheduler( object ):
       
 
 
+  def __waitForStatusUpdate(self, job_id):
+    
+    drmaaActionTime = datetime.now()
+    time.sleep(refreshment_interval)
+    (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
+    while last_status_update < drmaaActionTime:
+      time.sleep(refreshment_interval)
+      (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
+      if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(jid))
 
 
-class JobSchedulerError( Exception ): 
-  def __init__(self, msg):
-    self.args = (msg,)
-    logger = logging.getLogger('ljp.js')
-    logger.critical('EXCEPTION ' + msg)
     
     
 
@@ -402,10 +421,14 @@ class JobScheduler( object ):
       raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
     
     if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
+      if self.__fileToWrite: self.__fileToWrite.close()
       self.__fileToWrite = open(local_file_path, 'wt')
-   
+      
+      
     self.__fileToWrite.write(line)
     self.__fileToWrite.flush()
+    #os.fsync(self.__fileToWrite.fileno())
+   
    
   
   def readline(self, local_file_path):
@@ -429,6 +452,12 @@ class JobScheduler( object ):
     return self.__fileToRead.readline()
 
   
+  def endTransfers(self):
+    if self.__fileToWrite:
+      self.__fileToWrite.close()
+    if self.__fileToRead:
+      self.__fileToRead.close()
+    
 
   def cancelTransfer(self, local_file_path):
     '''
@@ -531,7 +560,7 @@ class JobScheduler( object ):
       print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return 
     
-    return self.__jobServer.getJobStatus(job_id)
+    return self.__jobServer.getJobStatus(job_id)[0]
         
 
   def exitInformation(self, job_id ):
@@ -615,16 +644,19 @@ class JobScheduler( object ):
     
     waitForever = timeout < 0
     startTime = datetime.now()
+    
     for jid in job_ids:
-      status = self.__jobServer.getJobStatus(jid) 
+      (status, last_status_update) = self.__jobServer.getJobStatus(jid)
       self.logger.debug("        job %s status: %s", jid, status)
-      timedelta = datetime.now()-startTime
-      while not status == JobServer.DONE and not status == JobServer.FAILED and (waitForever or timedelta.seconds < timeout):
-        time.sleep(1.5)
-        status = self.__jobServer.getJobStatus(jid) 
+      delta = datetime.now()-startTime
+      delta_status_update = datetime.now() - last_status_update
+      while not status == JobServer.DONE and not status == JobServer.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
+        time.sleep(refreshment_interval)
+        (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
         self.logger.debug("        job %s status: %s", jid, status)
-        timedelta = datetime.now()-startTime
-        
+        delta = datetime.now() - startTime
+        if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
+          raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid))
     
 
   def stop( self, job_id ):
