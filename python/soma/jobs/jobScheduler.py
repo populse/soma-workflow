@@ -277,14 +277,17 @@ class DrmaaJobScheduler( object ):
     '''
     drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     status = self.__status(job_id)
+    
     if status==JobServer.RUNNING:
       with self.__drmaa_lock:
         self.__drmaa.suspend(drmaaJobId)
+      self.__waitForStatusUpdate(job_id)
+    
     if status==JobServer.QUEUED_ACTIVE:
       with self.__drmaa_lock:
         self.__drmaa.hold(drmaaJobId)
-
-    self.__waitForStatusUpdate(job_id)
+      self.__waitForStatusUpdate(job_id)
+    
     
     
   def restart( self, job_id ):
@@ -294,14 +297,18 @@ class DrmaaJobScheduler( object ):
     
     drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     status = self.__status(job_id)
+    
     if status==JobServer.USER_SUSPENDED or status==JobServer.USER_SYSTEM_SUSPENDED:
       with self.__drmaa_lock:
         self.__drmaa.resume(drmaaJobId)
+      self.__waitForStatusUpdate(job_id)
+      
     if status==JobServer.USER_ON_HOLD or status==JobServer.USER_SYSTEM_ON_HOLD :
       with self.__drmaa_lock:
         self.__drmaa.release(drmaaJobId)
+      self.__waitForStatusUpdate(job_id)
     
-    self.__waitForStatusUpdate(job_id)
+    
   
 
 
@@ -329,14 +336,11 @@ class DrmaaJobScheduler( object ):
     drmaaActionTime = datetime.now()
     time.sleep(refreshment_interval)
     (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
-    while last_status_update < drmaaActionTime:
+    while not status == JobServer.DONE and not status == JobServer.FAILED and last_status_update < drmaaActionTime:
       time.sleep(refreshment_interval)
       (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
       if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
-        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(jid))
-
-
-    
+        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(job_id))
     
 
 

@@ -267,10 +267,11 @@ class JobsTest(unittest.TestCase):
     JobsTest.jobs.wait(self.myJobs, interval)
     delta = datetime.now() - startTime
     if delta < timedelta(seconds=interval):
-      status = JobsTest.jobs.status(jid)
-      self.failUnless(status == JobServer.DONE or 
-                      status == JobServer.FAILED,
-                      'Job %s status after wait: %s' %(self.myJobs[0], status))
+      for jid in self.myJobs:
+        status = JobsTest.jobs.status(jid)
+        self.failUnless(status == JobServer.DONE or 
+                        status == JobServer.FAILED,
+                        'Job %s status after wait: %s' %(self.myJobs[0], status))
     else:
       self.failUnless( abs(delta-timedelta(seconds=interval)) < timedelta(seconds=1))
    
@@ -278,7 +279,9 @@ class JobsTest(unittest.TestCase):
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.stop(jobid)
     status = JobsTest.jobs.status(jobid)
-    self.failUnless(status == JobServer.USER_ON_HOLD or 
+    self.failUnless(status == JobServer.DONE or
+                    status == JobServer.FAILED or 
+                    status == JobServer.USER_ON_HOLD or 
                     status == JobServer.USER_SYSTEM_ON_HOLD or
                     status == JobServer.USER_SUSPENDED or
                     status == JobServer.USER_SYSTEM_SUSPENDED,
@@ -472,6 +475,28 @@ class SubmissionWithTransfer(JobsTest):
     self.failUnless(correct, msg)
     
     
+
+
+class EndedJobWithTransfer(JobsTest):
+  '''
+  Submission of a job with transfer
+  '''
+  def setUp(self):
+    self.myJobs = []
+    self.myTransfers = []
+    info = JobsTest.jobExamples.submitJob1()
+    self.myJobs.append(info[0]) 
+    self.outputFiles = info[1]
+    self.remoteFiles = []
+
+    JobsTest.jobs.wait(self.myJobs)
+   
+  def tearDown(self):
+    JobsTest.tearDown(self)
+  
+  def testResult(self):
+    self.failUnless(True)
+
     
 class JobPipelineWithTransfer(JobsTest):
   '''
@@ -804,23 +829,26 @@ if __name__ == '__main__':
   
   suite_list = []
   if all:
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+
   else:
     minimal = ['test_wait2'] #'testResult']#, 'test_wait' ]
 
     tests = minimal
     
-    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
-    suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
-    suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
-    suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
+    #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+    suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer)))
  
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)
