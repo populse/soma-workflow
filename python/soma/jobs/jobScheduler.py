@@ -41,17 +41,26 @@ class DrmaaJobScheduler( object ):
   The L{DrmaaJobScheduler} must be created on one of the machine which is allowed
   to submit jobs by the DRMS.
   '''
-  def __init__( self, job_server ):
+  def __init__( self, job_server, parallel_job_submission_info = None):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
 
     @type  job_server: L{JobServer}
+    @type  parallel_job_submission_info: dictionary 
+    @param parallel_job_submission_info: DRMAA doesn't provide an unified way of submitting
+    parallel jobs. The value of parallel_job_submission is cluster dependant. 
+    The keys are:
+      - Drmaa job template attributes 
+      - parallel configuration name as defined in JobServer
     '''
     self.logger = logging.getLogger('ljp.drmaajs')
     
     self.__drmaa = DrmaaJobs()
     
     self.__jobServer = job_server
+
+    self.logger.debug("Parallel job submission info: %s", repr(parallel_job_submission_info))
+    self.__parallel_job_submission_info = parallel_job_submission_info
 
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
@@ -133,14 +142,20 @@ class DrmaaJobScheduler( object ):
           name_description,
           stdout_path,
           stderr_path,
-          working_directory):
+          working_directory,
+          parallel_job_info):
     
     '''
     Implementation of the L{JobScheduler} method.
     '''
         
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    self.logger.debug("submit")
+    self.logger.debug("parallel_job_info", repr(parallel_job_info))
     
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    parallel_config_name = None
+    max_node_number = 1
+
     if not stdout_path:
       stdout_path = self.__jobServer.generateLocalFilePath(self.__user_id)
       stderr_path = self.__jobServer.generateLocalFilePath(self.__user_id)
@@ -166,6 +181,11 @@ class DrmaaJobScheduler( object ):
       if working_directory:
         self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
       
+      if parallel_job_info:
+        self.logger.debug("parallel_job_info: ", repr(parallel_job_info))
+        parallel_config_name, max_node_number = parallel_job_info
+        self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
+
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
       self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
     
@@ -183,8 +203,10 @@ class DrmaaJobScheduler( object ):
                                       stdin, 
                                       name_description, 
                                       drmaaSubmittedJobId,
-                                      None,
-                                      command_info)
+                                      working_directory,
+                                      command_info,
+                                      parallel_config_name,
+                                      max_node_number)
                                     
     if required_local_input_files:
       self.__jobServer.registerInputs(job_id, required_local_input_files)
@@ -195,6 +217,53 @@ class DrmaaJobScheduler( object ):
       self.__jobs.add(job_id)
     
     return job_id
+
+  def __setDrmaaParallelJobTemplate(self, drmaa_job_template_id, configuration_name, max_num_node):
+    '''
+    Set the DRMAA job template information for a parallel job submission.
+    The configuration file must provide the parallel job submission information specific 
+    to the cluster in use. 
+
+    @type  drmaa_job_template_id: string 
+    @param drmaa_job_template_id: id of drmaa job template
+    @type  parallel_job_info: tuple (string, int)
+    @param parallel_job_info: (configuration_name, max_node_num)
+    configuration_name: type of parallel job as defined in jobServer.py (eg MPI, OpenMP...)
+    max_node_num: maximum node number the job requests (on a unique machine or separated machine
+    depending on the parallel configuration)
+    ''' 
+
+    if not self.__parallel_job_submission_info:
+      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information for this cluster.")
+    
+    if configuration_name not in self.__parallel_job_submission_info:
+      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s for the current cluster.", configuration_name)
+
+    cluster_specific_config_name = self.__parallel_job_submission_info[configuration_name]
+    
+    #NOT Safe ??
+    #for key in self.__parallel_job_submission_info.iterkeys():
+      #if "drmaa_" == key[0:5]:
+        #value = self.__parallel_job_submission_info[key]
+        #value = value.format(config_name=cluster_specific_config_name, max_node=max_num_node)
+        #with self.__drmaa_lock:
+          #self.__drmaa.setAttribute( drmaa_job_template_id, 
+                                     #key, 
+                                     #value)
+        #self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", key, value)
+
+    for drmaa_attribute in ("drmaa_native_specification", "drmaa_job_category"):
+      value = self.__parallel_job_submission_info.get(drmaa_attribute)
+      if value: 
+        #value = value.format(config_name=cluster_specific_config_name, max_node=max_num_node)
+        value = value.replace("{config_name}", cluster_specific_config_name)
+        value = value.replace("{max_node}", repr(max_num_node))
+        with self.__drmaa_lock: 
+          self.__drmaa.setAttribute(drmaa_job_template_id, 
+                                    drmaa_attribute, 
+                                    value)
+        self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", drmaa_attribute, value) 
+
    
 
   def dispose( self, job_id ):
@@ -488,11 +557,14 @@ class JobScheduler( object ):
               name_description=None,
               stdout_path=None,
               stderr_path=None,
-              working_directory=None):
+              working_directory=None,
+              parallel_job_info=None):
 
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
+
+    self.logger.debug("JobScheduler submit, parallel_job_info", repr(parallel_job_info))
 
     if len(command) == 0:
       raise JobSchedulerError("Submission error: the command must contain at least one element \n")
@@ -507,7 +579,8 @@ class JobScheduler( object ):
                                     name_description,
                                     stdout_path,
                                     stderr_path,
-                                    working_directory)
+                                    working_directory,
+                                    parallel_job_info)
     
     return job_id
 

@@ -200,7 +200,30 @@ class JobExamples(object):
             [file11, file12],
             None)
      
+  #def mpiJobSubmission(self, node_num):
+    #jobId = self.jobs.submit( command = [ "bash", self.inpath + "mpi/simple_mpi.sh", repr(node_num) ], 
+                              #join_stderrout=False, 
+                              #disposal_timeout = self.jobs_timeout,
+                              #name_description = "parallel job mpi",
+                              #parallel_job_info = (JobServer.MPI,node_num))
 
+    #return (jobId, None, None)
+     
+     
+  def mpiJobSubmission(self, node_num):
+    
+    script = self.jobs.transferInputFile(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
+    binary = self.jobs.transferInputFile(self.inpath + "mpi/simple_mpi", self.tr_timeout)
+    
+    jobId = self.jobs.submit( command = [ "bash", script, repr(node_num) ], 
+                              required_local_input_files = [script, binary],
+                              join_stderrout=False, 
+                              disposal_timeout = self.jobs_timeout,
+                              name_description = "parallel job mpi",
+                              parallel_job_info = (JobServer.MPI,node_num))
+
+    return (jobId, None, None)
+     
 class JobsTest(unittest.TestCase):
   '''
   Abstract class for jobs common tests.
@@ -372,7 +395,7 @@ class LocalCustomSubmission(JobsTest):
       self.failUnless(os.path.isfile(file), 'File %s doesn t exit' %file)
     (correct, msg) = checkFiles(self.stdouterrFiles, JobsTest.jobExamples.job1stdouterrModels)
     self.failUnless(correct, msg)
-    
+ 
 
 class LocalSubmission(JobsTest):
   '''
@@ -669,7 +692,6 @@ class ExceptionJobTest(JobsTest):
     
     (identical, msg) = checkFiles(self.remoteFiles, JobsTest.jobExamples.exceptionjobstdouterr,1)
     self.failUnless(identical, msg)
-    
 
     
 class DisconnectionTest(JobsTest):
@@ -822,10 +844,60 @@ class DisconnectionTest(JobsTest):
     #pass
 
 
+
+class MPIParallelJobTest(JobsTest):
+  '''
+  Submission of a parallel job (MPI)
+  '''
+  def setUp(self):
+    self.myJobs = []
+    self.myTransfers = []
+    self.node_num = 4
+    info = JobsTest.jobExamples.mpiJobSubmission(node_num = self.node_num)
+    self.myJobs.append(info[0]) 
+    self.outputFiles = info[1]
+   
+  def tearDown(self):
+    JobsTest.tearDown(self)
+    #for file in self.outputFiles:
+      #if os.path.isfile(file): os.remove(file)
+      
+  def testResult(self):
+    jobid = self.myJobs[0]
+    JobsTest.jobs.wait(self.myJobs)
+    
+    status = JobsTest.jobs.status(jobid)
+    self.failUnless(status == JobServer.DONE,
+                    'Job %s status after wait: %s' %(jobid, status))
+    exitInformation = JobsTest.jobs.exitInformation(jobid)
+    exitStatus = exitInformation[0]
+    self.failUnless(exitStatus == JobServer.FINISHED_REGULARLY, 
+                    'Job %s exit status: %s' %(jobid, exitStatus))
+    exitValue = exitInformation[1]
+    self.failUnless(exitValue == 0,
+                    'Job exit value: %d' %exitValue)
+                    
+
+    print "stdout: "
+    line = JobsTest.jobs.stdoutReadLine(jobid)
+    process_num = 1
+    while line:
+      splitted_line = line.split()
+      if splitted_line[0] == "Grettings":
+        self.failUnless(line.rstrip() == "Grettings from process %d!" %(process_num), 
+                        "stdout line:  %sinstead of  : 'Grettings from process %d!'" %(line, process_num))
+        process_num = process_num +1
+      line = JobsTest.jobs.stdoutReadLine(jobid)
+
+    self.failUnless(process_num==self.node_num, 
+                    "%d process(es) run instead of %d." %(process_num-1, self.node_num))
+
+
+
 if __name__ == '__main__':
   
-  #all = False
-  all = True
+  all = False
+  #all = True
   
   suite_list = []
   if all:
@@ -835,10 +907,11 @@ if __name__ == '__main__':
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
-    minimal = ['test_wait2'] #'testResult']#, 'test_wait' ]
+    minimal = ['testResult']#'test_wait2'] #, 'test_wait' ]
 
     tests = minimal
     
@@ -848,7 +921,9 @@ if __name__ == '__main__':
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
-    suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer)))
- 
+    #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
+    suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
+
+
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)

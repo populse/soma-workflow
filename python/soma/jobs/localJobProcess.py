@@ -4,6 +4,7 @@ import Pyro.core
 from Pyro.errors import PyroError, NamingError
 import soma.jobs.jobScheduler
 import soma.jobs.connection 
+from soma.jobs.jobServer import JobServer # for constants only
 import sys
 import threading
 import time 
@@ -76,12 +77,23 @@ def main(jobScheduler_name, log = ""):
   jobServer= Pyro.core.getProxyForURI( URI )
   
   ###########################
+  # Parallel job specific information
+  parallel_job_submission_info= {}
+  for drmaa_job_attribute in ["drmaa_job_category", "drmaa_native_specification"]:
+    if config.has_option(section, drmaa_job_attribute):
+      parallel_job_submission_info[drmaa_job_attribute] = config.get(section, drmaa_job_attribute)
+
+  for parallel_config in JobServer.PARALLEL_CONFIGURATIONS:
+    if config.has_option(section, parallel_config):
+      parallel_job_submission_info[parallel_config] = config.get(section, parallel_config)
+  
+  #############################
 
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
   
   # instance of drmaaJobScheduler
-  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer)
+  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer, parallel_job_submission_info)
   
   # instance of jobScheduler
   jobScheduler = JobScheduler(jobServer, drmaaJobScheduler)

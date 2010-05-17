@@ -4,14 +4,14 @@ import ConfigParser
 cfg = ConfigParser.ConfigParser()
 
 
-cfg.add_section('soizic_vaio')
+cfg.add_section('soizic-vaio')
 # jobs file directories
-cfg.set('soizic_vaio', 'job_examples_dir', "/home/soizic/projets/jobExamples/")
-cfg.set('soizic_vaio', 'job_output_dir', "/home/soizic/output/")
+cfg.set('soizic-vaio', 'job_examples_dir', "/home/soizic/projets/jobExamples/")
+cfg.set('soizic-vaio', 'job_output_dir', "/home/soizic/output/")
 # mode: 'remote' or 'local' (the login and password will be asked in the remote case)
-cfg.set('soizic_vaio', 'mode', 'local')
-cfg.set('soizic_vaio', 'ressource_id', 'soizic_home_cluster')
-cfg.set('soizic_vaio', 'python', 'python')
+cfg.set('soizic-vaio', 'mode', 'local')
+cfg.set('soizic-vaio', 'ressource_id', 'soizic_home_cluster')
+cfg.set('soizic-vaio', 'python', 'python')
 
 cfg.add_section('is143016')
 # jobs file directories

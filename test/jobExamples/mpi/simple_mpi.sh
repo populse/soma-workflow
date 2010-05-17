@@ -1,0 +1,1 @@
+/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/mpirun -machinefile $TMPDIR/machines -np $1 /home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/mpi/simple_mpi

@@ -60,6 +60,8 @@ Job server database tables:
       exit_value    
       terminating_signal
       resource_usage_file
+      parallel_config_name
+      max_node_number
 
   
   Transfer
@@ -101,7 +103,9 @@ def createDatabase(database_file):
                                        exit_status          VARCHAR(255),
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
-                                       resource_usage       TEXT
+                                       resource_usage       TEXT,
+                                       parallel_config_name TEXT,
+                                       max_node_number      INTEGER
                                        )''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  TEXT PRIMARY KEY NOT NULL, 
@@ -184,6 +188,7 @@ class JobServer ( object ):
   USER_SYSTEM_SUSPENDED="user_system_suspended"
   DONE="done"
   FAILED="failed"
+  
   '''
   Exit job status:
   '''
@@ -193,6 +198,14 @@ class JobServer ( object ):
   FINISHED_TERM_SIG="finished_signal"
   FINISHED_UNCLEAR_CONDITIONS="finished_unclear_condition"
   USER_KILLED="killed_by_user"
+  
+  '''
+  Parallel job configuration names:
+  '''
+  MPI="MPI"
+  OPEN_MP="OpenMP"
+  PARALLEL_CONFIGURATIONS = [MPI, OPEN_MP]
+  
     
   def __init__(self, database_file, tmp_file_dir_path):
     '''
@@ -369,7 +382,9 @@ class JobServer ( object ):
                name_description=None,
                drmaa_id=None,
                working_directory=None, 
-               command_info=None):
+               command_info=None,
+               parallel_config_name=None,
+               max_node_number=1):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -393,6 +408,11 @@ class JobServer ( object ):
     @type  working_directory: string
     @type  command_info: string
     @param command_info: job command for user information only
+    @type  parallel_config_name: None or string 
+    @param parallel_config_name: if the job is made to run on several nodes: name of 
+    the paralle configuration as defined in JobServer.
+    @type  max_node_number: int 
+    @param max_node_number: maximum of node requested by the job to run
     @rtype: C{JobIdentifier}
     @return: the identifier of the job
     '''
@@ -418,10 +438,14 @@ class JobServer ( object ):
                          name_description,
                          command,
                          submission_date, 
-                         exit_status)
+                         exit_status,
+
+                         parallel_config_name,
+                         max_node_number)
                         VALUES (?, ?, ?, ?, ?,
                                 ?, ?, ?, ?, ?, 
-                                ?, ?, ?, ?, ?)''',
+                                ?, ?, ?, ?, ?, 
+                                ?, ?)''',
                         (user_id,
                         
                         drmaa_id,
@@ -438,7 +462,10 @@ class JobServer ( object ):
                         name_description,
                         command_info,
                         date.today(), 
-                        JobServer.EXIT_UNDETERMINED))
+                        JobServer.EXIT_UNDETERMINED,
+
+                        parallel_config_name,
+                        max_node_number))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -896,8 +923,29 @@ class JobServer ( object ):
     return (desc, cmd, sub_date)
 
 
-
-
+  def getParallelJobInformation(self, job_id):
+    '''
+    Returns the job parallel configuration name and the 
+    the maximum number of node which was requested to run the job.
+    The job_id must be valid.
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        parallel_config, max_node = cursor.execute('''SELECT  
+                                              parallel_config_name, 
+                                              max_node_number
+                                              FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getParallelJobInformation %s: %s \n' %(type(e), e)) 
+      cursor.close()
+      connection.close()
+      
+    if parallel_config: parallel_config = parallel_config.encode('utf-8')
+    return (parallel_config, max_node)
 
   #TRANSFERS
   

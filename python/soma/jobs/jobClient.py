@@ -15,6 +15,8 @@ import socket
 Definitions:
 'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
 'Remote' refers to all hosts, processes or files which are not local.
+
+'Parallel job': job requiring more than one node to run.
 '''
 
 
@@ -210,7 +212,8 @@ class Jobs(object):
               name_description=None,
               stdout_path=None,
               stderr_path=None,
-              working_directory=None):
+              working_directory=None,
+              parallel_job_info=None):
 
     '''
     Submits a job for execution to the cluster. A job identifier is returned and 
@@ -261,12 +264,22 @@ class Jobs(object):
     @type  working_directory: string
     @param working_directory: his argument can be set to choose the directory where 
     the job will be executed. (optional) 
- 
+
+    @type  parallel_job_info: tuple (string, int)
+    @param parallel_job_info: (configuration_name, max_node_num) or None
+    This argument must be filled if the job is made to run on several nodes (parallel job). 
+    configuration_name: type of parallel job as defined in jobServer.py (eg MPI, OpenMP...)
+    max_node_num: maximum node number the job requests (on a unique machine or separated machine
+    depending on the parallel configuration)
+    !! Warning !!: parallel configurations are not necessarily implemented for every cluster. 
+                   This is the only argument that is likely to request a specific implementation 
+                   for each cluster/DRMS.
+  
     @rtype:   C{JobIdentifier}
     @return:  the identifier of the submitted job 
 
     '''
-
+    
     job_id = self.__js_proxy.submit(command,
                                     required_local_input_files,
                                     required_local_output_files,
@@ -276,7 +289,8 @@ class Jobs(object):
                                     name_description,
                                     stdout_path,
                                     stderr_path,
-                                    working_directory)
+                                    working_directory,
+                                    parallel_job_info)
     return job_id
    
 
