@@ -161,7 +161,7 @@ class Jobs(object):
     '''
     Copies the local file to the associated remote file path. 
     The local file path must belong to the user's transfered files (ie belong to 
-    the sequence returned by the L{getTransfers} method). 
+    the sequence returned by the L{transfers} method). 
     
     @type  local_file: string or sequence of string
     @param local_file: local file path(s) 
@@ -177,7 +177,7 @@ class Jobs(object):
     
     @type local_file_path: string
     @param local_file_path: local file path associated with a transfer (ie 
-    belongs to the list returned by L{getTransfers}    
+    belongs to the list returned by L{transfers}    
     '''
     self.__js_proxy.cancelTransfer(local_file_path)
     
@@ -268,7 +268,7 @@ class Jobs(object):
     @type  parallel_job_info: tuple (string, int)
     @param parallel_job_info: (configuration_name, max_node_num) or None
     This argument must be filled if the job is made to run on several nodes (parallel job). 
-    configuration_name: type of parallel job as defined in jobServer.py (eg MPI, OpenMP...)
+    configuration_name: type of parallel job as defined in soma.jobs.constants (eg MPI, OpenMP...)
     max_node_num: maximum node number the job requests (on a unique machine or separated machine
     depending on the parallel configuration)
     !! Warning !!: parallel configurations are not necessarily implemented for every cluster. 
@@ -279,7 +279,7 @@ class Jobs(object):
     @return:  the identifier of the submitted job 
 
     '''
-    
+
     job_id = self.__js_proxy.submit(command,
                                     required_local_input_files,
                                     required_local_output_files,
@@ -323,7 +323,7 @@ class Jobs(object):
     
     return self.__js_proxy.jobs()
     
-  def getTransfers(self):
+  def transfers(self):
     '''
     Returns the transfers currently owned by the user as a sequece of local file path 
     returned by the L{registerTransfer} method. 
@@ -333,12 +333,12 @@ class Jobs(object):
     of the pool
     '''
  
-    return self.__js_proxy.getTransfers()
+    return self.__js_proxy.transfers()
 
     
-  def getTransferInformation(self, local_file_path):
+  def transferInformation(self, local_file_path):
     '''
-    The local_file_path must belong to the list of paths returned by L{getTransfers}.
+    The local_file_path must belong to the list of paths returned by L{transfers}.
     Returns the information related to the file transfer corresponding to the 
     local_file_path.
 
@@ -350,7 +350,7 @@ class Jobs(object):
         -expiration_date: after this date the local file will be deleted, unless an
         existing job has declared this file as output or input.
     '''
-    return self.__js_proxy.getTransferInformation(local_file_path)
+    return self.__js_proxy.transferInformation(local_file_path)
    
   
   
@@ -389,7 +389,7 @@ class Jobs(object):
     return self.__js_proxy.exitInformation(job_id)
     
  
-  def generalInformation(self, job_id):
+  def jobInformation(self, job_id):
     '''
     Gives general information about the job: name/description, command and 
     submission date.
@@ -400,7 +400,7 @@ class Jobs(object):
     @return: (name_description, command, submission_date) it may be C{None} if the job 
     is not valid. 
     '''
-    return self.__js_proxy.generalInformation(job_id)
+    return self.__js_proxy.jobInformation(job_id)
     
 
 

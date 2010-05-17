@@ -15,9 +15,9 @@ from datetime import date
 from datetime import timedelta
 from datetime import datetime
 import threading
-
 import os
 import logging
+import soma.jobs.constants as constants
 
 __docformat__ = "epytext en"
 
@@ -41,7 +41,7 @@ Job server database tables:
       id
       user_id
     
-    => used by the job system (JobScheduler, DrmaaJobScheduler, JobServer)
+    => used by the job system (DrmaaJobScheduler, JobServer)
       drmaa_id 
       expiration_date
       status  
@@ -174,37 +174,6 @@ class JobServerError( Exception):
 
 class JobServer ( object ):
 
-  '''
-  Job status:
-  '''
-  UNDETERMINED="undetermined"
-  QUEUED_ACTIVE="queued_active"
-  SYSTEM_ON_HOLD="system_on_hold"
-  USER_ON_HOLD="user_on_hold"
-  USER_SYSTEM_ON_HOLD="user_system_on_hold"
-  RUNNING="running"
-  SYSTEM_SUSPENDED="system_suspended"
-  USER_SUSPENDED="user_suspended"
-  USER_SYSTEM_SUSPENDED="user_system_suspended"
-  DONE="done"
-  FAILED="failed"
-  
-  '''
-  Exit job status:
-  '''
-  EXIT_UNDETERMINED="exit_status_undetermined"
-  EXIT_ABORTED="aborted"
-  FINISHED_REGULARLY="finished_regularly"
-  FINISHED_TERM_SIG="finished_signal"
-  FINISHED_UNCLEAR_CONDITIONS="finished_unclear_condition"
-  USER_KILLED="killed_by_user"
-  
-  '''
-  Parallel job configuration names:
-  '''
-  MPI="MPI"
-  OPEN_MP="OpenMP"
-  PARALLEL_CONFIGURATIONS = [MPI, OPEN_MP]
   
     
   def __init__(self, database_file, tmp_file_dir_path):
@@ -450,7 +419,7 @@ class JobServer ( object ):
                         
                         drmaa_id,
                         expiration_date, 
-                        JobServer.UNDETERMINED,
+                        constants.UNDETERMINED,
                         datetime.now(),
                         stdin_file,
                         join_stderrout,
@@ -462,7 +431,7 @@ class JobServer ( object ):
                         name_description,
                         command_info,
                         date.today(), 
-                        JobServer.EXIT_UNDETERMINED,
+                        constants.EXIT_UNDETERMINED,
 
                         parallel_config_name,
                         max_node_number))

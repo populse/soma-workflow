@@ -231,7 +231,7 @@ class FileTransfer( object ):
     '''
     Copy the local file to the associated remote file path. 
     The local file path must belong to the user's transfered files (ie belong to 
-    the sequence returned by the L{getTransfers} method). 
+    the sequence returned by the L{transfers} method). 
     
     @type  local_file: string or sequence of string
     @param local_file: local file path(s) 
@@ -255,7 +255,7 @@ class LocalFileTransfer(FileTransfer):
     
     def transferOutputFile(self, local_file):
     
-      local_file_path, remote_file_path, expiration_date = self.jobScheduler.getTransferInformation(local_file)
+      local_file_path, remote_file_path, expiration_date = self.jobScheduler.transferInformation(local_file)
       
       try:
         shutil.copy(local_file_path,remote_file_path)
@@ -279,7 +279,7 @@ class RemoteFileTransfer(FileTransfer):
     
     
     def transferOutputFile(self, local_file):
-      local_file_path, remote_file_path, expiration_date = self.jobScheduler.getTransferInformation(local_file)
+      local_file_path, remote_file_path, expiration_date = self.jobScheduler.transferInformation(local_file)
       
       outfile = open(remote_file_path, "w")
       line = self.jobScheduler.readline(local_file_path)
@@ -307,6 +307,7 @@ class ConnectionChecker(object):
           ls = self.lastSignal
         delta = datetime.now()-ls
         if delta > self.interval * 3:
+          self.disconnectionCallback()
           self.connected = False
         else:
           self.connected = True
@@ -326,8 +327,9 @@ class ConnectionChecker(object):
   def isConnected(self):
     return self.connected
   
-
-
+  def disconnectionCallback(self):
+    pass
+  
 
 class ConnectionHolder(threading.Thread):
   def __init__(self, connectionChecker):

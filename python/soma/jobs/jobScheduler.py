@@ -8,7 +8,6 @@
 
 from __future__ import with_statement
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
-from soma.jobs.jobServer import JobServer
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 from datetime import date
@@ -19,6 +18,7 @@ import threading
 import time
 from datetime import datetime
 import logging
+import soma.jobs.constants as constants
 
 __docformat__ = "epytext en"
 
@@ -51,7 +51,7 @@ class DrmaaJobScheduler( object ):
     parallel jobs. The value of parallel_job_submission is cluster dependant. 
     The keys are:
       - Drmaa job template attributes 
-      - parallel configuration name as defined in JobServer
+      - parallel configuration name as defined in soma.jobs.constants
     '''
     self.logger = logging.getLogger('ljp.drmaajs')
     
@@ -90,7 +90,7 @@ class DrmaaJobScheduler( object ):
             # get back the status from DRMAA
             status = self.__status(job_id)
             logger_su.debug("job " + repr(job_id) + " : " + status)
-            if status == JobServer.DONE or status == JobServer.FAILED:
+            if status == constants.DONE or status == constants.FAILED:
               # update the exit status and status on the job server 
               self.__endOfJob(job_id, status)
               ended.append(job_id)
@@ -149,9 +149,6 @@ class DrmaaJobScheduler( object ):
     Implementation of the L{JobScheduler} method.
     '''
         
-    self.logger.debug("submit")
-    self.logger.debug("parallel_job_info", repr(parallel_job_info))
-    
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     parallel_config_name = None
     max_node_number = 1
@@ -182,7 +179,6 @@ class DrmaaJobScheduler( object ):
         self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
       
       if parallel_job_info:
-        self.logger.debug("parallel_job_info: ", repr(parallel_job_info))
         parallel_config_name, max_node_number = parallel_job_info
         self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
 
@@ -228,7 +224,7 @@ class DrmaaJobScheduler( object ):
     @param drmaa_job_template_id: id of drmaa job template
     @type  parallel_job_info: tuple (string, int)
     @param parallel_job_info: (configuration_name, max_node_num)
-    configuration_name: type of parallel job as defined in jobServer.py (eg MPI, OpenMP...)
+    configuration_name: type of parallel job as defined in soma.jobs.constants (eg MPI, OpenMP...)
     max_node_num: maximum node number the job requests (on a unique machine or separated machine
     depending on the parallel configuration)
     ''' 
@@ -259,10 +255,10 @@ class DrmaaJobScheduler( object ):
         value = value.replace("{config_name}", cluster_specific_config_name)
         value = value.replace("{max_node}", repr(max_num_node))
         with self.__drmaa_lock: 
-          self.__drmaa.setAttribute(drmaa_job_template_id, 
+          self.__drmaa.setAttribute( drmaa_job_template_id, 
                                     drmaa_attribute, 
                                     value)
-        self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", drmaa_attribute, value) 
+          self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", drmaa_attribute, value) 
 
    
 
@@ -288,21 +284,19 @@ class DrmaaJobScheduler( object ):
   def __status( self, job_id ):
     '''
     Returns the status of a submitted job. => add a converstion from DRMAA job 
-    status strings to JobServer status ???
+    status strings to the status defined in soma.jobs.constants ???
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     @rtype:  C{JobStatus}
-    @return: the status of the job. The possible values are UNDETERMINED, 
-    QUEUED_ACTIVE, SYSTEM_ON_HOLD, USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING,
-    SYSTEM_SUSPENDED, USER_SUSPENDED, USER_SYSTEM_SUSPENDED, DONE, FAILED
+    @return: the status of the job. The possible values are defined in soma.jobs.constants
     '''
     
     drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     
     with self.__drmaa_lock:
       status = self.__drmaa.jobStatus(drmaaJobId) 
-       #add conversion from DRMAA status strings to JobServer status strings if needed
+       #add conversion from DRMAA status strings to the status defined in soma.jobs.constants if needed
       
     return status
    
@@ -311,7 +305,7 @@ class DrmaaJobScheduler( object ):
 
   def __endOfJob(self, job_id, status):
     '''
-    The method is called when the job status is JobServer.DONE or FAILED,
+    The method is called when the job status is DONE or FAILED,
     to get the job exit inforation from DRMAA and update the JobServer.
     The job_id is also remove form the job list.
     '''
@@ -347,12 +341,12 @@ class DrmaaJobScheduler( object ):
     drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     status = self.__status(job_id)
     
-    if status==JobServer.RUNNING:
+    if status==constants.RUNNING:
       with self.__drmaa_lock:
         self.__drmaa.suspend(drmaaJobId)
       self.__waitForStatusUpdate(job_id)
     
-    if status==JobServer.QUEUED_ACTIVE:
+    if status==constants.QUEUED_ACTIVE:
       with self.__drmaa_lock:
         self.__drmaa.hold(drmaaJobId)
       self.__waitForStatusUpdate(job_id)
@@ -367,12 +361,12 @@ class DrmaaJobScheduler( object ):
     drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
     status = self.__status(job_id)
     
-    if status==JobServer.USER_SUSPENDED or status==JobServer.USER_SYSTEM_SUSPENDED:
+    if status==constants.USER_SUSPENDED or status==constants.USER_SYSTEM_SUSPENDED:
       with self.__drmaa_lock:
         self.__drmaa.resume(drmaaJobId)
       self.__waitForStatusUpdate(job_id)
       
-    if status==JobServer.USER_ON_HOLD or status==JobServer.USER_SYSTEM_ON_HOLD :
+    if status==constants.USER_ON_HOLD or status==constants.USER_SYSTEM_ON_HOLD :
       with self.__drmaa_lock:
         self.__drmaa.release(drmaaJobId)
       self.__waitForStatusUpdate(job_id)
@@ -390,11 +384,11 @@ class DrmaaJobScheduler( object ):
     with self.__drmaa_lock:
       self.__drmaa.terminate(drmaaJobId)
     self.__jobServer.setJobExitInfo(job_id, 
-                                    JobServer.USER_KILLED,
+                                    constants.USER_KILLED,
                                     None,
                                     None,
                                     None)
-    self.__jobServer.setJobStatus(job_id, JobServer.FAILED)
+    self.__jobServer.setJobStatus(job_id, constants.FAILED)
     with self.__jobs_lock:
       self.__jobs.discard(job_id)
       
@@ -405,7 +399,7 @@ class DrmaaJobScheduler( object ):
     drmaaActionTime = datetime.now()
     time.sleep(refreshment_interval)
     (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
-    while not status == JobServer.DONE and not status == JobServer.FAILED and last_status_update < drmaaActionTime:
+    while not status == constants.DONE and not status == constants.FAILED and last_status_update < drmaaActionTime:
       time.sleep(refreshment_interval)
       (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
       if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
@@ -564,8 +558,6 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
 
-    self.logger.debug("JobScheduler submit, parallel_job_info", repr(parallel_job_info))
-
     if len(command) == 0:
       raise JobSchedulerError("Submission error: the command must contain at least one element \n")
 
@@ -608,14 +600,14 @@ class JobScheduler( object ):
     '''
     return self.__jobServer.getJobs(self.__user_id)
     
-  def getTransfers(self):
+  def transfers(self):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     return self.__jobServer.getTransfers(self.__user_id)
 
     
-  def getTransferInformation(self, local_file_path):
+  def transferInformation(self, local_file_path):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
@@ -654,7 +646,7 @@ class JobScheduler( object ):
     return (exit_status, exit_value, terminating_signal, resource_usage)
     
  
-  def generalInformation(self, job_id):
+  def jobInformation(self, job_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
@@ -727,7 +719,7 @@ class JobScheduler( object ):
       self.logger.debug("        job %s status: %s", jid, status)
       delta = datetime.now()-startTime
       delta_status_update = datetime.now() - last_status_update
-      while not status == JobServer.DONE and not status == JobServer.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
+      while not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
         time.sleep(refreshment_interval)
         (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
         self.logger.debug("        job %s status: %s", jid, status)
