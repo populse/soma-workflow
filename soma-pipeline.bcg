@@ -1,0 +1,10 @@
+#-----------------------------------------------------------------------------
+class SomaPipelineComponent( GenericMakerComponent ):
+  _name = 'soma-pipeline'
+
+  def shareDir( self ):
+    return os.path.join( 'share', 'soma-' + self.version() )
+
+  def docDir( self ):
+    return os.path.join( 'share', 'doc', 'soma-' + self.version() )
+
