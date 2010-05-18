@@ -24,7 +24,7 @@ jobs_cfg.set('neurospin_test_cluster', 'tmp_file_dir_path',            '/neurosp
 jobs_cfg.set('neurospin_test_cluster', 'database_file',                '/volatile/laguitton/jobs.db')
 #DRMS 
 jobs_cfg.set('neurospin_test_cluster', 'drms',                         'SGE') 
-jobs_cfg.set('neurospin_test_cluster', 'submitting_machines',          "['is143016', 'is204723']")
+jobs_cfg.set('neurospin_test_cluster', 'submitting_machines',          "is143016 is204723")
 
 
 
@@ -47,7 +47,7 @@ jobs_cfg.set('soizic_home_cluster', 'tmp_file_dir_path',            '/home/soizi
 jobs_cfg.set('soizic_home_cluster', 'database_file',                '/home/soizic/jobs.db')
 #DRMS
 jobs_cfg.set('soizic_home_cluster', 'drms',                         'SGE')
-jobs_cfg.set('soizic_home_cluster', 'submitting_machines',          "['soizic-vaio']")
+jobs_cfg.set('soizic_home_cluster', 'submitting_machines',          "soizic-vaio")
 
 with open('jobs.cfg', 'wb') as configfile:
     jobs_cfg.write(configfile)

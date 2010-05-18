@@ -53,7 +53,7 @@ class Jobs(object):
     if not config.has_section(resource_id):
       raise Exception("Can't find section " + resource_id + " in configuration file: " + config_file)
 
-    submitting_machines = eval(config.get(resource_id, 'submitting_machines'))
+    submitting_machines = config.get(resource_id, 'submitting_machines').split()
     hostname = socket.gethostname()
     mode = 'remote'
     for machine in submitting_machines:
