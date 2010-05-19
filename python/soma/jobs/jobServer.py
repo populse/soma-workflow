@@ -166,10 +166,10 @@ def printTables(database_file):
 
 
 class JobServerError( Exception):
-  def __init__(self, msg):
+  def __init__(self, msg, logger=None):
     self.args = (msg,)
-    logger = logging.getLogger('jobServer')
-    logger.critical('EXCEPTION ' + msg)
+    if logger: 
+      logger.critical('EXCEPTION ' + msg)
 
 
 class JobServer ( object ):
@@ -192,12 +192,12 @@ class JobServer ( object ):
      
     self.__lock = threading.RLock()
    
-    logger = logging.getLogger('jobServer')
+    self.logger = logging.getLogger('jobServer')
     
     with self.__lock:
       if not os.path.isfile(database_file):
         print "Database creation " + database_file
-        logger.info("Database creation " + database_file)
+        self.logger.info("Database creation " + database_file)
         createDatabase(database_file)
       
       
@@ -210,7 +210,7 @@ class JobServer ( object ):
     try:
       connection = connect(self.__database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
-        raise JobServerError('Database connection error %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
     return connection
   
   
@@ -236,7 +236,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error registerUser %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error registerUser %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -269,7 +269,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e), self.logger) 
       
       newFilePath = self.__tmp_file_dir_path + "/" + login + '/'
       if remote_file_path == None:
@@ -309,7 +309,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error addTransfer %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error addTransfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -334,7 +334,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error removeTransferASAP %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error removeTransferASAP %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -439,7 +439,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error addJob %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error addJob %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       job_id = cursor.lastrowid
       cursor.close()
@@ -450,13 +450,13 @@ class JobServer ( object ):
       tmp = open(stdout_file, 'w')
       tmp.close()
     except IOError, e:
-      raise JobServerError("Could not create the standard output file %s: %s \n"  %(type(e), e))
+      raise JobServerError("Could not create the standard output file %s: %s \n"  %(type(e), e), self.logger)
     if stderr_file:
       try:
         tmp = open(stderr_file, 'w')
         tmp.close()
       except IOError, e:
-        raise JobServerError("Could not create the standard error file %s: %s \n"  %(type(e), e))
+        raise JobServerError("Could not create the standard error file %s: %s \n"  %(type(e), e), self.logger)
 
     return job_id
    
@@ -480,7 +480,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setJobStatus %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error setJobStatus %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -526,7 +526,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setJobExitInfo %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error setJobExitInfo %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -552,7 +552,7 @@ class JobServer ( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise JobServerError('Error registerInputs %s: %s \n' %(type(e), e)) 
+          raise JobServerError('Error registerInputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -577,7 +577,7 @@ class JobServer ( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise JobServerError('Error registerOutputs %s: %s \n' %(type(e), e)) 
+          raise JobServerError('Error registerOutputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -605,7 +605,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error deleteJob %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()
@@ -672,7 +672,7 @@ class JobServer ( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error clean %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error clean %s: %s \n' %(type(e), e), self.logger) 
       
       cursor.close()
       connection.commit()
@@ -712,10 +712,10 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e)) 
+        raise JobServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
       cursor.close()
       connection.close()
-      return result
+    return result
   
   
   
@@ -738,7 +738,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getJobs %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getJobs %s: %s \n' %(type(e), e), self.logger) 
           
       cursor.close()
       connection.close()
@@ -763,7 +763,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getDrmaaJobId %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getDrmaaJobId %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       return drmaa_id
@@ -786,7 +786,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
@@ -808,11 +808,11 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error areErrOutJoined %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error areErrOutJoined %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
+
     return join_errout
-  
 
   def getJobStatus(self, job_id):
     '''
@@ -828,11 +828,12 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getJobStatus %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getJobStatus %s: %s \n' %(type(e), e), self.logger) 
       status = status.encode('utf-8')
       date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
       cursor.close()
       connection.close()
+ 
     return (status, date)
   
 
@@ -854,7 +855,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getExitInformation %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getExitInformation %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     
@@ -882,7 +883,7 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getGeneralInformation %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getGeneralInformation %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -909,10 +910,11 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getParallelJobInformation %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getParallelJobInformation %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-      
+
+    
     if parallel_config: parallel_config = parallel_config.encode('utf-8')
     return (parallel_config, max_node)
 
@@ -940,10 +942,11 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserTransfer %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error isUserTransfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
+    
 
 
 
@@ -967,11 +970,10 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransfers %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getTransfers %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return local_file_paths
-    
     
 
   def getTransferInformation(self, local_file_path):
@@ -991,12 +993,11 @@ class JobServer ( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransferInformation %s: %s \n' %(type(e), e)) 
+        raise JobServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
       result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'))
       cursor.close()
       connection.close()
     return result
-
 
 
 if __name__ == '__main__':

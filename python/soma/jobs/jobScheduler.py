@@ -26,10 +26,10 @@ __docformat__ = "epytext en"
 refreshment_interval = 1 #seconds
 
 class JobSchedulerError( Exception ): 
-  def __init__(self, msg):
+  def __init__(self, msg, logger = None):
     self.args = (msg,)
-    logger = logging.getLogger('ljp.js')
-    logger.critical('EXCEPTION ' + msg)
+    if logger:
+      logger.critical('EXCEPTION ' + msg)
 
 
 
@@ -99,13 +99,11 @@ class DrmaaJobScheduler( object ):
               # update the status on the job server 
               self.__jobServer.setJobStatus(job_id, status)
         self.__jobsEnded = allJobsEnded
-
         # get the exit information for terminated jobs and update the jobServer
         for job_id in ended:
           with self.__jobs_lock:
             self.__jobs.discard(job_id)
         logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
-      
         time.sleep(interval)
     
     
@@ -165,7 +163,7 @@ class DrmaaJobScheduler( object ):
       self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
       self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
-     
+      
       if join_stderrout:
         self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
       else:
@@ -184,7 +182,7 @@ class DrmaaJobScheduler( object ):
 
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
       self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
-    
+     
     # for user information only
     command_info = ""
     for command_element in command:
@@ -211,7 +209,6 @@ class DrmaaJobScheduler( object ):
 
     with self.__jobs_lock:
       self.__jobs.add(job_id)
-    
     return job_id
 
   def __setDrmaaParallelJobTemplate(self, drmaa_job_template_id, configuration_name, max_num_node):
@@ -230,10 +227,10 @@ class DrmaaJobScheduler( object ):
     ''' 
 
     if not self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information for this cluster.")
+      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information for this cluster.", self.logger)
     
     if configuration_name not in self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s for the current cluster.", configuration_name)
+      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s for the current cluster." %(configuration_name), self.logger)
 
     cluster_specific_config_name = self.__parallel_job_submission_info[configuration_name]
     
@@ -403,7 +400,7 @@ class DrmaaJobScheduler( object ):
       time.sleep(refreshment_interval)
       (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
       if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
-        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(job_id))
+        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(job_id), self.logger)
     
 
 
@@ -432,7 +429,7 @@ class JobScheduler( object ):
     try:
       userLogin = pwd.getpwuid(os.getuid())[0]
     except Exception, e:
-      raise JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e))
+      raise JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e), self.logger)
     
     self.__user_id = self.__jobServer.registerUser(userLogin)
    
@@ -485,7 +482,7 @@ class JobScheduler( object ):
     '''
     
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
+      raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
     
     if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
       if self.__fileToWrite: self.__fileToWrite.close()
@@ -510,7 +507,7 @@ class JobScheduler( object ):
     '''
     
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path)
+      raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
     
     
     if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
@@ -559,7 +556,7 @@ class JobScheduler( object ):
     '''
 
     if len(command) == 0:
-      raise JobSchedulerError("Submission error: the command must contain at least one element \n")
+      raise JobSchedulerError("Submission error: the command must contain at least one element \n", self.logger)
 
     # check the required_local_input_files, required_local_output_file and stdin ?
     job_id = self.__drmaaJS.submit( command,
@@ -706,14 +703,13 @@ class JobScheduler( object ):
     '''
     for jid in job_ids:
       if not self.__jobServer.isUserJob(jid, self.__user_id):
-        raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid )
+        raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid, self.logger)
       
     #self.__drmaaJS.wait(job_ids, timeout)
     self.logger.debug("        waiting...")
     
     waitForever = timeout < 0
     startTime = datetime.now()
-    
     for jid in job_ids:
       (status, last_status_update) = self.__jobServer.getJobStatus(jid)
       self.logger.debug("        job %s status: %s", jid, status)
@@ -725,7 +721,7 @@ class JobScheduler( object ):
         self.logger.debug("        job %s status: %s", jid, status)
         delta = datetime.now() - startTime
         if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
-          raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid))
+          raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
     
 
   def stop( self, job_id ):
@@ -733,7 +729,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id )
+      raise JobSchedulerError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
     self.__drmaaJS.stop(job_id)
    
@@ -744,7 +740,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id )
+      raise JobSchedulerError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
     self.__drmaaJS.restart(job_id)
 
@@ -755,6 +751,6 @@ class JobScheduler( object ):
     '''
 
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id )
+      raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
     self.__drmaaJS.kill(job_id)
