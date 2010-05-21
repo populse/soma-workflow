@@ -49,6 +49,28 @@ jobs_cfg.set('soizic_home_cluster', 'database_file',                '/home/soizi
 jobs_cfg.set('soizic_home_cluster', 'drms',                         'SGE')
 jobs_cfg.set('soizic_home_cluster', 'submitting_machines',          "soizic-vaio")
 
+
+jobs_cfg.add_section('DSV_cluster')
+# parallel job specific submission information
+jobs_cfg.set('DSV_cluster', 'drmaa_native_specification',   "-l nodes={max_node}") 
+jobs_cfg.set('DSV_cluster', 'MPI',                          'mpi')
+#Job local process
+jobs_cfg.set('DSV_cluster', 'job_processes_logging_format', '%(asctime)s => %(module)s line %(lineno)s: %(message)s')
+jobs_cfg.set('DSV_cluster', 'job_processes_logging_level',  'DEBUG')
+jobs_cfg.set('DSV_cluster', 'job_processes_log_dir_path',   '/home/souedet/soma-jobs/server/logs')
+jobs_cfg.set('DSV_cluster', 'src_local_process',            '/home/souedet/svn/bioproj/soma/soma-pipeline/trunk/python/soma/jobs/localJobProcess.py')
+#Job server
+jobs_cfg.set('DSV_cluster', 'job_server_logging_format',    "%(asctime)s => line %(lineno)s: %(message)s")
+jobs_cfg.set('DSV_cluster', 'job_server_logging_level',     'DEBUG')
+jobs_cfg.set('DSV_cluster', 'job_server_log_file',          '/home/souedet/soma-jobs/server/logs/log_jobServer')
+jobs_cfg.set('DSV_cluster', 'name_server_host',             'gabriel.intra.cea.fr')
+jobs_cfg.set('DSV_cluster', 'job_server_name',              'JobServer')
+jobs_cfg.set('DSV_cluster', 'tmp_file_dir_path',            '/home/souedet/soma-jobs/server/jobFiles/')
+jobs_cfg.set('DSV_cluster', 'database_file',                '/home/souedet/soma-jobs/server/jobs.db')
+#DRMS 
+jobs_cfg.set('DSV_cluster', 'drms',                         'PBS') 
+jobs_cfg.set('DSV_cluster', 'submitting_machines',          'gabriel.intra.cea.fr')
+
 with open('jobs.cfg', 'wb') as configfile:
     jobs_cfg.write(configfile)
 

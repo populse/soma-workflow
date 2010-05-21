@@ -6,7 +6,7 @@ drmaajobs = DrmaaJobs()
 
 jobTemplateId = drmaajobs.allocateJobTemplate()
 drmaajobs.setCommand(jobTemplateId, 
-                     "python", 
+                     "/i2bm/research/Mandriva-2008.0-i686/bin/python", 
                      ["/home/sl225510/projets/jobExamples/complete/job1.py", 
                      "/home/sl225510/projets/jobExamples/complete/file0",
                      "/home/sl225510/projets/jobExamples/complete/file11",
@@ -15,7 +15,7 @@ drmaajobs.setCommand(jobTemplateId,
 drmaajobs.setAttribute(jobTemplateId,"drmaa_input_path", "[void]:/home/sl225510/projets/jobExamples/complete/stdin1")
 drmaajobs.setAttribute(jobTemplateId,"drmaa_output_path", "[void]:/home/sl225510/stdoutjob1")
 drmaajobs.setAttribute(jobTemplateId,"drmaa_error_path", "[void]:/home/sl225510/stderrjob1")
-drmaajobs.setAttribute(jobTemplateId,"drmaa_join_files", "y")
+drmaajobs.setAttribute(jobTemplateId,"drmaa_join_files", "n")
 
 jobIds = []
 jobId = drmaajobs.runJob(jobTemplateId)
@@ -31,11 +31,11 @@ printJobStatus()
 
 time.sleep(2)
 
-#printJobStatus()
+printJobStatus()
 
-#time.sleep(10)
+time.sleep(10)
 
-#printJobStatus()
+printJobStatus()
 
 exitStatus, returned_value, term_sig, resource_usage = drmaajobs.wait(jobIds[0], 0)
 
@@ -55,6 +55,6 @@ print "returnedValue = " + repr(returned_value)
 print "term_sig = " + repr(term_sig)
 print "resource_usage " + repr(resource_usage)
 
-#drmaajobs.synchronize(jobIds)
+##drmaajobs.synchronize(jobIds)
 
-printJobStatus()
+#printJobStatus()

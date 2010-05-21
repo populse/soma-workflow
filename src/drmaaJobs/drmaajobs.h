@@ -29,6 +29,7 @@ struct ltint
 class DrmaaJobs {
 
     void log(std::string msg);
+    //std::string * mLogPath;
     
     std::map<int, drmaa_job_template_t *, ltint> mJobTemplatesMap;
 

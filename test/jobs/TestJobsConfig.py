@@ -33,6 +33,18 @@ cfg.set('is206464', 'ressource_id', 'neurospin_test_cluster')
 # python: to avoid the site package error in the jobs standard error output
 cfg.set('is206464', 'python', "/i2bm/research/Mandriva-2008.0-i686/bin/python")
 
+cfg.add_section('gabriel.intra.cea.fr')
+# jobs file directories
+cfg.set('gabriel.intra.cea.fr', 'job_examples_dir',  "/home/souedet/svn/bioproj/soma/soma-pipeline/trunk/test/jobExamples/")
+cfg.set('gabriel.intra.cea.fr', 'job_output_dir', "/home/souedet/soma-jobs/output/")
+# mode: 'remote' or 'local' (the login and password will be asked in the remote case)
+cfg.set('gabriel.intra.cea.fr', 'mode', 'local')
+cfg.set('gabriel.intra.cea.fr', 'ressource_id', 'DSV_cluster')
+# python: to avoid the site package error in the jobs standard error output
+cfg.set('gabriel.intra.cea.fr', 'python', "/usr/bin/python")
+
+
+
 with open('TestJobs.cfg', 'wb') as configfile:
     cfg.write(configfile)
 
