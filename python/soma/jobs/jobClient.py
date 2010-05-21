@@ -63,30 +63,92 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode
+    self.__mode = mode #'local_no_disconnection'
+    
+    #########
+    # LOCAL #
+    #########
     if self.__mode == 'local':
       self.__connection = soma.jobs.connection.JobLocalConnection(src_local_process, log)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
+    
+    ##########
+    # REMOTE #
+    ##########
     if self.__mode == 'remote':
       sub_machine = submitting_machines[random.randint(0, len(submitting_machines)-1)]
       print 'submission machine: ' + sub_machine
       self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, log)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = soma.jobs.connection.RemoteFileTransfer(self.__js_proxy)
-    if self.__mode == 'local_no_disconnection':
+    
+    ###############
+    # LOCAL DEBUG #
+    ###############
+    if self.__mode == 'local_no_disconnection': # DEBUG
       from soma.jobs.jobScheduler import JobScheduler
-      self.__js_proxy  = JobScheduler()
+      import logging
+      import Pyro.naming
+      import Pyro.core
+      from Pyro.errors import PyroError, NamingError
+      from soma.jobs.constants import *
+      # log file 
+      if not config.get(resource_id, 'job_processes_log_dir_path') == 'None':
+        logfilepath =  config.get(resource_id, 'job_processes_log_dir_path')+ "log_jobScheduler_sl2255101"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+        logging.basicConfig(
+          filename = logfilepath,
+          format = config.get(resource_id, 'job_processes_logging_format', 1),
+          level = eval("logging."+config.get(resource_id, 'job_processes_logging_level')))
+      
+      global logger
+      logger = logging.getLogger('ljp')
+      logger.info(" ")
+      logger.info("****************************************************")
+      logger.info("****************************************************")
+    
+      # looking for the JobServer
+      Pyro.core.initClient()
+      locator = Pyro.naming.NameServerLocator()
+      name_server_host = config.get(resource_id, 'name_server_host')
+      if name_server_host == 'None':
+        ns = locator.getNS()
+      else: 
+        ns = locator.getNS(host= name_server_host )
+    
+      job_server_name = config.get(resource_id, 'job_server_name')
+      try:
+        URI=ns.resolve(job_server_name)
+        logger.info('JobServer URI:'+ repr(URI))
+      except NamingError,x:
+        logger.critical('Couldn\'t find' + job_server_name + ' nameserver says:',x)
+        raise SystemExit
+      jobServer= Pyro.core.getProxyForURI( URI )
+  
+      #parallel_job_submission_info
+      parallel_job_submission_info= {}
+      for drmaa_job_attribute in ["drmaa_job_category", "drmaa_native_specification"]:
+        if config.has_option(resource_id, drmaa_job_attribute):
+          parallel_job_submission_info[drmaa_job_attribute] = config.get(resource_id, drmaa_job_attribute)
+    
+      for parallel_config in PARALLEL_CONFIGURATIONS:
+        if config.has_option(resource_id, parallel_config):
+          parallel_job_submission_info[parallel_config] = config.get(resource_id, parallel_config)
+  
+      self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info)
       self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
       self.__connection = None
 
 
   def disconnect(self):
     '''
-    Simulates a disconnection for TEST PURPORSE ONLY.
+    Simulates a disconnection for TEST PURPOSE ONLY.
     !!! The current instance won't be usable anymore after this call !!!!
     '''
     self.__connection.stop()
+
+   
+
 
   ########## FILE TRANSFER ###############################################
     

@@ -406,7 +406,7 @@ class DrmaaJobScheduler( object ):
 
 class JobScheduler( object ):
   
-  def __init__( self, job_server, drmaa_job_scheduler = None):
+  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None):
     ''' 
     @type  job_server: L{JobServer}
     @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
@@ -421,7 +421,8 @@ class JobScheduler( object ):
     if drmaa_job_scheduler:
       self.__drmaaJS = drmaa_job_scheduler
     else:
-      self.__drmaaJS = DrmaaJobScheduler()
+      print "parallel_job_submission_info" + repr(parallel_job_submission_info)
+      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info)
     
     # Job Server
     self.__jobServer= job_server
