@@ -7,8 +7,8 @@ BRAINVISA_COPY_AND_INSTALL_HEADERS( headers soma/pipeline headersTarget )
 add_library( somadrmaajobs SHARED ${sources} )
 add_dependencies( somadrmaajobs ${headersTarget} )
 set_property( TARGET somadrmaajobs PROPERTY VERSION ${${PROJECT_NAME}_VERSION} )
-#target_link_libraries( somadrmaajobs "${CMAKE_CURRENT_SOURCE_DIR}/drmaa/libcondordrmaa.a" ) #condor
-target_link_libraries( somadrmaajobs "${CMAKE_CURRENT_SOURCE_DIR}/drmaa/libdrmaa.so" ) #SGE
+target_link_libraries( somadrmaajobs "${CMAKE_CURRENT_SOURCE_DIR}/drmaa/libcondordrmaa.so" ) #condor
+#target_link_libraries( somadrmaajobs "${CMAKE_CURRENT_SOURCE_DIR}/drmaa/libdrmaa.so" ) #SGE
 
 BRAINVISA_INSTALL( TARGETS somadrmaajobs
                    DESTINATION lib

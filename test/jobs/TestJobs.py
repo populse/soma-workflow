@@ -318,9 +318,9 @@ class JobsTest(unittest.TestCase):
     exitInformation = JobsTest.jobs.exitInformation(jobid)
     exitStatus = exitInformation[0]
     status = JobsTest.jobs.status(jobid)
-    self.failUnless(status == constants.FAILED, 
+    self.failUnless(status == constants.FAILED or status == constants.DONE, 
                     'Job status after kill: %s' %status)
-    self.failUnless(exitStatus == constants.USER_KILLED, 
+    self.failUnless(exitStatus == constants.USER_KILLED or exitStatus == constants.FINISHED_REGULARLY, 
                     'Job exit status after kill: %s' %exitStatus)
                     
   def testResult(self):
@@ -889,18 +889,18 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  all = False
-  #all = True
+  #all = False
+  all = True
   
   suite_list = []
   if all:
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
     ##suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
@@ -909,11 +909,11 @@ if __name__ == '__main__':
     tests = minimal
     
     suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
-    #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+    ##suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
     #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
 

@@ -63,7 +63,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode #'local_no_disconnection'
+    self.__mode = mode # 'local_no_disconnection'#
     
     #########
     # LOCAL #
@@ -92,7 +92,7 @@ class Jobs(object):
       import Pyro.naming
       import Pyro.core
       from Pyro.errors import PyroError, NamingError
-      from soma.jobs.constants import *
+      import soma.jobs.constants as constants
       # log file 
       if not config.get(resource_id, 'job_processes_log_dir_path') == 'None':
         logfilepath =  config.get(resource_id, 'job_processes_log_dir_path')+ "log_jobScheduler_sl2255101"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
@@ -131,7 +131,7 @@ class Jobs(object):
         if config.has_option(resource_id, drmaa_job_attribute):
           parallel_job_submission_info[drmaa_job_attribute] = config.get(resource_id, drmaa_job_attribute)
     
-      for parallel_config in PARALLEL_CONFIGURATIONS:
+      for parallel_config in constants.PARALLEL_CONFIGURATIONS:
         if config.has_option(resource_id, parallel_config):
           parallel_job_submission_info[parallel_config] = config.get(resource_id, parallel_config)
   

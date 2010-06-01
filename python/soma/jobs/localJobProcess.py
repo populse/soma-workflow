@@ -20,6 +20,12 @@ class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
     Pyro.core.ObjBase.__init__(self)
     soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
   pass
+
+#class JobScheduler(Pyro.core.SynchronizedObjBase, soma.jobs.jobScheduler.JobScheduler):
+  #def __init__(self, job_server, drmaa_job_scheduler):
+    #Pyro.core.SynchronizedObjBase.__init__(self)
+    #soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
+  #pass
   
 class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecker):
   def __init__(self, interval = 1, controlInterval = 3):
@@ -88,6 +94,8 @@ def main(jobScheduler_name, log = ""):
       parallel_job_submission_info[parallel_config] = config.get(section, parallel_config)
   
   #############################
+
+  #Pyro.config.PYRO_MULTITHREADED = 0
 
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
