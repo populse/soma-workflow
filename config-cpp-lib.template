@@ -1,0 +1,10 @@
+DEFINES = @defines@
+VERSION = @version@
+CONFIG  = thread
+
+INCLUDEPATH = @soma-jobs_cpp:includeBuild@
+
+BUILDMODEEXT = @buildModeExtension@
+
+LIBS = @soma-jobs_cpp:libDepsLine@
+

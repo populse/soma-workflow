@@ -1,0 +1,16 @@
+DEFINES = @defines@
+VERSION = @version@
+CONFIG  = thread
+
+INCLUDEPATH = @soma-jobs_sip:includeBuild@
+
+BUILDMODEEXT = @buildModeExtension@
+
+LIBS = @soma-jobs_sip:libDepsLine@
+
+SIPINCLUDE = @soma-jobs_sip:sipinclude@
+SIP_PLATFORM = @sip:platform@
+PYTHON_LIBS = @sip:libLine@
+SIP_LIBS = @soma-jobs_sip:libBuildLine@
+SIP_OPTIONS = @sip:sip_options@
+SOMA_JOBS_CPP_LIBS=@soma-jobs_cpp:libLine@

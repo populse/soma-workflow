@@ -1,6 +1,22 @@
+#print 'soma-pipeline.bcg'
+
 #-----------------------------------------------------------------------------
-class SomaPipelineComponent( GenericMakerComponent ):
-  _name = 'soma-pipeline'
+class CppComponent_somajobs( GenericMakerComponent ):
+  _name = 'soma-jobs_cpp'
+
+  def __init__( self, opts ):
+    options[ 'soma-jobs_cpp' ] = options[ 'soma-pipeline' ]
+    GenericMakerComponent.__init__( self, options[ 'soma-pipeline' ] )
+
+
+  def dependencies( self ):
+    return [ DrmaaComponent ]
+
+  def sourceName( self ):
+    return 'soma-jobs'
+
+  def _libraries( self ):
+    return [ 'somadrmaajobs' ]
 
   def shareDir( self ):
     return os.path.join( 'share', 'soma-' + self.version() )
@@ -8,3 +24,121 @@ class SomaPipelineComponent( GenericMakerComponent ):
   def docDir( self ):
     return os.path.join( 'share', 'doc', 'soma-' + self.version() )
 
+  def makeDocumentation( self ):
+    print 'soma-pipeline_cpp doc'
+    print self.doDoxygen()
+    GenericMakerComponent.makeDocumentation( self )
+    print 'soma-pipeline_cpp doc done'
+
+  def templateConfigurationFiles( self ):
+    return [ os.path.join( self.sourceDir(), i ) for i in
+             ( 'config-cpp-lib.template',
+               'config-sip.template' ) ]
+
+  def packageDocs( self ):
+    pass
+
+#-----------------------------------------------------------------------------
+class SipComponent_somajobs( GenericMakerModuleComponent ):
+  _name = 'soma-jobs_sip'
+
+  def sourceName( self ):
+    return 'soma-jobs_sip'
+
+  def _libraries( self ):
+    return []
+
+  def dependencies( self ):
+    return [ 'soma-jobs_cpp', SipComponent ]
+
+  def shareDir( self ):
+    return os.path.join( 'share', 'soma-' + self.version() )
+
+  def docDir( self ):
+    return os.path.join( 'share', 'doc', 'soma-' + self.version() )
+
+  def postInit( self ):
+    if not self._initialized:
+      GenericMakerComponent.postInit( self )
+      source = os.path.join( self.sourceDir(), 'src', 'sip' )
+      build = os.path.join( self.componentBuildDir(), 'src', 'sip' )
+      self._data[ 'sipinclude' ] = [ '-I', build, '-I', source ]
+      self._data[ 'sipinclude' ] = SipComponent.sipinclude( self )
+
+  def doEpydoc( self ):
+    return True
+
+  def pythonModule( self ):
+    return 'soma.pipeline.somadrmaajobs'
+
+
+#-----------------------------------------------------------------------------
+class PythonComponent_somapipeline( GenericMakerComponent ):
+  _name = 'soma-pipeline_python'
+
+  def __init__( self, opts ):
+    options[ 'soma-pipeline_python' ] = options[ 'soma-pipeline' ]
+    GenericMakerComponent.__init__( self, options[ 'soma-pipeline' ] )
+
+  def sourceName( self ):
+    return 'soma-pipeline'
+
+  def _libraries( self ):
+    return []
+
+  def dependencies( self ):
+    return []
+
+  def shareDir( self ):
+    return os.path.join( 'share', 'soma-' + self.version() )
+
+  def docDir( self ):
+    return os.path.join( 'share', 'doc', 'soma-' + self.version() )
+
+  def doEpydoc( self ):
+    return True
+
+  def pythonModule( self ):
+    return 'soma.pipeline'
+
+  def configureCompilation( self ):
+    pass
+
+  def filesToPack( self ):
+    # avoid packaging twice...
+    return []
+
+  def packageDocs( self ):
+    pass
+
+
+#-----------------------------------------------------------------------------
+class SomaPipelineComponent( GenericMakerComponent ):
+  _name = 'soma-pipeline'
+
+  def dependencies( self ):
+    return [ 'soma-pipeline_python' ]
+
+  def weakDependencies( self ):
+    return [ 'soma-jobs_sip', StdCppComponent ]
+
+  def _libraries( self ):
+    return []
+
+  def shareDir( self ):
+    return os.path.join( 'share', 'soma-' + self.version() )
+
+  def docDir( self ):
+    return os.path.join( 'share', 'doc', 'soma-' + self.version() )
+
+  def templateConfigurationFiles( self ):
+    return []
+
+  def configureCompilation( self ):
+    pass
+
+  def build( self, instances ):
+    pass
+
+  def makeDoxygenDocumentation( self ):
+    pass
