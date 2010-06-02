@@ -180,6 +180,11 @@ class DrmaaJobScheduler( object ):
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
       self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
      
+      if drmaaSubmittedJobId == "":
+        self.logger.error("Could not submit job: Drmaa problem.");
+        self.logger.debug("<< submit")
+        return -1
+        
       # for user information only
       command_info = ""
       for command_element in command:

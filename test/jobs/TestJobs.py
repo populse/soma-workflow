@@ -226,6 +226,7 @@ class JobsTest(unittest.TestCase):
 
 
   if test_config.get(hostname, 'mode') == 'remote':
+    print "Ressource => " + test_config.get(hostname, 'ressource_id')
     print "login: ",
     login = raw_input()
     password = getpass.getpass()
@@ -889,8 +890,8 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  #all = False
-  all = True
+  all = False
+  #all = True
   
   suite_list = []
   if all:
@@ -908,9 +909,9 @@ if __name__ == '__main__':
 
     tests = minimal
     
-    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
     ##suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
