@@ -15,17 +15,17 @@ import os
         
 ###### JobScheduler pyro object
 
-class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
-  def __init__(self, job_server, drmaa_job_scheduler):
-    Pyro.core.ObjBase.__init__(self)
-    soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
-  pass
-
-#class JobScheduler(Pyro.core.SynchronizedObjBase, soma.jobs.jobScheduler.JobScheduler):
+#class JobScheduler(Pyro.core.ObjBase, soma.jobs.jobScheduler.JobScheduler):
   #def __init__(self, job_server, drmaa_job_scheduler):
-    #Pyro.core.SynchronizedObjBase.__init__(self)
+    #Pyro.core.ObjBase.__init__(self)
     #soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
   #pass
+
+class JobScheduler(Pyro.core.SynchronizedObjBase, soma.jobs.jobScheduler.JobScheduler):
+  def __init__(self, job_server, drmaa_job_scheduler):
+    Pyro.core.SynchronizedObjBase.__init__(self)
+    soma.jobs.jobScheduler.JobScheduler.__init__(self, job_server, drmaa_job_scheduler)
+  pass
   
 class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecker):
   def __init__(self, interval = 1, controlInterval = 3):
@@ -46,7 +46,7 @@ def main(jobScheduler_name, log = ""):
   config.read(config_file_path)
   section = 'neurospin_test_cluster'
   #section = 'soizic_home_cluster'  
-  
+  #section = 'DSV_cluster'
   
   ###########
   # log file 
@@ -109,15 +109,15 @@ def main(jobScheduler_name, log = ""):
   
   # connection to the pyro daemon and output its URI 
   uri_jsc = daemon.connect(jobScheduler,jobScheduler_name)
-  sys.stdout.write(jobScheduler_name+ " URI: " + str(uri_jsc) + "\n")
-  sys.stdout.flush() 
+  sys.stdout.write(jobScheduler_name+ " " + str(uri_jsc) + "\n")
+  sys.stdout.flush()
  
   logger.info('Server object ' + jobScheduler_name + ' is ready.')
   
   # connection check
   connectionChecker = ConnectionChecker()
   uri_cc = daemon.connect(connectionChecker, 'connectionChecker')
-  sys.stdout.write(jobScheduler_name+ " connectionChecker URI: " + str(uri_cc) + "\n")
+  sys.stdout.write("connectionChecker " + str(uri_cc) + "\n")
   sys.stdout.flush() 
   
   # Daemon request loop thread

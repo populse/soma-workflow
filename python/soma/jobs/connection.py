@@ -10,7 +10,6 @@ from datetime import datetime
 from datetime import timedelta
 import threading
 import time
-import pexpect
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError
 import socket
@@ -19,11 +18,21 @@ import os
 import sys
 import shutil
 
+import select
+import SocketServer
+import logging
+import subprocess
+
+
+
 __docformat__ = "epytext en"
 
 
 class JobConnectionError( Exception):
-  pass
+  def __init__(self, msg, logger = None):
+    self.args = (msg,)
+    if logger:
+      logger.critical('EXCEPTION ' + msg)
 
 '''
 requirements: Pyro must be installed on the remote machine.
@@ -31,6 +40,7 @@ requirements: Pyro must be installed on the remote machine.
 To be consistent: "local" means on a submitting machine of the pool 
                   "remote" refers to all other machine
 '''
+
 
 
 class JobRemoteConnection( object ):
@@ -49,6 +59,7 @@ class JobRemoteConnection( object ):
                submitting_machine,
                local_process_src,
                log = ""):
+    
     '''
     Run the local job process, create a connection and get back a L(JobScheduler)
     proxy which can be used to submit, monitor and control jobs on the pool.
@@ -62,21 +73,13 @@ class JobRemoteConnection( object ):
     @type  local_process_src: string
     @param local_process_src: path to the localJobProcess.py on the submitting_machine
     '''
+    import paramiko #required only on client host
 
     if not login:
       raise JobConnectionError("Remote connection requires a login")
     print 'login ' + login
     print 'submitting machine ' + submitting_machine
 
-    def createTunnel(port, host, hostport, login, server_address, password):
-      command = "ssh -N -L %s:%s:%s %s@%s" %(port, host, hostport, login, server_address)
-      print "tunnel command: " + command
-      child = pexpect.spawn(command) 
-      child.expect('.ssword:*')
-      child.sendline(password)
-      time.sleep(2)
-      return child
-  
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
       s.bind(('localhost',0)) #try to bind to the port 0 so that the system will find an available port
@@ -86,40 +89,41 @@ class JobRemoteConnection( object ):
     
     pyro_objet_name = "jobScheduler_" + login
 
-
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
-
-    command = "ssh %s@%s python %s %s %s" %( login, 
-                                          submitting_machine, 
-                                          local_process_src, 
-                                          pyro_objet_name,
-                                          log) 
+    command = "python %s %s %s" %(local_process_src, pyro_objet_name, log) 
     print "local process command: " + command
-    self.__job_process_child = pexpect.spawn(command)
-    self.__job_process_child.expect('.ssword:*')
-    self.__job_process_child.sendline(password)
-    self.__job_process_child.expect(pyro_objet_name + " URI: ")
-    job_scheduler_uri = self.__job_process_child.readline()
-    self.__job_process_child.expect(" connectionChecker URI: ")
-    connection_checker_uri = self.__job_process_child.readline()
+    
+    client = paramiko.SSHClient()
+    client.load_system_host_keys()
+    client.connect(hostname = submitting_machine, port=22, username=login, password=password)
+    stdin, stdout, stderr = client.exec_command(command)
+    line = stdout.readline()
+    while line and line.split()[0] != pyro_objet_name:
+      line = stdout.readline()
+    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+    job_scheduler_uri = line.split()[1] 
+    line = stdout.readline()
+    while line and line.split()[0] != "connectionChecker":
+      line = stdout.readline()
+    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+    connection_checker_uri = line.split()[1] 
+    
+    print "job_scheduler_uri: " +  job_scheduler_uri
+    print "connection_checker_uri: " +  connection_checker_uri
 
     local_pyro_daemon_port = Pyro.core.processStringURI(job_scheduler_uri).port
     print "Pyro object port: " + repr(local_pyro_daemon_port)
-  
 
     # find an available port              #
     remote_pyro_daemon_port = searchAvailablePort()
     print "client pyro object port: " + repr(remote_pyro_daemon_port)
 
-    
     # tunnel creation                      #
-    self.__pyro_daemon_tunnel_child = createTunnel(remote_pyro_daemon_port, 
-                                                  submitting_machine, 
-                                                  local_pyro_daemon_port, 
-                                                  login, 
-                                                  submitting_machine, 
-                                                  password)
+    transport = paramiko.Transport((submitting_machine, 22))
+    transport.connect(username = login, password = password)
+    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, transport)
+    tunnel.start()
     
     # create the proxies                     #
     self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
@@ -164,16 +168,22 @@ class JobLocalConnection( object ):
 
     command = "python " + local_process_src + " " + pyro_objet_name + " " + log
     print command
-    self.__job_process_child = pexpect.spawn(command)
     
-    #fout = file('/neurospin/tmp/Soizic/jobFiles/mylog.txt','w')
-    #self.__job_process_child.logfile = fout
-    #self.__job_process_child.logfile = sys.stdout
-    self.__job_process_child.expect(pyro_objet_name + " URI: ")
-    job_scheduler_uri = self.__job_process_child.readline()
-    self.__job_process_child.expect(" connectionChecker URI: ")
-    connection_checker_uri = self.__job_process_child.readline()  
-    self.__job_process_child.terminated = True
+    self.__job_process_child = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE)
+    
+    line = self.__job_process_child.stdout.readline()
+    while line and line.split()[0] != pyro_objet_name:
+      line = self.__job_process_child.stdout.readline()
+    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+    job_scheduler_uri = line.split()[1] 
+    line = self.__job_process_child.stdout.readline()
+    while line and line.split()[0] != "connectionChecker":
+      line = self.__job_process_child.stdout.readline()
+    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+    connection_checker_uri = line.split()[1] 
+    
+    
+    
     
     # create the proxies                     #
     self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
@@ -294,7 +304,7 @@ class RemoteFileTransfer(FileTransfer):
 
 class ConnectionChecker(object):
   
-  def __init__(self, interval = 1, controlInterval = 3):
+  def __init__(self, interval = 2, controlInterval = 3):
     self.connected = False
     self.lock = threading.RLock()
     self.interval = timedelta(seconds = interval)
@@ -311,11 +321,11 @@ class ConnectionChecker(object):
           self.connected = False
         else:
           self.connected = True
-          time.sleep(control_interval)
+        time.sleep(control_interval)
         
     self.controlThread = threading.Thread(name = "connectionControlThread", 
                                           target = controlLoop, 
-                                          args = (self, 4))
+                                          args = (self, controlInterval))
     self.controlThread.setDaemon(True)
     self.controlThread.start()
       
@@ -348,5 +358,63 @@ class ConnectionHolder(threading.Thread):
 
   def stop(self):
     self.stopped = True
-    
+  
+
+class Tunnel(threading.Thread):
+  class ForwardServer (SocketServer.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
       
+  class Handler (SocketServer.BaseRequestHandler):
+    
+    def handle(self):
+      logger = logging.getLogger('ljp.connection')
+      try:
+        chan = self.ssh_transport.open_channel('direct-tcpip',
+                                              (self.chain_host, self.chain_port),
+                                              self.request.getpeername())
+      except Exception, e:
+        raise JobConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,
+                                                                          self.chain_port,
+                                                                          repr(e)), logger)
+
+      if chan is None:
+        raise JobConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
+                (self.chain_host, self.chain_port), logger)
+        
+
+      logger.info('Connected!  Tunnel open %r -> %r -> %r' % (self.request.getpeername(), chan.getpeername(), (self.chain_host, self.chain_port)))
+      while True:
+        r, w, x = select.select([self.request, chan], [], [])
+        if self.request in r:
+          data = self.request.recv(1024)
+          if len(data) == 0: break
+          chan.send(data)
+        if chan in r:
+          data = chan.recv(1024)
+          if len(data) == 0: break
+          self.request.send(data)
+      chan.close()
+      self.request.close()
+      logger.info('Tunnel closed from %r' % (self.request.getpeername(),))
+
+  def __init__(self, port, host, hostport, transport):
+    threading.Thread.__init__(self)
+    self.__port = port 
+    self.__host = host
+    self.__hostport = hostport
+    self.__transport = transport
+    self.setDaemon(True)
+    
+  def run(self):
+    host = self.__host
+    hostport = self.__hostport
+    transport = self.__transport
+    port = self.__port
+    class SubHander (Tunnel.Handler):
+        chain_host = host
+        chain_port = hostport
+        ssh_transport = transport
+    Tunnel.ForwardServer(('', port), SubHander).serve_forever()
+
+  

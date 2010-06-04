@@ -775,6 +775,7 @@ class DisconnectionTest(JobsTest):
     # Job 4
     
     info4 = JobsTest.jobExamples.submitJob4()
+    self.failUnless(not info4[0] == -1, "The job was not submitted.")
     self.myJobs.append(info4[0]) 
     self.outputFiles.extend(info4[1])
 
@@ -895,13 +896,13 @@ if __name__ == '__main__':
   
   suite_list = []
   if all:
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
     ##suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
@@ -911,13 +912,15 @@ if __name__ == '__main__':
     
     #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
-    ##suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+    suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
     #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
 
 
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)
+  
+  sys.exit(0)
