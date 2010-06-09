@@ -1013,6 +1013,7 @@ if __name__ == '__main__':
   config.read(config_file_path)
   #section = 'soizic_home_cluster'
   section = 'neurospin_test_cluster'
+  #section = 'DSV_cluster'
  
   ###########
   # log file 

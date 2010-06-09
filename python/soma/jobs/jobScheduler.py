@@ -56,6 +56,13 @@ class DrmaaJobScheduler( object ):
     self.logger = logging.getLogger('ljp.drmaajs')
     
     self.__drmaa = DrmaaJobs()
+    # patch for pbs-torque drmaa ##
+    jobTemplateId = self.__drmaa.allocateJobTemplate()
+    self.__drmaa.setCommand(jobTemplateId, "echo", [])
+    self.__drmaa.setAttribute(jobTemplateId, "drmaa_output_path", "[void]:/dev/null")
+    self.__drmaa.setAttribute(jobTemplateId, "drmaa_error_path", "[void]:/dev/null")
+    self.__drmaa.runJob(jobTemplateId)
+    ################################
     
     self.__jobServer = job_server
 

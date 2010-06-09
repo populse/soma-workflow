@@ -17,13 +17,10 @@ import pwd
 import os
 import sys
 import shutil
-
+import subprocess
+import logging
 import select
 import SocketServer
-import logging
-import subprocess
-
-
 
 __docformat__ = "epytext en"
 
@@ -42,7 +39,6 @@ To be consistent: "local" means on a submitting machine of the pool
 '''
 
 
-
 class JobRemoteConnection( object ):
   '''
   The L{JobRemoteConnection} class makes it possible to sumbit jobs from a machine which is
@@ -59,7 +55,6 @@ class JobRemoteConnection( object ):
                submitting_machine,
                local_process_src,
                log = ""):
-    
     '''
     Run the local job process, create a connection and get back a L(JobScheduler)
     proxy which can be used to submit, monitor and control jobs on the pool.
@@ -73,13 +68,14 @@ class JobRemoteConnection( object ):
     @type  local_process_src: string
     @param local_process_src: path to the localJobProcess.py on the submitting_machine
     '''
+    
     import paramiko #required only on client host
-
+    
     if not login:
       raise JobConnectionError("Remote connection requires a login")
     print 'login ' + login
     print 'submitting machine ' + submitting_machine
-
+  
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
       s.bind(('localhost',0)) #try to bind to the port 0 so that the system will find an available port
@@ -88,12 +84,11 @@ class JobRemoteConnection( object ):
       return available_port 
     
     pyro_objet_name = "jobScheduler_" + login
-
+    
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
     command = "python %s %s %s" %(local_process_src, pyro_objet_name, log) 
     print "local process command: " + command
-    
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.connect(hostname = submitting_machine, port=22, username=login, password=password)
@@ -108,23 +103,24 @@ class JobRemoteConnection( object ):
       line = stdout.readline()
     if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
     connection_checker_uri = line.split()[1] 
+    client.close()
     
     print "job_scheduler_uri: " +  job_scheduler_uri
     print "connection_checker_uri: " +  connection_checker_uri
-
     local_pyro_daemon_port = Pyro.core.processStringURI(job_scheduler_uri).port
     print "Pyro object port: " + repr(local_pyro_daemon_port)
-
+  
     # find an available port              #
     remote_pyro_daemon_port = searchAvailablePort()
     print "client pyro object port: " + repr(remote_pyro_daemon_port)
 
+    
     # tunnel creation                      #
     transport = paramiko.Transport((submitting_machine, 22))
     transport.connect(username = login, password = password)
-    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, transport)
+    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, transport) 
     tunnel.start()
-    
+
     # create the proxies                     #
     self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
@@ -134,6 +130,26 @@ class JobRemoteConnection( object ):
     self.jobScheduler.URI.address = 'localhost'
     connection_checker.URI.port = remote_pyro_daemon_port
     connection_checker.URI.address = 'localhost'
+    
+    # waiting for the tunnel to be set
+    tunnelSet = False
+    maxattemps = 10
+    attempts = 0
+    while not tunnelSet and attempts <= maxattemps :
+      try:
+        attempts = attempts + 1
+        print "Communication through the ssh tunnel. Attempt no " + repr(attempts) + "/" + repr(maxattemps)
+        self.jobScheduler.jobs()
+        connection_checker.isConnected()
+      except Pyro.errors.ProtocolError, e: 
+        print "Failed"
+        time.sleep(1)
+      else:
+        print "Communication through ssh tunnel OK"  
+        tunnelSet = True
+    
+    if attempts > maxattemps: 
+      raise JobConnectionError("The ssh tunnel could not be started within " + repr(maxattemps) + " seconds. The waiting time delay might need to be extended. See the configuration file")
 
     # create the connection holder objet for #
     # a clean disconnection in any case      #
@@ -168,22 +184,19 @@ class JobLocalConnection( object ):
 
     command = "python " + local_process_src + " " + pyro_objet_name + " " + log
     print command
+   
+    local_job_process = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE)
     
-    self.__job_process_child = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE)
-    
-    line = self.__job_process_child.stdout.readline()
+    line = local_job_process.stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
-      line = self.__job_process_child.stdout.readline()
+      line = local_job_process.stdout.readline()
     if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
     job_scheduler_uri = line.split()[1] 
-    line = self.__job_process_child.stdout.readline()
+    line = local_job_process.stdout.readline()
     while line and line.split()[0] != "connectionChecker":
-      line = self.__job_process_child.stdout.readline()
+      line = local_job_process.stdout.readline()
     if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
     connection_checker_uri = line.split()[1] 
-    
-    
-    
     
     # create the proxies                     #
     self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
@@ -340,7 +353,6 @@ class ConnectionChecker(object):
   def disconnectionCallback(self):
     pass
   
-
 class ConnectionHolder(threading.Thread):
   def __init__(self, connectionChecker):
     threading.Thread.__init__(self)
@@ -358,46 +370,54 @@ class ConnectionHolder(threading.Thread):
 
   def stop(self):
     self.stopped = True
-  
-
-class Tunnel(threading.Thread):
-  class ForwardServer (SocketServer.ThreadingTCPServer):
-    daemon_threads = True
-    allow_reuse_address = True
+    
       
+class Tunnel(threading.Thread):
+  
+  class ForwardServer (SocketServer.ThreadingTCPServer):
+    daemon_threads = False
+    allow_reuse_address = True
+    
   class Handler (SocketServer.BaseRequestHandler):
     
-    def handle(self):
-      logger = logging.getLogger('ljp.connection')
+    def setup(self):
+      self.logger = logging.getLogger('ljp.connection')
+      self.logger.debug('Setup : %s %d' %(repr(self.chain_host), self.chain_port))
       try:
-        chan = self.ssh_transport.open_channel('direct-tcpip',
+        self.__chan = self.ssh_transport.open_channel('direct-tcpip',
                                               (self.chain_host, self.chain_port),
                                               self.request.getpeername())
       except Exception, e:
-        raise JobConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,
-                                                                          self.chain_port,
-                                                                          repr(e)), logger)
-
-      if chan is None:
+        raise JobConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,self.chain_port,repr(e)), self.logger)
+  
+      if self.__chan is None:
         raise JobConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
-                (self.chain_host, self.chain_port), logger)
-        
-
-      logger.info('Connected!  Tunnel open %r -> %r -> %r' % (self.request.getpeername(), chan.getpeername(), (self.chain_host, self.chain_port)))
+                (self.chain_host, self.chain_port), self.logger)
+  
+      self.logger.info('Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port)))
+      #print 'Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port))
+      
+    
+    def handle(self):
+      self.logger.debug('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
       while True:
-        r, w, x = select.select([self.request, chan], [], [])
+        r, w, x = select.select([self.request, self.__chan], [], [])
         if self.request in r:
           data = self.request.recv(1024)
           if len(data) == 0: break
-          chan.send(data)
-        if chan in r:
-          data = chan.recv(1024)
+          self.__chan.send(data)
+        if self.__chan in r:
+          data = self.__chan.recv(1024)
           if len(data) == 0: break
           self.request.send(data)
-      chan.close()
+      
+    def finish(self):
+      self.logger.info('Tunnel closed from %r' %(self.request.getpeername(),))
+      #print 'Tunnel closed from %r' %(self.request.getpeername(),)
+      self.__chan.close()
       self.request.close()
-      logger.info('Tunnel closed from %r' % (self.request.getpeername(),))
-
+    
+    
   def __init__(self, port, host, hostport, transport):
     threading.Thread.__init__(self)
     self.__port = port 
@@ -405,7 +425,8 @@ class Tunnel(threading.Thread):
     self.__hostport = hostport
     self.__transport = transport
     self.setDaemon(True)
-    
+
+  
   def run(self):
     host = self.__host
     hostport = self.__hostport
@@ -415,6 +436,9 @@ class Tunnel(threading.Thread):
         chain_host = host
         chain_port = hostport
         ssh_transport = transport
-    Tunnel.ForwardServer(('', port), SubHander).serve_forever()
-
-  
+    try:
+      Tunnel.ForwardServer(('', port), SubHander).serve_forever()
+    except KeyboardInterrupt:
+      print 'tunnel %d:%s:%d stopped !' %(port, host, hostport)
+      
+      

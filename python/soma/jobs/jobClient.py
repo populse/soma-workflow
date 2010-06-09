@@ -46,6 +46,16 @@ class Jobs(object):
     '''
     
     #########################
+    # for debugging purpose
+    
+    #import logging
+    #logging.basicConfig(
+        #filename = "/home/sl225510/clientlog",
+        #format = "%(message)s",
+        #level = logging.DEBUG)
+    
+    
+    #########################
     # reading configuration 
     config = ConfigParser.ConfigParser()
     config.read(config_file)

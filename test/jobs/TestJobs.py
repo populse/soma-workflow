@@ -219,39 +219,39 @@ class JobsTest(unittest.TestCase):
   '''
   Abstract class for jobs common tests.
   '''
-
-  test_config = ConfigParser.ConfigParser()
-  test_config.read('TestJobs.cfg')
-  hostname = socket.gethostname()
-
-
-  if test_config.get(hostname, 'mode') == 'remote':
-    print "Ressource => " + test_config.get(hostname, 'ressource_id')
-    print "login: ",
-    login = raw_input()
-    password = getpass.getpass()
-  else:
-    login = None
-    password = None
+  @staticmethod
+  def setupConnection():
+    JobsTest.test_config = ConfigParser.ConfigParser()
+    JobsTest.test_config.read('TestJobs.cfg')
+    JobsTest.hostname = socket.gethostname()
+    
+    if JobsTest.test_config.get(JobsTest.hostname, 'mode') == 'remote':
+      print "Ressource => " + JobsTest.test_config.get(JobsTest.hostname, 'ressource_id')
+      print "login: ",
+      JobsTest.login = raw_input()
+      JobsTest.password = getpass.getpass()
+    else:
+      JobsTest.login = None
+      JobsTest.password = None
+    
+    
+    JobsTest.jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
+                                    JobsTest.test_config.get(JobsTest.hostname, 'ressource_id'), 
+                                    JobsTest.login, 
+                                    JobsTest.password,
+                                    log="1")
   
-
-  jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
-                                  test_config.get(hostname, 'ressource_id'), 
-                                  login, 
-                                  password,
-                                  log="1")
-
-  transfer_timeout = -24 
-  jobs_timeout = 1
-
-  jobExamples = JobExamples(jobs, 
-                            test_config.get(hostname, 'job_examples_dir'), 
-                            test_config.get(hostname, 'job_output_dir'), 
-                            test_config.get(hostname, 'python'),
-                            transfer_timeout, 
-                            jobs_timeout)   
-
-  outpath = test_config.get(hostname, 'job_output_dir')
+    JobsTest.transfer_timeout = -24 
+    JobsTest.jobs_timeout = 1
+  
+    JobsTest.jobExamples = JobExamples(JobsTest.jobs, 
+                              JobsTest.test_config.get(JobsTest.hostname, 'job_examples_dir'), 
+                              JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir'), 
+                              JobsTest.test_config.get(JobsTest.hostname, 'python'),
+                              JobsTest.transfer_timeout, 
+                              JobsTest.jobs_timeout)   
+  
+    JobsTest.outpath = JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir')
                                    
   def setUp(self):
     raise Exception('JobTest is an abstract class. SetUp must be implemented in subclass')
@@ -891,21 +891,24 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  all = False
-  #all = True
+  #all = False
+  all = True
+  
+  JobsTest.setupConnection()
   
   suite_list = []
   if all:
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
     ##suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
+    
     minimal = ['testResult']#'test_wait2'] #, 'test_wait' ]
 
     tests = minimal
