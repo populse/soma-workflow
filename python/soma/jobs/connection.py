@@ -116,9 +116,10 @@ class JobRemoteConnection( object ):
 
     
     # tunnel creation                      #
-    transport = paramiko.Transport((submitting_machine, 22))
-    transport.connect(username = login, password = password)
-    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, transport) 
+    self.__transport = paramiko.Transport((submitting_machine, 22))
+    self.__transport.setDaemon(True)
+    self.__transport.connect(username = login, password = password)
+    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, self.__transport) 
     tunnel.start()
 
     # create the proxies                     #
@@ -142,10 +143,10 @@ class JobRemoteConnection( object ):
         self.jobScheduler.jobs()
         connection_checker.isConnected()
       except Pyro.errors.ProtocolError, e: 
-        print "Failed"
+        print "-> Communication through ssh tunnel Failed"
         time.sleep(1)
       else:
-        print "Communication through ssh tunnel OK"  
+        print "-> Communication through ssh tunnel OK"  
         tunnelSet = True
     
     if attempts > maxattemps: 
@@ -161,6 +162,7 @@ class JobRemoteConnection( object ):
     For test purpose only !
     '''
     self.__connection_holder.stop()
+    self.__transport.close()
 
   def getJobScheduler(self):
     return self.jobScheduler
@@ -375,7 +377,7 @@ class ConnectionHolder(threading.Thread):
 class Tunnel(threading.Thread):
   
   class ForwardServer (SocketServer.ThreadingTCPServer):
-    daemon_threads = False
+    daemon_threads = True
     allow_reuse_address = True
     
   class Handler (SocketServer.BaseRequestHandler):

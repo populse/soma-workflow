@@ -345,6 +345,7 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
       status = self.__status(job_id)
+      self.logger.debug("   status : " + status)
       
       if status==constants.RUNNING:
         self.__drmaa.suspend(drmaaJobId)

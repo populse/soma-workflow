@@ -196,7 +196,7 @@ class Jobs(object):
  
   '''
     
-  def transferInputFile(self, remote_input_file, disposal_timeout = 168):
+  def sendFile(self, remote_input_file, disposal_timeout = 168):
     '''
     Transfers a remote file, bound to be used as job input, to a local directory. 
 
@@ -212,7 +212,7 @@ class Jobs(object):
     return self.__file_transfer.transferInputFile(remote_input_file, disposal_timeout) 
     
 
-  def registerTransfer(self, remote_file_path, disposal_timeout=168): 
+  def registerFileTransfer(self, remote_file_path, disposal_timeout=168): 
     '''
     Generates a unique local path and save the (local_path, remote_path) association.
     
@@ -229,7 +229,7 @@ class Jobs(object):
 
 
 
-  def transferOutputFile(self, local_file):
+  def retrieveFile(self, local_file):
     '''
     Copies the local file to the associated remote file path. 
     The local file path must belong to the user's transfered files (ie belong to 
