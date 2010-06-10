@@ -32,7 +32,7 @@ class JobConnectionError( Exception):
       logger.critical('EXCEPTION ' + msg)
 
 '''
-requirements: Pyro must be installed on the remote machine.
+requirements: Pyro and Paramiko must be installed on the remote machine.
 
 To be consistent: "local" means on a submitting machine of the pool 
                   "remote" refers to all other machine

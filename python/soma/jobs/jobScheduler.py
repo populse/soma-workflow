@@ -777,3 +777,5 @@ class JobScheduler( object ):
       raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
     self.__drmaaJS.kill(job_id)
+
+

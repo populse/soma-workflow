@@ -30,19 +30,11 @@ class Jobs(object):
                log = ""):
     '''
     @type  config_file: string
-    @param config_file: 
+    @param config_file: configuration file path
     @type  resource_id: C{ResourceIdentifier} or None
-    @param resource_id: The name of the resource to use, eg: "NeuroSpin HiPiP" or 
-    "CCRT"... the ressource_id config must be inside the config_file.
-    @type  mode: string or None
-    @param mode: 
-       - 'local': (default) if run on a submitting machine of the cluster
-       - 'remote': if run from a machine whichis not a submitting machine 
-       of the pool and doesn't share a file system with these machines
-       - 'local_no_disconnection": used for debugging purpose only.
-       - if None the mode will be inferred from the pool_name (never 
-       local_no_disconnection)
-    @param login and password: only required if mode is 'remote'
+    @param resource_id: The name of the resource to use, eg: "neurospin_test_cluster" or 
+    "DSV_cluster"... the ressource_id config must be inside the config_file.
+    @param login and password: only required if run from a submitting machine of the cluster.
     '''
     
     #########################
@@ -73,7 +65,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode # 'local_no_disconnection'#
+    self.__mode = mode # 'local_no_disconnection' (local debug)#
     
     #########
     # LOCAL #
@@ -163,49 +155,49 @@ class Jobs(object):
   ########## FILE TRANSFER ###############################################
     
   '''
-  The file transfer method must be used to submit jobs with the L{submitWithTransfer} 
-  method.
+  The file transfer methods must be used when submitting a job from a remote
+  machine
   
-  For example:
+  Example:
   #job remote input files: rfin_1, rfin_2, ..., rfin_n 
   #job remote output files: rfout_1, rfout_2, ..., rfout_m  
   
   #how to proceed for output files:
-  lfout_1 = jobs.registerTransfer(rfout_1)
-  lfout_2 = jobs.registerTransfer(rfout_2)
+  lfout_1 = jobs.registerFileTransfer(rfout_1)
+  lfout_2 = jobs.registerFileTransfer(rfout_2)
   ...
-  lfout_n = jobs.registerTransfer(rfout_m)
+  lfout_n = jobs.registerFileTransfer(rfout_m)
   
   #how to procedd with input files:
-  lfin_1= jobs.transferInputFile(rfin_1)
-  lfin_2= jobs.transferInputFile(rfin_2)
+  lfin_1= jobs.sendFile(rfin_1)
+  lfin_2= jobs.sendFile(rfin_2)
   ...
-  lfin_n= jobs.transferInputFile(rfin_n)
+  lfin_n= jobs.sendFile(rfin_n)
     
-  #Job submittion: don't forget to specifies required local input and output files 
+  #Job submittion: don't forget to reference local input and output files 
   job_id = jobs.submit(['python', '/somewhere/something.py'], 
                        [lfin_1, lfin_2, ..., lfin_n],
                        [lfout_1, lfout_2, ..., lfout_n])
   jobs.wait(job_id)
   
   #After Job execution, transfer back the output file
-  jobs.transferOutputFile(lfout_1)
-  jobs.transferOutputFile(lfout_2)
+  jobs.retrieveFile(lfout_1)
+  jobs.retrieveFile(lfout_2)
   ...
-  jobs.transferOutputFile(lfout_m)
+  jobs.retrieveFile(lfout_m)
  
   '''
     
   def sendFile(self, remote_input_file, disposal_timeout = 168):
     '''
-    Transfers a remote file, bound to be used as job input, to a local directory. 
+    Transfers a remote file to a local directory. 
 
     @type  remote_input_file: string 
     @param remote_input_file: remote path of input file
     @type  disposalTimeout: int
     @param disposalTimeout:  The local file and transfer information is 
     automatically disposed after disposal_timeout hours, except if a job 
-    declare using the file as input. Default delay is 168 hours (7 days).
+    references it as input. Default delay is 168 hours (7 days).
     @rtype: string 
     @return: local file path where the remote file was copied 
     '''
@@ -221,7 +213,7 @@ class Jobs(object):
     @type  disposalTimeout: int
     @param disposalTimeout: The local file and transfer information is 
     automatically disposed after disposal_timeout hours, except if a job 
-    declare using the file as output or input. Default delay is 168 hours (7 days).
+    references it as output or input. Default delay is 168 hours (7 days).
     @rtype: string or sequence of string
     @return: local file path associated with the remote file
     '''
@@ -235,8 +227,8 @@ class Jobs(object):
     The local file path must belong to the user's transfered files (ie belong to 
     the sequence returned by the L{transfers} method). 
     
-    @type  local_file: string or sequence of string
-    @param local_file: local file path(s) 
+    @type  local_file: string 
+    @param local_file: local file path 
     '''
     self.__file_transfer.transferOutputFile(local_file)
   
@@ -244,8 +236,8 @@ class Jobs(object):
   def cancelTransfer(self, local_file_path):
     '''
     Deletes the specified local file and the associated transfer information.
-    If some jobs declares using the file, the transfer won't be deleted immediately
-    but as soon as all the jobs will be disposed.
+    If some jobs reference the file as input or output, the transfer won't be 
+    deleted immediately but as soon as all the jobs will be disposed.
     
     @type local_file_path: string
     @param local_file_path: local file path associated with a transfer (ie 
@@ -257,15 +249,14 @@ class Jobs(object):
   ########## JOB SUBMISSION ##################################################
 
   '''
-  L{submit}, L{customSubmit} and L{submitWithTransfer} methods submit a 
-  job for execution to the cluster. A job identifier is returned. 
-  This private structure must be used to inspect and control the job via 
-  L{JobScheduler} methods.
+  L{submit} methods submits a job for execution to the cluster. 
+  A job identifier is returned and can be used to inspect and 
+  control the job.
   
-  Example::
-    from soma.jobs import jobClient
+  Example:
+    import soma.jobs.jobClient
       
-    jobs = jobClient.Jobs()
+    jobs = soma.jobs.jobClient.Jobs()
     job_id = jobs.submit( ['python', '/somewhere/something.py'] )
     jobs.stop(job_id)
     jobs.restart(job_id)
@@ -276,8 +267,8 @@ class Jobs(object):
 
   def submit( self,
               command,
-              required_local_input_files=None,
-              required_local_output_files=None,
+              referenced_input_files=None,
+              references_output_files=None,
               stdin=None,
               join_stderrout=False,
               disposal_timeout=168,
@@ -289,24 +280,25 @@ class Jobs(object):
 
     '''
     Submits a job for execution to the cluster. A job identifier is returned and 
-    must be used to inspect and control the job.
-    If the job used transfered files (L{transferInputFile} and L{registerTransfer} 
+    can be used to inspect and control the job.
+    If the job used transfered files (L{sendFile} and L{registerFileTransfer} 
     methods) The list of involved local input and output file must be specified to 
     guarantee that the files will exist during the whole job life. 
-
     
     Every path must be local (ie reachable by the cluster machines) 
 
     @type  command: sequence of string 
     @param command: The command to execute. Must constain at least one element.
     
-    @type  required_local_input_files: sequence of string
-    @param required_local_input_files: list of all local input files obtained with the 
-    L{transferInputFile} method which are required for the job to run. 
+    @type  referenced_input_files: sequence of string
+    @param referenced_input_files: list of all transfered input files required 
+    for the job to run. The files must be local and belong to the list of transfered 
+    file L{transfers}
     
-    @type  required_local_output_files: sequence of string
-    @param required_local_output_files: list of all registered local files obtained 
-    with the L{registerTransfer} method the job will use as output.
+    @type  referenced_output_files: sequence of string
+    @param referenced_output_files: list of all local files which will be used as 
+    output of the job. The files must be local and belong to the list of transfered 
+    file L{transfers}
     
     @type  stdin: string
     @param stdin: job's standard input as a path to a file. C{None} if the 
@@ -328,10 +320,13 @@ class Jobs(object):
  
     @type  stdout_path: string
     @param stdout_path: this argument can be set to choose the file where the job's 
-    standard output will be redirected. (optional)
+    standard output will be redirected. (optional: if it not set the user will still be
+    able to read the standard output)
     @type  stderr_path: string 
     @param stderr_path: this argument can be set to choose the file where the job's 
-    standard error will be redirected (optional). It won't be used if the stdout_path argument is not set. 
+    standard error will be redirected (optional: if it not set the user will still be
+    able to read the standard error output). 
+    It won't be used if the stdout_path argument is not set. 
     
     @type  working_directory: string
     @param working_directory: his argument can be set to choose the directory where 
