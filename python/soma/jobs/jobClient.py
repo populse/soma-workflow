@@ -268,7 +268,7 @@ class Jobs(object):
   def submit( self,
               command,
               referenced_input_files=None,
-              references_output_files=None,
+              referenced_output_files=None,
               stdin=None,
               join_stderrout=False,
               disposal_timeout=168,
@@ -348,8 +348,8 @@ class Jobs(object):
     '''
 
     job_id = self.__js_proxy.submit(command,
-                                    required_local_input_files,
-                                    required_local_output_files,
+                                    referenced_input_files,
+                                    referenced_output_files,
                                     stdin,
                                     join_stderrout,
                                     disposal_timeout,

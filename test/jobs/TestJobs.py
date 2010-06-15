@@ -202,11 +202,15 @@ class JobExamples(object):
      
   def mpiJobSubmission(self, node_num):
     
+    #compilation 
+    
+    
+    
     script = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
     binary = self.jobs.sendFile(self.inpath + "mpi/simple_mpi", self.tr_timeout)
     
     jobId = self.jobs.submit( command = [ "bash", script, repr(node_num) ], 
-                              required_local_input_files = [script, binary],
+                              referenced_input_files = [script, binary],
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
                               name_description = "parallel job mpi",
@@ -891,8 +895,8 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  #all = False
-  all = True
+  all = False
+  #all = True
   
   JobsTest.setupConnection()
   
@@ -918,9 +922,9 @@ if __name__ == '__main__':
     #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
-    suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+    #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
     #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
-    #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
+    suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
 
 
   alltests = unittest.TestSuite(suite_list)

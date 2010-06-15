@@ -245,10 +245,11 @@ void DrmaaJobs::setVectorAttribute(int jobTemplateId, const char* name, int nbAr
     const char ** args = new const char* [nbArguments+1];
 
     //printf("DrmaaJobs::setVectorAttribute: nbArguments = %d \n", nbArguments);
-    //for(int i = 0 ; i < nbArguments ; i++) {
-        //args[i] = arguments[i];
-        //printf("DrmaaJobs::setVectorAttribute: argument num %d = %s \n", i, args[i]);
-    //}
+    log("DrmaaJobs::setVectorAttribute " + std::string(name) + " : \n");
+    for(int i = 0 ; i < nbArguments ; i++) {
+        args[i] = arguments[i];
+        log(std::string(args[i]));
+    }
     args[nbArguments] = NULL;
 
     log("> before drmaa_set_vector_attribute");
