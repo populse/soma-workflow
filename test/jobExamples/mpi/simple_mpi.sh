@@ -1,1 +1,4 @@
-/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/mpirun -machinefile $TMPDIR/machines -np $1 /home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/mpi/simple_mpi
+#!/bin/bash
+echo "SOMA_JOB_MPI_BIN" $SOMA_JOB_MPI_BIN "SOMA_JOB_NODE_FILE" $SOMA_JOB_NODE_FILE
+
+. $SOMA_JOB_MPI_BIN/mpirun -machinefile `eval echo $SOMA_JOB_NODE_FILE` -np $1 $2

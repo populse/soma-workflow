@@ -204,19 +204,82 @@ class JobExamples(object):
     
     #compilation 
     
+    l_source = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
     
+    l_object = self.jobs.registerFileTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
+    #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
+    #/opt/mpich/gnu/bin/
     
+    mpibin = self.jobs.config.get(self.jobs.resource_id, constants.OCFG_PARALLEL_MPI_BIN)
+    print "mpibin = " + mpibin
+    
+    print "l_source = " + l_source
+    print "l_object = " + l_object
+    compil1jobId = self.jobs.submit( command = [ mpibin+"/mpicc", 
+                                                  "-c", l_source, 
+                                                  "-o", l_object ], 
+                                      referenced_input_files = [l_source],
+                                      referenced_output_files = [l_object],
+                                      join_stderrout=False, 
+                                      disposal_timeout = self.jobs_timeout,
+                                      name_description = "job compil1 mpi")
+    
+    self.jobs.wait([compil1jobId])
+    
+    l_bin = self.jobs.registerFileTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
+    print "l_bin = " + l_bin
+    
+    compil2jobId = self.jobs.submit( command = [ mpibin+"/mpicc", 
+                                                "-o", l_bin, 
+                                                l_object ], 
+                                    referenced_input_files = [l_object],
+                                    referenced_output_files = [l_bin],
+                                    join_stderrout=False, 
+                                    disposal_timeout = self.jobs_timeout,
+                                    name_description = "job compil2 mpi")
+    
+    self.jobs.wait([compil2jobId])
+    self.jobs.cancelTransfer(l_object)
+
+    
+    # mpi job submission
     script = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
-    binary = self.jobs.sendFile(self.inpath + "mpi/simple_mpi", self.tr_timeout)
     
-    jobId = self.jobs.submit( command = [ "bash", script, repr(node_num) ], 
-                              referenced_input_files = [script, binary],
+    jobId = self.jobs.submit( command = [ script, repr(node_num), l_bin], 
+                              referenced_input_files = [script, l_bin],
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
                               name_description = "parallel job mpi",
-                              parallel_job_info = (constants.MPI,node_num))
+                              parallel_job_info = (constants.OCFG_PARALLEL_MPI,node_num))
 
-    return (jobId, None, None)
+    self.jobs.dispose(compil1jobId)
+    self.jobs.dispose(compil2jobId)
+    
+    
+    
+    #l_source = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
+    
+    #l_object = self.jobs.registerFileTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
+    
+    #l_bin = self.jobs.registerFileTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
+    
+    #print "l_source = " + l_source
+    #print "l_object = " + l_object
+    #print "l_bin = " + l_bin
+    
+    #script = self.jobs.sendFile(self.inpath + "mpi/simple_mpi_n_comp.sh", self.tr_timeout)
+    
+    #jobId = self.jobs.submit( command = [ "bash", script, l_source, l_object, repr(node_num), l_bin], 
+                              #referenced_input_files = [script, l_bin],
+                              #join_stderrout=False, 
+                              #disposal_timeout = self.jobs_timeout,
+                              #name_description = "parallel job mpi",
+                              #parallel_job_info = (constants.OCFG_PARALLEL_MPI,node_num))
+
+
+    
+
+    return (jobId, [l_source], None)
           
      
 class JobsTest(unittest.TestCase):
@@ -895,20 +958,20 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  all = False
-  #all = True
+  #all = False
+  all = True
   
   JobsTest.setupConnection()
   
   suite_list = []
   if all:
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:

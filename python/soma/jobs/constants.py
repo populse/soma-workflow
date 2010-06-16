@@ -42,9 +42,46 @@ JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
                   FINISHED_UNCLEAR_CONDITIONS,
                   USER_KILLED]
 
+
 '''
-Parallel job configuration names:
+Soma job configuration variables
+CFG => Mandatory variable
+OCFG => Optional
 '''
-MPI="MPI"
-OPEN_MP="OpenMP"
-PARALLEL_CONFIGURATIONS = [MPI, OPEN_MP]
+CFG_SUBMITTING_MACHINES = 'submitting_machines'
+OCFG_DRMS = 'drms'
+
+#Job server
+
+CFG_DATABASE_FILE = 'database_file'
+CFG_TMP_FILE_DIR_PATH = 'tmp_file_dir_path'
+CFG_JOB_SERVER_NAME = 'job_server_name'
+CFG_NAME_SERVER_HOST ='name_server_host'
+
+OCFG_JOB_SERVER_LOG_FILE = 'job_server_log_file'
+OCFG_JOB_SERVER_LOG_LEVEL = 'job_server_logging_level'
+OCFG_JOB_SERVER_LOG_FORMAT = 'job_server_logging_format'
+
+#User local process
+
+CFG_SRC_LOCAL_PROCESS = 'src_local_process'
+
+OCFG_LOCAL_PROCESSES_LOG_DIR = 'job_processes_log_dir_path'
+OCFG_LOCAL_PROCESSES_LOG_LEVEL = 'job_processes_logging_level'
+OCFG_LOCAL_PROCESSES_LOG_FORMAT = 'job_processes_logging_format'
+
+
+#Parallel job configuration :
+
+OCFG_PARALLEL_MPI="MPI"
+OCFG_PARALLEL_OPEN_MP="OpenMP"
+PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_MPI, OCFG_PARALLEL_OPEN_MP]
+
+OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
+OCFG_PARALLEL_JOB_CATEGORY = "drmaa_job_category"
+PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
+
+OCFG_PARALLEL_MPI_BIN = 'SOMA_JOB_MPI_BIN'
+OCFG_PARALLEL_NODE_FILE = 'SOMA_JOB_NODE_FILE'
+PARALLEL_JOB_ENV = [OCFG_PARALLEL_MPI_BIN, OCFG_PARALLEL_NODE_FILE]
+

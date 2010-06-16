@@ -275,7 +275,7 @@ class LocalFileTransfer(FileTransfer):
         shutil.copy(remote_input_file,local_input_file_path)
       except IOError, e:
         raise FileTransferError("The input file was not transfered. %s: %s" %(type(e), e) )
-
+      os.chmod(local_input_file_path, 0777)
       return local_input_file_path
     
     def transferOutputFile(self, local_file):

@@ -50,12 +50,12 @@ def main(jobScheduler_name, log = ""):
   
   ###########
   # log file 
-  if not config.get(section, 'job_processes_log_dir_path') == 'None':
-    logfilepath =  config.get(section, 'job_processes_log_dir_path')+ "log_"+jobScheduler_name+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+  if not config.get(section, OCFG_LOCAL_PROCESSES_LOG_DIR) == 'None':
+    logfilepath =  config.get(section, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_"+jobScheduler_name+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
     logging.basicConfig(
       filename = logfilepath,
-      format = config.get(section, 'job_processes_logging_format', 1),
-      level = eval("logging."+config.get(section, 'job_processes_logging_level')))
+      format = config.get(section, OCFG_LOCAL_PROCESSES_LOG_FORMAT, 1),
+      level = eval("logging."+config.get(section, OCFG_LOCAL_PROCESSES_LOG_LEVEL)))
   
   logger = logging.getLogger('ljp')
   logger.info(" ")
@@ -66,13 +66,13 @@ def main(jobScheduler_name, log = ""):
   # looking for the JobServer
   Pyro.core.initClient()
   locator = Pyro.naming.NameServerLocator()
-  name_server_host = config.get(section, 'name_server_host')
+  name_server_host = config.get(section, CFG_NAME_SERVER_HOST)
   if name_server_host == 'None':
     ns = locator.getNS()
   else: 
     ns = locator.getNS(host= name_server_host )
 
-  job_server_name = config.get(section, 'job_server_name')
+  job_server_name = config.get(section, CFG_JOB_SERVER_NAME)
   try:
       URI=ns.resolve(job_server_name)
       logger.info('JobServer URI:'+ repr(URI))
@@ -85,14 +85,9 @@ def main(jobScheduler_name, log = ""):
   ###########################
   # Parallel job specific information
   parallel_job_submission_info= {}
-  for drmaa_job_attribute in ["drmaa_job_category", "drmaa_native_specification"]:
-    if config.has_option(section, drmaa_job_attribute):
-      parallel_job_submission_info[drmaa_job_attribute] = config.get(section, drmaa_job_attribute)
-
-  for parallel_config in PARALLEL_CONFIGURATIONS:
-    if config.has_option(section, parallel_config):
-      parallel_job_submission_info[parallel_config] = config.get(section, parallel_config)
-  
+  for parallel_info in PARALLEL_JOB_ENV + PARALLEL_DRMAA_ATTRIBUTES + PARALLEL_CONFIGURATIONS:
+    if config.has_option(section, parallel_info):
+      parallel_job_submission_info[parallel_info] = config.get(section, parallel_info)
   #############################
 
   #Pyro.config.PYRO_MULTITHREADED = 0

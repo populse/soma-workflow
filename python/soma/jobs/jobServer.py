@@ -1017,12 +1017,12 @@ if __name__ == '__main__':
  
   ###########
   # log file 
-  log_file_path = config.get(section, 'job_server_log_file')
+  log_file_path = config.get(section, constants.OCFG_JOB_SERVER_LOG_FILE)
   if log_file_path != 'None':  
     logging.basicConfig(
       filename = log_file_path,
-      format = config.get(section, 'job_server_logging_format', 1),
-      level = eval("logging."+config.get(section, 'job_server_logging_level')))
+      format = config.get(section, constants.OCFG_JOB_SERVER_LOG_FORMAT, 1),
+      level = eval("logging."+config.get(section, constants.OCFG_JOB_SERVER_LOG_LEVEL)))
   
   ########################
   # Pyro server creation 
@@ -1037,7 +1037,7 @@ if __name__ == '__main__':
   # locate the NS 
   locator = Pyro.naming.NameServerLocator()
   print 'searching for Name Server...'
-  name_server_host = config.get(section, 'name_server_host')
+  name_server_host = config.get(section, constants.CFG_NAME_SERVER_HOST)
   if name_server_host == 'None':
     ns = locator.getNS()
   else: 
@@ -1045,15 +1045,15 @@ if __name__ == '__main__':
   daemon.useNameServer(ns)
 
   # connect a new object implementation (first unregister previous one)
-  job_server_name = config.get(section, 'job_server_name')
+  job_server_name = config.get(section, constants.CFG_JOB_SERVER_NAME)
   try:
     ns.unregister(job_server_name)
   except NamingError:
     pass
 
   # connect new object implementation
-  jobServer = PyroJobServer(config.get(section, 'database_file') , 
-                            config.get(section, 'tmp_file_dir_path') )
+  jobServer = PyroJobServer(config.get(section, constants.CFG_DATABASE_FILE) , 
+                            config.get(section, constants.CFG_TMP_FILE_DIR_PATH) )
   daemon.connect(jobServer,job_server_name)
   print "port = " + repr(daemon.port)
   

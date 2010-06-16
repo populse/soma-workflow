@@ -246,18 +246,7 @@ class DrmaaJobScheduler( object ):
 
     cluster_specific_config_name = self.__parallel_job_submission_info[configuration_name]
     
-    #NOT Safe ??
-    #for key in self.__parallel_job_submission_info.iterkeys():
-      #if "drmaa_" == key[0:5]:
-        #value = self.__parallel_job_submission_info[key]
-        #value = value.format(config_name=cluster_specific_config_name, max_node=max_num_node)
-        #with self.__lock:
-          #self.__drmaa.setAttribute( drmaa_job_template_id, 
-                                     #key, 
-                                     #value)
-        #self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", key, value)
-
-    for drmaa_attribute in ("drmaa_native_specification", "drmaa_job_category"):
+    for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
       value = self.__parallel_job_submission_info.get(drmaa_attribute)
       if value: 
         #value = value.format(config_name=cluster_specific_config_name, max_node=max_num_node)
@@ -269,6 +258,17 @@ class DrmaaJobScheduler( object ):
                                     value)
           self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ", drmaa_attribute, value) 
 
+
+    job_env = []
+    for parallel_env_v in constants.PARALLEL_JOB_ENV:
+      value = self.__parallel_job_submission_info.get(parallel_env_v)
+      if value: job_env.append(parallel_env_v+'='+value.rstrip())
+    
+    
+    with self.__lock:
+        self.__drmaa.setVectorAttribute(drmaa_job_template_id, 'drmaa_v_env', job_env)
+        self.logger.debug("Parallel job environment : " + repr(job_env))
+        
     self.logger.debug("<< __setDrmaaParallelJobTemplate")
 
   def dispose( self, job_id ):
@@ -510,7 +510,7 @@ class JobScheduler( object ):
     if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
       if self.__fileToWrite: self.__fileToWrite.close()
       self.__fileToWrite = open(local_file_path, 'wt')
-      
+      os.chmod(local_file_path, 0777)
       
     self.__fileToWrite.write(line)
     self.__fileToWrite.flush()

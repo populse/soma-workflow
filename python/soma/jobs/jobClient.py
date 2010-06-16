@@ -10,7 +10,7 @@ import ConfigParser
 import soma.jobs.connection 
 import random
 import socket
-
+from soma.jobs.constants import * 
 ''' 
 Definitions:
 'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
@@ -51,21 +51,23 @@ class Jobs(object):
     # reading configuration 
     config = ConfigParser.ConfigParser()
     config.read(config_file)
+    self.resource_id = resource_id
+    self.config = config
    
     if not config.has_section(resource_id):
       raise Exception("Can't find section " + resource_id + " in configuration file: " + config_file)
 
-    submitting_machines = config.get(resource_id, 'submitting_machines').split()
+    submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     hostname = socket.gethostname()
     mode = 'remote'
     for machine in submitting_machines:
       if hostname == machine: mode = 'local'
     print "hostname: " + hostname + " => mode = " + mode
-    src_local_process = config.get(resource_id, 'src_local_process')
+    src_local_process = config.get(resource_id, CFG_SRC_LOCAL_PROCESS)
 
     #########################
     # Connection
-    self.__mode = mode # 'local_no_disconnection' (local debug)#
+    self.__mode = mode # 'local_no_disconnection' #(local debug)# 
     
     #########
     # LOCAL #
@@ -94,14 +96,14 @@ class Jobs(object):
       import Pyro.naming
       import Pyro.core
       from Pyro.errors import PyroError, NamingError
-      import soma.jobs.constants as constants
+      
       # log file 
-      if not config.get(resource_id, 'job_processes_log_dir_path') == 'None':
-        logfilepath =  config.get(resource_id, 'job_processes_log_dir_path')+ "log_jobScheduler_sl2255101"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+      if not config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR) == 'None':
+        logfilepath =  config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_jobScheduler_sl2255101"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
         logging.basicConfig(
           filename = logfilepath,
-          format = config.get(resource_id, 'job_processes_logging_format', 1),
-          level = eval("logging."+config.get(resource_id, 'job_processes_logging_level')))
+          format = config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_FORMAT, 1),
+          level = eval("logging."+config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_LEVEL)))
       
       global logger
       logger = logging.getLogger('ljp')
@@ -112,13 +114,13 @@ class Jobs(object):
       # looking for the JobServer
       Pyro.core.initClient()
       locator = Pyro.naming.NameServerLocator()
-      name_server_host = config.get(resource_id, 'name_server_host')
+      name_server_host = config.get(resource_id, CFG_NAME_SERVER_HOST)
       if name_server_host == 'None':
         ns = locator.getNS()
       else: 
         ns = locator.getNS(host= name_server_host )
     
-      job_server_name = config.get(resource_id, 'job_server_name')
+      job_server_name = config.get(resource_id, CFG_JOB_SERVER_NAME)
       try:
         URI=ns.resolve(job_server_name)
         logger.info('JobServer URI:'+ repr(URI))
@@ -129,13 +131,9 @@ class Jobs(object):
   
       #parallel_job_submission_info
       parallel_job_submission_info= {}
-      for drmaa_job_attribute in ["drmaa_job_category", "drmaa_native_specification"]:
-        if config.has_option(resource_id, drmaa_job_attribute):
-          parallel_job_submission_info[drmaa_job_attribute] = config.get(resource_id, drmaa_job_attribute)
-    
-      for parallel_config in constants.PARALLEL_CONFIGURATIONS:
-        if config.has_option(resource_id, parallel_config):
-          parallel_job_submission_info[parallel_config] = config.get(resource_id, parallel_config)
+      for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + PARALLEL_JOB_ENV + PARALLEL_CONFIGURATIONS:
+        if config.has_option(resource_id, parallel_config_info):
+          parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
   
       self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info)
       self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
