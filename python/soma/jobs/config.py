@@ -15,9 +15,9 @@ jobs_cfg.add_section(s)
 
 # parallel job specific submission information
 jobs_cfg.set(s, OCFG_PARALLEL_COMMAND, "-pe  {config_name} {max_node}") 
-jobs_cfg.set(s, OCFG_PARALLEL_MPI,        'mpi')
-jobs_cfg.set(s, OCFG_PARALLEL_MPI_BIN,        '/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/')
-jobs_cfg.set(s, OCFG_PARALLEL_NODE_FILE,      '$TMPDIR/machines')
+jobs_cfg.set(s, OCFG_PARALLEL_PC_MPI,        'mpi')
+jobs_cfg.set(s, OCFG_PARALLEL_ENV_MPI_BIN,        '/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/')
+jobs_cfg.set(s, OCFG_PARALLEL_ENV_NODE_FILE,      '$TMPDIR/machines')
 #Job local process
 jobs_cfg.set(s, OCFG_LOCAL_PROCESSES_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s : %(message)s      %(threadName)s')
 jobs_cfg.set(s, OCFG_LOCAL_PROCESSES_LOG_LEVEL,  'DEBUG')
@@ -68,9 +68,9 @@ s = 'DSV_cluster'
 jobs_cfg.add_section(s)
 # parallel job specific submission information
 jobs_cfg.set(s, OCFG_PARALLEL_COMMAND,   "-l nodes={max_node}") 
-jobs_cfg.set(s, OCFG_PARALLEL_MPI,  'mpi')
-jobs_cfg.set(s, OCFG_PARALLEL_MPI_BIN,   '/opt/mpich/gnu/bin/')
-jobs_cfg.set(s, OCFG_PARALLEL_NODE_FILE, '$PBS_NODEFILE')
+jobs_cfg.set(s, OCFG_PARALLEL_PC_MPI,  'mpi')
+jobs_cfg.set(s, OCFG_PARALLEL_ENV_MPI_BIN,   '/opt/mpich/gnu/bin/')
+jobs_cfg.set(s, OCFG_PARALLEL_ENV_NODE_FILE, '$PBS_NODEFILE')
 #Job local process
 jobs_cfg.set(s, OCFG_LOCAL_PROCESSES_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
 jobs_cfg.set(s, OCFG_LOCAL_PROCESSES_LOG_LEVEL,  'DEBUG')

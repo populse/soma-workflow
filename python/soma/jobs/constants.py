@@ -44,8 +44,8 @@ JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
 
 
 '''
-Soma job configuration variables
-CFG => Mandatory variable
+Soma job configuration items
+CFG => Mandatory items
 OCFG => Optional
 '''
 CFG_SUBMITTING_MACHINES = 'submitting_machines'
@@ -70,18 +70,17 @@ OCFG_LOCAL_PROCESSES_LOG_DIR = 'job_processes_log_dir_path'
 OCFG_LOCAL_PROCESSES_LOG_LEVEL = 'job_processes_logging_level'
 OCFG_LOCAL_PROCESSES_LOG_FORMAT = 'job_processes_logging_format'
 
-
-#Parallel job configuration :
-
-OCFG_PARALLEL_MPI="MPI"
-OCFG_PARALLEL_OPEN_MP="OpenMP"
-PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_MPI, OCFG_PARALLEL_OPEN_MP]
-
+# Parallel job configuration :
+# DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
 OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
 OCFG_PARALLEL_JOB_CATEGORY = "drmaa_job_category"
 PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
-
-OCFG_PARALLEL_MPI_BIN = 'SOMA_JOB_MPI_BIN'
-OCFG_PARALLEL_NODE_FILE = 'SOMA_JOB_NODE_FILE'
-PARALLEL_JOB_ENV = [OCFG_PARALLEL_MPI_BIN, OCFG_PARALLEL_NODE_FILE]
+# kinds of parallel jobs (items can be added by administrator)
+OCFG_PARALLEL_PC_MPI="MPI"
+OCFG_PARALLEL_PC_OPEN_MP="OpenMP"
+PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
+# parallel job environment variables for the execution machine (items can be added by administrators) 
+OCFG_PARALLEL_ENV_MPI_BIN = 'SOMA_JOB_MPI_BIN'
+OCFG_PARALLEL_ENV_NODE_FILE = 'SOMA_JOB_NODE_FILE'
+PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 

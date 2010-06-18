@@ -210,7 +210,7 @@ class JobExamples(object):
     #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
     #/opt/mpich/gnu/bin/
     
-    mpibin = self.jobs.config.get(self.jobs.resource_id, constants.OCFG_PARALLEL_MPI_BIN)
+    mpibin = self.jobs.config.get(self.jobs.resource_id, constants.OCFG_PARALLEL_ENV_MPI_BIN)
     print "mpibin = " + mpibin
     
     print "l_source = " + l_source
@@ -250,33 +250,10 @@ class JobExamples(object):
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
                               name_description = "parallel job mpi",
-                              parallel_job_info = (constants.OCFG_PARALLEL_MPI,node_num))
+                              parallel_job_info = (constants.OCFG_PARALLEL_PC_MPI,node_num))
 
     self.jobs.dispose(compil1jobId)
     self.jobs.dispose(compil2jobId)
-    
-    
-    
-    #l_source = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
-    
-    #l_object = self.jobs.registerFileTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
-    
-    #l_bin = self.jobs.registerFileTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
-    
-    #print "l_source = " + l_source
-    #print "l_object = " + l_object
-    #print "l_bin = " + l_bin
-    
-    #script = self.jobs.sendFile(self.inpath + "mpi/simple_mpi_n_comp.sh", self.tr_timeout)
-    
-    #jobId = self.jobs.submit( command = [ "bash", script, l_source, l_object, repr(node_num), l_bin], 
-                              #referenced_input_files = [script, l_bin],
-                              #join_stderrout=False, 
-                              #disposal_timeout = self.jobs_timeout,
-                              #name_description = "parallel job mpi",
-                              #parallel_job_info = (constants.OCFG_PARALLEL_MPI,node_num))
-
-
     
 
     return (jobId, [l_source], None)
