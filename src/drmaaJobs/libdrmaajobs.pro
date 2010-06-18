@@ -2,6 +2,7 @@
 
 TEMPLATE= lib
 TARGET  = somadrmaajobs${BUILDMODEEXT}
+INCBDIR = soma/pipeline
 
 HEADERS = \
   drmaajobs.h \
