@@ -73,7 +73,7 @@ class Jobs(object):
     # LOCAL #
     #########
     if self.__mode == 'local':
-      self.__connection = soma.jobs.connection.JobLocalConnection(src_local_process, log)
+      self.__connection = soma.jobs.connection.JobLocalConnection(src_local_process, resource_id, log)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
     
@@ -83,7 +83,7 @@ class Jobs(object):
     if self.__mode == 'remote':
       sub_machine = submitting_machines[random.randint(0, len(submitting_machines)-1)]
       print 'submission machine: ' + sub_machine
-      self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, log)
+      self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, resource_id, log)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = soma.jobs.connection.RemoteFileTransfer(self.__js_proxy)
     

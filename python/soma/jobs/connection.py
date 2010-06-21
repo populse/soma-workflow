@@ -54,6 +54,7 @@ class JobRemoteConnection( object ):
                password, 
                submitting_machine,
                local_process_src,
+               resource_id,
                log = ""):
     '''
     Run the local job process, create a connection and get back a L(JobScheduler)
@@ -87,7 +88,7 @@ class JobRemoteConnection( object ):
     
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
-    command = "python %s %s %s" %(local_process_src, pyro_objet_name, log) 
+    command = "python %s %s %s %s" %(local_process_src, resource_id, pyro_objet_name, log) 
     print "local process command: " + command
     client = paramiko.SSHClient()
     client.load_system_host_keys()
@@ -172,6 +173,7 @@ class JobLocalConnection( object ):
   
   def __init__(self,
                local_process_src,
+               resource_id, 
                log = ""):
     '''
     '''
@@ -184,7 +186,7 @@ class JobLocalConnection( object ):
     # run the local job process and get back the    #
     # JobScheduler and ConnectionChecker URIs       #
 
-    command = "python " + local_process_src + " " + pyro_objet_name + " " + log
+    command = "python %s %s %s %s" %(local_process_src, resource_id, pyro_objet_name, log) 
     print command
    
     local_job_process = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE)

@@ -1005,15 +1005,20 @@ if __name__ == '__main__':
   import Pyro.core
   from Pyro.errors import PyroError,NamingError
   import ConfigParser
+  import sys
+
+  if not len(sys.argv) == 2:
+    sys.stdout.write("jobServer takes 1 argument: resource id. \n")
+    sys.exit(1)
+  
+  print "Ressource: " + sys.argv[1]
 
   #########################
   # reading configuration 
   config = ConfigParser.ConfigParser()
   config_file_path = os.environ['SOMA_JOBS_CONFIG']
   config.read(config_file_path)
-  #section = 'soizic_home_cluster'
-  section = 'neurospin_test_cluster'
-  #section = 'DSV_cluster'
+  section = sys.argv[1]
  
   ###########
   # log file 

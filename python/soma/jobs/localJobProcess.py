@@ -35,7 +35,7 @@ class ConnectionChecker(Pyro.core.ObjBase, soma.jobs.connection.ConnectionChecke
 
 ###### main server program
 
-def main(jobScheduler_name, log = ""):
+def main(resource_id, jobScheduler_name, log = ""):
   
   import ConfigParser
 
@@ -44,9 +44,7 @@ def main(jobScheduler_name, log = ""):
   config = ConfigParser.ConfigParser()
   config_file_path = os.environ['SOMA_JOBS_CONFIG']
   config.read(config_file_path)
-  section = 'neurospin_test_cluster'
-  #section = 'soizic_home_cluster'  
-  #section = 'DSV_cluster'
+  section = resource_id
   
   ###########
   # log file 
@@ -154,12 +152,14 @@ def main(jobScheduler_name, log = ""):
   
 
 if __name__=="__main__":
-  if not len(sys.argv) == 2 and not len(sys.argv) == 3:
-    sys.stdout.write("PyroJobScheduler takes 1 argument: name of the JobScheduler object. \n")
+  if not len(sys.argv) == 3 and not len(sys.argv) == 4:
+    sys.stdout.write("localJobProcess takes 2 arguments:\n")
+    sys.stdout.write("   1. resource id \n")
+    sys.stdout.write("   2. name of the JobScheduler object. \n")
   else:  
-    if len(sys.argv) == 2:
-      jobScheduler_name = sys.argv[1]
-      main(jobScheduler_name)
+    resource_id = sys.argv[1]
+    jobScheduler_name = sys.argv[2]
     if len(sys.argv) == 3:
-      jobScheduler_name = sys.argv[1]
-      main(jobScheduler_name, sys.argv[2])
+      main(resource_id, jobScheduler_name)
+    if len(sys.argv) == 4:
+      main(resource_id, jobScheduler_name, sys.argv[3])
