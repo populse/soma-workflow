@@ -37,15 +37,6 @@ class Jobs(object):
     @param login and password: only required if run from a submitting machine of the cluster.
     '''
     
-    #########################
-    # for debugging purpose
-    
-    #import logging
-    #logging.basicConfig(
-        #filename = "/home/sl225510/clientlog",
-        #format = "%(message)s",
-        #level = logging.DEBUG)
-    
     
     #########################
     # reading configuration 
@@ -57,6 +48,12 @@ class Jobs(object):
     if not config.has_section(resource_id):
       raise Exception("Can't find section " + resource_id + " in configuration file: " + config_file)
 
+    if config.has_section(OCFG_SECTION_CLIENT) and not config.get(OCFG_SECTION_CLIENT, OCFG_CLIENT_LOG_FILE) == 'None':
+       import logging
+       logging.basicConfig(filename = config.get(OCFG_SECTION_CLIENT, OCFG_CLIENT_LOG_FILE),
+                           format = config.get(OCFG_SECTION_CLIENT, OCFG_CLIENT_LOG_FORMAT, 1), 
+                           level = eval("logging."+config.get(OCFG_SECTION_CLIENT, OCFG_CLIENT_LOG_LEVEL)))
+   
     submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     hostname = socket.gethostname()
     mode = 'remote'

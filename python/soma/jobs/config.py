@@ -88,7 +88,20 @@ jobs_cfg.set(s, CFG_DATABASE_FILE,          '/home/sl225510/soma-jobs-server/job
 jobs_cfg.set(s, OCFG_DRMS,               'PBS') 
 jobs_cfg.set(s, CFG_SUBMITTING_MACHINES, 'gabriel.intra.cea.fr')
 
+
+########################
+# client configuration #
+########################
+
+s = OCFG_SECTION_CLIENT
+
+jobs_cfg.add_section(s)
+# client log file
+jobs_cfg.set(s, OCFG_CLIENT_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s')
+jobs_cfg.set(s, OCFG_CLIENT_LOG_LEVEL,  'DEBUG')
+jobs_cfg.set(s, OCFG_CLIENT_LOG_FILE,    '/home/sl225510/log_somajobsclient')
+
+
+#####################################################"
 with open('jobs.cfg', 'wb') as configfile:
     jobs_cfg.write(configfile)
-
-
