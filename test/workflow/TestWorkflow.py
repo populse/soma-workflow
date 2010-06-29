@@ -63,8 +63,7 @@ if __name__ == '__main__':
                                        job4,
                                        workflow.ParallelWorkflow([file11, file12, file3, file4])
                                        ])
-  
-                             
-  workflow.workflowToDot(myWorkflow, "/home/sl225510/myWorkflow.dot")
+   
+  view = workflow.workflowDotView(myWorkflow, "/home/sl225510/myWorkflow.dot", "/home/sl225510/graph.png")
   
   myWorkflow.run()
