@@ -944,11 +944,11 @@ if __name__ == '__main__':
   if all:
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
@@ -957,14 +957,14 @@ if __name__ == '__main__':
 
     tests = minimal
     
-    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
     #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
     #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
-    suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
+    #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
 
 
   alltests = unittest.TestSuite(suite_list)

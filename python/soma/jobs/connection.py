@@ -233,7 +233,7 @@ class FileTransfer( object ):
     '''
     self.jobScheduler = jobScheduler
 
-  def transferInputFile(self, remote_input_file, disposal_timeout):
+  def sendFile(self, local_file, remote_file):
     '''
     An unique local path is generated and associated with the remote path. 
     Each remote files is copied to its associated local location.
@@ -254,7 +254,7 @@ class FileTransfer( object ):
     raise Exception('FileTransfer is an abstract class. transferInputFile must be implemented in subclass')
      
 
-  def transferOutputFile(self, local_file):
+  def retrieveFile(self, local_file, remote_file):
     '''
     Copy the local file to the associated remote file path. 
     The local file path must belong to the user's transfered files (ie belong to 
@@ -269,50 +269,40 @@ class FileTransfer( object ):
 
 class LocalFileTransfer(FileTransfer):
   
-    def transferInputFile(self, remote_input_file, disposal_timeout):
-     
-      local_input_file_path = self.jobScheduler.registerTransfer(remote_input_file, disposal_timeout)
+    def sendFile(self, local_file, remote_file):
       
       try:
-        shutil.copy(remote_input_file,local_input_file_path)
+        shutil.copy(remote_file,local_file)
       except IOError, e:
         raise FileTransferError("The input file was not transfered. %s: %s" %(type(e), e) )
-      os.chmod(local_input_file_path, 0777)
-      return local_input_file_path
+      os.chmod(local_file, 0777)
     
-    def transferOutputFile(self, local_file):
-    
-      local_file_path, remote_file_path, expiration_date = self.jobScheduler.transferInformation(local_file)
-      
+    def retrieveFile(self, local_file, remote_file):   
       try:
-        shutil.copy(local_file_path,remote_file_path)
+        shutil.copy(local_file,remote_file)
       except IOError, e:
         raise FileTransferError("The output file was not transfered back. %s: %s" %(type(e), e) )
 
 
 class RemoteFileTransfer(FileTransfer):
 
-    def transferInputFile(self, remote_input_file, disposal_timeout):
-      local_input_file_path = self.jobScheduler.registerTransfer(remote_input_file, disposal_timeout)
-      
-      infile = open(remote_input_file)
+    def sendFile(self, local_file, remote_file):
+       
+      infile = open(remote_file)
       line = infile.readline()
       while line:
-          self.jobScheduler.writeLine(line, local_input_file_path)
+          self.jobScheduler.writeLine(line, local_file)
           line = infile.readline()
       infile.close()
       self.jobScheduler.endTransfers()
-      return local_input_file_path
     
     
-    def transferOutputFile(self, local_file):
-      local_file_path, remote_file_path, expiration_date = self.jobScheduler.transferInformation(local_file)
-      
-      outfile = open(remote_file_path, "w")
-      line = self.jobScheduler.readline(local_file_path)
+    def retrieveFile(self, local_file, remote_file): 
+      outfile = open(remote_file, "w")
+      line = self.jobScheduler.readline(local_file)
       while line:
           outfile.write(line)
-          line = self.jobScheduler.readline(local_file_path)
+          line = self.jobScheduler.readline(local_file)
       outfile.close()
       self.jobScheduler.endTransfers()
 

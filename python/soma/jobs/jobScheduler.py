@@ -19,6 +19,8 @@ import time
 from datetime import datetime
 import logging
 import soma.jobs.constants as constants
+import soma.jobs.jobServer 
+import copy
 
 __docformat__ = "epytext en"
 
@@ -77,10 +79,15 @@ class DrmaaJobScheduler( object ):
     
     self.__user_id = self.__jobServer.registerUser(userLogin) 
 
-    self.__jobs = set([])
+    self.__jobs = {} 
+    self.__workflows = {}
+    self.__endedTransfers = set([])
+    
     self.__lock = threading.RLock()
     
     self.__jobsEnded = False
+    
+    
     
     def startJobStatusUpdateLoop( self, interval ):
       logger_su = logging.getLogger('ljp.drmaajs.su')
@@ -88,25 +95,33 @@ class DrmaaJobScheduler( object ):
         # get rid of all the jobs that doesn't exist anymore
         with self.__lock:
           serverJobs = self.__jobServer.getJobs(self.__user_id)
-          self.__jobs = self.__jobs.intersection(serverJobs)
+          removed_from_server = set(self.__jobs.keys()).difference(serverJobs)
+          for job_id in removed_from_server:
+            del self.__jobs[job_id]
+          #self.__jobs = self.__jobs.intersection(serverJobs)
           allJobsEnded = True
           ended = []
-          for job_id in self.__jobs:
-            # get back the status from DRMAA
-            status = self.__status(job_id)
-            logger_su.debug("job " + repr(job_id) + " : " + status)
-            if status == constants.DONE or status == constants.FAILED:
-              # update the exit status and status on the job server 
-              self.__endOfJob(job_id, status)
-              ended.append(job_id)
-            else:
-              allJobsEnded = False
-              # update the status on the job server 
-              self.__jobServer.setJobStatus(job_id, status)
+          for job_id in self.__jobs.keys():
+            if self.__jobs[job_id].submitted:
+              # get back the status from DRMAA
+              status = self.__status(job_id)
+              logger_su.debug("job " + repr(job_id) + " : " + status)
+              if status == constants.DONE or status == constants.FAILED:
+                # update the exit status and status on the job server 
+                self.__endOfJob(job_id, status)
+                ended.append(job_id)
+              else:
+                allJobsEnded = False
+                # update the status on the job server 
+                self.__jobServer.setJobStatus(job_id, status)
           self.__jobsEnded = allJobsEnded
           # get the exit information for terminated jobs and update the jobServer
+          if ended or self.__endedTransfers:
+            self.workflowProcessing(endedJobs = ended, endedTransfers = self.__endedTransfers )
+            self.__endedTransfers.clear()
           for job_id in ended:
-            self.__jobs.discard(job_id)
+            del self.__jobs[job_id]
+          
         logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
         time.sleep(interval)
     
@@ -129,98 +144,126 @@ class DrmaaJobScheduler( object ):
     '''
  
     
-  
+  def signalTransferEnded(self, local_file_path):
+    '''
+    WIP
+    '''
+    with self.__lock:
+      self.logger.debug("signal transfer ended " + local_file_path)
+      self.__endedTransfers.add(local_file_path)
 
 
   ########## JOB SUBMISSION #################################################
 
-  def submit( self,
-          command,
-          required_local_input_files,
-          required_local_output_files,
-          stdin,
-          join_stderrout,
-          disposal_timeout,
-          name_description,
-          stdout_path,
-          stderr_path,
-          working_directory,
-          parallel_job_info):
+  def submit(self, jobTemplate):
     
     '''
     Implementation of the L{JobScheduler} method.
     '''
     self.logger.debug(">> submit")
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+      
+    job_id = self.__registerJob(jobTemplate)
+    
+    self.__drmaaJobSubmission(jobTemplate.command, job_id)
+    self.logger.debug("<< submit")
+    return job_id
+  
+      
+  def __registerJob(self,
+                    jobTemplate_o,
+                    workflow_id=-1):
+    
+    jobTemplate = copy.deepcopy(jobTemplate_o)
+    
+    expiration_date = date.today() + timedelta(hours=jobTemplate.disposal_timeout) 
     parallel_config_name = None
     max_node_number = 1
 
-    if not stdout_path:
+    if not jobTemplate.stdout_path:
       stdout_path = self.__jobServer.generateLocalFilePath(self.__user_id)
       stderr_path = self.__jobServer.generateLocalFilePath(self.__user_id)
-      custom_submit = False #the std out and err file has to be removed with the job
+      custom_submission = False #the std out and err file has to be removed with the job
     else:
-      custom_submit = True #the std out and err file won't to be removed with the job
+      custom_submission = True #the std out and err file won't to be removed with the job
+      stdout_path = jobTemplate.stdout_path
+      stderr_path = jobTemplate.stderr_path
+      
+      
+    if jobTemplate.parallel_job_info:
+      parallel_config_name, max_node_number = jobTemplate.parallel_job_info
+       
+    command_info = ""
+    for command_element in jobTemplate.command:
+      command_info = command_info + " " + command_element
       
     with self.__lock:
+      job_id = self.__jobServer.addJob( soma.jobs.jobServer.DBJob(
+                                        user_id = self.__user_id, 
+                                        custom_submission = custom_submission,
+                                        expiration_date = expiration_date, 
+                                        command = command_info,
+                                        workflow_id = workflow_id,
+                                        
+                                        stdin_file = jobTemplate.stdin, 
+                                        join_errout = jobTemplate.join_stderrout,
+                                        stdout_file = stdout_path,
+                                        stderr_file = stderr_path,
+                                        working_directory = jobTemplate.working_directory,
+                                        
+                                        parallel_config_name = parallel_config_name,
+                                        max_node_number = max_node_number,
+                                        name_description = jobTemplate.name_description))
+                                      
+      if jobTemplate.referenced_input_files:
+        self.__jobServer.registerInputs(job_id, jobTemplate.referenced_input_files)
+      if jobTemplate.referenced_output_files:
+        self.__jobServer.registerOutputs(job_id, jobTemplate.referenced_output_files)
+
+    jobTemplate.job_id = job_id
+    jobTemplate.workflow_id = workflow_id
+    self.__jobs[job_id] = jobTemplate
+    return job_id
+        
+  def __drmaaJobSubmission(self, command, job_id): 
+    
+    job = self.__jobServer.getJob(job_id)
+    
+    with self.__lock:
+      
       drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
       self.__drmaa.setCommand(drmaaJobTemplateId, command[0], command[1:])
     
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + stdout_path)
+      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + job.stdout_file)
       
-      if join_stderrout:
+      if job.join_errout:
         self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
       else:
-        if stderr_path:
-          self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + stderr_path)
+        if job.stderr_file:
+          self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + job.stderr_file)
      
-      if stdin:
-        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + stdin)
+      if job.stdin_file:
+        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + job.stdin_file)
         
-      if working_directory:
-        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", working_directory)
+      if job.working_directory:
+        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", job.working_directory)
       
-      if parallel_job_info:
-        parallel_config_name, max_node_number = parallel_job_info
-        self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
+      if job.parallel_config_name :
+        self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, job.parallel_config_name, job.max_node_number)
 
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
       self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
      
       if drmaaSubmittedJobId == "":
         self.logger.error("Could not submit job: Drmaa problem.");
-        self.logger.debug("<< submit")
         return -1
-        
-      # for user information only
-      command_info = ""
-      for command_element in command:
-        command_info = command_info + " " + command_element
       
-      job_id = self.__jobServer.addJob(self.__user_id, 
-                                        custom_submit,
-                                        expiration_date, 
-                                        stdout_path,
-                                        stderr_path,
-                                        join_stderrout,
-                                        stdin, 
-                                        name_description, 
-                                        drmaaSubmittedJobId,
-                                        working_directory,
-                                        command_info,
-                                        parallel_config_name,
-                                        max_node_number)
-                                      
-      if required_local_input_files:
-        self.__jobServer.registerInputs(job_id, required_local_input_files)
-      if required_local_output_files:
-        self.__jobServer.registerOutputs(job_id, required_local_output_files)
+      self.__jobServer.setSubmissionInformation(job_id, drmaaSubmittedJobId, date.today())
+      self.__jobs[job_id].submitted = True
+      
+    self.logger.debug("job %s submitted! drmaa id = %s", job_id, drmaaSubmittedJobId)
+    
+    
 
-      self.__jobs.add(job_id)
-      
-    self.logger.debug("new job ! id = %s drmaa id = %s", job_id, drmaaSubmittedJobId)
-    self.logger.debug("<< submit")
-    return job_id
 
   def __setDrmaaParallelJobTemplate(self, drmaa_job_template_id, configuration_name, max_num_node):
     '''
@@ -281,6 +324,146 @@ class DrmaaJobScheduler( object ):
       self.__jobServer.deleteJob(job_id)
     self.logger.debug("<< dispose")
 
+
+  ########## WORKFLOW SUBMISSION ############################################
+  
+  def submitWorkflow(self, workflow_o, disposal_timeout):
+    # type checking for the workflow ?
+    workflow = copy.deepcopy(workflow_o)
+    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
+    workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date)
+    workflow.wf_id = workflow_id 
+    
+    
+    for node in workflow.nodes:
+      if isinstance(node, constants.FileSending):
+        node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
+        self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id)
+       
+      else:
+        if isinstance(node, constants.FileRetrieving):
+          node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
+          self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id)
+    
+    for node in workflow.nodes:
+      if isinstance(node, constants.JobTemplate):
+       
+        new_command = []
+        for command_el in node.command:
+          if isinstance(command_el, constants.FileTransfer):
+            new_command.append(command_el.local_file_path)
+          else:
+            new_command.append(command_el)
+        node.command = new_command
+        
+        new_referenced_input_files = []
+        for input_file in node.referenced_input_files:
+          if isinstance(input_file, constants.FileTransfer):
+            new_referenced_input_files.append(input_file.local_file_path)
+          else:
+            new_referenced_input_files.append(input_file)
+        node.referenced_input_files= new_referenced_input_files
+       
+        new_referenced_output_files = []
+        for output_file in node.referenced_output_files:
+          if isinstance(output_file, constants.FileTransfer):
+            new_referenced_output_files.append(output_file.local_file_path)
+          else:
+            new_referenced_output_files.append(output_file)
+        node.referenced_output_files = new_referenced_output_files
+        
+        if isinstance(node.stdin, constants.FileTransfer):
+          node.stdin = node.stdin.local_file_path 
+              
+        job_id = self.__registerJob(node, workflow_id)
+        node.job_id = job_id
+     
+    self.__jobServer.setWorkflow(workflow_id, workflow, self.__user_id)
+    self.__workflows[workflow_id] = workflow
+    
+    
+    
+    for node in workflow.nodes:
+      torun=True
+      for dep in workflow.dependencies:
+        torun = torun and not dep[1] == node
+      if torun:
+        if isinstance(node, constants.JobTemplate):
+          self.__drmaaJobSubmission(node.command, node.job_id)
+    return workflow
+     
+  def __isWFNodeCompleted(self, node):
+    competed = False
+    if isinstance(node, constants.JobTemplate):
+      if node.job_id:
+        status = self.__jobServer.getJobStatus(node.job_id)
+        completed = status == constants.DONE or status == constants.FAILED
+    if isinstance(node, constants.FileSending):
+      if node.local_file_path:
+        status = self.__jobServer.getTransferStatus(node.local_file_path)
+        completed = status == constants.TRANSFERED
+    if isinstance(node, constants.FileRetrieving):
+      if node.local_file_path:
+        status = self.__jobServer.getTransferStatus(node.local_file_path)
+        completed = status == constants.READY_TO_TRANSFER
+    return completed
+      
+    
+   
+  def workflowProcessing(self, endedJobs=[], endedTransfers=[]):
+    
+    self.logger.debug(">> workflowProcessing")
+    wf_to_process = set([])
+    for job_id in endedJobs:
+      job = self.__jobs[job_id]
+      self.logger.debug("==> ended job: " + job.name)
+      if job.referenced_output_files:
+        for local_file_path in job.referenced_output_files:
+          self.__jobServer.setTransferStatus(local_file_path, constants.READY_TO_TRANSFER)
+      if not job.workflow_id == -1:
+        workflow = self.__workflows[job.workflow_id]
+        wf_to_process.add(workflow)
+    for local_file_path in endedTransfers:
+      self.logger.debug("==> ended Transfer: " + local_file_path)
+      workflow_id = self.__jobServer.getTransferInformation(local_file_path)[3]
+      self.logger.debug("workflow_id " + repr(workflow_id))
+      if not workflow_id == -1:
+        workflow = self.__workflows[workflow_id]
+        wf_to_process.add(workflow)
+      
+    to_run = []
+    for workflow in wf_to_process:
+      for node in workflow.nodes:
+        if isinstance(node, constants.JobTemplate):
+          status = self.__jobServer.getJobStatus(node.job_id)
+          to_inspect = status[0] == constants.NOT_SUBMITTED
+          #print "node " + node.name + " status " + status[0] + " to inspect " + repr(to_inspect)
+        if isinstance(node, constants.FileTransfer):
+          status = self.__jobServer.getTransferStatus(node.local_file_path)
+          to_inspect = status == constants.TRANSFER_NOT_READY
+          #print "node " + node.name + " status " + status + " to inspect " + repr(to_inspect)
+        if to_inspect:
+          self.logger.debug("to inspect : " + node.name)
+          node_to_run = False
+          for dep in workflow.dependencies:
+            if dep[1] == node: 
+              #print "node " + node.name + " dep: " + dep[0].name + " " + dep[1].name 
+              node_to_run = self.__isWFNodeCompleted(dep[0])
+              if not node_to_run: break
+          if node_to_run: 
+            self.logger.debug("to run : " + node.name)
+            to_run.append(node)
+      
+    for node in to_run:
+      if isinstance(node, constants.JobTemplate):
+        self.__drmaaJobSubmission(node.command, node.job_id)
+      if isinstance(node,constants.FileTransfer):
+        self.__jobServer.setTransferStatus(node.local_file_path, constants.READY_TO_TRANSFER)
+    
+    self.logger.debug("<<< workflowProcessing")
+    
+        
+
   ########### DRMS MONITORING ################################################
 
 
@@ -297,8 +480,9 @@ class DrmaaJobScheduler( object ):
     self.logger.debug(">> __status")
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      status = self.__drmaa.jobStatus(drmaaJobId) 
-      #add conversion from DRMAA status strings to the status defined in soma.jobs.constants if needed
+      if drmaaJobId:
+        status = self.__drmaa.jobStatus(drmaaJobId) 
+        #add conversion from DRMAA status strings to the status defined in soma.jobs.constants if needed
     self.logger.debug("<< __status")
     return status
    
@@ -314,20 +498,20 @@ class DrmaaJobScheduler( object ):
     self.logger.debug(">> __endOfJob")
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      self.logger.debug("End of job %s, drmaaJobId = %s", job_id, drmaaJobId)
+      if drmaaJobId:
+        self.logger.debug("End of job %s, drmaaJobId = %s", job_id, drmaaJobId)
       
-      exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
-
-      self.logger.debug("job %s, exit_status=%s exit_value =%d", job_id, exit_status, exit_value)
-      
-      str_rusage = ''
-      for rusage in resource_usage:
-        str_rusage = str_rusage + rusage + ' '
-      
-      self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
-      self.__jobServer.setJobStatus(job_id, status)
+        exit_status, exit_value, term_sig, resource_usage = self.__drmaa.wait(drmaaJobId, 0)
+  
+        self.logger.debug("job %s, exit_status=%s exit_value =%d", job_id, exit_status, exit_value)
+        
+        str_rusage = ''
+        for rusage in resource_usage:
+          str_rusage = str_rusage + rusage + ' '
+        
+        self.__jobServer.setJobExitInfo(job_id, exit_status, exit_value, term_sig, str_rusage)
+        self.__jobServer.setJobStatus(job_id, status)
     
-    assert(self.__jobServer.getJobStatus(job_id)[0] == status)
     self.logger.debug("<< __endOfJob")
 
   def areJobsDone(self):
@@ -344,16 +528,17 @@ class DrmaaJobScheduler( object ):
     status_changed = False
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      status = self.__status(job_id)
-      self.logger.debug("   status : " + status)
-      
-      if status==constants.RUNNING:
-        self.__drmaa.suspend(drmaaJobId)
-        status_changed = True
-      
-      if status==constants.QUEUED_ACTIVE:
-        self.__drmaa.hold(drmaaJobId)
-        status_changed = True
+      if drmaaJobId:
+        status = self.__status(job_id)
+        self.logger.debug("   status : " + status)
+        
+        if status==constants.RUNNING:
+          self.__drmaa.suspend(drmaaJobId)
+          status_changed = True
+        
+        if status==constants.QUEUED_ACTIVE:
+          self.__drmaa.hold(drmaaJobId)
+          status_changed = True
         
         
     if status_changed:
@@ -369,15 +554,16 @@ class DrmaaJobScheduler( object ):
     status_changed = False
     with self.__lock:
       drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-      status = self.__status(job_id)
-      
-      if status==constants.USER_SUSPENDED or status==constants.USER_SYSTEM_SUSPENDED:
-        self.__drmaa.resume(drmaaJobId)
-        status_changed = True
+      if drmaaJobId:
+        status = self.__status(job_id)
         
-      if status==constants.USER_ON_HOLD or status==constants.USER_SYSTEM_ON_HOLD :
-        self.__drmaa.release(drmaaJobId)
-        status_changed = True
+        if status==constants.USER_SUSPENDED or status==constants.USER_SYSTEM_SUSPENDED:
+          self.__drmaa.resume(drmaaJobId)
+          status_changed = True
+          
+        if status==constants.USER_ON_HOLD or status==constants.USER_SYSTEM_ON_HOLD :
+          self.__drmaa.release(drmaaJobId)
+          status_changed = True
         
     if status_changed:
       self.__waitForStatusUpdate(job_id)
@@ -395,19 +581,21 @@ class DrmaaJobScheduler( object ):
     with self.__lock:
       (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
 
-      if not status == constants.DONE and not status == constants.FAILED:
+      if status and not status == constants.DONE and not status == constants.FAILED:
         drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
-        self.logger.debug("terminate job %s drmaa id %s with status %s", job_id, drmaaJobId, status)
-        self.__drmaa.terminate(drmaaJobId)
-      
-        self.__jobServer.setJobExitInfo(job_id, 
-                                        constants.USER_KILLED,
-                                        None,
-                                        None,
-                                        None)
+        if drmaaJobId:
+          self.logger.debug("terminate job %s drmaa id %s with status %s", job_id, drmaaJobId, status)
+          self.__drmaa.terminate(drmaaJobId)
         
-        self.__jobServer.setJobStatus(job_id, constants.FAILED)
-        self.__jobs.discard(job_id)
+          self.__jobServer.setJobExitInfo(job_id, 
+                                          constants.USER_KILLED,
+                                          None,
+                                          None,
+                                          None)
+          
+          self.__jobServer.setJobStatus(job_id, constants.FAILED)
+        if job_id in self.__jobs.keys():
+          del self.__jobs[job_id]
         
     self.logger.debug("<< kill")
 
@@ -418,10 +606,10 @@ class DrmaaJobScheduler( object ):
     drmaaActionTime = datetime.now()
     time.sleep(refreshment_interval)
     (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
-    while not status == constants.DONE and not status == constants.FAILED and last_status_update < drmaaActionTime:
+    while status and not status == constants.DONE and not status == constants.FAILED and last_status_update < drmaaActionTime:
       time.sleep(refreshment_interval)
       (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
-      if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
         raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(job_id), self.logger)
     self.logger.debug("<< __waitForStatusUpdate")
 
@@ -476,7 +664,7 @@ class JobScheduler( object ):
     A transfer will associate remote file path to unique local file path.
   
   Use L{registerTransfer} then L{writeLine} or scp or 
-  shutil.copy to tranfer input file from the remote to the local 
+  shutil.copy to transfer input file from the remote to the local 
   environment.
   Use L{registerTransfer} and once the job has run use L{readline} or scp or
   shutil.copy to transfer the output file from the local to the remote environment.
@@ -545,6 +733,17 @@ class JobScheduler( object ):
     if self.__fileToRead:
       self.__fileToRead.close()
     
+    
+  def setTransferStatus(self, local_file_path, status):
+    '''
+    WIP
+    '''
+     
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
+      print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_file_path
+      return
+    
+    self.__jobServer.setTransferStatus(local_file_path, status)
 
   def cancelTransfer(self, local_file_path):
     '''
@@ -555,44 +754,35 @@ class JobScheduler( object ):
       print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_file_path
       return
 
-    self.__jobServer.removeTransferASAP(local_file_path)
+    self.__jobServer.removeTransfer(local_file_path)
+    
+  def signalTransferEnded(self, local_file_path):
+    '''
+    WIP
+    '''
+    self.__drmaaJS.signalTransferEnded(local_file_path)
     
 
   ########## JOB SUBMISSION ##################################################
 
   
   def submit( self,
-              command,
-              required_local_input_files=None,
-              required_local_output_files=None,
-              stdin=None,
-              join_stderrout=False,
-              disposal_timeout=168,
-              name_description=None,
-              stdout_path=None,
-              stderr_path=None,
-              working_directory=None,
-              parallel_job_info=None):
-
+              jobTemplate):
     '''
-    Implementation of soma.jobs.jobClient.Jobs API
+    Submits a job to the system. 
+    
+    @type  jobTemplate: L{constants.JobTemplate}
+    @param jobTemplate: job informations 
     '''
 
-    if len(command) == 0:
+    if len(jobTemplate.command) == 0:
       raise JobSchedulerError("Submission error: the command must contain at least one element \n", self.logger)
 
     # check the required_local_input_files, required_local_output_file and stdin ?
-    job_id = self.__drmaaJS.submit( command,
-                                    required_local_input_files,
-                                    required_local_output_files,
-                                    stdin,
-                                    join_stderrout,
-                                    disposal_timeout,
-                                    name_description,
-                                    stdout_path,
-                                    stderr_path,
-                                    working_directory,
-                                    parallel_job_info)
+    
+    
+    
+    job_id = self.__drmaaJS.submit(jobTemplate)
     
     return job_id
 
@@ -611,6 +801,24 @@ class JobScheduler( object ):
     self.__drmaaJS.dispose(job_id)
 
 
+  ########## WORKFLOW SUBMISSION ############################################
+  
+  def submitWorkflow(self, workflow, disposal_timeout):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    return self.__drmaaJS.submitWorkflow(workflow, disposal_timeout)
+  
+  def disposeWorkflow(self, workflow_id):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(worflow_id, self.__user_id):
+      print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      return
+    
+    self.__jobServer.deleteWorkflow(workflow_id)
+
   ########## SERVER STATE MONITORING ########################################
 
 
@@ -625,6 +833,21 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     return self.__jobServer.getTransfers(self.__user_id)
+  
+  
+  def workflows(self):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    return self.__jobServer.getWorkflows(self.__user_id)
+  
+  def submittedWorkflow(self, wf_id):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+      print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+    return self.__jobServer.getWorkflow(wf_id)
 
     
   def transferInformation(self, local_file_path):
@@ -651,6 +874,18 @@ class JobScheduler( object ):
     
     return self.__jobServer.getJobStatus(job_id)[0]
         
+        
+  def transferStatus(self, local_file_path):
+    '''
+    WIP
+    '''
+    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      print "Could get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_file_path
+      return 
+    
+    return self.__jobServer.getTransferStatus(local_file_path)
+    
+    
 
   def exitInformation(self, job_id ):
     '''
@@ -661,7 +896,11 @@ class JobScheduler( object ):
       print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
   
-    exit_status, exit_value, terminating_signal, resource_usage = self.__jobServer.getExitInformation(job_id)
+    dbJob = self.__jobServer.getJob(job_id)
+    exit_status = dbJob.exit_status
+    exit_value = dbJob.exit_value
+    terminating_signal =dbJob.terminating_signal
+    resource_usage = dbJob.resource_usage
     
     return (exit_status, exit_value, terminating_signal, resource_usage)
     
@@ -671,13 +910,16 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     
-    #if not self.__jobServer.isUserJob(job_id, self.__user_id):
-    #print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
-    #return
-
-    info = self.__jobServer.getGeneralInformation(job_id)
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return
     
-    return info
+    dbJob = self.__jobServer.getJob(job_id)
+    name_description = dbJob.name_description 
+    command = dbJob.command
+    submission_date = dbJob.submission_date
+    
+    return (name_description, command, submission_date)
     
 
 
@@ -735,16 +977,17 @@ class JobScheduler( object ):
     startTime = datetime.now()
     for jid in job_ids:
       (status, last_status_update) = self.__jobServer.getJobStatus(jid)
-      self.logger.debug("        job %s status: %s", jid, status)
-      delta = datetime.now()-startTime
-      delta_status_update = datetime.now() - last_status_update
-      while not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
-        time.sleep(refreshment_interval)
-        (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
+      if status:
         self.logger.debug("        job %s status: %s", jid, status)
-        delta = datetime.now() - startTime
-        if datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
-          raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
+        delta = datetime.now()-startTime
+        delta_status_update = datetime.now() - last_status_update
+        while status and not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
+          time.sleep(refreshment_interval)
+          (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
+          self.logger.debug("        job %s status: %s", jid, status)
+          delta = datetime.now() - startTime
+          if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
+            raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
     
 
   def stop( self, job_id ):

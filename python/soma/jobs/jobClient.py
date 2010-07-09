@@ -10,7 +10,9 @@ import ConfigParser
 import soma.jobs.connection 
 import random
 import socket
-from soma.jobs.constants import * 
+from soma.jobs.constants import *
+import time
+
 ''' 
 Definitions:
 'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
@@ -64,7 +66,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode # 'local_no_disconnection' #(local debug)# 
+    self.__mode = mode #    'local_no_disconnection' #(local debug)#
     
     #########
     # LOCAL #
@@ -96,7 +98,7 @@ class Jobs(object):
       
       # log file 
       if not config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR) == 'None':
-        logfilepath =  config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_jobScheduler_sl2255101"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+        logfilepath =  config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_jobScheduler_sl225510"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
         logging.basicConfig(
           filename = logfilepath,
           format = config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_FORMAT, 1),
@@ -196,8 +198,23 @@ class Jobs(object):
     @rtype: string 
     @return: local file path where the remote file was copied 
     '''
-    return self.__file_transfer.transferInputFile(remote_input_file, disposal_timeout) 
-    
+    local_file_path = self.__js_proxy.registerTransfer(remote_input_file, disposal_timeout)
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
+    self.__file_transfer.sendFile(local_file_path, remote_input_file) 
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
+    self.__js_proxy.signalTransferEnded(local_file_path)
+    return local_file_path
+  
+  def sendRegisteredFile(self, local_file_path):
+    '''
+    WIP
+    '''
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
+    time.sleep(5) #TEST !
+    local_file_path, remote_file_path, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file_path)
+    self.__file_transfer.sendFile(local_file_path, remote_file_path)
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
+    self.__js_proxy.signalTransferEnded(local_file_path)
 
   def registerFileTransfer(self, remote_file_path, disposal_timeout=168): 
     '''
@@ -225,9 +242,12 @@ class Jobs(object):
     @type  local_file: string 
     @param local_file: local file path 
     '''
-    self.__file_transfer.transferOutputFile(local_file)
-  
-
+    
+    local_file, remote_file, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file)
+    self.__js_proxy.setTransferStatus(local_file, TRANSFERING)
+    self.__file_transfer.retrieveFile(local_file, remote_file)
+    self.__js_proxy.setTransferStatus(local_file, TRANSFERED)
+   
   def cancelTransfer(self, local_file_path):
     '''
     Deletes the specified local file and the associated transfer information.
@@ -342,7 +362,7 @@ class Jobs(object):
 
     '''
 
-    job_id = self.__js_proxy.submit(command,
+    job_id = self.__js_proxy.submit(JobTemplate(command,
                                     referenced_input_files,
                                     referenced_output_files,
                                     stdin,
@@ -352,7 +372,7 @@ class Jobs(object):
                                     stdout_path,
                                     stderr_path,
                                     working_directory,
-                                    parallel_job_info)
+                                    parallel_job_info))
     return job_id
    
 
@@ -371,6 +391,29 @@ class Jobs(object):
     
     self.__js_proxy.dispose(job_id)
     
+
+  ########## WORKFLOW SUBMISSION ####################################
+  
+  def submitWorkflow(self, workflow, disposal_timeout=168):
+    '''
+    Submits a workflow to the system and returns the id of each 
+    submitted workflow element (Job or file transfer).
+    
+    @type  workflow: L{Workflow}
+    @param workflow: workflow description (nodes and node dependencies)
+    @rtype: L{Workflow}
+    @return: The workflow compemented by the id of each submitted 
+    workflow element.
+    '''
+    submittedWF =  self.__js_proxy.submitWorkflow(workflow, disposal_timeout)
+    return submittedWF
+  
+  
+  def disposeWorkflow(self, workflow_id):
+    '''
+    WIP
+    '''
+    self.__js_proxy.dispose(workflow_id)
 
   ########## MONITORING #############################################
 
@@ -397,6 +440,20 @@ class Jobs(object):
  
     return self.__js_proxy.transfers()
 
+  def workflows(self):
+    '''
+    Returns the identifiers of the submitted workflows.
+    '''
+    return self.__js_proxy.workflows()
+  
+  def submittedWorkflow(self, wf_id):
+    '''
+    Returns the submitted workflow.
+    
+    @rtype: L{Workflow}
+    @return: submitted workflow 
+    '''
+    return self.__js_proxy.submittedWorkflow(wf_id)
     
   def transferInformation(self, local_file_path):
     '''
@@ -429,7 +486,13 @@ class Jobs(object):
     USER_SYSTEM_SUSPENDED, DONE or FAILED
     '''
     return self.__js_proxy.status(job_id)
-        
+  
+  
+  def transferStatus(self, local_file_path):
+    '''
+    WIP
+    '''
+    return self.__js_proxy.transferStatus(local_file_path) 
 
   def exitInformation(self, job_id ):
     '''

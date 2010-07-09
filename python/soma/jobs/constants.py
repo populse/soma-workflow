@@ -7,6 +7,7 @@
 '''
 Job status:
 '''
+NOT_SUBMITTED="not_submitted"
 UNDETERMINED="undetermined"
 QUEUED_ACTIVE="queued_active"
 SYSTEM_ON_HOLD="system_on_hold"
@@ -18,7 +19,8 @@ USER_SUSPENDED="user_suspended"
 USER_SYSTEM_SUSPENDED="user_system_suspended"
 DONE="done"
 FAILED="failed"
-JOB_STATUS = [UNDETERMINED, 
+JOB_STATUS = [NOT_SUBMITTED,
+              UNDETERMINED, 
               QUEUED_ACTIVE,
               SYSTEM_ON_HOLD,
               USER_ON_HOLD,
@@ -46,6 +48,18 @@ JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
                   FINISHED_UNCLEAR_CONDITIONS,
                   USER_KILLED]
 
+
+'''
+File transfer status:
+'''
+TRANSFER_NOT_READY ="transfer_not_ready"
+READY_TO_TRANSFER ="ready_to_transfer"
+TRANSFERING="transfering"
+TRANSFERED="transfered"
+FILE_TRANSFER_STATUS = [TRANSFER_NOT_READY,
+                        READY_TO_TRANSFER,
+                        TRANSFERING,
+                        TRANSFERED]
 
 '''
 Soma job configuration items
@@ -94,3 +108,72 @@ OCFG_SECTION_CLIENT = 'CLIENT'
 OCFG_CLIENT_LOG_FILE = 'client_log_file'
 OCFG_CLIENT_LOG_FORMAT = 'client_log_format'
 OCFG_CLIENT_LOG_LEVEL = 'client_log_level'
+
+
+
+class JobTemplate(object):
+  def __init__( self, 
+                command,
+                referenced_input_files=None,
+                referenced_output_files=None,
+                stdin=None,
+                join_stderrout=False,
+                disposal_timeout=168,
+                name_description=None,
+                stdout_path=None,
+                stderr_path=None,
+                working_directory=None,
+                parallel_job_info=None):
+    self.command = command
+    self.referenced_input_files = referenced_input_files
+    self.referenced_output_files = referenced_output_files
+    self.stdin = stdin
+    self.join_stderrout = join_stderrout
+    self.disposal_timeout = disposal_timeout
+    self.name_description = name_description
+    self.stdout_path = stdout_path
+    self.stderr_path = stderr_path
+    self.working_directory = working_directory
+    self.parallel_job_info = parallel_job_info
+    self.name = name_description
+    
+    self.job_id = -1
+    self.workflow_id = -1
+    self.submitted = False
+    
+ 
+
+
+class FileTransfer(object):
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    self.remote_file_path = remote_file_path
+    self.disposal_timeout = disposal_timeout
+    if name:
+      self.name = name
+    else:
+      self.name = "send_" + self.remote_file_path
+
+    self.local_file_path = " "
+
+class FileSending(FileTransfer):
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+
+class FileRetrieving(FileTransfer):
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+    
+class Workflow(object):
+  def __init__(self):
+    self.wf_id = -1
+    self.nodes = []
+    self.dependencies = []
