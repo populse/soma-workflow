@@ -120,7 +120,6 @@ if __name__ == '__main__':
   script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
   stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
   
-  exceptionJobScript = FileSending(example_dir + "simple/exceptionJob.py", 168)
                                                                                                          
   # jobs
   job1 = JobTemplate([python, script1, file0,  file11, file12, "5"], 
@@ -133,15 +132,10 @@ if __name__ == '__main__':
                     [file2], 
                     stdin2, False, 168, "job2")
                             
-  #job3 = JobTemplate([python, script3, file12,  file3, "20"], 
-                    #[file12, script3, stdin3], 
-                    #[file3], 
-                    #stdin3, False, 168, "job3")
-  
-  job3 = JobTemplate([python, exceptionJobScript],
-                     [exceptionJobScript, file12, script3, stdin3],
-                     [file3],
-                     None, False, 168, "job3")
+  job3 = JobTemplate([python, script3, file12,  file3, "20"], 
+                    [file12, script3, stdin3], 
+                    [file3], 
+                    stdin3, False, 168, "job3")
   
   job4 = JobTemplate([python, script4, file2,  file3, file4, "20"], 
                              [file2, file3, script4, stdin4], 
@@ -175,8 +169,7 @@ if __name__ == '__main__':
                                  (stdin4, job4),
                                  (file2, job4),
                                  (file3, job4),
-                                 (job4, file4),
-                                 (exceptionJobScript, job3)]
+                                 (job4, file4)]
                                  )
                                  
   printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
