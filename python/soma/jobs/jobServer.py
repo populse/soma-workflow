@@ -972,7 +972,7 @@ class JobServer ( object ):
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('UPDATE jobs SET drmaa_id=?, submission_date=?, status=? WHERE id=?', (drmaa_id, submission_date, constants.UNDETERMINED, job_id))
+        cursor.execute('UPDATE jobs SET drmaa_id=?, submission_date=?, status=?, last_status_update=? WHERE id=?', (drmaa_id, submission_date, constants.UNDETERMINED, datetime.now(), job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()

@@ -8,6 +8,8 @@ import pickle
 import subprocess
 import time
 import threading
+import ConfigParser
+
 
 def printWorkflow(workflow, dot_file_path, graph_file_path):
   if dot_file_path and os.path.isfile(dot_file_path):
@@ -81,15 +83,16 @@ def viewUpdateLoop(jobs, submitted_workflow):
 
 if __name__ == '__main__':
   
-  examples_dir = "/home/sl225510/svn/brainvisa/soma/soma-pipeline/trunk/test/jobExamples/"
-  ouput_dir = "/home/sl225510/output/"
-  python = "/i2bm/research/Mandriva-2008.0-i686/bin/python"
+  test_config = ConfigParser.ConfigParser()
+  test_config.read('TestJobs.cfg')
+  
+  examples_dir = JobsTest.test_config.get(JobsTest.hostname, 'job_examples_dir')
+  ouput_dir = JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir'
+  python = JobsTest.test_config.get(JobsTest.hostname, 'python'
   
   #############################
   # OFFLINE WORKFLOW BUILDING #
   #############################
-  
-  
   
   # outputs
   file11 = FileRetrieving(ouput_dir + "file11", 168, "file11")
@@ -163,8 +166,23 @@ if __name__ == '__main__':
                                  
   printWorkflow(myWorkflow, "/home/sl225510/myWorkflow.dot", "/home/sl225510/graph.png")
    
-  jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"], 'neurospin_test_cluster')
- 
+  hostname = socket.gethostname()
+  if JobsTest.test_config.get(JobsTest.hostname, 'mode') == 'remote':
+    print "Ressource => " + JobsTest.test_config.get(JobsTest.hostname, 'ressource_id')
+    print "login: ",
+    JobsTest.login = raw_input()
+    JobsTest.password = getpass.getpass()
+  else:
+    JobsTest.login = None
+    JobsTest.password = None
+  
+  jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
+                                  JobsTest.test_config.get(JobsTest.hostname, 'ressource_id'), 
+                                  JobsTest.login, 
+                                  JobsTest.password,
+                                  log="1")
+   
+   
   submitted_workflow = jobs.submitWorkflow(myWorkflow)
   print submitted_workflow
  

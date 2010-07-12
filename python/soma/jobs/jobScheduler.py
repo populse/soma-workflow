@@ -102,7 +102,9 @@ class DrmaaJobScheduler( object ):
           allJobsEnded = True
           ended = []
           for job_id in self.__jobs.keys():
-            if self.__jobs[job_id].submitted:
+            if not self.__jobs[job_id].submitted:
+              self.__jobServer.setJobStatus(job_id, constants.NOT_SUBMITTED) # to update the last status update 
+            else:
               # get back the status from DRMAA
               status = self.__status(job_id)
               logger_su.debug("job " + repr(job_id) + " : " + status)
@@ -114,13 +116,13 @@ class DrmaaJobScheduler( object ):
                 allJobsEnded = False
                 # update the status on the job server 
                 self.__jobServer.setJobStatus(job_id, status)
-          self.__jobsEnded = allJobsEnded
           # get the exit information for terminated jobs and update the jobServer
           if ended or self.__endedTransfers:
             self.workflowProcessing(endedJobs = ended, endedTransfers = self.__endedTransfers )
             self.__endedTransfers.clear()
           for job_id in ended:
             del self.__jobs[job_id]
+          self.__jobsEnded = len( self.__jobs) == 0 
           
         logger_su.debug("---------- all jobs done : " + repr(self.__jobsEnded))
         time.sleep(interval)
@@ -483,6 +485,8 @@ class DrmaaJobScheduler( object ):
       if drmaaJobId:
         status = self.__drmaa.jobStatus(drmaaJobId) 
         #add conversion from DRMAA status strings to the status defined in soma.jobs.constants if needed
+      else:
+        status = constants.NOT_SUBMITTED
     self.logger.debug("<< __status")
     return status
    
@@ -978,13 +982,13 @@ class JobScheduler( object ):
     for jid in job_ids:
       (status, last_status_update) = self.__jobServer.getJobStatus(jid)
       if status:
-        self.logger.debug("        job %s status: %s", jid, status)
+        self.logger.debug("wait        job %s status: %s", jid, status)
         delta = datetime.now()-startTime
         delta_status_update = datetime.now() - last_status_update
         while status and not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
           time.sleep(refreshment_interval)
           (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
-          self.logger.debug("        job %s status: %s", jid, status)
+          self.logger.debug("wait        job %s status: %s last update %s, now %s", jid, status, repr(last_status_update), repr(datetime.now()))
           delta = datetime.now() - startTime
           if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
             raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
