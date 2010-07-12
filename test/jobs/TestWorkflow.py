@@ -9,6 +9,8 @@ import subprocess
 import time
 import threading
 import ConfigParser
+import sys
+import getpass
 
 
 def printWorkflow(workflow, dot_file_path, graph_file_path):
@@ -29,13 +31,13 @@ def printWorkflow(workflow, dot_file_path, graph_file_path):
   print command
   
   
-def printSubmittedWorkflow(jobs, workflow, cmpt):#, dot_file_path, graph_file_path):
+def printSubmittedWorkflow(ouput_dir, jobs, workflow, cmpt):#, dot_file_path, graph_file_path):
   
-  dot_file_path = "/home/sl225510/myWorkflow" + repr(cmpt) + ".dot"
+  dot_file_path = ouput_dir + "/myWorkflow" + repr(cmpt) + ".dot"
   if cmpt<10 :
-    graph_file_path = "/home/sl225510/graph0" + repr(cmpt) +".png"
+    graph_file_path = ouput_dir + "/graph0" + repr(cmpt) +".png"
   else:
-    graph_file_path = "/home/sl225510/graph" + repr(cmpt) +".png"
+    graph_file_path = ouput_dir + "/graph" + repr(cmpt) +".png"
     
   if dot_file_path and os.path.isfile(dot_file_path):
     os.remove(dot_file_path)
@@ -73,22 +75,28 @@ def printSubmittedWorkflow(jobs, workflow, cmpt):#, dot_file_path, graph_file_pa
   print command
 
 
-def viewUpdateLoop(jobs, submitted_workflow):
+def viewUpdateLoop(ouput_dir, jobs, submitted_workflow):
   #for i in range(1, 30):
   i = 0
   while True:
-    printSubmittedWorkflow(jobs, submitted_workflow, i)
+    printSubmittedWorkflow(ouput_dir, jobs, submitted_workflow, i)
     i = i +1
     time.sleep(2)
 
 if __name__ == '__main__':
   
+  if len(sys.argv) == 0:
+    test_no = 1
+  else:
+    test_no = sys.argv[1]
+  
   test_config = ConfigParser.ConfigParser()
   test_config.read('TestJobs.cfg')
   
-  examples_dir = JobsTest.test_config.get(JobsTest.hostname, 'job_examples_dir')
-  ouput_dir = JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir'
-  python = JobsTest.test_config.get(JobsTest.hostname, 'python'
+  hostname = socket.gethostname()
+  examples_dir = test_config.get(hostname, 'job_examples_dir')
+  ouput_dir = test_config.get(hostname, 'job_output_dir') + test_no + "/"
+  python = test_config.get(hostname, 'python')
   
   #############################
   # OFFLINE WORKFLOW BUILDING #
@@ -112,6 +120,7 @@ if __name__ == '__main__':
   script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
   stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
   
+  exceptionJobScript = FileSending(example_dir + "simple/exceptionJob.py", 168)
                                                                                                          
   # jobs
   job1 = JobTemplate([python, script1, file0,  file11, file12, "5"], 
@@ -124,10 +133,15 @@ if __name__ == '__main__':
                     [file2], 
                     stdin2, False, 168, "job2")
                             
-  job3 = JobTemplate([python, script3, file12,  file3, "20"], 
-                    [file12, script3, stdin3], 
-                    [file3], 
-                    stdin3, False, 168, "job3")
+  #job3 = JobTemplate([python, script3, file12,  file3, "20"], 
+                    #[file12, script3, stdin3], 
+                    #[file3], 
+                    #stdin3, False, 168, "job3")
+  
+  job3 = JobTemplate([python, exceptionJobScript],
+                     [exceptionJobScript, file12, script3, stdin3],
+                     [file3],
+                     None, False, 168, "job3")
   
   job4 = JobTemplate([python, script4, file2,  file3, file4, "20"], 
                              [file2, file3, script4, stdin4], 
@@ -161,39 +175,46 @@ if __name__ == '__main__':
                                  (stdin4, job4),
                                  (file2, job4),
                                  (file3, job4),
-                                 (job4, file4)]
+                                 (job4, file4),
+                                 (exceptionJobScript, job3)]
                                  )
                                  
-  printWorkflow(myWorkflow, "/home/sl225510/myWorkflow.dot", "/home/sl225510/graph.png")
+  printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
    
-  hostname = socket.gethostname()
-  if JobsTest.test_config.get(JobsTest.hostname, 'mode') == 'remote':
-    print "Ressource => " + JobsTest.test_config.get(JobsTest.hostname, 'ressource_id')
+  
+  if test_config.get(hostname, 'mode') == 'remote':
+    print "Ressource => " + test_config.get(hostname, 'ressource_id')
     print "login: ",
-    JobsTest.login = raw_input()
-    JobsTest.password = getpass.getpass()
+    login = raw_input()
+    password = getpass.getpass()
   else:
-    JobsTest.login = None
-    JobsTest.password = None
+    login = None
+    password = None
   
   jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
-                                  JobsTest.test_config.get(JobsTest.hostname, 'ressource_id'), 
-                                  JobsTest.login, 
-                                  JobsTest.password,
-                                  log="1")
+                                  test_config.get(hostname, 'ressource_id'), 
+                                  login, 
+                                  password,
+                                  log=test_no)
+                                  
+  jobs2 = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
+                                test_config.get(hostname, 'ressource_id'), 
+                                login, 
+                                password)
+                                #log=test_no)
    
    
   submitted_workflow = jobs.submitWorkflow(myWorkflow)
   print submitted_workflow
  
  
-  printWorkflow(submitted_workflow, "/home/sl225510/myWorkflow1.dot", "/home/sl225510/graph01.png")
+  printWorkflow(submitted_workflow, ouput_dir + "/myWorkflow1.dot", ouput_dir + "/graph01.png")
    
-  printSubmittedWorkflow(jobs, submitted_workflow, 2)
+  printSubmittedWorkflow(ouput_dir, jobs2, submitted_workflow, 2)
   
   view_thread = threading.Thread(name = "View", 
                                  target = viewUpdateLoop, 
-                                 args = (jobs, submitted_workflow))
+                                 args = (ouput_dir, jobs2, submitted_workflow))
   view_thread.setDaemon(True)
   view_thread.start()
   
@@ -204,10 +225,20 @@ if __name__ == '__main__':
         jobs.sendRegisteredFile(node.local_file_path)
         #printSubmittedWorkflow(jobs, submitted_workflow, cmpt)
         #cmpt = cmpt+1
-        
-        
-        
-        
+  
+  to_wait_for = []
+  for node in submitted_workflow.nodes:
+    if isinstance(node, JobTemplate):
+      to_wait_for.append(node.job_id)
+      
+  jobs.wait(to_wait_for)
+  
+  for node in submitted_workflow.nodes:
+    if isinstance(node, FileRetrieving):
+      if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
+        jobs.retrieveFile(node.local_file_path)
+  time.sleep(6)
+      
   #for i in range(cmpt, cmpt + 25):
     #printSubmittedWorkflow(jobs, submitted_workflow, i)
     #time.sleep(2)
