@@ -61,6 +61,14 @@ FILE_TRANSFER_STATUS = [TRANSFER_NOT_READY,
                         TRANSFERING,
                         TRANSFERED]
 
+
+#'''
+#Workflow status:
+#'''
+#WORKFLOW_FAILED = "workflow_failed"
+#WORKFLOW_STATUS = [ WORKFLOW_FAILED,  ]
+
+
 '''
 Soma job configuration items
 CFG => Mandatory items
@@ -120,8 +128,8 @@ class JobTemplate(object):
                 join_stderrout=False,
                 disposal_timeout=168,
                 name_description=None,
-                stdout_path=None,
-                stderr_path=None,
+                stdout_file=None,
+                stderr_file=None,
                 working_directory=None,
                 parallel_job_info=None):
     self.command = command
@@ -131,17 +139,14 @@ class JobTemplate(object):
     self.join_stderrout = join_stderrout
     self.disposal_timeout = disposal_timeout
     self.name_description = name_description
-    self.stdout_path = stdout_path
-    self.stderr_path = stderr_path
+    self.stdout_file = stdout_file
+    self.stderr_file = stderr_file
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
     self.name = name_description
     
     self.job_id = -1
     self.workflow_id = -1
-    self.submitted = False
-    
- 
 
 
 class FileTransfer(object):

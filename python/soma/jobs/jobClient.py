@@ -66,7 +66,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode #    'local_no_disconnection' #(local debug)#
+    self.__mode =  mode #   'local_no_disconnection' #(local debug)# 
     
     #########
     # LOCAL #
@@ -210,7 +210,7 @@ class Jobs(object):
     WIP
     '''
     self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
-    time.sleep(5) #TEST !
+    time.sleep(1) #TEST !
     local_file_path, remote_file_path, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file_path)
     self.__file_transfer.sendFile(local_file_path, remote_file_path)
     self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)

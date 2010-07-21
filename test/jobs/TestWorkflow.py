@@ -1,5 +1,4 @@
-import soma.workflow.workflow as workflow
-#from soma.workflow.workflow import *
+
 from soma.jobs.constants import *
 import soma.jobs.jobClient
 import socket
@@ -53,7 +52,9 @@ def printSubmittedWorkflow(ouput_dir, jobs, workflow, cmpt):#, dot_file_path, gr
         print >> file, node.name + "[shape=box];"
       else:
         if status == DONE or status == FAILED:
-          print >> file, node.name + "[shape=box label="+ node.name + "_done, style=filled, color=gray];"#\"0.9,0.9,0.9\"];"
+          exit_status, exit_value, term_signal, resource_usage = jobs.exitInformation(node.job_id)
+          print "job " + node.name + " term_signal " + repr(term_signal)
+          print >> file, node.name + "[shape=box label="+ node.name + "_"+status+"_"+exit_status+"_"+repr(exit_value)+", style=filled, color=gray];"#\"0.9,0.9,0.9\"];"
         else:
           print >> file, node.name + "[shape=box label="+ node.name + "_"+status+", style=filled, color=red];"#\"0.9,0.7,0.7\"];"
     if isinstance(node, FileTransfer):
@@ -120,22 +121,28 @@ if __name__ == '__main__':
   script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
   stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
   
+  exceptionJobScript = FileSending(examples_dir + "simple/exceptionJob.py", 168, "exception_job")
                                                                                                          
   # jobs
-  job1 = JobTemplate([python, script1, file0,  file11, file12, "5"], 
+  job1 = JobTemplate([python, script1, file0,  file11, file12, "20"], 
                     [file0, script1, stdin1], 
                     [file11, file12], 
                     stdin1, False, 168, "job1")
                              
-  job2 = JobTemplate([python, script2, file11,  file0, file2, "20"], 
+  job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
                     [file0, file11, script2, stdin2], 
                     [file2], 
                     stdin2, False, 168, "job2")
                             
-  job3 = JobTemplate([python, script3, file12,  file3, "20"], 
+  job3 = JobTemplate([python, script3, file12,  file3, "30"], 
                     [file12, script3, stdin3], 
                     [file3], 
                     stdin3, False, 168, "job3")
+  
+  #job3 = JobTemplate([python, exceptionJobScript],
+                     #[exceptionJobScript, file12, script3, stdin3],
+                     #[file3],
+                     #None, False, 168, "job3")
   
   job4 = JobTemplate([python, script4, file2,  file3, file4, "20"], 
                              [file2, file3, script4, stdin4], 
@@ -147,7 +154,7 @@ if __name__ == '__main__':
   myWorkflow.nodes.extend([file11, file12, file2, file3, file4,
                           file0, script1, stdin1, 
                           script2, stdin2, 
-                          script3, stdin3, 
+                          script3, stdin3, #exceptionJobScript,
                           script4, stdin4, 
                           job1, job2, job3, job4])
                           
@@ -169,8 +176,9 @@ if __name__ == '__main__':
                                  (stdin4, job4),
                                  (file2, job4),
                                  (file3, job4),
-                                 (job4, file4)]
-                                 )
+                                 (job4, file4)])#,
+                                 #(exceptionJobScript, job3)]
+                                 #)
                                  
   printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
    
@@ -228,6 +236,7 @@ if __name__ == '__main__':
   
   for node in submitted_workflow.nodes:
     if isinstance(node, FileRetrieving):
+      print "Transfer " + node.name + " status: " + jobs.transferStatus(node.local_file_path)
       if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
         jobs.retrieveFile(node.local_file_path)
   time.sleep(6)

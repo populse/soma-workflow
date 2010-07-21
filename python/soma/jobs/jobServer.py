@@ -226,10 +226,10 @@ class DBJob(object):
               resource_usage = None):
               
     '''
-    Adds a job to the database and returns its identifier.
-    
     @type user_id: C{UserIdentifier}
     @type expiration_date: date
+    @type  drmaa_id: string or None
+    @param drmaa_id: submitted job DRMAA identifier
     @type  status: string
     @param status: job status as defined in constants.JOB_STATUS
     @type  last_status_update: date
@@ -1140,33 +1140,41 @@ class JobServer ( object ):
         raise JobServerError('Error getJob %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
+    
     dbJob = DBJob(user_id,
     
                   expiration_date,
                   join_errout,
-                  stdout_file,
+                  self.__stringConversion(stdout_file),
                   custom_submission,
                   
                   drmaa_id,
-                  status,
+                  self.__stringConversion(status),
                   last_status_update,
                   workflow_id,
                   
-                  command,
-                  stdin_file,
-                  stderr_file,
-                  working_directory,
-                  parallel_config_name,
+                  self.__stringConversion(command),
+                  self.__stringConversion(stdin_file),
+                  self.__stringConversion(stderr_file),
+                  self.__stringConversion(working_directory),
+                  self.__stringConversion(parallel_config_name),
                   max_node_number,
                   
-                  name_description,
+                  self.__stringConversion(name_description),
                   submission_date,
-                  exit_status,
+                  self.__stringConversion(exit_status),
                   exit_value,
-                  terminating_signal,
-                  resource_usage)
+                  self.__stringConversion(terminating_signal),
+                  self.__stringConversion(resource_usage))
     return dbJob
 
+
+  def __stringConversion(self, string):
+    if string: 
+      return string.encode('utf-8')
+    else: 
+      return string
+  
 
   ###############################################
   # INPUTS/OUTPUTS
