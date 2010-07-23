@@ -1,6 +1,6 @@
 
 from soma.jobs.constants import *
-import soma.jobs.jobClient
+from soma.jobs.jobClient import *
 import socket
 import os
 import pickle
@@ -176,9 +176,9 @@ if __name__ == '__main__':
                                  (stdin4, job4),
                                  (file2, job4),
                                  (file3, job4),
-                                 (job4, file4)])#,
+                                 (job4, file4)]#,
                                  #(exceptionJobScript, job3)]
-                                 #)
+                                 )
                                  
   printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
    
@@ -192,13 +192,13 @@ if __name__ == '__main__':
     login = None
     password = None
   
-  jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
+  jobs = Jobs(os.environ["SOMA_JOBS_CONFIG"],
                                   test_config.get(hostname, 'ressource_id'), 
                                   login, 
                                   password,
                                   log=test_no)
                                   
-  jobs2 = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
+  jobs2 = Jobs(os.environ["SOMA_JOBS_CONFIG"],
                                 test_config.get(hostname, 'ressource_id'), 
                                 login, 
                                 password)

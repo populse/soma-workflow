@@ -13,16 +13,121 @@ import socket
 from soma.jobs.constants import *
 import time
 
-''' 
-Definitions:
-'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
-'Remote' refers to all hosts, processes or files which are not local.
 
-'Parallel job': job requiring more than one node to run.
+''' 
+Jobs
+====
+  
+  Instances of Jobs allow to submit, control and retrieve jobs, file transfers and workflows.
+
+Workflows
+=========
+  
+  Use JobTemplate, FileTransfer, FileRetrieving, FileSending and Workflow classes to build worfklows. 
+  Use Jobs.submitWorkflow to submit a workflow.
+
+Definitions
+===========
+
+  -'Local' refers to the hosts of the cluster where the jobs are submitted to. Eg: a local file can be reached by any host of the cluser and a local process runs on a cluster submitting host.
+  -'Remote' refers to all hosts, processes or files which are not local.
+  -'Parallel job': job requiring more than one node to run.
 '''
+
+class JobTemplate(object):
+  '''
+  Job representation in a workflow. 
+  Workflow node type.
+  
+  The job parameters are identical to the Jobs.submit method arguments.
+  (See the Jobs.submit method for a description of each parameter)
+  '''
+  def __init__( self, 
+                command,
+                referenced_input_files=None,
+                referenced_output_files=None,
+                stdin=None,
+                join_stderrout=False,
+                disposal_timeout=168,
+                name_description=None,
+                stdout_file=None,
+                stderr_file=None,
+                working_directory=None,
+                parallel_job_info=None):
+    self.command = command
+    self.referenced_input_files = referenced_input_files
+    self.referenced_output_files = referenced_output_files
+    self.stdin = stdin
+    self.join_stderrout = join_stderrout
+    self.disposal_timeout = disposal_timeout
+    self.name_description = name_description
+    self.stdout_file = stdout_file
+    self.stderr_file = stderr_file
+    self.working_directory = working_directory
+    self.parallel_job_info = parallel_job_info
+    self.name = name_description
+    
+    self.job_id = -1
+    self.workflow_id = -1
+
+
+class FileTransfer(object):
+  '''
+  Workflow node type.
+  File transfer representation in a workflow.
+  '''
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    self.remote_file_path = remote_file_path
+    self.disposal_timeout = disposal_timeout
+    if name:
+      self.name = name
+    else:
+      self.name = "send_" + self.remote_file_path
+
+    self.local_file_path = " "
+
+class FileSending(FileTransfer):
+  '''
+  Workflow node type.
+  File transfer for an input file.
+  '''
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+
+class FileRetrieving(FileTransfer):
+  '''
+  Workflow node type.
+  File transfer for an output file.
+  '''
+  def __init__( self,
+                remote_file_path, 
+                disposal_timeout = 168,
+                name = None):
+    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+    
+class Workflow(object):
+  '''
+  Workflow to be submitted using an instance of the Jobs class.
+  '''
+  def __init__(self):
+    self.wf_id = -1
+    self.nodes = []
+    self.dependencies = []
+
+
 
 
 class Jobs(object):
+  
+  '''
+  Submition, control and monitoring of jobs, transfer and workflows.
+  '''
   
   def __init__(self, 
                config_file,
@@ -156,16 +261,17 @@ class Jobs(object):
   machine
   
   Example:
+  
   #job remote input files: rfin_1, rfin_2, ..., rfin_n 
   #job remote output files: rfout_1, rfout_2, ..., rfout_m  
   
-  #how to proceed for output files:
+  #Call registerFileTransfer for each output file:
   lfout_1 = jobs.registerFileTransfer(rfout_1)
   lfout_2 = jobs.registerFileTransfer(rfout_2)
   ...
   lfout_n = jobs.registerFileTransfer(rfout_m)
   
-  #how to procedd with input files:
+  #Call sendFile for each input file:
   lfin_1= jobs.sendFile(rfin_1)
   lfin_2= jobs.sendFile(rfin_2)
   ...
@@ -205,16 +311,6 @@ class Jobs(object):
     self.__js_proxy.signalTransferEnded(local_file_path)
     return local_file_path
   
-  def sendRegisteredFile(self, local_file_path):
-    '''
-    WIP
-    '''
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
-    time.sleep(1) #TEST !
-    local_file_path, remote_file_path, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file_path)
-    self.__file_transfer.sendFile(local_file_path, remote_file_path)
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
-    self.__js_proxy.signalTransferEnded(local_file_path)
 
   def registerFileTransfer(self, remote_file_path, disposal_timeout=168): 
     '''
@@ -231,7 +327,27 @@ class Jobs(object):
     '''
     return self.__js_proxy.registerTransfer(remote_file_path, disposal_timeout)
 
-
+  def sendRegisteredFile(self, local_file_path):
+    '''
+    Transfer a remote file to a local directory. The local_file_path 
+    must have been generated using the registerFileTransfer method. 
+        
+      local_file_path = sendFile(remote_file_path)
+      
+    is strictly equivalent to :
+    
+      local_file_path = registerFileTransfer(remote_file_path)
+      sendRegisteredFile(local_file_path)
+    
+    Use registerFileTransfer + sendRegisteredFile when the local_file_path
+    is needed before transfering to file.
+    '''
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
+    time.sleep(1) #TEST !
+    local_file_path, remote_file_path, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file_path)
+    self.__file_transfer.sendFile(local_file_path, remote_file_path)
+    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
+    self.__js_proxy.signalTransferEnded(local_file_path)
 
   def retrieveFile(self, local_file):
     '''
@@ -264,7 +380,7 @@ class Jobs(object):
   ########## JOB SUBMISSION ##################################################
 
   '''
-  L{submit} methods submits a job for execution to the cluster. 
+  L{submit} method submits a job for execution to the cluster. 
   A job identifier is returned and can be used to inspect and 
   control the job.
   
@@ -288,8 +404,8 @@ class Jobs(object):
               join_stderrout=False,
               disposal_timeout=168,
               name_description=None,
-              stdout_path=None,
-              stderr_path=None,
+              stdout_file=None,
+              stderr_file=None,
               working_directory=None,
               parallel_job_info=None):
 
@@ -333,15 +449,15 @@ class Jobs(object):
     @type  name_description: string
     @param name_description: optional job name or description for user usage only
  
-    @type  stdout_path: string
-    @param stdout_path: this argument can be set to choose the file where the job's 
+    @type  stdout_file: string
+    @param stdout_file: this argument can be set to choose the file where the job's 
     standard output will be redirected. (optional: if it not set the user will still be
     able to read the standard output)
-    @type  stderr_path: string 
-    @param stderr_path: this argument can be set to choose the file where the job's 
+    @type  stderr_file: string 
+    @param stderr_file: this argument can be set to choose the file where the job's 
     standard error will be redirected (optional: if it not set the user will still be
     able to read the standard error output). 
-    It won't be used if the stdout_path argument is not set. 
+    It won't be used if the stdout_file argument is not set. 
     
     @type  working_directory: string
     @param working_directory: his argument can be set to choose the directory where 
@@ -369,8 +485,8 @@ class Jobs(object):
                                     join_stderrout,
                                     disposal_timeout,
                                     name_description,
-                                    stdout_path,
-                                    stderr_path,
+                                    stdout_file,
+                                    stderr_file,
                                     working_directory,
                                     parallel_job_info))
     return job_id
@@ -411,7 +527,7 @@ class Jobs(object):
   
   def disposeWorkflow(self, workflow_id):
     '''
-    WIP
+    Removes a workflow and all its associated nodes (file transfers and jobs)
     '''
     self.__js_proxy.dispose(workflow_id)
 
@@ -430,12 +546,11 @@ class Jobs(object):
     
   def transfers(self):
     '''
-    Returns the transfers currently owned by the user as a sequece of local file path 
+    Returns the transfers currently owned by the user as a sequence of local file path 
     returned by the L{registerTransfer} method. 
     
     @rtype: sequence of string
-    @return: local_file_path : path of the file on the directory shared by the machines
-    of the pool
+    @return: sequence of local file path.
     '''
  
     return self.__js_proxy.transfers()
@@ -443,6 +558,8 @@ class Jobs(object):
   def workflows(self):
     '''
     Returns the identifiers of the submitted workflows.
+    
+    @rtype: sequence of C{WorkflowIdentifier}
     '''
     return self.__js_proxy.workflows()
   
@@ -481,16 +598,20 @@ class Jobs(object):
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     @rtype:  C{JobStatus} or None
     @return: the status of the job, if its valid and own by the current user, None 
-    otherwise. UNDETERMINED, QUEUED_ACTIVE, SYSTEM_ON_HOLD, 
-    USER_ON_HOLD, USER_SYSTEM_ON_HOLD, RUNNING, SYSTEM_SUSPENDED, USER_SUSPENDED,
-    USER_SYSTEM_SUSPENDED, DONE or FAILED
+    otherwise. See the list of status: constants.JOBS_STATUS.
     '''
     return self.__js_proxy.status(job_id)
   
   
   def transferStatus(self, local_file_path):
     '''
-    WIP
+    Returns the status of a transfer. 
+    
+    @type  local_file_path: string
+    @param local_file_path: 
+    @rtype: C{TransferStatus} or None
+    @return: the status of the job transfer if its valid and own by the current user, None
+    otherwise. See the list of status: constants. constants.FILE_TRANSFER_STATUS
     '''
     return self.__js_proxy.transferStatus(local_file_path) 
 
@@ -502,9 +623,8 @@ class Jobs(object):
     @param job_id: The job identifier (returned by L{submit} or L{jobs})
     @rtype:  tuple (exit_status, exit_value, term_signal, resource_usage) or None
     @return: It may be C{None} if the job is not valid. 
-        - exit_status: EXIT_UNDETERMINED, EXIT_ABORTED (the job never ran), 
-                       FINISHED_REGULARLY, FINISHED_TERM_SIG, 
-                       FINISHED_UNCLEAR_CONDITIONS or USER_KILLED
+        - exit_status: The status of the terminated job. See the list of status
+                       constants.JOB_EXIT_STATUS
         - exit_value: operating system exit code if the job terminated normally.
         - term_signal: representation of the signal that caused the termination of 
           the  job if the job terminated due to the receipt of a signal.

@@ -19,6 +19,7 @@ import time
 from datetime import datetime
 import logging
 import soma.jobs.constants as constants
+from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow
 import soma.jobs.jobServer 
 import copy
 
@@ -189,7 +190,8 @@ class DrmaaJobScheduler( object ):
     
   def signalTransferEnded(self, local_file_path):
     '''
-    WIP
+    Has to be called each time a file transfer ends for the 
+    workflows to be proceeded.
     '''
     with self.__lock:
       self.logger.debug("signal transfer ended " + local_file_path)
@@ -401,21 +403,21 @@ class DrmaaJobScheduler( object ):
     
     
     for node in workflow.nodes:
-      if isinstance(node, constants.FileSending):
+      if isinstance(node, FileSending):
         node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
         self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id)
        
       else:
-        if isinstance(node, constants.FileRetrieving):
+        if isinstance(node, FileRetrieving):
           node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
           self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id)
     
     for node in workflow.nodes:
-      if isinstance(node, constants.JobTemplate):
+      if isinstance(node, JobTemplate):
        
         new_command = []
         for command_el in node.command:
-          if isinstance(command_el, constants.FileTransfer):
+          if isinstance(command_el, FileTransfer):
             new_command.append(command_el.local_file_path)
           else:
             new_command.append(command_el)
@@ -423,7 +425,7 @@ class DrmaaJobScheduler( object ):
         
         new_referenced_input_files = []
         for input_file in node.referenced_input_files:
-          if isinstance(input_file, constants.FileTransfer):
+          if isinstance(input_file, FileTransfer):
             new_referenced_input_files.append(input_file.local_file_path)
           else:
             new_referenced_input_files.append(input_file)
@@ -431,13 +433,13 @@ class DrmaaJobScheduler( object ):
        
         new_referenced_output_files = []
         for output_file in node.referenced_output_files:
-          if isinstance(output_file, constants.FileTransfer):
+          if isinstance(output_file, FileTransfer):
             new_referenced_output_files.append(output_file.local_file_path)
           else:
             new_referenced_output_files.append(output_file)
         node.referenced_output_files = new_referenced_output_files
         
-        if isinstance(node.stdin, constants.FileTransfer):
+        if isinstance(node.stdin, FileTransfer):
           node.stdin = node.stdin.local_file_path 
               
         registered_job = self.__registerJob(node, workflow_id)
@@ -452,23 +454,23 @@ class DrmaaJobScheduler( object ):
       for dep in workflow.dependencies:
         torun = torun and not dep[1] == node
       if torun:
-        if isinstance(node, constants.JobTemplate):
+        if isinstance(node, JobTemplate):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
     return workflow
      
   def __isWFNodeCompleted(self, node):
     competed = False
-    if isinstance(node, constants.JobTemplate):
+    if isinstance(node, JobTemplate):
       if node.job_id: 
         completed = True
         if node.job_id in self.__jobs :
           status = self.__jobs[node.job_id].status
           completed = status == constants.DONE or status == constants.FAILED
-    if isinstance(node, constants.FileSending):
+    if isinstance(node, FileSending):
       if node.local_file_path:
         status = self.__jobServer.getTransferStatus(node.local_file_path)
         completed = status == constants.TRANSFERED
-    if isinstance(node, constants.FileRetrieving):
+    if isinstance(node, FileRetrieving):
       if node.local_file_path:
         status = self.__jobServer.getTransferStatus(node.local_file_path)
         completed = status == constants.READY_TO_TRANSFER
@@ -498,13 +500,12 @@ class DrmaaJobScheduler( object ):
           not job.exit_status == constants.FINISHED_REGULARLY: 
           # error failure case !
           # the workflow execution is stopped
-          # WIP !!
           self.logger.debug("Job failure " + repr(job_id))
           if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
             workflow = self.__workflows[job.jobTemplate.workflow_id]
             self.logger.debug("Workflow failure : " + repr(job.jobTemplate.workflow_id))
             for node in workflow.nodes:
-              if isinstance(node, constants.JobTemplate) and \
+              if isinstance(node, JobTemplate) and \
                  node.job_id in self.__jobs and \
                  self.__jobs[node.job_id].status == constants.NOT_SUBMITTED:
                    self.logger.debug("job " + repr(node.job_id) + " : ABORTED")
@@ -530,14 +531,14 @@ class DrmaaJobScheduler( object ):
       to_run = []
       for workflow in wf_to_process:
         for node in workflow.nodes:
-          if isinstance(node, constants.JobTemplate):
+          if isinstance(node, JobTemplate):
             self.logger.debug("__workflowProcessing job " + repr(node.job_id) + " status !!!! self.__jobs : " + repr(self.__jobs.keys()))
             to_inspect = False
             if node.job_id in self.__jobs:
               status = self.__jobs[node.job_id].status
               to_inspect = status == constants.NOT_SUBMITTED
             #print "node " + node.name + " status " + status[0] + " to inspect " + repr(to_inspect)
-          if isinstance(node, constants.FileTransfer):
+          if isinstance(node, FileTransfer):
             status = self.__jobServer.getTransferStatus(node.local_file_path)
             to_inspect = status == constants.TRANSFER_NOT_READY
             #print "node " + node.name + " status " + status + " to inspect " + repr(to_inspect)
@@ -554,9 +555,9 @@ class DrmaaJobScheduler( object ):
               to_run.append(node)
         
       for node in to_run:
-        if isinstance(node, constants.JobTemplate):
+        if isinstance(node, JobTemplate):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
-        if isinstance(node,constants.FileTransfer):
+        if isinstance(node,FileTransfer):
           self.__jobServer.setTransferStatus(node.local_file_path, constants.READY_TO_TRANSFER)
       
     self.logger.debug("<<< workflowProcessing")
@@ -792,7 +793,7 @@ class JobScheduler( object ):
     
   def setTransferStatus(self, local_file_path, status):
     '''
-    WIP
+    Set a transfer status. 
     '''
      
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
@@ -803,7 +804,7 @@ class JobScheduler( object ):
 
   def cancelTransfer(self, local_file_path):
     '''
-     Implementation of the L{Jobs} method.
+    Implementation of the L{Jobs} method.
     '''
     
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
@@ -814,7 +815,8 @@ class JobScheduler( object ):
     
   def signalTransferEnded(self, local_file_path):
     '''
-    WIP
+    Has to be called each time a file transfer ends for the 
+    workflows to be proceeded.
     '''
     self.__drmaaJS.signalTransferEnded(local_file_path)
     
@@ -827,7 +829,7 @@ class JobScheduler( object ):
     '''
     Submits a job to the system. 
     
-    @type  jobTemplate: L{constants.JobTemplate}
+    @type  jobTemplate: L{JobTemplate}
     @param jobTemplate: job informations 
     '''
 
@@ -933,7 +935,7 @@ class JobScheduler( object ):
         
   def transferStatus(self, local_file_path):
     '''
-    WIP
+    Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
       print "Could get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_file_path
@@ -987,10 +989,10 @@ class JobScheduler( object ):
       print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
       return   
 
-    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
+    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
     
-    if not self.__stdoutFileToRead or not self.__stdoutFileToRead.name == stdout_path:
-      self.__stdoutFileToRead = open(stdout_path, 'rt')
+    if not self.__stdoutFileToRead or not self.__stdoutFileToRead.name == stdout_file:
+      self.__stdoutFileToRead = open(stdout_file, 'rt')
       
     return self.__stdoutFileToRead.readline()
 
@@ -1003,14 +1005,14 @@ class JobScheduler( object ):
       print "Could get not read std error for the job %d. It doesn't exist or is owned by a different user \n" %job_id
       return   
 
-    stdout_path, stderr_path = self.__jobServer.getStdOutErrFilePath(job_id)
+    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
     
-    if not stderr_path:
+    if not stderr_file:
       self.__stderrFileToRead = None
       return 
 
-    if not self.__stderrFileToRead or not self.__stderrFileToRead.name == stderr_path:
-      self.__stderrFileToRead = open(stderr_path, 'rt')
+    if not self.__stderrFileToRead or not self.__stderrFileToRead.name == stderr_file:
+      self.__stderrFileToRead = open(stderr_file, 'rt')
       
     return self.__stderrFileToRead.readline()
 

@@ -176,8 +176,8 @@ class JobExamples(object):
                               join_stderrout=False,
                               disposal_timeout = self.jobs_timeout,
                               name_description = "job1 local custom submission",
-                              stdout_path=stdout,
-                              stderr_path=stderr,
+                              stdout_file=stdout,
+                              stderr_file=stderr,
                               working_directory=self.outpath )
       
     return (jobId, 
@@ -943,7 +943,7 @@ if __name__ == '__main__':
   suite_list = []
   if all:
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
