@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 import sys
 from soma.jobs.gui.workflowGui import WorkflowWidget
-from TestWorkflowQT import *
+from WorkflowExample import *
 
 
     
@@ -13,7 +13,10 @@ if __name__=="__main__":
   workflowWidget.show()
   
   TestWorkflow = TestWorkflow()
-  workflowWidget.setWorkflow(TestWorkflow.workflow)
+  #workflowWidget.setWorkflow(TestWorkflow.workflow)
+  
+  TestWorkflow.workflowSubmission()
+  workflowWidget.setWorkflow(TestWorkflow.submitted_workflow, TestWorkflow.jobs)
   
   app.exec_()
     
