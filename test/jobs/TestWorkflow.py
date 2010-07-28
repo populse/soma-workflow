@@ -148,9 +148,12 @@ if __name__ == '__main__':
                              [file2, file3, script4, stdin4], 
                              [file4], 
                              stdin4, False, 168, "job4")
+                             
+  
+  mainGroup = Group([job1, job2, job3, job4])
   
   #building the workflow
-  myWorkflow = Workflow()
+  myWorkflow = Workflow(mainGroup)
   myWorkflow.nodes.extend([file11, file12, file2, file3, file4,
                           file0, script1, stdin1, 
                           script2, stdin2, 
@@ -179,7 +182,7 @@ if __name__ == '__main__':
                                  (job4, file4)]#,
                                  #(exceptionJobScript, job3)]
                                  )
-                                 
+  
   printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
    
   

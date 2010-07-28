@@ -34,6 +34,7 @@ Definitions
   -'Parallel job': job requiring more than one node to run.
 '''
 
+
 class JobTemplate(object):
   '''
   Job representation in a workflow. 
@@ -111,17 +112,37 @@ class FileRetrieving(FileTransfer):
                 name = None):
     FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
     
+class Group(object):
+  '''
+  Workflow group: provide a hierarchical structure to a workflow.
+  However groups has only a displaying role, it doesn't have
+  any impact on the workflow execution.
+  '''
+  def __init__(self, elements, name = None):
+    '''
+    @type  elements: sequence of JobTemplate and groups
+    @param elements: the elements belonging to the group.
+    @type  name: string
+    @param name: name of the group. 
+    If name is None the group will be named 'group'
+    '''
+    self.elements = elements
+    if name:
+      self.name = name
+    else: 
+      self.name = "group"
+
+
 class Workflow(object):
   '''
   Workflow to be submitted using an instance of the Jobs class.
   '''
-  def __init__(self):
+  def __init__(self, mainGroup):
     self.wf_id = -1
     self.nodes = []
     self.dependencies = []
-
-
-
+    self.groups= []
+    self.mainGroup = mainGroup
 
 class Jobs(object):
   

@@ -946,10 +946,10 @@ if __name__ == '__main__':
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
   else:
     
