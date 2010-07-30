@@ -137,13 +137,29 @@ class Workflow(object):
   '''
   Workflow to be submitted using an instance of the Jobs class.
   '''
-  def __init__(self, mainGroup):
+  def __init__(self, nodes, dependencies, mainGroup = [], groups = []):
+    '''
+    @type  node: sequence of L{JobTemplate} and/or L{FileTransfer}
+    @param node: workflow elements
+    @type  dependencies: sequence of tuple (node, node) a node being 
+    a L{JobTemplate} or a L{FileTransfer}
+    @param dependencies: dependencies between workflow elements specifying an execution order. 
+    @type  groups: sequence of sequence of L{Groups} and/or L{JobTemplate}
+    @param groups: (optional) provide a hierarchical structure to a workflow for displaying purpose only
+    @type  mainGroup: sequence of L{Groups} and/or L{JobTemplate}
+    @param mainGroup: (optional) lower level group.  
+    '''
+    
     self.wf_id = -1
-    self.nodes = []
-    self.dependencies = []
-    self.groups= []
+    self.nodes = nodes
+    self.dependencies = dependencies
+    self.groups= groups
     self.mainGroup = mainGroup
-
+    if len(mainGroup) == 0:
+      for node in self.nodes:
+        if isinstance(node, JobTemplate):
+          self.mainGroup.append(node) 
+      
 class Jobs(object):
   
   '''

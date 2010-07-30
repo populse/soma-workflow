@@ -124,17 +124,17 @@ if __name__ == '__main__':
   exceptionJobScript = FileSending(examples_dir + "simple/exceptionJob.py", 168, "exception_job")
                                                                                                          
   # jobs
-  job1 = JobTemplate([python, script1, file0,  file11, file12, "20"], 
+  job1 = JobTemplate([python, script1, file0,  file11, file12, "5"], 
                     [file0, script1, stdin1], 
                     [file11, file12], 
                     stdin1, False, 168, "job1")
                              
-  job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
+  job2 = JobTemplate([python, script2, file11,  file0, file2, "15"], 
                     [file0, file11, script2, stdin2], 
                     [file2], 
                     stdin2, False, 168, "job2")
                             
-  job3 = JobTemplate([python, script3, file12,  file3, "30"], 
+  job3 = JobTemplate([python, script3, file12,  file3, "10"], 
                     [file12, script3, stdin3], 
                     [file3], 
                     stdin3, False, 168, "job3")
@@ -144,44 +144,43 @@ if __name__ == '__main__':
                      #[file3],
                      #None, False, 168, "job3")
   
-  job4 = JobTemplate([python, script4, file2,  file3, file4, "20"], 
+  job4 = JobTemplate([python, script4, file2,  file3, file4, "5"], 
                              [file2, file3, script4, stdin4], 
                              [file4], 
                              stdin4, False, 168, "job4")
                              
   
-  mainGroup = Group([job1, job2, job3, job4])
-  
   #building the workflow
-  myWorkflow = Workflow(mainGroup)
-  myWorkflow.nodes.extend([file11, file12, file2, file3, file4,
-                          file0, script1, stdin1, 
-                          script2, stdin2, 
-                          script3, stdin3, #exceptionJobScript,
-                          script4, stdin4, 
-                          job1, job2, job3, job4])
-                          
-  myWorkflow.dependencies.extend([(script1, job1),
-                                 (stdin1, job1),
-                                 (file0, job1),
-                                 (file0, job2),
-                                 (job1, file11),
-                                 (job1, file12),
-                                 (file11, job2),
-                                 (file12, job3),
-                                 (script2, job2),
-                                 (stdin2, job2),
-                                 (job2, file2),
-                                 (script3, job3),
-                                 (stdin3, job3),
-                                 (job3, file3),
-                                 (script4, job4),
-                                 (stdin4, job4),
-                                 (file2, job4),
-                                 (file3, job4),
-                                 (job4, file4)]#,
-                                 #(exceptionJobScript, job3)]
-                                 )
+  
+  nodes = [file11, file12, file2, file3, file4,
+           file0, script1, stdin1, 
+           script2, stdin2, 
+           script3, stdin3, #exceptionJobScript,
+           script4, stdin4, 
+           job1, job2, job3, job4]
+  
+  dependencies = [(script1, job1),
+                  (stdin1, job1),
+                  (file0, job1),
+                  (file0, job2),
+                  (job1, file11),
+                  (job1, file12),
+                  (file11, job2),
+                  (file12, job3),
+                  (script2, job2),
+                  (stdin2, job2),
+                  (job2, file2),
+                  (script3, job3),
+                  (stdin3, job3),
+                  (job3, file3),
+                  (script4, job4),
+                  (stdin4, job4),
+                  (file2, job4),
+                  (file3, job4),
+                  (job4, file4)]#,
+                  #(exceptionJobScript, job3)]
+  
+  myWorkflow = Workflow(nodes, dependencies)
   
   printWorkflow(myWorkflow, ouput_dir + "/myWorkflow.dot", ouput_dir + "/graph.png")
    

@@ -14,6 +14,7 @@ import getpass
 
 class TestWorkflow(object):
   def __init__(self, test_no=None):
+    self.jobs = None
     if not test_no: 
       self.test_no = 1
     else:
@@ -52,17 +53,17 @@ class TestWorkflow(object):
     exceptionJobScript = FileSending(self.examples_dir + "simple/exceptionJob.py", 168, "exception_job")
                                                                                                           
     # jobs
-    job1 = JobTemplate([python, script1, file0,  file11, file12, "10"], 
+    job1 = JobTemplate([python, script1, file0,  file11, file12, "20"], 
                       [file0, script1, stdin1], 
                       [file11, file12], 
                       stdin1, False, 168, "job1")
                               
-    job2 = JobTemplate([python, script2, file11,  file0, file2, "10"], 
+    job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
                       [file0, file11, script2, stdin2], 
                       [file2], 
                       stdin2, False, 168, "job2")
                               
-    job3 = JobTemplate([python, script3, file12,  file3, "15"], 
+    job3 = JobTemplate([python, script3, file12,  file3, "30"], 
                       [file12, script3, stdin3], 
                       [file3], 
                       stdin3, False, 168, "job3")
@@ -72,46 +73,50 @@ class TestWorkflow(object):
                       #[file3],
                       #None, False, 168, "job3")
     
-    job4 = JobTemplate([python, script4, file2,  file3, file4, "5"], 
+    job4 = JobTemplate([python, script4, file2,  file3, file4, "10"], 
                               [file2, file3, script4, stdin4], 
                               [file4], 
                               stdin4, False, 168, "job4")
   
-    self.group_1 = Group([job2, job3], 'group_1')
-    self.group_2 = Group([job1, self.group_1], 'group_2')
-    self.mainGroup = Group([self.group_2, job4])
+    
   
     #building the workflow
-    self.workflow = Workflow(self.mainGroup)
-    self.workflow.nodes.extend([file11, file12, file2, file3, file4,
-                            file0, script1, stdin1, 
-                            script2, stdin2, 
-                            script3, stdin3, #exceptionJobScript,
-                            script4, stdin4, 
-                            job1, job2, job3, job4])
-                            
-    self.workflow.dependencies.extend([(script1, job1),
-                                  (stdin1, job1),
-                                  (file0, job1),
-                                  (file0, job2),
-                                  (job1, file11),
-                                  (job1, file12),
-                                  (file11, job2),
-                                  (file12, job3),
-                                  (script2, job2),
-                                  (stdin2, job2),
-                                  (job2, file2),
-                                  (script3, job3),
-                                  (stdin3, job3),
-                                  (job3, file3),
-                                  (script4, job4),
-                                  (stdin4, job4),
-                                  (file2, job4),
-                                  (file3, job4),
-                                  (job4, file4)]#,
-                                  #(exceptionJobScript, job3)]
-                                  )
-    self.workflow.groups.extend([self.group_1, self.group_2])
+    
+    
+    nodes = [file11, file12, file2, file3, file4,
+           file0, script1, stdin1, 
+           script2, stdin2, 
+           script3, stdin3, #exceptionJobScript,
+           script4, stdin4, 
+           job1, job2, job3, job4]
+  
+    dependencies = [(script1, job1),
+                    (stdin1, job1),
+                    (file0, job1),
+                    (file0, job2),
+                    (job1, file11),
+                    (job1, file12),
+                    (file11, job2),
+                    (file12, job3),
+                    (script2, job2),
+                    (stdin2, job2),
+                    (job2, file2),
+                    (script3, job3),
+                    (stdin3, job3),
+                    (job3, file3),
+                    (script4, job4),
+                    (stdin4, job4),
+                    (file2, job4),
+                    (file3, job4),
+                    (job4, file4)]#,
+                    #(exceptionJobScript, job3)]
+                    
+    group_1 = Group([job2, job3], 'group_1')
+    group_2 = Group([job1, group_1], 'group_2')
+    mainGroup = Group([group_2, job4])
+    
+    self.workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+  
 
   def workflowSubmission(self):
     if self.test_config.get(self.hostname, 'mode') == 'remote':
@@ -133,25 +138,21 @@ class TestWorkflow(object):
     
     self.printWorkflow(self.submitted_workflow, self.ouput_dir + "/myWorkflow1.dot", self.ouput_dir + "/graph01.png")
       
+      
+  def transferInputFiles(self):
     for node in self.submitted_workflow.nodes:
       if isinstance(node, FileSending):
         if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
           self.jobs.sendRegisteredFile(node.local_file_path)
           
-    #to_wait_for = []
-    #for node in self.submitted_workflow.nodes:
-      #if isinstance(node, JobTemplate):
-        #to_wait_for.append(node.job_id)
-        
-    #self.jobs.wait(to_wait_for)
-    
-    #for node in self.submitted_workflow.nodes:
-      #if isinstance(node, FileRetrieving):
-        #print "Transfer " + node.name + " status: " + self.jobs.transferStatus(node.local_file_path)
-        #if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
-          #self.jobs.retrieveFile(node.local_file_path)
-    #time.sleep(6)
-      
+          
+  def transferOutputFiles(self): 
+    for node in self.submitted_workflow.nodes:
+      if isinstance(node, FileRetrieving):
+        print "Transfer " + node.name + " status: " + self.jobs.transferStatus(node.local_file_path)
+        if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
+          self.jobs.retrieveFile(node.local_file_path)
+       
 
   def printWorkflow(self, workflow, dot_file_path, graph_file_path):
     if dot_file_path and os.path.isfile(dot_file_path):
