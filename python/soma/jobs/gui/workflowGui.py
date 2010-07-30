@@ -104,14 +104,21 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     self.workflow = workflow 
     self.jobs = jobs
     
-    w_js = []
-    w_fts = []
-    for node in self.workflow.nodes:
-      if isinstance(node, JobTemplate):
-        w_js.append(node)
-      elif isinstance(node, FileTransfer):
-        w_fts.append(node)
-     
+    w_js = set([])
+    w_fts = set([])
+    if not self.workflow.full_nodes:
+      for node in self.workflow.nodes:
+        if isinstance(node, JobTemplate):
+          w_js.add(node)
+        elif isinstance(node, FileTransfer):
+          w_fts.add(node)
+    else:
+      for node in self.workflow.full_nodes:
+        if isinstance(node, JobTemplate):
+          w_js.add(node)
+        elif isinstance(node, FileTransfer):
+          w_fts.add(node)
+    
     # ids => {workflow element: sequence of ids}
     self.ids = {}
     self.root_id = -1
@@ -131,6 +138,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
                                          it_type = WorkflowItem.JOB, 
                                          data = job, 
                                          children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
+      for ft in job.referenced_input_files:
+        if isinstance(ft, FileTransfer): w_fts.add(ft)
+      for ft in job.referenced_output_files:
+        if isinstance(ft, FileTransfer): w_fts.add(ft)
+      
       
     # Groups
     self.root_item = WorkflowItem(it_id = -1, 
@@ -367,7 +379,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           return QtGui.QBrush(BLUE)
         display = "output: " + item.data.name
         
-      if item.data.local_file_path == " ":
+      if not item.data.local_file_path:
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + display
           return display

@@ -83,33 +83,42 @@ class TestWorkflow(object):
     #building the workflow
     
     
-    nodes = [file11, file12, file2, file3, file4,
-           file0, script1, stdin1, 
-           script2, stdin2, 
-           script3, stdin3, #exceptionJobScript,
-           script4, stdin4, 
-           job1, job2, job3, job4]
+    #nodes = [file11, file12, file2, file3, file4,
+           #file0, script1, stdin1, 
+           #script2, stdin2, 
+           #script3, stdin3, #exceptionJobScript,
+           #script4, stdin4, 
+           #job1, job2, job3, job4]
+           
+    nodes = [job1, job2, job3, job4]
   
-    dependencies = [(script1, job1),
-                    (stdin1, job1),
-                    (file0, job1),
-                    (file0, job2),
-                    (job1, file11),
-                    (job1, file12),
-                    (file11, job2),
-                    (file12, job3),
-                    (script2, job2),
-                    (stdin2, job2),
-                    (job2, file2),
-                    (script3, job3),
-                    (stdin3, job3),
-                    (job3, file3),
-                    (script4, job4),
-                    (stdin4, job4),
-                    (file2, job4),
-                    (file3, job4),
-                    (job4, file4)]#,
-                    #(exceptionJobScript, job3)]
+    #dependencies = [(script1, job1),
+                    #(stdin1, job1),
+                    #(file0, job1),
+                    #(file0, job2),
+                    #(job1, file11),
+                    #(job1, file12),
+                    #(file11, job2),
+                    #(file12, job3),
+                    #(script2, job2),
+                    #(stdin2, job2),
+                    #(job2, file2),
+                    #(script3, job3),
+                    #(stdin3, job3),
+                    #(job3, file3),
+                    #(script4, job4),
+                    #(stdin4, job4),
+                    #(file2, job4),
+                    #(file3, job4),
+                    #(job4, file4)]#,
+                    ##(exceptionJobScript, job3)]
+   
+    dependencies = [(job1, job2), 
+                    (job1, job3),
+                    (job2, job4), 
+                    (job3, job4)]
+  
+   
                     
     group_1 = Group([job2, job3], 'group_1')
     group_2 = Group([job1, group_1], 'group_2')
@@ -140,14 +149,14 @@ class TestWorkflow(object):
       
       
   def transferInputFiles(self):
-    for node in self.submitted_workflow.nodes:
+    for node in self.submitted_workflow.full_nodes:
       if isinstance(node, FileSending):
         if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
           self.jobs.sendRegisteredFile(node.local_file_path)
           
           
   def transferOutputFiles(self): 
-    for node in self.submitted_workflow.nodes:
+    for node in self.submitted_workflow.full_nodes:
       if isinstance(node, FileRetrieving):
         print "Transfer " + node.name + " status: " + self.jobs.transferStatus(node.local_file_path)
         if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:

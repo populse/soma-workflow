@@ -40,7 +40,9 @@ class JobTemplate(object):
   Job representation in a workflow. 
   Workflow node type.
   
-  The job parameters are identical to the Jobs.submit method arguments.
+  The job parameters are identical to the Jobs.submit method arguments except 
+  that referenced_input_files and references_output_files must be sequences of 
+  L{FileTransfer}.
   (See the Jobs.submit method for a description of each parameter)
   '''
   def __init__( self, 
@@ -88,7 +90,7 @@ class FileTransfer(object):
     else:
       self.name = "send_" + self.remote_file_path
 
-    self.local_file_path = " "
+    self.local_file_path = None
 
 class FileSending(FileTransfer):
   '''
@@ -137,7 +139,7 @@ class Workflow(object):
   '''
   Workflow to be submitted using an instance of the Jobs class.
   '''
-  def __init__(self, nodes, dependencies, mainGroup = [], groups = []):
+  def __init__(self, nodes, dependencies, mainGroup = None, groups = []):
     '''
     @type  node: sequence of L{JobTemplate} and/or L{FileTransfer}
     @param node: workflow elements
@@ -148,17 +150,26 @@ class Workflow(object):
     @param groups: (optional) provide a hierarchical structure to a workflow for displaying purpose only
     @type  mainGroup: sequence of L{Groups} and/or L{JobTemplate}
     @param mainGroup: (optional) lower level group.  
+    
+    For submitted workflows: 
+      - full_dependencies is a set including the Workflow.dependencies + the FileTransfer-JobTemplate and JobTemplate-FileTransfer dependencies
+      - full_nodes is a set including the nodes + the FileTransfer nodes. 
     '''
     
     self.wf_id = -1
     self.nodes = nodes
+    self.full_nodes = None
     self.dependencies = dependencies
+    self.full_dependencies = None 
     self.groups= groups
-    self.mainGroup = mainGroup
-    if len(mainGroup) == 0:
+    if mainGroup:
+      self.mainGroup = mainGroup
+    else:
+      elements = []
       for node in self.nodes:
         if isinstance(node, JobTemplate):
-          self.mainGroup.append(node) 
+          elements.append(node) 
+      self.mainGroup = Group(elements, "main_group")
       
 class Jobs(object):
   
@@ -208,7 +219,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode =  mode #   'local_no_disconnection' #(local debug)# 
+    self.__mode =  'local_no_disconnection' #(local debug)# mode #   
     
     #########
     # LOCAL #
@@ -240,7 +251,7 @@ class Jobs(object):
       
       # log file 
       if not config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR) == 'None':
-        logfilepath =  config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_jobScheduler_sl225510"+log#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
+        logfilepath =  config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_DIR)+ "log_jobScheduler_sl225510"+repr(log)#+time.strftime("_%d_%b_%I:%M:%S", time.gmtime())
         logging.basicConfig(
           filename = logfilepath,
           format = config.get(resource_id, OCFG_LOCAL_PROCESSES_LOG_FORMAT, 1),

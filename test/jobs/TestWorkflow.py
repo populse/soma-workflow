@@ -152,33 +152,41 @@ if __name__ == '__main__':
   
   #building the workflow
   
-  nodes = [file11, file12, file2, file3, file4,
-           file0, script1, stdin1, 
-           script2, stdin2, 
-           script3, stdin3, #exceptionJobScript,
-           script4, stdin4, 
-           job1, job2, job3, job4]
+  #nodes = [file11, file12, file2, file3, file4,
+           #file0, script1, stdin1, 
+           #script2, stdin2, 
+           #script3, stdin3, #exceptionJobScript,
+           #script4, stdin4, 
+           #job1, job2, job3, job4]
   
-  dependencies = [(script1, job1),
-                  (stdin1, job1),
-                  (file0, job1),
-                  (file0, job2),
-                  (job1, file11),
-                  (job1, file12),
-                  (file11, job2),
-                  (file12, job3),
-                  (script2, job2),
-                  (stdin2, job2),
-                  (job2, file2),
-                  (script3, job3),
-                  (stdin3, job3),
-                  (job3, file3),
-                  (script4, job4),
-                  (stdin4, job4),
-                  (file2, job4),
-                  (file3, job4),
-                  (job4, file4)]#,
-                  #(exceptionJobScript, job3)]
+  nodes = [job1, job2, job3, job4]
+  
+  #dependencies = [(script1, job1),
+                  #(stdin1, job1),
+                  #(file0, job1),
+                  #(file0, job2),
+                  #(job1, file11),
+                  #(job1, file12),
+                  #(file11, job2),
+                  #(file12, job3),
+                  #(script2, job2),
+                  #(stdin2, job2),
+                  #(job2, file2),
+                  #(script3, job3),
+                  #(stdin3, job3),
+                  #(job3, file3),
+                  #(script4, job4),
+                  #(stdin4, job4),
+                  #(file2, job4),
+                  #(file3, job4),
+                  #(job4, file4)]#,
+                  ##(exceptionJobScript, job3)]
+  
+  
+  dependencies = [(job1, job2), 
+                  (job1, job3),
+                  (job2, job4), 
+                  (job3, job4)]
   
   myWorkflow = Workflow(nodes, dependencies)
   

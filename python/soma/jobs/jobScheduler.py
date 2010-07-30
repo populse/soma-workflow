@@ -248,6 +248,7 @@ class DrmaaJobScheduler( object ):
     if jobTemplate.parallel_job_info:
       parallel_config_name, max_node_number = jobTemplate.parallel_job_info
        
+       
     command_info = ""
     for command_element in jobTemplate.command:
       command_info = command_info + " " + command_element
@@ -401,57 +402,98 @@ class DrmaaJobScheduler( object ):
     workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date)
     workflow.wf_id = workflow_id 
     
+    def assert_is_a_workflow_node(local_file_path):
+      matching_node = None
+      for node in workflow.full_nodes:
+        if isinstance(node, FileTransfer) and node.local_file_path == input_file:
+          matching_node = node 
+          break
+      if not matching_node: 
+        raise JobSchedulerError("Workflow submission: The localfile path \"" + local_file_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
+      else: 
+        return matching_node
     
-    for node in workflow.nodes:
+    if not workflow.full_nodes:
+      workflow.full_nodes = set(workflow.nodes)
+      # get back the full nodes looking for fileTransfer nodes in the JobTemplate node
+      for node in workflow.nodes:
+        if isinstance(node, JobTemplate):
+          for ft in node.referenced_input_files:
+            if isinstance(ft, FileTransfer):  workflow.full_nodes.add(ft)
+          for ft in node.referenced_output_files:
+            if isinstance(ft, FileTransfer): workflow.full_nodes.add(ft)
+          
+    # the missing dependencies between JobTemplate and FileTransfer will be added 
+    workflow.full_dependencies = set(workflow.dependencies)
+   
+    w_js = []
+    w_fts = []
+    # Register FileTransfer to the JobServers
+    for node in workflow.full_nodes:
       if isinstance(node, FileSending):
         node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
         self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id)
-       
-      else:
-        if isinstance(node, FileRetrieving):
-          node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
-          self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id)
+        w_fts.append(node)
+      elif isinstance(node, FileRetrieving):
+        node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
+        self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id)
+        w_fts.append(node)
+      elif isinstance(node, JobTemplate):
+        w_js.append(node)
     
-    for node in workflow.nodes:
-      if isinstance(node, JobTemplate):
-       
-        new_command = []
-        for command_el in node.command:
-          if isinstance(command_el, FileTransfer):
-            new_command.append(command_el.local_file_path)
-          else:
-            new_command.append(command_el)
-        node.command = new_command
-        
-        new_referenced_input_files = []
-        for input_file in node.referenced_input_files:
-          if isinstance(input_file, FileTransfer):
-            new_referenced_input_files.append(input_file.local_file_path)
-          else:
-            new_referenced_input_files.append(input_file)
-        node.referenced_input_files= new_referenced_input_files
-       
-        new_referenced_output_files = []
-        for output_file in node.referenced_output_files:
-          if isinstance(output_file, FileTransfer):
-            new_referenced_output_files.append(output_file.local_file_path)
-          else:
-            new_referenced_output_files.append(output_file)
-        node.referenced_output_files = new_referenced_output_files
-        
-        if isinstance(node.stdin, FileTransfer):
-          node.stdin = node.stdin.local_file_path 
-              
-        registered_job = self.__registerJob(node, workflow_id)
-        node.job_id = registered_job.jobTemplate.job_id
+    # Job attributs conversion and job registration to the JobServer:
+    for job in w_js:
+      # command
+      new_command = []
+      for command_el in job.command:
+        if isinstance(command_el, FileTransfer):
+          new_command.append(command_el.local_file_path)
+        else:
+          new_command.append(command_el)
+      job.command = new_command
+      
+      
+      
+      # referenced_input_files => replace the FileTransfer objects by the corresponding local_file_path
+      new_referenced_input_files = []
+      for input_file in job.referenced_input_files:
+        if isinstance(input_file, FileTransfer):
+          new_referenced_input_files.append(input_file.local_file_path)
+          workflow.full_dependencies.add((input_file, job))
+        else: 
+          ift_node = assert_is_a_workflow_node(input_file)
+          new_referenced_input_files.append(input_file)
+          workflow.full_dependencies.add((ift_node, job))
+      job.referenced_input_files= new_referenced_input_files
+      
+      # referenced_input_files => replace the FileTransfer objects by the corresponding local_file_path
+      new_referenced_output_files = []
+      for output_file in job.referenced_output_files:
+        if isinstance(output_file, FileTransfer):
+          new_referenced_output_files.append(output_file.local_file_path)
+          workflow.full_dependencies.add((job, output_file))
+        else:
+          oft_node = assert_is_a_workflow_node(output_file)
+          new_referenced_output_files.append(output_file)
+          workflow.full_dependencies.add((job, oft_node))
+      job.referenced_output_files = new_referenced_output_files
+      
+      # stdin => replace JobTransfer object by corresponding
+      if isinstance(job.stdin, FileTransfer):
+        job.stdin = job.stdin.local_file_path 
+      else: assert_is_a_workflow_node(job.stdin)
+      
+      # Job registration
+      registered_job = self.__registerJob(job, workflow_id)
+      job.job_id = registered_job.jobTemplate.job_id
      
     self.__jobServer.setWorkflow(workflow_id, workflow, self.__user_id)
     self.__workflows[workflow_id] = workflow
     
-    
+    # run nodes without dependencies
     for node in workflow.nodes:
       torun=True
-      for dep in workflow.dependencies:
+      for dep in workflow.full_dependencies:
         torun = torun and not dep[1] == node
       if torun:
         if isinstance(node, JobTemplate):
@@ -504,7 +546,7 @@ class DrmaaJobScheduler( object ):
           if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
             workflow = self.__workflows[job.jobTemplate.workflow_id]
             self.logger.debug("Workflow failure : " + repr(job.jobTemplate.workflow_id))
-            for node in workflow.nodes:
+            for node in workflow.full_nodes:
               if isinstance(node, JobTemplate) and \
                  node.job_id in self.__jobs and \
                  self.__jobs[node.job_id].status == constants.NOT_SUBMITTED:
@@ -530,7 +572,7 @@ class DrmaaJobScheduler( object ):
         
       to_run = []
       for workflow in wf_to_process:
-        for node in workflow.nodes:
+        for node in workflow.full_nodes:
           if isinstance(node, JobTemplate):
             self.logger.debug("__workflowProcessing job " + repr(node.job_id) + " status !!!! self.__jobs : " + repr(self.__jobs.keys()))
             to_inspect = False
@@ -545,7 +587,7 @@ class DrmaaJobScheduler( object ):
           if to_inspect:
             self.logger.debug("to inspect : " + node.name)
             node_to_run = False
-            for dep in workflow.dependencies:
+            for dep in workflow.full_dependencies:
               if dep[1] == node: 
                 #print "node " + node.name + " dep: " + dep[0].name + " " + dep[1].name 
                 node_to_run = self.__isWFNodeCompleted(dep[0])
