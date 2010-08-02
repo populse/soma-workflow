@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 import sys
-from soma.jobs.gui.workflowGui import WorkflowWidget, WorkflowItemModel
-from WorkflowExample import *
+from soma.jobs.gui.workflowGui import WorkflowWidget
+from soma.jobs.gui.jobsControler import *
 from modeltest import ModelTest
 
     
@@ -9,7 +9,7 @@ if __name__=="__main__":
   
   app = QtGui.QApplication(sys.argv)
   
-  workflowControler = TestWorkflow() 
+  workflowControler = JobsControler("TestJobs.cfg", 1) 
   
   workflowWidget = WorkflowWidget(workflowControler)
   workflowWidget.show()

@@ -17,18 +17,16 @@ class WorkflowWidget(QtGui.QWidget):
     super(WorkflowWidget, self).__init__(parent)
     
     self.workflowControler = workflowControler
-    self.workflow = workflowControler.workflow
+    self.workflowControler.connect('neurospin_test_cluster')
+    assert(self.workflowControler.isConnected())
     
     self.setWindowTitle("Workflows !!")
    
     self.workflowTreeView = WorkflowTreeView(self)
-    self.workflowItemModel = WorkflowItemModel(self.workflowControler.workflow, self.workflowControler.jobs, self)
-    self.workflowTreeView.setModel(self.workflowItemModel)
-    self.workflowTreeView.expandAll()
-    
     self.workflowGraphView = WorkflowGraphView(self)
     self.workflowElementInfo = WorkflowElementInfo(self)
   
+    self.openWorkflowButton = QtGui.QPushButton("open a worklfow", self)
     self.submitWorkflowButton = QtGui.QPushButton("submit", self)
     self.transferInFilesButton = QtGui.QPushButton("transfer input files", self)
     self.transferOutFilesButton = QtGui.QPushButton("transfer output files", self)
@@ -39,6 +37,8 @@ class WorkflowWidget(QtGui.QWidget):
     
     lvlayout = QtGui.QVBoxLayout()
     lvlayout.addWidget(self.workflowTreeView)
+    
+    lvlayout.addWidget(self.openWorkflowButton)
     lvlayout.addWidget(self.submitWorkflowButton)
     lvlayout.addWidget(self.transferInFilesButton)
     lvlayout.addWidget(self.transferOutFilesButton)
@@ -48,33 +48,42 @@ class WorkflowWidget(QtGui.QWidget):
     layout.addLayout(rvlayout)
     self.setLayout(layout)
     
+    self.openWorkflowButton.clicked.connect(self.openWorkflow)
     self.submitWorkflowButton.clicked.connect(self.submitWorkflow)
     self.transferInFilesButton.clicked.connect(self.transferInputFiles)
     self.transferOutFilesButton.clicked.connect(self.transferOutputFiles)
 
   @QtCore.pyqtSlot()
+  def openWorkflow(self):
+    self.current_workflow = self.workflowControler.generateWorkflowExample()
+    self.currentWorkflowChanged()
+
+  @QtCore.pyqtSlot()
   def submitWorkflow(self):
-    self.workflowControler.workflowSubmission()
-    self.workflowItemModel = WorkflowItemModel(self.workflowControler.submitted_workflow, self.workflowControler.jobs, self)
-    self.workflowTreeView.setModel(self.workflowItemModel)
-    self.workflowTreeView.expandAll()
+    self.current_workflow = self.workflowControler.submitWorkflow(self.current_workflow)
+    self.currentWorkflowChanged()
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    self.workflowControler.transferInputFiles()
+    self.workflowControler.transferInputFiles(self.current_workflow)
   
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.workflowControler.transferOutputFiles()
+    self.workflowControler.transferOutputFiles(self.current_workflow)
+    
+  def currentWorkflowChanged(self):
+    self.workflowItemModel = WorkflowItemModel(self.current_workflow, self.workflowControler.jobs, self)
+    self.workflowTreeView.setModel(self.workflowItemModel)
+    self.workflowTreeView.expandAll()
   
     
 class WorkflowGraphView(QtGui.QGraphicsView):
   
-  def __init__(self, parent = None):
+  def __init__(self, controler, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
     self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
     
-      
+    self.controler = controler
   
 class WorkflowItem(object):
   
