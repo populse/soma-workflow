@@ -479,10 +479,11 @@ class DrmaaJobScheduler( object ):
       job.referenced_output_files = new_referenced_output_files
       
       # stdin => replace JobTransfer object by corresponding
-      if isinstance(job.stdin, FileTransfer):
-        job.stdin = job.stdin.local_file_path 
-      else: assert_is_a_workflow_node(job.stdin)
-      
+      if job.stdin:
+        if isinstance(job.stdin, FileTransfer):
+          job.stdin = job.stdin.local_file_path 
+        else: assert_is_a_workflow_node(job.stdin)
+        
       # Job registration
       registered_job = self.__registerJob(job, workflow_id)
       job.job_id = registered_job.jobTemplate.job_id

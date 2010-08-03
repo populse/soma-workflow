@@ -58,8 +58,12 @@ class JobTemplate(object):
                 working_directory=None,
                 parallel_job_info=None):
     self.command = command
-    self.referenced_input_files = referenced_input_files
-    self.referenced_output_files = referenced_output_files
+    if referenced_input_files: 
+      self.referenced_input_files = referenced_input_files
+    else: self.referenced_input_files = set([])
+    if referenced_output_files:
+      self.referenced_output_files = referenced_output_files
+    else: self.referenced_output_files = set([]) 
     self.stdin = stdin
     self.join_stderrout = join_stderrout
     self.disposal_timeout = disposal_timeout

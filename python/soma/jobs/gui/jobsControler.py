@@ -4,6 +4,7 @@ from soma.jobs.jobClient import *
 import socket
 import os
 import ConfigParser
+import pickle
 
 
 class JobsControler(object):
@@ -54,7 +55,13 @@ class JobsControler(object):
                 log=self.test_no)
     
     
-  def generateWorkflowExample(self):
+  def readWorkflowFromFile(self, file_path):
+    file = open(file_path, "r")
+    workflow = pickle.load(file)
+    file.close()
+    return workflow
+    
+  def generateWorkflowExample(self, file_path):
     examples_dir = self.test_config.get(self.hostname, 'job_examples_dir')
     python = self.test_config.get(self.hostname, 'python')
     
@@ -127,7 +134,11 @@ class JobsControler(object):
     group_2 = Group([job1, group_1], 'group_2')
     mainGroup = Group([group_2, job4])
     
-    return Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+    workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+    
+    file = open(file_path, 'w')
+    pickle.dump(workflow, file)
+    file.close()
     
     
   def submitWorkflow(self, workflow):

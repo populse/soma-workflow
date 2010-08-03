@@ -30,6 +30,7 @@ class WorkflowWidget(QtGui.QWidget):
     self.submitWorkflowButton = QtGui.QPushButton("submit", self)
     self.transferInFilesButton = QtGui.QPushButton("transfer input files", self)
     self.transferOutFilesButton = QtGui.QPushButton("transfer output files", self)
+    self.workflowExampleButton = QtGui.QPushButton("create a workflow example", self)
   
     rvlayout = QtGui.QVBoxLayout()
     rvlayout.addWidget(self.workflowGraphView)
@@ -42,6 +43,7 @@ class WorkflowWidget(QtGui.QWidget):
     lvlayout.addWidget(self.submitWorkflowButton)
     lvlayout.addWidget(self.transferInFilesButton)
     lvlayout.addWidget(self.transferOutFilesButton)
+    lvlayout.addWidget(self.workflowExampleButton)
     
     layout = QtGui.QHBoxLayout()
     layout.addLayout(lvlayout)
@@ -52,15 +54,28 @@ class WorkflowWidget(QtGui.QWidget):
     self.submitWorkflowButton.clicked.connect(self.submitWorkflow)
     self.transferInFilesButton.clicked.connect(self.transferInputFiles)
     self.transferOutFilesButton.clicked.connect(self.transferOutputFiles)
+    self.workflowExampleButton.clicked.connect(self.createWorkflowExample)
+    
 
   @QtCore.pyqtSlot()
   def openWorkflow(self):
-    self.current_workflow = self.workflowControler.generateWorkflowExample()
-    self.currentWorkflowChanged()
+    file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
+    if file_path:
+      self.current_workflow = self.workflowControler.readWorkflowFromFile(file_path)
+      print "!!!! dependencies nb : " + repr(len(self.current_workflow.dependencies))
+      self.currentWorkflowChanged()
+    
+  @QtCore.pyqtSlot()
+  def createWorkflowExample(self):
+    file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
+    if file_path:
+      self.workflowControler.generateWorkflowExample(file_path)
 
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
     self.current_workflow = self.workflowControler.submitWorkflow(self.current_workflow)
+    print "!!!! dependencies nb : " + repr(len(self.current_workflow.full_dependencies))
+    print "!!!! full dependencies nb : " + repr(len(self.current_workflow.full_dependencies))
     self.currentWorkflowChanged()
     
   @QtCore.pyqtSlot()
@@ -190,28 +205,30 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     for ft in w_fts:
       self.ids[ft] = []
       for job in w_js:
-        if ft in job.referenced_input_files or ft.local_file_path in job.referenced_input_files:
+        ref_in = list(job.referenced_input_files)
+        ref_out = list(job.referenced_output_files)
+        if ft in ref_in or ft.local_file_path in ref_in:
           item_id = id_cnt
           id_cnt = id_cnt + 1
           self.ids[ft].append(item_id)
-          if ft in job.referenced_input_files:
-            row = job.referenced_input_files.index(ft)
+          if ft in ref_in:
+            row = ref_in.index(ft)
           else: 
-            row = job.referenced_input_files.index(ft.local_file_path)
+            row = ref_in.index(ft.local_file_path)
           self.items[item_id] = WorkflowItem( it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
                                               it_type = WorkflowItem.INPUT_FILE_T, 
                                               data = ft)
           self.items[self.ids[job]].children[row]=item_id
-        if ft in job.referenced_output_files or ft.local_file_path in job.referenced_output_files:
+        if ft in ref_out or ft.local_file_path in ref_out:
           item_id = id_cnt
           id_cnt = id_cnt + 1
           self.ids[ft].append(item_id)
-          if ft in job.referenced_output_files:
-            row = len(job.referenced_input_files)+job.referenced_output_files.index(ft)
+          if ft in ref_out:
+            row = len(ref_in)+ref_out.index(ft)
           else:
-            row = len(job.referenced_input_files)+job.referenced_output_files.index(ft.local_file_path)
+            row = len(ref_in)+ref_out.index(ft.local_file_path)
           self.items[item_id] = WorkflowItem( it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
