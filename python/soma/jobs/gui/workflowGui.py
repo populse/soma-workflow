@@ -22,8 +22,10 @@ class WorkflowWidget(QtGui.QWidget):
     
     self.setWindowTitle("Workflows !!")
    
+    self.workflowItemModel = None
+   
     self.workflowTreeView = WorkflowTreeView(self)
-    self.workflowGraphView = WorkflowGraphView(self)
+    self.workflowGraphView = WorkflowGraphView(self.workflowControler, self)
     self.workflowElementInfo = WorkflowElementInfo(self)
   
     self.openWorkflowButton = QtGui.QPushButton("open a worklfow", self)
@@ -57,12 +59,12 @@ class WorkflowWidget(QtGui.QWidget):
     self.workflowExampleButton.clicked.connect(self.createWorkflowExample)
     
 
+
   @QtCore.pyqtSlot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
     if file_path:
       self.current_workflow = self.workflowControler.readWorkflowFromFile(file_path)
-      print "!!!! dependencies nb : " + repr(len(self.current_workflow.dependencies))
       self.currentWorkflowChanged()
     
   @QtCore.pyqtSlot()
@@ -74,8 +76,6 @@ class WorkflowWidget(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
     self.current_workflow = self.workflowControler.submitWorkflow(self.current_workflow)
-    print "!!!! dependencies nb : " + repr(len(self.current_workflow.full_dependencies))
-    print "!!!! full dependencies nb : " + repr(len(self.current_workflow.full_dependencies))
     self.currentWorkflowChanged()
     
   @QtCore.pyqtSlot()
@@ -87,19 +87,43 @@ class WorkflowWidget(QtGui.QWidget):
     self.workflowControler.transferOutputFiles(self.current_workflow)
     
   def currentWorkflowChanged(self):
+    
+    #if self.workflowItemModel:
+     #self.workflowItemModel.dataChanged.disconnect(self.workflowGraphView.modelChanged)
     self.workflowItemModel = WorkflowItemModel(self.current_workflow, self.workflowControler.jobs, self)
     self.workflowTreeView.setModel(self.workflowItemModel)
     self.workflowTreeView.expandAll()
+    #self.workflowGraphView.setWorflow(self.current_workflow)
+    #self.workflowItemModel.dataChanged.connect(self.workflowGraphView.modelChanged)
   
     
-class WorkflowGraphView(QtGui.QGraphicsView):
+class WorkflowGraphView(QtGui.QLabel):
   
   def __init__(self, controler, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
     self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
+    self.setMinimumSize(300,400)
     
     self.controler = controler
-  
+    self.workflow = None
+    
+    self.setBackgroundRole(QtGui.QPalette.Base)
+    self.setAlignment(QtCore.Qt.AlignCenter)
+    
+                                        
+  def setWorflow(self, workflow):
+    self.workflow = workflow
+    
+  @QtCore.pyqtSlot()
+  def modelChanged(self):
+    if self.workflow:
+      image_file_path = self.controler.printWorkflow(self.workflow)
+      self.image = QtGui.QImage(image_file_path)
+      self.pixmap = QtGui.QPixmap.fromImage(self.image)
+      self.setPixmap(self.pixmap)
+    else:
+      self.setPixmap(QtGui.QPixmap())
+
 class WorkflowItem(object):
   
   GROUP = "group"
@@ -202,11 +226,21 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             self.items[item.parent].children[item.row]=item.it_id
     
     # file transfers
+    def compFileTransfers(ft1, ft2): 
+      if isinstance(ft1, FileTransfer):
+        str1 = ft1.name
+      else: str1 = ft1
+      if isinstance(ft2, FileTransfer):
+        str2 = ft2.name
+      else: str2 = ft2
+      return cmp(str1, str2)
     for ft in w_fts:
       self.ids[ft] = []
       for job in w_js:
         ref_in = list(job.referenced_input_files)
+        ref_in.sort(compFileTransfers)
         ref_out = list(job.referenced_output_files)
+        ref_out.sort(compFileTransfers)
         if ft in ref_in or ft.local_file_path in ref_in:
           item_id = id_cnt
           id_cnt = id_cnt + 1
@@ -237,8 +271,13 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           self.items[self.ids[job]].children[row]=item_id
                                   
     ########## #print model ####################
+    #print "dependencies : " + repr(len(workflow.dependencies))
+    #if workflow.full_dependencies: 
+      #print "full_dependencies : " + repr(len(workflow.full_dependencies)) 
+    #for dep in workflow.dependencies:
+      #print dep[0].name + " -> " + dep[1].name
     #for item in self.items.values():
-      #print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.data.name) + " " + repr(item.children)    
+      #print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.data.name) + " " + repr(item.children)   
     #raw_input()
     ###########################################
     
@@ -249,7 +288,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
                               self.index(row,0, QtCore.QModelIndex()))
         time.sleep(interval)
     
-    self.__update_loop = threading.Thread(name = "WorflowItemMode_update_loop",
+    self.__update_loop = threading.Thread(name = "WorflowItemModel_update_loop",
                                          target = updateLoop,
                                          args = (self, 1))
     self.__update_loop.setDaemon(True)

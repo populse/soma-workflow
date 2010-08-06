@@ -5,6 +5,8 @@ import socket
 import os
 import ConfigParser
 import pickle
+import subprocess
+import commands
 
 
 class JobsControler(object):
@@ -156,12 +158,12 @@ class JobsControler(object):
         if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
           self.jobs.retrieveFile(node.local_file_path)
           
-  def printWorflow(self, workflow):
-    GRAY="0.8,0.8,0.8"
-    BLUE="0,0.8,1.0"
-    RED="1.0,0.4,0.2"
-    GREEN="0.6,1.0,0.2"
-    LIGHT_BLUE="0.8,1.0,1.0"
+  def printWorkflow(self, workflow):
+    GRAY="\"#C8C8B4\""
+    BLUE="\"#00C8FF\""
+    RED="\"#FF6432\""
+    GREEN="\"#9BFF32\""
+    LIGHT_BLUE="\"#C8FFFF\""
     
     dot_file_path = self.output_dir + "tmp.dot"
     graph_file_path = self.output_dir + "tmp.png"
@@ -169,32 +171,42 @@ class JobsControler(object):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
     print >> file, "digraph G {"
-    for ar in self.workflow.dependencies:
+    for ar in workflow.dependencies:
       print >> file, ar[0].name + " -> " + ar[1].name
-    for node in self.workflow.nodes:
+    for node in workflow.nodes:
       if isinstance(node, JobTemplate):
-        status = self.jobs.status(node.job_id)
-        if status == NOT_SUBMITTED:
-          print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GRAY +"];"
-        elif status == DONE:
-          print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
-        elif status == FAILED:
-          print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + RED +"];"
+        if node.job_id == -1:
+          print >> file, node.name + "[shape=box label="+ node.name +"];"
         else:
-          print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GREEN +"];"
+          status = self.jobs.status(node.job_id)
+          if status == NOT_SUBMITTED:
+            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GRAY +"];"
+          elif status == DONE:
+            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
+          elif status == FAILED:
+            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + RED +"];"
+          else:
+            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GREEN +"];"
       if isinstance(node, FileTransfer):
-        status = self.jobs.transferStatus(node.local_file_path)
-        if status == TRANSFER_NOT_READY:
-           print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GRAY +"];"
-        elif status == READY_TO_TRANSFER:
-          print >> file, node.name + "[label="+ node.name +", style=filled, color=" + BLUE +"];"
-        elif status == TRANSFERING:
-          print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GREEN +"];"
-        elif status == TRANSFERED:
-          print >> file, node.name + "[label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
-        
+        if not node.local_file_path:
+          print >> file, node.name + "[label="+ node.name +"];"
+        else:
+          status = self.jobs.transferStatus(node.local_file_path)
+          if status == TRANSFER_NOT_READY:
+            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GRAY +"];"
+          elif status == READY_TO_TRANSFER:
+            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + BLUE +"];"
+          elif status == TRANSFERING:
+            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GREEN +"];"
+          elif status == TRANSFERED:
+            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
+          
     print >> file, "}"
     file.close()
+    
+    command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
+    #dot_process = subprocess.Popen(command, shell = True)
+    commands.getstatusoutput(command)
     return graph_file_path
     
   
