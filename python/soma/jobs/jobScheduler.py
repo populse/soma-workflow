@@ -188,14 +188,14 @@ class DrmaaJobScheduler( object ):
     '''
  
     
-  def signalTransferEnded(self, local_file_path):
+  def signalTransferEnded(self, local_path):
     '''
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
     with self.__lock:
-      self.logger.debug("signal transfer ended " + local_file_path)
-      self.__endedTransfers.add(local_file_path)
+      self.logger.debug("signal transfer ended " + local_path)
+      self.__endedTransfers.add(local_path)
 
 
   ########## JOB SUBMISSION #################################################
@@ -316,6 +316,10 @@ class DrmaaJobScheduler( object ):
       if job.jobTemplate.parallel_job_info :
         parallel_config_name, max_node_number = job.jobTemplate.parallel_job_info
         self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
+        
+      job_env =[ "LD_LIBRARY_PATH=.:/volatile/laguitton/build-dir//lib:/i2bm/research/Mandriva-2008.0-i686/qwt-qt4/lib:/i2bm/research/Mandriva-2008.0-i686/Qt4/lib:.:/home/sl225510/lib:/i2bm/research/Mandriva-2008.0-i686/lib:/neurospin/tmp/Soizic/jobFiles/srcServers/:/i2bm/research/Mandriva-2008.0-i686/qwt/lib:/usr/lib/qt3/lib:/neurospin/local/Mandriva-2008.0-i686/lib:/neurospin/local/lib:/i2bm/local/Mandriva-2008.0-i686/lib:/i2bm/local/lib:/volatile/laguitton/sge6-2u5/lib/lx24-x86/:/neurospin/tmp/Soizic/jobFiles/srcServers/"]
+      job_env.append("PATH=/home/sl225510/svn/brainvisa/communication/web/trunk/tools:/home/sl225510/svn/brainvisa/development/build-config/trunk:/home/sl225510/svn/brainvisa/development/brainvisa-svn/trunk/bin:/volatile/laguitton/build-dir//bin:/i2bm/research/Mandriva-2008.0-i686/Qt4/bin:.:/home/sl225510/bin:/i2bm/research/Mandriva-2008.0-i686/bin:/condor/condor-7.4.0/bin:/condor/condor-7.4.0/sbin:/neurospin/local/Mandriva-2008.0-i686/bin:/neurospin/local/bin:/i2bm/local/Mandriva-2008.0-i686/bin:/i2bm/local/bin:/volatile/laguitton/sge6-2u5/bin/lx24-x86:/condor/condor-7.4.0/bin:/condor/condor-7.4.0/sbin:/usr/bin:/bin:/usr/local/bin:/usr/X11R6/bin/:/usr/games:/usr/lib/qt3//bin:/neurospin/local/neuromag/bin/X11:/neurospin/local/neuromag/bin/util:/i2bm/research/Mandriva-2008.0-i686/i2bm_pack-main/bin:/i2bm/research/Mandriva-2008.0-i686/i2bm_nmr-stable/bin")
+      self.__drmaa.setVectorAttribute(drmaaJobTemplateId, 'drmaa_v_env', job_env)
 
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
       self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
@@ -402,14 +406,14 @@ class DrmaaJobScheduler( object ):
     workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date)
     workflow.wf_id = workflow_id 
     
-    def assert_is_a_workflow_node(local_file_path):
+    def assert_is_a_workflow_node(local_path):
       matching_node = None
       for node in workflow.full_nodes:
-        if isinstance(node, FileTransfer) and node.local_file_path == input_file:
+        if isinstance(node, FileTransfer) and node.local_path == input_file:
           matching_node = node 
           break
       if not matching_node: 
-        raise JobSchedulerError("Workflow submission: The localfile path \"" + local_file_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
+        raise JobSchedulerError("Workflow submission: The localfile path \"" + local_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
       else: 
         return matching_node
     
@@ -431,12 +435,20 @@ class DrmaaJobScheduler( object ):
     # Register FileTransfer to the JobServers
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
-        node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
-        self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id)
+        if node.remote_paths:
+          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+          os.mkdir(node.local_path)
+        else:
+          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_path)
+        self.__jobServer.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id, node.remote_paths)
         w_fts.append(node)
       elif isinstance(node, FileRetrieving):
-        node.local_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_file_path)
-        self.__jobServer.addTransfer(node.local_file_path, node.remote_file_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id)
+        if node.remote_paths:
+          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+          os.mkdir(node.local_path)
+        else:
+          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_path)
+        self.__jobServer.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id, node.remote_paths)
         w_fts.append(node)
       elif isinstance(node, JobTemplate):
         w_js.append(node)
@@ -446,19 +458,19 @@ class DrmaaJobScheduler( object ):
       # command
       new_command = []
       for command_el in job.command:
-        if isinstance(command_el, FileTransfer):
-          new_command.append(command_el.local_file_path)
+        if isinstance(command_el, tuple):
+          new_command.append(command_el[0].local_path + "/" + command_el[1])
+        elif isinstance(command_el, FileTransfer):
+          new_command.append(command_el.local_path)
         else:
           new_command.append(command_el)
       job.command = new_command
       
-      
-      
-      # referenced_input_files => replace the FileTransfer objects by the corresponding local_file_path
+      # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
       new_referenced_input_files = []
       for input_file in job.referenced_input_files:
         if isinstance(input_file, FileTransfer):
-          new_referenced_input_files.append(input_file.local_file_path)
+          new_referenced_input_files.append(input_file.local_path)
           workflow.full_dependencies.add((input_file, job))
         else: 
           ift_node = assert_is_a_workflow_node(input_file)
@@ -466,11 +478,11 @@ class DrmaaJobScheduler( object ):
           workflow.full_dependencies.add((ift_node, job))
       job.referenced_input_files= new_referenced_input_files
       
-      # referenced_input_files => replace the FileTransfer objects by the corresponding local_file_path
+      # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
       new_referenced_output_files = []
       for output_file in job.referenced_output_files:
         if isinstance(output_file, FileTransfer):
-          new_referenced_output_files.append(output_file.local_file_path)
+          new_referenced_output_files.append(output_file.local_path)
           workflow.full_dependencies.add((job, output_file))
         else:
           oft_node = assert_is_a_workflow_node(output_file)
@@ -481,7 +493,7 @@ class DrmaaJobScheduler( object ):
       # stdin => replace JobTransfer object by corresponding
       if job.stdin:
         if isinstance(job.stdin, FileTransfer):
-          job.stdin = job.stdin.local_file_path 
+          job.stdin = job.stdin.local_path 
         else: assert_is_a_workflow_node(job.stdin)
         
       # Job registration
@@ -510,12 +522,12 @@ class DrmaaJobScheduler( object ):
           status = self.__jobs[node.job_id].status
           completed = status == constants.DONE or status == constants.FAILED
     if isinstance(node, FileSending):
-      if node.local_file_path:
-        status = self.__jobServer.getTransferStatus(node.local_file_path)
+      if node.local_path:
+        status = self.__jobServer.getTransferStatus(node.local_path)
         completed = status == constants.TRANSFERED
     if isinstance(node, FileRetrieving):
-      if node.local_file_path:
-        status = self.__jobServer.getTransferStatus(node.local_file_path)
+      if node.local_path:
+        status = self.__jobServer.getTransferStatus(node.local_path)
         completed = status == constants.READY_TO_TRANSFER
     return completed
       
@@ -558,14 +570,14 @@ class DrmaaJobScheduler( object ):
             del self.__workflows[job.jobTemplate.workflow_id]
         else:        
           if job.jobTemplate.referenced_output_files:
-            for local_file_path in job.jobTemplate.referenced_output_files:
-              self.__jobServer.setTransferStatus(local_file_path, constants.READY_TO_TRANSFER)
+            for local_path in job.jobTemplate.referenced_output_files:
+              self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
             if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
               workflow = self.__workflows[job.jobTemplate.workflow_id]
               wf_to_process.add(workflow)
-      for local_file_path in endedTransfers:
-        self.logger.debug("==> ended Transfer: " + local_file_path)
-        workflow_id = self.__jobServer.getTransferInformation(local_file_path)[3]
+      for local_path in endedTransfers:
+        self.logger.debug("==> ended Transfer: " + local_path)
+        workflow_id = self.__jobServer.getTransferInformation(local_path)[3]
         self.logger.debug("workflow_id " + repr(workflow_id))
         if not workflow_id == -1 and workflow_id in self.__workflows:
           workflow = self.__workflows[workflow_id]
@@ -575,33 +587,33 @@ class DrmaaJobScheduler( object ):
       for workflow in wf_to_process:
         for node in workflow.full_nodes:
           if isinstance(node, JobTemplate):
-            self.logger.debug("__workflowProcessing job " + repr(node.job_id) + " status !!!! self.__jobs : " + repr(self.__jobs.keys()))
             to_inspect = False
             if node.job_id in self.__jobs:
               status = self.__jobs[node.job_id].status
               to_inspect = status == constants.NOT_SUBMITTED
             #print "node " + node.name + " status " + status[0] + " to inspect " + repr(to_inspect)
           if isinstance(node, FileTransfer):
-            status = self.__jobServer.getTransferStatus(node.local_file_path)
+            status = self.__jobServer.getTransferStatus(node.local_path)
             to_inspect = status == constants.TRANSFER_NOT_READY
             #print "node " + node.name + " status " + status + " to inspect " + repr(to_inspect)
           if to_inspect:
-            self.logger.debug("to inspect : " + node.name)
+            self.logger.debug("---- to inspect : " + node.name)
             node_to_run = False
             for dep in workflow.full_dependencies:
               if dep[1] == node: 
-                #print "node " + node.name + " dep: " + dep[0].name + " " + dep[1].name 
+                self.logger.debug("node " + node.name + " dep: " + dep[0].name + " " + dep[1].name)
                 node_to_run = self.__isWFNodeCompleted(dep[0])
                 if not node_to_run: break
             if node_to_run: 
-              self.logger.debug("to run : " + node.name)
+              if isinstance(node, JobTemplate):
+                self.logger.debug("---- A JOB to run : " + node.name + " " + repr(node.command))
               to_run.append(node)
         
       for node in to_run:
         if isinstance(node, JobTemplate):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
         if isinstance(node,FileTransfer):
-          self.__jobServer.setTransferStatus(node.local_file_path, constants.READY_TO_TRANSFER)
+          self.__jobServer.setTransferStatus(node.local_path, constants.READY_TO_TRANSFER)
       
     self.logger.debug("<<< workflowProcessing")
     
@@ -770,15 +782,18 @@ class JobScheduler( object ):
   shutil.copy to transfer the output file from the local to the remote environment.
   '''
 
-  def registerTransfer(self, remote_file_path, disposal_timeout=168): 
+  def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths = None): 
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-      
-    local_input_file_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_file_path)
+    if remote_paths:
+      local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+      os.mkdir(local_path)
+    else:
+      local_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_path)
     expirationDate = date.today() + timedelta(hours=disposal_timeout) 
-    self.__jobServer.addTransfer(local_input_file_path, remote_file_path, expirationDate, self.__user_id)
-    return local_input_file_path
+    self.__jobServer.addTransfer(local_path, remote_path, expirationDate, self.__user_id, -1, remote_paths)
+    return local_path
 
 
   def writeLine(self, line, local_file_path):
@@ -834,34 +849,34 @@ class JobScheduler( object ):
       self.__fileToRead.close()
     
     
-  def setTransferStatus(self, local_file_path, status):
+  def setTransferStatus(self, local_path, status):
     '''
     Set a transfer status. 
     '''
      
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
-      print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_file_path
+    if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
+      print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
     
-    self.__jobServer.setTransferStatus(local_file_path, status)
+    self.__jobServer.setTransferStatus(local_path, status)
 
-  def cancelTransfer(self, local_file_path):
+  def cancelTransfer(self, local_path):
     '''
     Implementation of the L{Jobs} method.
     '''
     
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id) :
-      print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_file_path
+    if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
+      print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
 
-    self.__jobServer.removeTransfer(local_file_path)
+    self.__jobServer.removeTransfer(local_path)
     
-  def signalTransferEnded(self, local_file_path):
+  def signalTransferEnded(self, local_path):
     '''
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
-    self.__drmaaJS.signalTransferEnded(local_file_path)
+    self.__drmaaJS.signalTransferEnded(local_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -951,17 +966,17 @@ class JobScheduler( object ):
     return self.__jobServer.getWorkflow(wf_id)
 
     
-  def transferInformation(self, local_file_path):
+  def transferInformation(self, local_path):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    #TBI raise an exception if local_file_path is not valid transfer??
+    #TBI raise an exception if local_path is not valid transfer??
     
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_file_path
+    if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
+      print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_path
       return
       
-    return self.__jobServer.getTransferInformation(local_file_path)
+    return self.__jobServer.getTransferInformation(local_path)
    
 
 
@@ -976,15 +991,15 @@ class JobScheduler( object ):
     return self.__jobServer.getJobStatus(job_id)[0]
         
         
-  def transferStatus(self, local_file_path):
+  def transferStatus(self, local_path):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      print "Could get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_file_path
+    if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
+      print "Could get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
       return 
     
-    return self.__jobServer.getTransferStatus(local_file_path)
+    return self.__jobServer.getTransferStatus(local_path)
     
     
 

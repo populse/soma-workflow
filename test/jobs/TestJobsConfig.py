@@ -21,7 +21,7 @@ cfg.set('is143016', 'job_output_dir', "/home/sl225510/output/")
 cfg.set('is143016', 'mode', 'local')
 cfg.set('is143016', 'ressource_id', 'neurospin_test_cluster')
 # python: to avoid the site package error in the jobs standard error output
-cfg.set('is143016', 'python', "/i2bm/research/Mandriva-2008.0-i686/bin/python") 
+cfg.set('is143016', 'python', "python")#/i2bm/research/Mandriva-2008.0-i686/bin/python") 
  
 #cfg.add_section('is143016')
 ## jobs file directories

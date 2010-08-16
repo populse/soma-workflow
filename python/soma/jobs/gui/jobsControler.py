@@ -149,14 +149,14 @@ class JobsControler(object):
   def transferInputFiles(self, workflow):
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
-        if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
-          self.jobs.sendRegisteredFile(node.local_file_path)
+        if self.jobs.transferStatus(node.local_path) == READY_TO_TRANSFER:
+          self.jobs.sendRegisteredTransfer(node.local_path)
     
   def transferOutputFiles(self, workflow):
     for node in workflow.full_nodes:
       if isinstance(node, FileRetrieving):
-        if self.jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
-          self.jobs.retrieveFile(node.local_file_path)
+        if self.jobs.transferStatus(node.local_path) == READY_TO_TRANSFER:
+          self.jobs.retrieve(node.local_path)
           
   def printWorkflow(self, workflow):
     GRAY="\"#C8C8B4\""
@@ -188,10 +188,10 @@ class JobsControler(object):
           else:
             print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GREEN +"];"
       if isinstance(node, FileTransfer):
-        if not node.local_file_path:
+        if not node.local_path:
           print >> file, node.name + "[label="+ node.name +"];"
         else:
-          status = self.jobs.transferStatus(node.local_file_path)
+          status = self.jobs.transferStatus(node.local_path)
           if status == TRANSFER_NOT_READY:
             print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:

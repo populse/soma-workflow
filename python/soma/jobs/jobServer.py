@@ -25,8 +25,7 @@ __docformat__ = "epytext en"
 
 strtime_format = '%Y-%m-%d %H:%M:%S'
 
-
-
+file_separator = ', '
 
 
 def adapt_datetime(ts):
@@ -82,6 +81,7 @@ Job server database tables:
     user_id
     workflow_id (optional)
     status
+    remote_paths
 
   Input/Ouput junction table
     job_id 
@@ -135,7 +135,8 @@ def createDatabase(database_file):
                                             expiration_date  DATE NOT NULL,
                                             user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
                                             workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflow (id),
-                                            status           VARCHAR(255) NOT NULL)''')
+                                            status           VARCHAR(255) NOT NULL,
+                                            remote_paths     TEXT)''')
 
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
                                       local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
@@ -168,14 +169,19 @@ def printTables(database_file):
     
   print "==== transfers table: ===="
   for row in cursor.execute('SELECT * FROM transfers'):
-    local_file_path, remote_file_path, transfer_date, expiration_date, user_id = row
-    print '| local_file_path', repr(local_file_path).ljust(25), '| remote_file_path=', repr(remote_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
+    print row
+    #local_file_path, remote_file_path, transfer_date, expiration_date, user_id = row
+    #print '| local_file_path', repr(local_file_path).ljust(25), '| remote_file_path=', repr(remote_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
+  
+  print "==== workflows table: ========"
+  for row in cursor.execute('SELECT * FROM workflows'):
+    print row
+    #id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id,     working_directory = row
+    #print 'id=', repr(id).rjust(3), 'submission_date=', repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3), 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file', repr(stdout_file).rjust(10), 'stderr_file', repr(stderr_file).rjust(10), 'join_errout', repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10), 'name_description', repr(name_description).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10), 'working_directory', repr(working_directory).rjust(10)
   
   print "==== jobs table: ========"
   for row in cursor.execute('SELECT * FROM jobs'):
     print row
-    #id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id,     working_directory = row
-    #print 'id=', repr(id).rjust(3), 'submission_date=', repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3), 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file', repr(stdout_file).rjust(10), 'stderr_file', repr(stderr_file).rjust(10), 'join_errout', repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10), 'name_description', repr(name_description).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10), 'working_directory', repr(working_directory).rjust(10)
   
   print "==== ios table: ========="
   for row in cursor.execute('SELECT * FROM ios'):
@@ -510,7 +516,7 @@ class JobServer ( object ):
   #####################################"
   # TRANSFERS 
   
-  def addTransfer(self, local_file_path, remote_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1):
+  def addTransfer(self, local_file_path, remote_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, remote_paths = None):
     '''
     Adds a transfer to the database.
     
@@ -523,14 +529,22 @@ class JobServer ( object ):
     @param status: job transfer status (used when the transfer belong to a workflow)
     @type  workflow_id: C{WorkflowIdentifier}
     @param workflow_id: None or identifier of the workflow the transfer belongs to
+    @type  remote_paths: sequence of string or None
+    @param remote_paths: sequence of remote file or directory if transfering a 
+    file serie or if the file format involve serveral files of directories.
     '''
+    if remote_paths:
+      remote_path_std = file_separator.join(remote_paths)
+    else:
+      remote_path_std = None
+     
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO transfers 
-                        (local_file_path, remote_file_path, transfer_date, expiration_date, user_id, workflow_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                        (local_file_path, remote_file_path, date.today(), expiration_date, user_id, workflow_id, status))
+                        (local_file_path, remote_file_path, transfer_date, expiration_date, user_id, workflow_id, status, remote_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (local_file_path, remote_file_path, date.today(), expiration_date, user_id, workflow_id, status, remote_path_std))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -570,11 +584,11 @@ class JobServer ( object ):
     '''
     Returns the information related to the transfer associated to the local file path.
     The local_file_path must be associated to a transfer.
-    Returns (None, None, None, -1) if the local_file_path is not associated to a transfer.
+    Returns (None, None, None, -1, None) if the local_file_path is not associated to a transfer.
     
     @type local_file_path: string
     @rtype: tuple
-    @returns: (local_file_path, remote_file_path, expiration_date)
+    @returns: (local_file_path, remote_file_path, expiration_date, workflow_id, remote_paths)
     '''
     with self.__lock:
       connection = self.__connect()
@@ -586,7 +600,8 @@ class JobServer ( object ):
                                    local_file_path, 
                                    remote_file_path, 
                                    expiration_date, 
-                                   workflow_id 
+                                   workflow_id,
+                                   remote_paths 
                                    FROM transfers 
                                    WHERE local_file_path=?''', 
                                    [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
@@ -597,9 +612,13 @@ class JobServer ( object ):
         connection.close()
         raise JobServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
       if info:
-        result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'), info[3])
+        if info[4]:
+          remote_paths = info[4].encode('utf-8').split(file_separator)
+        else: 
+          remote_paths = None
+        result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'), info[3], remote_paths)
       else:
-        result = (None, None, None, -1)
+        result = (None, None, None, -1, None)
       cursor.close()
       connection.close()
     return result

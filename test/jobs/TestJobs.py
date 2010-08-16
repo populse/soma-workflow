@@ -96,12 +96,12 @@ class JobExamples(object):
     self.jobs = jobs
   
   def submitJob1(self, time=2):
-    self.l_file11 = self.jobs.registerFileTransfer(self.outpath + "file11", self.tr_timeout) 
-    self.l_file12 = self.jobs.registerFileTransfer(self.outpath + "file12", self.tr_timeout) 
+    self.l_file11 = self.jobs.registerTransfer(self.outpath + "file11", self.tr_timeout) 
+    self.l_file12 = self.jobs.registerTransfer(self.outpath + "file12", self.tr_timeout) 
     
-    self.l_file0 = self.jobs.sendFile(self.inpath + "complete/" + "file0", self.tr_timeout) 
-    l_script1 = self.jobs.sendFile(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
-    l_stdin1 = self.jobs.sendFile(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    self.l_file0 = self.jobs.send(self.inpath + "complete/" + "file0", self.tr_timeout) 
+    l_script1 = self.jobs.send(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
+    l_stdin1 = self.jobs.send(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
     
     job1id = self.jobs.submit( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, repr(time)], 
                                [self.l_file0, l_script1, l_stdin1], 
@@ -112,10 +112,10 @@ class JobExamples(object):
   
 
   def submitJob2(self, time=2):
-    self.l_file2 = self.jobs.registerFileTransfer(self.outpath + "file2", self.tr_timeout) 
+    self.l_file2 = self.jobs.registerTransfer(self.outpath + "file2", self.tr_timeout) 
 
-    l_script2 = self.jobs.sendFile(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
-    l_stdin2 = self.jobs.sendFile(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    l_script2 = self.jobs.send(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
+    l_stdin2 = self.jobs.send(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
   
     job2id = self.jobs.submit( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, repr(time)], 
                                [self.l_file0, self.l_file11, l_script2, l_stdin2], 
@@ -125,10 +125,10 @@ class JobExamples(object):
 
 
   def submitJob3(self, time=2):
-    self.l_file3 = self.jobs.registerFileTransfer(self.outpath + "file3", self.tr_timeout) 
+    self.l_file3 = self.jobs.registerTransfer(self.outpath + "file3", self.tr_timeout) 
     
-    l_script3 = self.jobs.sendFile(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
-    l_stdin3 = self.jobs.sendFile(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
+    l_script3 = self.jobs.send(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
+    l_stdin3 = self.jobs.send(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
     
     job3id = self.jobs.submit( [self.python, l_script3, self.l_file12, self.l_file3, repr(time)], 
                                [self.l_file12, l_script3, l_stdin3], 
@@ -139,10 +139,10 @@ class JobExamples(object):
   
   
   def submitJob4(self):
-    self.l_file4 = self.jobs.registerFileTransfer(self.outpath + "file4", self.tr_timeout) 
+    self.l_file4 = self.jobs.registerTransfer(self.outpath + "file4", self.tr_timeout) 
   
-    l_script4 = self.jobs.sendFile(self.inpath + "complete/" + "job4.py", self.tr_timeout) 
-    l_stdin4 = self.jobs.sendFile(self.inpath + "complete/" + "stdin4", self.tr_timeout) 
+    l_script4 = self.jobs.send(self.inpath + "complete/" + "job4.py", self.tr_timeout) 
+    l_stdin4 = self.jobs.send(self.inpath + "complete/" + "stdin4", self.tr_timeout) 
   
     job4id = self.jobs.submit( [self.python, l_script4, self.l_file2, self.l_file3, self.l_file4], 
                                [self.l_file2, self.l_file3, l_script4, l_stdin4], 
@@ -152,7 +152,7 @@ class JobExamples(object):
   
   
   def submitExceptionJob(self):
-    l_script = self.jobs.sendFile(self.inpath + "simple/exceptionJob.py", self.tr_timeout)
+    l_script = self.jobs.send(self.inpath + "simple/exceptionJob.py", self.tr_timeout)
     
     jobid = self.jobs.submit( [self.python, l_script], 
                               [l_script], 
@@ -204,9 +204,9 @@ class JobExamples(object):
     
     #compilation 
     
-    l_source = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
+    l_source = self.jobs.send(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
     
-    l_object = self.jobs.registerFileTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
+    l_object = self.jobs.registerTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
     #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
     #/opt/mpich/gnu/bin/
     
@@ -226,7 +226,7 @@ class JobExamples(object):
     
     self.jobs.wait([compil1jobId])
     
-    l_bin = self.jobs.registerFileTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
+    l_bin = self.jobs.registerTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
     print "l_bin = " + l_bin
     
     compil2jobId = self.jobs.submit( command = [ mpibin+"/mpicc", 
@@ -243,7 +243,7 @@ class JobExamples(object):
 
     
     # mpi job submission
-    script = self.jobs.sendFile(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
+    script = self.jobs.send(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
     
     jobId = self.jobs.submit( command = [ script, repr(node_num), l_bin], 
                               referenced_input_files = [script, l_bin],
@@ -516,7 +516,7 @@ class SubmissionWithTransfer(JobsTest):
     for file in self.outputFiles:
       remote_file = JobsTest.jobs.transferInformation(file)[1]
       self.failUnless(remote_file)
-      JobsTest.jobs.retrieveFile(file)
+      JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
       self.remoteFiles.append(remote_file)
    
@@ -651,7 +651,7 @@ class JobPipelineWithTransfer(JobsTest):
     for file in self.outputFiles:
       remote_file = JobsTest.jobs.transferInformation(file)[1]
       self.failUnless(remote_file)
-      JobsTest.jobs.retrieveFile(file)
+      JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
       self.remoteFiles.append(remote_file)
     
@@ -841,7 +841,7 @@ class DisconnectionTest(JobsTest):
     for file in self.outputFiles:
       remote_file = JobsTest.jobs.transferInformation(file)[1]
       self.failUnless(remote_file)
-      JobsTest.jobs.retrieveFile(file)
+      JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
       self.remoteFiles.append(remote_file)
     
@@ -943,9 +943,9 @@ if __name__ == '__main__':
   suite_list = []
   if all:
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
     suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
+    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
     #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
@@ -957,11 +957,11 @@ if __name__ == '__main__':
 
     tests = minimal
     
-    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
     #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
-    #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+    suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
     #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
     #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))

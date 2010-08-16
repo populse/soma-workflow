@@ -82,19 +82,27 @@ class FileTransfer(object):
   '''
   Workflow node type.
   File transfer representation in a workflow.
+  Use remote_paths if the transfer involves several associated files and/or directories:
+        - when transfering a file serie 
+        - in the case of file format associating several file and/or directories
+          (ex: a SPM image is stored in 2 files: .img and .hdr)
+  In this case, set remote_path to one the files (eq: .img).
+  In other cases (1 file or 1 directory) the remote_paths must be set to None.
   '''
   def __init__( self,
-                remote_file_path, 
+                remote_path, 
                 disposal_timeout = 168,
-                name = None):
-    self.remote_file_path = remote_file_path
+                name = None,
+                remote_paths = None):
+    self.remote_path = remote_path
     self.disposal_timeout = disposal_timeout
     if name:
       self.name = name
     else:
-      self.name = "send_" + self.remote_file_path
+      self.name = "send_" + self.remote_path
 
-    self.local_file_path = None
+    self.remote_paths = remote_paths
+    self.local_path = None
 
 class FileSending(FileTransfer):
   '''
@@ -102,10 +110,11 @@ class FileSending(FileTransfer):
   File transfer for an input file.
   '''
   def __init__( self,
-                remote_file_path, 
+                remote_path, 
                 disposal_timeout = 168,
-                name = None):
-    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+                name = None,
+                remote_paths = None):
+    FileTransfer.__init__(self,remote_path, disposal_timeout, name, remote_paths)
 
 class FileRetrieving(FileTransfer):
   '''
@@ -113,10 +122,11 @@ class FileRetrieving(FileTransfer):
   File transfer for an output file.
   '''
   def __init__( self,
-                remote_file_path, 
+                remote_path, 
                 disposal_timeout = 168,
-                name = None):
-    FileTransfer.__init__(self,remote_file_path, disposal_timeout, name)
+                name = None,
+                remote_paths = None):
+    FileTransfer.__init__(self,remote_path, disposal_timeout, name, remote_paths)
     
 class Group(object):
   '''
@@ -223,7 +233,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode =  'local_no_disconnection' #(local debug)# mode #   
+    self.__mode = 'local_no_disconnection' #(local debug)#  mode #   
     
     #########
     # LOCAL #
@@ -231,7 +241,7 @@ class Jobs(object):
     if self.__mode == 'local':
       self.__connection = soma.jobs.connection.JobLocalConnection(src_local_process, resource_id, log)
       self.__js_proxy = self.__connection.getJobScheduler()
-      self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.LocalTransfer(self.__js_proxy)
     
     ##########
     # REMOTE #
@@ -241,7 +251,7 @@ class Jobs(object):
       print 'submission machine: ' + sub_machine
       self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, resource_id, log)
       self.__js_proxy = self.__connection.getJobScheduler()
-      self.__file_transfer = soma.jobs.connection.RemoteFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.RemoteTransfer(self.__js_proxy)
     
     ###############
     # LOCAL DEBUG #
@@ -292,7 +302,7 @@ class Jobs(object):
           parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
   
       self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info)
-      self.__file_transfer = soma.jobs.connection.LocalFileTransfer(self.__js_proxy)
+      self.__file_transfer = soma.jobs.connection.LocalTransfer(self.__js_proxy)
       self.__connection = None
 
 
@@ -317,17 +327,17 @@ class Jobs(object):
   #job remote input files: rfin_1, rfin_2, ..., rfin_n 
   #job remote output files: rfout_1, rfout_2, ..., rfout_m  
   
-  #Call registerFileTransfer for each output file:
-  lfout_1 = jobs.registerFileTransfer(rfout_1)
-  lfout_2 = jobs.registerFileTransfer(rfout_2)
+  #Call registerTransfer for each output file:
+  lfout_1 = jobs.registerTransfer(rfout_1)
+  lfout_2 = jobs.registerTransfer(rfout_2)
   ...
-  lfout_n = jobs.registerFileTransfer(rfout_m)
+  lfout_n = jobs.registerTransfer(rfout_m)
   
-  #Call sendFile for each input file:
-  lfin_1= jobs.sendFile(rfin_1)
-  lfin_2= jobs.sendFile(rfin_2)
+  #Call send for each input file:
+  lfin_1= jobs.send(rfin_1)
+  lfin_2= jobs.send(rfin_2)
   ...
-  lfin_n= jobs.sendFile(rfin_n)
+  lfin_n= jobs.send(rfin_n)
     
   #Job submittion: don't forget to reference local input and output files 
   job_id = jobs.submit(['python', '/somewhere/something.py'], 
@@ -336,97 +346,119 @@ class Jobs(object):
   jobs.wait(job_id)
   
   #After Job execution, transfer back the output file
-  jobs.retrieveFile(lfout_1)
-  jobs.retrieveFile(lfout_2)
+  jobs.retrieve(lfout_1)
+  jobs.retrieve(lfout_2)
   ...
-  jobs.retrieveFile(lfout_m)
+  jobs.retrieve(lfout_m)
+  
+  When sending or registering a transfer, use remote_paths if the transfer involves several associated files and/or directories:
+          - when transfering a file serie 
+          - in the case of file format associating several file and/or directories
+            (ex: a SPM image is stored in 2 files: .img and .hdr)
+  In this case, set remote_path to one the files (eq: .img).
+  In other cases (1 file or 1 directory) the remote_paths must be set to None.
+  
+  Example:
+    
+  #transfer of a SPM image file
+  fout_1 = jobs.registerTransfer(remote_path = 'mypath/myimage.img', 
+                                 remote_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
+  ...
+  jobs.retrive(fout_1)
  
   '''
     
-  def sendFile(self, remote_input_file, disposal_timeout = 168):
+  def send(self, remote_input, disposal_timeout = 168, remote_paths=None):
     '''
     Transfers a remote file to a local directory. 
-
-    @type  remote_input_file: string 
-    @param remote_input_file: remote path of input file
+   
+    @type  remote_input: string 
+    @param remote_input: remote path of input file
     @type  disposalTimeout: int
     @param disposalTimeout:  The local file and transfer information is 
     automatically disposed after disposal_timeout hours, except if a job 
     references it as input. Default delay is 168 hours (7 days).
+    @type remote_paths: sequence of string or None
+    @type remote_paths: sequence of file to transfer if transfering a 
+    file serie or if the file format involve serveral files of directories.
     @rtype: string 
-    @return: local file path where the remote file was copied 
+    @return: local path where the remote file was copied
     '''
-    local_file_path = self.__js_proxy.registerTransfer(remote_input_file, disposal_timeout)
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
-    self.__file_transfer.sendFile(local_file_path, remote_input_file) 
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
-    self.__js_proxy.signalTransferEnded(local_file_path)
-    return local_file_path
+    local_path = self.__js_proxy.registerTransfer(remote_input, disposal_timeout, remote_paths)
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
+    self.__file_transfer.send(local_path, remote_input, remote_paths) 
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
+    self.__js_proxy.signalTransferEnded(local_path)
+    return local_path
   
 
-  def registerFileTransfer(self, remote_file_path, disposal_timeout=168): 
+  def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
     '''
     Generates a unique local path and save the (local_path, remote_path) association.
     
-    @type  remote_file_path: string
-    @param remote_file_path: remote path of file
+    @type  remote_path: string
+    @param remote_path: remote path of file
     @type  disposalTimeout: int
     @param disposalTimeout: The local file and transfer information is 
     automatically disposed after disposal_timeout hours, except if a job 
     references it as output or input. Default delay is 168 hours (7 days).
+    @type remote_paths: sequence of string or None
+    @type remote_paths: sequence of file to transfer if transfering a 
+    file serie or if the file format involve serveral file of directories.
     @rtype: string or sequence of string
     @return: local file path associated with the remote file
     '''
-    return self.__js_proxy.registerTransfer(remote_file_path, disposal_timeout)
+    return self.__js_proxy.registerTransfer(remote_path, disposal_timeout, remote_paths)
 
-  def sendRegisteredFile(self, local_file_path):
+  def sendRegisteredTransfer(self, local_path):
     '''
-    Transfer a remote file to a local directory. The local_file_path 
-    must have been generated using the registerFileTransfer method. 
+    Transfer one or several remote file(s) to a local directory. The local_path 
+    must have been generated using the registerTransfer method. 
         
-      local_file_path = sendFile(remote_file_path)
+      local_path = send(remote_path)
       
     is strictly equivalent to :
     
-      local_file_path = registerFileTransfer(remote_file_path)
-      sendRegisteredFile(local_file_path)
+      local_path = registerTransfer(remote_path)
+      sendRegisteredTransfer(local_path)
     
-    Use registerFileTransfer + sendRegisteredFile when the local_file_path
+    Use registerTransfer + sendRegisteredTransfer when the local_path
     is needed before transfering to file.
     '''
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERING)
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
     time.sleep(1) #TEST !
-    local_file_path, remote_file_path, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file_path)
-    self.__file_transfer.sendFile(local_file_path, remote_file_path)
-    self.__js_proxy.setTransferStatus(local_file_path, TRANSFERED)
-    self.__js_proxy.signalTransferEnded(local_file_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
+    self.__file_transfer.send(local_path, remote_path, remote_paths)
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
+    self.__js_proxy.signalTransferEnded(local_path)
 
-  def retrieveFile(self, local_file):
+  def retrieve(self, local_path):
     '''
-    Copies the local file to the associated remote file path. 
-    The local file path must belong to the user's transfered files (ie belong to 
+    If local_path is a file path: copies the local file to the associated remote file path.
+    If local_path is a directory path: copies the content of the directory to the associated remote directory.
+    The local path must belong to the user's transfers (ie belong to 
     the sequence returned by the L{transfers} method). 
     
-    @type  local_file: string 
-    @param local_file: local file path 
+    @type  local_path: string 
+    @param local_path: local path 
     '''
     
-    local_file, remote_file, expiration_date, workflow_id = self.__js_proxy.transferInformation(local_file)
-    self.__js_proxy.setTransferStatus(local_file, TRANSFERING)
-    self.__file_transfer.retrieveFile(local_file, remote_file)
-    self.__js_proxy.setTransferStatus(local_file, TRANSFERED)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
+    self.__file_transfer.retrieve(local_path, remote_path, remote_paths)
+    self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
    
-  def cancelTransfer(self, local_file_path):
+  def cancelTransfer(self, local_path):
     '''
-    Deletes the specified local file and the associated transfer information.
-    If some jobs reference the file as input or output, the transfer won't be 
+    Deletes the local file or directory and the associated transfer information.
+    If some jobs reference the local file(s) as input or output, the transfer won't be 
     deleted immediately but as soon as all the jobs will be disposed.
     
-    @type local_file_path: string
-    @param local_file_path: local file path associated with a transfer (ie 
+    @type local_path: string
+    @param local_path: local path associated with a transfer (ie 
     belongs to the list returned by L{transfers}    
     '''
-    self.__js_proxy.cancelTransfer(local_file_path)
+    self.__js_proxy.cancelTransfer(local_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -464,7 +496,7 @@ class Jobs(object):
     '''
     Submits a job for execution to the cluster. A job identifier is returned and 
     can be used to inspect and control the job.
-    If the job used transfered files (L{sendFile} and L{registerFileTransfer} 
+    If the job used transfered files (L{send} and L{registerTransfer} 
     methods) The list of involved local input and output file must be specified to 
     guarantee that the files will exist during the whole job life. 
     
@@ -624,21 +656,21 @@ class Jobs(object):
     '''
     return self.__js_proxy.submittedWorkflow(wf_id)
     
-  def transferInformation(self, local_file_path):
+  def transferInformation(self, local_path):
     '''
-    The local_file_path must belong to the list of paths returned by L{transfers}.
+    The local_path must belong to the list of paths returned by L{transfers}.
     Returns the information related to the file transfer corresponding to the 
-    local_file_path.
+    local_path.
 
-    @rtype: tuple (local_file_path, remote_file_path, expiration_date)
+    @rtype: tuple (local_path, remote_path, expiration_date)
     @return:
-        -local_file_path: path of the file on the directory shared by the machines
-        of the pool
-        -remote_file_path: path of the file on the remote machine 
+        -local_path: path of the local file or directory
+        -remote_path: remote file or directory path
         -expiration_date: after this date the local file will be deleted, unless an
         existing job has declared this file as output or input.
+        -remote_paths: sequence of file or directory path or None
     '''
-    return self.__js_proxy.transferInformation(local_file_path)
+    return self.__js_proxy.transferInformation(local_path)
    
   
   
@@ -655,17 +687,17 @@ class Jobs(object):
     return self.__js_proxy.status(job_id)
   
   
-  def transferStatus(self, local_file_path):
+  def transferStatus(self, local_path):
     '''
     Returns the status of a transfer. 
     
-    @type  local_file_path: string
-    @param local_file_path: 
+    @type  local_path: string
+    @param local_path: 
     @rtype: C{TransferStatus} or None
     @return: the status of the job transfer if its valid and own by the current user, None
     otherwise. See the list of status: constants. constants.FILE_TRANSFER_STATUS
     '''
-    return self.__js_proxy.transferStatus(local_file_path) 
+    return self.__js_proxy.transferStatus(local_path) 
 
   def exitInformation(self, job_id ):
     '''

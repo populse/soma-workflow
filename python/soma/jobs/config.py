@@ -40,7 +40,7 @@ jobs_cfg.set(s, CFG_TMP_FILE_DIR_PATH,      '/neurospin/tmp/Soizic/jobFiles/')
 jobs_cfg.set(s, CFG_DATABASE_FILE,          '/volatile/laguitton/jobs.db')
 #DRMS 
 jobs_cfg.set(s, OCFG_DRMS,               'SGE') 
-jobs_cfg.set(s, CFG_SUBMITTING_MACHINES, "is143016 is204723")
+jobs_cfg.set(s, CFG_SUBMITTING_MACHINES, "is143016")# is204723")
 
 ##########################
 # SOIZIC HOME CLUSTER #

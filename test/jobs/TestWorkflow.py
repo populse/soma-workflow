@@ -233,7 +233,7 @@ if __name__ == '__main__':
   for node in submitted_workflow.full_nodes:
     if isinstance(node, FileSending):
       if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
-        jobs.sendRegisteredFile(node.local_file_path)
+        jobs.sendRegisteredTransfer(node.local_file_path)
         #printSubmittedWorkflow(jobs, submitted_workflow, cmpt)
         #cmpt = cmpt+1
   
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     if isinstance(node, FileRetrieving):
       print "Transfer " + node.name + " status: " + jobs.transferStatus(node.local_file_path)
       if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
-        jobs.retrieveFile(node.local_file_path)
+        jobs.retrieve(node.local_file_path)
   time.sleep(6)
       
   #for i in range(cmpt, cmpt + 25):

@@ -223,9 +223,9 @@ class JobLocalConnection( object ):
 
 
 
-class FileTransferError( Exception ): pass
+class TransferError( Exception ): pass
 
-class FileTransfer( object ):
+class Transfer( object ):
 
   def __init__( self, jobScheduler):
     '''
@@ -233,79 +233,175 @@ class FileTransfer( object ):
     '''
     self.jobScheduler = jobScheduler
 
+  def send(self, local_path, remote_path, remote_paths=None):
+    '''
+    Transfer remote files and/or directories to the specified local location.
+    - Case 1: the remote_path is a file path and remote_paths is None
+        The local_path must be a file path.
+        The remote file will be copied to the local_path.
+    - Case 2: the remote_path is a directory and the remote_paths is None
+        The local_path must be a directory path
+        The whole remote directory will be copied to the local_path
+    - Case3: the remote_paths is a sequence of file and/or directory paths.
+        The local_path must be a directory path
+        The files and/or directories in remote_paths are copied to the local_path
+    '''
+    
+     # Case 1
+    if os.path.isfile(remote_path) and not remote_paths:
+      self.sendFile(local_path, remote_path)
+      
+    # Case 2
+    elif os.path.isdir(remote_path) and not remote_paths:
+      self.sendDirectory(local_path, remote_path)
+    
+    # Case 3
+    elif remote_paths:
+      for r_path in remote_paths:
+        if os.path.isfile(r_path):
+          self.sendFile(local_path, r_path, )
+        if os.path.isdir(r_path):
+          self.sendDirectory(local_path, r_path)
+         
+    else:
+      raise TransferError("Transfer.send: the files were not transfered.")
+    
+
+  def retrieve(self, local_path, remote_path, remote_paths):
+    '''
+    Transfer local files and/or directories to the specified remote location.
+    - Case 1: the remote_path is a file path and remote_paths is None
+        The local_path must be a file path.
+        The local file will be copied to the remote_path.
+    - Case 2: the remote_path is a directory and the remote_paths is None
+        The local_path must be a directory path
+        The whole local directory will be copied to the remote_path
+    - Case3: the remote_paths is a sequence of file and/or directory paths.
+        The local_path must be a directory path
+        The whole local directory will be copied to the base directory of remote_path.
+    '''
+
+    # Case 1 and 2
+    if not remote_paths:
+      self.retrieveFileOrDirectory(local_path, remote_path)
+    
+    # Case 3
+    elif remote_paths:
+      remote_directory = os.path.dirname(remote_path)
+      self.retrieveDirectoryContents(local_path, remote_directory)
+         
+    else:
+      raise TransferError("Transfer.retrieve: the files were not transfered.")
+   
+
   def sendFile(self, local_file, remote_file):
     '''
-    An unique local path is generated and associated with the remote path. 
-    Each remote files is copied to its associated local location.
-    When the disposal timout will be past, and no exisiting job will 
-    declare using the file as input, the files will be disposed. 
+    Equivalents to:    cp remote_file local_file
     
-    @type  remote_input_file: string 
-    @param remote_input_file: remote path of input file
-    @type  disposalTimeout: int
-    @param disposalTimeout: Number of hours before each local file is considered 
-    to have been forgotten by the user. Passed that delay, and if no existing job 
-    declares using the file as input, the local file and information 
-    related to the transfer are disposed. 
-    Default delay is 168 hours (7 days).
-    @rtype: string 
-    @return: local file path where the file were copied 
+    @type local_file: file path
+    @type remote_file: file path 
     '''
-    raise Exception('FileTransfer is an abstract class. transferInputFile must be implemented in subclass')
-     
-
-  def retrieveFile(self, local_file, remote_file):
+    raise TransferError('Transfer is an abstract class. sendFile must be implemented in subclass')
+ 
+  def sendDirectory(local_dir, remote_dir):
     '''
-    Copy the local file to the associated remote file path. 
-    The local file path must belong to the user's transfered files (ie belong to 
-    the sequence returned by the L{transfers} method). 
+    Equivalent to:    cp -r remote_dir local_dir
     
-    @type  local_file: string or sequence of string
-    @param local_file: local file path(s) 
+    @type local_dir: directory path
+    @type remote_dir: directory path 
     '''
-    raise Exception('FileTransfer is an abstract class. transferOutputFile must be implemented in subclass')
-  
+    raise TransferError('Transfer is an abstract class. sendFile must be implemented in subclass')
+ 
+  def retrieveFileOrDirectory(self, local_path, remote_path):
+    '''
+    if local_path is a directory path, equivalents to:    
+      cp -r local_path remote_path 
+    if local_path is a file path, equivalent to:
+      cp local_path remote_path
+    
+    @type local_dir: file or directory path
+    @type remote_dir: file or directory path 
+    '''
+    raise TransferError('Transfer is an abstract class. retrieveFileOrDirectory must be implemented in subclass')
+   
+   
+   
+   
+  def retrieveDirectoryContents(self,local_dir, remote_dir):
+    '''
+    Equivalent to:    cp -r local_dir/* remote_dir
+    
+    @type local_file: directory path
+    @type remote_file: directory path 
+    '''
+    raise TransferError('Transfer is an abstract class. retrieveDirectoryContents must be implemented in subclass')
   
 
-class LocalFileTransfer(FileTransfer):
+class LocalTransfer(Transfer):
   
-    def sendFile(self, local_file, remote_file):
+  def sendFile(self, local_file, remote_file):
+    try:
+      shutil.copy(remote_file, local_file)
+    except IOError, e:
+      raise TransferError("The file was not transfered. %s: %s" %(type(e), e) )
+    os.chmod(local_file, 0777)
+  
+  def retrieveFileOrDirectory(self, local_path, remote_path):
+    try:
+      if os.path.isfile(local_path): 
+        shutil.copy(local_path, remote_path)
+      if os.path.isfile(local_path): 
+        shutil.copy(local_path, remote_path)
+    except IOError, e:
+      raise TransferError("The file or directory was not transfered back. %s: %s" %(type(e), e) )
+
+  def sendDirectory(self, local_dir, remote_dir):
+    try:
+      shutil.copytree(remote_dir, local_dir)
+    except IOError, e:
+      raise TransferError("The directory was not transfered. %s: %s" %(type(e), e) )
+    os.chmod(local_file, 0777)
+  
+  def retrieveDirectoryContents(self, local_dir, remote_dir):
+    try:
+      for el in os.listdir(local_dir):
+        if os.path.isfile(el):
+          shutil.copy(el, remote_dir)
+        elif os.path.isdir(el):
+          shutil.copytree(el, remote_dir)
+    except IOError, e:
+      raise TransferError("The directory was not transfered back. %s: %s" %(type(e), e) )
+
+
+class RemoteTransfer(Transfer):
+
+  def sendFile(self, local_file, remote_file):
       
-      try:
-        shutil.copy(remote_file,local_file)
-      except IOError, e:
-        raise FileTransferError("The input file was not transfered. %s: %s" %(type(e), e) )
-      os.chmod(local_file, 0777)
-    
-    def retrieveFile(self, local_file, remote_file):   
-      try:
-        shutil.copy(local_file,remote_file)
-      except IOError, e:
-        raise FileTransferError("The output file was not transfered back. %s: %s" %(type(e), e) )
+    infile = open(remote_file)
+    line = infile.readline()
+    while line:
+        self.jobScheduler.writeLine(line, local_file)
+        line = infile.readline()
+    infile.close()
+    self.jobScheduler.endTransfers()
+  
+  
+  def retrieveFileOrDirectory(self, local_path, remote_path): 
+    outfile = open(remote_path, "w")
+    line = self.jobScheduler.readline(local_path)
+    while line:
+        outfile.write(line)
+        line = self.jobScheduler.readline(local_path)
+    outfile.close()
+    self.jobScheduler.endTransfers()
 
-
-class RemoteFileTransfer(FileTransfer):
-
-    def sendFile(self, local_file, remote_file):
-       
-      infile = open(remote_file)
-      line = infile.readline()
-      while line:
-          self.jobScheduler.writeLine(line, local_file)
-          line = infile.readline()
-      infile.close()
-      self.jobScheduler.endTransfers()
-    
-    
-    def retrieveFile(self, local_file, remote_file): 
-      outfile = open(remote_file, "w")
-      line = self.jobScheduler.readline(local_file)
-      while line:
-          outfile.write(line)
-          line = self.jobScheduler.readline(local_file)
-      outfile.close()
-      self.jobScheduler.endTransfers()
-
+  def sendDirectory(self, local_dir, remote_dir):
+    #TBI!!
+    pass
+  
+  def retrieveDirectoryContents(self, local_dir, remote_dir):
+    #TBI!!
+    pass
 
 
 

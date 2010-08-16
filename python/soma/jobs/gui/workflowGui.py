@@ -241,28 +241,28 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         ref_in.sort(compFileTransfers)
         ref_out = list(job.referenced_output_files)
         ref_out.sort(compFileTransfers)
-        if ft in ref_in or ft.local_file_path in ref_in:
+        if ft in ref_in or ft.local_path in ref_in:
           item_id = id_cnt
           id_cnt = id_cnt + 1
           self.ids[ft].append(item_id)
           if ft in ref_in:
             row = ref_in.index(ft)
           else: 
-            row = ref_in.index(ft.local_file_path)
+            row = ref_in.index(ft.local_path)
           self.items[item_id] = WorkflowItem( it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
                                               it_type = WorkflowItem.INPUT_FILE_T, 
                                               data = ft)
           self.items[self.ids[job]].children[row]=item_id
-        if ft in ref_out or ft.local_file_path in ref_out:
+        if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
           id_cnt = id_cnt + 1
           self.ids[ft].append(item_id)
           if ft in ref_out:
             row = len(ref_in)+ref_out.index(ft)
           else:
-            row = len(ref_in)+ref_out.index(ft.local_file_path)
+            row = len(ref_in)+ref_out.index(ft.local_path)
           self.items[item_id] = WorkflowItem( it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
@@ -444,12 +444,12 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           return QtGui.QBrush(BLUE)
         display = "output: " + item.data.name
         
-      if not item.data.local_file_path:
+      if not item.data.local_path:
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + display
           return display
       else:
-        status = self.jobs.transferStatus(item.data.local_file_path)
+        status = self.jobs.transferStatus(item.data.local_path)
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + display + " => " + status
           return display + " => " + status
