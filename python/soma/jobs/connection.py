@@ -364,14 +364,14 @@ class LocalTransfer(Transfer):
   
   def retrieveDirectoryContents(self, local_dir, remote_dir):
     try:
-      for el in os.listdir(local_dir):
-        if os.path.isfile(el):
-          shutil.copy(el, remote_dir)
-        elif os.path.isdir(el):
-          shutil.copytree(el, remote_dir)
+      for name in os.listdir(local_dir):
+        element = os.path.join(local_dir,name)
+        if os.path.isfile(element):
+          shutil.copy(element, remote_dir)
+        elif os.path.isdir(element):
+          shutil.copytree(element, remote_dir)
     except IOError, e:
       raise TransferError("The directory was not transfered back. %s: %s" %(type(e), e) )
-
 
 class RemoteTransfer(Transfer):
 

@@ -165,41 +165,47 @@ class JobsControler(object):
     GREEN="\"#9BFF32\""
     LIGHT_BLUE="\"#C8FFFF\""
     
+    names = dict()
+    current_id = 0
+    
     dot_file_path = self.output_dir + "tmp.dot"
     graph_file_path = self.output_dir + "tmp.png"
     if dot_file_path and os.path.isfile(dot_file_path):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
     print >> file, "digraph G {"
+    for node in workflow.nodes:
+      current_id = current_id + 1
+      names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
     for ar in workflow.dependencies:
-      print >> file, ar[0].name + " -> " + ar[1].name
+      print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
     for node in workflow.nodes:
       if isinstance(node, JobTemplate):
         if node.job_id == -1:
-          print >> file, node.name + "[shape=box label="+ node.name +"];"
+          print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
           status = self.jobs.status(node.job_id)
           if status == NOT_SUBMITTED:
-            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GRAY +"];"
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == DONE:
-            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
           elif status == FAILED:
-            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + RED +"];"
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
           else:
-            print >> file, node.name + "[shape=box label="+ node.name +", style=filled, color=" + GREEN +"];"
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
       if isinstance(node, FileTransfer):
         if not node.local_path:
-          print >> file, node.name + "[label="+ node.name +"];"
+          print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
           status = self.jobs.transferStatus(node.local_path)
           if status == TRANSFER_NOT_READY:
-            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GRAY +"];"
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:
-            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + BLUE +"];"
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
           elif status == TRANSFERING:
-            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + GREEN +"];"
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
           elif status == TRANSFERED:
-            print >> file, node.name + "[label="+ node.name +", style=filled, color=" + LIGHT_BLUE +"];"
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
           
     print >> file, "}"
     file.close()

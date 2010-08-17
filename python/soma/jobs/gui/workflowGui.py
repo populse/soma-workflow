@@ -1,8 +1,10 @@
 from PyQt4 import QtGui, QtCore
+from PyQt4 import uic
 from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, JobTemplate
 from soma.jobs.constants import *
 import time
 import threading
+import os
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -10,12 +12,19 @@ RED=QtGui.QColor(255,100,50)
 GREEN=QtGui.QColor(155,255,50)
 LIGHT_BLUE=QtGui.QColor(200,255,255)
 
+Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'WorkflowMainWindow.ui' ))[0]
+Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
+Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
 
-class WorkflowWidget(QtGui.QWidget):
+
+class WorkflowWidget(QtGui.QMainWindow):
   
   def __init__(self, workflowControler, parent = None, flags = 0):
     super(WorkflowWidget, self).__init__(parent)
     
+    self.ui = Ui_WorkflowMainWindow()
+    self.ui.setupUi(self)
+
     self.workflowControler = workflowControler
     self.workflowControler.connect('neurospin_test_cluster')
     assert(self.workflowControler.isConnected())
@@ -24,40 +33,21 @@ class WorkflowWidget(QtGui.QWidget):
    
     self.workflowItemModel = None
    
-    self.workflowTreeView = WorkflowTreeView(self)
     self.workflowGraphView = WorkflowGraphView(self.workflowControler, self)
+    graphViewLayout = QtGui.QVBoxLayout()
+    graphViewLayout.addWidget(self.workflowGraphView)
+    self.ui.graphViewScrollAreaWidgetContents.setLayout(graphViewLayout)
+    
     self.workflowElementInfo = WorkflowElementInfo(self)
-  
-    self.openWorkflowButton = QtGui.QPushButton("open a worklfow", self)
-    self.submitWorkflowButton = QtGui.QPushButton("submit", self)
-    self.transferInFilesButton = QtGui.QPushButton("transfer input files", self)
-    self.transferOutFilesButton = QtGui.QPushButton("transfer output files", self)
-    self.workflowExampleButton = QtGui.QPushButton("create a workflow example", self)
-  
-    rvlayout = QtGui.QVBoxLayout()
-    rvlayout.addWidget(self.workflowGraphView)
-    rvlayout.addWidget(self.workflowElementInfo)
-    
-    lvlayout = QtGui.QVBoxLayout()
-    lvlayout.addWidget(self.workflowTreeView)
-    
-    lvlayout.addWidget(self.openWorkflowButton)
-    lvlayout.addWidget(self.submitWorkflowButton)
-    lvlayout.addWidget(self.transferInFilesButton)
-    lvlayout.addWidget(self.transferOutFilesButton)
-    lvlayout.addWidget(self.workflowExampleButton)
-    
-    layout = QtGui.QHBoxLayout()
-    layout.addLayout(lvlayout)
-    layout.addLayout(rvlayout)
-    self.setLayout(layout)
-    
-    self.openWorkflowButton.clicked.connect(self.openWorkflow)
-    self.submitWorkflowButton.clicked.connect(self.submitWorkflow)
-    self.transferInFilesButton.clicked.connect(self.transferInputFiles)
-    self.transferOutFilesButton.clicked.connect(self.transferOutputFiles)
-    self.workflowExampleButton.clicked.connect(self.createWorkflowExample)
-    
+    itemInfoLayout = QtGui.QVBoxLayout()
+    itemInfoLayout.addWidget(self.workflowElementInfo)
+    self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+
+    self.ui.action_submit.triggered.connect(self.submitWorkflow)
+    self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
+    self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
+    self.ui.action_open_wf.triggered.connect(self.openWorkflow)
+    self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
 
 
   @QtCore.pyqtSlot()
@@ -88,28 +78,24 @@ class WorkflowWidget(QtGui.QWidget):
     
   def currentWorkflowChanged(self):
     
-    #if self.workflowItemModel:
-     #self.workflowItemModel.dataChanged.disconnect(self.workflowGraphView.modelChanged)
+    if self.workflowItemModel:
+     self.workflowItemModel.dataChanged.disconnect(self.workflowGraphView.modelChanged)
     self.workflowItemModel = WorkflowItemModel(self.current_workflow, self.workflowControler.jobs, self)
-    self.workflowTreeView.setModel(self.workflowItemModel)
-    self.workflowTreeView.expandAll()
-    #self.workflowGraphView.setWorflow(self.current_workflow)
-    #self.workflowItemModel.dataChanged.connect(self.workflowGraphView.modelChanged)
+    self.ui.treeView.setModel(self.workflowItemModel)
+    self.workflowElementInfo.setSelectionModel(self.ui.treeView.selectionModel())
+    #self.ui.treeView.expandAll()
+    self.workflowGraphView.setWorflow(self.current_workflow)
+    self.workflowItemModel.dataChanged.connect(self.workflowGraphView.modelChanged)
   
     
 class WorkflowGraphView(QtGui.QLabel):
   
   def __init__(self, controler, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
-    self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
-    self.setMinimumSize(300,400)
     
     self.controler = controler
     self.workflow = None
-    
-    self.setBackgroundRole(QtGui.QPalette.Base)
-    self.setAlignment(QtCore.Qt.AlignCenter)
-    
+
                                         
   def setWorflow(self, workflow):
     self.workflow = workflow
@@ -474,16 +460,88 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     return QtCore.QVariant()
 
 
-class WorkflowElementInfo(QtGui.QLabel):
+class WorkflowElementInfo(QtGui.QWidget):
   
   def __init__(self, parent = None):
     super(WorkflowElementInfo, self).__init__(parent)
-    self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
+    #self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
+   
+    self.selectionModel = None
+    self.infoWidget = None
+    
+    self.vLayout = QtGui.QVBoxLayout(self)
+    
+  def setSelectionModel(self, selectionModel):
+    if self.selectionModel:
+      self.selectionModel.currentChanged.disconnect(self.currentChanged)
+    self.selectionModel = selectionModel
+    self.selectionModel.currentChanged.connect(self.currentChanged)
+    
+    if self.infoWidget:
+      self.infoWidget.hide()
+      self.vLayout.removeWidget(self.infoWidget)
+      self.infoWidget = None
+    
+  @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+  def currentChanged(self, current, previous):
+    
+    if self.infoWidget:
+      self.infoWidget.hide()
+      self.vLayout.removeWidget(self.infoWidget)
+  
+    item = current.internalPointer()
+    if item.it_type == WorkflowItem.JOB:
+      self.infoWidget = JobInfoWidget(item, self)
+    elif item.it_type == WorkflowItem.OUTPUT_FILE_T or item.it_type == WorkflowItem.INPUT_FILE_T:
+      self.infoWidget = TransferInfoWidget(item, self)
+    else:
+      self.infoWidget = None
+      
+    if self.infoWidget:
+      self.vLayout.addWidget(self.infoWidget)
+      
+    self.update()
+    
+    
+    
+class JobInfoWidget(QtGui.QTabWidget):
+  
+  def __init__(self, jobItem, parent = None):
+    super(JobInfoWidget, self).__init__(parent)
+    
+    self.ui = Ui_JobInfo()
+    self.ui.setupUi(self)
+    
+    self.jobItem = jobItem
+ 
+    self.ui.job_name.setText(self.jobItem.data.name)
+    
+  
+class TransferInfoWidget(QtGui.QTabWidget):
+  
+  def __init__(self, transferItem, parent = None):
+    super(TransferInfoWidget, self).__init__(parent)
+    self.ui = Ui_TransferInfo()
+    self.ui.setupUi(self)
+    
+    self.transferItem = transferItem
+    
+    self.ui.transfer_name.setText(self.transferItem.data.name)
+    self.ui.transfer_status.setText(" ")
+    
+    self.ui.remote_path.setText(transferItem.data.remote_path)
+    self.ui.remote_paths.setText(" ")#self.transferItem.data.remote_paths
+    
+    if self.transferItem.data.local_path:
+      self.ui.local_path.setText(self.transferItem.data.local_path)
+    else: self.ui.local_path.setText(" ")
+    
     
     
 class WorkflowTreeView(QtGui.QTreeView):
   
   def __init__(self, parent = None):
     super(WorkflowTreeView, self).__init__(parent)
+    self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
    # self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
     
