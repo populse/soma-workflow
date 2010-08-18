@@ -171,6 +171,7 @@ class Workflow(object):
     '''
     
     self.wf_id = -1
+    self.name = None
     self.nodes = nodes
     self.full_nodes = None
     self.dependencies = dependencies
@@ -594,7 +595,7 @@ class Jobs(object):
 
   ########## WORKFLOW SUBMISSION ####################################
   
-  def submitWorkflow(self, workflow, disposal_timeout=168):
+  def submitWorkflow(self, workflow, disposal_timeout=168, name = None):
     '''
     Submits a workflow to the system and returns the id of each 
     submitted workflow element (Job or file transfer).
@@ -605,7 +606,7 @@ class Jobs(object):
     @return: The workflow compemented by the id of each submitted 
     workflow element.
     '''
-    submittedWF =  self.__js_proxy.submitWorkflow(workflow, disposal_timeout)
+    submittedWF =  self.__js_proxy.submitWorkflow(workflow, disposal_timeout, name)
     return submittedWF
   
   
@@ -613,7 +614,7 @@ class Jobs(object):
     '''
     Removes a workflow and all its associated nodes (file transfers and jobs)
     '''
-    self.__js_proxy.dispose(workflow_id)
+    self.__js_proxy.disposeWorkflow(workflow_id)
 
   ########## MONITORING #############################################
 
@@ -647,12 +648,24 @@ class Jobs(object):
     '''
     return self.__js_proxy.workflows()
   
+  def workflowInformation(self, wf_id):
+    '''
+    Returns a tuple: 
+      - expiration date
+      - workflow name
+      
+    @rtype: (date, name)
+    @return: (expiration date, workflow name) 
+    '''
+    return self.__js_proxy.workflowInformation(wf_id)
+    
+  
   def submittedWorkflow(self, wf_id):
     '''
     Returns the submitted workflow.
     
     @rtype: L{Workflow}
-    @return: submitted workflow 
+    @return: submitted workflow
     '''
     return self.__js_proxy.submittedWorkflow(wf_id)
     

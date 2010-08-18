@@ -399,12 +399,13 @@ class DrmaaJobScheduler( object ):
 
   ########## WORKFLOW SUBMISSION ############################################
   
-  def submitWorkflow(self, workflow_o, disposal_timeout):
+  def submitWorkflow(self, workflow_o, disposal_timeout, name):
     # type checking for the workflow ?
     workflow = copy.deepcopy(workflow_o)
     expiration_date = date.today() + timedelta(hours=disposal_timeout) 
-    workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date)
+    workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date, name)
     workflow.wf_id = workflow_id 
+    workflow.name = name
     
     def assert_is_a_workflow_node(local_path):
       matching_node = None
@@ -919,17 +920,17 @@ class JobScheduler( object ):
 
   ########## WORKFLOW SUBMISSION ############################################
   
-  def submitWorkflow(self, workflow, disposal_timeout):
+  def submitWorkflow(self, workflow, disposal_timeout, name):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    return self.__drmaaJS.submitWorkflow(workflow, disposal_timeout)
+    return self.__drmaaJS.submitWorkflow(workflow, disposal_timeout, name)
   
   def disposeWorkflow(self, workflow_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(worflow_id, self.__user_id):
+    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
       print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return
     
@@ -965,7 +966,17 @@ class JobScheduler( object ):
       print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
     return self.__jobServer.getWorkflow(wf_id)
 
+ 
+  def workflowInformation(self, wf_id):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+      print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+    return self.__jobServer.getWorkflowInfo(wf_id)
     
+    
+ 
   def transferInformation(self, local_path):
     '''
     Implementation of soma.jobs.jobClient.Jobs API

@@ -149,7 +149,8 @@ def createDatabase(database_file):
   cursor.execute('''CREATE TABLE workflows (id               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                            user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
                                            pickle_file_path TEXT,
-                                           expiration_date  DATE NOT NULL) ''')
+                                           expiration_date  DATE NOT NULL,
+                                           name TEXT) ''')
   
   cursor.close()
   connection.commit()
@@ -678,7 +679,7 @@ class JobServer ( object ):
   ###############################################
   # WORKFLOWS
   
-  def addWorkflow(self, user_id, expiration_date):
+  def addWorkflow(self, user_id, expiration_date, name = None):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -695,11 +696,13 @@ class JobServer ( object ):
         cursor.execute('''INSERT INTO workflows 
                          (user_id,
                           pickle_file_path,
-                          expiration_date)
-                          VALUES (?, ?, ?)''',
+                          expiration_date,
+                          name)
+                          VALUES (?, ?, ?, ?)''',
                          (user_id,
                           None, 
-                          expiration_date))
+                          expiration_date,
+                          name))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -767,11 +770,12 @@ class JobServer ( object ):
       
   def getWorkflow(self, wf_id):
     '''
-    Return the workflow object
+    Returns the workflow object.
     The wf_id must be valid.
     
     @type wf_id: C{WorflowIdentifier}
     @rtype: C{Workflow}
+    @return: workflow object
     '''
     with self.__lock:
       connection = self.__connect()
@@ -792,7 +796,33 @@ class JobServer ( object ):
     file.close()
     
     return workflow
+  
+  def getWorkflowInfo(self, wf_id):
+    '''
+    Returns a tuple with the workflow expiration date and name
+    The wf_id must be valid.
     
+    @type wf_id: C{WorflowIdentifier}
+    @rtype: (date, string)
+    @return: (expiration_date, name)
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        expiration_date, name = cursor.execute('''SELECT  
+                                                  expiration_date,
+                                                  name
+                                                  FROM workflows WHERE id=?''', [wf_id]).next()#supposes that the wf_id is valid
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getWorkflowInfo %s: %s \n' %(type(e), e), self.logger) 
+      cursor.close()
+      connection.close()
+      
+    return (expiration_date, self.__stringConversion(name))
+  
   
       
   ###########################################

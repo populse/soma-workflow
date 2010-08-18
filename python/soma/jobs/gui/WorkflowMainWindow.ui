@@ -51,6 +51,9 @@
     <addaction name="action_submit"/>
     <addaction name="action_transfer_infiles"/>
     <addaction name="action_transfer_outfiles"/>
+    <addaction name="separator"/>
+    <addaction name="action_delete_workflow"/>
+    <addaction name="action_change_expiration_date"/>
    </widget>
    <addaction name="menu_file"/>
    <addaction name="menuWorkflows"/>
@@ -65,22 +68,29 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>511</width>
-     <height>524287</height>
+     <width>561</width>
+     <height>95</height>
     </size>
    </property>
    <property name="features">
-    <set>QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
-    <string>Current Workflow</string>
+    <string>Workflow</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>4</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>workflow name:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
       <widget class="QLineEdit" name="lineedit_wf_name">
        <property name="minimumSize">
         <size>
@@ -96,24 +106,48 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="2" column="2">
       <widget class="QPushButton" name="button_submit">
        <property name="text">
         <string>Submit</string>
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QPushButton" name="button_transfer_input">
+     <item row="2" column="3">
+      <widget class="QPushButton" name="button_delete_wf">
        <property name="text">
-        <string>Transfer Input Files</string>
+        <string>Delete</string>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>expiration date:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QDateTimeEdit" name="dateTimeEdit_expiration"/>
+     </item>
+     <item row="3" column="2">
+      <widget class="QPushButton" name="button_change_exp_date">
+       <property name="text">
+        <string>Change date</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="4">
       <widget class="QPushButton" name="button_transfer_ouput">
        <property name="text">
         <string>Transfer Output Files</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4">
+      <widget class="QPushButton" name="button_transfer_input">
+       <property name="text">
+        <string>Transfer Input Files</string>
        </property>
       </widget>
      </item>
@@ -129,6 +163,9 @@
    </property>
    <property name="features">
     <set>QDockWidget::NoDockWidgetFeatures</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
    </property>
    <property name="windowTitle">
     <string>Submitted workflows</string>
@@ -188,7 +225,7 @@
           <x>0</x>
           <y>0</y>
           <width>280</width>
-          <height>199</height>
+          <height>348</height>
          </rect>
         </property>
        </widget>
@@ -196,6 +233,18 @@
      </item>
     </layout>
    </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_wf_statistics">
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
+   <property name="windowTitle">
+    <string>Workflow statistics</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_wf_stat"/>
   </widget>
   <action name="action_open_wf">
    <property name="text">
@@ -222,7 +271,35 @@
     <string>Transfer output files</string>
    </property>
   </action>
+  <action name="action_delete_workflow">
+   <property name="text">
+    <string>Delete workflow</string>
+   </property>
+   <property name="toolTip">
+    <string>delete the current workflow</string>
+   </property>
+  </action>
+  <action name="action_change_expiration_date">
+   <property name="text">
+    <string>Change expiration date</string>
+   </property>
+   <property name="toolTip">
+    <string>Change the workflow expiration date</string>
+   </property>
+  </action>
  </widget>
+ <tabstops>
+  <tabstop>lineedit_wf_name</tabstop>
+  <tabstop>button_submit</tabstop>
+  <tabstop>button_transfer_input</tabstop>
+  <tabstop>button_transfer_ouput</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>combo_submitted_wfs</tabstop>
+  <tabstop>dateTimeEdit_expiration</tabstop>
+  <tabstop>button_change_exp_date</tabstop>
+  <tabstop>button_delete_wf</tabstop>
+  <tabstop>scrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
@@ -232,8 +309,8 @@
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>183</x>
-     <y>64</y>
+     <x>535</x>
+     <y>76</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -248,8 +325,8 @@
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>289</x>
-     <y>64</y>
+     <x>758</x>
+     <y>76</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -264,8 +341,40 @@
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>422</x>
+     <x>758</x>
+     <y>109</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_delete_wf</sender>
+   <signal>clicked()</signal>
+   <receiver>action_delete_workflow</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>591</x>
      <y>64</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_change_exp_date</sender>
+   <signal>clicked()</signal>
+   <receiver>action_change_expiration_date</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>497</x>
+     <y>97</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

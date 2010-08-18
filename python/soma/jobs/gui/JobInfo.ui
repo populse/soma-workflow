@@ -86,24 +86,14 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="0">
+    <item row="5" column="0">
      <widget class="QLabel" name="label">
       <property name="text">
        <string>Ressource usage:</string>
       </property>
      </widget>
     </item>
-    <item row="4" column="1">
-     <widget class="QLineEdit" name="resource_usage">
-      <property name="frame">
-       <bool>false</bool>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="5" column="1">
+    <item row="6" column="1">
      <widget class="QLineEdit" name="stdout_path">
       <property name="frame">
        <bool>false</bool>
@@ -113,14 +103,14 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="0">
+    <item row="6" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
        <string>standard output file :</string>
       </property>
      </widget>
     </item>
-    <item row="6" column="1">
+    <item row="7" column="1">
      <widget class="QLineEdit" name="stderr_path">
       <property name="frame">
        <bool>false</bool>
@@ -130,12 +120,32 @@
       </property>
      </widget>
     </item>
-    <item row="6" column="0">
+    <item row="7" column="0">
      <widget class="QLabel" name="label_4">
       <property name="text">
        <string>standard error file :</string>
       </property>
      </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Terminating signal:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="term_signal">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
+     <widget class="QComboBox" name="resource_usage"/>
     </item>
    </layout>
   </widget>

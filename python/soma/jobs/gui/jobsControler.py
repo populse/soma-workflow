@@ -39,6 +39,7 @@ class JobsControler(object):
       if cid != OCFG_SECTION_CLIENT:
         resource_ids.append(cid)
         
+        
   def isRemoteConnection(self, resource_id):
     submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     is_remote = True
@@ -62,6 +63,25 @@ class JobsControler(object):
     workflow = pickle.load(file)
     file.close()
     return workflow
+  
+  def getSubmittedWorkflows(self):
+    '''
+    returns a list of tuple:
+    - workflow id
+    - expiration date
+    - workflow name
+    '''
+    result = []
+    result.append((-1, None, " "))
+    for wf_id in self.jobs.workflows():
+      expiration_date, name = self.jobs.workflowInformation(wf_id)
+      result.append((wf_id, expiration_date, name))
+    return result
+    
+  def getWorkflow(self, wf_id):
+    workflow = self.jobs.submittedWorkflow(wf_id)
+    expiration_date = self.jobs.workflowInformation(wf_id)[0]
+    return (workflow, expiration_date)
     
   def generateWorkflowExample(self, file_path):
     examples_dir = self.test_config.get(self.hostname, 'job_examples_dir')
@@ -143,8 +163,12 @@ class JobsControler(object):
     file.close()
     
     
-  def submitWorkflow(self, workflow):
-    return self.jobs.submitWorkflow(workflow) 
+  def submitWorkflow(self, workflow, name):
+    return self.jobs.submitWorkflow(workflow = workflow,                                               disposal_timeout = 168,
+                                    name = name) 
+                                    
+  def deleteWorkflow(self, wf_id):
+    return self.jobs.disposeWorkflow(wf_id)
     
   def transferInputFiles(self, workflow):
     for node in workflow.full_nodes:

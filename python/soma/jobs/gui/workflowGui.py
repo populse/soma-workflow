@@ -5,6 +5,7 @@ from soma.jobs.constants import *
 import time
 import threading
 import os
+from datetime import date
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -19,103 +20,159 @@ Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'Tra
 
 class WorkflowWidget(QtGui.QMainWindow):
   
-  def __init__(self, workflowControler, parent = None, flags = 0):
+  def __init__(self, controler, parent = None, flags = 0):
     super(WorkflowWidget, self).__init__(parent)
     
     self.ui = Ui_WorkflowMainWindow()
     self.ui.setupUi(self)
 
-    self.workflowControler = workflowControler
-    self.workflowControler.connect('neurospin_test_cluster')
-    assert(self.workflowControler.isConnected())
+    self.controler = controler
+    self.controler.connect('neurospin_test_cluster')
+    assert(self.controler.isConnected())
     
     self.setWindowTitle("Workflows !!")
    
-    self.workflowItemModel = None
+    self.current_workflow = None
+    self.expiration_date = None
+    self.itemModel = None
    
-    self.workflowGraphView = WorkflowGraphView(self.workflowControler, self)
-    graphViewLayout = QtGui.QVBoxLayout()
-    graphViewLayout.addWidget(self.workflowGraphView)
-    self.ui.graphViewScrollAreaWidgetContents.setLayout(graphViewLayout)
+    self.graphWidget = WorkflowGraphView(self.controler, self)
+    graphWidgetLayout = QtGui.QVBoxLayout()
+    graphWidgetLayout.addWidget(self.graphWidget)
+    self.ui.graphViewScrollAreaWidgetContents.setLayout(graphWidgetLayout)
     
-    self.workflowElementInfo = WorkflowElementInfo(self)
+    self.itemInfoWidget = WorkflowElementInfo(self)
     itemInfoLayout = QtGui.QVBoxLayout()
-    itemInfoLayout.addWidget(self.workflowElementInfo)
+    itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+    
+    
 
     self.ui.action_submit.triggered.connect(self.submitWorkflow)
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
     self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
     self.ui.action_open_wf.triggered.connect(self.openWorkflow)
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
-
+    self.ui.action_delete_workflow.triggered.connect(self.deleteWorkflow)
+    self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
+    
+    
+    self.updateWorkflowList()
+    self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+    
+    
 
   @QtCore.pyqtSlot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
     if file_path:
-      self.current_workflow = self.workflowControler.readWorkflowFromFile(file_path)
+      self.current_workflow = self.controler.readWorkflowFromFile(file_path)
       self.currentWorkflowChanged()
+      self.ui.combo_submitted_wfs.setCurrentIndex(0)
+      self.ui.lineedit_wf_name.clear()
+      self.ui.dateTimeEdit_expiration.setDate(date.today())
     
   @QtCore.pyqtSlot()
   def createWorkflowExample(self):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
     if file_path:
-      self.workflowControler.generateWorkflowExample(file_path)
+      self.controler.generateWorkflowExample(file_path)
 
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
-    self.current_workflow = self.workflowControler.submitWorkflow(self.current_workflow)
+    name = unicode(self.ui.lineedit_wf_name.text())
+    if name == "": name = None
+    self.current_workflow = self.controler.submitWorkflow(self.current_workflow, name)
     self.currentWorkflowChanged()
+    self.updateWorkflowList()
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    self.workflowControler.transferInputFiles(self.current_workflow)
+    self.controler.transferInputFiles(self.current_workflow)
   
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.workflowControler.transferOutputFiles(self.current_workflow)
+    self.controler.transferOutputFiles(self.current_workflow)
+    
+  @QtCore.pyqtSlot(int)
+  def workflowSelectionChanged(self, index):
+    if index <0 or index >= self.ui.combo_submitted_wfs.count():
+      return
+    wf_id = self.ui.combo_submitted_wfs.itemData(index).toInt()[0]
+    if wf_id != -1:
+      (self.current_workflow, self.expiration_date) = self.controler.getWorkflow(wf_id)
+      self.currentWorkflowChanged()
+      
+  @QtCore.pyqtSlot()
+  def deleteWorkflow(self):
+    if self.current_workflow.wf_id == -1: return
+    
+    if self.current_workflow.name:
+      name = self.current_workflow.name
+    else: 
+      name = repr(self.current_workflow.wf_id)
+    
+    answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the worflow " + name +"?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.NoButton)
+    if answer != QtGui.QMessageBox.Ok: return
+    
+    self.controler.deleteWorkflow(self.current_workflow.wf_id)
+    self.current_workflow = None
+    self.currentWorkflowChanged()
+    self.updateWorkflowList()
+    
+  @QtCore.pyqtSlot()
+  def changeExpirationDate(self):
+    #WIP
+    pass
     
   def currentWorkflowChanged(self):
     
-    if self.workflowItemModel:
-     self.workflowItemModel.dataChanged.disconnect(self.workflowGraphView.modelChanged)
-    self.workflowItemModel = WorkflowItemModel(self.current_workflow, self.workflowControler.jobs, self)
-    self.ui.treeView.setModel(self.workflowItemModel)
-    self.workflowElementInfo.setSelectionModel(self.ui.treeView.selectionModel())
-    #self.ui.treeView.expandAll()
-    self.workflowGraphView.setWorflow(self.current_workflow)
-    self.workflowItemModel.dataChanged.connect(self.workflowGraphView.modelChanged)
-  
-    
-class WorkflowGraphView(QtGui.QLabel):
-  
-  def __init__(self, controler, parent = None):
-    super(WorkflowGraphView, self).__init__(parent)
-    
-    self.controler = controler
-    self.workflow = None
-
-                                        
-  def setWorflow(self, workflow):
-    self.workflow = workflow
-    
-  @QtCore.pyqtSlot()
-  def modelChanged(self):
-    if self.workflow:
-      image_file_path = self.controler.printWorkflow(self.workflow)
-      self.image = QtGui.QImage(image_file_path)
-      self.pixmap = QtGui.QPixmap.fromImage(self.image)
-      self.setPixmap(self.pixmap)
+    if not self.current_workflow:
+      self.ui.treeView.setModel(None)
+      self.graphWidget.clear()
+      self.itemInfoWidget.clear()
+      self.ui.lineedit_wf_name.clear()
+      self.ui.dateTimeEdit_expiration.setDate(date.today())
+      
     else:
-      self.setPixmap(QtGui.QPixmap())
-
+      if self.itemModel:
+        self.itemModel.dataChanged.disconnect(self.graphWidget.dataChanged)
+        self.itemModel.dataChanged.disconnect(self.itemInfoWidget.dataChanged)
+          
+      self.itemModel = WorkflowItemModel(self.current_workflow, self.controler.jobs, self)
+      self.ui.treeView.setModel(self.itemModel)
+      
+      if self.current_workflow.name:
+        self.ui.lineedit_wf_name.setText(self.current_workflow.name)
+      
+      self.itemModel.dataChanged.connect(self.graphWidget.dataChanged)
+      self.graphWidget.setWorflow(self.current_workflow)
+      self.itemModel.dataChanged.connect(self.itemInfoWidget.dataChanged)
+      self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
+      print "expiration date: " + repr(self.expiration_date)
+      #self.ui.dateTimeEdit_expiration.setDate(self.expiration_date)
+  
+  def updateWorkflowList(self):
+    
+    self.ui.combo_submitted_wfs.clear()
+    for wf_info in self.controler.getSubmittedWorkflows():
+      wf_id, expiration_date, workflow_name = wf_info
+      if not workflow_name: workflow_name = repr(wf_id)
+      self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
+    
+    if self.current_workflow:
+      index = self.ui.combo_submitted_wfs.findData(self.current_workflow.wf_id)
+      self.ui.combo_submitted_wfs.setCurrentIndex(index)
+    else:
+      self.ui.combo_submitted_wfs.setCurrentIndex(0)
+      
 class WorkflowItem(object):
   
   GROUP = "group"
   JOB = "job"
   OUTPUT_FILE_T = "output_file_transfer"
   INPUT_FILE_T = "input_file_transfer"
+  
   
   def __init__(self, it_id, 
                parent = -1, 
@@ -124,11 +181,45 @@ class WorkflowItem(object):
                data = None,
                children_nb = 0):
     self.it_id = it_id
-    self.parent = parent
+    self.parent = parent # parent_id
     self.row = row
-    self.it_type = it_type
+    if it_type:
+      self.it_type = it_type
+    else: 
+      self.it_type = WorkflowItem.GROUP
     self.data = data
     self.children = [-1 for i in range(children_nb)]   
+    
+    self.state = {} 
+    if self.it_type == WorkflowItem.JOB:
+      self.state["status"] = " "
+      self.state["exit_info"] = (" ", " ", " ", " ")
+    elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
+      self.state["transfer_status"] = " "
+    
+  def updateState(self, jobs):
+    '''
+    @type  jobs: soma.jobs.jobClient.job
+    @param jobs: jobs interface (connection)
+    @rtype: boolean
+    @returns: did the state change?
+    '''
+    state_changed = False
+    if self.it_type == WorkflowItem.JOB and self.data.job_id != -1 :
+      status = jobs.status(self.data.job_id)
+      state_changed = state_changed or status != self.state["status"]
+      self.state["status"]=status
+      #if state_changed and status == DONE or status == FAILED:
+      exit_info =  jobs.exitInformation(self.data.job_id)
+      state_changed = state_changed or exit_info != self.state["exit_info"]
+      self.state["exit_info"] = jobs.exitInformation(self.data.job_id)
+    elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
+      transfer_status = jobs.transferStatus(self.data.local_path)
+      state_changed = state_changed or transfer_status != self.state["transfer_status"]
+      self.state["transfer_status"] = transfer_status
+    return state_changed
+    
+
     
 class WorkflowItemModel(QtCore.QAbstractItemModel):
   
@@ -269,17 +360,32 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     
     def updateLoop(self, interval):
       while True:
-        row = self.rowCount(QtCore.QModelIndex())
-        self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()),
-                              self.index(row,0, QtCore.QModelIndex()))
+        self.checkChanges()
         time.sleep(interval)
+    
+    row = self.rowCount(QtCore.QModelIndex())
+    self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()),
+                          self.index(row,0, QtCore.QModelIndex()))
     
     self.__update_loop = threading.Thread(name = "WorflowItemModel_update_loop",
                                          target = updateLoop,
-                                         args = (self, 1))
+                                         args = (self, 3))
+    
     self.__update_loop.setDaemon(True)
     self.__update_loop.start()
     
+    
+  def checkChanges(self):
+    data_changed = False
+    for item in self.items.values():
+      item_changed = item.updateState(self.jobs)
+      data_changed = data_changed or item_changed
+      #self.dataChanged.emit(self.createIndex(item.row, 0, item), self.createIndex(item.row, 0, item))
+    
+    if data_changed:
+      row = self.rowCount(QtCore.QModelIndex())
+      self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()), self.index(row,0, QtCore.QModelIndex()))
+        
     
     
   def index(self, row, column, parent=QtCore.QModelIndex()):
@@ -380,7 +486,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
           return item.data.name
       else:
-        status = self.jobs.status(item.data.job_id)
+        status = item.state["status"]
+        #status = self.jobs.status(item.data.job_id)
         # not submitted
         if status == NOT_SUBMITTED:
           if role == QtCore.Qt.DisplayRole:
@@ -391,15 +498,16 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             return GRAY
         # Done or Failed
         if status == DONE or status == FAILED:
-          exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(item.data.job_id)
+          #exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(item.data.job_id)
+          exit_status, exit_value, term_signal, resource_usage = item.state["exit_info"]
           if role == QtCore.Qt.DisplayRole:
             #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
             return item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
-            if status == DONE:
+            if status == DONE and exit_status == FINISHED_REGULARLY:
               #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
               return LIGHT_BLUE
-            if status == FAILED:
+            else:
               #print "<<<< data QtCore.Qt.DecorationRole RED"
               return RED
           
@@ -435,7 +543,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           #print "<<<< data QtCore.Qt.DisplayRole " + display
           return display
       else:
-        status = self.jobs.transferStatus(item.data.local_path)
+        #status = self.jobs.transferStatus(item.data.local_path)
+        status = item.state["transfer_status"]
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + display + " => " + status
           return display + " => " + status
@@ -481,6 +590,14 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
       self.infoWidget = None
+      
+  def clear(self):
+    if self.infoWidget:
+      self.infoWidget.hide()
+      self.vLayout.removeWidget(self.infoWidget)
+    self.infoWidget = None
+    self.dataChanged()
+    
     
   @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
   def currentChanged(self, current, previous):
@@ -502,6 +619,11 @@ class WorkflowElementInfo(QtGui.QWidget):
       
     self.update()
     
+  @QtCore.pyqtSlot()
+  def dataChanged(self):
+    if self.infoWidget:
+      self.infoWidget.dataChanged()
+      
     
     
 class JobInfoWidget(QtGui.QTabWidget):
@@ -513,10 +635,31 @@ class JobInfoWidget(QtGui.QTabWidget):
     self.ui.setupUi(self)
     
     self.jobItem = jobItem
+    
+    self.dataChanged()
+    
+  def dataChanged(self):
  
     self.ui.job_name.setText(self.jobItem.data.name)
+    self.ui.job_status.setText(self.jobItem.state["status"])
+    exit_status, exit_value, term_signal, resource_usage = self.jobItem.state["exit_info"]
+    if exit_status: 
+      self.ui.exit_status.setText(exit_status)
+    else: 
+      self.ui.exit_status.setText(" ")
+    if exit_value: 
+      self.ui.exit_value.setText(exit_value)
+    else: 
+      self.ui.exit_value.setText(" ")
+    if term_signal: 
+      self.ui.term_signal.setText(term_signal)
+    else: 
+      self.ui.term_signal.setText(" ")
+    if resource_usage: 
+      self.ui.resource_usage.insertItems(0, resource_usage.split())
+    else: 
+      self.ui.resource_usage.clear()
     
-  
 class TransferInfoWidget(QtGui.QTabWidget):
   
   def __init__(self, transferItem, parent = None):
@@ -525,23 +668,48 @@ class TransferInfoWidget(QtGui.QTabWidget):
     self.ui.setupUi(self)
     
     self.transferItem = transferItem
+    self.dataChanged()
+    
+  def dataChanged(self):
     
     self.ui.transfer_name.setText(self.transferItem.data.name)
-    self.ui.transfer_status.setText(" ")
+    self.ui.transfer_status.setText(self.transferItem.state["transfer_status"])
     
-    self.ui.remote_path.setText(transferItem.data.remote_path)
-    self.ui.remote_paths.setText(" ")#self.transferItem.data.remote_paths
+    self.ui.remote_path.setText(self.transferItem.data.remote_path)
+    if self.transferItem.data.remote_paths:
+      self.ui.remote_paths.insertItems(0, self.transferItem.data.remote_paths)
+    else:
+      self.ui.remote_paths.clear()
     
     if self.transferItem.data.local_path:
       self.ui.local_path.setText(self.transferItem.data.local_path)
-    else: self.ui.local_path.setText(" ")
+    else: 
+      self.ui.local_path.setText(" ")
     
     
-    
-class WorkflowTreeView(QtGui.QTreeView):
+class WorkflowGraphView(QtGui.QLabel):
   
-  def __init__(self, parent = None):
-    super(WorkflowTreeView, self).__init__(parent)
-    self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-   # self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
+  def __init__(self, controler, parent = None):
+    super(WorkflowGraphView, self).__init__(parent)
     
+    self.controler = controler
+    self.workflow = None
+
+                                        
+  def setWorflow(self, workflow):
+    self.workflow = workflow
+    self.dataChanged()
+    
+  def clear(self):
+    self.workflow = None
+    self.dataChanged()
+    
+  @QtCore.pyqtSlot()
+  def dataChanged(self):
+    if self.workflow:
+      image_file_path = self.controler.printWorkflow(self.workflow)
+      self.image = QtGui.QImage(image_file_path)
+      self.pixmap = QtGui.QPixmap.fromImage(self.image)
+      self.setPixmap(self.pixmap)
+    else:
+      self.setPixmap(QtGui.QPixmap())
