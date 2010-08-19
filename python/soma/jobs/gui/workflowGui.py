@@ -235,7 +235,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.combo_submitted_wfs.setCurrentIndex(index)
         self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
         
-    
+      #self.graphWidget.resize(self.graphWidget.pixmap.size()*2.0)
 
   
   def updateWorkflowList(self):
@@ -276,6 +276,11 @@ class WorkflowItem(object):
     if self.it_type == WorkflowItem.JOB:
       self.state["status"] = " "
       self.state["exit_info"] = (" ", " ", " ", " ")
+      self.state["stdout_path"] = " "
+      self.state["stderr_path"] = " "
+      self.state["stdout"] = " "
+      self.state["stderr"] = " "
+      
     elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
       self.state["transfer_status"] = " "
     
@@ -295,6 +300,23 @@ class WorkflowItem(object):
       exit_info =  jobs.exitInformation(self.data.job_id)
       state_changed = state_changed or exit_info != self.state["exit_info"]
       self.state["exit_info"] = jobs.exitInformation(self.data.job_id)
+      
+      if self.state["stdout"] == " " and (status == DONE or status == FAILED):
+        line = jobs.stdoutReadLine(self.data.job_id)
+        stdout = ""
+        while line:
+          stdout = stdout + line + "\n"
+          line = jobs.stdoutReadLine(self.data.job_id)
+        self.state["stdout"] = stdout
+          
+      if self.state["stderr"] == " " and (status == DONE or status == FAILED):
+        line = jobs.stderrReadLine(self.data.job_id)
+        stderr = ""
+        while line:
+          stderr = stderr + line + "\n"
+          line = jobs.stderrReadLine(self.data.job_id)
+        self.state["stderr"] = stderr
+      
     elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
       transfer_status = jobs.transferStatus(self.data.local_path)
       state_changed = state_changed or transfer_status != self.state["transfer_status"]
@@ -585,7 +607,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           exit_status, exit_value, term_signal, resource_usage = item.state["exit_info"]
           if role == QtCore.Qt.DisplayRole:
             #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
-            return item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
+            return item.data.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
             if status == DONE and exit_status == FINISHED_REGULARLY:
               #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
@@ -743,6 +765,12 @@ class JobInfoWidget(QtGui.QTabWidget):
     else: 
       self.ui.resource_usage.clear()
     
+    self.ui.stdout_path.setText(self.jobItem.state["stdout_path"])
+    self.ui.stderr_path.setText(self.jobItem.state["stderr_path"])
+    self.ui.stdout_file_contents.setText(self.jobItem.state["stdout"])
+    self.ui.stderr_file_contents.setText(self.jobItem.state["stderr"])
+    
+    
 class TransferInfoWidget(QtGui.QTabWidget):
   
   def __init__(self, transferItem, parent = None):
@@ -777,6 +805,12 @@ class WorkflowGraphView(QtGui.QLabel):
     
     self.controler = controler
     self.workflow = None
+   
+    #self.setBackgroundRole(QtGui.QPalette.Base)
+    #self.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+    #self.setScaledContents(True)
+    
+    #self.resize(200,300)
 
                                         
   def setWorflow(self, workflow):
@@ -796,3 +830,4 @@ class WorkflowGraphView(QtGui.QLabel):
       self.setPixmap(self.pixmap)
     else:
       self.setPixmap(QtGui.QPixmap())
+    
