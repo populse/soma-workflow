@@ -595,18 +595,19 @@ class Jobs(object):
 
   ########## WORKFLOW SUBMISSION ####################################
   
-  def submitWorkflow(self, workflow, disposal_timeout=168, name = None):
+  def submitWorkflow(self, workflow, expiration_date=None, name = None):
     '''
     Submits a workflow to the system and returns the id of each 
     submitted workflow element (Job or file transfer).
     
     @type  workflow: L{Workflow}
     @param workflow: workflow description (nodes and node dependencies)
+    @type  expiration_date: datetime.datetime
     @rtype: L{Workflow}
     @return: The workflow compemented by the id of each submitted 
     workflow element.
     '''
-    submittedWF =  self.__js_proxy.submitWorkflow(workflow, disposal_timeout, name)
+    submittedWF =  self.__js_proxy.submitWorkflow(workflow, expiration_date, name)
     return submittedWF
   
   
@@ -615,6 +616,17 @@ class Jobs(object):
     Removes a workflow and all its associated nodes (file transfers and jobs)
     '''
     self.__js_proxy.disposeWorkflow(workflow_id)
+    
+  def changeWorkflowExpirationDate(self, workflow_id, new_expiration_date):
+    '''
+    Ask a new expiration date for the workflow.
+    Return True if the workflow expiration date was set to the new date.
+        
+    @type  workflow_id: C{WorkflowIdentifier}
+    @type  expiration_date: datetime.datetime
+    @rtype: boolean
+    '''
+    return self.__js_proxy.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
 
   ########## MONITORING #############################################
 

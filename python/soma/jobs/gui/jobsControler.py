@@ -163,12 +163,15 @@ class JobsControler(object):
     file.close()
     
     
-  def submitWorkflow(self, workflow, name):
-    return self.jobs.submitWorkflow(workflow = workflow,                                               disposal_timeout = 168,
+  def submitWorkflow(self, workflow, name, expiration_date):
+    return self.jobs.submitWorkflow(workflow = workflow,                                               expiration_date = expiration_date,
                                     name = name) 
                                     
   def deleteWorkflow(self, wf_id):
     return self.jobs.disposeWorkflow(wf_id)
+  
+  def changeWorkflowExpirationDate(self, wf_id, date):
+    return self.jobs.changeWorkflowExpirationDate(wf_id, date)
     
   def transferInputFiles(self, workflow):
     for node in workflow.full_nodes:

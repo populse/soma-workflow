@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WorkflowMainWindow</class>
- <widget class="QMainWindow" name="WorkflowMainWindow">
+ <class>toolbutton_submit</class>
+ <widget class="QMainWindow" name="toolbutton_submit">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1077</width>
+    <width>739</width>
     <height>698</height>
    </rect>
   </property>
@@ -32,7 +32,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1077</width>
+     <width>739</width>
      <height>24</height>
     </rect>
    </property>
@@ -68,7 +68,7 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>561</width>
+     <width>598</width>
      <height>95</height>
     </size>
    </property>
@@ -106,20 +106,6 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="2">
-      <widget class="QPushButton" name="button_submit">
-       <property name="text">
-        <string>Submit</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="3">
-      <widget class="QPushButton" name="button_delete_wf">
-       <property name="text">
-        <string>Delete</string>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
@@ -130,24 +116,104 @@
      <item row="3" column="1">
       <widget class="QDateTimeEdit" name="dateTimeEdit_expiration"/>
      </item>
-     <item row="3" column="2">
-      <widget class="QPushButton" name="button_change_exp_date">
+     <item row="2" column="2">
+      <widget class="QToolButton" name="toolButton_submit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
        <property name="text">
-        <string>Change date</string>
+        <string>Submit</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextOnly</enum>
        </property>
       </widget>
      </item>
-     <item row="3" column="4">
-      <widget class="QPushButton" name="button_transfer_ouput">
+     <item row="3" column="2">
+      <widget class="QToolButton" name="toolButton_change_exp_date">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
        <property name="text">
-        <string>Transfer Output Files</string>
+        <string>Change date</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextOnly</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="3">
+      <widget class="QToolButton" name="toolButton_button_delete_wf">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>92</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
+       <property name="text">
+        <string>Delete</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextOnly</enum>
        </property>
       </widget>
      </item>
      <item row="2" column="4">
-      <widget class="QPushButton" name="button_transfer_input">
+      <widget class="QToolButton" name="toolButton_transfer_input">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
        <property name="text">
         <string>Transfer Input Files</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextOnly</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="4">
+      <widget class="QToolButton" name="toolButton_transfer_output">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
+       <property name="text">
+        <string>Transfer Output Files</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextOnly</enum>
        </property>
       </widget>
      </item>
@@ -263,17 +329,17 @@
   </action>
   <action name="action_transfer_infiles">
    <property name="text">
-    <string>Transfer Input File</string>
+    <string>Transfer Input Files</string>
    </property>
   </action>
   <action name="action_transfer_outfiles">
    <property name="text">
-    <string>Transfer output files</string>
+    <string>Transfer Output Files</string>
    </property>
   </action>
   <action name="action_delete_workflow">
    <property name="text">
-    <string>Delete workflow</string>
+    <string>Delete</string>
    </property>
    <property name="toolTip">
     <string>delete the current workflow</string>
@@ -281,7 +347,7 @@
   </action>
   <action name="action_change_expiration_date">
    <property name="text">
-    <string>Change expiration date</string>
+    <string>Change date</string>
    </property>
    <property name="toolTip">
     <string>Change the workflow expiration date</string>
@@ -290,97 +356,11 @@
  </widget>
  <tabstops>
   <tabstop>lineedit_wf_name</tabstop>
-  <tabstop>button_submit</tabstop>
-  <tabstop>button_transfer_input</tabstop>
-  <tabstop>button_transfer_ouput</tabstop>
   <tabstop>treeView</tabstop>
   <tabstop>combo_submitted_wfs</tabstop>
   <tabstop>dateTimeEdit_expiration</tabstop>
-  <tabstop>button_change_exp_date</tabstop>
-  <tabstop>button_delete_wf</tabstop>
   <tabstop>scrollArea</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>button_submit</sender>
-   <signal>clicked()</signal>
-   <receiver>action_submit</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>535</x>
-     <y>76</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_transfer_input</sender>
-   <signal>clicked()</signal>
-   <receiver>action_transfer_infiles</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>758</x>
-     <y>76</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_transfer_ouput</sender>
-   <signal>clicked()</signal>
-   <receiver>action_transfer_outfiles</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>758</x>
-     <y>109</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_delete_wf</sender>
-   <signal>clicked()</signal>
-   <receiver>action_delete_workflow</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>591</x>
-     <y>64</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_change_exp_date</sender>
-   <signal>clicked()</signal>
-   <receiver>action_change_expiration_date</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>497</x>
-     <y>97</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

@@ -231,7 +231,7 @@ class DrmaaJobScheduler( object ):
     @type  workflow_id: int
     @param workflow_id: workflow id if the job belongs to any, -1 otherwise
     '''
-    expiration_date = date.today() + timedelta(hours=jobTemplate.disposal_timeout) 
+    expiration_date = datetime.now() + timedelta(hours=jobTemplate.disposal_timeout) 
     parallel_config_name = None
     max_node_number = 1
 
@@ -328,7 +328,7 @@ class DrmaaJobScheduler( object ):
         self.logger.error("Could not submit job: Drmaa problem.");
         return -1
       
-      self.__jobServer.setSubmissionInformation(job.jobTemplate.job_id, drmaaSubmittedJobId, date.today())
+      self.__jobServer.setSubmissionInformation(job.jobTemplate.job_id, drmaaSubmittedJobId, datetime.now())
       job.drmaa_id = drmaaSubmittedJobId
       job.status = constants.UNDETERMINED
       
@@ -399,10 +399,9 @@ class DrmaaJobScheduler( object ):
 
   ########## WORKFLOW SUBMISSION ############################################
   
-  def submitWorkflow(self, workflow_o, disposal_timeout, name):
+  def submitWorkflow(self, workflow_o, expiration_date, name):
     # type checking for the workflow ?
     workflow = copy.deepcopy(workflow_o)
-    expiration_date = date.today() + timedelta(hours=disposal_timeout) 
     workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date, name)
     workflow.wf_id = workflow_id 
     workflow.name = name
@@ -792,7 +791,7 @@ class JobScheduler( object ):
       os.mkdir(local_path)
     else:
       local_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_path)
-    expirationDate = date.today() + timedelta(hours=disposal_timeout) 
+    expirationDate = datetime.now() + timedelta(hours=disposal_timeout) 
     self.__jobServer.addTransfer(local_path, remote_path, expirationDate, self.__user_id, -1, remote_paths)
     return local_path
 
@@ -920,11 +919,11 @@ class JobScheduler( object ):
 
   ########## WORKFLOW SUBMISSION ############################################
   
-  def submitWorkflow(self, workflow, disposal_timeout, name):
+  def submitWorkflow(self, workflow, expiration_date, name):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    return self.__drmaaJS.submitWorkflow(workflow, disposal_timeout, name)
+    return self.__drmaaJS.submitWorkflow(workflow, expiration_date, name)
   
   def disposeWorkflow(self, workflow_id):
     '''
@@ -935,6 +934,21 @@ class JobScheduler( object ):
       return
     
     self.__jobServer.deleteWorkflow(workflow_id)
+    
+  def changeWorkflowExpirationDate(self, workflow_id, new_expiration_date):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
+      print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      return False
+    
+    if new_expiration_date < datetime.now(): 
+      return False
+    # TO DO: Add other rules?
+    
+    self.__jobServer.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
+    return True
 
   ########## SERVER STATE MONITORING ########################################
 
@@ -1007,7 +1021,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
-      print "Could get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
+      print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
       return 
     
     return self.__jobServer.getTransferStatus(local_path)

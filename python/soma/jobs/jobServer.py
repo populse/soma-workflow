@@ -483,7 +483,7 @@ class JobServer ( object ):
       cursor = connection.cursor()
       try:
         login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[0]#supposes that the user_id is valid
-        login = login.encode('utf-8')
+        login = self.__stringConversion(login)
         cursor.execute('INSERT INTO fileCounter (foo) VALUES (?)', [0])
         file_num = cursor.lastrowid
       except Exception, e:
@@ -614,10 +614,10 @@ class JobServer ( object ):
         raise JobServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
       if info:
         if info[4]:
-          remote_paths = info[4].encode('utf-8').split(file_separator)
+          remote_paths = self.__stringConversion(info[4]).split(file_separator)
         else: 
           remote_paths = None
-        result = (info[0].encode('utf-8'), info[1].encode('utf-8'), info[2].encode('utf-8'), info[3], remote_paths)
+        result = (self.__stringConversion(info[0]), self.__stringConversion(info[1]), self.__strToDateConversion(info[2]), info[3], remote_paths)
       else:
         result = (None, None, None, -1, None)
       cursor.close()
@@ -643,7 +643,7 @@ class JobServer ( object ):
         connection.close()
         raise JobServerError('Error getTransferStatus %s: %s \n' %(type(e), e), self.logger) 
       if status:
-        status = status.encode('utf-8')
+        status = self.__stringConversion(status)
       cursor.close()
       connection.close()
  
@@ -768,6 +768,27 @@ class JobServer ( object ):
       cursor.close()
       connection.close()
       
+  def changeWorkflowExpirationDate(self, wf_id, new_date):
+    '''
+    Change the workflow expiration date.
+    
+    @type wf_id: C{WorflowIdentifier}
+    @type new_date: datetime.datetime
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        cursor.execute('UPDATE workflows SET expiration_date=? WHERE id=?', (new_date, wf_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error changeWorkflowExpirationDate %s: %s \n' %(type(e), e), self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+      
   def getWorkflow(self, wf_id):
     '''
     Returns the workflow object.
@@ -821,7 +842,7 @@ class JobServer ( object ):
       cursor.close()
       connection.close()
       
-    return (expiration_date, self.__stringConversion(name))
+    return (self.__strToDateConversion(expiration_date), self.__stringConversion(name))
   
   
       
@@ -998,11 +1019,8 @@ class JobServer ( object ):
         cursor.close()
         connection.close()
         raise JobServerError('Error getJobStatus %s: %s \n' %(type(e), e), self.logger) 
-      if status: status = status.encode('utf-8')
-      if strdate:
-        date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
-      else:
-        date = None
+      status = self.__stringConversion(status)
+      date = self.__strToDateConversion(strdate)
       cursor.close()
       connection.close()
  
@@ -1192,14 +1210,14 @@ class JobServer ( object ):
     
     dbJob = DBJob(user_id,
     
-                  expiration_date,
+                  self.__strToDateConversion(expiration_date),
                   join_errout,
                   self.__stringConversion(stdout_file),
                   custom_submission,
                   
                   drmaa_id,
                   self.__stringConversion(status),
-                  last_status_update,
+                  self.__strToDateConversion(last_status_update),
                   workflow_id,
                   
                   self.__stringConversion(command),
@@ -1210,7 +1228,7 @@ class JobServer ( object ):
                   max_node_number,
                   
                   self.__stringConversion(name_description),
-                  submission_date,
+                  self.__strToDateConversion(submission_date),
                   self.__stringConversion(exit_status),
                   exit_value,
                   self.__stringConversion(terminating_signal),
@@ -1224,6 +1242,12 @@ class JobServer ( object ):
     else: 
       return string
   
+  def __strToDateConversion(self,strdate):
+    if strdate:
+      date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
+    else:
+      date = None
+    return date
 
   ###############################################
   # INPUTS/OUTPUTS
@@ -1379,7 +1403,7 @@ class JobServer ( object ):
       try:
         for row in cursor.execute('SELECT local_file_path FROM transfers WHERE user_id=?', [user_id]):
           local_file = row[0]
-          local_file = local_file.encode('utf-8')
+          local_file = self.__stringConversion(local_file)
           local_file_paths.append(local_file)
       except Exception, e:
         cursor.close()

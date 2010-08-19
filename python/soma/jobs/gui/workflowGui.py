@@ -6,6 +6,8 @@ import time
 import threading
 import os
 from datetime import date
+from datetime import datetime
+from datetime import timedelta
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -45,9 +47,13 @@ class WorkflowWidget(QtGui.QMainWindow):
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
-    
-    
 
+    self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
+    self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
+    self.ui.toolButton_transfer_output.setDefaultAction(self.ui.action_transfer_outfiles)
+    self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
+    self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
+    
     self.ui.action_submit.triggered.connect(self.submitWorkflow)
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
     self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
@@ -57,20 +63,18 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     
     
-    self.updateWorkflowList()
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
-    
-    
+    self.updateWorkflowList()
+    self.currentWorkflowChanged()
 
   @QtCore.pyqtSlot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
     if file_path:
+      self.currentWorkflowAboutToChange()
       self.current_workflow = self.controler.readWorkflowFromFile(file_path)
       self.currentWorkflowChanged()
-      self.ui.combo_submitted_wfs.setCurrentIndex(0)
-      self.ui.lineedit_wf_name.clear()
-      self.ui.dateTimeEdit_expiration.setDate(date.today())
+      
     
   @QtCore.pyqtSlot()
   def createWorkflowExample(self):
@@ -80,11 +84,20 @@ class WorkflowWidget(QtGui.QMainWindow):
 
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
+    assert(self.current_workflow)
+    
     name = unicode(self.ui.lineedit_wf_name.text())
     if name == "": name = None
-    self.current_workflow = self.controler.submitWorkflow(self.current_workflow, name)
-    self.currentWorkflowChanged()
+    qtdt = self.ui.dateTimeEdit_expiration.dateTime()
+    date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                    qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+    
+    self.currentWorkflowAboutToChange()
+    self.current_workflow = self.controler.submitWorkflow(self.current_workflow, name, date)
+    self.expiration_date = date
     self.updateWorkflowList()
+    self.currentWorkflowChanged()
+    
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
@@ -98,14 +111,19 @@ class WorkflowWidget(QtGui.QMainWindow):
   def workflowSelectionChanged(self, index):
     if index <0 or index >= self.ui.combo_submitted_wfs.count():
       return
+    
     wf_id = self.ui.combo_submitted_wfs.itemData(index).toInt()[0]
+    self.currentWorkflowAboutToChange()
     if wf_id != -1:
       (self.current_workflow, self.expiration_date) = self.controler.getWorkflow(wf_id)
-      self.currentWorkflowChanged()
-      
+    else:
+      self.current_workflow = None
+      self.expiration_date = datetime.now()
+    self.currentWorkflowChanged()
+    
   @QtCore.pyqtSlot()
   def deleteWorkflow(self):
-    if self.current_workflow.wf_id == -1: return
+    assert(self.current_workflow and self.current_workflow.wf_id != -1)
     
     if self.current_workflow.name:
       name = self.current_workflow.name
@@ -114,58 +132,122 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the worflow " + name +"?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.NoButton)
     if answer != QtGui.QMessageBox.Ok: return
-    
+
+    self.currentWorkflowAboutToChange()
     self.controler.deleteWorkflow(self.current_workflow.wf_id)
     self.current_workflow = None
-    self.currentWorkflowChanged()
     self.updateWorkflowList()
+    self.currentWorkflowChanged()
     
   @QtCore.pyqtSlot()
   def changeExpirationDate(self):
-    #WIP
-    pass
+    qtdt = self.ui.dateTimeEdit_expiration.dateTime()
+    date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                    qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+    change_occured = self.controler.changeWorkflowExpirationDate(self.current_workflow.wf_id,date)
+    if not change_occured:
+      QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
+      self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
+    else:
+      self.expiration_date = date
     
+  
+  def currentWorkflowAboutToChange(self):
+    if self.itemModel:
+        self.itemModel.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
+        self.itemModel.stopUpdateThread()
+        self.itemModel
+  
   def currentWorkflowChanged(self):
-    
     if not self.current_workflow:
+      # No workflow
       self.ui.treeView.setModel(None)
+      
       self.graphWidget.clear()
       self.itemInfoWidget.clear()
-      self.ui.lineedit_wf_name.clear()
-      self.ui.dateTimeEdit_expiration.setDate(date.today())
       
+      self.ui.lineedit_wf_name.clear()
+      self.ui.lineedit_wf_name.setEnabled(False)
+      
+      self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
+      self.ui.dateTimeEdit_expiration.setEnabled(False)
+      
+      self.ui.action_submit.setEnabled(False)
+      self.ui.action_change_expiration_date.setEnabled(False)
+      self.ui.action_delete_workflow.setEnabled(False)
+      self.ui.action_transfer_infiles.setEnabled(False)
+      self.ui.action_transfer_outfiles.setEnabled(False)
+      
+      self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
+      self.ui.combo_submitted_wfs.setCurrentIndex(0)
+      self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     else:
-      if self.itemModel:
-        self.itemModel.dataChanged.disconnect(self.graphWidget.dataChanged)
-        self.itemModel.dataChanged.disconnect(self.itemInfoWidget.dataChanged)
-          
       self.itemModel = WorkflowItemModel(self.current_workflow, self.controler.jobs, self)
       self.ui.treeView.setModel(self.itemModel)
-      
-      if self.current_workflow.name:
-        self.ui.lineedit_wf_name.setText(self.current_workflow.name)
+      self.itemModel.emit(QtCore.SIGNAL("modelReset()"))
       
       self.itemModel.dataChanged.connect(self.graphWidget.dataChanged)
       self.graphWidget.setWorflow(self.current_workflow)
+      
       self.itemModel.dataChanged.connect(self.itemInfoWidget.dataChanged)
       self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
-      print "expiration date: " + repr(self.expiration_date)
-      #self.ui.dateTimeEdit_expiration.setDate(self.expiration_date)
+      
+      if self.current_workflow.wf_id == -1:
+        # Workflow not submitted
+        if self.current_workflow.name:
+          self.ui.lineedit_wf_name.setText(self.current_workflow.name)
+        else:
+          self.ui.lineedit_wf_name.clear()
+        self.ui.lineedit_wf_name.setEnabled(True)
+        
+        self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+        self.ui.dateTimeEdit_expiration.setEnabled(True)
+        
+        self.ui.action_submit.setEnabled(True)
+        self.ui.action_change_expiration_date.setEnabled(False)
+        self.ui.action_delete_workflow.setEnabled(False)
+        self.ui.action_transfer_infiles.setEnabled(False)
+        self.ui.action_transfer_outfiles.setEnabled(False)
+        
+        self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
+        self.ui.combo_submitted_wfs.setCurrentIndex(0)
+        self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+        
+      else:
+        # Submitted workflow
+        if self.current_workflow.name:
+          self.ui.lineedit_wf_name.setText(self.current_workflow.name)
+        else: 
+          self.ui.lineedit_wf_name.setText(repr(self.current_workflow.wf_id))
+        self.ui.lineedit_wf_name.setEnabled(False)
+        
+        self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
+        self.ui.dateTimeEdit_expiration.setEnabled(True)
+        
+        self.ui.action_submit.setEnabled(False)
+        self.ui.action_change_expiration_date.setEnabled(True)
+        self.ui.action_delete_workflow.setEnabled(True)
+        self.ui.action_transfer_infiles.setEnabled(True)
+        self.ui.action_transfer_outfiles.setEnabled(True)        
+        
+        index = self.ui.combo_submitted_wfs.findData(self.current_workflow.wf_id)
+        self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
+        self.ui.combo_submitted_wfs.setCurrentIndex(index)
+        self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+        
+    
+
   
   def updateWorkflowList(self):
-    
+    self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
     self.ui.combo_submitted_wfs.clear()
     for wf_info in self.controler.getSubmittedWorkflows():
       wf_id, expiration_date, workflow_name = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
       self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
+    self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
-    if self.current_workflow:
-      index = self.ui.combo_submitted_wfs.findData(self.current_workflow.wf_id)
-      self.ui.combo_submitted_wfs.setCurrentIndex(index)
-    else:
-      self.ui.combo_submitted_wfs.setCurrentIndex(0)
-      
+          
 class WorkflowItem(object):
   
   GROUP = "group"
@@ -226,19 +308,18 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
   def __init__(self, workflow, jobs = None, parent=None):
     
     super(WorkflowItemModel, self).__init__(parent)
-    self.workflow = workflow 
     self.jobs = jobs
     
     w_js = set([])
     w_fts = set([])
-    if not self.workflow.full_nodes:
-      for node in self.workflow.nodes:
+    if not workflow.full_nodes:
+      for node in workflow.nodes:
         if isinstance(node, JobTemplate):
           w_js.add(node)
         elif isinstance(node, FileTransfer):
           w_fts.add(node)
     else:
-      for node in self.workflow.full_nodes:
+      for node in workflow.full_nodes:
         if isinstance(node, JobTemplate):
           w_js.add(node)
         elif isinstance(node, FileTransfer):
@@ -274,11 +355,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
                                   parent = -1, 
                                   row = -1, 
                                   it_type = WorkflowItem.GROUP, 
-                                  data = self.workflow.mainGroup, 
-                                  children_nb = len(self.workflow.mainGroup.elements))
+                                  data = workflow.mainGroup, 
+                                  children_nb = len(workflow.mainGroup.elements))
                                        
     
-    for group in self.workflow.groups:
+    for group in workflow.groups:
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[group] = item_id
@@ -292,11 +373,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     # parent and children research for jobs and groups
     for item in self.items.values():
       if item.it_type == WorkflowItem.GROUP or item.it_type == WorkflowItem.JOB:
-        if item.data in self.workflow.mainGroup.elements:
+        if item.data in workflow.mainGroup.elements:
           item.parent = -1
-          item.row = self.workflow.mainGroup.elements.index(item.data)
+          item.row = workflow.mainGroup.elements.index(item.data)
           self.root_item.children[item.row]=item.it_id
-        for group in self.workflow.groups:
+        for group in workflow.groups:
           if item.data in group.elements:
             item.parent = self.ids[group]
             item.row = group.elements.index(item.data)
@@ -357,15 +438,12 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       #print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.data.name) + " " + repr(item.children)   
     #raw_input()
     ###########################################
-    
+    self.__update_state = True
+    self.__update_interval = 3
     def updateLoop(self, interval):
-      while True:
+      while self.__update_state:
         self.checkChanges()
         time.sleep(interval)
-    
-    row = self.rowCount(QtCore.QModelIndex())
-    self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()),
-                          self.index(row,0, QtCore.QModelIndex()))
     
     self.__update_loop = threading.Thread(name = "WorflowItemModel_update_loop",
                                          target = updateLoop,
@@ -378,14 +456,19 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
   def checkChanges(self):
     data_changed = False
     for item in self.items.values():
+      #print "update state " + repr(self.__update_state) + " " + repr(self.name) + " " + repr(self.wf_id)
+      if not self.__update_state: break 
       item_changed = item.updateState(self.jobs)
       data_changed = data_changed or item_changed
       #self.dataChanged.emit(self.createIndex(item.row, 0, item), self.createIndex(item.row, 0, item))
     
-    if data_changed:
+    if data_changed and self.__update_state:
       row = self.rowCount(QtCore.QModelIndex())
       self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()), self.index(row,0, QtCore.QModelIndex()))
         
+  def stopUpdateThread(self):
+    self.__update_state = False
+    
     
     
   def index(self, row, column, parent=QtCore.QModelIndex()):
