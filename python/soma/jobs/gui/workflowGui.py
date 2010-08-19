@@ -48,6 +48,10 @@ class WorkflowWidget(QtGui.QMainWindow):
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
+    self.ui.slider_zoom.setRange(30, 100)
+    self.ui.slider_zoom.setValue(100)
+    self.ui.slider_zoom.sliderMoved.connect(self.zoomChanged)
+    
     self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
     self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
     self.ui.toolButton_transfer_output.setDefaultAction(self.ui.action_transfer_outfiles)
@@ -61,7 +65,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
     self.ui.action_delete_workflow.triggered.connect(self.deleteWorkflow)
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
-    
     
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     self.updateWorkflowList()
@@ -151,6 +154,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     else:
       self.expiration_date = date
     
+  @QtCore.pyqtSlot(int)
+  def zoomChanged(self, percentage):
+    rate = percentage / 100.0
+    self.graphWidget.setZoom(rate)
+  
   
   def currentWorkflowAboutToChange(self):
     if self.itemModel:
@@ -235,8 +243,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.combo_submitted_wfs.setCurrentIndex(index)
         self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
         
-      #self.graphWidget.resize(self.graphWidget.pixmap.size()*2.0)
-
+      
   
   def updateWorkflowList(self):
     self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
@@ -798,20 +805,25 @@ class TransferInfoWidget(QtGui.QTabWidget):
       self.ui.local_path.setText(" ")
     
     
-class WorkflowGraphView(QtGui.QLabel):
+class WorkflowGraphView(QtGui.QWidget):
   
   def __init__(self, controler, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
     
     self.controler = controler
-    self.workflow = None
-   
-    #self.setBackgroundRole(QtGui.QPalette.Base)
-    #self.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
-    #self.setScaledContents(True)
     
-    #self.resize(200,300)
-
+    self.workflow = None
+    
+    self.image_label = QtGui.QLabel(self)
+    self.image_label.setScaledContents(True)
+    self.image_label.setBackgroundRole(QtGui.QPalette.Base)
+    self.image_label.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+    
+    layout = QtGui.QVBoxLayout()
+    layout.addWidget(self.image_label)
+    
+    self.zoom_rate = 1.0
+    self.setZoom(1.0)
                                         
   def setWorflow(self, workflow):
     self.workflow = workflow
@@ -821,13 +833,20 @@ class WorkflowGraphView(QtGui.QLabel):
     self.workflow = None
     self.dataChanged()
     
+  def setZoom(self, zoom_rate):
+    self.zoom_rate = zoom_rate
+    print "new rate " + repr(zoom_rate)
+    if self.workflow:
+      self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
+    
   @QtCore.pyqtSlot()
   def dataChanged(self):
     if self.workflow:
       image_file_path = self.controler.printWorkflow(self.workflow)
-      self.image = QtGui.QImage(image_file_path)
-      self.pixmap = QtGui.QPixmap.fromImage(self.image)
-      self.setPixmap(self.pixmap)
+      image = QtGui.QImage(image_file_path)
+      pixmap = QtGui.QPixmap.fromImage(image)
+      self.image_label.setPixmap(pixmap)
+      self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
     else:
-      self.setPixmap(QtGui.QPixmap())
+      self.image_label.setPixmap(QtGui.QPixmap())
     
