@@ -835,7 +835,6 @@ class WorkflowGraphView(QtGui.QWidget):
     
   def setZoom(self, zoom_rate):
     self.zoom_rate = zoom_rate
-    print "new rate " + repr(zoom_rate)
     if self.workflow:
       self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
     

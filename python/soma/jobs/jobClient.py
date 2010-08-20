@@ -234,7 +234,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode #'local_no_disconnection' #(local debug)#     
+    self.__mode = 'local_no_disconnection' #(local debug)#mode #     
     
     #########
     # LOCAL #

@@ -16,6 +16,7 @@ from datetime import timedelta
 from datetime import datetime
 import threading
 import os
+import shutil
 import logging
 import soma.jobs.constants as constants
 import pickle
@@ -362,6 +363,11 @@ class JobServer ( object ):
         raise JobServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
     return connection
   
+  def __userTransferDirPath(self, login, user_id):
+    path = os.path.join(self.__tmp_file_dir_path,login+"_"+repr(user_id))
+    return path# supposes simple logins. Or use only the user id ? 
+  
+  
   def registerUser(self, login):
     '''
     Register a user so that he can submit job.
@@ -376,9 +382,6 @@ class JobServer ( object ):
         count = cursor.execute('SELECT count(*) FROM users WHERE login=?', [login]).next()[0]
         if count==0:
           cursor.execute('INSERT INTO users (login) VALUES (?)', [login])          
-          personal_path = self.__tmp_file_dir_path + "/" + login
-          if not os.path.isdir(personal_path):
-            os.mkdir(personal_path)
         user_id = cursor.execute('SELECT id FROM users WHERE login=?', [login]).next()[0]
       except Exception, e:
         connection.rollback()
@@ -388,6 +391,11 @@ class JobServer ( object ):
       connection.commit()
       cursor.close()
       connection.close()
+      
+      personal_path = self.__userTransferDirPath(login, user_id)
+      if not os.path.isdir(personal_path):
+        os.mkdir(personal_path)
+      
       return user_id
   
   
@@ -396,6 +404,7 @@ class JobServer ( object ):
     Delete all expired jobs, transfers and workflows, except transfers which are requested 
     by valid job.
     '''
+    self.removeNonRegisteredFiles()
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
@@ -419,8 +428,8 @@ class JobServer ( object ):
                                                           WHERE id=?''', 
                                                           [job_id]).next()
           if not custom:
-            self.__removeFile(stdof)
-            self.__removeFile(stdef)
+            self.__removeFile(self.__stringConversion(stdof))
+            self.__removeFile(self.__stringConversion(stdef))
         
         cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
         
@@ -464,6 +473,49 @@ class JobServer ( object ):
       connection.commit()
       connection.close()
      
+  def removeNonRegisteredFiles(self):
+    registered_local_paths = []
+    registered_users = []
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        for row in cursor.execute('SELECT local_file_path FROM transfers'):
+          local_path = row[0]
+          registered_local_paths.append(self.__stringConversion(local_path))
+        for row in cursor.execute('SELECT stdout_file FROM jobs'):
+          stdout_file = row[0]
+          if stdout_file:   
+            registered_local_paths.append(self.__stringConversion(stdout_file))
+        for row in cursor.execute('SELECT stderr_file FROM jobs'):
+          stderr_file = row[0]
+          if stderr_file:
+            registered_local_paths.append(self.__stringConversion(stderr_file))
+        for row in cursor.execute('SELECT pickle_file_path FROM workflows'):
+          pickle_file_path = row[0]
+          if pickle_file_path:
+            registered_local_paths.append(self.__stringConversion(pickle_file_path))
+        for row in cursor.execute('SELECT id, login FROM users'):
+          user_id, login = row
+          registered_users.append((user_id, login))
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error removeNonRegisteredFiles %s: %s \n' %(type(e), e), self.logger) 
+      cursor.close()
+      connection.close()
+      
+    
+    for user_info in registered_users:
+      user_id, login = user_info
+      directory_path = self.__userTransferDirPath(login, user_id) 
+      for name in os.listdir(directory_path):
+        local_path = os.path.join(directory_path,name)
+        if not local_path in registered_local_paths:
+          self.logger.debug("removeNonRegisteredFiles, not registered " + local_path + " to delete!")
+          self.__removeFile(local_path)
+  
+     
      
   def generateLocalFilePath(self, user_id, remote_file_path=None):
     '''
@@ -492,26 +544,37 @@ class JobServer ( object ):
         connection.close()
         raise JobServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e), self.logger) 
       
-      newFilePath = self.__tmp_file_dir_path + "/" + login + '/'
+      userDirPath = self.__userTransferDirPath(login, user_id) 
       if remote_file_path == None:
-        newFilePath += repr(file_num)
+        newFilePath = os.path.join(userDirPath, repr(file_num))
+        #newFilePath += repr(file_num)
       else:
-        iextention = remote_file_path.rfind(".")
+        remote_base_name  = os.path.basename(remote_file_path)
+        iextention = remote_base_name.find(".")
         if iextention == -1 :
-          newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(file_num) 
+          newFilePath = os.path.join(userDirPath, remote_base_name + '_' + repr(file_num))
+          #newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(file_num) 
         else: 
-          newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + remote_file_path[iextention:]
+          newFilePath = os.path.join(userDirPath, remote_base_name[0:iextention] + '_' + repr(file_num) + remote_base_name[iextention:])
+          #newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + remote_file_path[iextention:]
       cursor.close()
       connection.commit()
       connection.close()
       return newFilePath
-        
+  
+  
   def __removeFile(self, file_path):
-    if file_path and os.path.isfile(file_path):
+    if file_path and os.path.isdir(file_path):
+      try :
+        shutil.rmtree(file_path)
+      except Exception, e:
+        self.logger.debug("Could not remove file %s, error %s: %s \n" %(file_path, type(e), e))  
+        
+    elif file_path and os.path.isfile(file_path):
       try:
         os.remove(file_path)
-      except OSError,e:
-        print "Could not remove file %s, error %s: %s \n" %(file_path, type(e), e) 
+      except Exception, e:
+        self.logger.debug("Could not remove file %s, error %s: %s \n" %(file_path, type(e), e))
     
     
   #####################################"
