@@ -317,11 +317,11 @@ class DrmaaJobScheduler( object ):
         parallel_config_name, max_node_number = job.jobTemplate.parallel_job_info
         self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
         
-      #job_env = ["LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"]]
-      #job_env.append("PATH="+os.environ["PATH"])
-      
-      job_env =[ "LD_LIBRARY_PATH=.:/volatile/laguitton/build-dir//lib:/i2bm/research/Mandriva-2008.0-i686/qwt-qt4/lib:/i2bm/research/Mandriva-2008.0-i686/Qt4/lib:.:/home/sl225510/lib:/i2bm/research/Mandriva-2008.0-i686/lib:/neurospin/tmp/Soizic/jobFiles/srcServers/:/i2bm/research/Mandriva-2008.0-i686/qwt/lib:/usr/lib/qt3/lib:/neurospin/local/Mandriva-2008.0-i686/lib:/neurospin/local/lib:/i2bm/local/Mandriva-2008.0-i686/lib:/i2bm/local/lib:/volatile/laguitton/sge6-2u5/lib/lx24-x86/:/neurospin/tmp/Soizic/jobFiles/srcServers/"]
-      job_env.append("PATH=/home/sl225510/svn/brainvisa/communication/web/trunk/tools:/home/sl225510/svn/brainvisa/development/build-config/trunk:/home/sl225510/svn/brainvisa/development/brainvisa-svn/trunk/bin:/volatile/laguitton/build-dir//bin:/i2bm/research/Mandriva-2008.0-i686/Qt4/bin:.:/home/sl225510/bin:/i2bm/research/Mandriva-2008.0-i686/bin:/condor/condor-7.4.0/bin:/condor/condor-7.4.0/sbin:/neurospin/local/Mandriva-2008.0-i686/bin:/neurospin/local/bin:/i2bm/local/Mandriva-2008.0-i686/bin:/i2bm/local/bin:/volatile/laguitton/sge6-2u5/bin/lx24-x86:/condor/condor-7.4.0/bin:/condor/condor-7.4.0/sbin:/usr/bin:/bin:/usr/local/bin:/usr/X11R6/bin/:/usr/games:/usr/lib/qt3//bin:/neurospin/local/neuromag/bin/X11:/neurospin/local/neuromag/bin/util:/i2bm/research/Mandriva-2008.0-i686/i2bm_pack-main/bin:/i2bm/research/Mandriva-2008.0-i686/i2bm_nmr-stable/bin")
+      job_env = ["LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"]]
+      job_env.append("PATH="+os.environ["PATH"])
+      self.logger.debug("Environment:")
+      self.logger.debug("  PATH="+os.environ["PATH"])
+      self.logger.debug("  LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"])
       self.__drmaa.setVectorAttribute(drmaaJobTemplateId, 'drmaa_v_env', job_env)
 
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
