@@ -757,6 +757,8 @@ class Jobs(object):
     return self.__js_proxy.jobInformation(job_id)
     
 
+  def resertStdReading(self):
+    self.__js_proxy.resertStdReading()
 
   def stdoutReadLine(self, job_id):
     '''

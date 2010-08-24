@@ -29,7 +29,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.setupUi(self)
 
     self.controler = controler
-    self.controler.connect('neurospin_test_cluster')
+    #self.controler.connect('neurospin_test_cluster')
+    self.controler.connect('DSV_cluster', 'sl225510', 'lg2t/1bm')
     assert(self.controler.isConnected())
     
     self.setWindowTitle("Workflows !!")
@@ -283,8 +284,7 @@ class WorkflowItem(object):
     if self.it_type == WorkflowItem.JOB:
       self.state["status"] = " "
       self.state["exit_info"] = (" ", " ", " ", " ")
-      self.state["stdout_path"] = " "
-      self.state["stderr_path"] = " "
+      self.state["command"] = " "
       self.state["stdout"] = " "
       self.state["stderr"] = " "
       
@@ -303,11 +303,14 @@ class WorkflowItem(object):
       status = jobs.status(self.data.job_id)
       state_changed = state_changed or status != self.state["status"]
       self.state["status"]=status
+      separator = " "
+      self.state["command"]= separator.join(self.data.command)
       #if state_changed and status == DONE or status == FAILED:
       exit_info =  jobs.exitInformation(self.data.job_id)
       state_changed = state_changed or exit_info != self.state["exit_info"]
       self.state["exit_info"] = jobs.exitInformation(self.data.job_id)
-      
+       
+      jobs.resertStdReading()
       if self.state["stdout"] == " " and (status == DONE or status == FAILED):
         line = jobs.stdoutReadLine(self.data.job_id)
         stdout = ""
@@ -315,7 +318,7 @@ class WorkflowItem(object):
           stdout = stdout + line + "\n"
           line = jobs.stdoutReadLine(self.data.job_id)
         self.state["stdout"] = stdout
-          
+        
       if self.state["stderr"] == " " and (status == DONE or status == FAILED):
         line = jobs.stderrReadLine(self.data.job_id)
         stderr = ""
@@ -323,7 +326,7 @@ class WorkflowItem(object):
           stderr = stderr + line + "\n"
           line = jobs.stderrReadLine(self.data.job_id)
         self.state["stderr"] = stderr
-      
+    
     elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
       transfer_status = jobs.transferStatus(self.data.local_path)
       state_changed = state_changed or transfer_status != self.state["transfer_status"]
@@ -616,7 +619,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
             return item.data.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
-            if status == DONE and exit_status == FINISHED_REGULARLY:
+            if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
               #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
               return LIGHT_BLUE
             else:
@@ -760,7 +763,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     else: 
       self.ui.exit_status.setText(" ")
     if exit_value: 
-      self.ui.exit_value.setText(exit_value)
+      self.ui.exit_value.setText(repr(exit_value))
     else: 
       self.ui.exit_value.setText(" ")
     if term_signal: 
@@ -772,8 +775,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     else: 
       self.ui.resource_usage.clear()
     
-    self.ui.stdout_path.setText(self.jobItem.state["stdout_path"])
-    self.ui.stderr_path.setText(self.jobItem.state["stderr_path"])
+    self.ui.command.setText(self.jobItem.state["command"])
     self.ui.stdout_file_contents.setText(self.jobItem.state["stdout"])
     self.ui.stderr_file_contents.setText(self.jobItem.state["stderr"])
     

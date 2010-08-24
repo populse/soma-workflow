@@ -118,15 +118,15 @@ class JobsControler(object):
                       [file2], 
                       stdin2, False, 168, "job2")
                               
-    job3 = JobTemplate([python, script3, file12,  file3, "30"], 
-                      [file12, script3, stdin3], 
-                      [file3], 
-                      stdin3, False, 168, "job3")
+    #job3 = JobTemplate([python, script3, file12,  file3, "30"], 
+                      #[file12, script3, stdin3], 
+                      #[file3], 
+                      #stdin3, False, 168, "job3")
     
-    #job3 = JobTemplate([python, exceptionJobScript],
-                      #[exceptionJobScript, file12, script3, stdin3],
-                      #[file3],
-                      #None, False, 168, "job3")
+    job3 = JobTemplate([python, exceptionJobScript],
+                      [exceptionJobScript, file12, script3, stdin3],
+                      [file3],
+                      None, False, 168, "job3")
     
     job4 = JobTemplate([python, script4, file2,  file3, file4, "10"], 
                               [file2, file3, script4, stdin4], 

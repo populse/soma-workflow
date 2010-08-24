@@ -810,8 +810,8 @@ class JobScheduler( object ):
     @param local_file_path: local file path to fill up
     '''
     
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
+    #if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      #raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
     
     if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
       if self.__fileToWrite: self.__fileToWrite.close()
@@ -835,8 +835,8 @@ class JobScheduler( object ):
     return: read line
     '''
     
-    if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
+    #if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
+      #raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
     
     
     if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
@@ -850,6 +850,19 @@ class JobScheduler( object ):
       self.__fileToWrite.close()
     if self.__fileToRead:
       self.__fileToRead.close()
+    
+  def isfile(self, local_path):
+    return os.path.isfile(local_path)
+  
+  def isdir(self, local_path):
+    return os.path.isdir(local_path)
+  
+  def listdir(self, local_path):
+    return os.listdir(local_path)
+  
+  def mkdir(self, local_path):
+    return os.mkdir(local_path)
+  
     
     
   def setTransferStatus(self, local_path, status):
@@ -880,6 +893,8 @@ class JobScheduler( object ):
     workflows to be proceeded.
     '''
     self.__drmaaJS.signalTransferEnded(local_path)
+    
+   
     
 
   ########## JOB SUBMISSION ##################################################
@@ -1065,7 +1080,9 @@ class JobScheduler( object ):
     
     return (name_description, command, submission_date)
     
-
+  def resertStdReading(self):
+    self.__stdoutFileToRead = None
+    self.__stderrFileToRead = None
 
   def stdoutReadLine(self, job_id):
     '''
