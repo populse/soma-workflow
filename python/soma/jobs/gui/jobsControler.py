@@ -215,7 +215,11 @@ class JobsControler(object):
           if status == NOT_SUBMITTED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == DONE:
-            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+            exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(node.job_id)
+            if exit_status == FINISHED_REGULARLY and exit_value == 0:
+              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+            else: 
+              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
           elif status == FAILED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
           else:

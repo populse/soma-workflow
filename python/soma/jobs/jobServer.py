@@ -151,7 +151,8 @@ def createDatabase(database_file):
                                            user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
                                            pickle_file_path TEXT,
                                            expiration_date  DATE NOT NULL,
-                                           name TEXT) ''')
+                                           name TEXT,
+                                           ended_transfers TEXT) ''')
   
   cursor.close()
   connection.commit()
@@ -739,6 +740,61 @@ class JobServer ( object ):
       connection.close()
 
   
+  def addWorkflowEndedTransfer(self, workflow_id, local_file_path):
+    '''
+    To signal that a transfer belonging to a workflow finished.
+    '''
+    separator = ", "
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
+        if not count == 0 :
+          str_ended_transfers = cursor.execute('SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0] 
+          if str_ended_transfers != None:
+            ended_transfers = self.__stringConversion(str_ended_transfers).split(separator)
+            ended_transfers.append(local_file_path)
+            str_ended_transfers = separator.join(ended_transfers)
+          else:
+            str_ended_transfers = local_file_path
+          cursor.execute('UPDATE workflows SET ended_transfers=? WHERE id=?', (str_ended_transfers, workflow_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+    
+
+  def popWorkflowEndedTransfer(self, workflow_id):
+    '''
+    Returns the ended transfers for a workflow and clear the ended transfer list.
+    '''
+    separator = ", "
+    ended_transfers = []
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
+        if not count == 0 :
+          str_ended_transfers = cursor.execute('SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0] 
+          if str_ended_transfers != None:
+            ended_transfers = self.__stringConversion(str_ended_transfers).split(separator)
+          cursor.execute('UPDATE workflows SET ended_transfers=? WHERE id=?', (None, workflow_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+    return ended_transfers
+
   ###############################################
   # WORKFLOWS
   

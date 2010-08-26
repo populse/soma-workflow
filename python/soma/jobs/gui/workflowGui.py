@@ -18,7 +18,8 @@ LIGHT_BLUE=QtGui.QColor(200,255,255)
 Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'WorkflowMainWindow.ui' ))[0]
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
-
+#Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
+#Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
 
 class WorkflowWidget(QtGui.QMainWindow):
   
@@ -29,8 +30,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.setupUi(self)
 
     self.controler = controler
-    #self.controler.connect('neurospin_test_cluster')
-    self.controler.connect('DSV_cluster', 'sl225510', 'lg2t/1bm')
+    self.controler.connect('neurospin_test_cluster')
+    #self.controler.connect('DSV_cluster', 'sl225510', 'lg2t/1bm')
     assert(self.controler.isConnected())
     
     self.setWindowTitle("Workflows !!")
@@ -850,4 +851,10 @@ class WorkflowGraphView(QtGui.QWidget):
       self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
     else:
       self.image_label.setPixmap(QtGui.QPixmap())
+    
+    
+#class ConnectionDlg(QtGui.QDialog):
+  
+  #def __init__(self, controler, parent = None):
+    #super(ConnectionDlg, self).__init__(parent)
     

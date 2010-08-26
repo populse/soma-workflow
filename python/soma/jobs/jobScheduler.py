@@ -118,10 +118,9 @@ class DrmaaJobScheduler( object ):
     
     self.__user_id = self.__jobServer.registerUser(userLogin) 
 
-    self.__jobs = {} 
-    self.__workflows = {}
-    self.__endedTransfers = set([])
-    
+    self.__jobs = {} # job_id -> job
+    self.__workflows = {} # workflow_id -> workflow 
+
     self.__lock = threading.RLock()
     
     self.__jobsEnded = False
@@ -158,10 +157,16 @@ class DrmaaJobScheduler( object ):
                 allJobsEnded = False
             # update the status on the job server 
             self.__jobServer.setJobStatus(job.jobTemplate.job_id, job.status)
+
+          # get back ended transfers
+          endedTransfers = []
+          for workflow_id in self.__workflows.keys():
+            workflow_ended_transfers = self.__jobServer.popWorkflowEndedTransfer(workflow_id)
+            if workflow_ended_transfers:
+              endedTransfers.append((workflow_id, workflow_ended_transfers))
           # get the exit information for terminated jobs and update the jobServer
-          if ended or self.__endedTransfers:
-            self.__workflowProcessing(endedJobs = ended, endedTransfers = self.__endedTransfers )
-            self.__endedTransfers.clear()
+          if ended or endedTransfers:
+            self.__workflowProcessing(endedJobs = ended, endedTransfers = endedTransfers )
           for job_id in ended:
             del self.__jobs[job_id]
           self.__jobsEnded = len( self.__jobs) == 0 
@@ -186,16 +191,6 @@ class DrmaaJobScheduler( object ):
     stops updating the L{JobServer}. (should be called when all the jobs are
     done) 
     '''
- 
-    
-  def signalTransferEnded(self, local_path):
-    '''
-    Has to be called each time a file transfer ends for the 
-    workflows to be proceeded.
-    '''
-    with self.__lock:
-      self.logger.debug("signal transfer ended " + local_path)
-      self.__endedTransfers.add(local_path)
 
 
   ########## JOB SUBMISSION #################################################
@@ -542,8 +537,8 @@ class DrmaaJobScheduler( object ):
 
     @type  endedJobs: list of job id
     @param endedJobs: list of the ended jobs
-    @type  endedTransfers: list of local file path
-    @param endedTransfers: list of ended transfers
+    @type  endedTransfers: sequence of tuple (workflow_id, set of local_file_path)
+    @param endedTransfers: list of ended transfers for each workflow
     '''
     self.logger.debug(">> workflowProcessing")
 
@@ -578,11 +573,10 @@ class DrmaaJobScheduler( object ):
             if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
               workflow = self.__workflows[job.jobTemplate.workflow_id]
               wf_to_process.add(workflow)
-      for local_path in endedTransfers:
-        self.logger.debug("==> ended Transfer: " + local_path)
-        workflow_id = self.__jobServer.getTransferInformation(local_path)[3]
-        self.logger.debug("workflow_id " + repr(workflow_id))
-        if not workflow_id == -1 and workflow_id in self.__workflows:
+
+      for workflow_id, w_ended_transfers in endedTransfers:
+        for local_path in w_ended_transfers:
+          self.logger.debug("==> ended Transfer: " + local_path + " workflow_id " + repr(workflow_id))
           workflow = self.__workflows[workflow_id]
           wf_to_process.add(workflow)
         
@@ -892,9 +886,9 @@ class JobScheduler( object ):
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
-    self.__drmaaJS.signalTransferEnded(local_path)
-    
-   
+    workflow_id = self.__jobServer.getTransferInformation(local_path)[3]
+    if workflow_id != -1:
+      self.__jobServer.addWorkflowEndedTransfer(workflow_id, local_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -941,6 +935,8 @@ class JobScheduler( object ):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
+    if not expiration_date:
+      expiration_date = datetime.now() + timedelta(days=7)
     return self.__drmaaJS.submitWorkflow(workflow, expiration_date, name)
   
   def disposeWorkflow(self, workflow_id):
