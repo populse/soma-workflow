@@ -314,9 +314,9 @@ class DrmaaJobScheduler( object ):
         
       job_env = ["LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"]]
       job_env.append("PATH="+os.environ["PATH"])
-      self.logger.debug("Environment:")
-      self.logger.debug("  PATH="+os.environ["PATH"])
-      self.logger.debug("  LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"])
+      #self.logger.debug("Environment:")
+      #self.logger.debug("  PATH="+os.environ["PATH"])
+      #self.logger.debug("  LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"])
       self.__drmaa.setVectorAttribute(drmaaJobTemplateId, 'drmaa_v_env', job_env)
 
       drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
@@ -511,25 +511,67 @@ class DrmaaJobScheduler( object ):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
     return workflow
      
-  def __isWFNodeCompleted(self, node):
-    competed = False
-    if isinstance(node, JobTemplate):
-      if node.job_id: 
-        completed = True
-        if node.job_id in self.__jobs :
-          status = self.__jobs[node.job_id].status
-          completed = status == constants.DONE or status == constants.FAILED
-    if isinstance(node, FileSending):
-      if node.local_path:
-        status = self.__jobServer.getTransferStatus(node.local_path)
-        completed = status == constants.TRANSFERED
-    if isinstance(node, FileRetrieving):
-      if node.local_path:
-        status = self.__jobServer.getTransferStatus(node.local_path)
-        completed = status == constants.READY_TO_TRANSFER
-    return completed
+  #def __isWFNodeCompleted(self, node):
+    #competed = False
+    #if isinstance(node, JobTemplate):
+      #if node.job_id: 
+        #completed = True
+        #if node.job_id in self.__jobs :
+          #status = self.__jobs[node.job_id].status
+          #completed = status == constants.DONE or status == constants.FAILED
+    #if isinstance(node, FileSending):
+      #if node.local_path:
+        #status = self.__jobServer.getTransferStatus(node.local_path)
+        #completed = status == constants.TRANSFERED
+    #if isinstance(node, FileRetrieving):
+      #if node.local_path:
+        #status = self.__jobServer.getTransferStatus(node.local_path)
+        #completed = status == constants.READY_TO_TRANSFER
+    #return completed
       
-    
+  NODE_NOT_PROCESSED="node_not_processed"
+  NODE_IN_PROGRESS="node_in_progress"
+  NODE_ENDED_WITH_SUCCESS="node_ended_with_success"
+  NODE_FAILED="node_failed"
+
+  def __getNodeStatus(self, node):
+    if isinstance(node, JobTemplate):
+      if not node.job_id:
+        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      if not node.job_id in self.__jobs:
+        status = self.__jobServer.getJobStatus(node.job_id)[0]
+        if status == constants.DONE:
+          job = self.__jobServer.getJob(node.job_id)
+      else:
+        job = self.__jobs[node.job_id]
+        status = job.status
+      if status == constants.NOT_SUBMITTED:
+        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      if status == constants.FAILED:
+        return DrmaaJobScheduler.NODE_FAILED
+      if status == constants.DONE:
+        if not job.exit_value == 0 or job.terminating_signal != None or not job.exit_status == constants.FINISHED_REGULARLY:
+          return DrmaaJobScheduler.NODE_FAILED
+        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
+      return DrmaaJobScheduler.NODE_IN_PROGRESS
+    if isinstance(node, FileSending):
+      if not node.local_path: return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      status = self.__jobServer.getTransferStatus(node.local_path)
+      if status == constants.TRANSFERED:
+        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
+      if status == constants.TRANSFER_NOT_READY or status == constants.READY_TO_TRANSFER:
+        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      if status == constants.TRANSFERING:
+        return DrmaaJobScheduler.NODE_IN_PROGRESS
+    if isinstance(node, FileRetrieving):
+      if not node.local_path: return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      status = self.__jobServer.getTransferStatus(node.local_path)
+      if status == constants.TRANSFERED or status == constants.READY_TO_TRANSFER:
+        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
+      if status == constants.TRANSFER_NOT_READY:
+        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+      if status == constants.TRANSFERING:
+        return DrmaaJobScheduler.NODE_IN_PROGRESS
    
   def __workflowProcessing(self, endedJobs=[], endedTransfers=[]):
     '''
@@ -546,41 +588,23 @@ class DrmaaJobScheduler( object ):
       wf_to_process = set([])
       for job_id in endedJobs:
         job = self.__jobs[job_id]
-        self.logger.debug("==> ended job: " + job.jobTemplate.name)     
-       
-        if not job.exit_value == 0 or \
-          job.terminating_signal != None or \
-          not job.exit_status == constants.FINISHED_REGULARLY: 
-          # error failure case !
-          # the workflow execution is stopped
-          self.logger.debug("Job failure " + repr(job_id))
+        self.logger.debug("  ==> ended job: " + job.jobTemplate.name)     
+      
+        if job.jobTemplate.referenced_output_files:
+          for local_path in job.jobTemplate.referenced_output_files:
+            self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
           if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
             workflow = self.__workflows[job.jobTemplate.workflow_id]
-            self.logger.debug("Workflow failure : " + repr(job.jobTemplate.workflow_id))
-            for node in workflow.full_nodes:
-              if isinstance(node, JobTemplate) and \
-                 node.job_id in self.__jobs and \
-                 self.__jobs[node.job_id].status == constants.NOT_SUBMITTED:
-                   self.logger.debug("job " + repr(node.job_id) + " : ABORTED")
-                   del self.__jobs[node.job_id]
-                   self.__jobServer.setJobStatus(node.job_id, constants.FAILED)
-                   self.__jobServer.setJobExitInfo(node.job_id, constants.EXIT_ABORTED, None, None, None)
-            del self.__workflows[job.jobTemplate.workflow_id]
-        else:        
-          if job.jobTemplate.referenced_output_files:
-            for local_path in job.jobTemplate.referenced_output_files:
-              self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
-            if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
-              workflow = self.__workflows[job.jobTemplate.workflow_id]
-              wf_to_process.add(workflow)
+            wf_to_process.add(workflow)
 
       for workflow_id, w_ended_transfers in endedTransfers:
         for local_path in w_ended_transfers:
-          self.logger.debug("==> ended Transfer: " + local_path + " workflow_id " + repr(workflow_id))
+          self.logger.debug("  ==> ended Transfer: " + local_path + " workflow_id " + repr(workflow_id))
           workflow = self.__workflows[workflow_id]
           wf_to_process.add(workflow)
         
       to_run = []
+      to_abort = set([])
       for workflow in wf_to_process:
         for node in workflow.full_nodes:
           if isinstance(node, JobTemplate):
@@ -594,16 +618,22 @@ class DrmaaJobScheduler( object ):
             to_inspect = status == constants.TRANSFER_NOT_READY
             #print "node " + node.name + " status " + status + " to inspect " + repr(to_inspect)
           if to_inspect:
-            self.logger.debug("---- to inspect : " + node.name)
-            node_to_run = False
+            #self.logger.debug("  -- to inspect : " + node.name)
+            node_to_run = True # a node is run when all its dependencies succeed
             for dep in workflow.full_dependencies:
               if dep[1] == node: 
-                self.logger.debug("node " + node.name + " dep: " + dep[0].name + " " + dep[1].name)
-                node_to_run = self.__isWFNodeCompleted(dep[0])
-                if not node_to_run: break
+                #self.logger.debug("   node " + node.name + " dep: " + dep[0].name + " ---> " + dep[1].name)
+                node_status = self.__getNodeStatus(dep[0])
+                #self.logger.debug("   dep[0] status" + repr(node_status))
+                if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
+                  node_to_run = False
+                  if isinstance(node, JobTemplate) and isinstance(dep[1], JobTemplate) and not dep[1] in to_abort and node_status == DrmaaJobScheduler.NODE_FAILED  :
+                      to_abort.add(dep[1]) 
+                      break
+                  
             if node_to_run: 
               if isinstance(node, JobTemplate):
-                self.logger.debug("---- A JOB to run : " + node.name + " " + repr(node.command))
+                self.logger.debug("  ---- Job to run : " + node.name + " " + repr(node.command))
               to_run.append(node)
         
       for node in to_run:
@@ -612,6 +642,39 @@ class DrmaaJobScheduler( object ):
         if isinstance(node,FileTransfer):
           self.__jobServer.setTransferStatus(node.local_path, constants.READY_TO_TRANSFER)
       
+      # if a job fails the whole workflow branch has to be stopped
+      # look for the node in the branch to abort
+      previous_size = 0
+      while previous_size != len(to_abort):
+        previous_size = len(to_abort)
+        for dep in workflow.full_dependencies:
+          if isinstance(dep[1], JobTemplate) and dep[0] in to_abort and not dep[1] in to_abort:
+            to_abort.add(dep[1])
+            break
+          
+      # stop the whole branch
+      for node in to_abort:
+        if isinstance(node, JobTemplate) and node.job_id in self.__jobs.keys():
+          self.logger.debug("  ---- Failure: job to abort " + node.name)
+          assert(self.__jobs[node.job_id].status == constants.NOT_SUBMITTED)
+          self.__jobServer.setJobStatus(node.job_id, constants.FAILED)
+          self.__jobServer.setJobExitInfo(node.job_id, constants.EXIT_ABORTED, None, None, None)
+          del self.__jobs[node.job_id]
+        
+    # delete ended workflows:
+    finished_workfows = []
+    for workflow_id, workflow in self.__workflows.items():
+      finished = True
+      for node in workflow.full_nodes:
+        if isinstance(node, JobTemplate):
+          node_status = self.__getNodeStatus(node)
+          finished = finished and (node_status == DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS or node_status == DrmaaJobScheduler.NODE_FAILED)
+          if not finished: break
+      if finished: 
+        finished_workfows.append(workflow_id)
+    for workflow_id in finished_workfows:
+      self.logger.debug("  ~~~~ END OF WORKFLOW " + repr(workflow_id) + " ~~~~")
+      del self.__workflows[workflow_id]
     self.logger.debug("<<< workflowProcessing")
     
         
