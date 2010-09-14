@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <stddef.h>
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
