@@ -8,52 +8,48 @@ import pickle
 import subprocess
 import commands
 
-
 class JobsControler(object):
   
-  def __init__(self, TestConfigFilePath, test_no = 1):
+  def __init__(self, test_config_file_path, test_no = 1):
     
-    
-    self.hostname = socket.gethostname()
-    
-    self.jobs = None
-    
-    self.somajobs_config = ConfigParser.ConfigParser()
-    self.somajobs_config.read(os.environ["SOMA_JOBS_CONFIG"])
-    
-    self.test_no = test_no
     # Test config 
-    self.test_config = ConfigParser.ConfigParser()
-    self.test_config.read(TestConfigFilePath)
-    self.output_dir = self.test_config.get(self.hostname, 'job_output_dir') + repr(self.test_no) + "/"
+    self.test_config_file_path = test_config_file_path
+    self.test_no = 1
+   
     
-
-  def isConnected(self):
-    return not self.jobs == None 
-  
   def getRessourceIds(self):
     resource_ids = []
-    for cid in self.somajobs_config.sections():
+    somajobs_config = ConfigParser.ConfigParser()
+    somajobs_config.read(os.environ["SOMA_JOBS_CONFIG"])
+    for cid in somajobs_config.sections():
       if cid != OCFG_SECTION_CLIENT:
         resource_ids.append(cid)
         
+    return resource_ids
         
+  def getConnection(self, resource_id, login, password, test_no):
+    try: 
+      connection = Jobs(os.environ["SOMA_JOBS_CONFIG"],
+                          resource_id, 
+                          login, 
+                          password,
+                          log=test_no)
+    except Exception, e:
+      return (None, "%s" %(e) )
+      
+    return (connection, "") 
+    
   def isRemoteConnection(self, resource_id):
-    submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
+    somajobs_config = ConfigParser.ConfigParser()
+    somajobs_config.read(os.environ["SOMA_JOBS_CONFIG"])
+    submitting_machines = somajobs_config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
+    hostname = socket.gethostname()
     is_remote = True
     for machine in submitting_machines: 
-      if self.hostname == machine: 
+      if hostname == machine: 
         is_remote = False
         break
     return is_remote
-    
-    
-  def connect(self, resource_id, login = None, password = None):
-    self.jobs = Jobs(os.environ["SOMA_JOBS_CONFIG"],
-                resource_id, 
-                login, 
-                password,
-                log=self.test_no)
     
     
   def readWorkflowFromFile(self, file_path):
@@ -62,7 +58,7 @@ class JobsControler(object):
     file.close()
     return workflow
   
-  def getSubmittedWorkflows(self):
+  def getSubmittedWorkflows(self, connection):
     '''
     returns a list of tuple:
     - workflow id
@@ -71,19 +67,19 @@ class JobsControler(object):
     '''
     result = []
     result.append((-1, None, " "))
-    for wf_id in self.jobs.workflows():
-      expiration_date, name = self.jobs.workflowInformation(wf_id)
+    for wf_id in connection.workflows():
+      expiration_date, name = connection.workflowInformation(wf_id)
       result.append((wf_id, expiration_date, name))
     return result
     
-  def getWorkflow(self, wf_id):
-    workflow = self.jobs.submittedWorkflow(wf_id)
-    expiration_date = self.jobs.workflowInformation(wf_id)[0]
+  def getWorkflow(self, wf_id, connection):
+    workflow = connection.submittedWorkflow(wf_id)
+    expiration_date = connection.workflowInformation(wf_id)[0]
     return (workflow, expiration_date)
     
   def generateWorkflowExample(self, file_path):
 
-    wfExamples = WorkflowExamples(with_tranfers = False, test_config = self.test_config, hostname = self.hostname, test_no = self.test_no)
+    wfExamples = WorkflowExamples(with_tranfers = False, test_config_file_path = self.test_config_file_path, test_no = self.test_no)
   
     #workflow = wfExamples.multipleSimpleExample()
     workflow = wfExamples.simpleExample()
@@ -95,29 +91,32 @@ class JobsControler(object):
     file.close()
     
     
-  def submitWorkflow(self, workflow, name, expiration_date):
-    return self.jobs.submitWorkflow(workflow = workflow,                                               expiration_date = expiration_date,
+  def submitWorkflow(self, workflow, name, expiration_date, connection):
+    return connection.submitWorkflow(workflow = workflow,                                               expiration_date = expiration_date,
                                     name = name) 
                                     
-  def deleteWorkflow(self, wf_id):
-    return self.jobs.disposeWorkflow(wf_id)
+  def deleteWorkflow(self, wf_id, connection):
+    return connection.disposeWorkflow(wf_id)
   
-  def changeWorkflowExpirationDate(self, wf_id, date):
-    return self.jobs.changeWorkflowExpirationDate(wf_id, date)
+  def changeWorkflowExpirationDate(self, wf_id, date, connection):
+    return connection.changeWorkflowExpirationDate(wf_id, date)
     
-  def transferInputFiles(self, workflow):
+  def transferInputFiles(self, workflow, connection):
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
-        if self.jobs.transferStatus(node.local_path) == READY_TO_TRANSFER:
-          self.jobs.sendRegisteredTransfer(node.local_path)
+        if connection.transferStatus(node.local_path) == READY_TO_TRANSFER:
+          connection.sendRegisteredTransfer(node.local_path)
     
-  def transferOutputFiles(self, workflow):
+  def transferOutputFiles(self, workflow, connection):
     for node in workflow.full_nodes:
       if isinstance(node, FileRetrieving):
-        if self.jobs.transferStatus(node.local_path) == READY_TO_TRANSFER:
-          self.jobs.retrieve(node.local_path)
+        if connection.transferStatus(node.local_path) == READY_TO_TRANSFER:
+          connection.retrieve(node.local_path)
           
-  def printWorkflow(self, workflow):
+  def printWorkflow(self, workflow, connection):
+    
+    output_dir = "/tmp/"
+    
     GRAY="\"#C8C8B4\""
     BLUE="\"#00C8FF\""
     RED="\"#FF6432\""
@@ -127,8 +126,8 @@ class JobsControler(object):
     names = dict()
     current_id = 0
     
-    dot_file_path = self.output_dir + "tmp.dot"
-    graph_file_path = self.output_dir + "tmp.png"
+    dot_file_path = output_dir + "tmp.dot"
+    graph_file_path = output_dir + "tmp.png"
     if dot_file_path and os.path.isfile(dot_file_path):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
@@ -143,11 +142,11 @@ class JobsControler(object):
         if node.job_id == -1:
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
-          status = self.jobs.status(node.job_id)
+          status = connection.status(node.job_id)
           if status == NOT_SUBMITTED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == DONE:
-            exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(node.job_id)
+            exit_status, exit_value, term_signal, resource_usage = connection.exitInformation(node.job_id)
             if exit_status == FINISHED_REGULARLY and exit_value == 0:
               print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
             else: 
@@ -160,7 +159,7 @@ class JobsControler(object):
         if not node.local_path:
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
-          status = self.jobs.transferStatus(node.local_path)
+          status = connection.transferStatus(node.local_path)
           if status == TRANSFER_NOT_READY:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:
@@ -183,10 +182,14 @@ class JobsControler(object):
     
 class WorkflowExamples(object):
   
-  def __init__(self, with_tranfers, test_config, hostname, test_no):
+  def __init__(self, with_tranfers, test_config_file_path, test_no):
     '''
     @type with_tranfers: boolean
     '''
+    test_config = ConfigParser.ConfigParser()
+    test_config.read(test_config_file_path)
+    
+    hostname = socket.gethostname()
     self.examples_dir = test_config.get(hostname, 'job_examples_dir')
     self.python = test_config.get(hostname, 'python')
     self.output_dir = test_config.get(hostname, 'job_output_dir') + repr(test_no) + "/"

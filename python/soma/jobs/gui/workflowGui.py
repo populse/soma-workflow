@@ -19,7 +19,9 @@ Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ )
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
-#Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
+Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
+
+
 
 class WorkflowWidget(QtGui.QMainWindow):
   
@@ -30,10 +32,14 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.setupUi(self)
 
     self.controler = controler
-    self.controler.connect('neurospin_test_cluster')
-    #self.controler.connect('DSV_cluster', 'sl225510', 'lg2t/1bm')
-    assert(self.controler.isConnected())
-    
+    self.connections = {} # ressource_id => connection
+
+    self.current_resource = None
+    self.current_connection = None
+    self.addConnection()
+    while not self.current_connection:
+      self.addConnection()
+      
     self.setWindowTitle("Workflows !!")
    
     self.current_workflow = None
@@ -69,9 +75,53 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+   
     self.updateWorkflowList()
     self.currentWorkflowChanged()
 
+
+  def addConnection(self):
+    
+    connection_dlg = QtGui.QDialog()
+    ui = Ui_ConnectionDlg()
+    ui.setupUi(connection_dlg)
+    
+    resource_list = self.controler.getRessourceIds()
+    ui.combo_resources.addItems(resource_list)
+    if connection_dlg.exec_() == QtGui.QDialog.Accepted:
+    
+      resource_id = unicode(ui.combo_resources.currentText())
+      if ui.lineEdit_login.text(): 
+        login = ui.lineEdit_login.text()
+      else: 
+        login = None
+      if ui.lineEdit_password.text():
+        password = ui.lineEdit_password.text()
+      else:
+        password = None
+      
+      #resource_id = 'neurospin_test_cluster'
+      #login = None
+      #password = None
+      #resource_id = 'DSV_cluster'
+      #login = 'sl225510'
+      #password = 'lg2t/1bm'
+      
+      test_no = 1
+      
+      print "resource_id " + resource_id
+      print resource_id
+      print "login " + repr(login) 
+      print "password " + repr(password)
+      (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
+      
+      if connection:
+        self.connections[resource_id] = connection
+        self.current_resource = resource_id
+        self.current_connection = connection
+      else:
+        QtGui.QMessageBox.warning(self, "Connection failure.", msg) 
+    
   @QtCore.pyqtSlot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
@@ -98,7 +148,7 @@ class WorkflowWidget(QtGui.QMainWindow):
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
     
     self.currentWorkflowAboutToChange()
-    self.current_workflow = self.controler.submitWorkflow(self.current_workflow, name, date)
+    self.current_workflow = self.controler.submitWorkflow(self.current_workflow, name, date, self.current_connection)
     self.expiration_date = date
     self.updateWorkflowList()
     self.currentWorkflowChanged()
@@ -106,11 +156,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    self.controler.transferInputFiles(self.current_workflow)
+    self.controler.transferInputFiles(self.current_workflow, self.current_connection)
   
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.controler.transferOutputFiles(self.current_workflow)
+    self.controler.transferOutputFiles(self.current_workflow, self.current_connection)
     
   @QtCore.pyqtSlot(int)
   def workflowSelectionChanged(self, index):
@@ -120,7 +170,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     wf_id = self.ui.combo_submitted_wfs.itemData(index).toInt()[0]
     self.currentWorkflowAboutToChange()
     if wf_id != -1:
-      (self.current_workflow, self.expiration_date) = self.controler.getWorkflow(wf_id)
+      (self.current_workflow, self.expiration_date) = self.controler.getWorkflow(wf_id, self.current_connection)
     else:
       self.current_workflow = None
       self.expiration_date = datetime.now()
@@ -139,7 +189,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     if answer != QtGui.QMessageBox.Ok: return
 
     self.currentWorkflowAboutToChange()
-    self.controler.deleteWorkflow(self.current_workflow.wf_id)
+    self.controler.deleteWorkflow(self.current_workflow.wf_id, self.current_connection)
     self.current_workflow = None
     self.updateWorkflowList()
     self.currentWorkflowChanged()
@@ -149,7 +199,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     qtdt = self.ui.dateTimeEdit_expiration.dateTime()
     date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-    change_occured = self.controler.changeWorkflowExpirationDate(self.current_workflow.wf_id,date)
+    change_occured = self.controler.changeWorkflowExpirationDate(self.current_workflow.wf_id, date,  self.current_connection)
     if not change_occured:
       QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
       self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
@@ -192,12 +242,12 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.combo_submitted_wfs.setCurrentIndex(0)
       self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     else:
-      self.itemModel = WorkflowItemModel(self.current_workflow, self.controler.jobs, self)
+      self.itemModel = WorkflowItemModel(self.current_workflow, self.current_connection, self)
       self.ui.treeView.setModel(self.itemModel)
       self.itemModel.emit(QtCore.SIGNAL("modelReset()"))
       
       self.itemModel.dataChanged.connect(self.graphWidget.dataChanged)
-      self.graphWidget.setWorflow(self.current_workflow)
+      self.graphWidget.setWorflow(self.current_workflow, self.current_connection)
       
       self.itemModel.dataChanged.connect(self.itemInfoWidget.dataChanged)
       self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
@@ -250,7 +300,7 @@ class WorkflowWidget(QtGui.QMainWindow):
   def updateWorkflowList(self):
     self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
     self.ui.combo_submitted_wfs.clear()
-    for wf_info in self.controler.getSubmittedWorkflows():
+    for wf_info in self.controler.getSubmittedWorkflows(self.current_connection):
       wf_id, expiration_date, workflow_name = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
       self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
@@ -810,12 +860,13 @@ class TransferInfoWidget(QtGui.QTabWidget):
     
 class WorkflowGraphView(QtGui.QWidget):
   
-  def __init__(self, controler, parent = None):
+  def __init__(self, controler, connection, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
     
     self.controler = controler
     
     self.workflow = None
+    self.connection = None
     
     self.image_label = QtGui.QLabel(self)
     self.image_label.setScaledContents(True)
@@ -828,8 +879,9 @@ class WorkflowGraphView(QtGui.QWidget):
     self.zoom_rate = 1.0
     self.setZoom(1.0)
                                         
-  def setWorflow(self, workflow):
+  def setWorflow(self, workflow, connection):
     self.workflow = workflow
+    self.connection = connection
     self.dataChanged()
     
   def clear(self):
@@ -844,7 +896,7 @@ class WorkflowGraphView(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def dataChanged(self):
     if self.workflow:
-      image_file_path = self.controler.printWorkflow(self.workflow)
+      image_file_path = self.controler.printWorkflow(self.workflow, self.connection)
       image = QtGui.QImage(image_file_path)
       pixmap = QtGui.QPixmap.fromImage(image)
       self.image_label.setPixmap(pixmap)
