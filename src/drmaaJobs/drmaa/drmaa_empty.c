@@ -20,7 +20,7 @@ int drmaa_init(const char *contact, char *error_diagnosis,
                size_t error_diag_len) { return( 0 ); }
 int drmaa_exit(char *error_diagnosis, size_t error_diag_len) { return( 0 ); }
 int drmaa_allocate_job_template(drmaa_job_template_t **jt,
-                                char *error_diagnosis, size_t error_diag_len);
+                                char *error_diagnosis, size_t error_diag_len) { return( 0 ); }
 int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis,
                               size_t error_diag_len) { return( 0 ); }
 int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name,
@@ -36,7 +36,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
                                drmaa_attr_values_t **values,
                                char *error_diagnosis, size_t error_diag_len) { return( 0 ); }
 int drmaa_get_attribute_names(drmaa_attr_names_t **values,
-                              char *error_diagnosis, size_t error_diag_len);
+                              char *error_diagnosis, size_t error_diag_len)  { return( 0 ); }
 int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values,
                                      char *error_diagnosis,
                                      size_t error_diag_len) { return( 0 ); }
@@ -45,7 +45,7 @@ int drmaa_run_job(char *job_id, size_t job_id_len,
                   size_t error_diag_len) { return( 0 ); }
 int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids,
                         const drmaa_job_template_t *jt, int start, int end,
-                        int incr, char *error_diagnosis, size_t error_diag_len);
+                        int incr, char *error_diagnosis, size_t error_diag_len) { return( 0 ); }
 int drmaa_control(const char *jobid, int action, char *error_diagnosis,
                   size_t error_diag_len) { return( 0 ); }
 int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
@@ -60,7 +60,7 @@ int drmaa_wexitstatus(int *exit_status, int stat, char *error_diagnosis,
 int drmaa_wifsignaled(int *signaled, int stat, char *error_diagnosis,
                       size_t error_diag_len) { return( 0 ); }
 int drmaa_wtermsig(char *signal, size_t signal_len, int stat,
-                   char *error_diagnosis, size_t error_diag_len);
+                   char *error_diagnosis, size_t error_diag_len)  { return( 0 ); }
 int drmaa_wcoredump(int *core_dumped, int stat, char *error_diagnosis,
                     size_t error_diag_len) { return( 0 ); }
 int drmaa_wifaborted(int *aborted, int stat, char *error_diagnosis,
