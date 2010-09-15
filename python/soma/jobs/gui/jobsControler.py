@@ -27,8 +27,6 @@ class JobsControler(object):
     self.test_config.read(TestConfigFilePath)
     self.output_dir = self.test_config.get(self.hostname, 'job_output_dir') + repr(self.test_no) + "/"
     
-    
-    
 
   def isConnected(self):
     return not self.jobs == None 
@@ -85,10 +83,12 @@ class JobsControler(object):
     
   def generateWorkflowExample(self, file_path):
 
-    workflow = self.multipleSimpleExample()
-    #workflow = self.simpleExample()
-    #workflow = self.simpleExampleWithException1()
-    #workflow = self.simpleExampleWithException2()
+    wfExamples = WorkflowExamples(with_tranfers = False, test_config = self.test_config, hostname = self.hostname, test_no = self.test_no)
+  
+    #workflow = wfExamples.multipleSimpleExample()
+    workflow = wfExamples.simpleExample()
+    #workflow = wfExamples.simpleExampleWithException1()
+    #workflow = wfExamples.simpleExampleWithException2()
     
     file = open(file_path, 'w')
     pickle.dump(workflow, file)
@@ -180,71 +180,94 @@ class JobsControler(object):
     
   
   
-  
-  def simpleExample(self):
-    examples_dir = self.test_config.get(self.hostname, 'job_examples_dir')
-    python = self.test_config.get(self.hostname, 'python')
     
+class WorkflowExamples(object):
+  
+  def __init__(self, with_tranfers, test_config, hostname, test_no):
+    '''
+    @type with_tranfers: boolean
+    '''
+    self.examples_dir = test_config.get(hostname, 'job_examples_dir')
+    self.python = test_config.get(hostname, 'python')
+    self.output_dir = test_config.get(hostname, 'job_output_dir') + repr(test_no) + "/"
+    
+    self.with_transfers = with_tranfers
+    if self.with_transfers:
       # outputs
-    file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
-    file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
-    file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
-    file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
-    file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
+      self.file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
+      self.file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
+      self.file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
+      self.file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
+      self.file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
+      
+      # inputs
+      self.file0 = FileSending(self.examples_dir + "complete/" + "file0", 168, "file0")
+      self.script1 = FileSending(self.examples_dir + "complete/" + "job1.py", 168, "job1_py")
+      self.stdin1 = FileSending(self.examples_dir + "complete/" + "stdin1", 168, "stdin1")
+      self.script2 = FileSending(self.examples_dir + "complete/" + "job2.py", 168, "job2_py")
+      self.stdin2 = FileSending(self.examples_dir + "complete/" + "stdin2", 168, "stdin2")
+      self.script3 = FileSending(self.examples_dir + "complete/" + "job3.py", 168, "job3_py")
+      self.stdin3 = FileSending(self.examples_dir + "complete/" + "stdin3", 168, "stdin3")
+      self.script4 = FileSending(self.examples_dir + "complete/" + "job4.py", 168, "job4_py")
+      self.stdin4 = FileSending(self.examples_dir + "complete/" + "stdin4", 168, "stdin4")
+      
+      self.exceptionJobScript = FileSending(self.examples_dir + "simple/exceptionJob.py", 168, "exception_job")
+    else:
+      # outputs
+      self.file11 = self.output_dir + "file11"
+      self.file12 = self.output_dir + "file12"
+      self.file2 = self.output_dir + "file2"
+      self.file3 = self.output_dir + "file3"
+      self.file4 = self.output_dir + "file4"
+      
+      # inputs
+      self.file0 = self.examples_dir + "complete/" + "file0"
+      self.script1 = self.examples_dir + "complete/" + "job1.py"
+      self.stdin1 = self.examples_dir + "complete/" + "stdin1"
+      self.script2 = self.examples_dir + "complete/" + "job2.py"
+      self.stdin2 = self.examples_dir + "complete/" + "stdin2"
+      self.script3 = self.examples_dir + "complete/" + "job3.py"
+      self.stdin3 = self.examples_dir + "complete/" + "stdin3"
+      self.script4 = self.examples_dir + "complete/" + "job4.py"
+      self.stdin4 = self.examples_dir + "complete/" + "stdin4"
+      
+      self.exceptionJobScript = self.examples_dir + "simple/exceptionJob.py"
+      
+  def simpleExample(self):
     
-    # inputs
-    file0 = FileSending(examples_dir + "complete/" + "file0", 168, "file0")
-    script1 = FileSending(examples_dir + "complete/" + "job1.py", 168, "job1_py")
-    stdin1 = FileSending(examples_dir + "complete/" + "stdin1", 168, "stdin1")
-    script2 = FileSending(examples_dir + "complete/" + "job2.py", 168, "job2_py")
-    stdin2 = FileSending(examples_dir + "complete/" + "stdin2", 168, "stdin2")
-    script3 = FileSending(examples_dir + "complete/" + "job3.py", 168, "job3_py")
-    stdin3 = FileSending(examples_dir + "complete/" + "stdin3", 168, "stdin3")
-    script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
-    stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
-    
-    exceptionJobScript = FileSending(examples_dir + "simple/exceptionJob.py", 168, "exception_job")
-                                                                                                          
     # jobs
-    job1 = JobTemplate([python, script1, file0,  file11, file12, "20"], 
-                      [file0, script1, stdin1], 
-                      [file11, file12], 
-                      stdin1, False, 168, "job1")
-                              
-    job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
-                      [file0, file11, script2, stdin2], 
-                      [file2], 
-                      stdin2, False, 168, "job2")
-                              
-    job3 = JobTemplate([python, script3, file12,  file3, "30"], 
-                      [file12, script3, stdin3], 
-                      [file3], 
-                      stdin3, False, 168, "job3")
-    
-    #job3 = JobTemplate([python, exceptionJobScript],
-                      #[exceptionJobScript, file12, script3, stdin3],
-                      #[file3],
-                      #None, False, 168, "job3")
-    
-    job4 = JobTemplate([python, script4, file2,  file3, file4, "10"], 
-                              [file2, file3, script4, stdin4], 
-                              [file4], 
-                              stdin4, False, 168, "job4")
-  
-    
+    if self.with_transfers:
+      job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], 
+                        [self.file0, self.script1, self.stdin1], 
+                        [self.file11, self.file12], 
+                        self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], 
+                        [self.file0, self.file11, self.script2, self.stdin2], 
+                        [self.file2], 
+                        self.stdin2, False, 168, "job2")
+                                
+      job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], 
+                        [self.file12, self.script3, self.stdin3], 
+                        [self.file3], 
+                        self.stdin3, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], 
+                        [self.file2, self.file3, self.script4, self.stdin4], 
+                        [self.file4], 
+                        self.stdin4, False, 168, "job4")
+    else: 
+      job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+                                
+      job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
   
     #building the workflow
-    
-    #nodes = [file11, file12, file2, file3, file4,
-           #file0, script1, stdin1, 
-           #script2, stdin2, 
-           #script3, stdin3, #exceptionJobScript,
-           #script4, stdin4, 
-           #job1, job2, job3, job4]
-           
     nodes = [job1, job2, job3, job4]
   
-
     dependencies = [(job1, job2), 
                     (job1, job3),
                     (job2, job4), 
@@ -257,54 +280,39 @@ class JobsControler(object):
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
     return workflow
-    
+  
   def simpleExampleWithException1(self):
-    examples_dir = self.test_config.get(self.hostname, 'job_examples_dir')
-    python = self.test_config.get(self.hostname, 'python')
-    
-      # outputs
-    file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
-    file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
-    file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
-    file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
-    file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
-    
-    # inputs
-    file0 = FileSending(examples_dir + "complete/" + "file0", 168, "file0")
-    script1 = FileSending(examples_dir + "complete/" + "job1.py", 168, "job1_py")
-    stdin1 = FileSending(examples_dir + "complete/" + "stdin1", 168, "stdin1")
-    script2 = FileSending(examples_dir + "complete/" + "job2.py", 168, "job2_py")
-    stdin2 = FileSending(examples_dir + "complete/" + "stdin2", 168, "stdin2")
-    script3 = FileSending(examples_dir + "complete/" + "job3.py", 168, "job3_py")
-    stdin3 = FileSending(examples_dir + "complete/" + "stdin3", 168, "stdin3")
-    script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
-    stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
-    
-    exceptionJobScript = FileSending(examples_dir + "simple/exceptionJob.py", 168, "exception_job")
-                                                                                                          
+                                                          
     # jobs
-    job1 = JobTemplate([python, exceptionJobScript], 
-                      [exceptionJobScript, file0, script1, stdin1], 
-                      [file11, file12], 
-                      stdin1, False, 168, "job1")
-                              
-    job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
-                      [file0, file11, script2, stdin2], 
-                      [file2], 
-                      stdin2, False, 168, "job2")
-    
-
-    
-    job3 = JobTemplate([python, script3, file12,  file3, "30"], 
-                      [file12, script3, stdin3], 
-                      [file3], 
-                      stdin3, False, 168, "job3")
-    
-    job4 = JobTemplate([python, script4, file2,  file3, file4, "10"], 
-                              [file2, file3, script4, stdin4], 
-                              [file4], 
-                              stdin4, False, 168, "job4")
-           
+    if self.with_transfers:
+      job1 = JobTemplate([self.python, self.exceptionJobScript], 
+                        [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
+                        [self.file11, self.file12], 
+                        self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], 
+                        [self.file0, self.file11, self.script2, self.stdin2], 
+                        [self.file2], 
+                        self.stdin2, False, 168, "job2")
+                                
+      job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], 
+                        [self.file12, self.script3, self.stdin3], 
+                        [self.file3], 
+                        self.stdin3, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], 
+                        [self.file2, self.file3, self.script4, self.stdin4], 
+                        [self.file4], 
+                        self.stdin4, False, 168, "job4")
+    else:
+      job1 = JobTemplate([self.python, self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+                                
+      job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4") 
+          
     nodes = [job1, job2, job3, job4]
   
 
@@ -320,55 +328,41 @@ class JobsControler(object):
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
     return workflow
+  
   
   def simpleExampleWithException2(self):
-    examples_dir = self.test_config.get(self.hostname, 'job_examples_dir')
-    python = self.test_config.get(self.hostname, 'python')
-    
-      # outputs
-    file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
-    file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
-    file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
-    file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
-    file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
-    
-    # inputs
-    file0 = FileSending(examples_dir + "complete/" + "file0", 168, "file0")
-    script1 = FileSending(examples_dir + "complete/" + "job1.py", 168, "job1_py")
-    stdin1 = FileSending(examples_dir + "complete/" + "stdin1", 168, "stdin1")
-    script2 = FileSending(examples_dir + "complete/" + "job2.py", 168, "job2_py")
-    stdin2 = FileSending(examples_dir + "complete/" + "stdin2", 168, "stdin2")
-    script3 = FileSending(examples_dir + "complete/" + "job3.py", 168, "job3_py")
-    stdin3 = FileSending(examples_dir + "complete/" + "stdin3", 168, "stdin3")
-    script4 = FileSending(examples_dir + "complete/" + "job4.py", 168, "job4_py")
-    stdin4 = FileSending(examples_dir + "complete/" + "stdin4", 168, "stdin4")
-    
-    exceptionJobScript = FileSending(examples_dir + "simple/exceptionJob.py", 168, "exception_job")
-                                                                                                          
+   
     # jobs
-    job1 = JobTemplate([python, script1, file0,  file11, file12, "20"], 
-                      [file0, script1, stdin1], 
-                      [file11, file12], 
-                      stdin1, False, 168, "job1")
-                              
-    job2 = JobTemplate([python, script2, file11,  file0, file2, "30"], 
-                      [file0, file11, script2, stdin2], 
-                      [file2], 
-                      stdin2, False, 168, "job2")
-    
-    job3 = JobTemplate([python, exceptionJobScript],
-                      [exceptionJobScript, file12, script3, stdin3],
-                      [file3],
-                      None, False, 168, "job3")
-    
-    job4 = JobTemplate([python, script4, file2,  file3, file4, "10"], 
-                              [file2, file3, script4, stdin4], 
-                              [file4], 
-                              stdin4, False, 168, "job4")
-  
+    if self.with_transfers:
+      job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], 
+                        [self.file0, self.script1, self.stdin1], 
+                        [self.file11, self.file12], 
+                        self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], 
+                        [self.file0, self.file11, self.script2, self.stdin2], 
+                        [self.file2], 
+                        self.stdin2, False, 168, "job2")
+      
+      job3 = JobTemplate([self.python, self.exceptionJobScript],
+                        [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
+                        [self.file3],
+                        None, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], 
+                        [self.file2, self.file3, self.script4, self.stdin4], 
+                        [self.file4], 
+                        self.stdin4, False, 168, "job4")
+    else:
+      job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
+                                
+      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+      
+      job3 = JobTemplate([self.python, self.exceptionJobScript], None, None, None, False, 168, "job3")
+      
+      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
            
     nodes = [job1, job2, job3, job4]
-  
 
     dependencies = [(job1, job2), 
                     (job1, job3),
@@ -382,7 +376,8 @@ class JobsControler(object):
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
     return workflow
-    
+  
+  
   def multipleSimpleExample(self):
     workflow1 = self.simpleExample()
     workflow2 = self.simpleExampleWithException1()
@@ -408,4 +403,3 @@ class JobsControler(object):
     
     workflow = Workflow(nodes, dependencies, mainGroup, groups)
     return workflow
-    

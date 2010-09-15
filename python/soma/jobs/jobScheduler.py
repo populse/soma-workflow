@@ -492,7 +492,6 @@ class DrmaaJobScheduler( object ):
       if job.stdin:
         if isinstance(job.stdin, FileTransfer):
           job.stdin = job.stdin.local_path 
-        else: assert_is_a_workflow_node(job.stdin)
         
       # Job registration
       registered_job = self.__registerJob(job, workflow_id)
@@ -509,6 +508,7 @@ class DrmaaJobScheduler( object ):
       if torun:
         if isinstance(node, JobTemplate):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
+          
     return workflow
      
   #def __isWFNodeCompleted(self, node):
@@ -593,9 +593,9 @@ class DrmaaJobScheduler( object ):
         if job.jobTemplate.referenced_output_files:
           for local_path in job.jobTemplate.referenced_output_files:
             self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
-          if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
-            workflow = self.__workflows[job.jobTemplate.workflow_id]
-            wf_to_process.add(workflow)
+        if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
+          workflow = self.__workflows[job.jobTemplate.workflow_id]
+          wf_to_process.add(workflow)
 
       for workflow_id, w_ended_transfers in endedTransfers:
         for local_path in w_ended_transfers:
