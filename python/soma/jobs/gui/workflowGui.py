@@ -36,8 +36,9 @@ class WorkflowWidget(QtGui.QMainWindow):
 
     self.current_resource = None
     self.current_connection = None
-    self.addConnection()
-    while not self.current_connection:
+    keep_on = self.addConnection()
+    if not keep_on: return 
+    while keep_on and not self.current_connection:
       self.addConnection()
       
     self.setWindowTitle("Workflows !!")
@@ -88,39 +89,27 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     resource_list = self.controler.getRessourceIds()
     ui.combo_resources.addItems(resource_list)
-    if connection_dlg.exec_() == QtGui.QDialog.Accepted:
-    
+    if connection_dlg.exec_() != QtGui.QDialog.Accepted:
+      return False
+    else:
       resource_id = unicode(ui.combo_resources.currentText())
       if ui.lineEdit_login.text(): 
-        login = ui.lineEdit_login.text()
+        login = unicode(ui.lineEdit_login.text()).encode('utf-8')
       else: 
         login = None
       if ui.lineEdit_password.text():
-        password = ui.lineEdit_password.text()
+        password = unicode(ui.lineEdit_password.text()).encode('utf-8')
       else:
         password = None
-      
-      #resource_id = 'neurospin_test_cluster'
-      #login = None
-      #password = None
-      #resource_id = 'DSV_cluster'
-      #login = 'sl225510'
-      #password = 'lg2t/1bm'
-      
       test_no = 1
-      
-      print "resource_id " + resource_id
-      print resource_id
-      print "login " + repr(login) 
-      print "password " + repr(password)
       (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
-      
       if connection:
         self.connections[resource_id] = connection
         self.current_resource = resource_id
         self.current_connection = connection
-      else:
-        QtGui.QMessageBox.warning(self, "Connection failure.", msg) 
+      return True
+      
+
     
   @QtCore.pyqtSlot()
   def openWorkflow(self):

@@ -52,6 +52,7 @@ class JobRemoteConnection( object ):
   def __init__(self,
                login, 
                password, 
+               cluster_address,
                submitting_machine,
                local_process_src,
                resource_id,
@@ -74,8 +75,8 @@ class JobRemoteConnection( object ):
     
     if not login:
       raise JobConnectionError("Remote connection requires a login")
-    print 'login ' + login
-    print 'submitting machine ' + submitting_machine
+    #print 'login ' + login
+    #print 'submitting machine ' + submitting_machine
   
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
@@ -92,7 +93,7 @@ class JobRemoteConnection( object ):
     print "local process command: " + command
     client = paramiko.SSHClient()
     client.load_system_host_keys()
-    client.connect(hostname = submitting_machine, port=22, username=login, password=password)
+    client.connect(hostname = cluster_address, port=22, username=login, password=password)
     stdin, stdout, stderr = client.exec_command(command)
     line = stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
@@ -117,7 +118,7 @@ class JobRemoteConnection( object ):
 
     
     # tunnel creation                      #
-    self.__transport = paramiko.Transport((submitting_machine, 22))
+    self.__transport = paramiko.Transport((cluster_address, 22))
     self.__transport.setDaemon(True)
     self.__transport.connect(username = login, password = password)
     tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, self.__transport) 

@@ -225,6 +225,7 @@ class Jobs(object):
                            level = eval("logging."+config.get(OCFG_SECTION_CLIENT, OCFG_CLIENT_LOG_LEVEL)))
    
     submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
+    cluster_address = config.get(resource_id, CFG_CLUSTER_ADDRESS)
     hostname = socket.gethostname()
     mode = 'remote'
     for machine in submitting_machines:
@@ -249,8 +250,9 @@ class Jobs(object):
     ##########
     if self.__mode == 'remote':
       sub_machine = submitting_machines[random.randint(0, len(submitting_machines)-1)]
+      print 'cluster address: ' + cluster_address
       print 'submission machine: ' + sub_machine
-      self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, sub_machine, src_local_process, resource_id, log)
+      self.__connection = soma.jobs.connection.JobRemoteConnection(login, password, cluster_address, sub_machine, src_local_process, resource_id, log)
       self.__js_proxy = self.__connection.getJobScheduler()
       self.__file_transfer = soma.jobs.connection.RemoteTransfer(self.__js_proxy)
     

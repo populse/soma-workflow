@@ -74,6 +74,7 @@ Soma job configuration items
 CFG => Mandatory items
 OCFG => Optional
 '''
+CFG_CLUSTER_ADDRESS = 'cluster_address'
 CFG_SUBMITTING_MACHINES = 'submitting_machines'
 OCFG_DRMS = 'drms'
 

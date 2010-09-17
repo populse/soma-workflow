@@ -35,7 +35,7 @@ class JobsControler(object):
                           password,
                           log=test_no)
     except Exception, e:
-      return (None, "%s" %(e) )
+      return (None, "%s: %s" %(type(e),e) )
       
     return (connection, "") 
     
