@@ -21,6 +21,7 @@ Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
 Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
+Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'firstConnectionDlg.ui' ))[0]
 
 
 
@@ -37,16 +38,10 @@ class WorkflowWidget(QtGui.QMainWindow):
 
     self.current_resource = None
     self.current_connection = None
-    self.resource_list = [" "]
-    self.resource_list.extend(self.controler.getRessourceIds())
+    self.resource_list = self.controler.getRessourceIds()
     
     self.ui.combo_resources.addItems(self.resource_list)
     
-    #keep_on = self.addConnection()
-    #if not keep_on: return 
-    #while keep_on and not self.current_connection:
-      #self.addConnection()
-      
     self.setWindowTitle("Workflows")
    
     self.current_workflow = None
@@ -84,39 +79,52 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
     
-    #self.updateWorkflowList()
-    #self.currentWorkflowChanged()
+    # first connection:
+    self.firstConnection_dlg = QtGui.QDialog(self)
+    self.ui_firstConnection_dlg = Ui_FirstConnectionDlg()
+    self.ui_firstConnection_dlg.setupUi(self.firstConnection_dlg)
+    self.ui_firstConnection_dlg.combo_resources.addItems(self.resource_list)
+    self.firstConnection_dlg.accepted.connect(self.firstConnection)
+    self.firstConnection_dlg.rejected.connect(self.close)
+    self.firstConnection_dlg.show()
     
-  def addConnection(self):
-    
-    connection_dlg = QtGui.QDialog()
-    ui = Ui_ConnectionDlg()
-    ui.setupUi(connection_dlg)
-    
-    resource_list = self.controler.getRessourceIds()
-    ui.combo_resources.addItems(resource_list)
-    if connection_dlg.exec_() != QtGui.QDialog.Accepted:
-      return False
+    if self.current_connection:
+      index = self.ui.combo_resources.findText(self.current_resource)
+      self.ui.combo_resources.setCurrentIndex(index)
+      self.updateWorkflowList()
+      self.currentWorkflowChanged()
     else:
-      resource_id = unicode(ui.combo_resources.currentText())
-      if ui.lineEdit_login.text(): 
-        login = unicode(ui.lineEdit_login.text()).encode('utf-8')
-      else: 
-        login = None
-      if ui.lineEdit_password.text():
-        password = unicode(ui.lineEdit_password.text()).encode('utf-8')
-      else:
-        password = None
-      test_no = 1
-      (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
-      if connection:
-        self.connections[resource_id] = connection
-        self.current_resource = resource_id
-        self.setWindowTitle("Workflows - " + self.current_resource)
-        self.current_connection = connection
-      return True
+      self.close()
       
-
+      
+  @QtCore.pyqtSlot()
+  def firstConnection(self):
+    
+    resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
+    if self.ui_firstConnection_dlg.lineEdit_login.text(): 
+      login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
+    else: 
+      login = None
+    if self.ui_firstConnection_dlg.lineEdit_password.text():
+      password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
+    else:
+      password = None
+    test_no = 1
+    (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
+    if connection:
+      self.connections[resource_id] = connection
+      self.current_resource = resource_id
+      self.setWindowTitle("Workflows - " + self.current_resource)
+      self.current_connection = connection
+      index = self.ui.combo_resources.findText(self.current_resource)
+      self.ui.combo_resources.setCurrentIndex(index)
+      self.updateWorkflowList()
+      self.currentWorkflowChanged()
+      self.firstConnection_dlg.hide()
+    else:
+      QtGui.QMessageBox.information(self, "Connection failed", msg)
+      self.ui_firstConnection_dlg.lineEdit_password.clear()
+      self.firstConnection_dlg.show()
     
   @QtCore.pyqtSlot()
   def openWorkflow(self):
