@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
 from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, JobTemplate
@@ -36,12 +37,17 @@ class WorkflowWidget(QtGui.QMainWindow):
 
     self.current_resource = None
     self.current_connection = None
-    keep_on = self.addConnection()
-    if not keep_on: return 
-    while keep_on and not self.current_connection:
-      self.addConnection()
+    self.resource_list = [" "]
+    self.resource_list.extend(self.controler.getRessourceIds())
+    
+    self.ui.combo_resources.addItems(self.resource_list)
+    
+    #keep_on = self.addConnection()
+    #if not keep_on: return 
+    #while keep_on and not self.current_connection:
+      #self.addConnection()
       
-    self.setWindowTitle("Workflows !!")
+    self.setWindowTitle("Workflows")
    
     self.current_workflow = None
     self.expiration_date = None
@@ -76,11 +82,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
-   
-    self.updateWorkflowList()
-    self.currentWorkflowChanged()
-
-
+    self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
+    
+    #self.updateWorkflowList()
+    #self.currentWorkflowChanged()
+    
   def addConnection(self):
     
     connection_dlg = QtGui.QDialog()
@@ -106,6 +112,7 @@ class WorkflowWidget(QtGui.QMainWindow):
       if connection:
         self.connections[resource_id] = connection
         self.current_resource = resource_id
+        self.setWindowTitle("Workflows - " + self.current_resource)
         self.current_connection = connection
       return True
       
@@ -164,6 +171,62 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.current_workflow = None
       self.expiration_date = datetime.now()
     self.currentWorkflowChanged()
+    
+  @QtCore.pyqtSlot(int)
+  def resourceSelectionChanged(self, index):
+    if index <0 or index >= self.ui.combo_resources.count():
+      index = self.ui.combo_resources.findText(self.current_resource)
+      self.ui.combo_resources.setCurrentIndex(index)
+      return
+    
+    resource_id = unicode(self.ui.combo_resources.itemText(index)).encode('utf-8')
+    if resource_id == " ":
+      index = self.ui.combo_resources.findText(self.current_resource)
+      self.ui.combo_resources.setCurrentIndex(index)
+      return
+    
+    if resource_id in self.connections.keys():
+      connection = self.connections[resource_id]
+      self.current_resource = resource_id
+      self.setWindowTitle("Workflows - " + self.current_resource)
+      self.current_connection = connection
+      self.updateWorkflowList()
+      self.current_workflow = None
+      self.currentWorkflowChanged()
+      return
+    else:
+      connection_invalid = True
+      try_again = True
+      while connection_invalid or try_again: 
+        connection_dlg = QtGui.QDialog()
+        ui = Ui_ConnectionDlg()
+        ui.setupUi(connection_dlg)
+        ui.resource_label.setText(resource_id)
+        if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
+          try_again = False
+          index = self.ui.combo_resources.findText(self.current_resource)
+          self.ui.combo_resources.setCurrentIndex(index)
+          break
+        if ui.lineEdit_login.text(): 
+          login = unicode(ui.lineEdit_login.text()).encode('utf-8')
+        else: login = None
+        if ui.lineEdit_password.text():
+          password = unicode(ui.lineEdit_password.text()).encode('utf-8')
+        else: password = None
+        test_no = 1
+        (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
+        if connection:
+          connection_invalid = False
+          self.connections[resource_id] = connection
+          self.current_resource = resource_id
+          self.setWindowTitle("Workflows - " + self.current_resource)
+          self.current_connection = connection
+          self.updateWorkflowList()
+          self.current_workflow = None
+          self.currentWorkflowChanged()
+          return 
+        else:
+          QtGui.QMessageBox.information(self, "Connection failed", msg)
     
   @QtCore.pyqtSlot()
   def deleteWorkflow(self):
@@ -285,7 +348,6 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
         
       
-  
   def updateWorkflowList(self):
     self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
     self.ui.combo_submitted_wfs.clear()
@@ -304,12 +366,20 @@ class WorkflowItem(object):
   INPUT_FILE_T = "input_file_transfer"
   
   
-  def __init__(self, it_id, 
+  def __init__(self,
+               connection,
+               it_id, 
                parent = -1, 
                row = -1,
                it_type = None,
                data = None,
                children_nb = 0):
+    '''
+    @type  connection: soma.jobs.jobClient.job
+    @param connection: jobs interface 
+    '''
+    
+    self.connection = connection
     self.it_id = it_id
     self.parent = parent # parent_id
     self.row = row
@@ -331,56 +401,58 @@ class WorkflowItem(object):
     elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
       self.state["transfer_status"] = " "
     
-  def updateState(self, jobs):
+    self.initiated = False
+    
+    
+  def updateState(self):
     '''
-    @type  jobs: soma.jobs.jobClient.job
-    @param jobs: jobs interface (connection)
     @rtype: boolean
     @returns: did the state change?
     '''
+    self.initiated = True
     state_changed = False
     if self.it_type == WorkflowItem.JOB and self.data.job_id != -1 :
-      status = jobs.status(self.data.job_id)
+      status = self.connection.status(self.data.job_id)
       state_changed = state_changed or status != self.state["status"]
       self.state["status"]=status
       separator = " "
       self.state["command"]= separator.join(self.data.command)
       #if state_changed and status == DONE or status == FAILED:
-      exit_info =  jobs.exitInformation(self.data.job_id)
+      exit_info =  self.connection.exitInformation(self.data.job_id)
       state_changed = state_changed or exit_info != self.state["exit_info"]
-      self.state["exit_info"] = jobs.exitInformation(self.data.job_id)
+      self.state["exit_info"] = self.connection.exitInformation(self.data.job_id)
        
-      jobs.resertStdReading()
+      self.connection.resertStdReading()
       if self.state["stdout"] == " " and (status == DONE or status == FAILED):
-        line = jobs.stdoutReadLine(self.data.job_id)
+        line = self.connection.stdoutReadLine(self.data.job_id)
         stdout = ""
         while line:
           stdout = stdout + line + "\n"
-          line = jobs.stdoutReadLine(self.data.job_id)
+          line = self.connection.stdoutReadLine(self.data.job_id)
         self.state["stdout"] = stdout
         
       if self.state["stderr"] == " " and (status == DONE or status == FAILED):
-        line = jobs.stderrReadLine(self.data.job_id)
+        line = self.connection.stderrReadLine(self.data.job_id)
         stderr = ""
         while line:
           stderr = stderr + line + "\n"
-          line = jobs.stderrReadLine(self.data.job_id)
+          line = self.connection.stderrReadLine(self.data.job_id)
         self.state["stderr"] = stderr
     
     elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
-      transfer_status = jobs.transferStatus(self.data.local_path)
+      transfer_status = self.connection.transferStatus(self.data.local_path)
       state_changed = state_changed or transfer_status != self.state["transfer_status"]
       self.state["transfer_status"] = transfer_status
+      
     return state_changed
     
 
     
 class WorkflowItemModel(QtCore.QAbstractItemModel):
   
-  def __init__(self, workflow, jobs = None, parent=None):
+  def __init__(self, workflow, connection = None, parent=None):
     
     super(WorkflowItemModel, self).__init__(parent)
-    self.jobs = jobs
     
     w_js = set([])
     w_fts = set([])
@@ -410,7 +482,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[job] = item_id
-      self.items[item_id] = WorkflowItem(it_id = item_id, 
+      self.items[item_id] = WorkflowItem(connection = connection, 
+                                         it_id = item_id, 
                                          parent = -1, 
                                          row = -1, 
                                          it_type = WorkflowItem.JOB, 
@@ -423,7 +496,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       
       
     # Groups
-    self.root_item = WorkflowItem(it_id = -1, 
+    self.root_item = WorkflowItem(connection = connection, 
+                                  it_id = -1, 
                                   parent = -1, 
                                   row = -1, 
                                   it_type = WorkflowItem.GROUP, 
@@ -435,7 +509,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[group] = item_id
-      self.items[item_id] =  WorkflowItem(it_id = item_id, 
+      self.items[item_id] =  WorkflowItem(connection = connection, 
+                                          it_id = item_id, 
                                           parent = -1, 
                                           row = -1, 
                                           it_type = WorkflowItem.GROUP, 
@@ -479,7 +554,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             row = ref_in.index(ft)
           else: 
             row = ref_in.index(ft.local_path)
-          self.items[item_id] = WorkflowItem( it_id = item_id, 
+          self.items[item_id] = WorkflowItem( connection = connection,
+                                              it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
                                               it_type = WorkflowItem.INPUT_FILE_T, 
@@ -493,7 +569,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             row = len(ref_in)+ref_out.index(ft)
           else:
             row = len(ref_in)+ref_out.index(ft.local_path)
-          self.items[item_id] = WorkflowItem( it_id = item_id, 
+          self.items[item_id] = WorkflowItem( connection = connection,
+                                              it_id = item_id, 
                                               parent=self.ids[job], 
                                               row = row, 
                                               it_type = WorkflowItem.OUTPUT_FILE_T, 
@@ -512,6 +589,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     ###########################################
     self.__update_state = True
     self.__update_interval = 3
+    self.__lock = threading.RLock()
+  
     def updateLoop(self, interval):
       while self.__update_state:
         self.checkChanges()
@@ -524,13 +603,18 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     self.__update_loop.setDaemon(True)
     self.__update_loop.start()
     
+    #print "new WorkflowItemModel "
+    #row = self.rowCount(QtCore.QModelIndex())
+    #self.dataChanged.emit(self.index(0,0,QtCore.QModelIndex()), self.index(row,0, QtCore.QModelIndex()))
+    
     
   def checkChanges(self):
     data_changed = False
     for item in self.items.values():
       #print "update state " + repr(self.__update_state) + " " + repr(self.name) + " " + repr(self.wf_id)
       if not self.__update_state: break 
-      item_changed = item.updateState(self.jobs)
+      with self.__lock:
+        item_changed = item.updateState()
       data_changed = data_changed or item_changed
       #self.dataChanged.emit(self.createIndex(item.row, 0, item), self.createIndex(item.row, 0, item))
     
@@ -628,6 +712,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
   
     item = index.internalPointer()
     #print "  item " + item.data.name
+    
+    if not item.initiated:
+      with self.__lock:
+        item.updateState()
+    
     #### Groups ####
     if item.it_type == WorkflowItem.GROUP:
       if role == QtCore.Qt.DisplayRole:
@@ -635,7 +724,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         return item.data.name
     
     #### JobTemplates ####
-    if item.it_type == WorkflowItem.JOB:
+    if item.it_type == WorkflowItem.JOB:  
       if item.data.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
