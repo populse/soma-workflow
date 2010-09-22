@@ -21,17 +21,13 @@
     <string>job info</string>
    </attribute>
    <layout class="QFormLayout" name="formLayout">
+    <property name="fieldGrowthPolicy">
+     <enum>QFormLayout::ExpandingFieldsGrow</enum>
+    </property>
     <item row="0" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
        <string>Job name:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_8">
-      <property name="text">
-       <string>Job status:</string>
       </property>
      </widget>
     </item>
@@ -45,18 +41,15 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="job_status">
-      <property name="frame">
-       <bool>false</bool>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>Job status:</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="exit_status">
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="job_status">
       <property name="frame">
        <bool>false</bool>
       </property>
@@ -72,10 +65,13 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="1">
-     <widget class="QLineEdit" name="exit_value">
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="exit_status">
       <property name="frame">
        <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -86,44 +82,10 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="0">
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>Ressource usage:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="1">
-     <widget class="QLineEdit" name="command">
+    <item row="3" column="1">
+     <widget class="QLineEdit" name="exit_value">
       <property name="frame">
        <bool>false</bool>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="0">
-     <widget class="QLabel" name="label_6">
-      <property name="text">
-       <string>command:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="1">
-     <widget class="QLineEdit" name="stderr_path">
-      <property name="frame">
-       <bool>false</bool>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="0">
-     <widget class="QLabel" name="label_4">
-      <property name="text">
-       <string>standard error file :</string>
       </property>
      </widget>
     </item>
@@ -144,8 +106,32 @@
       </property>
      </widget>
     </item>
+    <item row="5" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Ressource usage:</string>
+      </property>
+     </widget>
+    </item>
     <item row="5" column="1">
      <widget class="QComboBox" name="resource_usage"/>
+    </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="label_6">
+      <property name="text">
+       <string>command:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
+     <widget class="QLineEdit" name="command">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -164,8 +150,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>344</width>
-         <height>248</height>
+         <width>96</width>
+         <height>32</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -200,8 +186,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>344</width>
-         <height>248</height>
+         <width>96</width>
+         <height>32</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout">

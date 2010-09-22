@@ -18,6 +18,7 @@ LIGHT_BLUE=QtGui.QColor(200,255,255)
 
 Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'WorkflowMainWindow.ui' ))[0]
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
+Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'graphWidget.ui' ))[0]
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
 Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
@@ -51,16 +52,16 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.graphWidget = WorkflowGraphView(self.controler, self)
     graphWidgetLayout = QtGui.QVBoxLayout()
     graphWidgetLayout.addWidget(self.graphWidget)
-    self.ui.graphViewScrollAreaWidgetContents.setLayout(graphWidgetLayout)
+    self.ui.dockWidgetContents_graph_view.setLayout(graphWidgetLayout)
+    
+    #graphWidgetLayout = QtGui.QVBoxLayout()
+    #graphWidgetLayout.addWidget(self.graphWidget)
+    #self.ui.graphViewScrollAreaWidgetContents.setLayout(graphWidgetLayout)
     
     self.itemInfoWidget = WorkflowElementInfo(self)
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
-
-    self.ui.slider_zoom.setRange(30, 100)
-    self.ui.slider_zoom.setValue(100)
-    self.ui.slider_zoom.sliderMoved.connect(self.zoomChanged)
     
     self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
     self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
@@ -78,6 +79,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
+    
+    self.showMaximized()
     
     # first connection:
     self.firstConnection_dlg = QtGui.QDialog(self)
@@ -266,10 +269,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     else:
       self.expiration_date = date
     
-  @QtCore.pyqtSlot(int)
-  def zoomChanged(self, percentage):
-    rate = percentage / 100.0
-    self.graphWidget.setZoom(rate)
+
   
   
   def currentWorkflowAboutToChange(self):
@@ -606,7 +606,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     
     self.__update_loop = threading.Thread(name = "WorflowItemModel_update_loop",
                                          target = updateLoop,
-                                         args = (self, 3))
+                                         args = (self, self.__update_interval))
     
     self.__update_loop.setDaemon(True)
     self.__update_loop.start()
@@ -948,6 +948,8 @@ class WorkflowGraphView(QtGui.QWidget):
   
   def __init__(self, controler, connection, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
+    self.ui = Ui_GraphWidget()
+    self.ui.setupUi(self)
     
     self.controler = controler
     
@@ -955,15 +957,20 @@ class WorkflowGraphView(QtGui.QWidget):
     self.connection = None
     
     self.image_label = QtGui.QLabel(self)
-    self.image_label.setScaledContents(True)
     self.image_label.setBackgroundRole(QtGui.QPalette.Base)
     self.image_label.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+    self.image_label.setScaledContents(True)
     
-    layout = QtGui.QVBoxLayout()
-    layout.addWidget(self.image_label)
+    self.ui.scrollArea.setBackgroundRole(QtGui.QPalette.Dark)
+    #self.ui.scrollArea.setWidget(self.image_label)
+    self.ui.scrollArea.setWidgetResizable(False)
     
-    self.zoom_rate = 1.0
-    self.setZoom(1.0)
+    self.ui.zoom_slider.setRange(10, 200)
+    self.ui.zoom_slider.sliderMoved.connect(self.zoomChanged)
+    self.ui.zoom_slider.setValue(100)
+    self.scale_factor = 1.0
+    
+    self.ui.adjust_size_checkBox.stateChanged.connect(self.adjustSizeChanged)
                                         
   def setWorflow(self, workflow, connection):
     self.workflow = workflow
@@ -974,11 +981,19 @@ class WorkflowGraphView(QtGui.QWidget):
     self.workflow = None
     self.dataChanged()
     
-  def setZoom(self, zoom_rate):
-    self.zoom_rate = zoom_rate
+  @QtCore.pyqtSlot(int)
+  def zoomChanged(self, percentage):
+    self.scale_factor = percentage / 100.0
     if self.workflow:
-      self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
+      self.image_label.resize(self.image_label.pixmap().size()*self.scale_factor)
     
+  @QtCore.pyqtSlot(int)
+  def adjustSizeChanged(self, state):
+    if self.ui.adjust_size_checkBox.isChecked():
+      pass
+      # TBI
+    
+  
   @QtCore.pyqtSlot()
   def dataChanged(self):
     if self.workflow:
@@ -986,13 +1001,20 @@ class WorkflowGraphView(QtGui.QWidget):
       image = QtGui.QImage(image_file_path)
       pixmap = QtGui.QPixmap.fromImage(image)
       self.image_label.setPixmap(pixmap)
-      self.image_label.resize(self.image_label.pixmap().size()*self.zoom_rate)
+      self.ui.scrollArea.setWidget(self.image_label)
+      self.image_label.resize(self.image_label.pixmap().size()*self.scale_factor)
     else:
-      self.image_label.setPixmap(QtGui.QPixmap())
+      self.ui.scrollArea.takeWidget()
     
     
-#class ConnectionDlg(QtGui.QDialog):
+class ClientModel(object):
   
-  #def __init__(self, controler, parent = None):
-    #super(ConnectionDlg, self).__init__(parent)
+  def __init__(self):
+    self.connections = {} # ressource_id => connection
+    self.workflows = {} # resource_id => list of loaded workflows
+    self.current_connection = None
+    self.current_workflow = None
+    
+    
+    
     

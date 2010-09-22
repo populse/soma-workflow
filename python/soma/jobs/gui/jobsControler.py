@@ -173,6 +173,7 @@ class JobsControler(object):
     file.close()
     
     command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
+    #print command
     #dot_process = subprocess.Popen(command, shell = True)
     commands.getstatusoutput(command)
     return graph_file_path
