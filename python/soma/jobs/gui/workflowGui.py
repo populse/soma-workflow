@@ -424,14 +424,10 @@ class WorkflowWidget(QtGui.QMainWindow):
 #class ClientWorkflow(object):
   
   #def __init__(self,  workflow, connection = None):
-    #self.ids = {} # ids => {workflow element: sequence of ids}
-    #self.root_id = -1 # id of the root node
-    #self.items = {} # items => {id : WorkflowItem}
-    
-    #id_cnt = 0 # unique id for the items
-    
-    ## retrieve the set of job and the set of file transfers
-    #w_js = set([])
+    #'''
+    #Creates a ClientWorkflow from a soma.job.jobClient.Workflow.
+    #'''
+     #w_js = set([])
     #w_fts = set([])
     #if not workflow.full_nodes:
       #for node in workflow.nodes:
@@ -446,18 +442,25 @@ class WorkflowWidget(QtGui.QMainWindow):
         #elif isinstance(node, FileTransfer):
           #w_fts.add(node)
     
-    ## Processing the Jobs to create the corresponding ClientWorkflowItems 
+    ## ids => {workflow element: sequence of ids}
+    #self.ids = {}
+    #self.root_id = -1
+    ## items => {id : WorkflowItem}
+    #self.items = {}
+    ## unique id for the items
+    #id_cnt = 0
+    
+    ## Jobs
     #for job in w_js:
       #item_id = id_cnt
       #id_cnt = id_cnt + 1
       #self.ids[job] = item_id
-      #self.items[item_id] = WorkflowItem(connection = connection, 
-                                         #it_id = item_id, 
-                                         #parent = -1, 
-                                         #row = -1, 
-                                         #it_type = WorkflowItem.JOB, 
-                                         #data = job, 
-                                         #children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
+      #self.items[item_id] = ClientJob(connection = connection, 
+                                      #it_id = item_id, 
+                                      #parent = -1, 
+                                      #row = -1, 
+                                      #data = job, 
+                                      #children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
       #for ft in job.referenced_input_files:
         #if isinstance(ft, FileTransfer): w_fts.add(ft)
       #for ft in job.referenced_output_files:
@@ -465,11 +468,10 @@ class WorkflowWidget(QtGui.QMainWindow):
       
       
     ## Groups
-    #self.root_item = WorkflowItem(connection = connection, 
+    #self.root_item = ClientGroup(connection = connection, 
                                   #it_id = -1, 
                                   #parent = -1, 
                                   #row = -1, 
-                                  #it_type = WorkflowItem.GROUP, 
                                   #data = workflow.mainGroup, 
                                   #children_nb = len(workflow.mainGroup.elements))
                                        
@@ -478,17 +480,16 @@ class WorkflowWidget(QtGui.QMainWindow):
       #item_id = id_cnt
       #id_cnt = id_cnt + 1
       #self.ids[group] = item_id
-      #self.items[item_id] =  WorkflowItem(connection = connection, 
+      #self.items[item_id] =  ClientGroup(connection = connection, 
                                           #it_id = item_id, 
                                           #parent = -1, 
                                           #row = -1, 
-                                          #it_type = WorkflowItem.GROUP, 
                                           #data = group, 
                                           #children_nb = len(group.elements))
     
     ## parent and children research for jobs and groups
     #for item in self.items.values():
-      #if item.it_type == WorkflowItem.GROUP or item.it_type == WorkflowItem.JOB:
+      #if isinstance(item, ClientGroup) or isinstance(item, ClientJob):
         #if item.data in workflow.mainGroup.elements:
           #item.parent = -1
           #item.row = workflow.mainGroup.elements.index(item.data)
@@ -523,12 +524,11 @@ class WorkflowWidget(QtGui.QMainWindow):
             #row = ref_in.index(ft)
           #else: 
             #row = ref_in.index(ft.local_path)
-          #self.items[item_id] = WorkflowItem( connection = connection,
-                                              #it_id = item_id, 
-                                              #parent=self.ids[job], 
-                                              #row = row, 
-                                              #it_type = WorkflowItem.INPUT_FILE_T, 
-                                              #data = ft)
+          #self.items[item_id] = ClientInputFileTransfer( connection = connection,
+                                                          #it_id = item_id, 
+                                                          #parent=self.ids[job], 
+                                                          #row = row, 
+                                                          #data = ft)
           #self.items[self.ids[job]].children[row]=item_id
         #if ft in ref_out or ft.local_path in ref_out:
           #item_id = id_cnt
@@ -538,12 +538,11 @@ class WorkflowWidget(QtGui.QMainWindow):
             #row = len(ref_in)+ref_out.index(ft)
           #else:
             #row = len(ref_in)+ref_out.index(ft.local_path)
-          #self.items[item_id] = WorkflowItem( connection = connection,
-                                              #it_id = item_id, 
-                                              #parent=self.ids[job], 
-                                              #row = row, 
-                                              #it_type = WorkflowItem.OUTPUT_FILE_T, 
-                                              #data = ft)
+          #self.items[item_id] = ClientOutputFileTransfer( connection = connection,
+                                                          #it_id = item_id, 
+                                                          #parent=self.ids[job], 
+                                                          #row = row, 
+                                                          #data = ft)
           #self.items[self.ids[job]].children[row]=item_id
                                   
     ########### #print model ####################
@@ -600,8 +599,8 @@ class ClientGroup(ClientWorkflowItem):
                row = -1,
                data = None,
                children_nb = 0 ):
-    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
-    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    super(ClientGroup, self).__init__(connection, it_id, parent, row, data, children_nb)
+    #ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
     
     
     # TO DO => state % of achievement
@@ -624,8 +623,8 @@ class ClientJob(ClientWorkflowItem):
                it_type = None,
                data = None,
                children_nb = 0 ):
-    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
-    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    super(ClientJob, self).__init__(connection, it_id, parent, row, data, children_nb)
+    #ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
     
     
     self.status = " "
@@ -675,8 +674,8 @@ class ClientFileTransfer(ClientWorkflowItem):
                row = -1,
                data = None,
                children_nb = 0 ):
-    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
-    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    #ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
     
     
     self.transfer_status = " "
@@ -702,8 +701,8 @@ class ClientOutputFileTransfer(ClientFileTransfer):
                row = -1,
                data = None,
                children_nb = 0 ):
-    #super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
-    ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
+    super(ClientOutputFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    #ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
 
 
 class ClientInputFileTransfer(ClientFileTransfer):
@@ -715,99 +714,11 @@ class ClientInputFileTransfer(ClientFileTransfer):
                row = -1,
                data = None,
                children_nb = 0 ):
-    #super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
-    ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
+    super(ClientInputFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    #ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
 
 
 
-#class ClientWorkflowItem(object):
-  
-  #GROUP = "group"
-  #JOB = "job"
-  #OUTPUT_FILE_T = "output_file_transfer"
-  #INPUT_FILE_T = "input_file_transfer"
-  
-  
-  #def __init__(self,
-               #connection,
-               #it_id, 
-               #parent = -1, 
-               #row = -1,
-               #it_type = None,
-               #data = None,
-               #children_nb = 0):
-    #'''
-    #@type  connection: soma.jobs.jobClient.job
-    #@param connection: jobs interface 
-    #'''
-    
-    #self.connection = connection
-    #self.it_id = it_id
-    #self.parent = parent # parent_id
-    #self.row = row
-    #if it_type:
-      #self.it_type = it_type
-    #else: 
-      #self.it_type = WorkflowItem.GROUP
-    #self.data = data
-    #self.children = [-1 for i in range(children_nb)]   
-    
-    #self.state = {} 
-    #if self.it_type == WorkflowItem.JOB:
-      #self.state["status"] = " "
-      #self.state["exit_info"] = (" ", " ", " ", " ")
-      #self.state["command"] = " "
-      #self.state["stdout"] = " "
-      #self.state["stderr"] = " "
-      
-    #elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
-      #self.state["transfer_status"] = " "
-    
-    #self.initiated = False
-    
-    
-  #def updateState(self):
-    #'''
-    #@rtype: boolean
-    #@returns: did the state change?
-    #'''
-    #self.initiated = True
-    #state_changed = False
-    #if self.it_type == WorkflowItem.JOB and self.data.job_id != -1 :
-      #status = self.connection.status(self.data.job_id)
-      #state_changed = state_changed or status != self.state["status"]
-      #self.state["status"]=status
-      #separator = " "
-      #self.state["command"]= separator.join(self.data.command)
-      ##if state_changed and status == DONE or status == FAILED:
-      #exit_info =  self.connection.exitInformation(self.data.job_id)
-      #state_changed = state_changed or exit_info != self.state["exit_info"]
-      #self.state["exit_info"] = self.connection.exitInformation(self.data.job_id)
-       
-      #self.connection.resertStdReading()
-      #if self.state["stdout"] == " " and (status == DONE or status == FAILED):
-        #line = self.connection.stdoutReadLine(self.data.job_id)
-        #stdout = ""
-        #while line:
-          #stdout = stdout + line + "\n"
-          #line = self.connection.stdoutReadLine(self.data.job_id)
-        #self.state["stdout"] = stdout
-        
-      #if self.state["stderr"] == " " and (status == DONE or status == FAILED):
-        #line = self.connection.stderrReadLine(self.data.job_id)
-        #stderr = ""
-        #while line:
-          #stderr = stderr + line + "\n"
-          #line = self.connection.stderrReadLine(self.data.job_id)
-        #self.state["stderr"] = stderr
-    
-    #elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
-      #transfer_status = self.connection.transferStatus(self.data.local_path)
-      #state_changed = state_changed or transfer_status != self.state["transfer_status"]
-      #self.state["transfer_status"] = transfer_status
-      
-    #return state_changed
-    
 
     
 class WorkflowItemModel(QtCore.QAbstractItemModel):
