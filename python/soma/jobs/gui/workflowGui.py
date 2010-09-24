@@ -54,10 +54,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     graphWidgetLayout.addWidget(self.graphWidget)
     self.ui.dockWidgetContents_graph_view.setLayout(graphWidgetLayout)
     
-    #graphWidgetLayout = QtGui.QVBoxLayout()
-    #graphWidgetLayout.addWidget(self.graphWidget)
-    #self.ui.graphViewScrollAreaWidgetContents.setLayout(graphWidgetLayout)
-    
     self.itemInfoWidget = WorkflowElementInfo(self)
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.addWidget(self.itemInfoWidget)
@@ -366,20 +362,212 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
           
-class WorkflowItem(object):
+
+#class ClientModel(QtCore.QObject):
   
-  GROUP = "group"
-  JOB = "job"
-  OUTPUT_FILE_T = "output_file_transfer"
-  INPUT_FILE_T = "input_file_transfer"
+  #'''
+  #model in the client side created to limit 
+  #delay when displaying workflows and to restrict remote communication
+  #and request to the db.
+  #'''
   
+  #def __init__(self):
+    #self.connections = {} # ressource_id => connection
+    #self.workflows = {} # loaded workflows # resource_id => workflow_id => workflow ()
+    #self.states = {} # node states # resource_id => workflow_id => node => state
+    #self.isnodeactive = {} # node states # resource_id => workflow_id => node => isnodeactive (ie to be updated)
+    
+    #self.modelChanged = QtCore.pyqtSignal()
+    
+    #self.current_connection = None
+    #self.current_workflow = None
+    
+    
+    #self.updateInterval = 3
+    
+    #def updateLoop():
+      ## update only the nodes of the current workflows
+      #while True:
+        #data_changed = self.checkChanges()
+        ## one request to have the state of all the workflow nodes and transfers
+        ##self.emit(QtCore.SIGNAL(modelchanged()))
+        #if data_changed: 
+          #self.modelChanged.emit()
+        #time.sleep(self.updateInterval)
+    
+    #self.updateThread = threading.Thread()
+    
+  #def checkChanges(self):
+    #data_changed = False
+    #return data_changed
+    
+    
+  #def setUpdateInterval(self, interval)
+    #self.updateInterval = interval
+    
+  #def addConnection(self, resource_id, connection):
+    #self.connections[resource_id] = connection
+    #self.workflows[resource_id] = {}
+    
+  #def setCurrentConnection(self, resource_id ):
+    #self.current_resource = resource_id
+    #self.current_connection = self.connections[resource_id]
+    
+  #def addWorkflow(self, resource_id, workflow):
+    #if wf_id != -1:
+      #self.workflows[resource_id][worflow.wf_id] = workflow
+    
+  #def setCurrentWorkflow(self, resource_id, wf_id):
+    #self.current_workflow = self.workflow[resource_id][wf_id]
+
+
+#class ClientWorkflow(object):
   
+  #def __init__(self,  workflow, connection = None):
+    #self.ids = {} # ids => {workflow element: sequence of ids}
+    #self.root_id = -1 # id of the root node
+    #self.items = {} # items => {id : WorkflowItem}
+    
+    #id_cnt = 0 # unique id for the items
+    
+    ## retrieve the set of job and the set of file transfers
+    #w_js = set([])
+    #w_fts = set([])
+    #if not workflow.full_nodes:
+      #for node in workflow.nodes:
+        #if isinstance(node, JobTemplate):
+          #w_js.add(node)
+        #elif isinstance(node, FileTransfer):
+          #w_fts.add(node)
+    #else:
+      #for node in workflow.full_nodes:
+        #if isinstance(node, JobTemplate):
+          #w_js.add(node)
+        #elif isinstance(node, FileTransfer):
+          #w_fts.add(node)
+    
+    ## Processing the Jobs to create the corresponding ClientWorkflowItems 
+    #for job in w_js:
+      #item_id = id_cnt
+      #id_cnt = id_cnt + 1
+      #self.ids[job] = item_id
+      #self.items[item_id] = WorkflowItem(connection = connection, 
+                                         #it_id = item_id, 
+                                         #parent = -1, 
+                                         #row = -1, 
+                                         #it_type = WorkflowItem.JOB, 
+                                         #data = job, 
+                                         #children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
+      #for ft in job.referenced_input_files:
+        #if isinstance(ft, FileTransfer): w_fts.add(ft)
+      #for ft in job.referenced_output_files:
+        #if isinstance(ft, FileTransfer): w_fts.add(ft)
+      
+      
+    ## Groups
+    #self.root_item = WorkflowItem(connection = connection, 
+                                  #it_id = -1, 
+                                  #parent = -1, 
+                                  #row = -1, 
+                                  #it_type = WorkflowItem.GROUP, 
+                                  #data = workflow.mainGroup, 
+                                  #children_nb = len(workflow.mainGroup.elements))
+                                       
+    
+    #for group in workflow.groups:
+      #item_id = id_cnt
+      #id_cnt = id_cnt + 1
+      #self.ids[group] = item_id
+      #self.items[item_id] =  WorkflowItem(connection = connection, 
+                                          #it_id = item_id, 
+                                          #parent = -1, 
+                                          #row = -1, 
+                                          #it_type = WorkflowItem.GROUP, 
+                                          #data = group, 
+                                          #children_nb = len(group.elements))
+    
+    ## parent and children research for jobs and groups
+    #for item in self.items.values():
+      #if item.it_type == WorkflowItem.GROUP or item.it_type == WorkflowItem.JOB:
+        #if item.data in workflow.mainGroup.elements:
+          #item.parent = -1
+          #item.row = workflow.mainGroup.elements.index(item.data)
+          #self.root_item.children[item.row]=item.it_id
+        #for group in workflow.groups:
+          #if item.data in group.elements:
+            #item.parent = self.ids[group]
+            #item.row = group.elements.index(item.data)
+            #self.items[item.parent].children[item.row]=item.it_id
+    
+    ## file transfers
+    #def compFileTransfers(ft1, ft2): 
+      #if isinstance(ft1, FileTransfer):
+        #str1 = ft1.name
+      #else: str1 = ft1
+      #if isinstance(ft2, FileTransfer):
+        #str2 = ft2.name
+      #else: str2 = ft2
+      #return cmp(str1, str2)
+    #for ft in w_fts:
+      #self.ids[ft] = []
+      #for job in w_js:
+        #ref_in = list(job.referenced_input_files)
+        #ref_in.sort(compFileTransfers)
+        #ref_out = list(job.referenced_output_files)
+        #ref_out.sort(compFileTransfers)
+        #if ft in ref_in or ft.local_path in ref_in:
+          #item_id = id_cnt
+          #id_cnt = id_cnt + 1
+          #self.ids[ft].append(item_id)
+          #if ft in ref_in:
+            #row = ref_in.index(ft)
+          #else: 
+            #row = ref_in.index(ft.local_path)
+          #self.items[item_id] = WorkflowItem( connection = connection,
+                                              #it_id = item_id, 
+                                              #parent=self.ids[job], 
+                                              #row = row, 
+                                              #it_type = WorkflowItem.INPUT_FILE_T, 
+                                              #data = ft)
+          #self.items[self.ids[job]].children[row]=item_id
+        #if ft in ref_out or ft.local_path in ref_out:
+          #item_id = id_cnt
+          #id_cnt = id_cnt + 1
+          #self.ids[ft].append(item_id)
+          #if ft in ref_out:
+            #row = len(ref_in)+ref_out.index(ft)
+          #else:
+            #row = len(ref_in)+ref_out.index(ft.local_path)
+          #self.items[item_id] = WorkflowItem( connection = connection,
+                                              #it_id = item_id, 
+                                              #parent=self.ids[job], 
+                                              #row = row, 
+                                              #it_type = WorkflowItem.OUTPUT_FILE_T, 
+                                              #data = ft)
+          #self.items[self.ids[job]].children[row]=item_id
+                                  
+    ########### #print model ####################
+    ##print "dependencies : " + repr(len(workflow.dependencies))
+    ##if workflow.full_dependencies: 
+      ##print "full_dependencies : " + repr(len(workflow.full_dependencies)) 
+    ##for dep in workflow.dependencies:
+      ##print dep[0].name + " -> " + dep[1].name
+    ##for item in self.items.values():
+      ##print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.data.name) + " " + repr(item.children)   
+    ##raw_input()
+    ############################################
+    
+    
+
+class ClientWorkflowItem(object):
+  '''
+  Abstract class for worflow items.
+  '''
   def __init__(self,
                connection,
                it_id, 
                parent = -1, 
                row = -1,
-               it_type = None,
                data = None,
                children_nb = 0):
     '''
@@ -391,68 +579,234 @@ class WorkflowItem(object):
     self.it_id = it_id
     self.parent = parent # parent_id
     self.row = row
-    if it_type:
-      self.it_type = it_type
-    else: 
-      self.it_type = WorkflowItem.GROUP
     self.data = data
     self.children = [-1 for i in range(children_nb)]   
     
-    self.state = {} 
-    if self.it_type == WorkflowItem.JOB:
-      self.state["status"] = " "
-      self.state["exit_info"] = (" ", " ", " ", " ")
-      self.state["command"] = " "
-      self.state["stdout"] = " "
-      self.state["stderr"] = " "
-      
-    elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
-      self.state["transfer_status"] = " "
-    
     self.initiated = False
-    
-    
+  
   def updateState(self):
     '''
     @rtype: boolean
     @returns: did the state change?
     '''
+    raise Exception('ClientWorklfowItem is an abstract class. updateState must be implemented in subclass')
+  
+
+class ClientGroup(ClientWorkflowItem):
+  def __init__(self,
+               connection,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
+    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    
+    
+    # TO DO => state % of achievement
+    
+  def updateState(self):
     self.initiated = True
     state_changed = False
-    if self.it_type == WorkflowItem.JOB and self.data.job_id != -1 :
-      status = self.connection.status(self.data.job_id)
-      state_changed = state_changed or status != self.state["status"]
-      self.state["status"]=status
+    # TO DO
+    
+    return state_changed
+  
+
+class ClientJob(ClientWorkflowItem):
+  
+  def __init__(self,
+               connection,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               it_type = None,
+               data = None,
+               children_nb = 0 ):
+    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
+    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    
+    
+    self.status = " "
+    self.exit_info = (" ", " ", " ", " ")
+    self.command = " "
+    self.stdout = " "
+    self.stderr = " "
+    
+  def updateState(self):
+    self.initiated = True
+    state_changed = False
+    if self.data and self.data.job_id != -1 :
+      new_status = self.connection.status(self.data.job_id)
+      state_changed = state_changed or self.status != new_status
+      self.status=new_status
       separator = " "
-      self.state["command"]= separator.join(self.data.command)
-      #if state_changed and status == DONE or status == FAILED:
-      exit_info =  self.connection.exitInformation(self.data.job_id)
-      state_changed = state_changed or exit_info != self.state["exit_info"]
-      self.state["exit_info"] = self.connection.exitInformation(self.data.job_id)
+      self.command= separator.join(self.data.command)
+      #if state_changed and self.status == DONE or self.status == FAILED:
+      new_exit_info =  self.connection.exitInformation(self.data.job_id)
+      state_changed = state_changed or new_exit_info != self.exit_info
+      self.exit_info = new_exit_info
        
       self.connection.resertStdReading()
-      if self.state["stdout"] == " " and (status == DONE or status == FAILED):
+      if self.stdout == " " and (self.status == DONE or self.status == FAILED):
         line = self.connection.stdoutReadLine(self.data.job_id)
         stdout = ""
         while line:
           stdout = stdout + line + "\n"
           line = self.connection.stdoutReadLine(self.data.job_id)
-        self.state["stdout"] = stdout
+        self.stdout = stdout
         
-      if self.state["stderr"] == " " and (status == DONE or status == FAILED):
+      if self.stderr == " " and (self.status == DONE or self.status == FAILED):
         line = self.connection.stderrReadLine(self.data.job_id)
         stderr = ""
         while line:
           stderr = stderr + line + "\n"
           line = self.connection.stderrReadLine(self.data.job_id)
-        self.state["stderr"] = stderr
-    
-    elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
-      transfer_status = self.connection.transferStatus(self.data.local_path)
-      state_changed = state_changed or transfer_status != self.state["transfer_status"]
-      self.state["transfer_status"] = transfer_status
-      
+        self.stderr = stderr
     return state_changed
+    
+class ClientFileTransfer(ClientWorkflowItem):
+  
+  def __init__(self,
+               connection,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    #super(ClientWorkflowItem, self).__init__(connection, it_id, parent, row, data, children_nb)
+    ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
+    
+    
+    self.transfer_status = " "
+    
+  def updateState(self):
+    
+    self.initiated = True
+    state_changed = False
+    
+    if self.data and self.data.local_path:
+      new_transfer_status = self.connection.transferStatus(self.data.local_path)
+      state_changed = state_changed or new_transfer_status != self.transfer_status
+      self.transfer_status = new_transfer_status
+    
+    return state_changed
+    
+class ClientOutputFileTransfer(ClientFileTransfer):
+  
+  def __init__(self,
+               connection,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    #super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
+
+
+class ClientInputFileTransfer(ClientFileTransfer):
+    
+  def __init__(self,
+               connection,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    #super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    ClientFileTransfer.__init__(self, connection, it_id, parent, row, data, children_nb)
+
+
+
+#class ClientWorkflowItem(object):
+  
+  #GROUP = "group"
+  #JOB = "job"
+  #OUTPUT_FILE_T = "output_file_transfer"
+  #INPUT_FILE_T = "input_file_transfer"
+  
+  
+  #def __init__(self,
+               #connection,
+               #it_id, 
+               #parent = -1, 
+               #row = -1,
+               #it_type = None,
+               #data = None,
+               #children_nb = 0):
+    #'''
+    #@type  connection: soma.jobs.jobClient.job
+    #@param connection: jobs interface 
+    #'''
+    
+    #self.connection = connection
+    #self.it_id = it_id
+    #self.parent = parent # parent_id
+    #self.row = row
+    #if it_type:
+      #self.it_type = it_type
+    #else: 
+      #self.it_type = WorkflowItem.GROUP
+    #self.data = data
+    #self.children = [-1 for i in range(children_nb)]   
+    
+    #self.state = {} 
+    #if self.it_type == WorkflowItem.JOB:
+      #self.state["status"] = " "
+      #self.state["exit_info"] = (" ", " ", " ", " ")
+      #self.state["command"] = " "
+      #self.state["stdout"] = " "
+      #self.state["stderr"] = " "
+      
+    #elif self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T:
+      #self.state["transfer_status"] = " "
+    
+    #self.initiated = False
+    
+    
+  #def updateState(self):
+    #'''
+    #@rtype: boolean
+    #@returns: did the state change?
+    #'''
+    #self.initiated = True
+    #state_changed = False
+    #if self.it_type == WorkflowItem.JOB and self.data.job_id != -1 :
+      #status = self.connection.status(self.data.job_id)
+      #state_changed = state_changed or status != self.state["status"]
+      #self.state["status"]=status
+      #separator = " "
+      #self.state["command"]= separator.join(self.data.command)
+      ##if state_changed and status == DONE or status == FAILED:
+      #exit_info =  self.connection.exitInformation(self.data.job_id)
+      #state_changed = state_changed or exit_info != self.state["exit_info"]
+      #self.state["exit_info"] = self.connection.exitInformation(self.data.job_id)
+       
+      #self.connection.resertStdReading()
+      #if self.state["stdout"] == " " and (status == DONE or status == FAILED):
+        #line = self.connection.stdoutReadLine(self.data.job_id)
+        #stdout = ""
+        #while line:
+          #stdout = stdout + line + "\n"
+          #line = self.connection.stdoutReadLine(self.data.job_id)
+        #self.state["stdout"] = stdout
+        
+      #if self.state["stderr"] == " " and (status == DONE or status == FAILED):
+        #line = self.connection.stderrReadLine(self.data.job_id)
+        #stderr = ""
+        #while line:
+          #stderr = stderr + line + "\n"
+          #line = self.connection.stderrReadLine(self.data.job_id)
+        #self.state["stderr"] = stderr
+    
+    #elif (self.it_type == WorkflowItem.OUTPUT_FILE_T or self.it_type == WorkflowItem.INPUT_FILE_T) and self.data.local_path:
+      #transfer_status = self.connection.transferStatus(self.data.local_path)
+      #state_changed = state_changed or transfer_status != self.state["transfer_status"]
+      #self.state["transfer_status"] = transfer_status
+      
+    #return state_changed
     
 
     
@@ -490,13 +844,12 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[job] = item_id
-      self.items[item_id] = WorkflowItem(connection = connection, 
-                                         it_id = item_id, 
-                                         parent = -1, 
-                                         row = -1, 
-                                         it_type = WorkflowItem.JOB, 
-                                         data = job, 
-                                         children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
+      self.items[item_id] = ClientJob(connection = connection, 
+                                      it_id = item_id, 
+                                      parent = -1, 
+                                      row = -1, 
+                                      data = job, 
+                                      children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
       for ft in job.referenced_input_files:
         if isinstance(ft, FileTransfer): w_fts.add(ft)
       for ft in job.referenced_output_files:
@@ -504,11 +857,10 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       
       
     # Groups
-    self.root_item = WorkflowItem(connection = connection, 
+    self.root_item = ClientGroup(connection = connection, 
                                   it_id = -1, 
                                   parent = -1, 
                                   row = -1, 
-                                  it_type = WorkflowItem.GROUP, 
                                   data = workflow.mainGroup, 
                                   children_nb = len(workflow.mainGroup.elements))
                                        
@@ -517,17 +869,16 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[group] = item_id
-      self.items[item_id] =  WorkflowItem(connection = connection, 
+      self.items[item_id] =  ClientGroup(connection = connection, 
                                           it_id = item_id, 
                                           parent = -1, 
                                           row = -1, 
-                                          it_type = WorkflowItem.GROUP, 
                                           data = group, 
                                           children_nb = len(group.elements))
     
     # parent and children research for jobs and groups
     for item in self.items.values():
-      if item.it_type == WorkflowItem.GROUP or item.it_type == WorkflowItem.JOB:
+      if isinstance(item, ClientGroup) or isinstance(item, ClientJob):
         if item.data in workflow.mainGroup.elements:
           item.parent = -1
           item.row = workflow.mainGroup.elements.index(item.data)
@@ -562,12 +913,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             row = ref_in.index(ft)
           else: 
             row = ref_in.index(ft.local_path)
-          self.items[item_id] = WorkflowItem( connection = connection,
-                                              it_id = item_id, 
-                                              parent=self.ids[job], 
-                                              row = row, 
-                                              it_type = WorkflowItem.INPUT_FILE_T, 
-                                              data = ft)
+          self.items[item_id] = ClientInputFileTransfer( connection = connection,
+                                                          it_id = item_id, 
+                                                          parent=self.ids[job], 
+                                                          row = row, 
+                                                          data = ft)
           self.items[self.ids[job]].children[row]=item_id
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
@@ -577,12 +927,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             row = len(ref_in)+ref_out.index(ft)
           else:
             row = len(ref_in)+ref_out.index(ft.local_path)
-          self.items[item_id] = WorkflowItem( connection = connection,
-                                              it_id = item_id, 
-                                              parent=self.ids[job], 
-                                              row = row, 
-                                              it_type = WorkflowItem.OUTPUT_FILE_T, 
-                                              data = ft)
+          self.items[item_id] = ClientOutputFileTransfer( connection = connection,
+                                                          it_id = item_id, 
+                                                          parent=self.ids[job], 
+                                                          row = row, 
+                                                          data = ft)
           self.items[self.ids[job]].children[row]=item_id
                                   
     ########## #print model ####################
@@ -726,19 +1075,19 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         item.updateState()
     
     #### Groups ####
-    if item.it_type == WorkflowItem.GROUP:
+    if isinstance(item,ClientGroup):
       if role == QtCore.Qt.DisplayRole:
         #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
         return item.data.name
     
     #### JobTemplates ####
-    if item.it_type == WorkflowItem.JOB:  
+    if isinstance(item, ClientJob): 
       if item.data.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
           return item.data.name
       else:
-        status = item.state["status"]
+        status = item.status
         #status = self.jobs.status(item.data.job_id)
         # not submitted
         if status == NOT_SUBMITTED:
@@ -751,7 +1100,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         # Done or Failed
         if status == DONE or status == FAILED:
           #exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(item.data.job_id)
-          exit_status, exit_value, term_signal, resource_usage = item.state["exit_info"]
+          exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if role == QtCore.Qt.DisplayRole:
             #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
             return item.data.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
@@ -772,8 +1121,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           return GREEN
         
     #### FileTransfers ####
-    if item.it_type == WorkflowItem.OUTPUT_FILE_T or item.it_type == WorkflowItem.INPUT_FILE_T :
-      if item.it_type == WorkflowItem.INPUT_FILE_T:
+    if isinstance(item, ClientFileTransfer):
+      if isinstance(item, ClientInputFileTransfer):
         #if role == QtCore.Qt.BackgroundRole:
           ##print "<<<< data QtCore.Qt.BackgroundRole QtGui.QBrush(QtGui.QColor(200, 200, 255))"
           #return QtGui.QBrush(QtGui.QColor(255, 200, 200))
@@ -781,7 +1130,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           #print "<<<< data QtCore.Qt.ForegroundRole QtGui.QBrush(RED)"
           return QtGui.QBrush(RED)
         display = "input: " + item.data.name
-      if item.it_type == WorkflowItem.OUTPUT_FILE_T:
+      if isinstance(item, ClientOutputFileTransfer):
         #if role == QtCore.Qt.BackgroundRole:
           ##print "<<<< data QtCore.Qt.BackgroundRole QtGui.QBrush(QtGui.QColor(255, 200, 200))"
           #return QtGui.QBrush(QtGui.QColor(255, 200, 200))
@@ -796,7 +1145,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           return display
       else:
         #status = self.jobs.transferStatus(item.data.local_path)
-        status = item.state["transfer_status"]
+        status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole " + display + " => " + status
           return display + " => " + status
@@ -859,9 +1208,9 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.vLayout.removeWidget(self.infoWidget)
   
     item = current.internalPointer()
-    if item.it_type == WorkflowItem.JOB:
+    if isinstance(item, ClientJob):
       self.infoWidget = JobInfoWidget(item, self)
-    elif item.it_type == WorkflowItem.OUTPUT_FILE_T or item.it_type == WorkflowItem.INPUT_FILE_T:
+    elif isinstance(item, ClientFileTransfer):
       self.infoWidget = TransferInfoWidget(item, self)
     else:
       self.infoWidget = None
@@ -893,8 +1242,8 @@ class JobInfoWidget(QtGui.QTabWidget):
   def dataChanged(self):
  
     self.ui.job_name.setText(self.jobItem.data.name)
-    self.ui.job_status.setText(self.jobItem.state["status"])
-    exit_status, exit_value, term_signal, resource_usage = self.jobItem.state["exit_info"]
+    self.ui.job_status.setText(self.jobItem.status)
+    exit_status, exit_value, term_signal, resource_usage = self.jobItem.exit_info
     if exit_status: 
       self.ui.exit_status.setText(exit_status)
     else: 
@@ -912,9 +1261,9 @@ class JobInfoWidget(QtGui.QTabWidget):
     else: 
       self.ui.resource_usage.clear()
     
-    self.ui.command.setText(self.jobItem.state["command"])
-    self.ui.stdout_file_contents.setText(self.jobItem.state["stdout"])
-    self.ui.stderr_file_contents.setText(self.jobItem.state["stderr"])
+    self.ui.command.setText(self.jobItem.command)
+    self.ui.stdout_file_contents.setText(self.jobItem.stdout)
+    self.ui.stderr_file_contents.setText(self.jobItem.stderr)
     
     
 class TransferInfoWidget(QtGui.QTabWidget):
@@ -930,7 +1279,7 @@ class TransferInfoWidget(QtGui.QTabWidget):
   def dataChanged(self):
     
     self.ui.transfer_name.setText(self.transferItem.data.name)
-    self.ui.transfer_status.setText(self.transferItem.state["transfer_status"])
+    self.ui.transfer_status.setText(self.transferItem.transfer_status)
     
     self.ui.remote_path.setText(self.transferItem.data.remote_path)
     if self.transferItem.data.remote_paths:
@@ -1007,13 +1356,12 @@ class WorkflowGraphView(QtGui.QWidget):
       self.ui.scrollArea.takeWidget()
     
     
-class ClientModel(object):
+
+    
   
-  def __init__(self):
-    self.connections = {} # ressource_id => connection
-    self.workflows = {} # resource_id => list of loaded workflows
-    self.current_connection = None
-    self.current_workflow = None
+    
+    
+    
     
     
     
