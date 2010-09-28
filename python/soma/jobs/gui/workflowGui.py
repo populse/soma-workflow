@@ -139,17 +139,17 @@ class WorkflowWidget(QtGui.QMainWindow):
     date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
     
-    workflow = self.controler.submitWorkflow(self.model.current_workflow.somajobworkflow, name, date, self.model.current_connection)
+    workflow = self.controler.submitWorkflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
     self.model.addWorkflow(workflow, date) 
     self.updateWorkflowList()
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    self.controler.transferInputFiles(self.model.current_workflow.somajobworkflow, self.model.current_connection)
+    self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
   
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.controler.transferOutputFiles(self.model.current_workflow.somajobworkflow, self.model.current_connection)
+    self.controler.transferOutputFiles(self.model.current_workflow.server_worflow, self.model.current_connection)
     
   @QtCore.pyqtSlot(int)
   def workflowSelectionChanged(self, index):
@@ -237,7 +237,8 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
     else:
       self.model.changeExpirationDate(date)
-    
+      
+  
   @QtCore.pyqtSlot()
   def currentConnectionChanged(self):
     print 'currentConnectionChanged'
@@ -291,7 +292,7 @@ class WorkflowWidget(QtGui.QMainWindow):
       #self.itemModel.dataChanged.connect(self.graphWidget.dataChanged)
       
       #2409 => TEMPORARY : the graph view has to be built from the clientModel
-      self.graphWidget.setWorkflow(self.model.current_workflow.somajobworkflow, self.model.current_connection)
+      self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
       #self.model.workflow_state_changed.connect(self.itemInfoWidget.dataChanged)
       self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.itemInfoWidget.dataChanged)
@@ -405,6 +406,9 @@ class WorkflowElementInfo(QtGui.QWidget):
     if self.infoWidget:
       self.infoWidget.dataChanged()
       
+  
+ 
+ 
 class JobInfoWidget(QtGui.QTabWidget):
   
   def __init__(self, jobItem, parent = None):
@@ -753,11 +757,12 @@ class ClientModel(QtCore.QObject):
     
     self.update_interval = 3 # update period in seconds
     self.auto_update = True
+    self.hold = False
     
     def updateLoop(self):
       # update only the current workflows
-      while self.auto_update:
-        if self.current_workflow and self.current_workflow.updateState(): 
+      while True:
+        if not self.hold and self.auto_update and self.current_workflow and self.current_workflow.updateState(): 
           #self.workflow_state_changed.emit()
           self.emit(QtCore.SIGNAL('workflow_state_changed()'))
         time.sleep(self.update_interval)
@@ -797,10 +802,10 @@ class ClientModel(QtCore.QObject):
     use it as the current workflow. 
     @type worklfow: soma.jobs.jobClient.Workflow
     '''
-    print 'addWorkflow'
+    print '==> addWorkflow' + repr(workflow.wf_id)
     #self.current_workflow_about_to_change.emit()
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-    
+    self.hold = True 
     self.current_workflow = ClientWorkflow(workflow, self.current_connection)
     self.current_wf_id = self.current_workflow.wf_id
     self.expiration_date = expiration_date
@@ -810,6 +815,8 @@ class ClientModel(QtCore.QObject):
     self.current_workflow.updateState()
     #self.current_workflow_changed.emit()
     self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+    self.hold = False
+    print '<== addWorkflow' 
     
   def deleteWorkflow(self):
     #self.current_workflow_about_to_change.emit()
@@ -863,6 +870,9 @@ class ClientWorkflow(object):
     '''
     Creates a ClientWorkflow from a soma.job.jobClient.Workflow.
     '''
+    
+    self.connection = connection
+    
     self.name = workflow.name 
     self.wf_id = workflow.wf_id
     
@@ -873,11 +883,16 @@ class ClientWorkflow(object):
    
     id_cnt = 0  # unique id for the items
     
-    self.somajobworkflow = workflow # TEMPORARY 
+    self.server_workflow = workflow 
+    self.server_jobs = {} # server job id => client job id
+    self.server_file_transfers = {} # server file path => client transfer id
     
+    
+    #print " ==> building the workflow "
+    #begining = datetime.now()
     # retrieving the set of job and the set of file transfers
-    w_js = set([])
-    w_fts = set([])
+    w_js = set([]) 
+    w_fts = set([]) 
     if not workflow.full_nodes:
       for node in workflow.nodes:
         if isinstance(node, JobTemplate):
@@ -895,9 +910,9 @@ class ClientWorkflow(object):
     for job in w_js:
       item_id = id_cnt
       id_cnt = id_cnt + 1
+      self.server_jobs[job.job_id] = item_id
       self.ids[job] = item_id
-      self.items[item_id] = ClientJob(connection = connection, 
-                                      it_id = item_id, 
+      self.items[item_id] = ClientJob(it_id = item_id, 
                                       parent = -1, 
                                       row = -1, 
                                       data = job, 
@@ -909,8 +924,7 @@ class ClientWorkflow(object):
       
       
     # Create the ClientGroup instances
-    self.root_item = ClientGroup(connection = connection, 
-                                  it_id = -1, 
+    self.root_item = ClientGroup( it_id = -1, 
                                   parent = -1, 
                                   row = -1, 
                                   data = workflow.mainGroup, 
@@ -921,8 +935,7 @@ class ClientWorkflow(object):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[group] = item_id
-      self.items[item_id] =  ClientGroup(connection = connection, 
-                                          it_id = item_id, 
+      self.items[item_id] =  ClientGroup( it_id = item_id, 
                                           parent = -1, 
                                           row = -1, 
                                           data = group, 
@@ -950,6 +963,7 @@ class ClientWorkflow(object):
         str2 = ft2.name
       else: str2 = ft2
       return cmp(str1, str2)
+      
     for ft in w_fts:
       self.ids[ft] = []
       for job in w_js:
@@ -960,13 +974,13 @@ class ClientWorkflow(object):
         if ft in ref_in or ft.local_path in ref_in:
           item_id = id_cnt
           id_cnt = id_cnt + 1
+          self.server_file_transfers[ft.local_path] = item_id
           self.ids[ft].append(item_id)
           if ft in ref_in:
             row = ref_in.index(ft)
           else: 
             row = ref_in.index(ft.local_path)
-          self.items[item_id] = ClientInputFileTransfer( connection = connection,
-                                                          it_id = item_id, 
+          self.items[item_id] = ClientInputFileTransfer(  it_id = item_id, 
                                                           parent=self.ids[job], 
                                                           row = row, 
                                                           data = ft)
@@ -974,17 +988,20 @@ class ClientWorkflow(object):
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
           id_cnt = id_cnt + 1
+          self.server_file_transfers[ft.local_path] = item_id
           self.ids[ft].append(item_id)
           if ft in ref_out:
             row = len(ref_in)+ref_out.index(ft)
           else:
             row = len(ref_in)+ref_out.index(ft.local_path)
-          self.items[item_id] = ClientOutputFileTransfer( connection = connection,
-                                                          it_id = item_id, 
+          self.items[item_id] = ClientOutputFileTransfer( it_id = item_id, 
                                                           parent=self.ids[job], 
                                                           row = row, 
                                                           data = ft)
           self.items[self.ids[job]].children[row]=item_id
+          
+    #end = datetime.now() - begining
+    #print " <== end building worflow " + repr(end.seconds)
                                   
     ########## #print model ####################
     #print "dependencies : " + repr(len(workflow.dependencies))
@@ -998,9 +1015,58 @@ class ClientWorkflow(object):
     ###########################################
     
   def updateState(self):
+    if self.wf_id == -1: 
+      return False
     data_changed = False
-    for item in self.items.values():
-      data_changed = item.updateState() or data_changed
+    
+    #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
+    #begining = datetime.now()
+    
+    wf_status = self.connection.workflowStatus(self.server_workflow.wf_id)
+    
+    #end = datetime.now() - begining
+    #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
+    
+    #print " ==> updating jobs " + repr(self.server_workflow.wf_id)
+    #begining = datetime.now()
+    
+    #updating jobs:
+    for job_info in wf_status[0]:
+      job_id, status, exit_info = job_info
+      item = self.items[self.server_jobs[job_id]]
+      data_changed = item.updateState(status, exit_info) or data_changed
+      #update stderr and stdout if needed
+      #if data_changed and item.stdout == " " and (status == DONE or status == FAILED):
+        #self.connection.resertStdReading()
+        #line = self.connection.stdoutReadLine(job_id)
+        #stdout = ""
+        #while line:
+          #stdout = stdout + line + "\n"
+          #line = self.connection.stdoutReadLine(job_id)
+        #item.stdout = stdout
+        
+        #line = self.connection.stderrReadLine(job_id)
+        #stderr = ""
+        #while line:
+          #stderr = stderr + line + "\n"
+          #line = self.connection.stderrReadLine(job_id)
+        #item.stderr = stderr
+    
+    #end = datetime.now() - begining
+    #print " <== end updating jobs" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
+    
+    #print " ==> updating transfers " + repr(self.server_workflow.wf_id)
+    #begining = datetime.now()
+    
+    #updating file transfer
+    for transfer_info in wf_status[1]:
+      local_file_path, status = transfer_info 
+      item = self.items[self.server_file_transfers[local_file_path]]
+      data_changed = item.updateState(status) or data_changed
+    
+    #end = datetime.now() - begining
+    #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
+    
     return data_changed
 
 class ClientWorkflowItem(object):
@@ -1008,7 +1074,6 @@ class ClientWorkflowItem(object):
   Abstract class for workflow items.
   '''
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
@@ -1019,7 +1084,6 @@ class ClientWorkflowItem(object):
     @param connection: jobs interface 
     '''
     
-    self.connection = connection
     self.it_id = it_id
     self.parent = parent # parent_id
     self.row = row
@@ -1028,130 +1092,141 @@ class ClientWorkflowItem(object):
     
     self.initiated = False
   
-  def updateState(self):
-    '''
-    @rtype: boolean
-    @returns: did the state change?
-    '''
-    raise Exception('ClientWorkflowItem is an abstract class. updateState must be implemented in subclass')
+  #def updateState(self):
+    #'''
+    #@rtype: boolean
+    #@returns: did the state change?
+    #'''
+    #raise Exception('ClientWorkflowItem is an abstract class. updateState must be implemented in subclass')
 
 class ClientGroup(ClientWorkflowItem):
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientGroup, self).__init__(connection, it_id, parent, row, data, children_nb)
-    #ClientWorkflowItem.__init__(self, connection, it_id, parent, row, data, children_nb)
-    
+    super(ClientGroup, self).__init__(it_id, parent, row, data, children_nb)  
     
     # TO DO => state % of achievement
     
-  def updateState(self):
-    self.initiated = True
-    state_changed = False
-    # TO DO
+  #def updateState(self):
+    #self.initiated = True
+    #state_changed = False
+    ## TO DO
     
-    return state_changed
+    #return state_changed
 
 class ClientJob(ClientWorkflowItem):
   
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
                it_type = None,
                data = None,
                children_nb = 0 ):
-    super(ClientJob, self).__init__(connection, it_id, parent, row, data, children_nb)
+    super(ClientJob, self).__init__(it_id, parent, row, data, children_nb)
     
-    self.status = " "
+    self.status = "not submitted"
     self.exit_info = (" ", " ", " ", " ")
-    self.command = " "
     self.stdout = " "
     self.stderr = " "
     
-  def updateState(self):
+    cmd_seq = []
+    for command_el in data.command:
+      if isinstance(command_el, FileTransfer):
+        cmd_seq.append(command_el.remote_path)
+      else:
+        cmd_seq.append(repr(command_el))
+    separator = " " 
+    self.command = separator.join(cmd_seq)
+    
+  def updateState(self, status, exit_info):
     self.initiated = True
     state_changed = False
-    if self.data and self.data.job_id != -1 :
-      new_status = self.connection.status(self.data.job_id)
-      state_changed = state_changed or self.status != new_status
-      self.status=new_status
-      separator = " "
-      self.command= separator.join(self.data.command)
-      #if state_changed and self.status == DONE or self.status == FAILED:
-      new_exit_info =  self.connection.exitInformation(self.data.job_id)
-      state_changed = state_changed or new_exit_info != self.exit_info
-      self.exit_info = new_exit_info
-       
-      self.connection.resertStdReading()
-      if self.stdout == " " and (self.status == DONE or self.status == FAILED):
-        line = self.connection.stdoutReadLine(self.data.job_id)
-        stdout = ""
-        while line:
-          stdout = stdout + line + "\n"
-          line = self.connection.stdoutReadLine(self.data.job_id)
-        self.stdout = stdout
-        
-      if self.stderr == " " and (self.status == DONE or self.status == FAILED):
-        line = self.connection.stderrReadLine(self.data.job_id)
-        stderr = ""
-        while line:
-          stderr = stderr + line + "\n"
-          line = self.connection.stderrReadLine(self.data.job_id)
-        self.stderr = stderr
+    state_changed = self.status != status or state_changed
+    self.status = status
+    state_changed = self.exit_info != exit_info or state_changed
+    self.exit_info = exit_info
+    
     return state_changed
+    
+    #self.initiated = True
+    #state_changed = False
+    #if self.data and self.data.job_id != -1 :
+      #new_status = self.connection.status(self.data.job_id)
+      #state_changed = state_changed or self.status != new_status
+      #self.status=new_status
+      #separator = " "
+      #self.command= separator.join(self.data.command)
+      ##if state_changed and self.status == DONE or self.status == FAILED:
+      #new_exit_info =  self.connection.exitInformation(self.data.job_id)
+      #state_changed = state_changed or new_exit_info != self.exit_info
+      #self.exit_info = new_exit_info
+       
+      #self.connection.resertStdReading()
+      #if self.stdout == " " and (self.status == DONE or self.status == FAILED):
+        #line = self.connection.stdoutReadLine(self.data.job_id)
+        #stdout = ""
+        #while line:
+          #stdout = stdout + line + "\n"
+          #line = self.connection.stdoutReadLine(self.data.job_id)
+        #self.stdout = stdout
+        
+      #if self.stderr == " " and (self.status == DONE or self.status == FAILED):
+        #line = self.connection.stderrReadLine(self.data.job_id)
+        #stderr = ""
+        #while line:
+          #stderr = stderr + line + "\n"
+          #line = self.connection.stderrReadLine(self.data.job_id)
+        #self.stderr = stderr
+    #return state_changed
     
 class ClientFileTransfer(ClientWorkflowItem):
   
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    super(ClientFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
     self.transfer_status = " "
     
-  def updateState(self):
+  def updateState(self, transfer_status):
     
     self.initiated = True
     state_changed = False
     
-    if self.data and self.data.local_path:
-      new_transfer_status = self.connection.transferStatus(self.data.local_path)
-      state_changed = state_changed or new_transfer_status != self.transfer_status
-      self.transfer_status = new_transfer_status
-    
+    state_changed = state_changed or transfer_status != self.transfer_status
+    self.transfer_status = transfer_status
+    #if self.data and self.data.local_path:
+      #new_transfer_status = self.connection.transferStatus(self.data.local_path)
+      #state_changed = state_changed or new_transfer_status != self.transfer_status
+      #self.transfer_status = new_transfer_status
     return state_changed
     
 class ClientOutputFileTransfer(ClientFileTransfer):
   
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientOutputFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    super(ClientOutputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
 
 class ClientInputFileTransfer(ClientFileTransfer):
     
   def __init__(self,
-               connection,
                it_id, 
                parent = -1, 
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientInputFileTransfer, self).__init__(connection, it_id, parent, row, data, children_nb)
+    super(ClientInputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
 
 

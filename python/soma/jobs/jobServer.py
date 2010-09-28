@@ -964,6 +964,47 @@ class JobServer ( object ):
     return (self.__strToDateConversion(expiration_date), self.__stringConversion(name))
   
   
+  def getWorkflowStatus(self, wf_id):
+    '''
+    Gets back the status of all the workflow elements at once, minimizing the
+    requests to the database.
+    
+    @type wf_id: C{WorflowIdentifier}
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info), sequence of tuple (transfer_id, status))
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+    
+      try:
+        workflow_status = ([],[])
+        # jobs
+        for row in cursor.execute('''SELECT id,
+                                            status,
+                                            exit_status,
+                                            exit_value,
+                                            terminating_signal,
+                                            resource_usage
+                                     FROM jobs WHERE workflow_id=?''', [wf_id]):
+          job_id, status, exit_status, exit_value, term_signal, resource_usage = row
+          workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage)))
+                          
+        # transfers 
+        for row in cursor.execute('''SELECT local_file_path, 
+                                            status
+                                     FROM transfers WHERE workflow_id=?''', [wf_id]):
+          local_file_path, status = row
+          workflow_status[1].append((local_file_path, status))
+          
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), self.logger) 
+      cursor.close()
+      connection.close()
+      
+    return workflow_status
+    
       
   ###########################################
   # JOBS 

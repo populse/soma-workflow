@@ -803,7 +803,7 @@ class JobScheduler( object ):
     if drmaa_job_scheduler:
       self.__drmaaJS = drmaa_job_scheduler
     else:
-      print "parallel_job_submission_info" + repr(parallel_job_submission_info)
+      #print "parallel_job_submission_info" + repr(parallel_job_submission_info)
       self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info)
     
     # Job Server
@@ -928,7 +928,7 @@ class JobScheduler( object ):
     '''
      
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
-      print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_path
+      #print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
     
     self.__jobServer.setTransferStatus(local_path, status)
@@ -939,7 +939,7 @@ class JobScheduler( object ):
     '''
     
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
-      print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_path
+      #print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
 
     self.__jobServer.removeTransfer(local_path)
@@ -986,8 +986,8 @@ class JobScheduler( object ):
     '''
     
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Couldn't dispose job %d. It doesn't exist or is not owned by the current user \n" % job_id
-      return
+      #print "Couldn't dispose job %d. It doesn't exist or is not owned by the current user \n" % job_id
+      return 
     
     self.__drmaaJS.dispose(job_id)
 
@@ -1007,7 +1007,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
-      print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return
     
     self.__jobServer.deleteWorkflow(workflow_id)
@@ -1017,7 +1017,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
-      print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return False
     
     if new_expiration_date < datetime.now(): 
@@ -1054,7 +1054,8 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
-      print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      return
     return self.__jobServer.getWorkflow(wf_id)
 
  
@@ -1063,7 +1064,8 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
-      print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      return
     return self.__jobServer.getWorkflowInfo(wf_id)
     
     
@@ -1075,7 +1077,7 @@ class JobScheduler( object ):
     #TBI raise an exception if local_path is not valid transfer??
     
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
-      print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_path
+      #print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_path
       return
       
     return self.__jobServer.getTransferInformation(local_path)
@@ -1087,10 +1089,21 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return 
+      #print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      return
     
     return self.__jobServer.getJobStatus(job_id)[0]
+        
+  
+  def workflowStatus(self, wf_id, groupe = None):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      return
+      
+    return self.__jobServer.getWorkflowStatus(wf_id)
         
         
   def transferStatus(self, local_path):
@@ -1098,8 +1111,8 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
-      print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
-      return 
+      #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
+      return
     
     return self.__jobServer.getTransferStatus(local_path)
     
@@ -1111,7 +1124,7 @@ class JobScheduler( object ):
     '''
   
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
+      #print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
   
     dbJob = self.__jobServer.getJob(job_id)
@@ -1129,7 +1142,7 @@ class JobScheduler( object ):
     '''
     
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
+      #print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
     
     dbJob = self.__jobServer.getJob(job_id)
@@ -1148,7 +1161,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
+      #print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
       return   
 
     stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
@@ -1164,7 +1177,7 @@ class JobScheduler( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      print "Could get not read std error for the job %d. It doesn't exist or is owned by a different user \n" %job_id
+      #print "Could get not read std error for the job %d. It doesn't exist or is owned by a different user \n" %job_id
       return   
 
     stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)

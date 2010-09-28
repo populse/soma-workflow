@@ -114,7 +114,8 @@ class FileSending(FileTransfer):
                 disposal_timeout = 168,
                 name = None,
                 remote_paths = None):
-    FileTransfer.__init__(self,remote_path, disposal_timeout, name, remote_paths)
+    super(FileSending, self).__init__(remote_path, disposal_timeout, name, remote_paths)
+   
 
 class FileRetrieving(FileTransfer):
   '''
@@ -126,7 +127,7 @@ class FileRetrieving(FileTransfer):
                 disposal_timeout = 168,
                 name = None,
                 remote_paths = None):
-    FileTransfer.__init__(self,remote_path, disposal_timeout, name, remote_paths)
+    super(FileRetrieving, self).__init__(remote_path, disposal_timeout, name, remote_paths)
     
 class Group(object):
   '''
@@ -235,7 +236,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode #'local_no_disconnection' #(local debug)#      
+    self.__mode = mode # 'local_no_disconnection' #(local debug)#     
     
     #########
     # LOCAL #
@@ -713,6 +714,18 @@ class Jobs(object):
     '''
     return self.__js_proxy.status(job_id)
   
+  
+  def workflowStatus(self, wf_id, groupe = None):
+    '''
+    Gets back the status of all the workflow elements at once, minimizing the
+    communication with the server and requests to the database.
+    
+    @type  wf_id: C{WorflowIdentifier}
+    @param wf_id: The workflow identifier
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info), sequence of tuple (transfer_id, status))
+    '''
+    
+    return self.__js_proxy.workflowStatus(wf_id)
   
   def transferStatus(self, local_path):
     '''
