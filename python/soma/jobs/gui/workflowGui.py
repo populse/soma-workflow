@@ -552,6 +552,17 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     super(WorkflowItemModel, self).__init__(parent)
     self.workflow = client_workflow 
     
+    self.standby_icon=GRAY
+    self.transfer_ready_icon=BLUE
+    self.failed_icon=RED
+    self.running_icon=GREEN
+    self.done_icon=LIGHT_BLUE
+    
+    #self.standby_icon = QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/hourglass.png')
+    #self.failed_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/abort.png')
+    #self.running_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/forward.png')
+    #self.done_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/ok.png')
+    
   def index(self, row, column, parent=QtCore.QModelIndex()):
     ##print " " 
     ##print ">>> index " + repr(row) + " " + repr(column) 
@@ -637,9 +648,34 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       
     #### Groups ####
     if isinstance(item,ClientGroup):
+      if role == QtCore.Qt.FontRole:
+        font = QtGui.QFont()
+        font.setBold(True)
+        return font
       if role == QtCore.Qt.DisplayRole:
         #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
         return item.data.name
+      else:
+        #if item.state == ClientGroup.GP_NOT_SUBMITTED:
+          #if role == QtCore.Qt.DecorationRole:
+            ##print "<<<< data QtCore.Qt.DecorationRole GRAY"
+            #return self.standby_icon
+            ##return GRAY
+        if item.state == ClientGroup.GP_DONE:
+          if role == QtCore.Qt.DecorationRole:
+            #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
+            return self.done_icon
+            #return LIGHT_BLUE
+        if item.state == ClientGroup.GP_FAILED:
+          if role == QtCore.Qt.DecorationRole:
+            #print "<<<< data QtCore.Qt.DecorationRole RED"
+            return self.failed_icon
+            #return RED
+        if item.state == ClientGroup.GP_RUNNING:
+          if role == QtCore.Qt.DecorationRole:
+            #print "<<<< data QtCore.Qt.DecorationRole GREEN"
+            return self.running_icon
+            #return GREEN
     
     #### JobTemplates ####
     if isinstance(item, ClientJob): 
@@ -657,7 +693,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             return item.data.name
           if role == QtCore.Qt.DecorationRole:
             #print "<<<< data QtCore.Qt.DecorationRole GRAY"
-            return GRAY
+            return QtGui.QIcon() #self.standby_icon
+            #return GRAY
         # Done or Failed
         if status == DONE or status == FAILED:
           #exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(item.data.job_id)
@@ -668,18 +705,21 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           if role == QtCore.Qt.DecorationRole:
             if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
               #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
-              return LIGHT_BLUE
+              return self.done_icon
+              #return LIGHT_BLUE
             else:
               #print "<<<< data QtCore.Qt.DecorationRole RED"
-              return RED
+              return self.failed_icon
+              #return RED
           
         # Running
         if role == QtCore.Qt.DisplayRole:
           #print "<<<< data QtCore.Qt.DisplayRole" + item.data.name + " running..."
-          return item.data.name + " running..."
+          return item.data.name + " " + status #" running..."
         if role == QtCore.Qt.DecorationRole:
           #print "<<<< data QtCore.Qt.DecorationRole GREEN"
-          return GREEN
+          return self.running_icon
+          #return GREEN
         
     #### FileTransfers ####
     if isinstance(item, ClientFileTransfer):
@@ -910,7 +950,8 @@ class ClientWorkflow(object):
       
       
     # Create the ClientGroup instances
-    self.root_item = ClientGroup( it_id = -1, 
+    self.root_item = ClientGroup( self, 
+                                  it_id = -1, 
                                   parent = -1, 
                                   row = -1, 
                                   data = workflow.mainGroup, 
@@ -921,7 +962,8 @@ class ClientWorkflow(object):
       item_id = id_cnt
       id_cnt = id_cnt + 1
       self.ids[group] = item_id
-      self.items[item_id] =  ClientGroup( it_id = item_id, 
+      self.items[item_id] =  ClientGroup( self,
+                                          it_id = item_id, 
                                           parent = -1, 
                                           row = -1, 
                                           data = group, 
@@ -1037,6 +1079,10 @@ class ClientWorkflow(object):
     #end = datetime.now() - begining
     #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
     
+    
+    #updateing groups 
+    self.root_item.updateState()
+    
     return data_changed
         
 
@@ -1064,22 +1110,83 @@ class ClientWorkflowItem(object):
     self.initiated = False
 
 class ClientGroup(ClientWorkflowItem):
+  
+  GP_NOT_SUBMITTED = "not_submitted"
+  GP_DONE = "done"
+  GP_FAILED = "failed"
+  GP_RUNNING = "running"
+  
   def __init__(self,
+               client_workflow,
                it_id, 
                parent = -1, 
                row = -1,
                data = None,
-               children_nb = 0 ):
+               children_nb = 0):
     super(ClientGroup, self).__init__(it_id, parent, row, data, children_nb)  
+    
+    self.client_workflow = client_workflow
+    
+    self.achievement = 0 # % of achievement
+    self.state = ClientGroup.GP_NOT_SUBMITTED
+    self.total_children_nb = 0 # will be computed at the first update
     
     # TO DO => state % of achievement
     
-  #def updateState(self):
-    #self.initiated = True
-    #state_changed = False
-    ## TO DO
+  def updateState(self):
+    self.initiated = True
+    state_changed = False
     
-    #return state_changed
+    self.total_children_nb = len(self.children)
+    self.not_sub_nb = 0
+    self.done_nb = 0
+    self.failed_nb = 0
+    self.running_nb = 0
+    
+    for child in self.children:
+      item = self.client_workflow.items[child]
+      if isinstance(item, ClientJob):
+        if item.status == NOT_SUBMITTED:
+          self.not_sub_nb = self.not_sub_nb +1
+        elif item.status == DONE or item.status == FAILED:
+          exit_status, exit_value, term_signal, resource_usage = item.exit_info
+          if item.status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
+            self.done_nb = self.done_nb +1
+          else:
+            self.failed_nb = self.failed_nb +1
+        else:
+          self.running_nb = self.running_nb +1
+      if isinstance(item, ClientGroup):
+        item.updateState()
+        self.total_children_nb = self.total_children_nb + item.total_children_nb
+        if item.state == ClientGroup.GP_NOT_SUBMITTED:
+          self.not_sub_nb = self.not_sub_nb + 1
+        if item.state == ClientGroup.GP_DONE:
+          self.done_nb = self.done_nb +1
+        if item.state == ClientGroup.GP_FAILED:
+          self.failed_nb = self.failed_nb +1
+        if item.state == ClientGroup.GP_RUNNING:
+          self.running_nb = self.running_nb +1
+          
+    #print 'group ' + self.data.name
+    #print ' failed_nb ' + repr(self.failed_nb)
+    #print ' done_nb ' + repr(self.done_nb)
+    #print ' not_sub_nb ' + repr(self.not_sub_nb)
+    #print ' running_nb ' + repr(self.running_nb)
+    #print ' '
+          
+    if self.failed_nb != 0:
+      new_state = ClientGroup.GP_FAILED
+    elif self.done_nb == len(self.children):
+      new_state = ClientGroup.GP_DONE
+    elif self.not_sub_nb == len(self.children):
+      new_state = ClientGroup.GP_NOT_SUBMITTED
+    else:
+      new_state = ClientGroup.GP_RUNNING
+        
+    state_changed = self.state != new_state
+    self.state = new_state
+    return state_changed
 
 class ClientJob(ClientWorkflowItem):
   
