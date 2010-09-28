@@ -40,9 +40,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.currentWorkflowAboutToChange)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
-    #self.model.current_connection_changed.connect(self.currentConnectionChanged)
-    #self.model.current_workflow_about_to_change.connect(self.currentWorkflowAboutToChange)
-    #self.model.current_worklfow_changed.connect(self.currentWorkflowChanged)
     
     self.resource_list = self.controler.getRessourceIds()
     self.ui.combo_resources.addItems(self.resource_list)
@@ -56,7 +53,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     graphWidgetLayout.addWidget(self.graphWidget)
     self.ui.dockWidgetContents_graph_view.setLayout(graphWidgetLayout)
     
-    self.itemInfoWidget = WorkflowElementInfo(self)
+    self.itemInfoWidget = WorkflowElementInfo(self.model, self)
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
@@ -241,7 +238,6 @@ class WorkflowWidget(QtGui.QMainWindow):
   
   @QtCore.pyqtSlot()
   def currentConnectionChanged(self):
-    print 'currentConnectionChanged'
     self.setWindowTitle("Workflows - " + self.model.current_resource_id)
     self.updateWorkflowList()
     self.model.clearCurrentWorkflow()
@@ -250,14 +246,12 @@ class WorkflowWidget(QtGui.QMainWindow):
       
   @QtCore.pyqtSlot()
   def currentWorkflowAboutToChange(self):
-    print 'currentWorkflowAboutToChange'
     if self.itemModel:
         self.itemModel.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
         self.itemModel = None
   
   @QtCore.pyqtSlot()
   def currentWorkflowChanged(self):
-    print 'currentWorkflowChanged'
     if not self.model.current_workflow:
       # No workflow
       self.ui.treeView.setModel(None)
@@ -285,16 +279,11 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.treeView.setModel(self.itemModel)
       self.itemModel.emit(QtCore.SIGNAL("modelReset()"))
       
-      #2409
-      #self.model.workflow_state_changed.connect(self.graphWidget.dataChanged)
       self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
       
-      #self.itemModel.dataChanged.connect(self.graphWidget.dataChanged)
-      
-      #2409 => TEMPORARY : the graph view has to be built from the clientModel
+      #=> TEMPORARY : the graph view has to be built from the clientModel
       self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
-      #self.model.workflow_state_changed.connect(self.itemInfoWidget.dataChanged)
       self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.itemInfoWidget.dataChanged)
       self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
       
@@ -342,7 +331,6 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
         
   def updateWorkflowList(self):
-    print 'updateWorkflowList'
     self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
     self.ui.combo_submitted_wfs.clear()
     for wf_info in self.controler.getSubmittedWorkflows(self.model.current_connection):
@@ -353,12 +341,12 @@ class WorkflowWidget(QtGui.QMainWindow):
     
 class WorkflowElementInfo(QtGui.QWidget):
   
-  def __init__(self, parent = None):
+  def __init__(self, client_model, parent = None):
     super(WorkflowElementInfo, self).__init__(parent)
-    #self.setFrameStyle(QtGui.QFrame.Box| QtGui.QFrame.Plain)
-   
+    
     self.selectionModel = None
     self.infoWidget = None
+    self.model = client_model # used to update stderr and stdout only
     
     self.vLayout = QtGui.QVBoxLayout(self)
     
@@ -383,49 +371,48 @@ class WorkflowElementInfo(QtGui.QWidget):
     
   @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
   def currentChanged(self, current, previous):
-    
     if self.infoWidget:
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
-  
     item = current.internalPointer()
     if isinstance(item, ClientJob):
-      self.infoWidget = JobInfoWidget(item, self)
+      self.infoWidget = JobInfoWidget(item, self.model.current_connection, self)
     elif isinstance(item, ClientFileTransfer):
       self.infoWidget = TransferInfoWidget(item, self)
     else:
       self.infoWidget = None
-      
     if self.infoWidget:
       self.vLayout.addWidget(self.infoWidget)
-      
     self.update()
     
   @QtCore.pyqtSlot()
   def dataChanged(self):
     if self.infoWidget:
       self.infoWidget.dataChanged()
-      
-  
  
  
 class JobInfoWidget(QtGui.QTabWidget):
   
-  def __init__(self, jobItem, parent = None):
+  def __init__(self, job_item, connection, parent = None):
     super(JobInfoWidget, self).__init__(parent)
     
     self.ui = Ui_JobInfo()
     self.ui.setupUi(self)
     
-    self.jobItem = jobItem
+    self.job_item = job_item
+    self.connection = connection
     
     self.dataChanged()
     
+    self.currentChanged.connect(self.currentTabChanged)
+    self.ui.stderr_refresh_button.clicked.connect(self.refreshStderr)
+    self.ui.stdout_refresh_button.clicked.connect(self.refreshStdout)
+    
   def dataChanged(self):
  
-    self.ui.job_name.setText(self.jobItem.data.name)
-    self.ui.job_status.setText(self.jobItem.status)
-    exit_status, exit_value, term_signal, resource_usage = self.jobItem.exit_info
+    self.ui.job_name.setText(self.job_item.data.name)
+    self.ui.job_status.setText(self.job_item.status)
+    exit_status, exit_value, term_signal, resource_usage = self.job_item.exit_info
     if exit_status: 
       self.ui.exit_status.setText(exit_status)
     else: 
@@ -443,9 +430,31 @@ class JobInfoWidget(QtGui.QTabWidget):
     else: 
       self.ui.resource_usage.clear()
     
-    self.ui.command.setText(self.jobItem.command)
-    self.ui.stdout_file_contents.setText(self.jobItem.stdout)
-    self.ui.stderr_file_contents.setText(self.jobItem.stderr)
+    self.ui.command.setText(self.job_item.command)
+    self.ui.stdout_file_contents.setText(self.job_item.stdout)
+    self.ui.stderr_file_contents.setText(self.job_item.stderr)
+    
+  
+  @QtCore.pyqtSlot(int)
+  def currentTabChanged(self, index):
+    if index == 1 and self.job_item.stdout == "":
+      self.job_item.updateStdout(self.connection)
+      self.dataChanged()
+    if index == 2 and self.job_item.stderr == "":
+      self.job_item.updateStderr(self.connection)
+      self.dataChanged()
+      
+  @QtCore.pyqtSlot()
+  def refreshStdout(self):
+    self.job_item.updateStdout(self.connection)
+    self.dataChanged()
+    
+  @QtCore.pyqtSlot()
+  def refreshStderr(self):
+    self.job_item.updateStderr(self.connection)
+    self.dataChanged()
+    
+  
     
 class TransferInfoWidget(QtGui.QTabWidget):
   
@@ -750,11 +759,6 @@ class ClientModel(QtCore.QObject):
     self.current_wf_id = -1
     self.expiration_date = None
     
-    #self.workflow_state_changed = QtCore.pyqtSignal()
-    #self.current_connection_changed = QtCore.pyqtSignal()
-    #self.current_workflow_about_to_change = QtCore.pyqtSignal()
-    #self.current_worklfow_changed = QtCore.pyqtSignal()
-    
     self.update_interval = 3 # update period in seconds
     self.auto_update = True
     self.hold = False
@@ -763,7 +767,6 @@ class ClientModel(QtCore.QObject):
       # update only the current workflows
       while True:
         if not self.hold and self.auto_update and self.current_workflow and self.current_workflow.updateState(): 
-          #self.workflow_state_changed.emit()
           self.emit(QtCore.SIGNAL('workflow_state_changed()'))
         time.sleep(self.update_interval)
     
@@ -778,22 +781,18 @@ class ClientModel(QtCore.QObject):
     '''
     Adds a connection and use it as the current connection
     '''
-    print 'addConnection'
     self.connections[resource_id] = connection
     self.workflows[resource_id] = {}
     self.expiration_dates[resource_id] = {}
     self.current_resource_id = resource_id
     self.current_connection = connection
     self.emit(QtCore.SIGNAL('current_connection_changed()'))
-    #self.current_connection_changed.emit()
     
   def setCurrentConnection(self, resource_id):
     if resource_id != self.current_resource_id:
       assert(resource_id in self.connections.keys())
       self.current_resource = resource_id
       self.current_connection = self.connections[resource_id]
-      
-      #self.current_connection_changed.emit()
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
     
   def addWorkflow(self, workflow, expiration_date):
@@ -802,8 +801,6 @@ class ClientModel(QtCore.QObject):
     use it as the current workflow. 
     @type worklfow: soma.jobs.jobClient.Workflow
     '''
-    print '==> addWorkflow' + repr(workflow.wf_id)
-    #self.current_workflow_about_to_change.emit()
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
     self.hold = True 
     self.current_workflow = ClientWorkflow(workflow, self.current_connection)
@@ -813,15 +810,11 @@ class ClientModel(QtCore.QObject):
       self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
       self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
     self.current_workflow.updateState()
-    #self.current_workflow_changed.emit()
     self.emit(QtCore.SIGNAL('current_workflow_changed()'))
     self.hold = False
-    print '<== addWorkflow' 
     
   def deleteWorkflow(self):
-    #self.current_workflow_about_to_change.emit()
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-    
     if self.current_workflow and self.current_workflow.wf_id in self.workflows.keys():
       del self.workflows[wf_id]
       del self.expiration_dates[wf_id]
@@ -829,32 +822,23 @@ class ClientModel(QtCore.QObject):
     self.current_wf_id = -1
     self.expiration_date = datetime.now()
     
-    #self.current_workflow_changed.emit()
     self.emit(QtCore.SIGNAL('current_workflow_changed()'))
     
   def clearCurrentWorkflow(self):
     if self.current_workflow != None or  self.current_wf_id != -1:
-      #self.current_workflow_about_to_change.emit()
       self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-      
       self.current_workflow = None
       self.current_wf_id = -1
       self.expiration_date = datetime.now()
-      
-      #self.current_workflow_changed.emit()
       self.emit(QtCore.SIGNAL('current_workflow_changed()'))
     
   def setCurrentWorkflow(self, wf_id):
     if wf_id != self.current_wf_id:
       assert(wf_id in self.workflows[self.current_resource_id].keys())
-      #self.current_workflow_about_to_change.emit()
       self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-      
       self.current_wf_id = wf_id
       self.current_workflow = self.workflows[self.current_resource_id][self.current_wf_id]
       self.expiration_date = self.expiration_dates[self.current_resource_id][self.current_wf_id]
-      
-      #self.current_workflow_changed.emit()
       self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       
   def changeExpirationDate(self, date):
@@ -863,7 +847,10 @@ class ClientModel(QtCore.QObject):
 
   def isLoadedWorkflow(self, wf_id):
     return wf_id in self.workflows[self.current_resource_id].keys()
+  
+  
 
+    
 class ClientWorkflow(object):
   
   def __init__(self, workflow, connection = None):
@@ -886,7 +873,6 @@ class ClientWorkflow(object):
     self.server_workflow = workflow 
     self.server_jobs = {} # server job id => client job id
     self.server_file_transfers = {} # server file path => client transfer id
-    
     
     #print " ==> building the workflow "
     #begining = datetime.now()
@@ -1035,23 +1021,7 @@ class ClientWorkflow(object):
       job_id, status, exit_info = job_info
       item = self.items[self.server_jobs[job_id]]
       data_changed = item.updateState(status, exit_info) or data_changed
-      #update stderr and stdout if needed
-      #if data_changed and item.stdout == " " and (status == DONE or status == FAILED):
-        #self.connection.resertStdReading()
-        #line = self.connection.stdoutReadLine(job_id)
-        #stdout = ""
-        #while line:
-          #stdout = stdout + line + "\n"
-          #line = self.connection.stdoutReadLine(job_id)
-        #item.stdout = stdout
-        
-        #line = self.connection.stderrReadLine(job_id)
-        #stderr = ""
-        #while line:
-          #stderr = stderr + line + "\n"
-          #line = self.connection.stderrReadLine(job_id)
-        #item.stderr = stderr
-    
+
     #end = datetime.now() - begining
     #print " <== end updating jobs" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
     
@@ -1068,6 +1038,7 @@ class ClientWorkflow(object):
     #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
     
     return data_changed
+        
 
 class ClientWorkflowItem(object):
   '''
@@ -1091,13 +1062,6 @@ class ClientWorkflowItem(object):
     self.children = [-1 for i in range(children_nb)]   
     
     self.initiated = False
-  
-  #def updateState(self):
-    #'''
-    #@rtype: boolean
-    #@returns: did the state change?
-    #'''
-    #raise Exception('ClientWorkflowItem is an abstract class. updateState must be implemented in subclass')
 
 class ClientGroup(ClientWorkflowItem):
   def __init__(self,
@@ -1129,9 +1093,9 @@ class ClientJob(ClientWorkflowItem):
     super(ClientJob, self).__init__(it_id, parent, row, data, children_nb)
     
     self.status = "not submitted"
-    self.exit_info = (" ", " ", " ", " ")
-    self.stdout = " "
-    self.stderr = " "
+    self.exit_info = ("", "", "", "")
+    self.stdout = ""
+    self.stderr = ""
     
     cmd_seq = []
     for command_el in data.command:
@@ -1152,37 +1116,26 @@ class ClientJob(ClientWorkflowItem):
     
     return state_changed
     
-    #self.initiated = True
-    #state_changed = False
-    #if self.data and self.data.job_id != -1 :
-      #new_status = self.connection.status(self.data.job_id)
-      #state_changed = state_changed or self.status != new_status
-      #self.status=new_status
-      #separator = " "
-      #self.command= separator.join(self.data.command)
-      ##if state_changed and self.status == DONE or self.status == FAILED:
-      #new_exit_info =  self.connection.exitInformation(self.data.job_id)
-      #state_changed = state_changed or new_exit_info != self.exit_info
-      #self.exit_info = new_exit_info
-       
-      #self.connection.resertStdReading()
-      #if self.stdout == " " and (self.status == DONE or self.status == FAILED):
-        #line = self.connection.stdoutReadLine(self.data.job_id)
-        #stdout = ""
-        #while line:
-          #stdout = stdout + line + "\n"
-          #line = self.connection.stdoutReadLine(self.data.job_id)
-        #self.stdout = stdout
-        
-      #if self.stderr == " " and (self.status == DONE or self.status == FAILED):
-        #line = self.connection.stderrReadLine(self.data.job_id)
-        #stderr = ""
-        #while line:
-          #stderr = stderr + line + "\n"
-          #line = self.connection.stderrReadLine(self.data.job_id)
-        #self.stderr = stderr
-    #return state_changed
-    
+  def updateStdout(self, connection):
+    if self.data:
+      connection.resertStdReading()
+      line = connection.stdoutReadLine(self.data.job_id)
+      stdout = ""
+      while line:
+        stdout = stdout + line + "\n"
+        line = connection.stdoutReadLine(self.data.job_id)
+      self.stdout = stdout
+      
+  def updateStderr(self, connection):
+    if self.data:
+      connection.resertStdReading()
+      line = connection.stderrReadLine(self.data.job_id)
+      stderr = ""
+      while line:
+        stderr = stderr + line + "\n"
+        line = connection.stderrReadLine(self.data.job_id)
+      self.stderr = stderr
+      
 class ClientFileTransfer(ClientWorkflowItem):
   
   def __init__(self,
@@ -1201,10 +1154,7 @@ class ClientFileTransfer(ClientWorkflowItem):
     
     state_changed = state_changed or transfer_status != self.transfer_status
     self.transfer_status = transfer_status
-    #if self.data and self.data.local_path:
-      #new_transfer_status = self.connection.transferStatus(self.data.local_path)
-      #state_changed = state_changed or new_transfer_status != self.transfer_status
-      #self.transfer_status = new_transfer_status
+
     return state_changed
     
 class ClientOutputFileTransfer(ClientFileTransfer):
