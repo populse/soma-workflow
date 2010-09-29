@@ -177,7 +177,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     if resource_id in self.model.connections.keys():
       self.model.setCurrentConnection(resource_id)
-      
       return
     else:
       connection_invalid = True
@@ -831,7 +830,7 @@ class ClientModel(QtCore.QObject):
   def setCurrentConnection(self, resource_id):
     if resource_id != self.current_resource_id:
       assert(resource_id in self.connections.keys())
-      self.current_resource = resource_id
+      self.current_resource_id = resource_id
       self.current_connection = self.connections[resource_id]
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
     
@@ -912,7 +911,7 @@ class ClientWorkflow(object):
     
     self.server_workflow = workflow 
     self.server_jobs = {} # server job id => client job id
-    self.server_file_transfers = {} # server file path => client transfer id
+    self.server_file_transfers = {} # server file path => sequence of client transfer id
     
     #print " ==> building the workflow "
     #begining = datetime.now()
@@ -1002,7 +1001,10 @@ class ClientWorkflow(object):
         if ft in ref_in or ft.local_path in ref_in:
           item_id = id_cnt
           id_cnt = id_cnt + 1
-          self.server_file_transfers[ft.local_path] = item_id
+          if ft.local_path in self.server_file_transfers.keys():
+            self.server_file_transfers[ft.local_path].append(item_id)
+          else:
+            self.server_file_transfers[ft.local_path] = [ item_id ]
           self.ids[ft].append(item_id)
           if ft in ref_in:
             row = ref_in.index(ft)
@@ -1016,7 +1018,10 @@ class ClientWorkflow(object):
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
           id_cnt = id_cnt + 1
-          self.server_file_transfers[ft.local_path] = item_id
+          if ft.local_path in self.server_file_transfers.keys():
+            self.server_file_transfers[ft.local_path].append(item_id)
+          else:
+            self.server_file_transfers[ft.local_path] = [ item_id ]
           self.ids[ft].append(item_id)
           if ft in ref_out:
             row = len(ref_in)+ref_out.index(ft)
@@ -1073,8 +1078,9 @@ class ClientWorkflow(object):
     #updating file transfer
     for transfer_info in wf_status[1]:
       local_file_path, status = transfer_info 
-      item = self.items[self.server_file_transfers[local_file_path]]
-      data_changed = item.updateState(status) or data_changed
+      for item_id in self.server_file_transfers[local_file_path]:
+        item = self.items[item_id]
+        data_changed = item.updateState(status) or data_changed
     
     #end = datetime.now() - begining
     #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
@@ -1206,7 +1212,9 @@ class ClientJob(ClientWorkflowItem):
     
     cmd_seq = []
     for command_el in data.command:
-      if isinstance(command_el, FileTransfer):
+      if isinstance(command_el, tuple):
+        cmd_seq.append(command_el[0].remote_path)
+      elif isinstance(command_el, FileTransfer):
         cmd_seq.append(command_el.remote_path)
       else:
         cmd_seq.append(repr(command_el))

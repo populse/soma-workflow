@@ -312,8 +312,12 @@ class DrmaaJobScheduler( object ):
         parallel_config_name, max_node_number = job.jobTemplate.parallel_job_info
         self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
         
-      job_env = ["LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"]]
-      job_env.append("PATH="+os.environ["PATH"])
+      job_env = []
+      for var_name in os.environ.keys():
+        job_env.append(var_name+"="+os.environ[var_name])
+      
+      #job_env = ["LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"]]
+      #job_env.append("PATH="+os.environ["PATH"])
       #self.logger.debug("Environment:")
       #self.logger.debug("  PATH="+os.environ["PATH"])
       #self.logger.debug("  LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"])
