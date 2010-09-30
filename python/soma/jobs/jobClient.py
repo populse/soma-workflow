@@ -722,7 +722,7 @@ class Jobs(object):
     
     @type  wf_id: C{WorflowIdentifier}
     @param wf_id: The workflow identifier
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info), sequence of tuple (transfer_id, status))
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, status))
     '''
     
     return self.__js_proxy.workflowStatus(wf_id)

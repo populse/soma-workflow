@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>370</width>
-    <height>294</height>
+    <width>403</width>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,9 +21,6 @@
     <string>job info</string>
    </attribute>
    <layout class="QFormLayout" name="formLayout">
-    <property name="fieldGrowthPolicy">
-     <enum>QFormLayout::ExpandingFieldsGrow</enum>
-    </property>
     <item row="0" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
@@ -119,12 +116,97 @@
     <item row="6" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
-       <string>command:</string>
+       <string>Command:</string>
       </property>
      </widget>
     </item>
     <item row="6" column="1">
      <widget class="QLineEdit" name="command">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_11">
+      <property name="text">
+       <string>Time in queue:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="1">
+     <widget class="QLineEdit" name="time_in_queue">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="label_12">
+      <property name="text">
+       <string>Execution time:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="execution_time">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="0">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>Submission date:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="1">
+     <widget class="QLineEdit" name="submission_date">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="0">
+     <widget class="QLabel" name="label_9">
+      <property name="text">
+       <string>Execution date:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="1">
+     <widget class="QLineEdit" name="execution_date">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="0">
+     <widget class="QLabel" name="label_10">
+      <property name="text">
+       <string>Ending date:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="1">
+     <widget class="QLineEdit" name="ending_date">
       <property name="frame">
        <bool>false</bool>
       </property>
@@ -150,8 +232,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>344</width>
-         <height>216</height>
+         <width>377</width>
+         <height>311</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -210,8 +292,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>344</width>
-         <height>216</height>
+         <width>377</width>
+         <height>311</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout">

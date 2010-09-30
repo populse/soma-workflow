@@ -20,10 +20,54 @@ Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ )
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
 Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'graphWidget.ui' ))[0]
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
+Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'GroupInfo.ui' ))[0]
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
 Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
 Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'firstConnectionDlg.ui' ))[0]
 
+def setLabelFromString(label, value):
+  '''
+  @type value: string
+  '''
+  if value:
+    label.setText(value)
+  else:
+    label.setText("")
+    
+def setLabelFromInt(label, value):
+  '''
+  @type value: int
+  '''
+  if value:
+    label.setText(repr(value))
+  else:
+    label.setText("")
+
+def setLabelFromDeltaTime(label, value):
+  '''
+  @type value: datetime.deltatime
+  '''
+  if value:
+    hours = value.seconds//3600
+    mins = (value.seconds%3600)//60
+    seconds = (value.seconds%3600)%60
+    hours = hours + value.days * 24
+    time = QtCore.QTime(hours, mins, seconds)
+    label.setText(time.toString("HH:mm:ss"))
+  else:
+    label.setText("")
+
+
+def setLabelFromDateTime(label, value):
+  '''
+  @type value: datetime.datetime
+  '''
+  if value:
+    datetime = QtCore.QDateTime(value)
+    label.setText(datetime.toString("dd/MM/yy HH:mm:ss"))
+  else:
+    label.setText("")
+  
 
 class WorkflowWidget(QtGui.QMainWindow):
   
@@ -57,6 +101,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+
+    self.workflowInfoWidget = WorkflowInfo(self.model, self)
+    wfInfoLayout = QtGui.QVBoxLayout()
+    wfInfoLayout.addWidget(self.workflowInfoWidget)
+    self.ui.dockWidgetContents_wf_stat.setLayout(wfInfoLayout)
     
     self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
     self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
@@ -283,7 +332,6 @@ class WorkflowWidget(QtGui.QMainWindow):
       #=> TEMPORARY : the graph view has to be built from the clientModel
       self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
-      self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.itemInfoWidget.dataChanged)
       self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
       
       if self.model.current_wf_id == -1:
@@ -338,6 +386,43 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
+class WorkflowInfo(QtGui.QWidget):
+  
+  def __init__(self, client_model, parent = None):
+    super(WorkflowInfo, self).__init__(parent)
+    
+    self.infoWidget = None
+    self.vLayout = QtGui.QVBoxLayout(self)
+    self.model = client_model
+    
+    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.clear)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.workflowChanged)
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
+  
+  @QtCore.pyqtSlot()
+  def clear(self):
+    if self.infoWidget:
+      self.infoWidget.hide()
+      self.vLayout.removeWidget(self.infoWidget)
+    self.infoWidget = None
+    self.dataChanged()
+    
+  @QtCore.pyqtSlot()
+  def workflowChanged(self):
+    if self.infoWidget:
+      self.infoWidget.hide()
+      self.vLayout.removeWidget(self.infoWidget)
+    self.infoWidget = GroupInfoWidget(self.model.current_workflow.root_item, self)
+    if self.infoWidget:
+      self.vLayout.addWidget(self.infoWidget)
+    self.update()
+    
+  @QtCore.pyqtSlot()
+  def dataChanged(self):
+    if self.infoWidget:
+      self.infoWidget.dataChanged()
+    
 class WorkflowElementInfo(QtGui.QWidget):
   
   def __init__(self, client_model, parent = None):
@@ -346,6 +431,8 @@ class WorkflowElementInfo(QtGui.QWidget):
     self.selectionModel = None
     self.infoWidget = None
     self.model = client_model # used to update stderr and stdout only
+    
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged) 
     
     self.vLayout = QtGui.QVBoxLayout(self)
     
@@ -378,6 +465,8 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.infoWidget = JobInfoWidget(item, self.model.current_connection, self)
     elif isinstance(item, ClientFileTransfer):
       self.infoWidget = TransferInfoWidget(item, self)
+    elif isinstance(item, ClientGroup):
+      self.infoWidget = GroupInfoWidget(item, self)
     else:
       self.infoWidget = None
     if self.infoWidget:
@@ -409,27 +498,31 @@ class JobInfoWidget(QtGui.QTabWidget):
     
   def dataChanged(self):
  
-    self.ui.job_name.setText(self.job_item.data.name)
-    self.ui.job_status.setText(self.job_item.status)
+    setLabelFromString(self.ui.job_name, self.job_item.data.name)
+    setLabelFromString(self.ui.job_status,self.job_item.status)
     exit_status, exit_value, term_signal, resource_usage = self.job_item.exit_info
-    if exit_status: 
-      self.ui.exit_status.setText(exit_status)
-    else: 
-      self.ui.exit_status.setText(" ")
-    if exit_value: 
-      self.ui.exit_value.setText(repr(exit_value))
-    else: 
-      self.ui.exit_value.setText(" ")
-    if term_signal: 
-      self.ui.term_signal.setText(term_signal)
-    else: 
-      self.ui.term_signal.setText(" ")
+    setLabelFromString(self.ui.exit_status, exit_status)
+    setLabelFromInt(self.ui.exit_status, exit_status)
+    setLabelFromString(self.ui.term_signal, term_signal)
+    setLabelFromString(self.ui.exit_status, exit_status)
+    setLabelFromString(self.ui.command,self.job_item.command)
+    
     if resource_usage: 
       self.ui.resource_usage.insertItems(0, resource_usage.split())
     else: 
       self.ui.resource_usage.clear()
     
-    self.ui.command.setText(self.job_item.command)
+    setLabelFromDateTime(self.ui.submission_date, self.job_item.submission_date)
+    setLabelFromDateTime(self.ui.execution_date, self.job_item.execution_date)
+    setLabelFromDateTime(self.ui.ending_date, self.job_item.ending_date)
+    if self.job_item.submission_date:
+      if self.job_item.execution_date:
+        time_in_queue = self.job_item.execution_date - self.job_item.submission_date
+        setLabelFromDeltaTime(self.ui.time_in_queue, time_in_queue)
+        if self.job_item.ending_date:
+          execution_time = self.job_item.ending_date - self.job_item.execution_date
+          setLabelFromDeltaTime(self.ui.execution_time, execution_time)
+    
     self.ui.stdout_file_contents.setText(self.job_item.stdout)
     self.ui.stderr_file_contents.setText(self.job_item.stderr)
     
@@ -467,19 +560,57 @@ class TransferInfoWidget(QtGui.QTabWidget):
     
   def dataChanged(self):
     
-    self.ui.transfer_name.setText(self.transferItem.data.name)
-    self.ui.transfer_status.setText(self.transferItem.transfer_status)
+    setLabelFromString(self.ui.transfer_name, self.transferItem.data.name)
+    setLabelFromString(self.ui.transfer_status, self.transferItem.transfer_status)
+    setLabelFromString(self.ui.remote_path, self.transferItem.data.remote_path)
+    setLabelFromString(self.ui.local_path, self.transferItem.data.local_path)
     
-    self.ui.remote_path.setText(self.transferItem.data.remote_path)
     if self.transferItem.data.remote_paths:
       self.ui.remote_paths.insertItems(0, self.transferItem.data.remote_paths)
     else:
       self.ui.remote_paths.clear()
     
-    if self.transferItem.data.local_path:
-      self.ui.local_path.setText(self.transferItem.data.local_path)
-    else: 
-      self.ui.local_path.setText(" ")
+
+class GroupInfoWidget(QtGui.QWidget):
+  
+  def __init__(self, group_item, parent = None):
+    super(GroupInfoWidget, self).__init__(parent)
+    self.ui = Ui_GroupInfo()
+    self.ui.setupUi(self)
+    
+    self.group_item = group_item
+    self.dataChanged()
+    
+  def dataChanged(self):
+    
+    job_nb = len(self.group_item.not_sub) + len(self.group_item.done) + len(self.group_item.failed) + len(self.group_item.running)
+    
+    ended_job_nb = len(self.group_item.done) + len(self.group_item.failed)
+    
+    total_time = None
+    if self.group_item.first_sub_date and self.group_item.last_end_date:
+      total_time = self.group_item.last_end_date - self.group_item.first_sub_date
+    
+    input_file_nb = len(self.group_item.input_to_transfer) + len(self.group_item.input_transfer_ended)
+    ended_input_transfer_nb = len(self.group_item.input_transfer_ended)
+    
+    setLabelFromString(self.ui.status, self.group_item.status)
+    setLabelFromInt(self.ui.job_nb, job_nb)
+    setLabelFromInt(self.ui.ended_job_nb, ended_job_nb)
+    setLabelFromDeltaTime(self.ui.total_time, total_time)
+    setLabelFromInt(self.ui.input_file_nb, input_file_nb)
+    setLabelFromInt(self.ui.ended_input_transfer_nb, ended_input_transfer_nb)
+    
+    if self.group_item.input_to_transfer:
+      self.ui.comboBox_input_to_transfer.insertItems(0,  self.group_item.input_to_transfer)
+    else:
+      self.ui.comboBox_input_to_transfer.clear()
+    
+    if self.group_item.output_ready:
+      self.ui.comboBox_output_to_transfer.insertItems(0,  self.group_item.output_ready)
+    else:
+      self.ui.comboBox_output_to_transfer.clear()
+    
     
 class WorkflowGraphView(QtGui.QWidget):
   
@@ -655,22 +786,22 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
         return item.data.name
       else:
-        #if item.state == ClientGroup.GP_NOT_SUBMITTED:
+        #if item.status == ClientGroup.GP_NOT_SUBMITTED:
           #if role == QtCore.Qt.DecorationRole:
             ##print "<<<< data QtCore.Qt.DecorationRole GRAY"
             #return self.standby_icon
             ##return GRAY
-        if item.state == ClientGroup.GP_DONE:
+        if item.status == ClientGroup.GP_DONE:
           if role == QtCore.Qt.DecorationRole:
             #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
             return self.done_icon
             #return LIGHT_BLUE
-        if item.state == ClientGroup.GP_FAILED:
+        if item.status == ClientGroup.GP_FAILED:
           if role == QtCore.Qt.DecorationRole:
             #print "<<<< data QtCore.Qt.DecorationRole RED"
             return self.failed_icon
             #return RED
-        if item.state == ClientGroup.GP_RUNNING:
+        if item.status == ClientGroup.GP_RUNNING:
           if role == QtCore.Qt.DecorationRole:
             #print "<<<< data QtCore.Qt.DecorationRole GREEN"
             return self.running_icon
@@ -1065,9 +1196,10 @@ class ClientWorkflow(object):
     
     #updating jobs:
     for job_info in wf_status[0]:
-      job_id, status, exit_info = job_info
+      job_id, status, exit_info, date_info = job_info
+      #date_info = (None, None, None) # (submission_date, execution_date, ending_date)
       item = self.items[self.server_jobs[job_id]]
-      data_changed = item.updateState(status, exit_info) or data_changed
+      data_changed = item.updateState(status, exit_info, date_info) or data_changed
 
     #end = datetime.now() - begining
     #print " <== end updating jobs" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
@@ -1133,65 +1265,86 @@ class ClientGroup(ClientWorkflowItem):
     
     self.client_workflow = client_workflow
     
-    self.achievement = 0 # % of achievement
-    self.state = ClientGroup.GP_NOT_SUBMITTED
-    self.total_children_nb = 0 # will be computed at the first update
+    self.status = ClientGroup.GP_NOT_SUBMITTED
     
-    # TO DO => state % of achievement
+    self.not_sub = []
+    self.done = []
+    self.failed = []
+    self.running = []
+    
+    self.first_sub_date = None
+    self.last_end_date = None
+    
+    self.input_to_transfer = []
+    self.input_transfer_ended = []
+    self.output_ready = []
+    self.output_transfer_ended = []
     
   def updateState(self):
     self.initiated = True
     state_changed = False
     
-    self.total_children_nb = len(self.children)
-    self.not_sub_nb = 0
-    self.done_nb = 0
-    self.failed_nb = 0
-    self.running_nb = 0
+    self.first_sub_date = datetime.max 
+    self.last_end_date = datetime.min
+    
+    self.input_to_transfer = []
+    self.input_transfer_ended = []
+    self.output_ready = []
+    self.output_transfer_ended = []
+    
+    self.not_sub = []
+    self.done = []
+    self.failed = []
+    self.running = []
     
     for child in self.children:
       item = self.client_workflow.items[child]
       if isinstance(item, ClientJob):
+        # TO DO : explore files 
         if item.status == NOT_SUBMITTED:
-          self.not_sub_nb = self.not_sub_nb +1
+          self.not_sub.append(item)
         elif item.status == DONE or item.status == FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if item.status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
-            self.done_nb = self.done_nb +1
+            self.done.append(item)
           else:
-            self.failed_nb = self.failed_nb +1
+            self.failed.append(item)
         else:
-          self.running_nb = self.running_nb +1
+          self.running.append(item)
+        if item.ending_date and item.ending_date > self.last_end_date:
+          self.last_end_date = item.ending_date
+        if item.submission_date and item.submission_date < self.first_sub_date:
+           self.first_sub_date = item.submission_date
+          
       if isinstance(item, ClientGroup):
         item.updateState()
-        self.total_children_nb = self.total_children_nb + item.total_children_nb
-        if item.state == ClientGroup.GP_NOT_SUBMITTED:
-          self.not_sub_nb = self.not_sub_nb + 1
-        if item.state == ClientGroup.GP_DONE:
-          self.done_nb = self.done_nb +1
-        if item.state == ClientGroup.GP_FAILED:
-          self.failed_nb = self.failed_nb +1
-        if item.state == ClientGroup.GP_RUNNING:
-          self.running_nb = self.running_nb +1
-          
-    #print 'group ' + self.data.name
-    #print ' failed_nb ' + repr(self.failed_nb)
-    #print ' done_nb ' + repr(self.done_nb)
-    #print ' not_sub_nb ' + repr(self.not_sub_nb)
-    #print ' running_nb ' + repr(self.running_nb)
-    #print ' '
-          
-    if self.failed_nb != 0:
-      new_state = ClientGroup.GP_FAILED
-    elif self.done_nb == len(self.children):
-      new_state = ClientGroup.GP_DONE
-    elif self.not_sub_nb == len(self.children):
-      new_state = ClientGroup.GP_NOT_SUBMITTED
+        self.not_sub.extend(item.not_sub)
+        self.done.extend(item.done)
+        self.failed.extend(item.failed)
+        self.running.extend(item.running)
+        self.input_to_transfer.extend(item.input_to_transfer)
+        self.input_transfer_ended.extend(item.input_transfer_ended)
+        self.output_ready.extend(item.output_ready)
+        self.output_transfer_ended.extend(item.output_transfer_ended)
+        if item.first_sub_date and item.first_sub_date < self.first_sub_date:
+          self.first_sub_date = item.first_sub_date
+        if item.last_end_date and item.last_end_date > self.last_end_date:
+          self.last_end_date = item.last_end_date 
+           
+    if len(self.failed) > 0:
+      new_status = ClientGroup.GP_FAILED
+    elif len(self.not_sub) == 0 and len(self.failed) == 0 and len(self.running) == 0:
+      new_status = ClientGroup.GP_DONE
+    elif len(self.running) == 0 and len(self.done) == 0 and len(self.failed) == 0:
+      new_status = ClientGroup.GP_NOT_SUBMITTED
+      self.first_sub_date = None
+      self.last_end_date = None
     else:
-      new_state = ClientGroup.GP_RUNNING
+      new_status = ClientGroup.GP_RUNNING
+      self.last_end_date = None
         
-    state_changed = self.state != new_state
-    self.state = new_state
+    state_changed = self.status != new_status
+    self.status = new_status
     return state_changed
 
 class ClientJob(ClientWorkflowItem):
@@ -1209,6 +1362,9 @@ class ClientJob(ClientWorkflowItem):
     self.exit_info = ("", "", "", "")
     self.stdout = ""
     self.stderr = ""
+    self.submission_date = None
+    self.execution_date = None
+    self.ending_date = None
     
     cmd_seq = []
     for command_el in data.command:
@@ -1221,13 +1377,16 @@ class ClientJob(ClientWorkflowItem):
     separator = " " 
     self.command = separator.join(cmd_seq)
     
-  def updateState(self, status, exit_info):
+  def updateState(self, status, exit_info, date_info):
     self.initiated = True
     state_changed = False
     state_changed = self.status != status or state_changed
     self.status = status
     state_changed = self.exit_info != exit_info or state_changed
     self.exit_info = exit_info
+    self.submission_date = date_info[0]
+    self.execution_date = date_info[1]
+    self.ending_date = date_info[2]
     
     return state_changed
     

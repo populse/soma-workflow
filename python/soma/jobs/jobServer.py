@@ -68,6 +68,8 @@ Job server database tables:
     => for user and administrator usage
       name_description   : string, optional 
       submission_date    : date 
+      execution_date     : date
+      ending_date        : date
       exit_status        : string, optional
       exit_value         : int, optional
       terminating_signal : string, optional
@@ -124,6 +126,8 @@ def createDatabase(database_file):
                                        
                                        name_description     TEXT,
                                        submission_date      DATE,
+                                       execution_date       DATE,
+                                       ending_date          DATE,
                                        exit_status          VARCHAR(255),
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
@@ -229,6 +233,8 @@ class DBJob(object):
               
               name_description = None,
               submission_date = None,
+              execution_date = None,
+              ending_date =None,
               exit_status = None,
               exit_value = None,
               terminating_signal = None,
@@ -311,6 +317,9 @@ class DBJob(object):
     
     self.name_description = name_description
     self.submission_date = submission_date
+    self.execution_date = execution_date
+    self.ending_date = ending_date
+    
     self.exit_status = exit_status
     self.exit_value = exit_value
     self.terminating_signal = terminating_signal
@@ -970,7 +979,7 @@ class JobServer ( object ):
     requests to the database.
     
     @type wf_id: C{WorflowIdentifier}
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info), sequence of tuple (transfer_id, status))
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, status))
     '''
     with self.__lock:
       connection = self.__connect()
@@ -984,10 +993,19 @@ class JobServer ( object ):
                                             exit_status,
                                             exit_value,
                                             terminating_signal,
-                                            resource_usage
+                                            resource_usage,
+                                            submission_date,
+                                            execution_date,
+                                            ending_date
                                      FROM jobs WHERE workflow_id=?''', [wf_id]):
-          job_id, status, exit_status, exit_value, term_signal, resource_usage = row
-          workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage)))
+          job_id, status, exit_status, exit_value, term_signal, resource_usage, submission_date, execution_date, ending_date = row
+          
+          submission_date = self.__strToDateConversion(submission_date)
+          execution_date = self.__strToDateConversion(execution_date)
+          ending_date = self.__strToDateConversion(ending_date)
+          
+          
+          workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date)))
                           
         # transfers 
         for row in cursor.execute('''SELECT local_file_path, 
@@ -1044,6 +1062,9 @@ class JobServer ( object ):
                                        
                           name_description,
                           submission_date,
+                          execution_date,
+                          ending_date,
+                          
                           exit_status,
                           exit_value,
                           terminating_signal,
@@ -1052,7 +1073,7 @@ class JobServer ( object ):
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?,
-                                  ?)''',
+                                  ?, ?, ?)''',
                          (dbJob.user_id,
                         
                           dbJob.drmaa_id, 
@@ -1073,6 +1094,8 @@ class JobServer ( object ):
                           
                           dbJob.name_description,
                           dbJob.submission_date,
+                          dbJob.execution_date,
+                          dbJob.ending_date,
                           dbJob.exit_status,
                           dbJob.exit_value,
                           dbJob.terminating_signal,
@@ -1150,7 +1173,20 @@ class JobServer ( object ):
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
         if not count == 0 :
-          cursor.execute('UPDATE jobs SET status=?, last_status_update=? WHERE id=?', (status, datetime.now(), job_id))
+          
+          previous_status, execution_date, ending_date = cursor.execute('SELECT status, execution_date, ending_date FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
+          previous_status = self.__stringConversion(previous_status)
+          execution_date = self.__strToDateConversion(execution_date)
+          ending_date = self.__strToDateConversion(ending_date)
+          if previous_status != status:
+            if not execution_date and status == constants.RUNNING:
+              execution_date = datetime.now()
+            if not ending_date and status == constants.DONE or status == constants.FAILED:
+              ending_date = datetime.now()
+              if not execution_date :
+                execution_date = datetime.now()
+          
+          cursor.execute('UPDATE jobs SET status=?, last_status_update=?, execution_date=?, ending_date=? WHERE id=?', (status, datetime.now(), execution_date, ending_date, job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1334,6 +1370,8 @@ class JobServer ( object ):
                              \
         name_description,    \
         submission_date,     \
+        execution_date,      \
+        ending_date,         \
         exit_status,         \
         exit_value,          \
         terminating_signal,  \
@@ -1357,6 +1395,8 @@ class JobServer ( object ):
                                           
                                           name_description,
                                           submission_date,
+                                          execution_date,
+                                          ending_date,
                                           exit_status,
                                           exit_value,
                                           terminating_signal,
@@ -1389,6 +1429,8 @@ class JobServer ( object ):
                   
                   self.__stringConversion(name_description),
                   self.__strToDateConversion(submission_date),
+                  self.__strToDateConversion(execution_date),
+                  self.__strToDateConversion(ending_date),
                   self.__stringConversion(exit_status),
                   exit_value,
                   self.__stringConversion(terminating_signal),
