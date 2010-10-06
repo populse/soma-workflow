@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>toolbutton_submit</class>
- <widget class="QMainWindow" name="toolbutton_submit">
+ <class>workflowMainWindow</class>
+ <widget class="QMainWindow" name="workflowMainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>988</width>
-    <height>550</height>
+    <width>1001</width>
+    <height>638</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,6 +18,9 @@
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -38,7 +41,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>988</width>
+     <width>1001</width>
      <height>24</height>
     </rect>
    </property>
@@ -67,15 +70,15 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dock_current_wf">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="maximumSize">
     <size>
-     <width>598</width>
-     <height>95</height>
+     <width>532</width>
+     <height>84</height>
     </size>
    </property>
    <property name="features">
@@ -89,6 +92,9 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout">
+     <property name="margin">
+      <number>2</number>
+     </property>
      <item row="2" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
@@ -227,23 +233,17 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dock_submitted_wfs">
-   <property name="minimumSize">
-    <size>
-     <width>300</width>
-     <height>84</height>
-    </size>
-   </property>
    <property name="maximumSize">
     <size>
-     <width>300</width>
-     <height>524287</height>
+     <width>241</width>
+     <height>84</height>
     </size>
    </property>
    <property name="features">
     <set>QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas">
-    <set>Qt::AllDockWidgetAreas</set>
+    <set>Qt::TopDockWidgetArea</set>
    </property>
    <property name="windowTitle">
     <string>Current</string>
@@ -253,6 +253,9 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QGridLayout" name="gridLayout_2">
+     <property name="margin">
+      <number>2</number>
+     </property>
      <item row="0" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
@@ -313,40 +316,49 @@
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
    <property name="windowTitle">
-    <string>Item Infos</string>
+    <string>Selection</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_intemInfo"/>
   </widget>
-  <widget class="QDockWidget" name="dock_graph_view">
-   <property name="minimumSize">
-    <size>
-     <width>302</width>
-     <height>160</height>
-    </size>
+  <widget class="QDockWidget" name="dock_wf_info">
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
-    <string>Graph View</string>
+    <string>Worflow</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_graph_view"/>
+   <widget class="QWidget" name="dockWidgetContents_wf_info"/>
   </widget>
-  <widget class="QDockWidget" name="dock_wf_statistics">
-   <property name="allowedAreas">
-    <set>Qt::AllDockWidgetAreas</set>
+  <widget class="QDockWidget" name="dock_graph">
+   <property name="features">
+    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
-    <string>Workflow statistics</string>
+    <string>Graph</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>2</number>
+    <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_wf_stat"/>
+   <widget class="QWidget" name="dockWidgetContents_graph"/>
+  </widget>
+  <widget class="QDockWidget" name="dock_plot">
+   <property name="windowTitle">
+    <string>Plot</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_plot"/>
   </widget>
   <action name="action_open_wf">
    <property name="text">

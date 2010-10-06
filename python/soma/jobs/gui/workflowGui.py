@@ -9,6 +9,13 @@ import os
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
+import pickle
+import matplotlib, numpy
+matplotlib.use('Qt4Agg')
+import pylab
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -19,6 +26,7 @@ LIGHT_BLUE=QtGui.QColor(200,255,255)
 Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'WorkflowMainWindow.ui' ))[0]
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
 Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'graphWidget.ui' ))[0]
+Ui_PlotWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'PlotWidget.ui' ))[0]
 Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
 Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'GroupInfo.ui' ))[0]
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
@@ -76,7 +84,12 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.ui = Ui_WorkflowMainWindow()
     self.ui.setupUi(self)
-
+    
+    self.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
+    self.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
+    
+    self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
+    
     self.controler = controler
     self.model = client_model
     
@@ -92,20 +105,30 @@ class WorkflowWidget(QtGui.QMainWindow):
    
     self.itemModel = None # model for the TreeView
    
-    self.graphWidget = WorkflowGraphView(self.controler, self)
-    graphWidgetLayout = QtGui.QVBoxLayout()
-    graphWidgetLayout.addWidget(self.graphWidget)
-    self.ui.dockWidgetContents_graph_view.setLayout(graphWidgetLayout)
-    
     self.itemInfoWidget = WorkflowElementInfo(self.model, self)
     itemInfoLayout = QtGui.QVBoxLayout()
+    itemInfoLayout.setContentsMargins(2,2,2,2)
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
     self.workflowInfoWidget = WorkflowInfo(self.model, self)
     wfInfoLayout = QtGui.QVBoxLayout()
+    wfInfoLayout.setContentsMargins(2,2,2,2)
     wfInfoLayout.addWidget(self.workflowInfoWidget)
-    self.ui.dockWidgetContents_wf_stat.setLayout(wfInfoLayout)
+    self.ui.dockWidgetContents_wf_info.setLayout(wfInfoLayout)
+    
+    
+    self.graphWidget = WorkflowGraphView(self.controler, self)
+    graphWidgetLayout = QtGui.QVBoxLayout()
+    graphWidgetLayout.setContentsMargins(2,2,2,2)
+    graphWidgetLayout.addWidget(self.graphWidget)
+    self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
+    
+    self.workflowPlotWidget = WorkflowPlot(self.model, self)
+    plotLayout = QtGui.QVBoxLayout()
+    plotLayout.setContentsMargins(2,2,2,2)
+    plotLayout.addWidget(self.workflowPlotWidget)
+    self.ui.dockWidgetContents_plot.setLayout(plotLayout)
     
     self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
     self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
@@ -386,6 +409,8 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
+
+    
 class WorkflowInfo(QtGui.QWidget):
   
   def __init__(self, client_model, parent = None):
@@ -413,7 +438,8 @@ class WorkflowInfo(QtGui.QWidget):
     if self.infoWidget:
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
-    self.infoWidget = GroupInfoWidget(self.model.current_workflow.root_item, self)
+    if self.model.current_workflow:
+      self.infoWidget = GroupInfoWidget(self.model.current_workflow.root_item, self)
     if self.infoWidget:
       self.vLayout.addWidget(self.infoWidget)
     self.update()
@@ -422,6 +448,44 @@ class WorkflowInfo(QtGui.QWidget):
   def dataChanged(self):
     if self.infoWidget:
       self.infoWidget.dataChanged()
+      
+class WorkflowPlot(QtGui.QWidget):
+  
+  def __init__(self, client_model, parent = None):
+    super(WorkflowPlot, self).__init__(parent)
+    
+    self.plotWidget = None
+    self.vLayout = QtGui.QVBoxLayout(self)
+    self.model = client_model
+    
+    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.clear)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.workflowChanged)
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
+  
+  @QtCore.pyqtSlot()
+  def clear(self):
+    if self.plotWidget:
+      self.plotWidget.hide()
+      self.vLayout.removeWidget(self.plotWidget)
+    self.plotWidget = None
+    self.dataChanged()
+    
+  @QtCore.pyqtSlot()
+  def workflowChanged(self):
+    if self.plotWidget:
+      self.plotWidget.hide()
+      self.vLayout.removeWidget(self.plotWidget)
+    if self.model.current_workflow:
+      self.plotWidget = PlotView(self.model.current_workflow.root_item, self)
+    if self.plotWidget:
+      self.vLayout.addWidget(self.plotWidget)
+    self.update()
+    
+  @QtCore.pyqtSlot()
+  def dataChanged(self):
+    if self.plotWidget:
+      self.plotWidget.dataChanged()
     
 class WorkflowElementInfo(QtGui.QWidget):
   
@@ -478,6 +542,10 @@ class WorkflowElementInfo(QtGui.QWidget):
     if self.infoWidget:
       self.infoWidget.dataChanged()
  
+
+########################################################
+####################   VIEWS   #########################
+########################################################
  
 class JobInfoWidget(QtGui.QTabWidget):
   
@@ -546,27 +614,26 @@ class JobInfoWidget(QtGui.QTabWidget):
     self.job_item.updateStderr(self.connection)
     self.dataChanged()
     
-  
     
 class TransferInfoWidget(QtGui.QTabWidget):
   
-  def __init__(self, transferItem, parent = None):
+  def __init__(self, transfer_item, parent = None):
     super(TransferInfoWidget, self).__init__(parent)
     self.ui = Ui_TransferInfo()
     self.ui.setupUi(self)
     
-    self.transferItem = transferItem
+    self.transfer_item = transfer_item
     self.dataChanged()
     
   def dataChanged(self):
     
-    setLabelFromString(self.ui.transfer_name, self.transferItem.data.name)
-    setLabelFromString(self.ui.transfer_status, self.transferItem.transfer_status)
-    setLabelFromString(self.ui.remote_path, self.transferItem.data.remote_path)
-    setLabelFromString(self.ui.local_path, self.transferItem.data.local_path)
+    setLabelFromString(self.ui.transfer_name, self.transfer_item.data.name)
+    setLabelFromString(self.ui.transfer_status, self.transfer_item.transfer_status)
+    setLabelFromString(self.ui.remote_path, self.transfer_item.data.remote_path)
+    setLabelFromString(self.ui.local_path, self.transfer_item.data.local_path)
     
-    if self.transferItem.data.remote_paths:
-      self.ui.remote_paths.insertItems(0, self.transferItem.data.remote_paths)
+    if self.transfer_item.data.remote_paths:
+      self.ui.remote_paths.insertItems(0, self.transfer_item.data.remote_paths)
     else:
       self.ui.remote_paths.clear()
     
@@ -612,6 +679,452 @@ class GroupInfoWidget(QtGui.QWidget):
       self.ui.comboBox_output_to_transfer.clear()
     
     
+    ## plot nb_process_running(t)
+    #dates = []
+    #nb_process_running = []
+    #infos = [] # sequence of tuple (job_item, start, date) 
+               ## start is a bolean
+               ## if start then date is the execution date
+               ## else date is the ending date
+               
+    #jobs = self.group_item.done
+    #jobs.extend(self.group_item.failed)
+    #jobs.extend(self.group_item.running)
+    
+    
+    #sampling = 10 #seconds
+    #for job_item in jobs:
+      #if job_item.execution_date:
+        ##execution_date = job_item.execution_date + timedelta(seconds = sampling//2)
+        ##nb_seconds = sampling* (execution_date.second//sampling)
+        ##execution_date = datetime(execution_date.year, execution_date.month, execution_date.day, execution_date.hour, execution_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        
+        
+        #infos.append((job_item, True, job_item.execution_date))
+      #if job_item.ending_date:
+        ##ending_date = job_item.ending_date + timedelta(seconds = sampling//2) 
+        ##nb_seconds = sampling* (execution_date.second//sampling)
+        ##print execution_date
+        ##ending_date = datetime(ending_date.year, ending_date.month, execution_date.day, ending_date.hour, ending_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        
+        
+        #infos.append((job_item, False, job_item.ending_date))# - timedelta(seconds = 1)))
+    #infos = sorted(infos, key=lambda info_elem: info_elem[2])
+    
+    #file = open('/home/sl225510/plottrace', 'w')
+    #nb_process = 0
+    #previous = None
+    #for info_elem in infos:
+      #print >> file, "-- " + repr(info_elem[2]) + " " +  repr(info_elem[1])
+      #if previous and info_elem[2] == previous[2]:
+        #if info_elem[1]:
+          #nb_process = nb_process + 1
+        #else:
+          #nb_process = nb_process - 1
+        #print >> file, "----- " + repr(nb_process)
+        #nb_process_running[len(nb_process_running)-1] = nb_process
+      #else:
+        #dates.append(info_elem[2])
+        #if info_elem[1]:
+          #nb_process = nb_process + 1
+        #else:
+          #nb_process = nb_process - 1
+        #if len(nb_process_running):
+          #print >> file, repr(nb_process_running[len(nb_process_running)-1]) + "                new_date"
+        #nb_process_running.append(nb_process)
+      #previous = info_elem
+    #file.close()
+      
+    #file = open('/home/sl225510/plottime', 'w')
+    #pickle.dump(dates, file)
+    #file.close()
+    
+    #file = open('/home/sl225510/plotnbproc', 'w')
+    #pickle.dump(nb_process_running, file)
+    #file.close()
+      
+    ###histogram style
+    
+    ##hist = []
+    ##date = self.group_item.first_sub_date
+    ##ech = 0
+    ##if self.group_item.last_end_date:
+      ##lastdate = self.group_item.last_end_date
+    ##else:
+      ##lastdate = datetime.now()
+    
+    ##while date <  lastdate:
+      ##date = date + timedelta(seconds = 2)
+      ##ech = ech +1
+      ##for job_item in jobs:
+        ##if job_item.execution_date and date > job_item.execution_date and (not job_item.ending_date or date < job_item.ending_date):
+          ##hist.append(ech)
+
+      
+
+    ##file = open('/home/sl225510/plothist', 'w')
+    ##pickle.dump(hist, file)
+    ##file.close()
+
+class PlotView(QtGui.QWidget):
+  
+  def __init__(self, group_item, parent = None):
+    super(PlotView, self).__init__(parent)
+    
+    self.ui = Ui_PlotWidget()
+    self.ui.setupUi(self)
+    self.vlayout = QtGui.QVBoxLayout(self)
+    self.ui.frame_plot.setLayout(self.vlayout)
+    
+    self.ui.combo_plot_type.addItems(["nb proc fct time", "jobs fct time", "nb proc fct time 2"])
+    self.ui.combo_plot_type.setCurrentIndex(0)
+    self.plot_type = 0
+    
+    self.canvas = None
+    self.group_item = group_item
+    self.updatePlot()
+    
+    self.ui.combo_plot_type.currentIndexChanged.connect(self.plotTypeChanged)
+    self.ui.button_refresh.clicked.connect(self.refresh)
+    
+  @QtCore.pyqtSlot(int)
+  def plotTypeChanged(self, index):
+    self.plot_type = index
+    self.updatePlot()
+     
+  QtCore.pyqtSlot()
+  def refresh(self):
+    self.updatePlot()
+     
+  def dataChanged(self):
+    if self.ui.checkbox_auto_update.isChecked():
+      self.updatePlot()
+  
+  def updatePlot(self):
+    if self.plot_type == 0:
+      self.nbProcFctTime()
+    if self.plot_type == 1:
+      self.jobsFctTime()
+    if self.plot_type == 2:
+      self.nbProcFctTime2()
+    
+  def jobsFctTime(self):
+    
+    if self.canvas:
+      self.canvas.hide()
+      self.vlayout.removeWidget(self.canvas)
+      self.canvas = None
+      
+    self.figure = Figure()
+    self.axes = self.figure.add_subplot(111)
+    self.axes.hold(True)
+    self.canvas = FigureCanvas(self.figure)
+    self.canvas.setParent(self)
+    self.canvas.updateGeometry()
+    self.vlayout.addWidget(self.canvas)
+    
+    jobs = self.group_item.done
+    jobs.extend(self.group_item.failed)
+    jobs.extend(self.group_item.running)
+    
+    def key(j):
+      if j.execution_date:
+        return j.execution_date
+      else:
+        return datetime.max
+    
+    jobs = sorted(jobs, key=key)#lambda j: j.execution_date)
+  
+    nb_jobs = 0 
+    x_min = datetime.max
+    x_max = datetime.min
+    for j in jobs:
+      if j.execution_date:
+        nb_jobs = nb_jobs + 1
+        if j.execution_date < x_min:
+          x_min = j.execution_date
+        if j.ending_date:
+          self.axes.plot([j.execution_date, j.ending_date], [nb_jobs, nb_jobs])
+          if j.ending_date > x_max:
+            x_max = j.ending_date
+        else:
+          self.axes.plot([j.execution_date, datetime.now()], [nb_jobs, nb_jobs])
+          #x_max = datetime.now()
+  
+    if nb_jobs:
+      self.axes.set_xlim(x_min, x_max)
+      self.axes.set_ylim(0, nb_jobs+1)
+    
+    #self.axes.plot([1,5], [10, 10])
+    #self.axes.plot([2,4], [4, 4])
+    
+    #self.axes.set_xlim(0, 6)
+    #self.axes.set_ylim(2, 11)
+    
+    self.canvas.draw()
+    
+    self.update()
+  
+  def nbProcFctTime(self):
+    
+    if self.canvas:
+      self.canvas.hide()
+      self.vlayout.removeWidget(self.canvas)
+      self.canvas = None
+    
+    self.figure = Figure()
+    self.axes = self.figure.add_subplot(111)
+    self.axes.hold(True)
+    self.canvas = FigureCanvas(self.figure)
+    self.canvas.setParent(self)
+    self.canvas.updateGeometry()
+    self.vlayout.addWidget(self.canvas)
+    
+    infos = [] # sequence of tuple (job_item, start, date) 
+               # start is a bolean
+               # if start then date is the execution date
+               # else date is the ending date
+               
+    jobs = self.group_item.done
+    jobs.extend(self.group_item.failed)
+    jobs.extend(self.group_item.running)
+    
+  
+    for job_item in jobs:
+      if job_item.execution_date:
+        infos.append((job_item, True, job_item.execution_date))
+      if job_item.ending_date:
+        infos.append((job_item, False, job_item.ending_date))
+        
+    infos = sorted(infos, key=lambda info_elem: info_elem[2])
+    
+    nb_process = 0
+    nb_proc_max = 0
+    previous = None
+    for info_elem in infos:
+      if info_elem[1]:
+        nb_process = nb_process + 1
+      else:
+        nb_process = nb_process - 1
+      if previous and info_elem[2] != previous[2]:  
+        #self.axes.plot([previous[2], info_elem[2]], [nb_process, nb_process], 'b')
+        self.axes.fill_between([previous[2], info_elem[2]], [nb_process, nb_process], y2=0, edgecolor = 'b')
+        if nb_process > nb_proc_max:
+          nb_proc_max = nb_process
+          
+      previous = info_elem
+  
+    if nb_proc_max != 0:
+      self.axes.set_ylim(0, nb_proc_max+1)
+  
+  
+    self.canvas.draw()
+    
+    self.update()
+    
+    
+  def nbProcFctTime2(self):
+    
+    if self.canvas:
+      self.canvas.hide()
+      self.vlayout.removeWidget(self.canvas)
+      self.canvas = None
+      
+    self.figure = Figure()
+    self.axes = self.figure.add_subplot(111)
+    self.axes.hold(True)
+    self.canvas = FigureCanvas(self.figure)
+    self.canvas.setParent(self)
+    self.canvas.updateGeometry()
+    self.vlayout.addWidget(self.canvas)
+    
+    
+    dates = []
+    nb_process_running = []
+    infos = [] # sequence of tuple (job_item, start, date) 
+               # start is a bolean
+               # if start then date is the execution date
+               # else date is the ending date
+               
+    jobs = self.group_item.done
+    jobs.extend(self.group_item.failed)
+    jobs.extend(self.group_item.running)
+    
+    sampling = 10 #seconds
+    for job_item in jobs:
+      if job_item.execution_date:
+        #execution_date = job_item.execution_date + timedelta(seconds = sampling//2)
+        #nb_seconds = sampling* (execution_date.second//sampling)
+        #execution_date = datetime(execution_date.year, execution_date.month, execution_date.day, execution_date.hour, execution_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        infos.append((job_item, True, job_item.execution_date))
+      if job_item.ending_date:
+        #ending_date = job_item.ending_date + timedelta(seconds = sampling//2) 
+        #nb_seconds = sampling* (execution_date.second//sampling)
+        #print execution_date
+        #ending_date = datetime(ending_date.year, ending_date.month, execution_date.day, ending_date.hour, ending_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        infos.append((job_item, False, job_item.ending_date))# - timedelta(seconds = 1)))
+        
+    infos = sorted(infos, key=lambda info_elem: info_elem[2])
+    
+    nb_process = 0
+    previous = None
+    for info_elem in infos:
+      if previous and info_elem[2] == previous[2]:
+        if info_elem[1]:
+          nb_process = nb_process + 1
+        else:
+          nb_process = nb_process - 1
+        nb_process_running[len(nb_process_running)-1] = nb_process
+      else:
+        dates.append(info_elem[2])
+        if info_elem[1]:
+          nb_process = nb_process + 1
+        else:
+          nb_process = nb_process - 1
+        nb_process_running.append(nb_process)
+      previous = info_elem
+    
+    #self.axes.plot(dates, nb_process_running, 'r.', dates, nb_process_running, 'b')
+    
+    nb_proc_max = 0
+    for i in range( 2, len(nb_process_running)-1):
+      self.axes.fill_between([dates[i-1], dates[i]], [nb_process_running[i], nb_process_running[i]], y2=0, edgecolor = 'b')
+      if nb_process_running[i] > nb_proc_max:
+        nb_proc_max = nb_process_running[i]
+    
+    if nb_proc_max != 0:
+      self.axes.set_ylim(0, nb_proc_max+1)
+  
+    self.canvas.draw()
+    self.update()
+  
+  #def __init__(self, client_model, parent = None):
+    #super(PlotView, self).__init__(parent)
+    
+    #self.model = client_model
+    
+    #self.figure = None
+    #self.canvas = None
+    
+    #self.vLayout = QtGui.QVBoxLayout(self)
+
+    #self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
+    #self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.clear)
+    #self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.workflowChanged)
+    #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
+    
+    
+  #@QtCore.pyqtSlot()
+  #def clear(self):
+    #if self.canvas:
+      #self.canvas.hide()
+      #self.vLayout.removeWidget(self.canvas)
+      
+    #self.figure = None
+    #self.canvas = None
+    
+    #self.dates = []
+    #self.nb_process_running = []
+    #self.histo = []
+    
+  #@QtCore.pyqtSlot()
+  #def workflowChanged(self): 
+    #self.computeNbProcFctTime(self.model.current_workflow.root_item)
+    ##self.computeHisto(self.model.current_workflow.root_item)
+    #self.plotUpdate()
+    
+  #@QtCore.pyqtSlot()
+  #def dataChanged(self):
+    #pass
+    ##self.plotUpdate()
+    
+    
+  #def computeHisto(self, group_item):
+    
+    #jobs = group_item.done
+    #jobs.extend(group_item.failed)
+    #jobs.extend(group_item.running)
+
+    ##histogram style
+    #self.histo = []
+    #date = group_item.first_sub_date
+    #ech = 0
+    #if group_item.last_end_date:
+      #lastdate = group_item.last_end_date
+    #else:
+      #lastdate = datetime.now()
+    
+    #while date <  lastdate:
+      #date = date + timedelta(seconds = 2)
+      #ech = ech + 2
+      #for job_item in jobs:
+        #if job_item.execution_date and date > job_item.execution_date and (not job_item.ending_date or date < job_item.ending_date):
+          #self.histo.append(ech)
+    
+  #def computeNbProcFctTime(self, group_item):
+    
+    #self.dates = []
+    #self.nb_process_running = []
+    #infos = [] # sequence of tuple (job_item, start, date) 
+               ## start is a bolean
+               ## if start then date is the execution date
+               ## else date is the ending date
+               
+    #jobs = group_item.done
+    #jobs.extend(group_item.failed)
+    #jobs.extend(group_item.running)
+    
+    #sampling = 10 #seconds
+    #for job_item in jobs:
+      #if job_item.execution_date:
+        ##execution_date = job_item.execution_date + timedelta(seconds = sampling//2)
+        ##nb_seconds = sampling* (execution_date.second//sampling)
+        ##execution_date = datetime(execution_date.year, execution_date.month, execution_date.day, execution_date.hour, execution_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        #infos.append((job_item, True, job_item.execution_date))
+      #if job_item.ending_date:
+        ##ending_date = job_item.ending_date + timedelta(seconds = sampling//2) 
+        ##nb_seconds = sampling* (execution_date.second//sampling)
+        ##print execution_date
+        ##ending_date = datetime(ending_date.year, ending_date.month, execution_date.day, ending_date.hour, ending_date.minute, 0, 0) + timedelta(seconds = nb_seconds)
+        #infos.append((job_item, False, job_item.ending_date))# - timedelta(seconds = 1)))
+        
+    #infos = sorted(infos, key=lambda info_elem: info_elem[2])
+    
+    #nb_process = 0
+    #previous = None
+    #for info_elem in infos:
+      #if previous and info_elem[2] == previous[2]:
+        #if info_elem[1]:
+          #nb_process = nb_process + 1
+        #else:
+          #nb_process = nb_process - 1
+        #self.nb_process_running[len(self.nb_process_running)-1] = nb_process
+      #else:
+        #self.dates.append(info_elem[2])
+        #if info_elem[1]:
+          #nb_process = nb_process + 1
+        #else:
+          #nb_process = nb_process - 1
+        #self.nb_process_running.append(nb_process)
+      #previous = info_elem
+
+    
+  #def plotUpdate(self):
+    #if self.histo or (self.nb_process_running and self.dates):
+      #self.figure = Figure()
+      #self.axes = self.figure.add_subplot(111)
+      #self.axes.hold(False)
+      #self.canvas = FigureCanvas(self.figure)
+      #self.canvas.setParent(self)
+      #self.canvas.updateGeometry()
+      #self.vLayout.addWidget(self.canvas)
+
+      #if self.nb_process_running:
+        #self.axes.plot(self.dates, self.nb_process_running, 'r.', self.dates, self.nb_process_running, 'b')
+      #if self.histo:
+        #self.axes.hist(self.histo, bins = len(self.histo))
+      #self.update()
+
 class WorkflowGraphView(QtGui.QWidget):
   
   def __init__(self, controler, connection, parent = None):
@@ -672,6 +1185,10 @@ class WorkflowGraphView(QtGui.QWidget):
       self.image_label.resize(self.image_label.pixmap().size()*self.scale_factor)
     else:
       self.ui.scrollArea.takeWidget()
+      
+########################################################
+############   MODEL FOR THE TREE VIEW   ###############
+########################################################
     
 class WorkflowItemModel(QtCore.QAbstractItemModel):
   
@@ -1019,8 +1536,6 @@ class ClientModel(QtCore.QObject):
     return wf_id in self.workflows[self.current_resource_id].keys()
   
   
-
-    
 class ClientWorkflow(object):
   
   def __init__(self, workflow, connection = None):
@@ -1194,6 +1709,8 @@ class ClientWorkflow(object):
     #print " ==> updating jobs " + repr(self.server_workflow.wf_id)
     #begining = datetime.now()
     
+    if not wf_status:
+      return False
     #updating jobs:
     for job_info in wf_status[0]:
       job_id, status, exit_info, date_info = job_info
@@ -1387,7 +1904,23 @@ class ClientJob(ClientWorkflowItem):
     self.submission_date = date_info[0]
     self.execution_date = date_info[1]
     self.ending_date = date_info[2]
-    
+    if self.exit_info: 
+      exit_status, exit_value, term_signal, resource_usage = self.exit_info
+      if resource_usage:
+        ru = resource_usage.split()
+        for ruel in ru:
+          ruel = ruel.split("=")
+          if ruel[0] == "start_time":
+            t = time.localtime(float(ruel[1]))
+            self.execution_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
+          elif ruel[0] == "end_time":
+            t = time.localtime(float(ruel[1]))
+            self.ending_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
+          elif ruel[0] == "submission_time":
+            t = time.localtime(float(ruel[1]))
+            self.submission_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
+        
+        
     return state_changed
     
   def updateStdout(self, connection):
