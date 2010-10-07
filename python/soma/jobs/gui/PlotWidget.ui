@@ -52,7 +52,7 @@
      <item>
       <widget class="QCheckBox" name="checkbox_auto_update">
        <property name="text">
-        <string>auto update</string>
+        <string>auto refresh</string>
        </property>
        <property name="tristate">
         <bool>false</bool>
