@@ -51,17 +51,17 @@ def setLabelFromInt(label, value):
   else:
     label.setText("")
 
-def setLabelFromDeltaTime(label, value):
+def setLabelFromTimeDelta(label, value):
   '''
-  @type value: datetime.deltatime
+  @type value: datetime.timedelta
   '''
+  print "setLabelFromTimeDelta " + repr(value)
   if value:
     hours = value.seconds//3600
     mins = (value.seconds%3600)//60
     seconds = (value.seconds%3600)%60
     hours = hours + value.days * 24
-    time = QtCore.QTime(hours, mins, seconds)
-    label.setText(time.toString("HH:mm:ss"))
+    label.setText("%s:%s:%s" %(repr(hours), repr(mins), repr(seconds)))
   else:
     label.setText("")
 
@@ -589,10 +589,10 @@ class JobInfoWidget(QtGui.QTabWidget):
     if self.job_item.submission_date:
       if self.job_item.execution_date:
         time_in_queue = self.job_item.execution_date - self.job_item.submission_date
-        setLabelFromDeltaTime(self.ui.time_in_queue, time_in_queue)
+        setLabelFromTimeDelta(self.ui.time_in_queue, time_in_queue)
         if self.job_item.ending_date:
           execution_time = self.job_item.ending_date - self.job_item.execution_date
-          setLabelFromDeltaTime(self.ui.execution_time, execution_time)
+          setLabelFromTimeDelta(self.ui.execution_time, execution_time)
     
     self.ui.stdout_file_contents.setText(self.job_item.stdout)
     self.ui.stderr_file_contents.setText(self.job_item.stderr)
@@ -667,7 +667,8 @@ class GroupInfoWidget(QtGui.QWidget):
     setLabelFromString(self.ui.status, self.group_item.status)
     setLabelFromInt(self.ui.job_nb, job_nb)
     setLabelFromInt(self.ui.ended_job_nb, ended_job_nb)
-    setLabelFromDeltaTime(self.ui.total_time, total_time)
+    setLabelFromTimeDelta(self.ui.total_time, total_time)
+    setLabelFromTimeDelta(self.ui.theoretical_serial_time, self.group_item.theoretical_serial_time)
     setLabelFromInt(self.ui.input_file_nb, input_file_nb)
     setLabelFromInt(self.ui.ended_input_transfer_nb, ended_input_transfer_nb)
     
@@ -1512,6 +1513,7 @@ class ClientGroup(ClientWorkflowItem):
     
     self.first_sub_date = None
     self.last_end_date = None
+    self.theoretical_serial_time = None
     
     self.input_to_transfer = []
     self.input_transfer_ended = []
@@ -1524,6 +1526,7 @@ class ClientGroup(ClientWorkflowItem):
     
     self.first_sub_date = datetime.max 
     self.last_end_date = datetime.min
+    self.theoretical_serial_time = timedelta(0, 0, 0)
     
     self.input_to_transfer = []
     self.input_transfer_ended = []
@@ -1549,8 +1552,10 @@ class ClientGroup(ClientWorkflowItem):
             self.failed.append(item)
         else:
           self.running.append(item)
-        if item.ending_date and item.ending_date > self.last_end_date:
-          self.last_end_date = item.ending_date
+        if item.ending_date:
+          self.theoretical_serial_time = self.theoretical_serial_time + (item.ending_date - item.execution_date)
+          if item.ending_date > self.last_end_date:
+            self.last_end_date = item.ending_date
         if item.submission_date and item.submission_date < self.first_sub_date:
            self.first_sub_date = item.submission_date
           
@@ -1568,6 +1573,7 @@ class ClientGroup(ClientWorkflowItem):
           self.first_sub_date = item.first_sub_date
         if item.last_end_date and item.last_end_date > self.last_end_date:
           self.last_end_date = item.last_end_date 
+        self.theoretical_serial_time = self.theoretical_serial_time + item.theoretical_serial_time
            
     if len(self.failed) > 0:
       new_status = ClientGroup.GP_FAILED
