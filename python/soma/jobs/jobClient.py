@@ -35,7 +35,15 @@ Definitions
 '''
 
 
-class JobTemplate(object):
+    
+class WorkflowNode(object):
+  '''
+  Workflow node.
+  '''
+  def __init__(self, name):
+    self.name = name
+
+class JobTemplate(WorkflowNode):
   '''
   Job representation in a workflow. 
   Workflow node type.
@@ -57,6 +65,7 @@ class JobTemplate(object):
                 stderr_file=None,
                 working_directory=None,
                 parallel_job_info=None):
+    super(JobTemplate, self).__init__(name_description)
     self.command = command
     if referenced_input_files: 
       self.referenced_input_files = referenced_input_files
@@ -72,18 +81,52 @@ class JobTemplate(object):
     self.stderr_file = stderr_file
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
-    self.name = name_description
     
     self.job_id = -1
     self.workflow_id = -1
 
+    
+    
+class FileTranslation(object):
+  '''
+  #Workflow node type
+  File representation using relative path. 
+  When the workflow will be submitted to a resource, local translation files will be used to transform a namespace, 
+  an uuid and a relative path to an absolut path on the cluster.
+  #Use relative_paths if the translation involves several associated files and/or directories, eg:
+        #- file serie 
+        #- in the case of file format associating several file and/or directories
+          #(ex: a SPM image is stored in 2 files: .img and .hdr)
+  #In this case, set remote_path to one the files (eq: .img).
+  #In other cases (1 file or 1 directory) the relative_paths must be set to None.
+  '''
+  def __init__(self,
+               relative_path,
+               namespace,
+               uuid,
+               disposal_timeout = 168,
+               name = None):#,
+               #relative_paths = None):
+    if name:
+      self.name = name
+    else:
+      self.name = namespace + "::" + uuid + "::" + relative_path
+    #super(FileTranslation, self).__init__(ftl_name)
+    
+    self.relative_path = relative_path
+    self.namespace = namespace
+    self.uuid = uuid
+    self.disposal_timout = disposal_timeout
+    #self.relative_paths = relative_paths
+    
+    self.translation = None # absolute local file path 
 
-class FileTransfer(object):
+class FileTransfer(WorkflowNode):
   '''
   Workflow node type.
   File transfer representation in a workflow.
-  Use remote_paths if the transfer involves several associated files and/or directories:
-        - when transfering a file serie 
+  Use remote_paths if the transfer involves several associated files and/or directories, eg:
+        - file serie 
         - in the case of file format associating several file and/or directories
           (ex: a SPM image is stored in 2 files: .img and .hdr)
   In this case, set remote_path to one the files (eq: .img).
@@ -94,12 +137,15 @@ class FileTransfer(object):
                 disposal_timeout = 168,
                 name = None,
                 remote_paths = None):
+    if name:
+      ft_name = name
+    else:
+      ft_name = remote_path + "transfer"
+    super(FileTransfer, self).__init__(ft_name)
+    
     self.remote_path = remote_path
     self.disposal_timeout = disposal_timeout
-    if name:
-      self.name = name
-    else:
-      self.name = "send_" + self.remote_path
+   
 
     self.remote_paths = remote_paths
     self.local_path = None
@@ -156,7 +202,7 @@ class Workflow(object):
   '''
   def __init__(self, nodes, dependencies, mainGroup = None, groups = []):
     '''
-    @type  node: sequence of L{JobTemplate} and/or L{FileTransfer}
+    @type  node: sequence of L{WorkflowNode} 
     @param node: workflow elements
     @type  dependencies: sequence of tuple (node, node) a node being 
     a L{JobTemplate} or a L{FileTransfer}
@@ -236,7 +282,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode # 'local_no_disconnection' #(local debug)#     
+    self.__mode = mode #'local_no_disconnection' #(local debug)#      
     
     #########
     # LOCAL #
@@ -305,9 +351,42 @@ class Jobs(object):
         if config.has_option(resource_id, parallel_config_info):
           parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
   
-      self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info)
+      # File path translation
+      file_path_translation = None
+      if config.has_option(resource_id, OCFG_TRANSLATION_FILES):
+        file_path_translation={}
+        translation_files_str = config.get(resource_id, OCFG_TRANSLATION_FILES)
+        print "Translation files configured:"
+        for ns_file_str in translation_files_str.split():
+          ns_file = ns_file_str.split("{")
+          namespace = ns_file[0]
+          filename = ns_file[1].rstrip("}")
+          print " -namespace: " + namespace + ", translation file: " + filename
+          try: 
+            f = open(filename, "r")
+          except IOError, e:
+            logger.info("Couldn't read the translation file: " + filename)
+          else:
+            if not namespace in file_path_translation.keys():
+              file_path_translation[namespace] = {}
+            line = f.readline()
+            while line:
+              splitted_line = line.split(None,1)
+              if len(splitted_line) > 1:
+                uuid = splitted_line[0]
+                contents = splitted_line[1].rstrip()
+                print "      uuid: " + uuid + "   translation:" + contents
+                file_path_translation[namespace][uuid] = contents
+              line = f.readline()
+            f.close()
+      
+  
+      self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info,
+      file_path_translation = file_path_translation)
       self.__file_transfer = soma.jobs.connection.LocalTransfer(self.__js_proxy)
       self.__connection = None
+
+    
 
 
   def disconnect(self):

@@ -32,6 +32,8 @@ Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'GroupI
 #Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
 Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
 Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'firstConnectionDlg.ui' ))[0]
+Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  'workflowExampleDlg.ui' ))[0]
+
 
 def setLabelFromString(label, value):
   '''
@@ -55,7 +57,6 @@ def setLabelFromTimeDelta(label, value):
   '''
   @type value: datetime.timedelta
   '''
-  print "setLabelFromTimeDelta " + repr(value)
   if value:
     hours = value.seconds//3600
     mins = (value.seconds%3600)//60
@@ -195,9 +196,17 @@ class WorkflowWidget(QtGui.QMainWindow):
     
   @QtCore.pyqtSlot()
   def createWorkflowExample(self):
-    file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
-    if file_path:
-      self.controler.generateWorkflowExample(file_path)
+    worflowExample_dlg = QtGui.QDialog(self)
+    ui = Ui_WorkflowExampleDlg()
+    ui.setupUi(worflowExample_dlg)
+    ui.comboBox_example_type.addItems(self.controler.getWorkflowExampleList())
+    if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
+      with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
+      with_file_translation = ui.checkBox_file_translation.checkState() == QtCore.Qt.Checked
+      example_type = ui.comboBox_example_type.currentIndex()
+      file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
+      if file_path:
+        self.controler.generateWorkflowExample(with_file_transfer, with_file_translation, example_type, file_path)
 
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
@@ -220,7 +229,7 @@ class WorkflowWidget(QtGui.QMainWindow):
   
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.controler.transferOutputFiles(self.model.current_workflow.server_worflow, self.model.current_connection)
+    self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
     
   @QtCore.pyqtSlot(int)
   def workflowSelectionChanged(self, index):

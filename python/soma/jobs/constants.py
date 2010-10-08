@@ -97,6 +97,11 @@ OCFG_LOCAL_PROCESSES_LOG_DIR = 'job_processes_log_dir_path'
 OCFG_LOCAL_PROCESSES_LOG_LEVEL = 'job_processes_logging_level'
 OCFG_LOCAL_PROCESSES_LOG_FORMAT = 'job_processes_logging_format'
 
+#File path translation 
+#specify the translation files (if any) associated to a namespace
+#eg. translation_files = brainvisa{/home/toto/.brainvisa/translation.sjtr} namespace2{path/translation1.sjtr} namespace2{path/translation2.sjtr}
+OCFG_TRANSLATION_FILES = 'translation_files' 
+
 # Parallel job configuration :
 # DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
 OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
@@ -110,6 +115,8 @@ PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
 OCFG_PARALLEL_ENV_MPI_BIN = 'SOMA_JOB_MPI_BIN'
 OCFG_PARALLEL_ENV_NODE_FILE = 'SOMA_JOB_NODE_FILE'
 PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
+
+
 
 # client section
 

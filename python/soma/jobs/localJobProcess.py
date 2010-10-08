@@ -92,6 +92,40 @@ def main(resource_id, jobScheduler_name, log = ""):
     if config.has_option(section, parallel_info):
       parallel_job_submission_info[parallel_info] = config.get(section, parallel_info)
   #############################
+  
+  
+  #############################
+  # File path translation specific information 
+  file_path_translation = None
+  if config.has_option(section, OCFG_TRANSLATION_FILES):
+    file_path_translation={}
+    translation_files_str = config.get(section, OCFG_TRANSLATION_FILES)
+    logger.info("Translation files configured:")
+    for ns_file_str in translation_files_str.split():
+      ns_file = ns_file_str.split("{")
+      namespace = ns_file[0]
+      filename = ns_file[1].rstrip("}")
+      logger.info(" -namespace: " + namespace + ", translation file: " + filename)
+      try: 
+        f = open(filename, "r")
+      except IOError, e:
+        logger.info("Couldn't read the translation file: " + filename)
+      else:
+        if not namespace in file_path_translation.keys():
+          file_path_translation[namespace] = {}
+        line = f.readline()
+        while line:
+          splitted_line = line.split(None,1)
+          if len(splitted_line) > 1:
+            uuid = splitted_line[0]
+            contents = splitted_line[1].rstrip()
+            logger.info("      uuid: " + uuid + "   translation:" + contents)
+            file_path_translation[namespace][uuid] = contents
+          line = f.readline()
+        f.close()
+    logger.info("End translation file configuration")
+  
+  #############################
 
   #Pyro.config.PYRO_MULTITHREADED = 0
 
@@ -99,7 +133,7 @@ def main(resource_id, jobScheduler_name, log = ""):
   daemon = Pyro.core.Daemon()
   
   # instance of drmaaJobScheduler
-  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer, parallel_job_submission_info)
+  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer, parallel_job_submission_info, file_path_translation)
   
   # instance of jobScheduler
   jobScheduler = JobScheduler(jobServer, drmaaJobScheduler)

@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 import logging
 import soma.jobs.constants as constants
-from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow
+from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, FileTranslation
 import soma.jobs.jobServer 
 import copy
 
@@ -82,7 +82,7 @@ class DrmaaJobScheduler( object ):
       self.terminating_signal = None
 
 
-  def __init__( self, job_server, parallel_job_submission_info = None):
+  def __init__( self, job_server, parallel_job_submission_info = None, file_path_translation = None):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
 
@@ -93,6 +93,8 @@ class DrmaaJobScheduler( object ):
     The keys are:
       - Drmaa job template attributes 
       - parallel configuration name as defined in soma.jobs.constants
+    @type  translation_files: dictionary, namespace => uuid => path
+    @param translation_files: for each namespace a dictionary holding the traduction (association uuid => local path)
     '''
     self.logger = logging.getLogger('ljp.drmaajs')
     
@@ -109,6 +111,7 @@ class DrmaaJobScheduler( object ):
 
     self.logger.debug("Parallel job submission info: %s", repr(parallel_job_submission_info))
     self.__parallel_job_submission_info = parallel_job_submission_info
+    self.__file_path_translation = file_path_translation
 
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
@@ -356,10 +359,10 @@ class DrmaaJobScheduler( object ):
 
     self.logger.debug(">> __setDrmaaParallelJobTemplate")
     if not self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information for this cluster.", self.logger)
+      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information.", self.logger)
     
     if configuration_name not in self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s for the current cluster." %(configuration_name), self.logger)
+      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s." %(configuration_name), self.logger)
 
     cluster_specific_config_name = self.__parallel_job_submission_info[configuration_name]
     
@@ -387,6 +390,23 @@ class DrmaaJobScheduler( object ):
         self.logger.debug("Parallel job environment : " + repr(job_env))
         
     self.logger.debug("<< __setDrmaaParallelJobTemplate")
+    
+  def __filePathTranslation(self, ftl):
+    '''
+    @type ftl: L{FileTranslation}
+    @rtype: string
+    @returns: new path in the local environment
+    '''
+    if not self.__file_path_translation:
+      raise JobSchedulerError("Configuration file: Couldn't find file path translation.", self.logger)
+    if not ftl.namespace in self.__file_path_translation.keys():
+      raise JobSchedulerError("File path translation: the namespace %s does'nt exist" %(ftl.namespace), self.logger)
+    if not ftl.uuid in self.__file_path_translation[ftl.namespace].keys():
+      raise JobSchedulerError("File path translation: the uuid %s does'nt exist for the namespace %s." %(ftl.uuid, ftl.namespace), self.logger)
+    
+    local_path = os.path.join(self.__file_path_translation[ftl.namespace][ftl.uuid], ftl.relative_path)
+    return local_path
+    
 
   def dispose( self, job_id ):
     '''
@@ -404,6 +424,25 @@ class DrmaaJobScheduler( object ):
   def submitWorkflow(self, workflow_o, expiration_date, name):
     # type checking for the workflow ?
     workflow = copy.deepcopy(workflow_o)
+    
+    #Do the file translation first to check possible errors
+    for node in workflow.nodes:
+      if isinstance(node, JobTemplate):
+        for command_el in node.command:
+          if isinstance(command_el, tuple) and isinstance(command_el[0], FileTranslation):
+            command_el[0].translation = self.__filePathTranslation(command_el[0])
+          elif isinstance(command_el, FileTranslation):
+            command_el.translation = self.__filePathTranslation(command_el)
+        if node.stdout_file and isinstance(node.stdout_file, FileTranslation):
+          node.stdout_file = self.__filePathTranslation(node.stdout_file)
+        if node.stderr_file and isinstance(node.stderr_file, FileTranslation):
+          node.stderr_file = self.__filePathTranslation(node.stderr_file)
+        if node.working_directory and isinstance(node.working_directory, FileTranslation):
+          node.working_directory = self.__filePathTranslation(node.working_directory)
+        if node.stdin and isinstance(node.stdin, FileTranslation):
+          node.stdin = self.__filePathTranslation(node.stdin)
+     ######################################################
+ 
     workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date, name)
     workflow.wf_id = workflow_id 
     workflow.name = name
@@ -461,9 +500,14 @@ class DrmaaJobScheduler( object ):
       new_command = []
       for command_el in job.command:
         if isinstance(command_el, tuple):
-          new_command.append(command_el[0].local_path + "/" + command_el[1])
+          if isinstance(command_el[0], FileTransfer):
+            new_command.append(command_el[0].local_path + "/" + command_el[1])
+          if isinstance(command_el[0], FileTranslation):
+            new_command.append(command_el[0].translation + "/" + command_el[1])
         elif isinstance(command_el, FileTransfer):
           new_command.append(command_el.local_path)
+        elif isinstance(command_el, FileTranslation):
+          new_command.append(command_el.translation)
         else:
           new_command.append(command_el)
       job.command = new_command
@@ -681,7 +725,7 @@ class DrmaaJobScheduler( object ):
       del self.__workflows[workflow_id]
     self.logger.debug("<<< workflowProcessing")
     
-        
+
 
   ########### DRMS MONITORING ################################################
 
@@ -792,7 +836,7 @@ class DrmaaJobScheduler( object ):
 
 class JobScheduler( object ):
   
-  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None):
+  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None, file_path_translation = None):
     ''' 
     @type  job_server: L{JobServer}
     @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
@@ -808,7 +852,7 @@ class JobScheduler( object ):
       self.__drmaaJS = drmaa_job_scheduler
     else:
       #print "parallel_job_submission_info" + repr(parallel_job_submission_info)
-      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info)
+      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info, file_path_translation)
     
     # Job Server
     self.__jobServer= job_server
