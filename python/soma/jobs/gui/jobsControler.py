@@ -1,6 +1,6 @@
 
 from soma.jobs.constants import *
-from soma.jobs.jobClient import *
+from soma.jobs.jobClient import JobTemplate, FileTranslation, FileTransfer, FileSending, FileRetrieving, Group, Workflow, Jobs
 import socket
 import os
 import ConfigParser

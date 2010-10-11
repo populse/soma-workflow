@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 import sys
 from soma.jobs.gui.workflowGui import WorkflowWidget, ClientModel
-from soma.jobs.gui.jobsControler import *
+from soma.jobs.gui.jobsControler import JobsControler
 
     
 if __name__=="__main__":
