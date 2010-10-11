@@ -206,7 +206,6 @@ class WorkflowExamples(object):
     
     hostname = socket.gethostname()
     self.examples_dir = test_config.get(hostname, 'job_examples_dir')
-    self.python = test_config.get(hostname, 'python')
     self.output_dir = test_config.get(hostname, 'job_output_dir') + repr(test_no) + "/"
     
     self.with_transfers = with_tranfers
@@ -288,65 +287,65 @@ class WorkflowExamples(object):
   def job1(self):
     if self.with_transfers: 
       if not self.file_translation:
-        job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], 
+        job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1")
       else:
-        job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], 
+        job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1")
     else:
-      job1 = JobTemplate([self.python, self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
+      job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
     return job1
     
   def job2(self):
     if self.with_transfers: 
       if not self.file_translation:
-        job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], 
+        job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [self.file0, self.file11, self.script2, self.stdin2], 
                           [self.file2], 
                           self.stdin2, False, 168, "job2")
       else:
-        job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], 
+        job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [], 
                           [self.file2], 
                           self.stdin2, False, 168, "job2")
     else:
-      job2 = JobTemplate([self.python, self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+      job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
     return job2
     
   def job3(self):
     if self.with_transfers: 
       if not self.file_translation:
-        job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], 
+        job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], 
                             [self.file12, self.script3, self.stdin3], 
                             [self.file3], 
                             self.stdin3, False, 168, "job3")
       else:
-        job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], 
+        job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], 
                            [], 
                            [self.file3], 
                            self.stdin3, False, 168, "job3")
     else:
-      job3 = JobTemplate([self.python, self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
+      job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
     return job3
     
   def job4(self):
     if self.with_transfers: 
       if not self.file_translation:
-        job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], 
+        job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [self.file2, self.file3, self.script4, self.stdin4], 
                            [self.file4], 
                            self.stdin4, False, 168, "job4")
       else:
-        job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], 
+        job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [], 
                            [self.file4], 
                            self.stdin4, False, 168, "job4")
     else:
-      job4 = JobTemplate([self.python, self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
+      job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
     return job4
     
 
@@ -380,17 +379,17 @@ class WorkflowExamples(object):
     # jobs
     if self.with_transfers:
       if not self.file_translation:
-        job1 = JobTemplate([self.python, self.exceptionJobScript], 
+        job1 = JobTemplate(["python", self.exceptionJobScript], 
                           [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1 with exception")
       else:
-        job1 = JobTemplate([self.python, self.exceptionJobScript], 
+        job1 = JobTemplate(["python", self.exceptionJobScript], 
                   [], 
                   [self.file11, self.file12], 
                   self.stdin1, False, 168, "job1 with exception")
     else:
-      job1 = JobTemplate([self.python, self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1 with exception")                   
+      job1 = JobTemplate(["python", self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1 with exception")                   
     
     job2 = self.job2()
     job3 = self.job3()
@@ -422,17 +421,17 @@ class WorkflowExamples(object):
     
     if self.with_transfers:
       if not self.file_translation:
-        job3 = JobTemplate([self.python, self.exceptionJobScript],
+        job3 = JobTemplate(["python", self.exceptionJobScript],
                           [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
                           [self.file3],
                           None, False, 168, "job3 with exception")
       else:
-        job3 = JobTemplate([self.python, self.exceptionJobScript],
+        job3 = JobTemplate(["python", self.exceptionJobScript],
                           [],
                           [self.file3],
                           None, False, 168, "job3 with exception")
     else:
-      job3 = JobTemplate([self.python, self.exceptionJobScript], None, None, None, False, 168, "job3 with exception")
+      job3 = JobTemplate(["python", self.exceptionJobScript], None, None, None, False, 168, "job3 with exception")
       
       
            

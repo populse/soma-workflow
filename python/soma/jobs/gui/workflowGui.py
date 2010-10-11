@@ -1,7 +1,7 @@
 from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, JobTemplate
+from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, FileTranslation, JobTemplate
 from soma.jobs.constants import *
 import time
 import threading
@@ -1628,7 +1628,10 @@ class ClientJob(ClientWorkflowItem):
     cmd_seq = []
     for command_el in data.command:
       if isinstance(command_el, tuple):
-        cmd_seq.append(command_el[0].remote_path)
+        if isinstance(command_el, FileTransfer):
+          cmd_seq.append(command_el[0].remote_path)
+        elif isinstance(command_el[0], FileTranslation):
+          cmd_seq.append(repr(command_el[0]))
       elif isinstance(command_el, FileTransfer):
         cmd_seq.append(command_el.remote_path)
       else:
