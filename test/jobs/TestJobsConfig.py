@@ -46,7 +46,7 @@ cfg.set('is143016', 'python', "python")#/i2bm/research/Mandriva-2008.0-i686/bin/
  
 #cfg.add_section('is206464')
 ## jobs file directories
-#cfg.set('is206464', 'job_examples_dir',  "/home/soizic/jobClient/test/jobExamples/")
+#cfg.set('is206464', 'job_examples_dir',  "/home/soizic/svn/brainvisa/source/soma/soma-pipeline/trunk/test/jobExamples/")
 #cfg.set('is206464', 'job_output_dir', "/home/soizic/output/")
 ## mode: 'remote' or 'local' (the login and password will be asked in the remote case)
 #cfg.set('is206464', 'mode', 'remote')
@@ -57,13 +57,24 @@ cfg.set('is143016', 'python', "python")#/i2bm/research/Mandriva-2008.0-i686/bin/
 
 cfg.add_section('is206464')
 # jobs file directories
-cfg.set('is206464', 'job_examples_dir',  "/home/soizic/jobClient/test/jobExamples/")
+cfg.set('is206464', 'job_examples_dir',  "/home/soizic/svn/brainvisa/source/soma/soma-pipeline/trunk/test/jobExamples/")
 cfg.set('is206464', 'job_output_dir', "/home/soizic/output/")
 # mode: 'remote' or 'local' (the login and password will be asked in the remote case)
 cfg.set('is206464', 'mode', 'remote')
 cfg.set('is206464', 'ressource_id', 'DSV_cluster')
 # python: to avoid the site package error in the jobs standard error output
-cfg.set('is206464', 'python', "/usr/bin/python")
+cfg.set('is206464', 'python', "python")
+
+
+#cfg.add_section('is206464')
+##jobs file directories
+#cfg.set('is206464', 'job_examples_dir',  "/home/soizic/svn/brainvisa/source/soma/soma-pipeline/trunk/test/jobExamples/")
+#cfg.set('is206464', 'job_output_dir', "/home/soizic/output/")
+##mode: 'remote' or 'local' (the login and password will be asked in the remote case)
+#cfg.set('is206464', 'mode', 'remote')
+#cfg.set('is206464', 'ressource_id', 'HiPiP_cluster')
+##python: to avoid the site package error in the jobs standard error output
+#cfg.set('is206464', 'python', "python")
 
 
 cfg.add_section('gabriel.intra.cea.fr')

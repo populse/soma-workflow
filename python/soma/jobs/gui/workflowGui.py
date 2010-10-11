@@ -883,6 +883,7 @@ class WorkflowGraphView(QtGui.QWidget):
     self.scale_factor = 1.0
     
     self.ui.adjust_size_checkBox.stateChanged.connect(self.adjustSizeChanged)
+    self.ui.button_refresh.clicked.connect(self.refresh)
                                         
   def setWorkflow(self, workflow, connection):
     self.workflow = workflow
@@ -904,10 +905,15 @@ class WorkflowGraphView(QtGui.QWidget):
     if self.ui.adjust_size_checkBox.isChecked():
       pass
       # TBI
+
+  @QtCore.pyqtSlot()
+  def refresh(self):
+    self.dataChanged(force = True)
     
   @QtCore.pyqtSlot()
-  def dataChanged(self):
-    if False: #self.workflow:
+  def dataChanged(self, force = False):
+    if self.workflow and (force or self.ui.checkbox_auto_update.isChecked()):
+      print "graph update"
       image_file_path = self.controler.printWorkflow(self.workflow, self.connection)
       image = QtGui.QImage(image_file_path)
       pixmap = QtGui.QPixmap.fromImage(image)

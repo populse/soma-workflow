@@ -29,9 +29,6 @@
       <attribute name="headerVisible">
        <bool>false</bool>
       </attribute>
-      <attribute name="headerVisible">
-       <bool>false</bool>
-      </attribute>
      </widget>
     </item>
    </layout>
@@ -42,7 +39,7 @@
      <x>0</x>
      <y>0</y>
      <width>1001</width>
-     <height>24</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -74,12 +71,6 @@
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>532</width>
-     <height>84</height>
-    </size>
    </property>
    <property name="features">
     <set>QDockWidget::DockWidgetMovable</set>
@@ -229,16 +220,23 @@
        </property>
       </widget>
      </item>
+     <item row="2" column="5">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </widget>
   </widget>
   <widget class="QDockWidget" name="dock_submitted_wfs">
-   <property name="maximumSize">
-    <size>
-     <width>241</width>
-     <height>84</height>
-    </size>
-   </property>
    <property name="features">
     <set>QDockWidget::NoDockWidgetFeatures</set>
    </property>
@@ -303,6 +301,19 @@
        </property>
       </widget>
      </item>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -310,7 +321,7 @@
    <property name="minimumSize">
     <size>
      <width>302</width>
-     <height>36</height>
+     <height>37</height>
     </size>
    </property>
    <property name="features">
