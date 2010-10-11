@@ -1,4 +1,6 @@
-import os, hashlib, pickle, stat
+# -*- coding: utf-8 -*-
+
+import sys, os, hashlib, pickle, stat, operator
 
 class AsynchronousFileTransfer( object ):
   def __init__( self, file_name ):
@@ -101,13 +103,11 @@ class AsynchronousDirectoryTransfer( object ):
     cumulated_file_size, files_transfer = pickle.load( open( self.transfer_file_name, 'rb' ) )
     files_transfer[ relative_file_name ].send( data )
 
-def test():
-  source = '/home/yc176684/soma-pipeline'
-  dest = AsynchronousDirectoryTransfer( '/tmp/soma-pipeline' )
-  dest.initialize( AsynchronousDirectoryTransfer.directory_content( source, md5_hash=True) )
+def test_directory_transfer( source, dest, buffer_size=2**16, md5_hash=False ):
+  if not isinstance( dest, AsynchronousDirectoryTransfer ):
+    dest = AsynchronousDirectoryTransfer( dest )
+    dest.initialize( AsynchronousDirectoryTransfer.directory_content( source, md5_hash=True) )
   
-  import sys, operator
-  packet_size = 1000
   count = 0
   cumulated_file_size, files_transfer_status = dest.status()
   cumulated_transmissions = reduce( operator.add, (i[1][0] for i in files_transfer_status) )
@@ -117,7 +117,7 @@ def test():
       if transmited < file_size:
         f = open( os.path.join( source, name ), 'rb' )
         f.seek( transmited )
-        dest.send( name, f.read( packet_size ) )
+        dest.send( name, f.read( buffer_size ) )
     cumulated_file_size, files_transfer_status = dest.status()
     cumulated_transmissions = reduce( operator.add, (i[1][0] for i in files_transfer_status) )
     count += 1
