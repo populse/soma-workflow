@@ -429,9 +429,7 @@ class DrmaaJobScheduler( object ):
     for node in workflow.nodes:
       if isinstance(node, JobTemplate):
         for command_el in node.command:
-          if isinstance(command_el, tuple) and isinstance(command_el[0], FileTranslation):
-            command_el[0].translation = self.__filePathTranslation(command_el[0])
-          elif isinstance(command_el, FileTranslation):
+          if isinstance(command_el, FileTranslation):
             command_el.translation = self.__filePathTranslation(command_el)
         if node.stdout_file and isinstance(node.stdout_file, FileTranslation):
           node.stdout_file = self.__filePathTranslation(node.stdout_file)
@@ -499,11 +497,8 @@ class DrmaaJobScheduler( object ):
       # command
       new_command = []
       for command_el in job.command:
-        if isinstance(command_el, tuple):
-          if isinstance(command_el[0], FileTransfer):
-            new_command.append(command_el[0].local_path + "/" + command_el[1])
-          if isinstance(command_el[0], FileTranslation):
-            new_command.append(command_el[0].translation + "/" + command_el[1])
+        if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
+          new_command.append(os.path.join(command_el[0].local_path, command_el[1]))
         elif isinstance(command_el, FileTransfer):
           new_command.append(command_el.local_path)
         elif isinstance(command_el, FileTranslation):

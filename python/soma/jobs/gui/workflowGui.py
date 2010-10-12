@@ -1627,13 +1627,12 @@ class ClientJob(ClientWorkflowItem):
     
     cmd_seq = []
     for command_el in data.command:
-      if isinstance(command_el, tuple):
-        if isinstance(command_el, FileTransfer):
-          cmd_seq.append(command_el[0].remote_path)
-        elif isinstance(command_el[0], FileTranslation):
-          cmd_seq.append(repr(command_el[0]))
+      if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
+        cmd_seq.append("<FileTransfer " + command_el[0].remote_path + " >")
       elif isinstance(command_el, FileTransfer):
-        cmd_seq.append(command_el.remote_path)
+        cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
+      elif isinstance(command_el, FileTranslation):
+        cmd_seq.append("<FileTranslation " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
       else:
         cmd_seq.append(repr(command_el))
     separator = " " 
