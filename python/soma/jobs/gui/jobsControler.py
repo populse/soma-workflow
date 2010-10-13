@@ -1,6 +1,6 @@
 
 from soma.jobs.constants import *
-from soma.jobs.jobClient import JobTemplate, FileTranslation, FileTransfer, FileSending, FileRetrieving, Group, Workflow, Jobs
+from soma.jobs.jobClient import JobTemplate, UniversalResourcePath, FileTransfer, FileSending, FileRetrieving, Group, Workflow, Jobs
 import socket
 import os
 import ConfigParser
@@ -81,9 +81,9 @@ class JobsControler(object):
   def getWorkflowExampleList(self):
     return ["simple", "multiple", "with exception 1", "with exception 2"]
     
-  def generateWorkflowExample(self, with_file_transfer, with_file_translation, example_type, file_path):
+  def generateWorkflowExample(self, with_file_transfer, with_universal_resource_path, example_type, file_path):
 
-    wfExamples = WorkflowExamples(with_tranfers = with_file_transfer, test_config_file_path = self.test_config_file_path, test_no = self.test_no, file_translation = with_file_translation)
+    wfExamples = WorkflowExamples(with_tranfers = with_file_transfer, test_config_file_path = self.test_config_file_path, test_no = self.test_no, with_universal_resource_path = with_universal_resource_path)
     workflow = None
     if example_type == 0:
       workflow = wfExamples.simpleExample()
@@ -197,7 +197,7 @@ class WorkflowExamples(object):
   
   
   
-  def __init__(self, with_tranfers, test_config_file_path, test_no, file_translation = False):
+  def __init__(self, with_tranfers, test_config_file_path, test_no, with_universal_resource_path = False):
     '''
     @type with_tranfers: boolean
     '''
@@ -209,23 +209,22 @@ class WorkflowExamples(object):
     self.output_dir = test_config.get(hostname, 'job_output_dir') + repr(test_no) + "/"
     
     self.with_transfers = with_tranfers
-    self.file_translation = file_translation
+    self.with_universal_resource_path = with_universal_resource_path
     
     
-    if self.file_translation:
-      print "translation !!"
+    if self.with_universal_resource_path:
       # inputs
-      self.file0 = FileTranslation("complete/" + "file0", "example", "job_dir", 168)
-      self.script1 = FileTranslation("complete/" + "job1.py", "example", "job_dir", 168)
-      self.stdin1 = FileTranslation("complete/" + "stdin1", "example", "job_dir", 168)
-      self.script2 = FileTranslation("complete/" + "job2.py", "example", "job_dir", 168)
-      self.stdin2 = FileTranslation("complete/" + "stdin2", "example", "job_dir", 168)
-      self.script3 = FileTranslation("complete/" + "job3.py", "example", "job_dir", 168)
-      self.stdin3 = FileTranslation("complete/" + "stdin3", "example", "job_dir", 168)
-      self.script4 = FileTranslation("complete/" + "job4.py", "example", "job_dir", 168)
-      self.stdin4 = FileTranslation("complete/" + "stdin4", "example", "job_dir", 168)
+      self.file0 = UniversalResourcePath("complete/" + "file0", "example", "job_dir", 168)
+      self.script1 = UniversalResourcePath("complete/" + "job1.py", "example", "job_dir", 168)
+      self.stdin1 = UniversalResourcePath("complete/" + "stdin1", "example", "job_dir", 168)
+      self.script2 = UniversalResourcePath("complete/" + "job2.py", "example", "job_dir", 168)
+      self.stdin2 = UniversalResourcePath("complete/" + "stdin2", "example", "job_dir", 168)
+      self.script3 = UniversalResourcePath("complete/" + "job3.py", "example", "job_dir", 168)
+      self.stdin3 = UniversalResourcePath("complete/" + "stdin3", "example", "job_dir", 168)
+      self.script4 = UniversalResourcePath("complete/" + "job4.py", "example", "job_dir", 168)
+      self.stdin4 = UniversalResourcePath("complete/" + "stdin4", "example", "job_dir", 168)
       
-      self.exceptionJobScript = FileTranslation("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
+      self.exceptionJobScript = UniversalResourcePath("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
       
       if self.with_transfers:
         print "transfers !!!"
@@ -237,13 +236,13 @@ class WorkflowExamples(object):
         self.file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
       else:
         # outputs
-        self.file11 = FileTranslation("file11", "example", "output_dir", 168)
-        self.file12 = FileTranslation("file12", "example", "output_dir",168)
-        self.file2 = FileTranslation("file2", "example", "output_dir",168)
-        self.file3 = FileTranslation("file3", "example", "output_dir",168)
-        self.file4 = FileTranslation("file4", "example", "output_dir",168)
+        self.file11 = UniversalResourcePath("file11", "example", "output_dir", 168)
+        self.file12 = UniversalResourcePath("file12", "example", "output_dir",168)
+        self.file2 = UniversalResourcePath("file2", "example", "output_dir",168)
+        self.file3 = UniversalResourcePath("file3", "example", "output_dir",168)
+        self.file4 = UniversalResourcePath("file4", "example", "output_dir",168)
       
-    elif self.with_transfers and not self.file_translation:
+    elif self.with_transfers and not self.with_universal_resource_path:
       # outputs
       self.file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
       self.file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
@@ -286,7 +285,7 @@ class WorkflowExamples(object):
       
   def job1(self):
     if self.with_transfers: 
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
@@ -302,7 +301,7 @@ class WorkflowExamples(object):
     
   def job2(self):
     if self.with_transfers: 
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [self.file0, self.file11, self.script2, self.stdin2], 
                           [self.file2], 
@@ -318,7 +317,7 @@ class WorkflowExamples(object):
     
   def job3(self):
     if self.with_transfers: 
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], 
                             [self.file12, self.script3, self.stdin3], 
                             [self.file3], 
@@ -334,7 +333,7 @@ class WorkflowExamples(object):
     
   def job4(self):
     if self.with_transfers: 
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [self.file2, self.file3, self.script4, self.stdin4], 
                            [self.file4], 
@@ -378,7 +377,7 @@ class WorkflowExamples(object):
                                                           
     # jobs
     if self.with_transfers:
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job1 = JobTemplate(["python", self.exceptionJobScript], 
                           [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
@@ -420,7 +419,7 @@ class WorkflowExamples(object):
     job4 = self.job4()
     
     if self.with_transfers:
-      if not self.file_translation:
+      if not self.with_universal_resource_path:
         job3 = JobTemplate(["python", self.exceptionJobScript],
                           [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
                           [self.file3],

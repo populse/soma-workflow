@@ -45,12 +45,12 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkBox_file_translation">
+    <widget class="QCheckBox" name="checkBox_universal_resource_path">
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="text">
-      <string>with file path translation</string>
+      <string>with universal resource paths</string>
      </property>
     </widget>
    </item>

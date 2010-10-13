@@ -1,7 +1,7 @@
 from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, FileTranslation, JobTemplate
+from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, UniversalResourcePath, JobTemplate
 from soma.jobs.constants import *
 import time
 import threading
@@ -202,11 +202,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     ui.comboBox_example_type.addItems(self.controler.getWorkflowExampleList())
     if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
       with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
-      with_file_translation = ui.checkBox_file_translation.checkState() == QtCore.Qt.Checked
+      with_universal_resource_path = ui.checkBox_universal_resource_path.checkState() == QtCore.Qt.Checked
       example_type = ui.comboBox_example_type.currentIndex()
       file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
       if file_path:
-        self.controler.generateWorkflowExample(with_file_transfer, with_file_translation, example_type, file_path)
+        self.controler.generateWorkflowExample(with_file_transfer, with_universal_resource_path, example_type, file_path)
 
   @QtCore.pyqtSlot()
   def submitWorkflow(self):
@@ -422,6 +422,13 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
 
+#class WorkflowTree(QtGui.QWidget):
+
+  #def __init__(self, client_model, parent = None):
+    #super(WorkflowTree, self).__init__(parent)
+
+    #self.item_model = None
+    #self.tree
     
 class WorkflowInfo(QtGui.QWidget):
   
@@ -1627,12 +1634,12 @@ class ClientJob(ClientWorkflowItem):
     
     cmd_seq = []
     for command_el in data.command:
-      if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
+      if isinstance(command_el, tuple) and isinstacne(command_el[0], FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el[0].remote_path + " >")
       elif isinstance(command_el, FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
-      elif isinstance(command_el, FileTranslation):
-        cmd_seq.append("<FileTranslation " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
+      elif isinstance(command_el, UniversalResourcePath):
+        cmd_seq.append("<UniversalResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
       else:
         cmd_seq.append(repr(command_el))
     separator = " " 

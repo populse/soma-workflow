@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 import logging
 import soma.jobs.constants as constants
-from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, FileTranslation
+from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, UniversalResourcePath
 import soma.jobs.jobServer 
 import copy
 
@@ -82,7 +82,7 @@ class DrmaaJobScheduler( object ):
       self.terminating_signal = None
 
 
-  def __init__( self, job_server, parallel_job_submission_info = None, file_path_translation = None):
+  def __init__( self, job_server, parallel_job_submission_info = None, universal_path_translation = None):
     '''
     Opens a connection to the pool of machines and to the data server L{JobServer}.
 
@@ -93,8 +93,8 @@ class DrmaaJobScheduler( object ):
     The keys are:
       - Drmaa job template attributes 
       - parallel configuration name as defined in soma.jobs.constants
-    @type  translation_files: dictionary, namespace => uuid => path
-    @param translation_files: for each namespace a dictionary holding the traduction (association uuid => local path)
+    @type  universal_path_translation: dictionary, namespace => uuid => path
+    @param universal_path_translation: for each namespace a dictionary holding the traduction (association uuid => local path)
     '''
     self.logger = logging.getLogger('ljp.drmaajs')
     
@@ -111,7 +111,7 @@ class DrmaaJobScheduler( object ):
 
     self.logger.debug("Parallel job submission info: %s", repr(parallel_job_submission_info))
     self.__parallel_job_submission_info = parallel_job_submission_info
-    self.__file_path_translation = file_path_translation
+    self.__universal_path_translation = universal_path_translation
 
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
@@ -391,20 +391,20 @@ class DrmaaJobScheduler( object ):
         
     self.logger.debug("<< __setDrmaaParallelJobTemplate")
     
-  def __filePathTranslation(self, ftl):
+  def __UniversalResourcePathTranslation(self, urp):
     '''
-    @type ftl: L{FileTranslation}
+    @type urp: L{UniversalResourcePath}
     @rtype: string
-    @returns: new path in the local environment
+    @returns: path in the local environment
     '''
-    if not self.__file_path_translation:
-      raise JobSchedulerError("Configuration file: Couldn't find file path translation.", self.logger)
-    if not ftl.namespace in self.__file_path_translation.keys():
-      raise JobSchedulerError("File path translation: the namespace %s does'nt exist" %(ftl.namespace), self.logger)
-    if not ftl.uuid in self.__file_path_translation[ftl.namespace].keys():
-      raise JobSchedulerError("File path translation: the uuid %s does'nt exist for the namespace %s." %(ftl.uuid, ftl.namespace), self.logger)
+    if not self.__universal_path_translation:
+      raise JobSchedulerError("Configuration file: Couldn't find universal path translation files.", self.logger)
+    if not urp.namespace in self.__universal_path_translation.keys():
+      raise JobSchedulerError("Universal path translation: the namespace %s does'nt exist" %(urp.namespace), self.logger)
+    if not urp.uuid in self.__universal_path_translation[urp.namespace].keys():
+      raise JobSchedulerError("Universal path translation: the uuid %s does'nt exist for the namespace %s." %(urp.uuid, urp.namespace), self.logger)
     
-    local_path = os.path.join(self.__file_path_translation[ftl.namespace][ftl.uuid], ftl.relative_path)
+    local_path = os.path.join(self.__universal_path_translation[urp.namespace][urp.uuid], urp.relative_path)
     return local_path
     
 
@@ -425,20 +425,20 @@ class DrmaaJobScheduler( object ):
     # type checking for the workflow ?
     workflow = copy.deepcopy(workflow_o)
     
-    #Do the file translation first to check possible errors
+    #First, do the universal resource path translation to check possible errors
     for node in workflow.nodes:
       if isinstance(node, JobTemplate):
         for command_el in node.command:
-          if isinstance(command_el, FileTranslation):
-            command_el.translation = self.__filePathTranslation(command_el)
-        if node.stdout_file and isinstance(node.stdout_file, FileTranslation):
-          node.stdout_file = self.__filePathTranslation(node.stdout_file)
-        if node.stderr_file and isinstance(node.stderr_file, FileTranslation):
-          node.stderr_file = self.__filePathTranslation(node.stderr_file)
-        if node.working_directory and isinstance(node.working_directory, FileTranslation):
-          node.working_directory = self.__filePathTranslation(node.working_directory)
-        if node.stdin and isinstance(node.stdin, FileTranslation):
-          node.stdin = self.__filePathTranslation(node.stdin)
+          if isinstance(command_el, UniversalResourcePath):
+            command_el.local_path = self.__UniversalResourcePathTranslation(command_el)
+        if node.stdout_file and isinstance(node.stdout_file, UniversalResourcePath):
+          node.stdout_file = self.__UniversalResourcePathTranslation(node.stdout_file)
+        if node.stderr_file and isinstance(node.stderr_file, UniversalResourcePath):
+          node.stderr_file = self.__UniversalResourcePathTranslation(node.stderr_file)
+        if node.working_directory and isinstance(node.working_directory, UniversalResourcePath):
+          node.working_directory = self.__UniversalResourcePathTranslation(node.working_directory)
+        if node.stdin and isinstance(node.stdin, UniversalResourcePath):
+          node.stdin = self.__UniversalResourcePathTranslation(node.stdin)
      ######################################################
  
     workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date, name)
@@ -501,8 +501,8 @@ class DrmaaJobScheduler( object ):
           new_command.append(os.path.join(command_el[0].local_path, command_el[1]))
         elif isinstance(command_el, FileTransfer):
           new_command.append(command_el.local_path)
-        elif isinstance(command_el, FileTranslation):
-          new_command.append(command_el.translation)
+        elif isinstance(command_el, UniversalResourcePath):
+          new_command.append(command_el.local_path)
         else:
           new_command.append(command_el)
       job.command = new_command
@@ -831,7 +831,7 @@ class DrmaaJobScheduler( object ):
 
 class JobScheduler( object ):
   
-  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None, file_path_translation = None):
+  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None, universal_path_translation = None):
     ''' 
     @type  job_server: L{JobServer}
     @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
@@ -847,7 +847,7 @@ class JobScheduler( object ):
       self.__drmaaJS = drmaa_job_scheduler
     else:
       #print "parallel_job_submission_info" + repr(parallel_job_submission_info)
-      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info, file_path_translation)
+      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info, universal_path_translation)
     
     # Job Server
     self.__jobServer= job_server

@@ -42,8 +42,8 @@ jobs_cfg.set(s, CFG_TMP_FILE_DIR_PATH,      '/neurospin/tmp/Soizic/jobFiles/')
 jobs_cfg.set(s, CFG_DATABASE_FILE,          '/volatile/laguitton/jobs.db')
 #DRMS 
 jobs_cfg.set(s, OCFG_DRMS,               'SGE') 
-#File path translation
-jobs_cfg.set(s, OCFG_TRANSLATION_FILES, 'example{/neurospin/tmp/Soizic/jobFiles/translation_files/job_examples.sjtr}')
+#Universal path translation file
+jobs_cfg.set(s, OCFG_U_PATH_TRANSLATION_FILES, 'example{/neurospin/tmp/Soizic/jobFiles/translation_files/job_examples.sjtr} brainvisa{/home/sl225510/.brainvisa/soma-workflow.translation}')
 
 ##########################
 # SOIZIC HOME CLUSTER #
@@ -129,8 +129,8 @@ jobs_cfg.set(s, CFG_TMP_FILE_DIR_PATH,      '/home/cea/soma-jobs-server/jobFiles
 jobs_cfg.set(s, CFG_DATABASE_FILE,          '/home/cea/soma-jobs-server/jobs.db')
 #DRMS 
 jobs_cfg.set(s, OCFG_DRMS,               'SGE') 
-#File path translation
-jobs_cfg.set(s, OCFG_TRANSLATION_FILES, 'example{/home/cea/soma-jobs-server/translation_file_examples/job_examples.sjtr}')
+#Universal path translation file
+jobs_cfg.set(s, OCFG_U_PATH_TRANSLATION_FILES, 'example{/home/cea/soma-jobs-server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/cea/.brainvisa/soma-workflow.translation}')
 
 ########################
 # client configuration #

@@ -95,12 +95,12 @@ def main(resource_id, jobScheduler_name, log = ""):
   
   
   #############################
-  # File path translation specific information 
-  file_path_translation = None
-  if config.has_option(section, OCFG_TRANSLATION_FILES):
-    file_path_translation={}
-    translation_files_str = config.get(section, OCFG_TRANSLATION_FILES)
-    logger.info("Translation files configured:")
+  # Universal file path translation specific information 
+  universal_path_translation = None
+  if config.has_option(section, OCFG_U_PATH_TRANSLATION_FILES):
+    universal_path_translation={}
+    translation_files_str = config.get(section, OCFG_U_PATH_TRANSLATION_FILES)
+    logger.info("Universal path translation files configured:")
     for ns_file_str in translation_files_str.split():
       ns_file = ns_file_str.split("{")
       namespace = ns_file[0]
@@ -111,8 +111,8 @@ def main(resource_id, jobScheduler_name, log = ""):
       except IOError, e:
         logger.info("Couldn't read the translation file: " + filename)
       else:
-        if not namespace in file_path_translation.keys():
-          file_path_translation[namespace] = {}
+        if not namespace in universal_path_translation.keys():
+          universal_path_translation[namespace] = {}
         line = f.readline()
         while line:
           splitted_line = line.split(None,1)
@@ -120,10 +120,10 @@ def main(resource_id, jobScheduler_name, log = ""):
             uuid = splitted_line[0]
             contents = splitted_line[1].rstrip()
             logger.info("      uuid: " + uuid + "   translation:" + contents)
-            file_path_translation[namespace][uuid] = contents
+            universal_path_translation[namespace][uuid] = contents
           line = f.readline()
         f.close()
-    logger.info("End translation file configuration")
+    logger.info("End universal path translation file configuration")
   
   #############################
 
@@ -133,7 +133,7 @@ def main(resource_id, jobScheduler_name, log = ""):
   daemon = Pyro.core.Daemon()
   
   # instance of drmaaJobScheduler
-  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer, parallel_job_submission_info, file_path_translation)
+  drmaaJobScheduler = soma.jobs.jobScheduler.DrmaaJobScheduler(jobServer, parallel_job_submission_info, universal_path_translation)
   
   # instance of jobScheduler
   jobScheduler = JobScheduler(jobServer, drmaaJobScheduler)

@@ -87,18 +87,18 @@ class JobTemplate(WorkflowNode):
 
     
     
-class FileTranslation(object):
+class UniversalResourcePath(object):
   '''
-  #Workflow node type
-  File representation using relative path. 
-  When the workflow will be submitted to a resource, local translation files will be used to transform a namespace, 
-  an uuid and a relative path to an absolut path on the cluster.
-  #Use relative_paths if the translation involves several associated files and/or directories, eg:
-        #- file serie 
-        #- in the case of file format associating several file and/or directories
-          #(ex: a SPM image is stored in 2 files: .img and .hdr)
-  #In this case, set remote_path to one the files (eq: .img).
-  #In other cases (1 file or 1 directory) the relative_paths must be set to None.
+  Representation of path universaly over the resource.
+  The information required is:
+    - a namespace
+    - a database uuid
+    - the relative path of the file in the database
+  The UniversalResourcePath objects can be used instead of file path to describe job 
+  (JobTemplate.command, JobTemplate.stdin, JobTemplate.stdout_file and JobTemplate.stderr_file)
+  When a Workflow or a JobTemplate is submitted to a resource with the JobClient API, 
+  the UniversalResourcePath objects are replaced by the absolut path of the file on the resource,
+  provided the namespace and database are configured on the cluster (OCFG_U_PATH_TRANSLATION_FILES).   
   '''
   def __init__(self,
                relative_path,
@@ -111,15 +111,11 @@ class FileTranslation(object):
       self.name = name
     else:
       self.name = namespace + "::" + uuid + "::" + relative_path
-    #super(FileTranslation, self).__init__(ftl_name)
-    
+   
     self.relative_path = relative_path
     self.namespace = namespace
     self.uuid = uuid
     self.disposal_timout = disposal_timeout
-    #self.relative_paths = relative_paths
-    
-    self.translation = None # absolute local file path 
 
 class FileTransfer(WorkflowNode):
   '''
@@ -351,38 +347,37 @@ class Jobs(object):
         if config.has_option(resource_id, parallel_config_info):
           parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
   
-      # File path translation
-      file_path_translation = None
-      if config.has_option(resource_id, OCFG_TRANSLATION_FILES):
-        file_path_translation={}
-        translation_files_str = config.get(resource_id, OCFG_TRANSLATION_FILES)
-        print "Translation files configured:"
+      # Universal path translation files
+      universal_path_translation = None
+      if config.has_option(resource_id, OCFG_U_PATH_TRANSLATION_FILES):
+        universal_path_translation={}
+        translation_files_str = config.get(resource_id, OCFG_U_PATH_TRANSLATION_FILES)
+        logger.info("Universal path translation files configured:")
         for ns_file_str in translation_files_str.split():
           ns_file = ns_file_str.split("{")
           namespace = ns_file[0]
           filename = ns_file[1].rstrip("}")
-          print " -namespace: " + namespace + ", translation file: " + filename
+          logger.info(" -namespace: " + namespace + ", translation file: " + filename)
           try: 
             f = open(filename, "r")
           except IOError, e:
             logger.info("Couldn't read the translation file: " + filename)
           else:
-            if not namespace in file_path_translation.keys():
-              file_path_translation[namespace] = {}
+            if not namespace in universal_path_translation.keys():
+              universal_path_translation[namespace] = {}
             line = f.readline()
             while line:
               splitted_line = line.split(None,1)
               if len(splitted_line) > 1:
                 uuid = splitted_line[0]
                 contents = splitted_line[1].rstrip()
-                print "      uuid: " + uuid + "   translation:" + contents
-                file_path_translation[namespace][uuid] = contents
+                logger.info("      uuid: " + uuid + "   translation:" + contents)
+                universal_path_translation[namespace][uuid] = contents
               line = f.readline()
             f.close()
-      
-  
+          
       self.__js_proxy  = JobScheduler(job_server=jobServer, drmaa_job_scheduler=None, parallel_job_submission_info=parallel_job_submission_info,
-      file_path_translation = file_path_translation)
+      universal_path_translation = universal_path_translation)
       self.__file_transfer = soma.jobs.connection.LocalTransfer(self.__js_proxy)
       self.__connection = None
 
