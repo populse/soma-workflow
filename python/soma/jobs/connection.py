@@ -444,13 +444,13 @@ class RemoteTransfer(Transfer):
     Equivalent to:  shutil.copytree(cluster_dir, user_dir).
     '''
     try:
-      self.jobSchedulder.mkdir(cluster_dir)
+      self.jobScheduler.mkdir(cluster_dir)
       for name in os.listdir(user_dir):
         element = os.path.join(user_dir, name)
         if os.path.isfile(element):
-          self.sendFile(element, os.path.join(user_dir, name))
+          self.sendFile(os.path.join(cluster_dir, name),element)
         elif os.path.isdir(element):
-          self.sendDirectory(element, os.path.join(user_dir, name))
+          self.sendDirectory(os.path.join(cluster_dir, name),element)
     except IOError, e:
       raise TransferError("The directory was not transfered %s: %s" %(type(e), e))
   
