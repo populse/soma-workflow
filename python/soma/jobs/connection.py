@@ -413,12 +413,13 @@ class RemoteTransfer(Transfer):
     '''
     Equivalents to:    cp user_file cluster_file
     '''
+    print '!sendFile!', (cluster_file, user_file)
     try:
       infile = open(user_file)
-      line = infile.readline()
+      line = infile.read( 10*1024**2 ) # 10 Mb
       while line:
         self.jobScheduler.writeLine(line, cluster_file)
-        line = infile.readline()
+        line = infile.read( 10*1024**2 ) # 10 Mb
       infile.close()
       self.jobScheduler.endTransfers()
     except IOError, e:
@@ -443,6 +444,7 @@ class RemoteTransfer(Transfer):
     '''
     Equivalent to:  shutil.copytree(cluster_dir, user_dir).
     '''
+    print '!sendDirectory!', (cluster_dir, user_dir)
     try:
       self.jobScheduler.mkdir(cluster_dir)
       for name in os.listdir(user_dir):
