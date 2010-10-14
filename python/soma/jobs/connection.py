@@ -11,7 +11,7 @@ from datetime import timedelta
 import threading
 import time
 import Pyro.naming, Pyro.core
-from Pyro.errors import NamingError
+from Pyro.errors import NamingError, ConnectionClosedError
 import socket
 import pwd 
 import os
@@ -159,6 +159,9 @@ class JobRemoteConnection( object ):
     self.__connection_holder = ConnectionHolder(connection_checker)
     self.__connection_holder.start()
 
+  def isValid(self):
+    return self.__connection_holder.isAlive()
+
   def stop(self):
     '''
     For test purpose only !
@@ -260,7 +263,7 @@ class Transfer( object ):
     # Case 2
     elif os.path.isdir(remote_path) and not remote_paths:
       self.sendDirectory(cluster_path, remote_path)
-    
+
     # Case 3
     elif remote_paths:
       for r_path in remote_paths:
@@ -318,7 +321,7 @@ class Transfer( object ):
     @type cluster_dir: directory path
     @type user_dir: directory path 
     '''
-    raise TransferError('Transfer is an abstract class. sendFile must be implemented in subclass')
+    raise TransferError('Transfer is an abstract class. sendDirectory must be implemented in subclass')
  
   def retrieveFileOrDirectory(self, cluster_path, user_path):
     '''
@@ -416,15 +419,14 @@ class RemoteTransfer(Transfer):
     print '!sendFile!', (cluster_file, user_file)
     try:
       infile = open(user_file)
-      line = infile.read( 10*1024**2 ) # 10 Mb
+      line = infile.read(512**2)# 10*1024**2 ) # 10 Mb
       while line:
         self.jobScheduler.writeLine(line, cluster_file)
-        line = infile.read( 10*1024**2 ) # 10 Mb
+        line = infile.read(512**2) #10*1024**2 ) # 10 Mb
       infile.close()
       self.jobScheduler.endTransfers()
     except IOError, e:
       raise TransferError("The file was not transfered. %s: %s" %(type(e), e) )
-      
       
   def retrieveFileOrDirectory(self, cluster_path, user_file_or_dir): 
     '''
@@ -455,7 +457,6 @@ class RemoteTransfer(Transfer):
           self.sendDirectory(os.path.join(cluster_dir, name),element)
     except IOError, e:
       raise TransferError("The directory was not transfered %s: %s" %(type(e), e))
-  
   
   def retrieveDirectoryContents(self, cluster_dir, user_dir):
     '''
@@ -524,7 +525,11 @@ class ConnectionHolder(threading.Thread):
     self.stopped = False
     while not self.stopped :
       #print "ConnectionHolder => signal"
-      self.connectionChecker.signalConnectionExist()
+      try:
+        self.connectionChecker.signalConnectionExist()
+      except ConnectionClosedError, e:
+        print "Connection closed"
+        break
       time.sleep(self.interval)
 
   def stop(self):

@@ -9,12 +9,14 @@ import os
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-import pickle
 import matplotlib, numpy
 matplotlib.use('Qt4Agg')
 import pylab
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from Pyro.errors import ConnectionClosedError 
+
+
 
 
 GRAY=QtGui.QColor(200, 200, 180)
@@ -96,7 +98,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
-    
+    self.connect(self.model, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
+
     self.resource_list = self.controler.getRessourceIds()
     self.ui.combo_resources.addItems(self.resource_list)
     
@@ -115,6 +118,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     itemInfoLayout.setContentsMargins(2,2,2,2)
     itemInfoLayout.addWidget(self.itemInfoWidget)
     self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+
+    self.connect(self.itemInfoWidget, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
 
     self.workflowInfoWidget = WorkflowInfo(self.model, self)
     wfInfoLayout = QtGui.QVBoxLayout()
@@ -220,20 +225,40 @@ class WorkflowWidget(QtGui.QMainWindow):
     qtdt = self.ui.dateTimeEdit_expiration.dateTime()
     date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-    
-    workflow = self.controler.submitWorkflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
+    while True:
+      try:
+        workflow = self.controler.submitWorkflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
     self.updateWorkflowList()
     self.model.addWorkflow(workflow, date) 
 
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
-  
+    while True:
+      try:
+        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
+
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
-    
+    while True:
+      try:
+        self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
+
   @QtCore.pyqtSlot(int)
   def workflowSelectionChanged(self, index):
     if index <0 or index >= self.ui.combo_submitted_wfs.count():
@@ -265,33 +290,38 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.model.setCurrentConnection(resource_id)
       return
     else:
-      connection_invalid = True
-      try_again = True
-      while connection_invalid or try_again: 
-        connection_dlg = QtGui.QDialog()
-        ui = Ui_ConnectionDlg()
-        ui.setupUi(connection_dlg)
-        ui.resource_label.setText(resource_id)
-        if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
-          try_again = False
-          index = self.ui.combo_resources.findText(self.model.current_resource_id)
-          self.ui.combo_resources.setCurrentIndex(index)
-          break
-        if ui.lineEdit_login.text(): 
-          login = unicode(ui.lineEdit_login.text()).encode('utf-8')
-        else: login = None
-        if ui.lineEdit_password.text():
-          password = unicode(ui.lineEdit_password.text()).encode('utf-8')
-        else: password = None
-        test_no = 1
-        (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
-        if connection:
-          connection_invalid = False
-          self.model.addConnection(resource_id, connection)
-          return 
-        else:
-          QtGui.QMessageBox.information(self, "Connection failed", msg)
-    
+      new_connection = self.createConnection(resource_id)
+      if new_connection:
+        self.model.addConnection(resource_id, connection)
+
+  def createConnection(self, resource_id):
+    connection_invalid = True
+    try_again = True
+    while connection_invalid or try_again: 
+      connection_dlg = QtGui.QDialog()
+      connection_dlg.setModal(True)
+      ui = Ui_ConnectionDlg()
+      ui.setupUi(connection_dlg)
+      ui.resource_label.setText(resource_id)
+      if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
+        try_again = False
+        index = self.ui.combo_resources.findText(self.model.current_resource_id)
+        self.ui.combo_resources.setCurrentIndex(index)
+        break
+      if ui.lineEdit_login.text(): 
+        login = unicode(ui.lineEdit_login.text()).encode('utf-8')
+      else: login = None
+      if ui.lineEdit_password.text():
+        password = unicode(ui.lineEdit_password.text()).encode('utf-8')
+      else: password = None
+      test_no = 1
+      (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
+      if connection:
+        return connection
+      else:
+        QtGui.QMessageBox.information(self, "Connection failed", msg)
+    return None
+
   @QtCore.pyqtSlot()
   def deleteWorkflow(self):
     assert(self.model.current_workflow and self.model.current_wf_id != -1)
@@ -303,18 +333,31 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.NoButton)
     if answer != QtGui.QMessageBox.Ok: return
-
-    self.controler.deleteWorkflow(self.model.current_workflow.wf_id, self.model.current_connection)
+    while True:
+      try:
+        self.controler.deleteWorkflow(self.model.current_workflow.wf_id, self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
     self.updateWorkflowList()
     self.model.deleteWorkflow()
-    
     
   @QtCore.pyqtSlot()
   def changeExpirationDate(self):
     qtdt = self.ui.dateTimeEdit_expiration.dateTime()
     date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-    change_occured = self.controler.changeWorkflowExpirationDate(self.model.current_wf_id, date,  self.model.current_connection)
+    
+    while True:
+      try:
+        change_occured = self.controler.changeWorkflowExpirationDate(self.model.current_wf_id, date,  self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
     if not change_occured:
       QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
       self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
@@ -411,11 +454,34 @@ class WorkflowWidget(QtGui.QMainWindow):
   def updateWorkflowList(self):
     self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
     self.ui.combo_submitted_wfs.clear()
-    for wf_info in self.controler.getSubmittedWorkflows(self.model.current_connection):
+    while True:
+      try:
+        submittedWorflows = self.controler.getSubmittedWorkflows(self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
+    for wf_info in submittedWorflows:
       wf_id, expiration_date, workflow_name = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
       self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+    
+  @QtCore.pyqtSlot()
+  def reconnectAfterConnectionClosed(self):
+    answer = QtGui.QMessageBox.question(None, 
+                                        "Connection closed",
+                                        "The connection to  "+ self.model.current_resource_id +" closed.\n  Do you want to try a reconnection?", 
+                                        QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    if answer == QtGui.QMessageBox.Yes:
+      new_connection = self.createConnection(self.model.current_resource_id)
+      if new_connection:
+        self.model.reinitCurrentConnection(new_connection)
+        return True
+      else:
+        self.model.deleteCurrentConnection()
+        return False
     
 
 class WorkflowTree(QtGui.QWidget):
@@ -657,20 +723,35 @@ class JobInfoWidget(QtGui.QTabWidget):
   @QtCore.pyqtSlot(int)
   def currentTabChanged(self, index):
     if index == 1 and self.job_item.stdout == "":
-      self.job_item.updateStdout(self.connection)
-      self.dataChanged()
+      try:
+        self.job_item.updateStdout(self.connection)
+      except ConnectionClosedError, e:
+        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
+      else:
+        self.dataChanged()
     if index == 2 and self.job_item.stderr == "":
-      self.job_item.updateStderr(self.connection)
+      try:
+        self.job_item.updateStderr(self.connection)
+      except ConnectionClosedError, e:
+        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
+      else:
+        self.dataChanged()
       self.dataChanged()
       
   @QtCore.pyqtSlot()
   def refreshStdout(self):
-    self.job_item.updateStdout(self.connection)
+    try:
+      self.job_item.updateStdout(self.connection)
+    except ConnectionClosedError, e:
+        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
     self.dataChanged()
     
   @QtCore.pyqtSlot()
   def refreshStderr(self):
-    self.job_item.updateStderr(self.connection)
+    try:
+      self.job_item.updateStderr(self.connection)
+    except ConnectionClosedError, e:
+        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
     self.dataChanged()
     
     
@@ -1237,8 +1318,19 @@ class ClientModel(QtCore.QObject):
     def updateLoop(self):
       # update only the current workflows
       while True:
-        if not self.hold and self.auto_update and self.current_workflow and self.current_workflow.updateState(): 
-          self.emit(QtCore.SIGNAL('workflow_state_changed()'))
+        if not self.hold and self.auto_update and self.current_workflow :
+          try:
+            #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
+            #begining = datetime.now()
+            wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
+            #end = datetime.now() - begining
+            #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
+          except ConnectionClosedError, e:
+            self.emit(QtCore.SIGNAL('connection_closed_error()'))
+            self.hold = True
+          else: 
+            if self.current_workflow and self.current_workflow.updateState(wf_status): 
+              self.emit(QtCore.SIGNAL('workflow_state_changed()'))
         time.sleep(self.update_interval)
     
     self.__update_thread = threading.Thread(name = "ClientModelUpdateLoop",
@@ -1257,7 +1349,32 @@ class ClientModel(QtCore.QObject):
     self.expiration_dates[resource_id] = {}
     self.current_resource_id = resource_id
     self.current_connection = connection
+    self.current_workflow = None
+    self.current_wf_id = -1
+    self.expiration_date = None
     self.emit(QtCore.SIGNAL('current_connection_changed()'))
+    self.hold = False
+
+  def deleteCurrentConnection(self):
+    '''
+    Delete the current connection.
+    If any other connections exist the new current connection will be one of them.
+    If not the current connection is set to None.
+    '''
+    del self.connections[self.current_resource_id] 
+    del self.workflows[self.current_resource_id]
+    del self.expiration_dates[self.current_resource_id]
+    self.current_resource_id = None
+    self.current_connection = None
+    self.current_workflow = None
+    self.current_wf_id = -1
+    self.expiration_date = None
+    
+    if len(self.connections.keys()):
+      self.current_resource_id = self.connections.keys()[0]
+      self.current_connection = self.connections[self.current_resource_id]
+    self.emit(QtCore.SIGNAL('current_connection_changed()'))
+    self.hold = False
     
   def setCurrentConnection(self, resource_id):
     if resource_id != self.current_resource_id:
@@ -1265,6 +1382,12 @@ class ClientModel(QtCore.QObject):
       self.current_resource_id = resource_id
       self.current_connection = self.connections[resource_id]
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
+      self.hold = False
+
+  def reinitCurrentConnection(self, connection):
+    self.current_connection = connection
+    self.connections[self.current_resource_id] = connection
+    self.hold = False
     
   def addWorkflow(self, workflow, expiration_date):
     '''
@@ -1274,15 +1397,20 @@ class ClientModel(QtCore.QObject):
     '''
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
     self.hold = True 
-    self.current_workflow = ClientWorkflow(workflow, self.current_connection)
+    self.current_workflow = ClientWorkflow(workflow)
     self.current_wf_id = self.current_workflow.wf_id
     self.expiration_date = expiration_date
     if self.current_wf_id != -1:
       self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
       self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
-    self.current_workflow.updateState()
-    self.emit(QtCore.SIGNAL('current_workflow_changed()'))
-    self.hold = False
+    try:
+      wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
+    except ConnectionClosedError, e:
+      self.emit(QtCore.SIGNAL('connection_closed_error()'))
+    else: 
+      self.current_workflow.updateState(wf_status)
+      self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+      self.hold = False
     
   def deleteWorkflow(self):
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
@@ -1322,12 +1450,7 @@ class ClientModel(QtCore.QObject):
   
 class ClientWorkflow(object):
   
-  def __init__(self, workflow, connection = None):
-    '''
-    Creates a ClientWorkflow from a soma.job.jobClient.Workflow.
-    '''
-    
-    self.connection = connection
+  def __init__(self, workflow):
     
     self.name = workflow.name 
     self.wf_id = workflow.wf_id
@@ -1477,21 +1600,10 @@ class ClientWorkflow(object):
     #raw_input()
     ###########################################
     
-  def updateState(self):
+  def updateState(self, wf_status):
     if self.wf_id == -1: 
       return False
     data_changed = False
-    
-    #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
-    #begining = datetime.now()
-    
-    wf_status = self.connection.workflowStatus(self.server_workflow.wf_id)
-    
-    #end = datetime.now() - begining
-    #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
-    
-    #print " ==> updating jobs " + repr(self.server_workflow.wf_id)
-    #begining = datetime.now()
     
     if not wf_status:
       return False
@@ -1518,7 +1630,6 @@ class ClientWorkflow(object):
     #end = datetime.now() - begining
     #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
     
-    
     #updateing groups 
     self.root_item.updateState()
     
@@ -1535,10 +1646,6 @@ class ClientWorkflowItem(object):
                row = -1,
                data = None,
                children_nb = 0):
-    '''
-    @type  connection: soma.jobs.jobClient.job
-    @param connection: jobs interface 
-    '''
     
     self.it_id = it_id
     self.parent = parent # parent_id
