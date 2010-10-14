@@ -1674,7 +1674,7 @@ class ClientJob(ClientWorkflowItem):
     
     cmd_seq = []
     for command_el in data.command:
-      if isinstance(command_el, tuple) and isinstacne(command_el[0], FileTransfer):
+      if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el[0].remote_path + " >")
       elif isinstance(command_el, FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
