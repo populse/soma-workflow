@@ -22,17 +22,7 @@
   <property name="dockOptions">
    <set>QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_2">
-    <item>
-     <widget class="QTreeView" name="treeView">
-      <attribute name="headerVisible">
-       <bool>false</bool>
-      </attribute>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+  <widget class="QWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -415,7 +405,6 @@
  </widget>
  <tabstops>
   <tabstop>lineedit_wf_name</tabstop>
-  <tabstop>treeView</tabstop>
   <tabstop>dateTimeEdit_expiration</tabstop>
  </tabstops>
  <resources/>

@@ -94,9 +94,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.controler = controler
     self.model = client_model
     
-    
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
-    self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.currentWorkflowAboutToChange)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
     
     self.resource_list = self.controler.getRessourceIds()
@@ -104,7 +102,13 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.setWindowTitle("Workflows")
    
-    self.itemModel = None # model for the TreeView
+    self.treeWidget = WorkflowTree(self.model, self)
+    treeWidgetLayout = QtGui.QVBoxLayout()
+    treeWidgetLayout.setContentsMargins(2,2,2,2)
+    treeWidgetLayout.addWidget(self.treeWidget)
+    self.ui.centralwidget.setLayout(treeWidgetLayout)
+
+    self.connect(self.treeWidget, QtCore.SIGNAL('selection_model_changed()'), self.selection_model_changed)
    
     self.itemInfoWidget = WorkflowElementInfo(self.model, self)
     itemInfoLayout = QtGui.QVBoxLayout()
@@ -117,7 +121,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     wfInfoLayout.setContentsMargins(2,2,2,2)
     wfInfoLayout.addWidget(self.workflowInfoWidget)
     self.ui.dockWidgetContents_wf_info.setLayout(wfInfoLayout)
-    
     
     self.graphWidget = WorkflowGraphView(self.controler, self)
     graphWidgetLayout = QtGui.QVBoxLayout()
@@ -326,18 +329,15 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.model.clearCurrentWorkflow()
     index = self.ui.combo_resources.findText(self.model.current_resource_id)
     self.ui.combo_resources.setCurrentIndex(index)
-      
-  @QtCore.pyqtSlot()
-  def currentWorkflowAboutToChange(self):
-    if self.itemModel:
-        self.itemModel.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
-        self.itemModel = None
   
+  @QtCore.pyqtSlot()
+  def selection_model_changed(self):
+    self.itemInfoWidget.setSelectionModel(self.treeWidget.tree_view.selectionModel())
+      
   @QtCore.pyqtSlot()
   def currentWorkflowChanged(self):
     if not self.model.current_workflow:
       # No workflow
-      self.ui.treeView.setModel(None)
       
       self.graphWidget.clear()
       self.itemInfoWidget.clear()
@@ -358,16 +358,12 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.combo_submitted_wfs.setCurrentIndex(0)
       self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     else:
-      self.itemModel = WorkflowItemModel(self.model.current_workflow, self)
-      self.ui.treeView.setModel(self.itemModel)
-      self.itemModel.emit(QtCore.SIGNAL("modelReset()"))
-      
+  
       self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
       
       #=> TEMPORARY : the graph view has to be built from the clientModel
       self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
-      self.itemInfoWidget.setSelectionModel(self.ui.treeView.selectionModel())
       
       if self.model.current_wf_id == -1:
         # Workflow not submitted
@@ -422,14 +418,58 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     
 
-#class WorkflowTree(QtGui.QWidget):
+class WorkflowTree(QtGui.QWidget):
 
-  #def __init__(self, client_model, parent = None):
-    #super(WorkflowTree, self).__init__(parent)
+  def __init__(self, client_model, parent = None):
+    super(WorkflowTree, self).__init__(parent)
 
-    #self.item_model = None
-    #self.tree
+    self.tree_view = QtGui.QTreeView(self)
+    self.tree_view.setHeaderHidden(True)
+    self.vLayout = QtGui.QVBoxLayout(self)
+    self.vLayout.setContentsMargins(0,0,0,0)
+    self.vLayout.addWidget(self.tree_view)
+
+    self.model = client_model
+    self.item_model = None
     
+    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.currentWorkflowAboutToChange)
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
+    
+  @QtCore.pyqtSlot()
+  def clear(self):
+    if self.item_model:
+      self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
+      self.item_model = None
+      self.tree_view.setModel(None)
+      self.item_model.emit(QtCore.SIGNAL("modelReset()"))
+
+  @QtCore.pyqtSlot()
+  def currentWorkflowAboutToChange(self):
+    if self.item_model:
+      self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
+      self.item_model = None
+      self.tree_view.setModel(None)
+    
+  @QtCore.pyqtSlot()
+  def currentWorkflowChanged(self):
+    if self.model.current_workflow:
+      self.item_model = WorkflowItemModel(self.model.current_workflow, self)
+      self.tree_view.setModel(self.item_model)
+      self.item_model.emit(QtCore.SIGNAL("modelReset()"))
+      self.emit(QtCore.SIGNAL("selection_model_changed()"))
+    
+  @QtCore.pyqtSlot()
+  def dataChanged(self):
+    if self.item_model:
+      row = self.item_model.rowCount(QtCore.QModelIndex())
+      self.item_model.dataChanged.emit(self.item_model.index(0,0,QtCore.QModelIndex()),
+                                       self.item_model.index(row,0,QtCore.QModelIndex()))      
+    
+      
+
+
 class WorkflowInfo(QtGui.QWidget):
   
   def __init__(self, client_model, parent = None):
