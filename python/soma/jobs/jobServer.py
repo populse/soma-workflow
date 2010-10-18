@@ -85,6 +85,7 @@ Job server database tables:
     workflow_id (optional)
     status
     remote_paths
+    transfer_action_info
 
   Input/Ouput junction table
     job_id 
@@ -141,7 +142,8 @@ def createDatabase(database_file):
                                             user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
                                             workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflow (id),
                                             status           VARCHAR(255) NOT NULL,
-                                            remote_paths     TEXT)''')
+                                            remote_paths     TEXT,
+                                            transfer_action_info  TEXT)''')
 
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
                                       local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
@@ -721,6 +723,7 @@ class JobServer ( object ):
       connection.close()
  
     return status
+      
   
   def setTransferStatus(self, local_file_path, status):
     '''
@@ -747,6 +750,58 @@ class JobServer ( object ):
       connection.commit()
       cursor.close()
       connection.close()
+
+  def setTransferActionInfo(self, local_file_path, info):
+    '''
+    Save data necessary for the transfer itself.
+    In the case of a file transfer, info is a tuple (file size, md5 hash)
+    In the case of a directory transfer, info is a tuple (cumulated file size, file transfer info)
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        if not count == 0 :
+          pickled_info = pickle.dumps(info)
+          cursor.execute('UPDATE transfers SET transfer_action_info=? WHERE local_file_path=?', (pickled_info, local_file_path))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error setTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+      
+      
+  def getTransferActionInfo(self, local_file_path):
+    '''
+    Returns data necessary to the transfer itself.
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        if not count == 0 :
+          pickled_info = cursor.execute('SELECT transfer_action_info FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]#supposes that the local_file_path is associated to a transfer
+        else:
+          pickled_info = None
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+      
+      pickled_info = self.__stringConversion(pickled_info)
+      if pickled_info:
+        info = pickle.loads(pickled_info)
+      else:
+        info = None
+      cursor.close()
+      connection.close()
+ 
+    return info
 
   
   def addWorkflowEndedTransfer(self, workflow_id, local_file_path):

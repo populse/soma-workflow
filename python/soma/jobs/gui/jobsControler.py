@@ -112,16 +112,15 @@ class JobsControler(object):
     
   def transferInputFiles(self, workflow, connection):
     for node in workflow.full_nodes:
+      print node.name
       if isinstance(node, FileSending):
-        if connection.transferStatus(node.local_path) == READY_TO_TRANSFER:
+        if connection.transferStatus(node.local_path)[0] == READY_TO_TRANSFER:
           connection.sendRegisteredTransfer(node.local_path)
     
   def transferOutputFiles(self, workflow, connection):
-    print "transfer output files "
     for node in workflow.full_nodes:
       if isinstance(node, FileRetrieving):
-        print "FileRetrieving " + node.name
-        if connection.transferStatus(node.local_path) == READY_TO_TRANSFER:
+        if connection.transferStatus(node.local_path)[0] == READY_TO_TRANSFER:
           print READY_TO_TRANSFER
           connection.retrieve(node.local_path)
           
@@ -171,7 +170,7 @@ class JobsControler(object):
         if not node.local_path:
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
-          status = connection.transferStatus(node.local_path)
+          status = connection.transferStatus(node.local_path)[0]
           if status == TRANSFER_NOT_READY:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:

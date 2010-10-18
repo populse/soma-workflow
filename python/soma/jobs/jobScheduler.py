@@ -22,6 +22,7 @@ import soma.jobs.constants as constants
 from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, UniversalResourcePath
 import soma.jobs.jobServer 
 import copy
+import stat, hashlib
 
 __docformat__ = "epytext en"
 
@@ -899,6 +900,112 @@ class JobScheduler( object ):
     return local_path
 
 
+
+  ##### NEW TRANSFERS #####
+  
+  def initializeFileTransfer(self, local_path, file_size, md5_hash = None):
+    '''
+    Initialize the transfer of a file.
+    '''
+    info = (file_size, md5_hash)
+    f = open(local_path, 'w')
+    f.close()
+    self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
+    self.__jobServer.setTransferActionInfo(local_path, info)
+    return info
+
+
+  def __initializeDirectory(self, local_path, contents, subdirectory = ""):
+    '''
+    Initialize local directory from the contents of remote directory.
+
+    @rtype : tuple (int, dictionary)
+    @return : (cumulated file size, dictionary : relative file path => (file_size, md5_hash))
+    '''
+    file_transfer_info = {}
+    cumulated_file_size = 0
+    for item, description, md5_hash in contents:
+      relative_path = os.path.join(subdirectory,item)
+      full_path = os.path.join(local_path, relative_path)
+      if isinstance(description, list):
+        os.mkdir(full_path)
+        sub_size, sub_file_transfer_info = self.__initializeDirectory( local_path, description, relative_path)
+        cumulated_file_size += sub_size
+        file_transfer_info.update(sub_file_transfer_info)
+      else:
+        file_size = description
+        file_transfer_info[relative_path] = (file_size, md5_hash)
+        cumulated_file_size += file_size
+    info = (cumulated_file_size, file_transfer_info)
+
+    return info
+
+  def initializeDirTransfer(self, local_path, contents):
+    '''
+    Initialize the transfer of a directory.
+    '''
+    info = self.__initializeDirectory(local_path, contents)
+    self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
+    self.__jobServer.setTransferActionInfo(local_path, info)
+    return info
+    
+  
+  def __sendToFile(self, local_path, data, file_size, md5_hash = None):
+    '''
+    @rtype: boolean
+    @return: transfer ended
+    '''
+    file = open(local_path, 'ab')
+    file.write(data)
+    fs = file.tell()
+    file.close()
+    if fs > file_size:
+      # Reset file_size   
+      open(local_path, 'wb')
+      raise JobSchedulerError('sendPiece: Transmitted data exceed expected file size.')
+    elif fs == file_size:
+      if md5_hash is not None:
+        if hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() != md5_hash:
+          # Reset file
+          open( local_path, 'wb' )
+          raise JobSchedulerError('sendPiece: Transmission error detected.')
+        else:
+          return True
+      else:
+        return True
+    else:
+      return False
+
+  def sendPiece(self, local_path, data, relative_path=None):
+    '''
+    @rtype : boolean
+    @return : transfer ended
+    '''
+    if not relative_path:
+      # File case
+      (file_size, md5_hash) = self.__jobServer.getTransferActionInfo(local_path)
+      transfer_ended = self.__sendToFile(local_path, data, file_size, md5_hash)
+      if transfer_ended:
+        self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
+        self.signalTransferEnded(local_path)
+      
+    else:
+      # Directory case
+      (cumulated_size, file_transfer_info) = self.__jobServer.getTransferActionInfo(local_path)
+      if not relative_path in file_transfer_info:
+        raise JobSchedulerError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
+      (file_size, md5_hash) = file_transfer_info[relative_path]
+      transfer_ended = self.__sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
+      if transfer_ended:
+        self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
+        self.signalTransferEnded(local_path)
+      
+    return transfer_ended
+  
+  ##########################
+
+
+
   def writeLine(self, line, local_file_path):
     '''
     Writes a line to the local file. The path of the local input file
@@ -1148,7 +1255,7 @@ class JobScheduler( object ):
       
     return self.__jobServer.getWorkflowStatus(wf_id)
         
-        
+
   def transferStatus(self, local_path):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
@@ -1156,9 +1263,25 @@ class JobScheduler( object ):
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
       #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
       return
-    
-    return self.__jobServer.getTransferStatus(local_path)
-    
+
+    transfer_status = self.__jobServer.getTransferStatus(local_path)
+    if not transfer_status == constants.TRANSFERING:
+      return (transfer_status, None)
+    else:
+      local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__jobServer.getTransferInformation(local_path)
+      if not remote_paths:
+        # file case:
+        (file_size, md5_hash) = self.__jobServer.getTransferActionInfo(local_path)
+        transmitted = os.stat(local_path).st_size
+        return (transfer_status, (file_size, transmitted))
+      else:
+        # dir case:
+        (cumulated_file_size, file_transfer_info) = self.__jobServer.getTransferActionInfo(local_path)
+        file_size_transmitted = []
+        for relative_path, (file_size, md5_hash) in file_transfer_info.iteritems():
+          transmitted = os.stat(local_path).st_size
+          file_size_transmitted.append((relative_path, file_size, transmitted))
+        return (transfer_status, file_size_transmitted)
     
 
   def exitInformation(self, job_id ):

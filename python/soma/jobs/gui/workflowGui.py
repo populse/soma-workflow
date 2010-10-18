@@ -1809,13 +1809,13 @@ class ClientJob(ClientWorkflowItem):
         for ruel in ru:
           ruel = ruel.split("=")
           if ruel[0] == "start_time":
-            t = time.localtime(float(ruel[1]))
+            t = time.localtime(float(ruel[1].replace(',', '.')))
             self.execution_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
           elif ruel[0] == "end_time":
-            t = time.localtime(float(ruel[1]))
+            t = time.localtime(float(ruel[1].replace(',', '.')))
             self.ending_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
           elif ruel[0] == "submission_time":
-            t = time.localtime(float(ruel[1]))
+            t = time.localtime(float(ruel[1].replace(',', '.')))
             self.submission_date = datetime(year = t[0], month = t[1], day = t[2], hour = t[3], minute = t[4], second = t[5])
         
         

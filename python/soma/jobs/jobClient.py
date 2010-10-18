@@ -12,6 +12,7 @@ import random
 import socket
 from soma.jobs.constants import *
 import time
+import os, hashlib, stat
 
 
 ''' 
@@ -446,7 +447,7 @@ class Jobs(object):
  
   '''
     
-  def send(self, remote_input, disposal_timeout = 168, remote_paths=None):
+  def send(self, remote_input, disposal_timeout = 168, remote_paths=None, buffer_size = 512**2):
     '''
     Transfers a remote file to a local directory. 
    
@@ -462,13 +463,31 @@ class Jobs(object):
     @rtype: string 
     @return: local path where the remote file was copied
     '''
-    local_path = self.__js_proxy.registerTransfer(remote_input, disposal_timeout, remote_paths)
-    self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
-    self.__file_transfer.send(local_path, remote_input, remote_paths) 
-    self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
-    self.__js_proxy.signalTransferEnded(local_path)
-    return local_path
+    local_path = self.registerTransfer(remote_input, disposal_timeout, remote_paths)
+    self.sendRegisteredTransfer(local_path, buffer_size)
+    
+    #local_path = self.__js_proxy.registerTransfer(remote_input, disposal_timeout, remote_paths)
+    #self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
+    #self.__file_transfer.send(local_path, remote_input, remote_paths) 
+    #self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
+    #self.__js_proxy.signalTransferEnded(local_path)
+    #return local_path
   
+
+  def __transferFile(self, remote_path, local_path, buffer_size = 512**2, relative_path = None):
+    if relative_path:
+      r_path = os.path.join(remote_path, relative_path)
+    else:
+      r_path = remote_path
+    print "transfer " + r_path
+    f = open(r_path, 'rb')
+    transfer_ended = False
+    while not transfer_ended:
+      transfer_ended = self.sendPiece(local_path, f.read(buffer_size), relative_path)
+      print "transfer_ended " + repr(transfer_ended)
+    f.close()
+    
+    
 
   def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
     '''
@@ -488,7 +507,7 @@ class Jobs(object):
     '''
     return self.__js_proxy.registerTransfer(remote_path, disposal_timeout, remote_paths)
 
-  def sendRegisteredTransfer(self, local_path):
+  def sendRegisteredTransfer(self, local_path, buffer_size = 512**2):
     '''
     Transfer one or several remote file(s) to a local directory. The local_path 
     must have been generated using the registerTransfer method. 
@@ -503,28 +522,131 @@ class Jobs(object):
     Use registerTransfer + sendRegisteredTransfer when the local_path
     is needed before transfering to file.
     '''
-    self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
-    time.sleep(1) #TEST !
+
+    #self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
+    #time.sleep(1) #TEST !
+    #local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
+    #self.__file_transfer.send(local_path, remote_path, remote_paths)
+    #self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
+    #self.__js_proxy.signalTransferEnded(local_path)
+    
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
-    self.__file_transfer.send(local_path, remote_path, remote_paths)
-    self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
-    self.__js_proxy.signalTransferEnded(local_path)
+    transfer_action_info = self.initializeTransfer(local_path)
+    if not remote_paths:
+      if os.path.isfile(remote_path):
+        self.__transferFile(remote_path, local_path, buffer_size)
+      elif os.path.isdir(remote_path):
+        for relative_path in transfer_action_info[1]:
+          self.__transferFile(remote_path, local_path, buffer_size, relative_path)
+    else:
+      for relative_path in transfer_action_info[1]:
+        self.__transferFile(os.path.dirname(remote_path), local_path, buffer_size, relative_path)
+    
+    
 
   def retrieve(self, local_path):
     '''
     If local_path is a file path: copies the local file to the associated remote file path.
-    If local_path is a directory path: copies the content of the directory to the associated remote directory.
+    If local_path is a directory path: copies the contents of the directory to the associated remote directory.
     The local path must belong to the user's transfers (ie belong to 
     the sequence returned by the L{transfers} method). 
     
     @type  local_path: string 
     @param local_path: local path 
     '''
+    # TBRI
     
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
     self.__js_proxy.setTransferStatus(local_path, TRANSFERING)
     self.__file_transfer.retrieve(local_path, remote_path, remote_paths)
     self.__js_proxy.setTransferStatus(local_path, TRANSFERED)
+    
+
+          
+  @staticmethod
+  def __contents(path_seq, md5_hash=False):
+    result = []
+    for path in path_seq:
+      s = os.stat(path)
+      if stat.S_ISDIR(s.st_mode):
+        full_path_list = []
+        for element in os.listdir(path):
+          full_path_list.append(os.path.join(path, element))
+        contents = Jobs.__contents(full_path_list, md5_hash)
+        result.append((os.path.basename(path), contents, None))
+      else:
+        if md5_hash:
+          result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
+        else:
+          result.append( ( os.path.basename(path), s.st_size, None ) )
+    return result
+        
+        
+  def initializeTransfer(self, local_path):
+    '''
+    Initialize the transfer action and return the transfer action information.
+    
+    @rtype: tuple 
+    @return: in the case of a file transfer: tuple (file_size, md5_hash)
+             in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
+    '''
+    
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
+    
+    if not remote_paths:
+      if os.path.isfile(remote_path):
+        stat = os.stat(remote_path)
+        file_size = stat.st_size
+        md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
+        transfer_action_info = self.__js_proxy.initializeFileTransfer(local_path, file_size, md5_hash)
+      if os.path.isdir(remote_path):
+        contents = Jobs.__contents([remote_path])
+        transfer_action_info = self.__js_proxy.initializeDirTransfer(local_path, contents)
+    else: #remote_paths
+      contents = self.__contents(remote_paths)
+      transfer_action_info = self.__js_proxy.initializeDirTransfer(local_path,contents)
+    
+    
+    return transfer_action_info
+  
+        
+  def sendPiece(self, local_path, data, relative_path=None):
+    '''
+    Send a piece of data to a registered transfer (identified by local_path).
+
+    @type  local_path: string
+    @param local_path: transfer id
+    @type  data: data
+    @param data: data to write to the file
+    @type  relative_path: relative file path
+    @param relative_path: If local_path is a file, relative_path should be None. If local_path is a directory, relative_path is mandatory. 
+    @rtype : boolean
+    @return: transfer ended
+    '''
+    ftstatus = self.transferStatus(local_path)
+    if not ftstatus[0] == TRANSFERING:
+      self.initializeTransfer(local_path)
+    transfer_ended = self.__js_proxy.sendPiece(local_path, data, relative_path)
+    return transfer_ended
+   
+  def retrievePiece(self, local_path, buffer_size, already_transmitted, relative_path=None):
+    '''
+    Retrieve a piece of data from a file or directory (identified by local_path).
+    
+    @type  local_path: string
+    @param local_path: transfer id
+    @type  already_transmitted: int
+    @param already_transmitted: size of the data already retrieved
+    @type  buffer_size: int
+    @param buffer_size: size of the piece to retrieve
+    @type  relative_path: file path
+    @param relative_path: If local_path is a file, relative_path should be None. If local_path is a directory, relative_path is mandatory. 
+    @rtype: data
+    @return: piece of data read from the file at the position already_transmitted
+    '''
+    #TBI
+    pass
+    
    
   def cancelTransfer(self, local_path):
     '''
@@ -803,13 +925,15 @@ class Jobs(object):
   
   def transferStatus(self, local_path):
     '''
-    Returns the status of a transfer. 
+    Returns the status of a transfer and the information related to the transfer in progress in such case. 
     
     @type  local_path: string
     @param local_path: 
-    @rtype: C{TransferStatus} or None
-    @return: the status of the job transfer if its valid and own by the current user, None
-    otherwise. See the list of status: constants. constants.FILE_TRANSFER_STATUS
+    @rtype: tuple  (C{TransferStatus} or None, tuple or None)
+    @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
+             [1] None if the transfer status in not constants.TRANSFERING
+                 if it's a file transfer: tuple (file size, size already transfered)
+                 if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''
     return self.__js_proxy.transferStatus(local_path) 
 
