@@ -479,12 +479,10 @@ class Jobs(object):
       r_path = os.path.join(remote_path, relative_path)
     else:
       r_path = remote_path
-    print "transfer " + r_path
     f = open(r_path, 'rb')
     transfer_ended = False
     while not transfer_ended:
       transfer_ended = self.sendPiece(local_path, f.read(buffer_size), relative_path)
-      print "transfer_ended " + repr(transfer_ended)
     f.close()
     
     
@@ -620,7 +618,7 @@ class Jobs(object):
     @type  relative_path: relative file path
     @param relative_path: If local_path is a file, relative_path should be None. If local_path is a directory, relative_path is mandatory. 
     @rtype : boolean
-    @return: transfer ended
+    @return: the file transfer ended (=> but not necessarily the transfer associated to local_path)
     '''
     ftstatus = self.transferStatus(local_path)
     if ftstatus[0] == READY_TO_TRANSFER:

@@ -22,7 +22,7 @@ import soma.jobs.constants as constants
 from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, UniversalResourcePath
 import soma.jobs.jobServer 
 import copy
-import stat, hashlib
+import stat, hashlib, operator
 
 __docformat__ = "epytext en"
 
@@ -996,9 +996,13 @@ class JobScheduler( object ):
         raise JobSchedulerError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
       (file_size, md5_hash) = file_transfer_info[relative_path]
       transfer_ended = self.__sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
+      
       if transfer_ended:
-        self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
-        self.signalTransferEnded(local_path)
+        self.transferStatus(local_path)[0]
+        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transferStatus(local_path)[1]
+        if cumulated_transmissions == cumulated_file_size:
+          self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
+          self.signalTransferEnded(local_path)
       
     return transfer_ended
   
@@ -1277,11 +1281,16 @@ class JobScheduler( object ):
       else:
         # dir case:
         (cumulated_file_size, file_transfer_info) = self.__jobServer.getTransferActionInfo(local_path)
-        file_size_transmitted = []
+        files_transfer_status = []
         for relative_path, (file_size, md5_hash) in file_transfer_info.iteritems():
-          transmitted = os.stat(local_path).st_size
-          file_size_transmitted.append((relative_path, file_size, transmitted))
-        return (transfer_status, file_size_transmitted)
+          full_path = os.path.join(local_path, relative_path)
+          if os.path.isfile(full_path):
+            transmitted = os.stat(full_path).st_size
+          else:
+            transmitted = 0
+          files_transfer_status.append((relative_path, file_size, transmitted))
+        cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
+        return (transfer_status, (cumulated_file_size, cumulated_transmissions, files_transfer_status))
     
 
   def exitInformation(self, job_id ):
