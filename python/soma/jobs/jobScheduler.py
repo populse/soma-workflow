@@ -1256,8 +1256,18 @@ class JobScheduler( object ):
     if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
+    
+    wf_status = self.__jobServer.getWorkflowStatus(wf_id)
       
-    return self.__jobServer.getWorkflowStatus(wf_id)
+    # special processing for transfer status:
+    new_transfer_status = []
+    for transfer_info in wf_status[1]:
+      local_file_path = transfer_info[0]
+      complete_status = self.transferStatus(local_file_path)
+      new_transfer_status.append((local_file_path, complete_status))
+      
+    new_wf_status = (wf_status[0],new_transfer_status)
+    return new_wf_status
         
 
   def transferStatus(self, local_path):

@@ -239,14 +239,23 @@ class WorkflowWidget(QtGui.QMainWindow):
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-    while True:
-      try:
-        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
+
+    def transfer(self):
+      self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+
+    thread = threading.Thread(name = "TransferInputFiles",
+                              target = transfer,
+                              args =([self]))
+    thread.start()
+
+    #while True:
+      #try:
+        #self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+      #except ConnectionClosedError, e:
+        #if not self.reconnectAfterConnectionClosed():
+          #return
+      #else:
+        #break
 
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
@@ -652,7 +661,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     item = current.internalPointer()
     if isinstance(item, ClientJob):
       self.infoWidget = JobInfoWidget(item, self.model.current_connection, self)
-    elif isinstance(item, ClientFileTransfer):
+    elif isinstance(item, ClientTransfer):
       self.infoWidget = TransferInfoWidget(item, self)
     elif isinstance(item, ClientGroup):
       self.infoWidget = GroupInfoWidget(item, self)
@@ -1076,84 +1085,54 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     #self.done_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/ok.png')
     
   def index(self, row, column, parent=QtCore.QModelIndex()):
-    ##print " " 
-    ##print ">>> index " + repr(row) + " " + repr(column) 
     if row < 0 or not column == 0:
-      ##print "<<< index result QtCore.QModelIndex()"
       return QtCore.QModelIndex()
-    
+ 
     if not parent.isValid():
       if row < len(self.workflow.root_item.children):
-        ##print " index result " + self.workflow.items[self.workflow.root_item.children[row]].data.name + "  row:" + repr(row)
         return self.createIndex(row, column, self.workflow.items[self.workflow.root_item.children[row]])
     else:
       parent_item = parent.internalPointer()
-      #print " parent " + parent_item.data.name
       if row < len(parent_item.children):
-        #print " index result " + self.workflow.items[parent_item.children[row]].data.name + " row:" + repr(row) 
         return self.createIndex(row, column, self.workflow.items[parent_item.children[row]])
       
-    #print "<<< index result QtCore.QModelIndex()"
     return QtCore.QModelIndex()
     
   def parent(self, index):
-    #print " " 
-    #print ">>> parent " 
-    
     if not index.isValid():
-      #print "<<< parent QtCore.QModelIndex()"
       return QtCore.QModelIndex()
     
     item = index.internalPointer()
-    #print "   " + item.data.name
     if not item.parent == -1:
       parent_item = self.workflow.items[item.parent]
-      #print "<<< parent " + parent_item.data.name + " row: " + repr(parent_item.row)
       return self.createIndex(parent_item.row, 0, self.workflow.items[item.parent])
     
-    #print "<<< parent QtCore.QModelIndex()"
     return QtCore.QModelIndex()
 
   def rowCount(self, parent):
-    #print " " 
-    #print ">>> rowCount"
     if not parent.isValid():
-      #print "    parent root_item" 
-      #print "<<< rowCount : " + repr(len(self.workflow.root_item.children))
       return len(self.workflow.root_item.children)
     else:
       parent_item = parent.internalPointer()
-      #print "    parent " + parent_item.data.name
-      #print "<<< rowCount : " + repr(len(parent_item.children))
       return len(parent_item.children)
 
   def columnCount(self, parent):
-    #print " " 
-    #print ">>> columnCount"
-    
     children_nb = 0
     if not parent.isValid():
       children_nb = len(self.workflow.root_item.children)
-      #print "   parent = root_item"
     else:
       children_nb = len(parent.internalPointer().children)
-      #print "   parent = " + parent.internalPointer().data.name
         
     if children_nb == 0:
-      #print "<<< columnCount : " + repr(0)
       return 0
     else:
-      #print "<<< columnCount : " + repr(1)
       return 1
 
   def data(self, index, role):
-    #print "  "
-    #print ">>> data "
     if not index.isValid():
       return QtCore.QVariant()
   
     item = index.internalPointer()
-    #print "  item " + item.data.name
     
     #if not item.initiated:
       # WIP
@@ -1165,35 +1144,27 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         font.setBold(True)
         return font
       if role == QtCore.Qt.DisplayRole:
-        #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
+     
         return item.data.name
       else:
         #if item.status == ClientGroup.GP_NOT_SUBMITTED:
           #if role == QtCore.Qt.DecorationRole:
-            ##print "<<<< data QtCore.Qt.DecorationRole GRAY"
             #return self.standby_icon
             ##return GRAY
         if item.status == ClientGroup.GP_DONE:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
             return self.done_icon
-            #return LIGHT_BLUE
         if item.status == ClientGroup.GP_FAILED:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole RED"
             return self.failed_icon
-            #return RED
         if item.status == ClientGroup.GP_RUNNING:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole GREEN"
             return self.running_icon
-            #return GREEN
     
     #### JobTemplates ####
     if isinstance(item, ClientJob): 
       if item.data.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
-          #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
           return item.data.name
       else:
         status = item.status
@@ -1201,85 +1172,65 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         # not submitted
         if status == NOT_SUBMITTED:
           if role == QtCore.Qt.DisplayRole:
-            #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name
             return item.data.name
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole GRAY"
             return QtGui.QIcon() #self.standby_icon
             #return GRAY
         # Done or Failed
         if status == DONE or status == FAILED:
-          #exit_status, exit_value, term_signal, resource_usage = self.jobs.exitInformation(item.data.job_id)
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if role == QtCore.Qt.DisplayRole:
-            #print "<<<< data QtCore.Qt.DisplayRole " + item.data.name + " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
             return item.data.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
             if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
-              #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
               return self.done_icon
-              #return LIGHT_BLUE
             else:
-              #print "<<<< data QtCore.Qt.DecorationRole RED"
               return self.failed_icon
-              #return RED
+              
           
         # Running
         if role == QtCore.Qt.DisplayRole:
-          #print "<<<< data QtCore.Qt.DisplayRole" + item.data.name + " running..."
           return item.data.name + " " + status #" running..."
         if role == QtCore.Qt.DecorationRole:
-          #print "<<<< data QtCore.Qt.DecorationRole GREEN"
           return self.running_icon
-          #return GREEN
         
     #### FileTransfers ####
-    if isinstance(item, ClientFileTransfer):
-      if isinstance(item, ClientInputFileTransfer):
-        #if role == QtCore.Qt.BackgroundRole:
-          ##print "<<<< data QtCore.Qt.BackgroundRole QtGui.QBrush(QtGui.QColor(200, 200, 255))"
-          #return QtGui.QBrush(QtGui.QColor(255, 200, 200))
+    if isinstance(item, ClientTransfer):
+      if isinstance(item, ClientInputFileTransfer) or isinstance(item, ClientInputDirTransfer):
         if role == QtCore.Qt.ForegroundRole:
-          #print "<<<< data QtCore.Qt.ForegroundRole QtGui.QBrush(RED)"
           return QtGui.QBrush(RED)
-        display = "input: " + item.data.name
-      if isinstance(item, ClientOutputFileTransfer):
-        #if role == QtCore.Qt.BackgroundRole:
-          ##print "<<<< data QtCore.Qt.BackgroundRole QtGui.QBrush(QtGui.QColor(255, 200, 200))"
-          #return QtGui.QBrush(QtGui.QColor(255, 200, 200))
+        if item.transfer_status == TRANSFERING:
+          display = "input: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+        else:
+          display = "input: " + item.data.name
+      if isinstance(item, ClientOutputFileTransfer) or isinstance(item, ClientOutputDirTransfer):
         if role == QtCore.Qt.ForegroundRole:
-          #print "<<<< data QtCore.Qt.ForegroundRole QtGui.QBrush(BLUE)"
           return QtGui.QBrush(BLUE)
-        display = "output: " + item.data.name
+        if item.transfer_status == TRANSFERING:
+          display = "output: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+        else:
+          display = "output: " + item.data.name
         
       if not item.data.local_path:
         if role == QtCore.Qt.DisplayRole:
-          #print "<<<< data QtCore.Qt.DisplayRole " + display
           return display
       else:
-        #status = self.jobs.transferStatus(item.data.local_path)
         status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
-          #print "<<<< data QtCore.Qt.DisplayRole " + display + " => " + status
           return display + " => " + status
         if status == TRANSFER_NOT_READY:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole GRAY"
             return GRAY
         if status == READY_TO_TRANSFER:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole BLUE"
             return BLUE
         if status == TRANSFERING:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole GREEN"
             return GREEN
         if status == TRANSFERED:
           if role == QtCore.Qt.DecorationRole:
-            #print "<<<< data QtCore.Qt.DecorationRole LIGHT_BLUE"
             return LIGHT_BLUE
     
-    #print "<<<< data "
     return QtCore.QVariant()
     
 ########################################################
@@ -1563,10 +1514,16 @@ class ClientWorkflow(object):
             row = ref_in.index(ft)
           else: 
             row = ref_in.index(ft.local_path)
-          self.items[item_id] = ClientInputFileTransfer(  it_id = item_id, 
-                                                          parent=self.ids[job], 
-                                                          row = row, 
-                                                          data = ft)
+          if ft.remote_paths:
+            self.items[item_id] = ClientInputDirTransfer(  it_id = item_id, 
+                                                parent=self.ids[job], 
+                                                row = row, 
+                                                data = ft)
+          else:
+            self.items[item_id] = ClientInputFileTransfer(  it_id = item_id, 
+                                                            parent=self.ids[job], 
+                                                            row = row, 
+                                                            data = ft)
           self.items[self.ids[job]].children[row]=item_id
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
@@ -1841,7 +1798,21 @@ class ClientJob(ClientWorkflowItem):
         line = connection.stderrReadLine(self.data.job_id)
       self.stderr = stderr
       
-class ClientFileTransfer(ClientWorkflowItem):
+class ClientTransfer(ClientWorkflowItem):
+  
+  def __init__(self,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    super(ClientTransfer, self).__init__(it_id, parent, row, data, children_nb)
+    self.transfer_status = " "
+    self.percentage_achievement = 0
+    
+
+  
+class ClientFileTransfer(ClientTransfer):
   
   def __init__(self,
                it_id, 
@@ -1850,17 +1821,73 @@ class ClientFileTransfer(ClientWorkflowItem):
                data = None,
                children_nb = 0 ):
     super(ClientFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
-    self.transfer_status = " "
+
+    self.file_size = None
+    self.transmitted_size = None 
+  
+  def updateState(self, transfer_status_info):
+    self.initiated = True
+    state_changed = False
+    transfer_status = transfer_status_info[0]
+    if transfer_status_info[1]:
+      file_size, transmitted_size = transfer_status_info[1]
+      self.percentage_achievement = int(float(transmitted_size)/file_size * 100.0)
+    else:
+      (file_size, transmitted_size) = (None, None)
+      self.percentage_achievement = 0
+ 
     
-  def updateState(self, transfer_status):
     
+    state_changed = state_changed or transfer_status != self.transfer_status
+    state_changed = state_changed or file_size != self.file_size
+    state_changed = state_changed or transmitted_size != self.transmitted_size
+    self.transfer_status = transfer_status
+    self.file_size = file_size
+    self.transmitted_size = transmitted_size
+    
+    return state_changed
+  
+  
+class ClientDirTransfer(ClientTransfer):
+  
+  def __init__(self,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    super(ClientDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
+    
+    self.cumulated_file_size = None
+    self.cumulated_transmissions = None 
+    self.files_transfer_status = None
+    
+    
+  def updateState(self, transfer_status_info):
     self.initiated = True
     state_changed = False
     
+    transfer_status = transfer_status_info[0]
+    if transfer_status_info[1]:
+      (cumulated_file_size, cumulated_transmissions, files_transfer_status ) = transfer_status_info[1]
+      self.percentage_achievement = int(float(cumulated_transmissions)/cumulated_file_size * 100.0)
+    else:
+      (cumulated_file_size, cumulated_transmissions, files_transfer_status ) = (None, None, None)
+      self.percentage = 0
+    
+ 
     state_changed = state_changed or transfer_status != self.transfer_status
+    state_changed = state_changed or cumulated_file_size != self.cumulated_file_size
+    state_changed = state_changed or cumulated_transmissions != self.cumulated_transmissions
+    state_changed = state_changed or files_transfer_status != self.files_transfer_status
+    
     self.transfer_status = transfer_status
-
+    self.cumulated_file_size = cumulated_file_size
+    self.cumulated_transmissions = cumulated_transmissions
+    self.files_transfer_status = files_transfer_status
+    
     return state_changed
+    
     
 class ClientOutputFileTransfer(ClientFileTransfer):
   
@@ -1872,6 +1899,16 @@ class ClientOutputFileTransfer(ClientFileTransfer):
                children_nb = 0 ):
     super(ClientOutputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
+class ClientOutputDirTransfer(ClientDirTransfer):
+  
+  def __init__(self,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    super(ClientOutputDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
+
 
 class ClientInputFileTransfer(ClientFileTransfer):
     
@@ -1884,7 +1921,15 @@ class ClientInputFileTransfer(ClientFileTransfer):
     super(ClientInputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
 
-
+class ClientInputDirTransfer(ClientDirTransfer):
+    
+  def __init__(self,
+               it_id, 
+               parent = -1, 
+               row = -1,
+               data = None,
+               children_nb = 0 ):
+    super(ClientInputDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
     
     
