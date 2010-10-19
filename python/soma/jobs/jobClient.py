@@ -592,14 +592,13 @@ class Jobs(object):
     '''
     
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
-    
     if not remote_paths:
       if os.path.isfile(remote_path):
         stat = os.stat(remote_path)
         file_size = stat.st_size
         md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = self.__js_proxy.initializeFileTransfer(local_path, file_size, md5_hash)
-      if os.path.isdir(remote_path):
+      elif os.path.isdir(remote_path):
         contents = Jobs.__contents([remote_path])
         transfer_action_info = self.__js_proxy.initializeDirTransfer(local_path, contents)
     else: #remote_paths
@@ -624,7 +623,7 @@ class Jobs(object):
     @return: transfer ended
     '''
     ftstatus = self.transferStatus(local_path)
-    if not ftstatus[0] == TRANSFERING:
+    if ftstatus[0] == READY_TO_TRANSFER:
       self.initializeTransfer(local_path)
     transfer_ended = self.__js_proxy.sendPiece(local_path, data, relative_path)
     return transfer_ended
