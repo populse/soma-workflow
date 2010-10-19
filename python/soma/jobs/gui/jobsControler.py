@@ -16,11 +16,20 @@ class JobsControler(object):
     self.test_config_file_path = test_config_file_path
     self.test_no = 1
    
-    
+  @staticmethod
+  def getConfigFile():
+    result = os.environ.get( 'SOMA_JOBS_CONFIG' )
+    if not result or not os.path.exists( result ):
+      result = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'jobs.cfg' )
+      if not os.path.exists( result ):
+        raise RuntimeError( 'Cannot find soma-jobs configuration file. Perhaps SOMA_JOBS_CONFIG is not proprely set.' )
+    return result
+  
+  
   def getRessourceIds(self):
     resource_ids = []
     somajobs_config = ConfigParser.ConfigParser()
-    somajobs_config.read(os.environ["SOMA_JOBS_CONFIG"])
+    somajobs_config.read( self.getConfigFile() )
     for cid in somajobs_config.sections():
       if cid != OCFG_SECTION_CLIENT:
         resource_ids.append(cid)
@@ -29,7 +38,7 @@ class JobsControler(object):
         
   def getConnection(self, resource_id, login, password, test_no):
     try: 
-      connection = Jobs(os.environ["SOMA_JOBS_CONFIG"],
+      connection = Jobs( self.getConfigFile(),
                           resource_id, 
                           login, 
                           password,
@@ -41,7 +50,7 @@ class JobsControler(object):
     
   def isRemoteConnection(self, resource_id):
     somajobs_config = ConfigParser.ConfigParser()
-    somajobs_config.read(os.environ["SOMA_JOBS_CONFIG"])
+    somajobs_config.read( self.getConfigFile() )
     submitting_machines = somajobs_config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     hostname = socket.gethostname()
     is_remote = True

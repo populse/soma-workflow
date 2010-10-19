@@ -404,7 +404,8 @@ class RemoteTransfer(Transfer):
     equivalent to shutil.copytree(cluster_dir, user_dir)
     '''
     try:
-      os.mkdir(user_dir)
+      if not os.path.isdir( user_dir ):
+        os.mkdir(user_dir)
       for cluster_file_name in self.jobScheduler.listdir(cluster_dir):
         self.retrieveFileOrDirectory(os.path.join(cluster_dir, cluster_file_name), 
                                      os.path.join(user_dir, cluster_file_name))
