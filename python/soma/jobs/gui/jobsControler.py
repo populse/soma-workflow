@@ -119,26 +119,36 @@ class JobsControler(object):
   def changeWorkflowExpirationDate(self, wf_id, date, connection):
     return connection.changeWorkflowExpirationDate(wf_id, date)
     
-  def transferInputFiles(self, workflow, connection):
-    to_run = []
+  def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
+    to_transfer = []
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
         status, info = connection.transferStatus(node.local_path)
         if status == READY_TO_TRANSFER:
-          to_run.append((0, node.local_path))
+          to_transfer.append((0, node.local_path))
         if status == TRANSFERING:
-          to_run .append((info[1], node.local_path))
+          to_transfer .append((info[1], node.local_path))
           
-    to_run = sorted(to_run, key = lambda element: element[1])
-    for transmitted, local_path in to_run:
-      print "transfer " + local_path + "already transmitted " + repr(transmitted)
-      connection.sendRegisteredTransfer(local_path)
+    to_transfer = sorted(to_transfer, key = lambda element: element[1])
+    for transmitted, local_path in to_transfer:
+      print "send to " + local_path + " already transmitted size =" + repr(transmitted)
+      connection.sendRegisteredTransfer(local_path, buffer_size)
     
-  def transferOutputFiles(self, workflow, connection):
+  def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
+    to_transfer = []
     for node in workflow.full_nodes:
       if isinstance(node, FileRetrieving):
-        if connection.transferStatus(node.local_path)[0] == READY_TO_TRANSFER:
-          connection.retrieve(node.local_path)
+        status, info = connection.transferStatus(node.local_path)
+        if status == READY_TO_TRANSFER:
+          to_transfer.append((0, node.local_path))
+        if status == TRANSFERING:
+          to_transfer .append((info[1], node.local_path))
+
+    to_transfer = sorted(to_transfer, key = lambda element: element[1])
+    for transmitted, local_path in to_transfer:
+      print "retrieve " + local_path + " already transmitted size" + repr(transmitted)
+      connection.retrieve(local_path, buffer_size)
+
           
   def printWorkflow(self, workflow, connection):
     

@@ -898,12 +898,56 @@ class JobScheduler( object ):
     expirationDate = datetime.now() + timedelta(hours=disposal_timeout) 
     self.__jobServer.addTransfer(local_path, remote_path, expirationDate, self.__user_id, -1, remote_paths)
     return local_path
-
-
-
-  ##### NEW TRANSFERS #####
   
-  def initializeFileTransfer(self, local_path, file_size, md5_hash = None):
+  @staticmethod
+  def __contents(path_seq, md5_hash=False):
+    result = []
+    for path in path_seq:
+      s = os.stat(path)
+      if stat.S_ISDIR(s.st_mode):
+        full_path_list = []
+        for element in os.listdir(path):
+          full_path_list.append(os.path.join(path, element))
+        contents = JobScheduler.__contents(full_path_list, md5_hash)
+        result.append((os.path.basename(path), contents, None))
+      else:
+        if md5_hash:
+          result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
+        else:
+          result.append( ( os.path.basename(path), s.st_size, None ) )
+    return result
+
+
+  def initializeRetrivingTransfer(self, local_path):
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.transferInformation(local_path)
+    status = self.transferStatus(local_path)[0]
+    if status != constants.READY_TO_TRANSFER:
+      # raise ?
+      return (None, None)
+    contents = None
+    if not remote_paths:
+      if os.path.isfile(remote_path):
+        stat = os.stat(remote_path)
+        file_size = stat.st_size
+        md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
+        info = (file_size, md5_hash)
+      elif os.path.isdir(local_path):
+        contents = JobScheduler.__contents([local_path])
+        (cumulated_file_size, file_transfer_info) = self.__initializeDirectory(local_path, contents)
+        info = (cumulated_file_size, file_transfer_info)
+    else: #remote_paths
+      full_path_list = []
+      for element in os.listdir(local_path):
+        full_path_list.append(os.path.join(local_path, element))
+      contents = JobScheduler.__contents(full_path_list)
+      (cumulated_file_size, file_transfer_info) = self.__initializeDirectory(local_path, contents)
+      info = (cumulated_file_size, file_transfer_info)
+      
+
+    self.__jobServer.setTransferActionInfo(local_path, info)     
+    return (info, contents)
+
+  def initializeFileSending(self, local_path, file_size, md5_hash = None):
     '''
     Initialize the transfer of a file.
     '''
@@ -928,7 +972,7 @@ class JobScheduler( object ):
       relative_path = os.path.join(subdirectory,item)
       full_path = os.path.join(local_path, relative_path)
       if isinstance(description, list):
-        os.mkdir(full_path)
+        #os.mkdir(full_path)
         sub_size, sub_file_transfer_info = self.__initializeDirectory( local_path, description, relative_path)
         cumulated_file_size += sub_size
         file_transfer_info.update(sub_file_transfer_info)
@@ -940,11 +984,22 @@ class JobScheduler( object ):
 
     return info
 
-  def initializeDirTransfer(self, local_path, contents):
+  def __createDirStructure(self, local_path, contents, subdirectory = ""):
+    for item, description, md5_hash in contents:
+      relative_path = os.path.join(subdirectory,item)
+      full_path = os.path.join(local_path, relative_path)
+      if isinstance(description, list):
+        if not os.path.isdir(full_path):
+          os.mkdir(full_path)
+        self.__createDirStructure( local_path, description, relative_path)
+    
+
+  def initializeDirSending(self, local_path, contents):
     '''
     Initialize the transfer of a directory.
     '''
     info = self.__initializeDirectory(local_path, contents)
+    self.__createDirStructure(local_path, contents)
     self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
     self.__jobServer.setTransferActionInfo(local_path, info)
     return info
@@ -1006,75 +1061,22 @@ class JobScheduler( object ):
       
     return transfer_ended
   
-  ##########################
 
+  def retrievePiece(self, local_path, buffer_size, transmitted, relative_path = None):
+    '''
+    Implementation of the L{Jobs} method.
+    '''
+    if relative_path:
+      local_full_path = os.path.join(local_path, relative_path)
+    else:
+      local_full_path = local_path
+    f = open(local_full_path, 'rb')
+    if transmitted:
+      f.seek(transmitted)
+    data = f.read(buffer_size)
+    f.close()
+    return data
 
-
-  def writeLine(self, line, local_file_path):
-    '''
-    Writes a line to the local file. The path of the local input file
-    must have been generated using the L{registerTransfer} method.
-    
-    @type  line: string
-    @param line: line to write in the local input file
-    @type  local_file_path: string
-    @param local_file_path: local file path to fill up
-    '''
-    
-    #if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      #raise JobSchedulerError("Couldn't write to file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
-    
-    if not self.__fileToWrite or not self.__fileToWrite.name == local_file_path:
-      if self.__fileToWrite: self.__fileToWrite.close()
-      self.__fileToWrite = open(local_file_path, 'wt')
-      os.chmod(local_file_path, 0777)
-      
-    self.__fileToWrite.write(line)
-    self.__fileToWrite.flush()
-    #os.fsync(self.__fileToWrite.fileno())
-   
-   
-  
-  def readline(self, local_file_path):
-    '''
-    Reads a line from the local file. The path of the local input file
-    must have been generated using the L{registerTransfer} method.
-    
-    @type: string
-    @param: local file path to fill up
-    @rtype: string
-    return: read line
-    '''
-    
-    #if not self.__jobServer.isUserTransfer(local_file_path, self.__user_id):
-      #raise JobSchedulerError("Couldn't read from file %s: the transfer was not registered using 'registerTransfer' or the user doesn't own the file. \n" % local_file_path, self.logger)
-    
-    
-    if not self.__fileToRead or not self.__fileToRead.name == local_file_path:
-      self.__fileToRead = open(local_file_path, 'rt')
-    
-    return self.__fileToRead.readline()
-
-  
-  def endTransfers(self):
-    if self.__fileToWrite:
-      self.__fileToWrite.close()
-    if self.__fileToRead:
-      self.__fileToRead.close()
-    
-  def isfile(self, local_path):
-    return os.path.isfile(local_path)
-  
-  def isdir(self, local_path):
-    return os.path.isdir(local_path)
-  
-  def listdir(self, local_path):
-    return os.listdir(local_path)
-  
-  def mkdir(self, local_path):
-    return os.mkdir(local_path)
-  
-    
     
   def setTransferStatus(self, local_path, status):
     '''

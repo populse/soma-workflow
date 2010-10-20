@@ -50,7 +50,7 @@ def setLabelFromInt(label, value):
   '''
   @type value: int
   '''
-  if value:
+  if not value == None:
     label.setText(repr(value))
   else:
     label.setText("")
@@ -59,7 +59,7 @@ def setLabelFromTimeDelta(label, value):
   '''
   @type value: datetime.timedelta
   '''
-  if value:
+  if not value == None:
     hours = value.seconds//3600
     mins = (value.seconds%3600)//60
     seconds = (value.seconds%3600)%60
@@ -73,7 +73,7 @@ def setLabelFromDateTime(label, value):
   '''
   @type value: datetime.datetime
   '''
-  if value:
+  if not value == None:
     datetime = QtCore.QDateTime(value)
     label.setText(datetime.toString("dd/MM/yy HH:mm:ss"))
   else:
@@ -239,37 +239,33 @@ class WorkflowWidget(QtGui.QMainWindow):
     
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
-
     def transfer(self):
       try:
-        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
       except ConnectionClosedError, e:
         pass
-
+      except SystemExit, e:
+        pass
     thread = threading.Thread(name = "TransferInputFiles",
                               target = transfer,
                               args =([self]))
+    thread.setDaemon(True)
     thread.start()
-
-    #while True:
-      #try:
-        #self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
-      #except ConnectionClosedError, e:
-        #if not self.reconnectAfterConnectionClosed():
-          #return
-      #else:
-        #break
 
   @QtCore.pyqtSlot()
   def transferOutputFiles(self):
-    while True:
+    def transfer(self):
       try:
-        self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+        self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
       except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
+        pass
+      except SystemExit, e:
+        pass
+    thread = threading.Thread(name = "TransferOuputFiles",
+                              target = transfer,
+                              args =([self]))
+    thread.setDaemon(True)
+    thread.start()
 
   @QtCore.pyqtSlot(int)
   def workflowSelectionChanged(self, index):
@@ -1201,14 +1197,14 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       if isinstance(item, ClientInputFileTransfer) or isinstance(item, ClientInputDirTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(RED)
-        if item.transfer_status == TRANSFERING:
+        if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
           display = "input: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "input: " + item.data.name
       if isinstance(item, ClientOutputFileTransfer) or isinstance(item, ClientOutputDirTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(BLUE)
-        if item.transfer_status == TRANSFERING:
+        if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
           display = "output: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "output: " + item.data.name
