@@ -474,12 +474,14 @@ class Jobs(object):
     #return local_path
   
 
-  def __transferFile(self, remote_path, local_path, buffer_size = 512**2, relative_path = None):
+  def __transferFile(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
     if relative_path:
       r_path = os.path.join(remote_path, relative_path)
     else:
       r_path = remote_path
     f = open(r_path, 'rb')
+    if transmitted:
+      f.seek(transmitted)
     transfer_ended = False
     while not transfer_ended:
       transfer_ended = self.sendPiece(local_path, f.read(buffer_size), relative_path)
@@ -529,17 +531,54 @@ class Jobs(object):
     #self.__js_proxy.signalTransferEnded(local_path)
     
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
-    transfer_action_info = self.initializeTransfer(local_path)
+    status, transfer_action_info = self.__js_proxy.transferStatus(local_path)
+    print "transfer_action " + repr(transfer_action_info)
+    if not transfer_action_info:
+      init_info = self.initializeTransfer(local_path)
+      print "init info " + repr(init_info)
     if not remote_paths:
       if os.path.isfile(remote_path):
-        self.__transferFile(remote_path, local_path, buffer_size)
+        if transfer_action_info:
+          self.__transferFile(remote_path, 
+                              local_path, 
+                              buffer_size, 
+                              transmitted = transfer_action[1])
+        else:
+          self.__transferFile(remote_path, 
+                              local_path, 
+                              buffer_size)
       elif os.path.isdir(remote_path):
-        for relative_path in transfer_action_info[1]:
-          self.__transferFile(remote_path, local_path, buffer_size, relative_path)
+        if transfer_action_info:
+          for (relative_path, file_size, transmitted) in transfer_action_info[1]:
+            self.__transferFile(remote_path, 
+                                local_path, 
+                                buffer_size, 
+                                transmitted, 
+                                relative_path)
+        else:
+          for relative_path in init_info[1]:
+            self.__transferFile(remote_path, 
+                                local_path, 
+                                buffer_size,
+                                transmitted = 0,
+                                relative_path = relative_path)
     else:
-      for relative_path in transfer_action_info[1]:
-        self.__transferFile(os.path.dirname(remote_path), local_path, buffer_size, relative_path)
-    
+      if transfer_action_info:
+        for (relative_path, file_size, transmitted) in transfer_action_info[2]:
+          self.__transferFile(os.path.dirname(remote_path), 
+                              local_path, 
+                              buffer_size, 
+                              transmitted,
+                              relative_path)
+      else:
+        print "pouet"
+        for relative_path in init_info[1]:
+          self.__transferFile(os.path.dirname(remote_path), 
+                              local_path, 
+                              buffer_size, 
+                              transmitted = 0,
+                              relative_path = relative_path)
+        
     
 
   def retrieve(self, local_path):

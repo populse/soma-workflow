@@ -241,7 +241,10 @@ class WorkflowWidget(QtGui.QMainWindow):
   def transferInputFiles(self):
 
     def transfer(self):
-      self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+      try:
+        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection)
+      except ConnectionClosedError, e:
+        pass
 
     thread = threading.Thread(name = "TransferInputFiles",
                               target = transfer,
@@ -704,9 +707,8 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromString(self.ui.job_status,self.job_item.status)
     exit_status, exit_value, term_signal, resource_usage = self.job_item.exit_info
     setLabelFromString(self.ui.exit_status, exit_status)
-    setLabelFromInt(self.ui.exit_status, exit_status)
+    setLabelFromInt(self.ui.exit_value, exit_value)
     setLabelFromString(self.ui.term_signal, term_signal)
-    setLabelFromString(self.ui.exit_status, exit_status)
     setLabelFromString(self.ui.command,self.job_item.command)
     
     if resource_usage: 
