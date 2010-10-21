@@ -920,43 +920,43 @@ class JobScheduler( object ):
 
   def initializeRetrivingTransfer(self, local_path):
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.transferInformation(local_path)
-    status = self.transferStatus(local_path)[0]
+    status = self.transferStatus(local_path)
     if status != constants.READY_TO_TRANSFER:
       # raise ?
       return (None, None)
     contents = None
+    transfer_action_info = None
     if not remote_paths:
       if os.path.isfile(remote_path):
         stat = os.stat(remote_path)
         file_size = stat.st_size
         md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
-        info = (file_size, md5_hash)
+        transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
       elif os.path.isdir(local_path):
         contents = JobScheduler.__contents([local_path])
-        (cumulated_file_size, file_transfer_info) = self.__initializeDirectory(local_path, contents)
-        info = (cumulated_file_size, file_transfer_info)
+        (cumulated_file_size, dir_element_action_info) = self.__initializeDirectory(local_path, contents)
+        transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
     else: #remote_paths
       full_path_list = []
       for element in os.listdir(local_path):
         full_path_list.append(os.path.join(local_path, element))
       contents = JobScheduler.__contents(full_path_list)
-      (cumulated_file_size, file_transfer_info) = self.__initializeDirectory(local_path, contents)
-      info = (cumulated_file_size, file_transfer_info)
-      
+      (cumulated_file_size, dir_element_action_info) = self.__initializeDirectory(local_path, contents)
+      transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
 
-    self.__jobServer.setTransferActionInfo(local_path, info)     
-    return (info, contents)
+    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)     
+    return (transfer_action_info, contents)
 
   def initializeFileSending(self, local_path, file_size, md5_hash = None):
     '''
     Initialize the transfer of a file.
     '''
-    info = (file_size, md5_hash)
+    transfer_action_info = (file_size, md5_hash, constants.FILE_SENDING)
     f = open(local_path, 'w')
     f.close()
     self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
-    self.__jobServer.setTransferActionInfo(local_path, info)
-    return info
+    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)
+    return transfer_action_info
 
 
   def __initializeDirectory(self, local_path, contents, subdirectory = ""):
@@ -966,23 +966,22 @@ class JobScheduler( object ):
     @rtype : tuple (int, dictionary)
     @return : (cumulated file size, dictionary : relative file path => (file_size, md5_hash))
     '''
-    file_transfer_info = {}
+    dir_element_action_info = {}
     cumulated_file_size = 0
     for item, description, md5_hash in contents:
       relative_path = os.path.join(subdirectory,item)
       full_path = os.path.join(local_path, relative_path)
       if isinstance(description, list):
         #os.mkdir(full_path)
-        sub_size, sub_file_transfer_info = self.__initializeDirectory( local_path, description, relative_path)
+        sub_size, sub_dir_element_action_info = self.__initializeDirectory( local_path, description, relative_path)
         cumulated_file_size += sub_size
-        file_transfer_info.update(sub_file_transfer_info)
+        dir_element_action_info.update(sub_dir_element_action_info)
       else:
         file_size = description
-        file_transfer_info[relative_path] = (file_size, md5_hash)
+        dir_element_action_info[relative_path] = (file_size, md5_hash)
         cumulated_file_size += file_size
-    info = (cumulated_file_size, file_transfer_info)
 
-    return info
+    return (cumulated_file_size, dir_element_action_info)
 
   def __createDirStructure(self, local_path, contents, subdirectory = ""):
     for item, description, md5_hash in contents:
@@ -998,11 +997,12 @@ class JobScheduler( object ):
     '''
     Initialize the transfer of a directory.
     '''
-    info = self.__initializeDirectory(local_path, contents)
+    cumulated_file_size, dir_element_action_info = self.__initializeDirectory(local_path, contents)
+    transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
     self.__createDirStructure(local_path, contents)
     self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
-    self.__jobServer.setTransferActionInfo(local_path, info)
-    return info
+    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)
+    return transfer_action_info
     
   
   def __sendToFile(self, local_path, data, file_size, md5_hash = None):
@@ -1038,7 +1038,7 @@ class JobScheduler( object ):
     '''
     if not relative_path:
       # File case
-      (file_size, md5_hash) = self.__jobServer.getTransferActionInfo(local_path)
+      (file_size, md5_hash, transfer_type) = self.__jobServer.getTransferActionInfo(local_path)
       transfer_ended = self.__sendToFile(local_path, data, file_size, md5_hash)
       if transfer_ended:
         self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
@@ -1046,15 +1046,14 @@ class JobScheduler( object ):
       
     else:
       # Directory case
-      (cumulated_size, file_transfer_info) = self.__jobServer.getTransferActionInfo(local_path)
-      if not relative_path in file_transfer_info:
+      (cumulated_size, dir_element_action_info, transfer_type) = self.__jobServer.getTransferActionInfo(local_path)
+      if not relative_path in dir_element_action_info:
         raise JobSchedulerError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
-      (file_size, md5_hash) = file_transfer_info[relative_path]
+      (file_size, md5_hash) = dir_element_action_info[relative_path]
       transfer_ended = self.__sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
       
       if transfer_ended:
-        self.transferStatus(local_path)[0]
-        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transferStatus(local_path)[1]
+        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transferProgressionStatus(local_path, (cumulated_size, dir_element_action_info, transfer_type))
         if cumulated_transmissions == cumulated_file_size:
           self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
           self.signalTransferEnded(local_path)
@@ -1258,51 +1257,39 @@ class JobScheduler( object ):
     if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    
     wf_status = self.__jobServer.getWorkflowStatus(wf_id)
-      
-    # special processing for transfer status:
-    new_transfer_status = []
-    for transfer_info in wf_status[1]:
-      local_file_path = transfer_info[0]
-      complete_status = self.transferStatus(local_file_path)
-      new_transfer_status.append((local_file_path, complete_status))
-      
-    new_wf_status = (wf_status[0],new_transfer_status)
-    return new_wf_status
+    return wf_status
         
-
+        
   def transferStatus(self, local_path):
-    '''
-    Implementation of soma.jobs.jobClient.Jobs API
-    '''
     if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
       #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
       return
-
-    transfer_status = self.__jobServer.getTransferStatus(local_path)
-    if not transfer_status == constants.TRANSFERING:
-      return (transfer_status, None)
+    transfer_status = self.__jobServer.getTransferStatus(local_path)  
+    return transfer_status
+        
+  def transferActionInfo(self,local_path):
+    return self.__jobServer.getTransferActionInfo(local_path)
+ 
+  def transferProgressionStatus(self, local_path, transfer_action_info):
+    if transfer_action_info[2] == constants.FILE_SENDING:
+      (file_size, md5_hash, transfer_type) = transfer_action_info
+      transmitted = os.stat(local_path).st_size
+      return (file_size, transmitted)
+    elif transfer_action_info[2] == constants.DIR_SENDING:
+      (cumulated_file_size, dir_element_action_info, transfer_type) = transfer_action_info
+      files_transfer_status = []
+      for relative_path, (file_size, md5_hash) in dir_element_action_info.iteritems():
+        full_path = os.path.join(local_path, relative_path)
+        if os.path.isfile(full_path):
+          transmitted = os.stat(full_path).st_size
+        else:
+          transmitted = 0
+        files_transfer_status.append((relative_path, file_size, transmitted))
+      cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
+      return (cumulated_file_size, cumulated_transmissions, files_transfer_status)
     else:
-      local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__jobServer.getTransferInformation(local_path)
-      if not remote_paths:
-        # file case:
-        (file_size, md5_hash) = self.__jobServer.getTransferActionInfo(local_path)
-        transmitted = os.stat(local_path).st_size
-        return (transfer_status, (file_size, transmitted))
-      else:
-        # dir case:
-        (cumulated_file_size, file_transfer_info) = self.__jobServer.getTransferActionInfo(local_path)
-        files_transfer_status = []
-        for relative_path, (file_size, md5_hash) in file_transfer_info.iteritems():
-          full_path = os.path.join(local_path, relative_path)
-          if os.path.isfile(full_path):
-            transmitted = os.stat(full_path).st_size
-          else:
-            transmitted = 0
-          files_transfer_status.append((relative_path, file_size, transmitted))
-        cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
-        return (transfer_status, (cumulated_file_size, cumulated_transmissions, files_transfer_status))
+      return None
     
 
   def exitInformation(self, job_id ):

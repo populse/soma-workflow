@@ -12,7 +12,7 @@ import random
 import socket
 from soma.jobs.constants import *
 import time
-import os, hashlib, stat
+import os, hashlib, stat, operator
 
 
 ''' 
@@ -279,7 +279,7 @@ class Jobs(object):
 
     #########################
     # Connection
-    self.__mode = mode # 'local_no_disconnection' #(local debug)#     
+    self.__mode = mode #'local_no_disconnection' #(local debug)#      
     
     #########
     # LOCAL #
@@ -502,50 +502,51 @@ class Jobs(object):
     '''
     
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
-    status, transfer_action_info = self.__js_proxy.transferStatus(local_path)
+    transfer_action_info = self.__js_proxy.transferActionInfo(local_path)
     if not transfer_action_info:
       init_info = self.initializeSendingTransfer(local_path)
     if not remote_paths:
       if os.path.isfile(remote_path):
         if transfer_action_info:
           self.__sendFile(remote_path, 
-                              local_path, 
-                              buffer_size, 
-                              transmitted = transfer_action[1])
+                          local_path, 
+                          buffer_size, 
+                          transmitted = transfer_action[1])
         else:
           self.__sendFile(remote_path, 
-                              local_path, 
-                              buffer_size)
+                          local_path, 
+                          buffer_size)
+                          
       elif os.path.isdir(remote_path):
         if transfer_action_info:
-          for (relative_path, file_size, transmitted) in transfer_action_info[1]:
+          for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
             self.__sendFile(remote_path, 
-                                local_path, 
-                                buffer_size, 
-                                transmitted, 
-                                relative_path)
+                            local_path, 
+                            buffer_size, 
+                            transmitted, 
+                            relative_path)
         else:
           for relative_path in init_info[1]:
             self.__sendFile(remote_path, 
-                                local_path, 
-                                buffer_size,
-                                transmitted = 0,
-                                relative_path = relative_path)
+                            local_path, 
+                            buffer_size,
+                            transmitted = 0,
+                            relative_path = relative_path)
     else:
       if transfer_action_info:
-        for (relative_path, file_size, transmitted) in transfer_action_info[2]:
+        for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
           self.__sendFile(os.path.dirname(remote_path), 
-                              local_path, 
-                              buffer_size, 
-                              transmitted,
-                              relative_path)
+                          local_path, 
+                          buffer_size, 
+                          transmitted,
+                          relative_path)
       else:
         for relative_path in init_info[1]:
           self.__sendFile(os.path.dirname(remote_path), 
-                              local_path, 
-                              buffer_size, 
-                              transmitted = 0,
-                              relative_path = relative_path)
+                          local_path, 
+                          buffer_size, 
+                          transmitted = 0,
+                          relative_path = relative_path)
         
     
 
@@ -560,18 +561,20 @@ class Jobs(object):
     @param local_path: local path 
     '''
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
-    init_info = self.initializeRetrievingTransfer(local_path)
-    if isinstance(init_info[1], int):
+    transfer_action_info = self.initializeRetrievingTransfer(local_path)
+    
+    
+    if transfer_action_info[2] == FILE_RETRIEVING:
       # file case
-      (file_size, md5_hash) = init_info
+      (file_size, md5_hash, transfer_type) = transfer_action_info
       self.__retrieveFile(remote_path, 
                           local_path, 
                           file_size, 
                           md5_hash, 
                           buffer_size)
-    else:
+    elif transfer_action_info[2] == DIR_RETRIEVING:
       # dir case
-      (cumulated_file_size, file_transfer_info) = init_info
+      (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
       
       for relative_path, file_info in file_transfer_info.iteritems(): 
         (file_size, md5_hash) = file_info
@@ -686,8 +689,8 @@ class Jobs(object):
     @rtype : boolean
     @return: the file transfer ended (=> but not necessarily the transfer associated to local_path)
     '''
-    ftstatus = self.transferStatus(local_path)
-    if not ftstatus[0] == TRANSFERING:
+    status = self.__js_proxy.transferStatus(local_path)
+    if not status == TRANSFERING:
       self.initializeSendingTransfer(local_path)
     transfer_ended = self.__js_proxy.sendPiece(local_path, data, relative_path)
     return transfer_ended
@@ -702,11 +705,12 @@ class Jobs(object):
              in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
     '''
     
-    (info, contents) = self.__js_proxy.initializeRetrivingTransfer(local_path)
+    (transfer_action_info, contents) = self.__js_proxy.initializeRetrivingTransfer(local_path)
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
     if contents:
       self.__createDirStructure(os.path.dirname(remote_path), contents)
-    return info
+    return transfer_action_info
+    
 
   def __createDirStructure(self, path, contents, subdirectory = ""):
     if not os.path.isdir(path):
@@ -1012,10 +1016,21 @@ class Jobs(object):
     
     @type  wf_id: C{WorflowIdentifier}
     @param wf_id: The workflow identifier
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, status))
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)))
     '''
+    wf_status = self.__js_proxy.workflowStatus(wf_id)
+    if not wf_status:
+      # TBI raise ...
+      return
+     # special processing for transfer status:
+    new_transfer_status = []
+    for local_path, remote_path, status, transfer_action_info in wf_status[1]:
+      progression = self.__progression(local_path, remote_path, transfer_action_info)
+      new_transfer_status.append((local_path, (status, progression)))
+      
+    new_wf_status = (wf_status[0],new_transfer_status)
+    return new_wf_status
     
-    return self.__js_proxy.workflowStatus(wf_id)
   
   def transferStatus(self, local_path):
     '''
@@ -1029,7 +1044,44 @@ class Jobs(object):
                  if it's a file transfer: tuple (file size, size already transfered)
                  if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''
-    return self.__js_proxy.transferStatus(local_path) 
+    
+    status = self.__js_proxy.transferStatus(local_path)
+    transfer_action_info =  self.__js_proxy.transferActionInfo(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
+    progression = self.__progression(local_path, remote_path, transfer_action_info)
+    return (status, progression)
+      
+            
+            
+  def __progression(self, local_path, remote_path, transfer_action_info):
+    progression_info = None
+    if transfer_action_info == None :
+      progression_info = None
+    elif transfer_action_info[2] == FILE_SENDING or transfer_action_info[2] == DIR_SENDING:
+      progression_info = self.__js_proxy.transferProgressionStatus(local_path, transfer_action_info)
+    elif transfer_action_info[2] == FILE_RETRIEVING or transfer_action_info[2] == DIR_RETRIEVING:
+      if transfer_action_info[2] == FILE_RETRIEVING:
+        (file_size, md5_hash, transfer_type) = transfer_action_info
+        transmitted = os.stat(remote_path).st_size
+        progression_info = (file_size, transmitted)
+      elif transfer_action_info[2] == DIR_RETRIEVING:
+        (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
+        files_transfer_status = []
+        for relative_path, (file_size, md5_hash) in file_transfer_info.iteritems():
+          full_path = os.path.join(os.path.dirname(remote_path), relative_path)
+          if os.path.isfile(full_path):
+            transmitted = os.stat(full_path).st_size
+          else:
+            transmitted = 0
+          files_transfer_status.append((relative_path, file_size, transmitted))
+        cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
+        progression_info = (cumulated_file_size, cumulated_transmissions, files_transfer_status)
+       
+    return progression_info
+    
+    
+    
+    
 
   def exitInformation(self, job_id ):
     '''

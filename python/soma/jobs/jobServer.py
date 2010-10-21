@@ -1064,10 +1064,23 @@ class JobServer ( object ):
                           
         # transfers 
         for row in cursor.execute('''SELECT local_file_path, 
-                                            status
+                                            remote_file_path,
+                                            status,
+                                            transfer_action_info
                                      FROM transfers WHERE workflow_id=?''', [wf_id]):
-          local_file_path, status = row
-          workflow_status[1].append((local_file_path, status))
+          local_file_path, remote_file_path, status, pickled_info = row
+            
+          local_file_path = self.__stringConversion(local_file_path)
+          remote_file_path = self.__stringConversion(remote_file_path)
+          status = self.__stringConversion(status)
+          
+          pickled_info = self.__stringConversion(pickled_info)
+          if pickled_info:
+            transfer_action_info = pickle.loads(pickled_info)
+          else:
+            transfer_action_info = None
+            
+          workflow_status[1].append((local_file_path, remote_file_path, status, transfer_action_info))
           
       except Exception, e:
         cursor.close()

@@ -61,6 +61,17 @@ FILE_TRANSFER_STATUS = [TRANSFER_NOT_READY,
                         TRANSFERING,
                         TRANSFERED]
 
+'''
+Transfer type
+'''
+FILE_SENDING = "file_sending"
+FILE_RETRIEVING = "file_retrieving"
+DIR_SENDING = "directory_sending"
+DIR_RETRIEVING = "directory_retrieving"
+TRANSFER_TYPE = [FILE_SENDING, 
+                 FILE_RETRIEVING, 
+                 DIR_SENDING,
+                 FILE_SENDING]
 
 #'''
 #Workflow status:

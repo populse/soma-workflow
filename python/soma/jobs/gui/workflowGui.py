@@ -279,7 +279,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         (workflow, expiration_date) = self.controler.getWorkflow(wf_id, self.model.current_connection)
         self.model.addWorkflow(workflow, expiration_date)
     else:
-      self.clearCurrentWorkflow()
+      self.model.clearCurrentWorkflow()
     
   @QtCore.pyqtSlot(int)
   def resourceSelectionChanged(self, index):
@@ -300,7 +300,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     else:
       new_connection = self.createConnection(resource_id)
       if new_connection:
-        self.model.addConnection(resource_id, connection)
+        self.model.addConnection(resource_id, new_connection)
 
   def createConnection(self, resource_id):
     connection_invalid = True
@@ -1194,14 +1194,14 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         
     #### FileTransfers ####
     if isinstance(item, ClientTransfer):
-      if isinstance(item, ClientInputFileTransfer) or isinstance(item, ClientInputDirTransfer):
+      if isinstance(item, ClientInputTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(RED)
         if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
           display = "input: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "input: " + item.data.name
-      if isinstance(item, ClientOutputFileTransfer) or isinstance(item, ClientOutputDirTransfer):
+      if isinstance(item, ClientOutputTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(BLUE)
         if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
@@ -1268,18 +1268,21 @@ class ClientModel(QtCore.QObject):
       # update only the current workflows
       while True:
         if not self.hold and self.auto_update and self.current_workflow :
-          try:
-            #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
-            #begining = datetime.now()
-            wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
-            #end = datetime.now() - begining
-            #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
-          except ConnectionClosedError, e:
-            self.emit(QtCore.SIGNAL('connection_closed_error()'))
-            self.hold = True
-          else: 
-            if self.current_workflow and self.current_workflow.updateState(wf_status): 
-              self.emit(QtCore.SIGNAL('workflow_state_changed()'))
+            try:
+              if self.current_workflow.server_workflow.wf_id == -1:
+                wf_status = None
+              else:
+                #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
+                #begining = datetime.now()
+                wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
+                #end = datetime.now() - begining
+                #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
+            except ConnectionClosedError, e:
+              self.emit(QtCore.SIGNAL('connection_closed_error()'))
+              self.hold = True
+            else: 
+              if self.current_workflow and self.current_workflow.updateState(wf_status): 
+                self.emit(QtCore.SIGNAL('workflow_state_changed()'))
         time.sleep(self.update_interval)
     
     self.__update_thread = threading.Thread(name = "ClientModelUpdateLoop",
@@ -1513,15 +1516,11 @@ class ClientWorkflow(object):
           else: 
             row = ref_in.index(ft.local_path)
           if ft.remote_paths:
-            self.items[item_id] = ClientInputDirTransfer(  it_id = item_id, 
-                                                parent=self.ids[job], 
-                                                row = row, 
-                                                data = ft)
-          else:
-            self.items[item_id] = ClientInputFileTransfer(  it_id = item_id, 
-                                                            parent=self.ids[job], 
-                                                            row = row, 
-                                                            data = ft)
+            self.items[item_id] = ClientInputTransfer( it_id = item_id, 
+                                                       parent=self.ids[job], 
+                                                       row = row, 
+                                                       data = ft)
+         
           self.items[self.ids[job]].children[row]=item_id
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
@@ -1535,10 +1534,10 @@ class ClientWorkflow(object):
             row = len(ref_in)+ref_out.index(ft)
           else:
             row = len(ref_in)+ref_out.index(ft.local_path)
-          self.items[item_id] = ClientOutputFileTransfer( it_id = item_id, 
-                                                          parent=self.ids[job], 
-                                                          row = row, 
-                                                          data = ft)
+          self.items[item_id] = ClientOutputTransfer( it_id = item_id, 
+                                                      parent=self.ids[job], 
+                                                      row = row, 
+                                                      data = ft)
           self.items[self.ids[job]].children[row]=item_id
           
     #end = datetime.now() - begining
@@ -1577,10 +1576,10 @@ class ClientWorkflow(object):
     
     #updating file transfer
     for transfer_info in wf_status[1]:
-      local_file_path, status = transfer_info 
+      local_file_path, complete_status = transfer_info 
       for item_id in self.server_file_transfers[local_file_path]:
         item = self.items[item_id]
-        data_changed = item.updateState(status) or data_changed
+        data_changed = item.updateState(complete_status) or data_changed
     
     #end = datetime.now() - begining
     #print " <== end updating transfers" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
@@ -1798,6 +1797,9 @@ class ClientJob(ClientWorkflowItem):
       
 class ClientTransfer(ClientWorkflowItem):
   
+  DIRECTORY = "directory"
+  FILE = "file"
+  
   def __init__(self,
                it_id, 
                parent = -1, 
@@ -1805,48 +1807,49 @@ class ClientTransfer(ClientWorkflowItem):
                data = None,
                children_nb = 0 ):
     super(ClientTransfer, self).__init__(it_id, parent, row, data, children_nb)
+    
     self.transfer_status = " "
+    self.size = None
+    self.transmitted = None
+    self.elements_status = None
+    
     self.percentage_achievement = 0
-    
+    self.transfer_type = None
 
-  
-class ClientFileTransfer(ClientTransfer):
-  
-  def __init__(self,
-               it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(ClientFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
-
-    self.file_size = None
-    self.transmitted_size = None 
   
   def updateState(self, transfer_status_info):
     self.initiated = True
     state_changed = False
     transfer_status = transfer_status_info[0]
+    
     if transfer_status_info[1]:
-      file_size, transmitted_size = transfer_status_info[1]
-      self.percentage_achievement = int(float(transmitted_size)/file_size * 100.0)
+      if len(transfer_status_info[1]) == 2:
+        self.transfer_type = ClientTransfer.FILE
+        size, transmitted = transfer_status_info[1]
+        elements_status = None
+      elif len(transfer_status_info[1]) == 3:
+        self.transfer_type = ClientTransfer.DIRECTORY
+        (size, transmitted, elements_status) = transfer_status_info[1]
+      self.percentage_achievement = int(float(transmitted)/size * 100.0)
     else:
-      (file_size, transmitted_size) = (None, None)
+      (size, transmitted, elements_status) = (None, None, None)
       self.percentage_achievement = 0
- 
-    
-    
+      
     state_changed = state_changed or transfer_status != self.transfer_status
-    state_changed = state_changed or file_size != self.file_size
-    state_changed = state_changed or transmitted_size != self.transmitted_size
+    state_changed = state_changed or size != self.size
+    state_changed = state_changed or transmitted != self.transmitted
+    state_changed = state_changed or elements_status != self.elements_status
+    
     self.transfer_status = transfer_status
-    self.file_size = file_size
-    self.transmitted_size = transmitted_size
+    self.size = size
+    self.transmitted = transmitted
+    self.elements_status = elements_status
     
     return state_changed
   
   
-class ClientDirTransfer(ClientTransfer):
+
+class ClientInputTransfer(ClientTransfer):
   
   def __init__(self,
                it_id, 
@@ -1854,40 +1857,9 @@ class ClientDirTransfer(ClientTransfer):
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
+    super(ClientInputTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
-    self.cumulated_file_size = None
-    self.cumulated_transmissions = None 
-    self.files_transfer_status = None
-    
-    
-  def updateState(self, transfer_status_info):
-    self.initiated = True
-    state_changed = False
-    
-    transfer_status = transfer_status_info[0]
-    if transfer_status_info[1]:
-      (cumulated_file_size, cumulated_transmissions, files_transfer_status ) = transfer_status_info[1]
-      self.percentage_achievement = int(float(cumulated_transmissions)/cumulated_file_size * 100.0)
-    else:
-      (cumulated_file_size, cumulated_transmissions, files_transfer_status ) = (None, None, None)
-      self.percentage = 0
-    
- 
-    state_changed = state_changed or transfer_status != self.transfer_status
-    state_changed = state_changed or cumulated_file_size != self.cumulated_file_size
-    state_changed = state_changed or cumulated_transmissions != self.cumulated_transmissions
-    state_changed = state_changed or files_transfer_status != self.files_transfer_status
-    
-    self.transfer_status = transfer_status
-    self.cumulated_file_size = cumulated_file_size
-    self.cumulated_transmissions = cumulated_transmissions
-    self.files_transfer_status = files_transfer_status
-    
-    return state_changed
-    
-    
-class ClientOutputFileTransfer(ClientFileTransfer):
+class ClientOutputTransfer(ClientTransfer):
   
   def __init__(self,
                it_id, 
@@ -1895,41 +1867,5 @@ class ClientOutputFileTransfer(ClientFileTransfer):
                row = -1,
                data = None,
                children_nb = 0 ):
-    super(ClientOutputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
-    
-class ClientOutputDirTransfer(ClientDirTransfer):
-  
-  def __init__(self,
-               it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(ClientOutputDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
+    super(ClientOutputTransfer, self).__init__(it_id, parent, row, data, children_nb)
 
-
-class ClientInputFileTransfer(ClientFileTransfer):
-    
-  def __init__(self,
-               it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(ClientInputFileTransfer, self).__init__(it_id, parent, row, data, children_nb)
-    
-
-class ClientInputDirTransfer(ClientDirTransfer):
-    
-  def __init__(self,
-               it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(ClientInputDirTransfer, self).__init__(it_id, parent, row, data, children_nb)
-    
-    
-    
-    
-    
