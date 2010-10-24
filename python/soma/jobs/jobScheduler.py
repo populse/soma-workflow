@@ -927,10 +927,10 @@ class JobScheduler( object ):
     contents = None
     transfer_action_info = None
     if not remote_paths:
-      if os.path.isfile(remote_path):
-        stat = os.stat(remote_path)
+      if os.path.isfile(local_path):
+        stat = os.stat(local_path)
         file_size = stat.st_size
-        md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
+        md5_hash = hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
       elif os.path.isdir(local_path):
         contents = JobScheduler.__contents([local_path])

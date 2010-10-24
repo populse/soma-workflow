@@ -563,7 +563,6 @@ class Jobs(object):
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self.__js_proxy.transferInformation(local_path)
     transfer_action_info = self.initializeRetrievingTransfer(local_path)
     
-    
     if transfer_action_info[2] == FILE_RETRIEVING:
       # file case
       (file_size, md5_hash, transfer_type) = transfer_action_info
@@ -1062,7 +1061,10 @@ class Jobs(object):
     elif transfer_action_info[2] == FILE_RETRIEVING or transfer_action_info[2] == DIR_RETRIEVING:
       if transfer_action_info[2] == FILE_RETRIEVING:
         (file_size, md5_hash, transfer_type) = transfer_action_info
-        transmitted = os.stat(remote_path).st_size
+        if os.path.isfile(remote_path):
+          transmitted = os.stat(remote_path).st_size
+        else:
+          transmitted = 0
         progression_info = (file_size, transmitted)
       elif transfer_action_info[2] == DIR_RETRIEVING:
         (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info

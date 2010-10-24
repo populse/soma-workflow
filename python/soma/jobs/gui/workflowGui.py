@@ -42,7 +42,7 @@ def setLabelFromString(label, value):
   @type value: string
   '''
   if value:
-    label.setText(value)
+    label.setText(unicode(value.encode('utf-8')))
   else:
     label.setText("")
     
@@ -517,7 +517,7 @@ class WorkflowTree(QtGui.QWidget):
       self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
       self.item_model = None
       self.tree_view.setModel(None)
-      self.item_model.emit(QtCore.SIGNAL("modelReset()"))
+      #self.item_model.emit(QtCore.SIGNAL("modelReset()"))
 
   @QtCore.pyqtSlot()
   def currentWorkflowAboutToChange(self):
@@ -630,6 +630,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     self.model = client_model # used to update stderr and stdout only
     
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged) 
+    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear) 
     
     self.vLayout = QtGui.QVBoxLayout(self)
     
@@ -644,6 +645,7 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.vLayout.removeWidget(self.infoWidget)
       self.infoWidget = None
       
+  @QtCore.pyqtSlot()
   def clear(self):
     if self.infoWidget:
       self.infoWidget.hide()
@@ -1515,12 +1517,10 @@ class ClientWorkflow(object):
             row = ref_in.index(ft)
           else: 
             row = ref_in.index(ft.local_path)
-          if ft.remote_paths:
-            self.items[item_id] = ClientInputTransfer( it_id = item_id, 
-                                                       parent=self.ids[job], 
-                                                       row = row, 
-                                                       data = ft)
-         
+          self.items[item_id] = ClientInputTransfer( it_id = item_id, 
+                                                      parent=self.ids[job], 
+                                                      row = row, 
+                                                      data = ft)
           self.items[self.ids[job]].children[row]=item_id
         if ft in ref_out or ft.local_path in ref_out:
           item_id = id_cnt
@@ -1741,6 +1741,8 @@ class ClientJob(ClientWorkflowItem):
         cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
       elif isinstance(command_el, UniversalResourcePath):
         cmd_seq.append("<UniversalResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
+      elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
+        cmd_seq.append(unicode(command_el).encode('utf-8'))
       else:
         cmd_seq.append(repr(command_el))
     separator = " " 
