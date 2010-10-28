@@ -339,8 +339,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     else: 
       name = repr(self.model.current_wf_id)
     
-    answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.NoButton)
-    if answer != QtGui.QMessageBox.Ok: return
+    answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    if answer != QtGui.QMessageBox.Yes: return
     while True:
       try:
         self.controler.deleteWorkflow(self.model.current_workflow.wf_id, self.model.current_connection)
