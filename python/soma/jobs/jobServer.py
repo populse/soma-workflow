@@ -95,7 +95,7 @@ Job server database tables:
   Workflows
     id,
     user_id,
-    pickle_file_path,
+    pickled_workflow,
     expiration_date,
     
 '''
@@ -155,7 +155,7 @@ def createDatabase(database_file):
                                               
   cursor.execute('''CREATE TABLE workflows (id               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                            user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                           pickle_file_path TEXT,
+                                           pickled_workflow TEXT,
                                            expiration_date  DATE NOT NULL,
                                            name TEXT,
                                            ended_transfers TEXT) ''')
@@ -467,10 +467,6 @@ class JobServer ( object ):
         
         ############################################################################
         # Workflows
-        
-        for row in cursor.execute('SELECT pickle_file_path FROM workflows WHERE expiration_date < ?', [date.today()]):
-          pickle_file_path = row[0]
-          self.__removeFile(pickle_file_path)
           
         cursor.execute('DELETE FROM workflows WHERE expiration_date < ?', [date.today()])
         
@@ -503,10 +499,6 @@ class JobServer ( object ):
           stderr_file = row[0]
           if stderr_file:
             registered_local_paths.append(self.__stringConversion(stderr_file))
-        for row in cursor.execute('SELECT pickle_file_path FROM workflows'):
-          pickle_file_path = row[0]
-          if pickle_file_path:
-            registered_local_paths.append(self.__stringConversion(pickle_file_path))
         for row in cursor.execute('SELECT id, login FROM users'):
           user_id, login = row
           registered_users.append((user_id, login))
@@ -878,7 +870,7 @@ class JobServer ( object ):
       try:
         cursor.execute('''INSERT INTO workflows 
                          (user_id,
-                          pickle_file_path,
+                          pickled_workflow,
                           expiration_date,
                           name)
                           VALUES (?, ?, ?, ?)''',
@@ -933,15 +925,12 @@ class JobServer ( object ):
     @type user_id: C{WorkflowIdentifier}
     @type  workflow: L{Workflow}
     '''
-    pickle_file_path = self.generateLocalFilePath(user_id)
-    file = open(pickle_file_path, "w")
-    pickle.dump(workflow, file)
-    file.close()
+    pickled_workflow = pickle.dumps(workflow)
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('UPDATE workflows SET pickle_file_path=? WHERE id=?', (pickle_file_path, wf_id))
+        cursor.execute('UPDATE workflows SET pickled_workflow=? WHERE id=?', (pickled_workflow, wf_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -985,8 +974,8 @@ class JobServer ( object ):
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        pickle_file_path = cursor.execute('''SELECT  
-                                              pickle_file_path
+        pickled_workflow = cursor.execute('''SELECT  
+                                              pickled_workflow
                                               FROM workflows WHERE id=?''', [wf_id]).next()[0]#supposes that the wf_id is valid
       except Exception, e:
         cursor.close()
@@ -994,11 +983,13 @@ class JobServer ( object ):
         raise JobServerError('Error getWorkflow %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-
-    file = open(pickle_file_path, "r")
-    workflow = pickle.load(file)
-    file.close()
-    
+      
+    pickled_workflow = self.__stringConversion(pickled_workflow)
+    if pickled_workflow:
+      workflow = pickle.loads(pickled_workflow)
+    else:
+      workflow = None
+ 
     return workflow
   
   def getWorkflowInfo(self, wf_id):
