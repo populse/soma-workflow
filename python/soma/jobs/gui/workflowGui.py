@@ -125,7 +125,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     wfInfoLayout = QtGui.QVBoxLayout()
     wfInfoLayout.setContentsMargins(2,2,2,2)
     wfInfoLayout.addWidget(self.workflowInfoWidget)
-    self.ui.dockWidgetContents_wf_info.setLayout(wfInfoLayout)
+    self.ui.widget_wf_info.setLayout(wfInfoLayout)
     
     self.graphWidget = WorkflowGraphView(self.controler, self)
     graphWidgetLayout = QtGui.QVBoxLayout()
@@ -139,9 +139,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     plotLayout.addWidget(self.workflowPlotWidget)
     self.ui.dockWidgetContents_plot.setLayout(plotLayout)
     
-    self.ui.toolButton_submit.setDefaultAction(self.ui.action_submit)
-    self.ui.toolButton_transfer_input.setDefaultAction(self.ui.action_transfer_infiles)
-    self.ui.toolButton_transfer_output.setDefaultAction(self.ui.action_transfer_outfiles)
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
     self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
     
@@ -153,7 +150,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_delete_workflow.triggered.connect(self.deleteWorkflow)
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     
-    self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+    self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
     
     self.showMaximized()
@@ -266,12 +263,13 @@ class WorkflowWidget(QtGui.QMainWindow):
                               args =([self]))
     thread.setDaemon(True)
     thread.start()
-
-  @QtCore.pyqtSlot(int)
-  def workflowSelectionChanged(self, index):
-    if index <0 or index >= self.ui.combo_submitted_wfs.count():
+    
+  @QtCore.pyqtSlot()
+  def workflowSelectionChanged(self):
+    selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
+    if not selected_items:
       return
-    wf_id = self.ui.combo_submitted_wfs.itemData(index).toInt()[0]
+    wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
     if wf_id != -1:
       if self.model.isLoadedWorkflow(wf_id):
         self.model.setCurrentWorkflow(wf_id)
@@ -405,9 +403,6 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.action_transfer_infiles.setEnabled(False)
       self.ui.action_transfer_outfiles.setEnabled(False)
       
-      self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
-      self.ui.combo_submitted_wfs.setCurrentIndex(0)
-      self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
     else:
   
       self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
@@ -433,9 +428,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
-        self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
-        self.ui.combo_submitted_wfs.setCurrentIndex(0)
-        self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+        self.ui.list_widget_submitted_wfs.clearSelection()
         
       else:
         # Submitted workflow
@@ -454,14 +447,18 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_transfer_infiles.setEnabled(True)
         self.ui.action_transfer_outfiles.setEnabled(True)        
         
-        index = self.ui.combo_submitted_wfs.findData(self.model.current_wf_id)
-        self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
-        self.ui.combo_submitted_wfs.setCurrentIndex(index)
-        self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+        index = None
+        for i in range(0, self.ui.list_widget_submitted_wfs.count()):
+          if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
+            self.ui.list_widget_submitted_wfs.setCurrentRow(i)
+            break
+       
+          
+        
+        
         
   def updateWorkflowList(self):
-    self.ui.combo_submitted_wfs.currentIndexChanged.disconnect(self.workflowSelectionChanged)
-    self.ui.combo_submitted_wfs.clear()
+    
     while True:
       try:
         submittedWorflows = self.controler.getSubmittedWorkflows(self.model.current_connection)
@@ -470,11 +467,17 @@ class WorkflowWidget(QtGui.QMainWindow):
           return
       else:
         break
+    
+    self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
+    self.ui.list_widget_submitted_wfs.clear()
     for wf_info in submittedWorflows:
       wf_id, expiration_date, workflow_name = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
-      self.ui.combo_submitted_wfs.addItem(workflow_name, wf_id)
-    self.ui.combo_submitted_wfs.currentIndexChanged.connect(self.workflowSelectionChanged)
+      item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
+      item.setData(QtCore.Qt.UserRole, wf_id)
+      self.ui.list_widget_submitted_wfs.addItem(item)
+    self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
+    
     
   @QtCore.pyqtSlot()
   def reconnectAfterConnectionClosed(self):

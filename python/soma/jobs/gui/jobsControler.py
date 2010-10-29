@@ -75,7 +75,6 @@ class JobsControler(object):
     - workflow name
     '''
     result = []
-    result.append((-1, None, " "))
     for wf_id in connection.workflows():
       expiration_date, name = connection.workflowInformation(wf_id)
       result.append((wf_id, expiration_date, name))
