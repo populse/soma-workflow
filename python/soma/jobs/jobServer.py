@@ -1359,7 +1359,9 @@ class JobServer ( object ):
         raise JobServerError('Error %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-    return result
+    stdout_file_path = self.__stringConversion(result[0])
+    stderr_file_path = self.__stringConversion(result[1])
+    return (stdout_file_path, stderr_file_path)
 
   def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
     '''

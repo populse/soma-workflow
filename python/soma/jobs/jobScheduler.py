@@ -637,6 +637,7 @@ class DrmaaJobScheduler( object ):
         if job.jobTemplate.referenced_output_files:
           for local_path in job.jobTemplate.referenced_output_files:
             self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
+            
         if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
           workflow = self.__workflows[job.jobTemplate.workflow_id]
           wf_to_process.add(workflow)
@@ -1069,6 +1070,7 @@ class JobScheduler( object ):
       local_full_path = os.path.join(local_path, relative_path)
     else:
       local_full_path = local_path
+      
     f = open(local_full_path, 'rb')
     if transmitted:
       f.seek(transmitted)
@@ -1329,6 +1331,29 @@ class JobScheduler( object ):
   def resertStdReading(self):
     self.__stdoutFileToRead = None
     self.__stderrFileToRead = None
+
+  def getStdOutErrTransferActionInfo(self, job_id):
+    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+      return
+    
+    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
+    
+    stdout_transfer_action_info = None
+    stderr_transfer_action_info = None
+    if stdout_file and os.path.isfile(stdout_file):
+      stat = os.stat(stdout_file)
+      stdout_file_size = stat.st_size
+      stdout_md5_hash = hashlib.md5(open(stdout_file, 'rb' ).read()).hexdigest()
+      stdout_transfer_action_info = (stdout_file_size, stdout_md5_hash)
+    if stderr_file and os.path.isfile(stderr_file):
+      stat = os.stat(stderr_file)
+      stderr_file_size = stat.st_size
+      stderr_md5_hash = hashlib.md5(open(stderr_file, 'rb').read()).hexdigest()
+      stderr_transfer_action_info = (stderr_file_size, stderr_md5_hash)
+    
+    return (stdout_file, stdout_transfer_action_info, stderr_file, stderr_transfer_action_info)
+    
+
 
   def stdoutReadLine(self, job_id):
     '''

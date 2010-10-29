@@ -607,13 +607,14 @@ class Jobs(object):
     print "copy file to " + repr(r_path)
     f = open(r_path, 'ab')
     fs = f.tell()
+    #if fs > file_size:
+      #open(r_path, 'wb')
     transfer_ended = False
     while not transfer_ended :
       data = self.retrievePiece(local_path, buffer_size, fs, relative_path)
       f.write(data)
       fs = f.tell()
       if fs > file_size:
-         # Reset file_size 
          f.close()
          open(r_path, 'wb')
          raise Exception('retrievePiece: Transmitted data exceed expected file size.')
@@ -1132,7 +1133,6 @@ class Jobs(object):
     '''
     return self.__js_proxy.stdoutReadLine(job_id)
 
-  
 
   def stderrReadLine(self, job_id):
     '''
@@ -1145,6 +1145,31 @@ class Jobs(object):
     '''
     return self.__js_proxy.stderrReadLine(job_id)
 
+    
+  def retrieveStdOutErr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
+    '''
+    Copy the job standard error to a file.
+    '''
+    
+    local_stdout_file, stdout_transfer_action_info, local_stderr_file, stderr_transfer_action_info = self.__js_proxy.getStdOutErrTransferActionInfo(job_id)
+    
+    open(stdout_file_path, 'wb') 
+    if local_stdout_file and stdout_transfer_action_info:
+      self.__retrieveFile(stdout_file_path, 
+                          local_stdout_file, 
+                          stdout_transfer_action_info[0], 
+                          stdout_transfer_action_info[1], 
+                          buffer_size)
+  
+    if stderr_file_path:
+      open(stderr_file_path, 'wb') 
+      if local_stderr_file and stderr_transfer_action_info:
+          self.__retrieveFile(stderr_file_path, 
+                              local_stderr_file, 
+                              stderr_transfer_action_info[0], 
+                              stderr_transfer_action_info[1], 
+                              buffer_size)
+    
     
   ########## JOB CONTROL VIA DRMS ########################################
   

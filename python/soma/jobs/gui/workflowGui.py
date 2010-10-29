@@ -696,8 +696,8 @@ class JobInfoWidget(QtGui.QTabWidget):
     self.dataChanged()
     
     self.currentChanged.connect(self.currentTabChanged)
-    self.ui.stderr_refresh_button.clicked.connect(self.refreshStderr)
-    self.ui.stdout_refresh_button.clicked.connect(self.refreshStdout)
+    self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
+    self.ui.stdout_refresh_button.clicked.connect(self.refreshStdErrOut)
     
   def dataChanged(self):
  
@@ -731,34 +731,18 @@ class JobInfoWidget(QtGui.QTabWidget):
   
   @QtCore.pyqtSlot(int)
   def currentTabChanged(self, index):
-    if index == 1 and self.job_item.stdout == "":
+    if (index == 1 or index == 2) and self.job_item.stdout == "":
       try:
-        self.job_item.updateStdout(self.connection)
+        self.job_item.updateStdOutErr(self.connection)
       except ConnectionClosedError, e:
-        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
+        self.parent.emit(QtCore.SIGNAL("connection_closed_error()"))
       else:
-        self.dataChanged()
-    if index == 2 and self.job_item.stderr == "":
-      try:
-        self.job_item.updateStderr(self.connection)
-      except ConnectionClosedError, e:
-        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
-      else:
-        self.dataChanged()
-      self.dataChanged()
+        self.dataChanged() 
       
   @QtCore.pyqtSlot()
-  def refreshStdout(self):
+  def refreshStdErrOut(self):
     try:
-      self.job_item.updateStdout(self.connection)
-    except ConnectionClosedError, e:
-        self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
-    self.dataChanged()
-    
-  @QtCore.pyqtSlot()
-  def refreshStderr(self):
-    try:
-      self.job_item.updateStderr(self.connection)
+      self.job_item.updateStdOutErr(self.connection)
     except ConnectionClosedError, e:
         self.parent().emit(QtCore.SIGNAL("connection_closed_error()"))
     self.dataChanged()
@@ -1777,25 +1761,30 @@ class ClientJob(ClientWorkflowItem):
         
     return state_changed
     
-  def updateStdout(self, connection):
+  def updateStdOutErr(self, connection):
     if self.data:
-      connection.resertStdReading()
-      line = connection.stdoutReadLine(self.data.job_id)
+      stdout_path = "/tmp/soma_workflow_stdout"
+      stderr_path = "/tmp/soma_workflow_stderr"
+      connection.retrieveStdOutErr(self.data.job_id, stdout_path, stderr_path)
+      
+      f = open(stdout_path, "rt")
+      line = f.readline()
       stdout = ""
       while line:
         stdout = stdout + line + "\n"
-        line = connection.stdoutReadLine(self.data.job_id)
+        line = f.readline()
       self.stdout = stdout
+      f.close()
       
-  def updateStderr(self, connection):
-    if self.data:
-      connection.resertStdReading()
-      line = connection.stderrReadLine(self.data.job_id)
+      f = open(stderr_path, "rt")
+      line = f.readline()
       stderr = ""
       while line:
         stderr = stderr + line + "\n"
-        line = connection.stderrReadLine(self.data.job_id)
-      self.stderr = stderr
+        line = f.readline()
+      self.stderr =stderr
+      f.close()
+      
       
 class ClientTransfer(ClientWorkflowItem):
   

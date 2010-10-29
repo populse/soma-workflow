@@ -169,6 +169,44 @@ class JobsControler(object):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
     print >> file, "digraph G {"
+    #if workflow.full_nodes:
+      #for node in workflow.full_nodes:
+        #current_id = current_id + 1
+        #names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
+      #for ar in workflow.full_dependencies:
+        #print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
+      #for node in workflow.full_nodes:
+        #if isinstance(node, JobTemplate):
+          #if node.job_id == -1:
+            #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
+          #else:
+            #status = connection.status(node.job_id)
+            #if status == NOT_SUBMITTED:
+              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
+            #elif status == DONE:
+              #exit_status, exit_value, term_signal, resource_usage = connection.exitInformation(node.job_id)
+              #if exit_status == FINISHED_REGULARLY and exit_value == 0:
+                #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+              #else: 
+                #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
+            #elif status == FAILED:
+              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
+            #else:
+              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
+        #if isinstance(node, FileTransfer):
+          #if not node.local_path:
+            #print >> file, names[node][0] + "[label="+ names[node][1] +"];"
+          #else:
+            #status = connection.transferStatus(node.local_path)[0]
+            #if status == TRANSFER_NOT_READY:
+              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
+            #elif status == READY_TO_TRANSFER:
+              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
+            #elif status == TRANSFERING:
+              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
+            #elif status == TRANSFERED:
+              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+    #else:
     for node in workflow.nodes:
       current_id = current_id + 1
       names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
