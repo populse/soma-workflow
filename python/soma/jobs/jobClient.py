@@ -1118,33 +1118,6 @@ class Jobs(object):
     '''
     return self.__js_proxy.jobInformation(job_id)
     
-
-  def resertStdReading(self):
-    self.__js_proxy.resertStdReading()
-
-  def stdoutReadLine(self, job_id):
-    '''
-    Reads a line from the file where the job standard output stream is written.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype: string
-    return: read line
-    '''
-    return self.__js_proxy.stdoutReadLine(job_id)
-
-
-  def stderrReadLine(self, job_id):
-    '''
-    Reads a line from the file where the job standard error stream is written.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype: string
-    return: read line
-    '''
-    return self.__js_proxy.stderrReadLine(job_id)
-
     
   def retrieveStdOutErr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
     '''

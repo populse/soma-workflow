@@ -860,12 +860,6 @@ class JobScheduler( object ):
       raise JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e), self.logger)
     
     self.__user_id = self.__jobServer.registerUser(userLogin)
-   
-    self.__fileToRead = None
-    self.__fileToWrite = None
-    self.__stdoutFileToRead = None
-    self.__stderrFileToRead = None
-    
     
 
   def __del__( self ):
@@ -1328,10 +1322,6 @@ class JobScheduler( object ):
     
     return (name_description, command, submission_date)
     
-  def resertStdReading(self):
-    self.__stdoutFileToRead = None
-    self.__stderrFileToRead = None
-
   def getStdOutErrTransferActionInfo(self, job_id):
     if not self.__jobServer.isUserJob(job_id, self.__user_id):
       return
@@ -1352,44 +1342,6 @@ class JobScheduler( object ):
       stderr_transfer_action_info = (stderr_file_size, stderr_md5_hash)
     
     return (stdout_file, stdout_transfer_action_info, stderr_file, stderr_transfer_action_info)
-    
-
-
-  def stdoutReadLine(self, job_id):
-    '''
-    Implementation of soma.jobs.jobClient.Jobs API
-    '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      #print "Could get not read std output for the job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return   
-
-    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
-    
-    if not self.__stdoutFileToRead or not self.__stdoutFileToRead.name == stdout_file:
-      self.__stdoutFileToRead = open(stdout_file, 'rt')
-      
-    return self.__stdoutFileToRead.readline()
-
-
-  def stderrReadLine(self, job_id):
-    '''
-    Implementation of soma.jobs.jobClient.Jobs API
-    '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      #print "Could get not read std error for the job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return   
-
-    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
-    
-    if not stderr_file:
-      self.__stderrFileToRead = None
-      return 
-
-    if not self.__stderrFileToRead or not self.__stderrFileToRead.name == stderr_file:
-      self.__stderrFileToRead = open(stderr_file, 'rt')
-      
-    return self.__stderrFileToRead.readline()
-
     
   ########## JOB CONTROL VIA DRMS ########################################
   
