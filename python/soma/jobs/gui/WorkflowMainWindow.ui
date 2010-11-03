@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1026</width>
-    <height>627</height>
+    <height>817</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -37,6 +37,7 @@
      <string>File</string>
     </property>
     <addaction name="action_open_wf"/>
+    <addaction name="action_save"/>
     <addaction name="separator"/>
     <addaction name="action_create_wf_ex"/>
    </widget>
@@ -133,7 +134,7 @@
       <widget class="QComboBox" name="combo_resources">
        <property name="minimumSize">
         <size>
-         <width>120</width>
+         <width>242</width>
          <height>0</height>
         </size>
        </property>
@@ -187,6 +188,19 @@
        </property>
       </widget>
      </item>
+     <item>
+      <spacer name="verticalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -203,66 +217,83 @@
    <widget class="QWidget" name="dockWidgetContents_wf_info">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <layout class="QFormLayout" name="formLayout">
-       <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
-       </property>
-       <property name="fieldGrowthPolicy">
-        <enum>QFormLayout::ExpandingFieldsGrow</enum>
-       </property>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>name:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="lineedit_wf_name">
-         <property name="minimumSize">
-          <size>
-           <width>70</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>150</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>expiration date:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QDateTimeEdit" name="dateTimeEdit_expiration"/>
-       </item>
-       <item row="2" column="1">
-        <widget class="QToolButton" name="toolButton_change_exp_date">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="focusPolicy">
-          <enum>Qt::StrongFocus</enum>
-         </property>
-         <property name="text">
-          <string>Change date</string>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextOnly</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QWidget" name="widget_wf_status_date" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QFormLayout" name="formLayout">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>name:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="wf_name">
+            <property name="frame">
+             <bool>false</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>expiration date:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDateTimeEdit" name="dateTimeEdit_expiration"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="QToolButton" name="toolButton_change_exp_date">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::StrongFocus</enum>
+            </property>
+            <property name="text">
+             <string>Change date</string>
+            </property>
+            <property name="toolButtonStyle">
+             <enum>Qt::ToolButtonTextOnly</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>status:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineedit_wf_status">
+            <property name="frame">
+             <bool>false</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
       <widget class="QWidget" name="widget_wf_info" native="true"/>
@@ -322,6 +353,14 @@
    </property>
    <property name="toolTip">
     <string>Change the workflow expiration date</string>
+   </property>
+  </action>
+  <action name="action_save">
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="toolTip">
+    <string>save the workflow to a file</string>
    </property>
   </action>
  </widget>

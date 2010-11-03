@@ -35,6 +35,7 @@ Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'GroupI
 Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
 Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'firstConnectionDlg.ui' ))[0]
 Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  'workflowExampleDlg.ui' ))[0]
+Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  'submissionDlg.ui' ))[0]
 
 
 def setLabelFromString(label, value):
@@ -139,6 +140,9 @@ class WorkflowWidget(QtGui.QMainWindow):
     plotLayout.addWidget(self.workflowPlotWidget)
     self.ui.dockWidgetContents_plot.setLayout(plotLayout)
     
+    self.ui.widget_wf_status_date.hide()
+    self.ui.widget_wf_info.hide()
+    
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
     self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
     
@@ -149,6 +153,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
     self.ui.action_delete_workflow.triggered.connect(self.deleteWorkflow)
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
+    self.ui.action_save.triggered.connect(self.saveWorkflow)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
@@ -197,7 +202,15 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.updateWorkflowList()
       self.model.addWorkflow(workflow, datetime.now() + timedelta(days=5))
       
-      
+  @QtCore.pyqtSlot()
+  def saveWorkflow(self):
+    file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
+    if file_path:
+      try:
+        self.controler.saveWorkflowToFile(self, file_path, self.model.current_workflow)
+      except IOError, e:
+        QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
+        
     
   @QtCore.pyqtSlot()
   def createWorkflowExample(self):
@@ -217,21 +230,30 @@ class WorkflowWidget(QtGui.QMainWindow):
   def submitWorkflow(self):
     assert(self.model.current_workflow)
     
-    name = unicode(self.ui.lineedit_wf_name.text())
-    if name == "": name = None
-    qtdt = self.ui.dateTimeEdit_expiration.dateTime()
-    date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
-                    qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-    while True:
-      try:
-        workflow = self.controler.submitWorkflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
-    self.updateWorkflowList()
-    self.model.addWorkflow(workflow, date) 
+    submission_dlg = QtGui.QDialog(self)
+    ui = Ui_SubmissionDlg()
+    ui.setupUi(submission_dlg)
+    setLabelFromString(ui.resource_label, self.model.current_resource_id)
+    ui.resource_label.setText(self.model.current_resource_id)
+    ui.lineedit_wf_name.setText("")
+    ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+    
+    if submission_dlg.exec_() == QtGui.QDialog.Accepted:
+      name = unicode(ui.lineedit_wf_name.text())
+      if name == "": name = None
+      qtdt = ui.dateTimeEdit_expiration.dateTime()
+      date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                      qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+      while True:
+        try:
+          workflow = self.controler.submitWorkflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
+        except ConnectionClosedError, e:
+          if not self.reconnectAfterConnectionClosed():
+            return
+        else:
+          break
+      self.updateWorkflowList()
+      self.model.addWorkflow(workflow, date) 
 
     
   @QtCore.pyqtSlot()
@@ -391,9 +413,8 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.graphWidget.clear()
       self.itemInfoWidget.clear()
       
-      self.ui.lineedit_wf_name.clear()
-      self.ui.lineedit_wf_name.setEnabled(False)
-      
+      self.ui.wf_name.clear()
+     
       self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       self.ui.dateTimeEdit_expiration.setEnabled(False)
       
@@ -402,6 +423,11 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.action_delete_workflow.setEnabled(False)
       self.ui.action_transfer_infiles.setEnabled(False)
       self.ui.action_transfer_outfiles.setEnabled(False)
+      self.ui.action_save.setEnabled(False)
+      
+      self.ui.widget_wf_status_date.hide()
+      self.ui.widget_wf_info.hide()
+      
       
     else:
   
@@ -414,11 +440,10 @@ class WorkflowWidget(QtGui.QMainWindow):
       if self.model.current_wf_id == -1:
         # Workflow not submitted
         if self.model.current_workflow.name:
-          self.ui.lineedit_wf_name.setText(self.model.current_workflow.name)
+          self.ui.wf_name.setText(self.model.current_workflow.name)
         else:
-          self.ui.lineedit_wf_name.clear()
-        self.ui.lineedit_wf_name.setEnabled(True)
-        
+          self.ui.wf_name.clear()
+         
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
@@ -428,15 +453,17 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
+        self.ui.widget_wf_status_date.hide()
+        self.ui.widget_wf_info.hide()
+        
         self.ui.list_widget_submitted_wfs.clearSelection()
         
       else:
         # Submitted workflow
         if self.model.current_workflow.name:
-          self.ui.lineedit_wf_name.setText(self.model.current_workflow.name)
+          self.ui.wf_name.setText(self.model.current_workflow.name)
         else: 
-          self.ui.lineedit_wf_name.setText(repr(self.model.current_wf_id))
-        self.ui.lineedit_wf_name.setEnabled(False)
+          self.ui.wf_name.setText(repr(self.model.current_wf_id))
         
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
         self.ui.dateTimeEdit_expiration.setEnabled(True)
@@ -445,7 +472,11 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
         self.ui.action_transfer_infiles.setEnabled(True)
-        self.ui.action_transfer_outfiles.setEnabled(True)        
+        self.ui.action_transfer_outfiles.setEnabled(True)    
+        self.ui.action_save.setEnabled(True)    
+        
+        self.ui.widget_wf_status_date.show()
+        self.ui.widget_wf_info.show()
         
         index = None
         for i in range(0, self.ui.list_widget_submitted_wfs.count()):

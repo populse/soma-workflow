@@ -67,6 +67,11 @@ class JobsControler(object):
     file.close()
     return workflow
   
+  def saveWorkflowToFile(self, file_path, workflow):
+    file = open(file_path, "w")
+    pickle.dump(workflow, file)
+    file.close()
+  
   def getSubmittedWorkflows(self, connection):
     '''
     returns a list of tuple:
