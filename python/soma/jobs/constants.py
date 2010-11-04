@@ -73,11 +73,15 @@ TRANSFER_TYPE = [FILE_SENDING,
                  DIR_SENDING,
                  FILE_SENDING]
 
-#'''
-#Workflow status:
-#'''
-#WORKFLOW_FAILED = "workflow_failed"
-#WORKFLOW_STATUS = [ WORKFLOW_FAILED,  ]
+'''
+Workflow status:
+'''
+WORKFLOW_NOT_STARTED = "worklflow_not_started"
+WORKFLOW_IN_PROGRESS = "workflow_in_progress"
+WORKFLOW_DONE = "workflow_done"
+WORKFLOW_STATUS = [ WORKFLOW_NOT_STARTED, 
+                    WORKFLOW_IN_PROGRESS, 
+                    WORKFLOW_DONE]
 
 
 '''

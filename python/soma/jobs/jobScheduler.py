@@ -36,10 +36,6 @@ class JobSchedulerError( Exception ):
       logger.critical('EXCEPTION ' + msg)
 
 
-
-    
-
-
 class DrmaaJobScheduler( object ):
 
   '''
@@ -165,6 +161,7 @@ class DrmaaJobScheduler( object ):
           # get back ended transfers
           endedTransfers = []
           for workflow_id in self.__workflows.keys():
+            self.__jobServer.setWorkflowStatus(workflow_id, constants.WORKFLOW_IN_PROGRESS)
             workflow_ended_transfers = self.__jobServer.popWorkflowEndedTransfer(workflow_id)
             if workflow_ended_transfers:
               endedTransfers.append((workflow_id, workflow_ended_transfers))
@@ -422,6 +419,41 @@ class DrmaaJobScheduler( object ):
 
   ########## WORKFLOW SUBMISSION ############################################
   
+  
+  def restartWorkflow(self, wf_id):
+    
+    workflow = self.__jobServer.getWorkflow(wf_id)
+    with self.__lock:
+      to_restart = False
+      undone_jobs = []
+      for node in workflow.full_nodes:
+        if isinstance(node, JobTemplate):
+          node_status = self.__getNodeStatus(node)
+          if node_status == DrmaaJobScheduler.NODE_FAILED:
+            #clear all the information related to the previous job submission
+            self.__jobServer.setSubmissionInformation(node.job_id, None, None)
+            self.__jobServer.setJobStatus(node.job_id, constants.NOT_SUBMITTED)
+          if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
+            registered_job = DrmaaJobScheduler.RegisteredJob(node)
+            self.__jobs[node.job_id] = registered_job
+            undone_jobs.append(node)
+           
+      if undone_jobs:
+        self.__workflows[workflow.wf_id] = workflow
+        # look for nodes to run
+        for job in undone_jobs:
+          node_to_run = True # a node is run when all its dependencies succeed
+          for dep in workflow.full_dependencies:
+            if dep[1] == job: 
+              node_status = self.__getNodeStatus(dep[0])
+              if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
+                node_to_run = False
+                
+          if node_to_run: 
+            self.logger.debug("  ---- Job to run : " + node.name + " " + repr(node.command))
+            self.__drmaaJobSubmission(self.__jobs[job.job_id])
+
+  
   def submitWorkflow(self, workflow_o, expiration_date, name):
     # type checking for the workflow ?
     workflow = copy.deepcopy(workflow_o)
@@ -672,7 +704,7 @@ class DrmaaJobScheduler( object ):
                 #self.logger.debug("   dep[0] status" + repr(node_status))
                 if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
                   node_to_run = False
-                  if isinstance(node, JobTemplate) and isinstance(dep[1], JobTemplate) and not dep[1] in to_abort and node_status == DrmaaJobScheduler.NODE_FAILED  :
+                  if isinstance(dep[1], JobTemplate) and isinstance(dep[0], JobTemplate) and not dep[1] in to_abort and node_status == DrmaaJobScheduler.NODE_FAILED  :
                       to_abort.add(dep[1]) 
                       break
                   
@@ -720,6 +752,7 @@ class DrmaaJobScheduler( object ):
     for workflow_id in finished_workfows:
       self.logger.debug("  ~~~~ END OF WORKFLOW " + repr(workflow_id) + " ~~~~")
       del self.__workflows[workflow_id]
+      self.__jobServer.setWorkflowStatus(workflow_id, constants.WORKFLOW_DONE)
     self.logger.debug("<<< workflowProcessing")
     
 
@@ -1178,6 +1211,27 @@ class JobScheduler( object ):
     self.__jobServer.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
     return True
 
+  def restartWorkflow(self, workflow_id):
+    '''
+    Implementation of soma.jobs.jobClient.Jobs API
+    '''
+    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
+      #print "Couldn't restart workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      return False
+    
+    (status, last_status_update) = self.__jobServer.getWorkflowStatus(workflow_id)
+    
+    
+    print "last status update too old = " + repr((datetime.now() - last_status_update < timedelta(seconds=refreshment_interval*5))) 
+    if not last_status_update or (datetime.now() - last_status_update < timedelta(seconds=refreshment_interval*5) and status != constants.WORKFLOW_DONE):
+      return False
+    
+    
+    print "self.__drmaaJS.restartWorkflow(workflow_id)"
+    self.__drmaaJS.restartWorkflow(workflow_id)
+    return True
+    
+   
   ########## SERVER STATE MONITORING ########################################
 
 
@@ -1246,14 +1300,14 @@ class JobScheduler( object ):
     return self.__jobServer.getJobStatus(job_id)[0]
         
   
-  def workflowStatus(self, wf_id, groupe = None):
+  def detailedWorkflowStatus(self, wf_id, groupe = None):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    wf_status = self.__jobServer.getWorkflowStatus(wf_id)
+    wf_status = self.__jobServer.getDetailedWorkflowStatus(wf_id)
     return wf_status
         
         

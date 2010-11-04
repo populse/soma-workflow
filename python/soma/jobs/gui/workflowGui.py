@@ -154,6 +154,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_delete_workflow.triggered.connect(self.deleteWorkflow)
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     self.ui.action_save.triggered.connect(self.saveWorkflow)
+    self.ui.action_restart.triggered.connect(self.restartWorkflow)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
@@ -255,7 +256,20 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.updateWorkflowList()
       self.model.addWorkflow(workflow, date) 
 
-    
+  @QtCore.pyqtSlot()
+  def restartWorkflow(self):
+    try:
+      done = self.controler.restartWorkflow(self.model.current_workflow.server_workflow,
+                                            self.model.current_connection)
+    except ConnectionClosedError, e:
+      pass
+    except SystemExit, e:
+      pass
+    if not done:
+      QtGui.QMessageBox.warning(self, 
+                                "Restart workflow", 
+                                "The workflow is already running.")
+  
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
     def transfer(self):
@@ -1294,7 +1308,7 @@ class ClientModel(QtCore.QObject):
               else:
                 #print " ==> communication with the server " + repr(self.server_workflow.wf_id)
                 #begining = datetime.now()
-                wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
+                wf_status = self.current_connection.detailedWorkflowStatus(self.current_workflow.server_workflow.wf_id)
                 #end = datetime.now() - begining
                 #print " <== end communication" + repr(self.server_workflow.wf_id) + " : " + repr(end.seconds)
             except ConnectionClosedError, e:
@@ -1376,7 +1390,7 @@ class ClientModel(QtCore.QObject):
       self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
       self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
     try:
-      wf_status = self.current_connection.workflowStatus(self.current_workflow.server_workflow.wf_id)
+      wf_status = self.current_connection.detailedWorkflowStatus(self.current_workflow.server_workflow.wf_id)
     except ConnectionClosedError, e:
       self.emit(QtCore.SIGNAL('connection_closed_error()'))
     else: 
@@ -1426,6 +1440,8 @@ class ClientWorkflow(object):
     
     self.name = workflow.name 
     self.wf_id = workflow.wf_id
+    
+    self.wf_status = None
     
     self.ids = {} # ids => {workflow element: sequence of ids}
     self.root_id = -1 # id of the root node
@@ -1604,6 +1620,8 @@ class ClientWorkflow(object):
     
     #updateing groups 
     self.root_item.updateState()
+    
+    self.wf_status = wf_status[2]
     
     return data_changed
         

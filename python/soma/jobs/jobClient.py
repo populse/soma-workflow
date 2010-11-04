@@ -924,6 +924,15 @@ class Jobs(object):
     @rtype: boolean
     '''
     return self.__js_proxy.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
+  
+  def restartWorkflow(self, workflow_id):
+    '''
+    The jobs which failed in the previous submission will be submitted again.
+    The workflow execution must be done.
+    Return true if the workflow was resubmitted.
+    '''
+    return self.__js_proxy.restartWorkflow(workflow_id)
+    
 
   ########## MONITORING #############################################
 
@@ -1009,16 +1018,16 @@ class Jobs(object):
     return self.__js_proxy.status(job_id)
   
   
-  def workflowStatus(self, wf_id, groupe = None):
+  def detailedWorkflowStatus(self, wf_id, groupe = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and requests to the database.
     
     @type  wf_id: C{WorflowIdentifier}
     @param wf_id: The workflow identifier
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)))
+    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
     '''
-    wf_status = self.__js_proxy.workflowStatus(wf_id)
+    wf_status = self.__js_proxy.detailedWorkflowStatus(wf_id)
     if not wf_status:
       # TBI raise ...
       return
@@ -1028,7 +1037,7 @@ class Jobs(object):
       progression = self.__progression(local_path, remote_path, transfer_action_info)
       new_transfer_status.append((local_path, (status, progression)))
       
-    new_wf_status = (wf_status[0],new_transfer_status)
+    new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
     return new_wf_status
     
   

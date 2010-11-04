@@ -46,6 +46,8 @@
      <string>Workflow</string>
     </property>
     <addaction name="action_submit"/>
+    <addaction name="action_restart"/>
+    <addaction name="separator"/>
     <addaction name="action_transfer_infiles"/>
     <addaction name="action_transfer_outfiles"/>
     <addaction name="separator"/>
@@ -109,7 +111,9 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_open_wf"/>
+   <addaction name="separator"/>
    <addaction name="action_submit"/>
+   <addaction name="action_restart"/>
    <addaction name="separator"/>
    <addaction name="action_transfer_infiles"/>
    <addaction name="action_transfer_outfiles"/>
@@ -361,6 +365,14 @@
    </property>
    <property name="toolTip">
     <string>save the workflow to a file</string>
+   </property>
+  </action>
+  <action name="action_restart">
+   <property name="text">
+    <string>Restart</string>
+   </property>
+   <property name="toolTip">
+    <string>Restart</string>
    </property>
   </action>
  </widget>

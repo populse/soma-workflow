@@ -114,8 +114,12 @@ class JobsControler(object):
     
     
   def submitWorkflow(self, workflow, name, expiration_date, connection):
-    return connection.submitWorkflow(workflow = workflow,                                               expiration_date = expiration_date,
-                                    name = name) 
+    return connection.submitWorkflow(workflow=workflow,
+                                     expiration_date=expiration_date,
+                                     name=name) 
+                                    
+  def restartWorkflow(self, workflow, connection):
+    return connection.restartWorkflow(workflow.wf_id)
                                     
   def deleteWorkflow(self, wf_id, connection):
     return connection.disposeWorkflow(wf_id)

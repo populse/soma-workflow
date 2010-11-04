@@ -10,16 +10,19 @@ linked together via a distributed resource management systems (DRMS).
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 from __future__ import with_statement 
-from sqlite3 import *
-from datetime import date
-from datetime import timedelta
-from datetime import datetime
+
+import sqlite3
 import threading
 import os
 import shutil
 import logging
-import soma.jobs.constants as constants
 import pickle
+from datetime import date
+from datetime import timedelta
+from datetime import datetime
+
+import soma.jobs.constants as constants
+
 
 __docformat__ = "epytext en"
 
@@ -32,7 +35,7 @@ file_separator = ', '
 def adapt_datetime(ts):
     return ts.strftime(strtime_format)
 
-register_adapter(datetime, adapt_datetime)
+sqlite3.register_adapter(datetime, adapt_datetime)
 
 '''
 Job server database tables:
@@ -97,11 +100,13 @@ Job server database tables:
     user_id,
     pickled_workflow,
     expiration_date,
-    
+    name,
+    ended_transfered, 
+    status
 '''
 
 def createDatabase(database_file):
-  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
+  connection = sqlite3.connect(database_file, timeout=5, isolation_level="EXCLUSIVE")
   cursor = connection.cursor()
   cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                       login VARCHAR(255) NOT NULL UNIQUE)''')
@@ -113,7 +118,7 @@ def createDatabase(database_file):
                                        expiration_date      DATE NOT NULL,
                                        status               VARCHAR(255) NOT NULL,
                                        last_status_update   DATE NOT NULL,
-                                       workflow_id          INTEGER CONSTRAINT known_workflow REFERENCES workflow (id),
+                                       workflow_id          INTEGER CONSTRAINT known_workflow REFERENCES workflows (id),
                                        
                                        command              TEXT,
                                        stdin_file           TEXT,
@@ -140,7 +145,7 @@ def createDatabase(database_file):
                                             transfer_date    DATE,
                                             expiration_date  DATE NOT NULL,
                                             user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                            workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflow (id),
+                                            workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflows (id),
                                             status           VARCHAR(255) NOT NULL,
                                             remote_paths     TEXT,
                                             transfer_action_info  TEXT)''')
@@ -154,11 +159,13 @@ def createDatabase(database_file):
                                               foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
                                               
   cursor.execute('''CREATE TABLE workflows (id               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                                           user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                           pickled_workflow TEXT,
-                                           expiration_date  DATE NOT NULL,
-                                           name TEXT,
-                                           ended_transfers TEXT) ''')
+                                           user_id           INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
+                                           pickled_workflow   TEXT,
+                                           expiration_date    DATE NOT NULL,
+                                           name               TEXT,
+                                           ended_transfers    TEXT,
+                                           status             TEXT,
+                                           last_status_update DATE NOT NULL) ''')
   
   cursor.close()
   connection.commit()
@@ -168,7 +175,7 @@ def createDatabase(database_file):
 
 def printTables(database_file):
   
-  connection = connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
+  connection = sqlite3.connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
   
   print "==== users table: ========"
@@ -370,7 +377,7 @@ class JobServer ( object ):
     
   def __connect(self):
     try:
-      connection = connect(self.__database_file, timeout = 10, isolation_level = "EXCLUSIVE")
+      connection = sqlite3.connect(self.__database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
         raise JobServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
     return connection
@@ -872,12 +879,16 @@ class JobServer ( object ):
                          (user_id,
                           pickled_workflow,
                           expiration_date,
-                          name)
-                          VALUES (?, ?, ?, ?)''',
+                          name,
+                          status, 
+                          last_status_update)
+                          VALUES (?, ?, ?, ?, ?, ?)''',
                          (user_id,
                           None, 
                           expiration_date,
-                          name))
+                          name,
+                          constants.WORKFLOW_NOT_STARTED,
+                          datetime.now()))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1016,23 +1027,105 @@ class JobServer ( object ):
       cursor.close()
       connection.close()
       
-    return (self.__strToDateConversion(expiration_date), self.__stringConversion(name))
+    expiration_date = self.__strToDateConversion(expiration_date)
+    name = self.__stringConversion(name)
+    return (expiration_date, name)
   
   
+  def setWorkflowStatus(self, wf_id, status):
+    '''
+    Updates the workflow status in the database.
+    The status must be valid (ie a string among the workflow status 
+    string defined in constants.WORKFLOW_STATUS)
+    
+    @type  status: string
+    @param status: workflow status as defined in constants.WORKFLOW_STATUS
+    '''
+    with self.__lock:
+      # TBI if the status is not valid raise an exception ??
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM workflows 
+                                  WHERE id=?''', [wf_id]).next()[0]
+        if not count == 0 :
+          cursor.execute('''UPDATE workflows 
+                          SET status=?, 
+                          last_status_update=? 
+                          WHERE id=?''', 
+                          (status, 
+                          datetime.now(), 
+                          wf_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error setWorkflowStatus %s: %s \n' %(type(e), e), 
+                              self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+    
   def getWorkflowStatus(self, wf_id):
+    '''
+    Returns the workflow status stored in the database 
+    (updated by L{DrmaaJobScheduler}) and the date of its last update.
+    Returns (None, None) if the wf_id is not valid.
+    '''
+    with self.__lock:
+      connection = self.__connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM workflows 
+                                  WHERE id=?''', [wf_id]).next()[0]
+        if not count == 0 :
+          (status, strdate) = cursor.execute('''SELECT status, 
+                                                      last_status_update 
+                                                FROM workflows WHERE id=?''', 
+                                                [wf_id]).next()
+        else:
+          (status, strdate) = (None, None)
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise JobServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), 
+                              self.logger) 
+      status = self.__stringConversion(status)
+      date = self.__strToDateConversion(strdate)
+      cursor.close()
+      connection.close()
+    return (status, date)
+    
+  
+  
+  def getDetailedWorkflowStatus(self, wf_id):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     requests to the database.
     
     @type wf_id: C{WorflowIdentifier}
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, status))
+    @rtype: tuple (sequence of tuple (job_id, status, 
+                                      exit_info, 
+                                      (submission_date, 
+                                       execution_date, 
+                                       ending_date)), 
+                   sequence of tuple (transfer_id, status), 
+                   workflow_status)
     '''
     with self.__lock:
       connection = self.__connect()
       cursor = connection.cursor()
     
       try:
-        workflow_status = ([],[])
+        # workflow status 
+        wf_status = cursor.execute('''SELECT  
+                                      status
+                                      FROM workflows WHERE id=?''',
+                                      [wf_id]).next()[0]#supposes that the wf_id is valid
+                                      
+        workflow_status = ([],[], wf_status)
         # jobs
         for row in cursor.execute('''SELECT id,
                                             status,
@@ -1257,7 +1350,7 @@ class JobServer ( object ):
       
   def getJobStatus(self, job_id):
     '''
-    Returns the job status sored in the database (updated by L{DrmaaJobScheduler}) and 
+    Returns the job status stored in the database (updated by L{DrmaaJobScheduler}) and 
     the date of its last update.
     Returns (None, None) if the job_id is not valid.
     '''
@@ -1283,7 +1376,9 @@ class JobServer ( object ):
 
   def setSubmissionInformation(self, job_id, drmaa_id, submission_date):
     '''
-    Set the submission information of the job.
+    Set the submission information of the job and reset information 
+    related to the job submission (execution_date, ending_date, 
+    exit_status, exit_value, terminating_signal, resource_usage) .
     
     @type  drmaa_id: string
     @param drmaa_id: job identifier on DRMS if submitted via DRMAA
@@ -1294,7 +1389,29 @@ class JobServer ( object ):
       connection = self.__connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('UPDATE jobs SET drmaa_id=?, submission_date=?, status=?, last_status_update=? WHERE id=?', (drmaa_id, submission_date, constants.UNDETERMINED, datetime.now(), job_id))
+        cursor.execute('''UPDATE jobs 
+                          SET drmaa_id=?, 
+                              submission_date=?, 
+                              status=?, 
+                              last_status_update=?,
+                              exit_status=?,
+                              exit_value=?,
+                              terminating_signal=?,
+                              resource_usage=?, 
+                              execution_date=?,
+                              ending_date=?
+                              WHERE id=?''', 
+                              (drmaa_id, 
+                              submission_date, 
+                              constants.UNDETERMINED, 
+                              datetime.now(),
+                              None,
+                              None,
+                              None,
+                              None,
+                              None,
+                              None,
+                              job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
