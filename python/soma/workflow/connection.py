@@ -25,7 +25,7 @@ import SocketServer
 __docformat__ = "epytext en"
 
 
-class JobConnectionError( Exception):
+class ConnectionError( Exception):
   def __init__(self, msg, logger = None):
     self.args = (msg,)
     if logger:
@@ -39,7 +39,7 @@ To be consistent: "local" means on a submitting machine of the pool
 '''
 
 
-class JobRemoteConnection( object ):
+class RemoteConnection( object ):
   '''
   The L{JobRemoteConnection} class makes it possible to sumbit jobs from a machine which is
   not a submitting machine of the pool and possibly doesn't share a file system with these 
@@ -173,7 +173,7 @@ class JobRemoteConnection( object ):
     return self.jobScheduler
 
 
-class JobLocalConnection( object ):
+class LocalConnection( object ):
   
   def __init__(self,
                local_process_src,

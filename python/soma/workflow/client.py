@@ -44,7 +44,7 @@ class WorkflowNode(object):
   def __init__(self, name):
     self.name = name
 
-class JobTemplate(WorkflowNode):
+class Job(WorkflowNode):
   '''
   Job representation in a workflow. 
   Workflow node type.
@@ -88,7 +88,7 @@ class JobTemplate(WorkflowNode):
 
     
     
-class UniversalResourcePath(object):
+class SharedResourcePath(object):
   '''
   Representation of path universaly over the resource.
   The information required is:
@@ -147,7 +147,7 @@ class FileTransfer(WorkflowNode):
     self.remote_paths = remote_paths
     self.local_path = None
 
-class FileSending(FileTransfer):
+class ClientToComputationTransfer(FileTransfer):
   '''
   Workflow node type.
   File transfer for an input file.
@@ -160,7 +160,7 @@ class FileSending(FileTransfer):
     super(FileSending, self).__init__(remote_path, disposal_timeout, name, remote_paths)
    
 
-class FileRetrieving(FileTransfer):
+class ComputationToClientTransfer(FileTransfer):
   '''
   Workflow node type.
   File transfer for an output file.
@@ -172,7 +172,7 @@ class FileRetrieving(FileTransfer):
                 remote_paths = None):
     super(FileRetrieving, self).__init__(remote_path, disposal_timeout, name, remote_paths)
     
-class Group(object):
+class NodesGroup(object):
   '''
   Workflow group: provide a hierarchical structure to a workflow.
   However groups has only a displaying role, it doesn't have
@@ -230,7 +230,7 @@ class Workflow(object):
           elements.append(node) 
       self.mainGroup = Group(elements, "main_group")
       
-class Jobs(object):
+class WorkflowControler(object):
   
   '''
   Submition, control and monitoring of jobs, transfer and workflows.
@@ -383,8 +383,6 @@ class Jobs(object):
       self.__connection = None
 
     
-
-
   def disconnect(self):
     '''
     Simulates a disconnection for TEST PURPOSE ONLY.
@@ -447,27 +445,27 @@ class Jobs(object):
  
   '''
     
-  def send(self, remote_input, disposal_timeout = 168, remote_paths=None, buffer_size = 512**2):
-    '''
-    Transfers a remote file to a local directory. 
+  #def send(self, remote_input, disposal_timeout = 168, remote_paths=None, buffer_size = 512**2):
+    #'''
+    #Transfers a remote file to a local directory. 
    
-    @type  remote_input: string 
-    @param remote_input: remote path of input file
-    @type  disposalTimeout: int
-    @param disposalTimeout:  The local file and transfer information is 
-    automatically disposed after disposal_timeout hours, except if a job 
-    references it as input. Default delay is 168 hours (7 days).
-    @type remote_paths: sequence of string or None
-    @type remote_paths: sequence of file to transfer if transfering a 
-    file serie or if the file format involve serveral files of directories.
-    @rtype: string 
-    @return: local path where the remote file was copied
-    '''
-    local_path = self.registerTransfer(remote_input, disposal_timeout, remote_paths)
-    self.sendRegisteredTransfer(local_path, buffer_size)
+    #@type  remote_input: string 
+    #@param remote_input: remote path of input file
+    #@type  disposalTimeout: int
+    #@param disposalTimeout:  The local file and transfer information is 
+    #automatically disposed after disposal_timeout hours, except if a job 
+    #references it as input. Default delay is 168 hours (7 days).
+    #@type remote_paths: sequence of string or None
+    #@type remote_paths: sequence of file to transfer if transfering a 
+    #file serie or if the file format involve serveral files of directories.
+    #@rtype: string 
+    #@return: local path where the remote file was copied
+    #'''
+    #local_path = self.registerTransfer(remote_input, disposal_timeout, remote_paths)
+    #self.sendRegisteredTransfer(local_path, buffer_size)
 
     
-  def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
+  def register_transfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
     '''
     Generates a unique local path and save the (local_path, remote_path) association.
     
@@ -485,7 +483,7 @@ class Jobs(object):
     '''
     return self.__js_proxy.registerTransfer(remote_path, disposal_timeout, remote_paths)
 
-  def sendRegisteredTransfer(self, local_path, buffer_size = 512**2):
+  def send(self, local_path, buffer_size = 512**2):
     '''
     Transfers one or several remote file(s) to a local directory. The local_path 
     must have been generated using the registerTransfer method. 
@@ -585,7 +583,7 @@ class Jobs(object):
                             relative_path)
     
 
-  def __sendFile(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
+  def _send_file(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
     if relative_path:
       r_path = os.path.join(remote_path, relative_path)
     else:
@@ -599,7 +597,7 @@ class Jobs(object):
     f.close()
 
 
-  def __retrieveFile(self, remote_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
+  def _retrieve_file(self, remote_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
     if relative_path:
       r_path = os.path.join(os.path.dirname(remote_path), relative_path)
     else:
@@ -633,7 +631,7 @@ class Jobs(object):
 
           
   @staticmethod
-  def __contents(path_seq, md5_hash=False):
+  def _contents(path_seq, md5_hash=False):
     result = []
     for path in path_seq:
       s = os.stat(path)
@@ -651,7 +649,7 @@ class Jobs(object):
     return result
         
         
-  def initializeSendingTransfer(self, local_path):
+  def initialize_sending_transfer(self, local_path):
     '''
     Initializes the transfer action (from client to server) and returns the transfer action information.
     
@@ -676,7 +674,7 @@ class Jobs(object):
     return transfer_action_info
   
         
-  def sendPiece(self, local_path, data, relative_path=None):
+  def send_piece(self, local_path, data, relative_path=None):
     '''
     Sends a piece of data to a registered transfer (identified by local_path).
 
@@ -696,7 +694,7 @@ class Jobs(object):
     return transfer_ended
 
 
-  def initializeRetrievingTransfer(self, local_path):
+  def initialize_retrieving_transfer(self, local_path):
     '''
     Initializes the transfer action (from server to client) and returns the transfer action information.
     
@@ -727,7 +725,7 @@ class Jobs(object):
         self.__createDirStructure(path, description, relative_path)
    
    
-  def retrievePiece(self, local_path, buffer_size, transmitted, relative_path=None):
+  def retrieve_piece(self, local_path, buffer_size, transmitted, relative_path=None):
     '''
     Retrieves a piece of data from a file or directory (identified by local_path).
     
@@ -746,7 +744,7 @@ class Jobs(object):
     return data
     
    
-  def cancelTransfer(self, local_path):
+  def dispose_transfer(self, local_path):
     '''
     Deletes the local file or directory and the associated transfer information.
     If some jobs reference the local file(s) as input or output, the transfer won't be 
@@ -778,18 +776,10 @@ class Jobs(object):
     jobs.dispose(job_id)
   '''
 
-  def submit( self,
-              command,
-              referenced_input_files=None,
-              referenced_output_files=None,
-              stdin=None,
-              join_stderrout=False,
-              disposal_timeout=168,
-              name_description=None,
-              stdout_file=None,
-              stderr_file=None,
-              working_directory=None,
-              parallel_job_info=None):
+  def submit_job( self, 
+                  job,
+                  disposal_timeout=168,
+                  name=None):
 
     '''
     Submits a job for execution to the cluster. A job identifier is returned and 
@@ -892,7 +882,11 @@ class Jobs(object):
 
   ########## WORKFLOW SUBMISSION ####################################
   
-  def submitWorkflow(self, workflow, expiration_date=None, name = None):
+  def submit_workflow(self, 
+                      workflow, 
+                      disposal_timeout=None, 
+                      name=None,
+                      start=False):
     '''
     Submits a workflow to the system and returns the id of each 
     submitted workflow element (Job or file transfer).
@@ -908,13 +902,13 @@ class Jobs(object):
     return submittedWF
   
   
-  def disposeWorkflow(self, workflow_id):
+  def dispose_workflow(self, workflow_id):
     '''
     Removes a workflow and all its associated nodes (file transfers and jobs)
     '''
     self.__js_proxy.disposeWorkflow(workflow_id)
     
-  def changeWorkflowExpirationDate(self, workflow_id, new_expiration_date):
+  def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
     Ask a new expiration date for the workflow.
     Return True if the workflow expiration date was set to the new date.
@@ -925,21 +919,29 @@ class Jobs(object):
     '''
     return self.__js_proxy.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
   
-  def restartWorkflow(self, workflow_id):
+  def start_workflow(self, workflow_id):
     '''
     The jobs which failed in the previous submission will be submitted again.
     The workflow execution must be done.
     Return true if the workflow was resubmitted.
     '''
     return self.__js_proxy.restartWorkflow(workflow_id)
+  
+  def stop_workflow(self, workflow_id):
+    
+    
     
 
   ########## MONITORING #############################################
 
 
-  def jobs(self):
+  def jobs(self, job_ids=None):
     '''
-    Returns the identifier of the submitted and not diposed jobs.
+    
+    
+    Returns the identifier of the submitted and not diposed jobs + name and sub date.
+
+    @param job_ids: sequence of job id
 
     @rtype:  sequence of C{JobIdentifier}
     @return: series of job identifiers
@@ -966,7 +968,7 @@ class Jobs(object):
     '''
     return self.__js_proxy.workflows()
   
-  def workflowInformation(self, wf_id):
+  def workflow_information(self, wf_id):
     '''
     Returns a tuple: 
       - expiration date
@@ -978,7 +980,7 @@ class Jobs(object):
     return self.__js_proxy.workflowInformation(wf_id)
     
   
-  def submittedWorkflow(self, wf_id):
+  def workflow(self, wf_id):
     '''
     Returns the submitted workflow.
     
