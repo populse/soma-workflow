@@ -336,14 +336,14 @@ class DBJob(object):
 
 
 
-class JobServerError( Exception):
+class WorkflowDatabaseServerError( Exception ):
   def __init__(self, msg, logger=None):
     self.args = (msg,)
     if logger: 
       logger.critical('EXCEPTION ' + msg)
 
 
-class JobServer ( object ):
+class WorkflowDatabaseServer( object ):
   
   def __init__(self, database_file, tmp_file_dir_path):
     '''

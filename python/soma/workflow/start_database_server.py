@@ -1,17 +1,3 @@
-import soma.jobs.jobServer
-import Pyro.naming
-import Pyro.core
-from Pyro.errors import PyroError, NamingError
-import os
-import logging
-import soma.jobs.constants as constants
-
-class JobServer(Pyro.core.ObjBase, soma.jobs.jobServer.JobServer):
-  def __init__(self, database_file, tmp_file_dir_path):
-    Pyro.core.ObjBase.__init__(self)
-    soma.jobs.jobServer.JobServer.__init__(self, database_file, tmp_file_dir_path)
-  pass
-
 
 if __name__ == '__main__':
   import Pyro.naming
@@ -19,7 +5,21 @@ if __name__ == '__main__':
   from Pyro.errors import PyroError,NamingError
   import ConfigParser
   import sys
-
+  
+  import soma.jobs.jobServer
+  import Pyro.naming
+  import Pyro.core
+  from Pyro.errors import PyroError, NamingError
+  import os
+  import logging
+  import soma.jobs.constants as constants
+  
+  class JobServer(Pyro.core.ObjBase, soma.jobs.jobServer.JobServer):
+    def __init__(self, database_file, tmp_file_dir_path):
+      Pyro.core.ObjBase.__init__(self)
+      soma.jobs.jobServer.JobServer.__init__(self, database_file, tmp_file_dir_path)
+    pass
+  
   if not len(sys.argv) == 2:
     sys.stdout.write("jobServer takes 1 argument: resource id. \n")
     sys.exit(1)

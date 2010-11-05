@@ -864,7 +864,7 @@ class WorkflowControler(object):
     return job_id
    
 
-  def dispose( self, job_id ):
+  def dispose_job( self, job_id ):
     '''
     Frees all the resources allocated to the submitted job on the data server
     L{JobServer}. After this call, the C{job_id} becomes invalid and
@@ -949,7 +949,7 @@ class WorkflowControler(object):
     
     return self.__js_proxy.jobs()
     
-  def transfers(self):
+  def transfers(self, transfer_ids=None):
     '''
     Returns the transfers currently owned by the user as a sequence of local file path 
     returned by the L{registerTransfer} method. 
@@ -960,7 +960,7 @@ class WorkflowControler(object):
  
     return self.__js_proxy.transfers()
 
-  def workflows(self):
+  def workflows(self, workflow_ids=None):
     '''
     Returns the identifiers of the submitted workflows.
     
@@ -968,16 +968,16 @@ class WorkflowControler(object):
     '''
     return self.__js_proxy.workflows()
   
-  def workflow_information(self, wf_id):
-    '''
-    Returns a tuple: 
-      - expiration date
-      - workflow name
+  #def workflow_information(self, wf_id):
+    #'''
+    #Returns a tuple: 
+      #- expiration date
+      #- workflow name
       
-    @rtype: (date, name)
-    @return: (expiration date, workflow name) 
-    '''
-    return self.__js_proxy.workflowInformation(wf_id)
+    #@rtype: (date, name)
+    #@return: (expiration date, workflow name) 
+    #'''
+    #return self.__js_proxy.workflowInformation(wf_id)
     
   
   def workflow(self, wf_id):
@@ -989,25 +989,25 @@ class WorkflowControler(object):
     '''
     return self.__js_proxy.submittedWorkflow(wf_id)
     
-  def transferInformation(self, local_path):
-    '''
-    The local_path must belong to the list of paths returned by L{transfers}.
-    Returns the information related to the file transfer corresponding to the 
-    local_path.
+  #def transferInformation(self, local_path):
+    #'''
+    #The local_path must belong to the list of paths returned by L{transfers}.
+    #Returns the information related to the file transfer corresponding to the 
+    #local_path.
 
-    @rtype: tuple (local_path, remote_path, expiration_date)
-    @return:
-        -local_path: path of the local file or directory
-        -remote_path: remote file or directory path
-        -expiration_date: after this date the local file will be deleted, unless an
-        existing job has declared this file as output or input.
-        -remote_paths: sequence of file or directory path or None
-    '''
-    return self.__js_proxy.transferInformation(local_path)
+    #@rtype: tuple (local_path, remote_path, expiration_date)
+    #@return:
+        #-local_path: path of the local file or directory
+        #-remote_path: remote file or directory path
+        #-expiration_date: after this date the local file will be deleted, unless an
+        #existing job has declared this file as output or input.
+        #-remote_paths: sequence of file or directory path or None
+    #'''
+    #return self.__js_proxy.transferInformation(local_path)
    
   
   
-  def status( self, job_id ):
+  def job_status( self, job_id ):
     '''
     Returns the status of a submitted job.
     
@@ -1020,7 +1020,7 @@ class WorkflowControler(object):
     return self.__js_proxy.status(job_id)
   
   
-  def detailedWorkflowStatus(self, wf_id, groupe = None):
+  def workflow_nodes_status(self, wf_id, groupe = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and requests to the database.
@@ -1043,7 +1043,7 @@ class WorkflowControler(object):
     return new_wf_status
     
   
-  def transferStatus(self, local_path):
+  def transfer_status(self, local_path):
     '''
     Returns the status of a transfer and the information related to the transfer in progress in such case. 
     
@@ -1064,7 +1064,7 @@ class WorkflowControler(object):
       
             
             
-  def __progression(self, local_path, remote_path, transfer_action_info):
+  def _progression(self, local_path, remote_path, transfer_action_info):
     progression_info = None
     if transfer_action_info == None :
       progression_info = None
@@ -1093,12 +1093,10 @@ class WorkflowControler(object):
        
     return progression_info
     
-    
-    
-    
 
-  def exitInformation(self, job_id ):
+  def termination_status(self, job_id ):
     '''
+    ou regrouper avec status
     Gives the information related to the end of the job.
    
     @type  job_id: C{JobIdentifier}
@@ -1116,49 +1114,59 @@ class WorkflowControler(object):
     return self.__js_proxy.exitInformation(job_id)
     
  
-  def jobInformation(self, job_id):
-    '''
-    Gives general information about the job: name/description, command and 
-    submission date.
+  #def jobInformation(self, job_id):
+    #'''
+    #Gives general information about the job: name/description, command and 
+    #submission date.
     
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
-    @rtype: tuple or None
-    @return: (name_description, command, submission_date) it may be C{None} if the job 
-    is not valid. 
-    '''
-    return self.__js_proxy.jobInformation(job_id)
+    #@type  job_id: C{JobIdentifier}
+    #@param job_id: The job identifier (returned by L{submit} or L{jobs})
+    #@rtype: tuple or None
+    #@return: (name_description, command, submission_date) it may be C{None} if the job 
+    #is not valid. 
+    #'''
+    #return self.__js_proxy.jobInformation(job_id)
     
     
-  def retrieveStdOutErr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
-    '''
-    Copy the job standard error to a file.
-    '''
-    
-    local_stdout_file, stdout_transfer_action_info, local_stderr_file, stderr_transfer_action_info = self.__js_proxy.getStdOutErrTransferActionInfo(job_id)
-    
-    open(stdout_file_path, 'wb') 
-    if local_stdout_file and stdout_transfer_action_info:
-      self.__retrieveFile(stdout_file_path, 
-                          local_stdout_file, 
-                          stdout_transfer_action_info[0], 
-                          stdout_transfer_action_info[1], 
-                          buffer_size)
+  def stdout_transfer_id(self, job_id):
+   '''
+   @return : stdout_transfer_id
+   '''
   
-    if stderr_file_path:
-      open(stderr_file_path, 'wb') 
-      if local_stderr_file and stderr_transfer_action_info:
-          self.__retrieveFile(stderr_file_path, 
-                              local_stderr_file, 
-                              stderr_transfer_action_info[0], 
-                              stderr_transfer_action_info[1], 
-                              buffer_size)
+  def stderr_transfer_id(self, job_id):
+    '''
+   @return: stderr_transfer_id
+    ''' 
+    
+  #def retrieveStdOutErr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
+    #'''
+    #Copy the job standard error to a file.
+    #'''
+    
+    #local_stdout_file, stdout_transfer_action_info, local_stderr_file, stderr_transfer_action_info = self.__js_proxy.getStdOutErrTransferActionInfo(job_id)
+    
+    #open(stdout_file_path, 'wb') 
+    #if local_stdout_file and stdout_transfer_action_info:
+      #self.__retrieveFile(stdout_file_path, 
+                          #local_stdout_file, 
+                          #stdout_transfer_action_info[0], 
+                          #stdout_transfer_action_info[1], 
+                          #buffer_size)
+  
+    #if stderr_file_path:
+      #open(stderr_file_path, 'wb') 
+      #if local_stderr_file and stderr_transfer_action_info:
+          #self.__retrieveFile(stderr_file_path, 
+                              #local_stderr_file, 
+                              #stderr_transfer_action_info[0], 
+                              #stderr_transfer_action_info[1], 
+                              #buffer_size)
     
     
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_ids, timeout = -1):
+  def wait_job( self, job_ids, timeout = -1):
     '''
     Waits for all the specified jobs to finish execution or fail. 
     The job_id must be valid.
@@ -1171,7 +1179,7 @@ class WorkflowControler(object):
     '''
     self.__js_proxy.wait(job_ids, timeout)
 
-  def stop( self, job_id ):
+  def stop_job( self, job_id ):
     '''
     Temporarily stops the job until the method L{restart} is called. The job 
     is held if it was waiting in a queue and suspended if was running. 
@@ -1184,7 +1192,7 @@ class WorkflowControler(object):
    
   
   
-  def restart( self, job_id ):
+  def restart_job( self, job_id ):
     '''
     Restarts a job previously stopped by the L{stop} method.
     The job_id must be valid.
@@ -1195,7 +1203,7 @@ class WorkflowControler(object):
     self.__js_proxy.restart(job_id)
 
 
-  def kill( self, job_id ):
+  def kill_job( self, job_id ):
     '''
     Definitely terminates a job execution. After a L{kill}, a job is still in
     the list returned by L{jobs} and it can still be inspected by methods like

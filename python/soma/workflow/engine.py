@@ -29,14 +29,14 @@ __docformat__ = "epytext en"
 
 refreshment_interval = 1 #seconds
 
-class JobSchedulerError( Exception ): 
+class WorkflowEngineError( Exception ): 
   def __init__(self, msg, logger = None):
     self.args = (msg,)
     if logger:
       logger.critical('EXCEPTION ' + msg)
 
 
-class DrmaaJobScheduler( object ):
+class DrmaaWorkflowEngine( object ):
 
   '''
   Instances of this class opens a DRMAA session and allows to submit and control 
@@ -864,7 +864,7 @@ class DrmaaJobScheduler( object ):
     self.logger.debug("<< __waitForStatusUpdate")
 
 
-class JobScheduler( object ):
+class WorkflowEngine( object ):
   
   def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None, universal_path_translation = None):
     ''' 
