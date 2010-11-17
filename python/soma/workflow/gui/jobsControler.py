@@ -1,6 +1,6 @@
 
-from soma.jobs.constants import *
-from soma.jobs.jobClient import JobTemplate, UniversalResourcePath, FileTransfer, FileSending, FileRetrieving, Group, Workflow, Jobs
+from soma.workflow.constants import *
+from soma.workflow.client import Job, SharedResourcePath, FileTransfer, FileSending, FileRetrieving, WorkflowNodeGroup, Workflow, WorkflowController
 import socket
 import os
 import ConfigParser
@@ -18,11 +18,11 @@ class JobsControler(object):
    
   @staticmethod
   def getConfigFile():
-    result = os.environ.get( 'SOMA_JOBS_CONFIG' )
+    result = os.environ.get( 'SOMA_WORKFLOW_CONFIG' )
     if not result or not os.path.exists( result ):
       result = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'jobs.cfg' )
       if not os.path.exists( result ):
-        raise RuntimeError( 'Cannot find soma-jobs configuration file. Perhaps SOMA_JOBS_CONFIG is not proprely set.' )
+        raise RuntimeError( 'Cannot find soma-jobs configuration file. Perhaps SOMA_WORKFLOW_CONFIG is not proprely set.' )
     return result
   
   
@@ -38,11 +38,11 @@ class JobsControler(object):
         
   def getConnection(self, resource_id, login, password, test_no):
     try: 
-      connection = Jobs( self.getConfigFile(),
-                          resource_id, 
-                          login, 
-                          password,
-                          log=test_no)
+      connection = WorkflowController( self.getConfigFile(),
+                                       resource_id, 
+                                       login, 
+                                       password,
+                                       log=test_no)
     except Exception, e:
       return (None, "%s: %s" %(type(e),e) )
       
@@ -184,7 +184,7 @@ class JobsControler(object):
       #for ar in workflow.full_dependencies:
         #print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
       #for node in workflow.full_nodes:
-        #if isinstance(node, JobTemplate):
+        #if isinstance(node, Job):
           #if node.job_id == -1:
             #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
           #else:
@@ -221,7 +221,7 @@ class JobsControler(object):
     for ar in workflow.dependencies:
       print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
     for node in workflow.nodes:
-      if isinstance(node, JobTemplate):
+      if isinstance(node, Job):
         if node.job_id == -1:
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
@@ -285,17 +285,17 @@ class WorkflowExamples(object):
     
     if self.with_universal_resource_path:
       # inputs
-      self.file0 = UniversalResourcePath("complete/" + "file0", "example", "job_dir", 168)
-      self.script1 = UniversalResourcePath("complete/" + "job1.py", "example", "job_dir", 168)
-      self.stdin1 = UniversalResourcePath("complete/" + "stdin1", "example", "job_dir", 168)
-      self.script2 = UniversalResourcePath("complete/" + "job2.py", "example", "job_dir", 168)
-      self.stdin2 = UniversalResourcePath("complete/" + "stdin2", "example", "job_dir", 168)
-      self.script3 = UniversalResourcePath("complete/" + "job3.py", "example", "job_dir", 168)
-      self.stdin3 = UniversalResourcePath("complete/" + "stdin3", "example", "job_dir", 168)
-      self.script4 = UniversalResourcePath("complete/" + "job4.py", "example", "job_dir", 168)
-      self.stdin4 = UniversalResourcePath("complete/" + "stdin4", "example", "job_dir", 168)
+      self.file0 = SharedResourcePath("complete/" + "file0", "example", "job_dir", 168)
+      self.script1 = SharedResourcePath("complete/" + "job1.py", "example", "job_dir", 168)
+      self.stdin1 = SharedResourcePath("complete/" + "stdin1", "example", "job_dir", 168)
+      self.script2 = SharedResourcePath("complete/" + "job2.py", "example", "job_dir", 168)
+      self.stdin2 = SharedResourcePath("complete/" + "stdin2", "example", "job_dir", 168)
+      self.script3 = SharedResourcePath("complete/" + "job3.py", "example", "job_dir", 168)
+      self.stdin3 = SharedResourcePath("complete/" + "stdin3", "example", "job_dir", 168)
+      self.script4 = SharedResourcePath("complete/" + "job4.py", "example", "job_dir", 168)
+      self.stdin4 = SharedResourcePath("complete/" + "stdin4", "example", "job_dir", 168)
       
-      self.exceptionJobScript = UniversalResourcePath("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
+      self.exceptionJobScript = SharedResourcePath("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
       
       if self.with_transfers:
         print "transfers !!!"
@@ -307,11 +307,11 @@ class WorkflowExamples(object):
         self.file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
       else:
         # outputs
-        self.file11 = UniversalResourcePath("file11", "example", "output_dir", 168)
-        self.file12 = UniversalResourcePath("file12", "example", "output_dir",168)
-        self.file2 = UniversalResourcePath("file2", "example", "output_dir",168)
-        self.file3 = UniversalResourcePath("file3", "example", "output_dir",168)
-        self.file4 = UniversalResourcePath("file4", "example", "output_dir",168)
+        self.file11 = SharedResourcePath("file11", "example", "output_dir", 168)
+        self.file12 = SharedResourcePath("file12", "example", "output_dir",168)
+        self.file2 = SharedResourcePath("file2", "example", "output_dir",168)
+        self.file3 = SharedResourcePath("file3", "example", "output_dir",168)
+        self.file4 = SharedResourcePath("file4", "example", "output_dir",168)
       
     elif self.with_transfers and not self.with_universal_resource_path:
       # outputs
@@ -357,65 +357,65 @@ class WorkflowExamples(object):
   def job1(self):
     if self.with_transfers: 
       if not self.with_universal_resource_path:
-        job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
+        job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1")
       else:
-        job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
+        job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1")
     else:
-      job1 = JobTemplate(["python", self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
+      job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
     return job1
     
   def job2(self):
     if self.with_transfers: 
       if not self.with_universal_resource_path:
-        job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
+        job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [self.file0, self.file11, self.script2, self.stdin2], 
                           [self.file2], 
                           self.stdin2, False, 168, "job2")
       else:
-        job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
+        job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [], 
                           [self.file2], 
                           self.stdin2, False, 168, "job2")
     else:
-      job2 = JobTemplate(["python", self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+      job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
     return job2
     
   def job3(self):
     if self.with_transfers: 
       if not self.with_universal_resource_path:
-        job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], 
+        job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], 
                             [self.file12, self.script3, self.stdin3], 
                             [self.file3], 
                             self.stdin3, False, 168, "job3")
       else:
-        job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], 
+        job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], 
                            [], 
                            [self.file3], 
                            self.stdin3, False, 168, "job3")
     else:
-      job3 = JobTemplate(["python", self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
+      job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
     return job3
     
   def job4(self):
     if self.with_transfers: 
       if not self.with_universal_resource_path:
-        job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
+        job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [self.file2, self.file3, self.script4, self.stdin4], 
                            [self.file4], 
                            self.stdin4, False, 168, "job4")
       else:
-        job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
+        job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [], 
                            [self.file4], 
                            self.stdin4, False, 168, "job4")
     else:
-      job4 = JobTemplate(["python", self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
+      job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
     return job4
     
 
@@ -436,9 +436,9 @@ class WorkflowExamples(object):
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = Group([job2, job3], 'group_1')
-    group_2 = Group([job1, group_1], 'group_2')
-    mainGroup = Group([group_2, job4])
+    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
+    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
+    mainGroup = WorkflowNodeGroup([group_2, job4])
     
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
@@ -449,17 +449,17 @@ class WorkflowExamples(object):
     # jobs
     if self.with_transfers:
       if not self.with_universal_resource_path:
-        job1 = JobTemplate(["python", self.exceptionJobScript], 
+        job1 = Job(["python", self.exceptionJobScript], 
                           [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
                           self.stdin1, False, 168, "job1 with exception")
       else:
-        job1 = JobTemplate(["python", self.exceptionJobScript], 
+        job1 = Job(["python", self.exceptionJobScript], 
                   [], 
                   [self.file11, self.file12], 
                   self.stdin1, False, 168, "job1 with exception")
     else:
-      job1 = JobTemplate(["python", self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1 with exception")                   
+      job1 = Job(["python", self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1 with exception")                   
     
     job2 = self.job2()
     job3 = self.job3()
@@ -491,17 +491,17 @@ class WorkflowExamples(object):
     
     if self.with_transfers:
       if not self.with_universal_resource_path:
-        job3 = JobTemplate(["python", self.exceptionJobScript],
+        job3 = Job(["python", self.exceptionJobScript],
                           [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
                           [self.file3],
                           None, False, 168, "job3 with exception")
       else:
-        job3 = JobTemplate(["python", self.exceptionJobScript],
+        job3 = Job(["python", self.exceptionJobScript],
                           [],
                           [self.file3],
                           None, False, 168, "job3 with exception")
     else:
-      job3 = JobTemplate(["python", self.exceptionJobScript], None, None, None, False, 168, "job3 with exception")
+      job3 = Job(["python", self.exceptionJobScript], None, None, None, False, 168, "job3 with exception")
       
       
            

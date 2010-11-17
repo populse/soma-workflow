@@ -1,27 +1,30 @@
 
 if __name__ == '__main__':
-  import Pyro.naming
-  import Pyro.core
-  from Pyro.errors import PyroError,NamingError
   import ConfigParser
   import sys
-  
-  import soma.jobs.jobServer
+  import os
+  import logging
+
   import Pyro.naming
   import Pyro.core
   from Pyro.errors import PyroError, NamingError
-  import os
-  import logging
-  import soma.jobs.constants as constants
   
-  class JobServer(Pyro.core.ObjBase, soma.jobs.jobServer.JobServer):
-    def __init__(self, database_file, tmp_file_dir_path):
+  import soma.workflow.database_server
+  import soma.workflow.constants as constants
+  
+  class WorkflowDatabaseServer(Pyro.core.ObjBase, 
+                               soma.workflow.database_server.WorkflowDatabaseServer):
+    def __init__(self, 
+                 database_file, 
+                 tmp_file_dir_path):
       Pyro.core.ObjBase.__init__(self)
-      soma.jobs.jobServer.JobServer.__init__(self, database_file, tmp_file_dir_path)
+      soma.workflow.database_server.WorkflowDatabaseServer.__init__(self, 
+                                                           database_file, 
+                                                           tmp_file_dir_path)
     pass
   
   if not len(sys.argv) == 2:
-    sys.stdout.write("jobServer takes 1 argument: resource id. \n")
+    sys.stdout.write("start_database_server takes 1 argument: resource id. \n")
     sys.exit(1)
   
   print "Ressource: " + sys.argv[1]
@@ -29,18 +32,20 @@ if __name__ == '__main__':
   #########################
   # reading configuration 
   config = ConfigParser.ConfigParser()
-  config_file_path = os.environ['SOMA_JOBS_CONFIG']
+  config_file_path = os.environ['SOMA_WORKFLOW_CONFIG']
+  print "configuration file " + config_file_path
   config.read(config_file_path)
   section = sys.argv[1]
  
   ###########
   # log file 
-  log_file_path = config.get(section, constants.OCFG_JOB_SERVER_LOG_FILE)
+  log_file_path = config.get(section, constants.OCFG_SERVER_LOG_FILE)
   if log_file_path != 'None':  
     logging.basicConfig(
       filename = log_file_path,
-      format = config.get(section, constants.OCFG_JOB_SERVER_LOG_FORMAT, 1),
-      level = eval("logging."+config.get(section, constants.OCFG_JOB_SERVER_LOG_LEVEL)))
+      format = config.get(section, constants.OCFG_SERVER_LOG_FORMAT, 1),
+      level = eval("logging."+ config.get(section, 
+                                          constants.OCFG_SERVER_LOG_LEVEL)))
   
   ########################
   # Pyro server creation 
@@ -57,20 +62,22 @@ if __name__ == '__main__':
   daemon.useNameServer(ns)
 
   # connect a new object implementation (first unregister previous one)
-  job_server_name = config.get(section, constants.CFG_JOB_SERVER_NAME)
+  server_name = config.get(section, constants.CFG_SERVER_NAME)
   try:
-    ns.unregister(job_server_name)
+    ns.unregister(server_name)
   except NamingError:
     pass
 
   # connect new object implementation
-  jobServer = JobServer(config.get(section, constants.CFG_DATABASE_FILE) , 
-                        config.get(section, constants.CFG_TMP_FILE_DIR_PATH) )
-  daemon.connect(jobServer,job_server_name)
+  server = WorkflowDatabaseServer(config.get(section, 
+                                             constants.CFG_DATABASE_FILE), 
+                                  config.get(section, 
+                                             constants.CFG_TRANSFERED_FILES_DIR))
+  daemon.connect(server, server_name)
   print "port = " + repr(daemon.port)
   
   # enter the server loop.
-  print 'Server object ' + job_server_name + ' ready.'
+  print 'Server object ' + server_name + ' ready.'
 
   ########################
   # Request loop

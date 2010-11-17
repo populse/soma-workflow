@@ -1,14 +1,24 @@
 '''
-The class L{JobServer} is the data server used by the L{JobScheduler} to 
-save all information related to submitted jobs to predefined sets of machines
-linked together via a distributed resource management systems (DRMS).
-
-
 @author: Yann Cointepas
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
+
+'''
+soma-workflow database server
+
+The WorkflowDatabaseServer stores all the information related to workflows, jobs 
+and file transfer in a sqlite database file. The database stores the workflows,
+jobs and file transfer objects but also the status of the actions which can be
+done on the objects (submission of a job or a workflow, transfering a file...). 
+'''
+
+
+#-------------------------------------------------------------------------------
+# Imports
+#-------------------------------------------------------------------------------
+
 from __future__ import with_statement 
 
 import sqlite3
@@ -26,16 +36,27 @@ import soma.jobs.constants as constants
 
 __docformat__ = "epytext en"
 
+#-----------------------------------------------------------------------------
+# Globals and constants
+#-----------------------------------------------------------------------------
 
 strtime_format = '%Y-%m-%d %H:%M:%S'
-
 file_separator = ', '
 
+#-----------------------------------------------------------------------------
+# Local utilities
+#-----------------------------------------------------------------------------
 
 def adapt_datetime(ts):
     return ts.strftime(strtime_format)
 
 sqlite3.register_adapter(datetime, adapt_datetime)
+
+
+#-----------------------------------------------------------------------------
+# Classes and functions
+#-----------------------------------------------------------------------------
+
 
 '''
 Job server database tables:
@@ -48,7 +69,7 @@ Job server database tables:
       id      : int
       user_id : int
     
-    => used by the job system (DrmaaJobScheduler, JobServer)
+    => used by the job system (DrmaaWorkflowEngine, WorkflowDatabaseServer)
       drmaa_id           : string, None if not submitted
       expiration_date    : date
       status             : string
@@ -283,14 +304,14 @@ class DBJob(object):
     @type  parallel_config_name: None or string 
     @param parallel_config_name: if the job is made to run on several nodes: 
                                  name of the paralle configuration as defined 
-                                 in JobServer.
+                                 in WorkflowDatabaseServer.
     @type  max_node_number: int 
     @param max_node_number: maximum of node requested by the job to run
     
     @type  name_description: string
     @param name_description: optional description of the job.  
     @type  exit_status: string 
-    @param exit_status: exit status string as defined in L{JobServer}
+    @param exit_status: exit status string as defined in L{WorkflowDatabaseServer}
     @type  exit_value: int or None
     @param exit_value: if the status is FINISHED_REGULARLY, it contains the operating 
     system exit code of the job.
@@ -352,8 +373,8 @@ class WorkflowDatabaseServer( object ):
     @type  database_file: string
     @param database_file: the SQLite database file 
     @type  tmp_file_dir_path: string
-    @param tmp_file_dir_path: place on the file system shared by all the machine of the pool 
-    used to stored temporary transfered files.
+    @param tmp_file_dir_path: place on the resource file system where
+    the files will be transfered
     '''
         
     self.__tmp_file_dir_path = tmp_file_dir_path
@@ -379,7 +400,7 @@ class WorkflowDatabaseServer( object ):
     try:
       connection = sqlite3.connect(self.__database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
-        raise JobServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
     return connection
   
   def __userTransferDirPath(self, login, user_id):
@@ -406,7 +427,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error registerUser %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error registerUser %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -482,7 +503,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error clean %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error clean %s: %s \n' %(type(e), e), self.logger) 
       
       cursor.close()
       connection.commit()
@@ -512,7 +533,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error removeNonRegisteredFiles %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error removeNonRegisteredFiles %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -553,7 +574,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e), self.logger) 
       
       userDirPath = self.__userTransferDirPath(login, user_id) 
       if remote_file_path == None:
@@ -624,7 +645,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error addTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error addTransfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -649,7 +670,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error removeTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error removeTransfer %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -685,7 +706,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
       if info:
         if info[4]:
           remote_paths = self.__stringConversion(info[4]).split(file_separator)
@@ -715,7 +736,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getTransferStatus %s: %s \n' %(type(e), e), self.logger) 
       if status:
         status = self.__stringConversion(status)
       cursor.close()
@@ -745,7 +766,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -768,7 +789,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -790,7 +811,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
       
       pickled_info = self.__stringConversion(pickled_info)
       if pickled_info:
@@ -826,7 +847,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -852,7 +873,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -893,7 +914,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error addWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error addWorkflow %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       wf_id = cursor.lastrowid
       cursor.close()
@@ -922,7 +943,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()
@@ -946,7 +967,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setWorkflow %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -967,7 +988,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error changeWorkflowExpirationDate %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error changeWorkflowExpirationDate %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -991,7 +1012,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getWorkflow %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -1023,7 +1044,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getWorkflowInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getWorkflowInfo %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -1061,7 +1082,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setWorkflowStatus %s: %s \n' %(type(e), e), 
+        raise WorkflowDatabaseServerError('Error setWorkflowStatus %s: %s \n' %(type(e), e), 
                               self.logger) 
       connection.commit()
       cursor.close()
@@ -1070,7 +1091,7 @@ class WorkflowDatabaseServer( object ):
   def getWorkflowStatus(self, wf_id):
     '''
     Returns the workflow status stored in the database 
-    (updated by L{DrmaaJobScheduler}) and the date of its last update.
+    (updated by L{DrmaaWorkflowEngine}) and the date of its last update.
     Returns (None, None) if the wf_id is not valid.
     '''
     with self.__lock:
@@ -1090,7 +1111,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), 
+        raise WorkflowDatabaseServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), 
                               self.logger) 
       status = self.__stringConversion(status)
       date = self.__strToDateConversion(strdate)
@@ -1169,7 +1190,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -1257,7 +1278,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error addJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error addJob %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       job_id = cursor.lastrowid
       cursor.close()
@@ -1268,13 +1289,13 @@ class WorkflowDatabaseServer( object ):
       tmp = open(dbJob.stdout_file, 'w')
       tmp.close()
     except IOError, e:
-      raise JobServerError("Could not create the standard output file %s: %s \n"  %(type(e), e), self.logger)
+      raise WorkflowDatabaseServerError("Could not create the standard output file %s: %s \n"  %(type(e), e), self.logger)
     if dbJob.stderr_file:
       try:
         tmp = open(dbJob.stderr_file, 'w')
         tmp.close()
       except IOError, e:
-        raise JobServerError("Could not create the standard error file %s: %s \n"  %(type(e), e), self.logger)
+        raise WorkflowDatabaseServerError("Could not create the standard error file %s: %s \n"  %(type(e), e), self.logger)
 
     return job_id
    
@@ -1300,7 +1321,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()
@@ -1343,14 +1364,14 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setJobStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setJobStatus %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
   def getJobStatus(self, job_id):
     '''
-    Returns the job status stored in the database (updated by L{DrmaaJobScheduler}) and 
+    Returns the job status stored in the database (updated by L{DrmaaWorkflowEngine}) and 
     the date of its last update.
     Returns (None, None) if the job_id is not valid.
     '''
@@ -1366,7 +1387,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getJobStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getJobStatus %s: %s \n' %(type(e), e), self.logger) 
       status = self.__stringConversion(status)
       date = self.__strToDateConversion(strdate)
       cursor.close()
@@ -1416,7 +1437,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setSubmissionInformation %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setSubmissionInformation %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -1442,7 +1463,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getDrmaaJobId %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getDrmaaJobId %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       return drmaa_id
@@ -1464,7 +1485,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     stdout_file_path = self.__stringConversion(result[0])
@@ -1475,12 +1496,12 @@ class WorkflowDatabaseServer( object ):
     '''
     Record the job exit status in the database.
     The status must be valid (ie a string among the exit job status 
-    string defined in L{JobServer}.
+    string defined in L{WorkflowDatabaseServer}.
 
     @type  job_id: C{JobIdentifier}
     @param job_id: job identifier
     @type  exit_status: string 
-    @param exit_status: exit status string as defined in L{JobServer}
+    @param exit_status: exit status string as defined in L{WorkflowDatabaseServer}
     @type  exit_value: int or None
     @param exit_value: if the status is FINISHED_REGULARLY, it contains the operating 
     system exit code of the job.
@@ -1513,7 +1534,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise JobServerError('Error setJobExitInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error setJobExitInfo %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -1582,7 +1603,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getJob %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     
@@ -1651,7 +1672,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise JobServerError('Error registerInputs %s: %s \n' %(type(e), e), self.logger) 
+          raise WorkflowDatabaseServerError('Error registerInputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -1676,7 +1697,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise JobServerError('Error registerOutputs %s: %s \n' %(type(e), e), self.logger) 
+          raise WorkflowDatabaseServerError('Error registerOutputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -1707,7 +1728,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
@@ -1731,7 +1752,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getJobs %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getJobs %s: %s \n' %(type(e), e), self.logger) 
           
       cursor.close()
       connection.close()
@@ -1762,7 +1783,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error isUserTransfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
@@ -1788,7 +1809,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getTransfers %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getTransfers %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return local_file_paths
@@ -1817,7 +1838,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error isUserWorkflow wfid=%d, userid=%s. Error %s: %s \n' %(repr(wf_id), repr(user_id), type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error isUserWorkflow wfid=%d, userid=%s. Error %s: %s \n' %(repr(wf_id), repr(user_id), type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
@@ -1841,7 +1862,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise JobServerError('Error getWorkflows %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error getWorkflows %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return wf_ids

@@ -1,8 +1,8 @@
 from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-from soma.jobs.jobClient import Workflow, Group, FileSending, FileRetrieving, FileTransfer, UniversalResourcePath, JobTemplate
-from soma.jobs.constants import *
+from soma.workflow.client import Workflow, WorkflowNodeGroup, FileSending, FileRetrieving, FileTransfer, SharedResourcePath, Job
+from soma.workflow.constants import *
 import time
 import threading
 import os
@@ -1193,7 +1193,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           if role == QtCore.Qt.DecorationRole:
             return self.running_icon
     
-    #### JobTemplates ####
+    #### Jobs ####
     if isinstance(item, ClientJob): 
       if item.data.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
@@ -1271,7 +1271,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
 
 class ClientModel(QtCore.QObject):
   '''
-  Model for the client side of soma.jobs. This model was created to provide faster
+  Model for the client side of soma.workflow. This model was created to provide faster
   GUI minimizing communications with the server.
   The instances of this class hold the connections and the ClientWorkflow instances 
   created in the current session of the GUI.
@@ -1377,9 +1377,9 @@ class ClientModel(QtCore.QObject):
     
   def addWorkflow(self, workflow, expiration_date):
     '''
-    Build a ClientWorkflow from a soma.jobs.jobClient.Worklfow and 
+    Build a ClientWorkflow from a soma.workflow.client.Worklfow and 
     use it as the current workflow. 
-    @type worklfow: soma.jobs.jobClient.Workflow
+    @type worklfow: soma.workflow.client.Workflow
     '''
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
     self.hold = True 
@@ -1461,13 +1461,13 @@ class ClientWorkflow(object):
     w_fts = set([]) 
     if not workflow.full_nodes:
       for node in workflow.nodes:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           w_js.add(node)
         elif isinstance(node, FileTransfer):
           w_fts.add(node)
     else:
       for node in workflow.full_nodes:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           w_js.add(node)
         elif isinstance(node, FileTransfer):
           w_fts.add(node)
@@ -1775,8 +1775,8 @@ class ClientJob(ClientWorkflowItem):
         cmd_seq.append("<FileTransfer " + command_el[0].remote_path + " >")
       elif isinstance(command_el, FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
-      elif isinstance(command_el, UniversalResourcePath):
-        cmd_seq.append("<UniversalResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
+      elif isinstance(command_el, SharedResourcePath):
+        cmd_seq.append("<SharedResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
       elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
         cmd_seq.append(unicode(command_el).encode('utf-8'))
       else:

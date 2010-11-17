@@ -1,17 +1,34 @@
+from __future__ import with_statement
+
+
 '''
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+''' 
+soma-workflow local and remote connections from client to computing resource.
 
-from __future__ import with_statement
+The RemoteConnection and LocalConnection instances should be created on the 
+client side. Their constructor creates a WorkflowEngine object on the 
+computing resource and setup the pyro communicaiton with it. The method
+getWorkflowEngine get back a pyro proxy of the remote WorkflowEngine object.
+The RemoteConnection and object contains a thead which signals to the 
+WorkflowEngine object at regular time interval that the client is still
+connected.
+
+requirements: Pyro and Paramiko must be installed on the remote machine.
+'''
+
+#-------------------------------------------------------------------------------
+# Imports
+#-------------------------------------------------------------------------------
+
 from datetime import datetime
 from datetime import timedelta
 import threading
 import time
-import Pyro.naming, Pyro.core
-from Pyro.errors import NamingError, ConnectionClosedError
 import socket
 import pwd 
 import os
@@ -22,8 +39,14 @@ import logging
 import select
 import SocketServer
 
+import Pyro.naming, Pyro.core
+from Pyro.errors import NamingError, ConnectionClosedError
+
 __docformat__ = "epytext en"
 
+#-------------------------------------------------------------------------------
+# Classes and functions
+#-------------------------------------------------------------------------------
 
 class ConnectionError( Exception):
   def __init__(self, msg, logger = None):
@@ -31,22 +54,14 @@ class ConnectionError( Exception):
     if logger:
       logger.critical('EXCEPTION ' + msg)
 
-'''
-requirements: Pyro and Paramiko must be installed on the remote machine.
-
-To be consistent: "local" means on a submitting machine of the pool 
-                  "remote" refers to all other machine
-'''
 
 
 class RemoteConnection( object ):
   '''
-  The L{JobRemoteConnection} class makes it possible to sumbit jobs from a machine which is
-  not a submitting machine of the pool and possibly doesn't share a file system with these 
-  machines. The fonction L{getJobScheduler} gets back a proxy of a L{JobScheduler} object. 
-  The connection between the remote machine and the pool is done via ssh using port 
-  forwarding (tunneling).
-  The protocol used inside the tunnel is Pyro's protocol.
+  Remote version of the connection.
+  The WorkflowControler object is created using ssh with paramiko.
+  The communication between the client and the computing resource is done with
+  Pyro inside a ssh port forwarding tunnel.
   '''
   
   def __init__(self,
@@ -54,30 +69,23 @@ class RemoteConnection( object ):
                password, 
                cluster_address,
                submitting_machine,
-               local_process_src,
                resource_id,
                log = ""):
     '''
-    Run the local job process, create a connection and get back a L(JobScheduler)
-    proxy which can be used to submit, monitor and control jobs on the pool.
-    
     @type  login: string
-    @param login: user's login on the pool 
+    @param login: user's login on the computing resource 
     @type  password: string
     @param password: associted password
     @type  submitting_machine: string
-    @param submitting_machine: address of a submitting machine of the pool.
-    @type  local_process_src: string
-    @param local_process_src: path to the localJobProcess.py on the submitting_machine
+    @param submitting_machine: address of a submitting machine of the computing
+                               resource.
     '''
-    
+
     import paramiko #required only on client host
     
     if not login:
       raise JobConnectionError("Remote connection requires a login")
-    #print 'login ' + login
-    #print 'submitting machine ' + submitting_machine
-  
+   
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
       s.bind(('localhost',0)) #try to bind to the port 0 so that the system will find an available port
@@ -85,12 +93,12 @@ class RemoteConnection( object ):
       s.close()
       return available_port 
     
-    pyro_objet_name = "jobScheduler_" + login
+    pyro_objet_name = "workflow_engine_" + login
     
-    # run the local job process and get back the    #
-    # JobScheduler and ConnectionChecker URIs       #
-    command = "python %s %s %s %s" %(local_process_src, resource_id, pyro_objet_name, log) 
-    print "local process command: " + command
+    # run the workflow engine process and get back the    #
+    # WorkflowEngine and ConnectionChecker URIs       #
+    command = "python -m soma.workflow.start_workflow_engine %s %s %s" %(resource_id, pyro_objet_name, log) 
+    print "start engine command: " + command
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.connect(hostname = cluster_address, port=22, username=login, password=password)
@@ -98,19 +106,19 @@ class RemoteConnection( object ):
     line = stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
-    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
-    job_scheduler_uri = line.split()[1] 
+    if not line: raise JobConnectionError("Can't read workflow engine Pyro uri.")
+    workflow_engine_uri = line.split()[1] 
     line = stdout.readline()
     while line and line.split()[0] != "connectionChecker":
       line = stdout.readline()
-    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+    if not line: raise JobConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 
     client.close()
     
-    print "job_scheduler_uri: " +  job_scheduler_uri
+    print "workflow_engine_uri: " +  workflow_engine_uri
     print "connection_checker_uri: " +  connection_checker_uri
-    local_pyro_daemon_port = Pyro.core.processStringURI(job_scheduler_uri).port
-    print "Pyro object port: " + repr(local_pyro_daemon_port)
+    engine_pyro_daemon_port = Pyro.core.processStringURI(workflow_engine_uri).port
+    print "Pyro object port: " + repr(engine_pyro_daemon_port)
   
     # find an available port              #
     remote_pyro_daemon_port = searchAvailablePort()
@@ -121,16 +129,16 @@ class RemoteConnection( object ):
     self.__transport = paramiko.Transport((cluster_address, 22))
     self.__transport.setDaemon(True)
     self.__transport.connect(username = login, password = password)
-    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, local_pyro_daemon_port, self.__transport) 
+    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
     tunnel.start()
 
     # create the proxies                     #
-    self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
+    self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
   
     # setting the proxies to use the tunnel  #
-    self.jobScheduler.URI.port = remote_pyro_daemon_port
-    self.jobScheduler.URI.address = 'localhost'
+    self.workflow_engine.URI.port = remote_pyro_daemon_port
+    self.workflow_engine.URI.address = 'localhost'
     connection_checker.URI.port = remote_pyro_daemon_port
     connection_checker.URI.address = 'localhost'
     
@@ -142,7 +150,7 @@ class RemoteConnection( object ):
       try:
         attempts = attempts + 1
         print "Communication through the ssh tunnel. Attempt no " + repr(attempts) + "/" + repr(maxattemps)
-        self.jobScheduler.jobs()
+        self.workflow_engine.jobs()
         connection_checker.isConnected()
       except Pyro.errors.ProtocolError, e: 
         print "-> Communication through ssh tunnel Failed"
@@ -169,45 +177,51 @@ class RemoteConnection( object ):
     self.__connection_holder.stop()
     self.__transport.close()
 
-  def getJobScheduler(self):
-    return self.jobScheduler
+  def get_workflow_engine(self):
+    return self.workflow_engine
 
 
 class LocalConnection( object ):
+
+  '''
+  Local version of the connection.
+  The worjkflow engine process is created using subprocess.
+  '''
   
   def __init__(self,
-               local_process_src,
                resource_id, 
                log = ""):
-    '''
-    '''
-    
-    
+
     login = pwd.getpwuid(os.getuid())[0] 
+    pyro_objet_name = "workflow_engine_" + login
 
-    pyro_objet_name = "jobScheduler_" + login
-
-    # run the local job process and get back the    #
-    # JobScheduler and ConnectionChecker URIs       #
-
-    command = "python %s %s %s %s" %(local_process_src, resource_id, pyro_objet_name, log) 
+    # run the workflow engine process and get back the  
+    # workflow_engine and ConnectionChecker URIs  
+    command = "python -m soma.workflow.start_workflow_engine %s %s %s" %( 
+                                     resource_id, 
+                                     pyro_objet_name, 
+                                     log) 
     print command
    
-    local_job_process = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE)
+    engine_process = subprocess.Popen(command, 
+                                         shell = True, 
+                                         stdout=subprocess.PIPE)
     
-    line = local_job_process.stdout.readline()
+    line = engine_process.stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
-      line = local_job_process.stdout.readline()
-    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
-    job_scheduler_uri = line.split()[1] 
-    line = local_job_process.stdout.readline()
+      line = engine_process.stdout.readline()
+    if not line: 
+      raise JobConnectionError("Can't read workflow engine Pyro uri.")
+    workflow_engine_uri = line.split()[1] 
+    line = engine_process.stdout.readline()
     while line and line.split()[0] != "connectionChecker":
-      line = local_job_process.stdout.readline()
-    if not line: raise JobConnectionError("Can't read jobScheduler Pyro uri.")
+      line = engine_process.stdout.readline()
+    if not line: 
+      raise JobConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 
     
     # create the proxies                     #
-    self.jobScheduler = Pyro.core.getProxyForURI(job_scheduler_uri)
+    self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
   
     # create the connection holder objet for #
@@ -221,8 +235,8 @@ class LocalConnection( object ):
     '''
     self.__connection_holder.stop()
 
-  def getJobScheduler(self):
-    return self.jobScheduler
+  def get_workflow_engine(self):
+    return self.workflow_engine
 
 class ConnectionChecker(object):
   

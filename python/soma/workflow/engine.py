@@ -5,58 +5,82 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+'''
+soma-workflow engine classes
+
+The soma-workflow engine is a process that run on the computing resource side.
+The engine classes are used in soma.workflow.start_workflow_engine script which 
+creates a workflow engine process.
+
+The DrmaaWorkflowEngine object submits jobs to the resource DRMS using a DRMAA 
+session, it also schedules the workflow's job submission and updates the 
+database (soma.workflow.server.WorkflowDatabaseServer) at regular time 
+interval with the status of the jobs and workflows it manages.
+The WorkflowEngine uses a DrmaaWorkflowEngine instance, it does all the file 
+transfer work that should be done on the computing resource side, and queries 
+the database for all that doesn't concern submitted jobs and workflows.
+'''
+
+
+#-----------------------------------------------------------------------------
+# Imports
+#-----------------------------------------------------------------------------
 
 from __future__ import with_statement
-from soma.pipeline.somadrmaajobssip import DrmaaJobs
-import Pyro.naming, Pyro.core
-from Pyro.errors import NamingError
-from datetime import date
-from datetime import timedelta
+from datetime import date, timedelta, datetime
 import pwd
 import os
 import threading
 import time
-from datetime import datetime
 import logging
-import soma.jobs.constants as constants
-from soma.jobs.jobClient import JobTemplate, FileTransfer, FileSending, FileRetrieving, Workflow, UniversalResourcePath
-import soma.jobs.jobServer 
 import copy
 import stat, hashlib, operator
 
+import Pyro.naming, Pyro.core
+from Pyro.errors import NamingError
+
+import soma.workflow.constants as constants
+from soma.workflow.client import Job, FileTransfer, FileSending, FileRetrieving, Workflow, SharedResourcePath
+import soma.workflow.database_server 
+from soma.pipeline.somadrmaajobssip import DrmaaJobs
+
+#-----------------------------------------------------------------------------
+# Globals and constants
+#-----------------------------------------------------------------------------
+
 __docformat__ = "epytext en"
-
-
 refreshment_interval = 1 #seconds
 
-class WorkflowEngineError( Exception ): 
+#-----------------------------------------------------------------------------
+# Classes and functions
+#-----------------------------------------------------------------------------
+
+class WorkflowEngineError(Exception): 
   def __init__(self, msg, logger = None):
-    self.args = (msg,)
+    self.args = (msg,
     if logger:
       logger.critical('EXCEPTION ' + msg)
 
-
-class DrmaaWorkflowEngine( object ):
-
+class DrmaaWorkflowEngine(object):
   '''
   Instances of this class opens a DRMAA session and allows to submit and control 
-  the jobs. It updates constantly the jobs status on the L{JobServer}. 
-  The L{DrmaaJobScheduler} must be created on one of the machine which is allowed
+  the jobs. It updates constantly the jobs status on the L{WorkflowDatabaseServer}. 
+  The L{DrmaaWorkflowEngine} must be created on one of the machine which is allowed
   to submit jobs by the DRMS.
   '''
 
   class RegisteredJob(object):
     '''
-    Job representation in DrmaaJobScheduler.
+    Job representation in DrmaaWorkflowEngine.
     '''
     def __init__(self, jobTemplate):
       '''
-      @type  jobTemplate: L{constant.JobTemplate}
+      @type  jobTemplate: L{constant.Job}
       @param jobTemplate: job submittion information. 
-      Note a few restrictions concerning the type of some JobTemplate members:
+      ote a few restrictions concerning the type of some Job members:
       referenced_input_files, referenced_output_files and command: must be lists of string
       stdout, stderr and stdin: must be strings
-      job_id must be a valid job id registered in the JobServer
+      job_id must be a valid job id registered in the database server
       @type  drmaa_id: string or None
       @param drmaa_id: submitted job DRMAA identifier, None if the job is not submitted
       @type  status: string
@@ -64,7 +88,7 @@ class DrmaaWorkflowEngine( object ):
       @type  last_status_update: date
       @param last_status_update: last status update date
       @type  exit_status: string 
-      @param exit_status: exit status string as defined in L{JobServer}
+      @param exit_status: exit status string as defined in L{WorkflowDatabaseServer}
       @type  exit_value: int or None
       @param exit_value: if the status is FINISHED_REGULARLY, it contains the operating 
       system exit code of the job.
@@ -79,11 +103,11 @@ class DrmaaWorkflowEngine( object ):
       self.terminating_signal = None
 
 
-  def __init__( self, job_server, parallel_job_submission_info = None, universal_path_translation = None):
+  def __init__( self, database_server, parallel_job_submission_info = None, universal_path_translation = None):
     '''
-    Opens a connection to the pool of machines and to the data server L{JobServer}.
+    Opens a connection to the pool of machines and to the data server L{WorkflowDatabaseServer}.
 
-    @type  job_server: L{JobServer}
+    @type  database_server: L{WorkflowDatabaseServer}
     @type  parallel_job_submission_info: dictionary 
     @param parallel_job_submission_info: DRMAA doesn't provide an unified way of submitting
     parallel jobs. The value of parallel_job_submission is cluster dependant. 
@@ -97,14 +121,14 @@ class DrmaaWorkflowEngine( object ):
     
     self.__drmaa = DrmaaJobs()
     # patch for pbs-torque drmaa ##
-    jobTemplateId = self.__drmaa.allocateJobTemplate()
+    jobTemplateId = self.__drmaa.allocateJob()
     self.__drmaa.setCommand(jobTemplateId, "echo", [])
     self.__drmaa.setAttribute(jobTemplateId, "drmaa_output_path", "[void]:/dev/null")
     self.__drmaa.setAttribute(jobTemplateId, "drmaa_error_path", "[void]:/dev/null")
     self.__drmaa.runJob(jobTemplateId)
     ################################
     
-    self.__jobServer = job_server
+    self._database_server = database_server
 
     self.logger.debug("Parallel job submission info: %s", repr(parallel_job_submission_info))
     self.__parallel_job_submission_info = parallel_job_submission_info
@@ -116,7 +140,7 @@ class DrmaaWorkflowEngine( object ):
       self.logger.critical("Couldn't identify user %s: %s \n" %(type(e), e))
       raise SystemExit
     
-    self.__user_id = self.__jobServer.registerUser(userLogin) 
+    self.__user_id = self._database_server.registerUser(userLogin) 
 
     self.__jobs = {} # job_id -> job
     self.__workflows = {} # workflow_id -> workflow 
@@ -132,7 +156,7 @@ class DrmaaWorkflowEngine( object ):
       while True:
         # get rid of all the jobs that doesn't exist anymore
         with self.__lock:
-          serverJobs = self.__jobServer.getJobs(self.__user_id)
+          serverJobs = self._database_server.getJobs(self.__user_id)
           removed_from_server = set(self.__jobs.keys()).difference(serverJobs)
           for job_id in removed_from_server:
             del self.__jobs[job_id]
@@ -151,21 +175,21 @@ class DrmaaWorkflowEngine( object ):
                 str_rusage = ''
                 for rusage in resource_usage:
                   str_rusage = str_rusage + rusage + ' '
-                self.__jobServer.setJobExitInfo(job.jobTemplate.job_id, job.exit_status, job.exit_value, job.term_sig, str_rusage)
+                self._database_server.setJobExitInfo(job.jobTemplate.job_id, job.exit_status, job.exit_value, job.term_sig, str_rusage)
                 ended.append(job.jobTemplate.job_id)
               else:
                 allJobsEnded = False
             # update the status on the job server 
-            self.__jobServer.setJobStatus(job.jobTemplate.job_id, job.status)
+            self._database_server.setJobStatus(job.jobTemplate.job_id, job.status)
 
           # get back ended transfers
           endedTransfers = []
           for workflow_id in self.__workflows.keys():
-            self.__jobServer.setWorkflowStatus(workflow_id, constants.WORKFLOW_IN_PROGRESS)
-            workflow_ended_transfers = self.__jobServer.popWorkflowEndedTransfer(workflow_id)
+            self._database_server.setWorkflowStatus(workflow_id, constants.WORKFLOW_IN_PROGRESS)
+            workflow_ended_transfers = self._database_server.popWorkflowEndedTransfer(workflow_id)
             if workflow_ended_transfers:
               endedTransfers.append((workflow_id, workflow_ended_transfers))
-          # get the exit information for terminated jobs and update the jobServer
+          # get the exit information for terminated jobs and update the database 
           if ended or endedTransfers:
             self.__workflowProcessing(endedJobs = ended, endedTransfers = endedTransfers )
           for job_id in ended:
@@ -188,8 +212,8 @@ class DrmaaWorkflowEngine( object ):
   def __del__( self ):
     pass
     '''
-    Closes the connection with the pool and the data server L{JobServer} and
-    stops updating the L{JobServer}. (should be called when all the jobs are
+    Closes the connection with the pool and the data server L{WorkflowDatabaseServer} and
+    stops updating the L{WorkflowDatabaseServer}. (should be called when all the jobs are
     done) 
     '''
 
@@ -199,7 +223,7 @@ class DrmaaWorkflowEngine( object ):
   def submit(self, jobTemplate):
     
     '''
-    Implementation of the L{JobScheduler} method.
+    Implementation of the L{WorkflowEngine} method.
     '''
     self.logger.debug(">> submit")
 
@@ -217,11 +241,9 @@ class DrmaaWorkflowEngine( object ):
                     workflow_id=-1):
 
     '''
-    Register job in the jobServer and in the DrmaaJobScheduler current instance.
-
-    @type  jobTemplate: L{constant.JobTemplate}
+    @type  jobTemplate: L{constant.Job}
     @param jobTemplate: job submittion information. 
-    Note a few restrictions concerning the type of some JobTemplate members:
+    Note a few restrictions concerning the type of some Job members:
     referenced_input_files, referenced_output_files and command: must be lists of string
     stdout, stderr and stdin: must be strings
     @type  workflow_id: int
@@ -232,8 +254,8 @@ class DrmaaWorkflowEngine( object ):
     max_node_number = 1
 
     if not jobTemplate.stdout_file:
-      jobTemplate.stdout_file = self.__jobServer.generateLocalFilePath(self.__user_id)
-      jobTemplate.stderr_file = self.__jobServer.generateLocalFilePath(self.__user_id)
+      jobTemplate.stdout_file = self._database_server.generateLocalFilePath(self.__user_id)
+      jobTemplate.stderr_file = self._database_server.generateLocalFilePath(self.__user_id)
       custom_submission = False #the std out and err file has to be removed with the job
     else:
       custom_submission = True #the std out and err file won't to be removed with the job
@@ -250,7 +272,7 @@ class DrmaaWorkflowEngine( object ):
       command_info = command_info + " " + command_element
       
     with self.__lock:
-      job_id = self.__jobServer.addJob( soma.jobs.jobServer.DBJob(
+      job_id = self._database_server.addJob( soma.workflow.database_server.DBJob(
                                         user_id = self.__user_id, 
                                         custom_submission = custom_submission,
                                         expiration_date = expiration_date, 
@@ -268,50 +290,50 @@ class DrmaaWorkflowEngine( object ):
                                         name_description = jobTemplate.name_description))
                                       
       if jobTemplate.referenced_input_files:
-        self.__jobServer.registerInputs(job_id, jobTemplate.referenced_input_files)
+        self._database_server.registerInputs(job_id, jobTemplate.referenced_input_files)
       if jobTemplate.referenced_output_files:
-        self.__jobServer.registerOutputs(job_id, jobTemplate.referenced_output_files)
+        self._database_server.registerOutputs(job_id, jobTemplate.referenced_output_files)
 
     jobTemplate.job_id = job_id
     jobTemplate.workflow_id = workflow_id
-    registered_job = DrmaaJobScheduler.RegisteredJob(jobTemplate)
+    registered_job = DrmaaWorkflowEngine.RegisteredJob(jobTemplate)
     self.__jobs[job_id] = registered_job
     return registered_job
         
   def __drmaaJobSubmission(self, job): 
     '''
     Submit a registered job.
-    The job must have been registered in the current DrmaaJobScheduler instance.
+    The job must have been registered in the current DrmaaWorkflowEngine instance.
 
-    @type  job: L{DrmaaJobScheduler.RegisteredJob}
+    @type  job: L{DrmaaWorkflowEngine.RegisteredJob}
     @param job: registered job
     
     '''
     if job not in self.__jobs.values():
-      raise JobSchedulerError("A job must be registered before submission.", self.logger)
+      raise WorkflowEngineError("A job must be registered before submission.", self.logger)
     
     with self.__lock:
       
-      drmaaJobTemplateId = self.__drmaa.allocateJobTemplate()
-      self.__drmaa.setCommand(drmaaJobTemplateId, job.jobTemplate.command[0], job.jobTemplate.command[1:])
+      drmaaJobId = self.__drmaa.allocateJob()
+      self.__drmaa.setCommand(drmaaJobId, job.jobTemplate.command[0], job.jobTemplate.command[1:])
     
-      self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_output_path", "[void]:" + job.jobTemplate.stdout_file)
+      self.__drmaa.setAttribute(drmaaJobId, "drmaa_output_path", "[void]:" + job.jobTemplate.stdout_file)
       
       if job.jobTemplate.join_stderrout:
-        self.__drmaa.setAttribute(drmaaJobTemplateId,"drmaa_join_files", "y")
+        self.__drmaa.setAttribute(drmaaJobId,"drmaa_join_files", "y")
       else:
         if job.jobTemplate.stderr_file:
-          self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_error_path", "[void]:" + job.jobTemplate.stderr_file)
+          self.__drmaa.setAttribute(drmaaJobId, "drmaa_error_path", "[void]:" + job.jobTemplate.stderr_file)
      
       if job.jobTemplate.stdin:
-        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_input_path", "[void]:" + job.jobTemplate.stdin)
+        self.__drmaa.setAttribute(drmaaJobId, "drmaa_input_path", "[void]:" + job.jobTemplate.stdin)
         
       if job.jobTemplate.working_directory:
-        self.__drmaa.setAttribute(drmaaJobTemplateId, "drmaa_wd", job.jobTemplate.working_directory)
+        self.__drmaa.setAttribute(drmaaJobId, "drmaa_wd", job.jobTemplate.working_directory)
       
       if job.jobTemplate.parallel_job_info :
         parallel_config_name, max_node_number = job.jobTemplate.parallel_job_info
-        self.__setDrmaaParallelJobTemplate(drmaaJobTemplateId, parallel_config_name, max_node_number)
+        self.__setDrmaaParallelJob(drmaaJobId, parallel_config_name, max_node_number)
         
       job_env = []
       for var_name in os.environ.keys():
@@ -322,16 +344,16 @@ class DrmaaWorkflowEngine( object ):
       #self.logger.debug("Environment:")
       #self.logger.debug("  PATH="+os.environ["PATH"])
       #self.logger.debug("  LD_LIBRARY_PATH="+os.environ["LD_LIBRARY_PATH"])
-      self.__drmaa.setVectorAttribute(drmaaJobTemplateId, 'drmaa_v_env', job_env)
+      self.__drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
 
-      drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobTemplateId)
-      self.__drmaa.deleteJobTemplate(drmaaJobTemplateId)
+      drmaaSubmittedJobId = self.__drmaa.runJob(drmaaJobId)
+      self.__drmaa.deleteJob(drmaaJobId)
      
       if drmaaSubmittedJobId == "":
         self.logger.error("Could not submit job: Drmaa problem.");
         return -1
       
-      self.__jobServer.setSubmissionInformation(job.jobTemplate.job_id, drmaaSubmittedJobId, datetime.now())
+      self._database_server.setSubmissionInformation(job.jobTemplate.job_id, drmaaSubmittedJobId, datetime.now())
       job.drmaa_id = drmaaSubmittedJobId
       job.status = constants.UNDETERMINED
       
@@ -340,7 +362,7 @@ class DrmaaWorkflowEngine( object ):
     
 
 
-  def __setDrmaaParallelJobTemplate(self, drmaa_job_template_id, configuration_name, max_num_node):
+  def __setDrmaaParallelJob(self, drmaa_job_template_id, configuration_name, max_num_node):
     '''
     Set the DRMAA job template information for a parallel job submission.
     The configuration file must provide the parallel job submission information specific 
@@ -355,12 +377,12 @@ class DrmaaWorkflowEngine( object ):
     depending on the parallel configuration)
     ''' 
 
-    self.logger.debug(">> __setDrmaaParallelJobTemplate")
+    self.logger.debug(">> __setDrmaaParallelJob")
     if not self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : Couldn't find parallel job submission information.", self.logger)
+      raise WorkflowEngineError("Configuration file : Couldn't find parallel job submission information.", self.logger)
     
     if configuration_name not in self.__parallel_job_submission_info:
-      raise JobSchedulerError("Configuration file : couldn't find the parallel configuration %s." %(configuration_name), self.logger)
+      raise WorkflowEngineError("Configuration file : couldn't find the parallel configuration %s." %(configuration_name), self.logger)
 
     cluster_specific_config_name = self.__parallel_job_submission_info[configuration_name]
     
@@ -387,20 +409,20 @@ class DrmaaWorkflowEngine( object ):
         self.__drmaa.setVectorAttribute(drmaa_job_template_id, 'drmaa_v_env', job_env)
         self.logger.debug("Parallel job environment : " + repr(job_env))
         
-    self.logger.debug("<< __setDrmaaParallelJobTemplate")
+    self.logger.debug("<< __setDrmaaParallelJob")
     
-  def __UniversalResourcePathTranslation(self, urp):
+  def __SharedResourcePathTranslation(self, urp):
     '''
-    @type urp: L{UniversalResourcePath}
+    @type urp: L{SharedResourcePath}
     @rtype: string
     @returns: path in the local environment
     '''
     if not self.__universal_path_translation:
-      raise JobSchedulerError("Configuration file: Couldn't find universal path translation files.", self.logger)
+      raise WorkflowEngineError("Configuration file: Couldn't find universal path translation files.", self.logger)
     if not urp.namespace in self.__universal_path_translation.keys():
-      raise JobSchedulerError("Universal path translation: the namespace %s does'nt exist" %(urp.namespace), self.logger)
+      raise WorkflowEngineError("Universal path translation: the namespace %s does'nt exist" %(urp.namespace), self.logger)
     if not urp.uuid in self.__universal_path_translation[urp.namespace].keys():
-      raise JobSchedulerError("Universal path translation: the uuid %s does'nt exist for the namespace %s." %(urp.uuid, urp.namespace), self.logger)
+      raise WorkflowEngineError("Universal path translation: the uuid %s does'nt exist for the namespace %s." %(urp.uuid, urp.namespace), self.logger)
     
     local_path = os.path.join(self.__universal_path_translation[urp.namespace][urp.uuid], urp.relative_path)
     return local_path
@@ -408,12 +430,12 @@ class DrmaaWorkflowEngine( object ):
 
   def dispose( self, job_id ):
     '''
-    Implementation of the L{JobScheduler} method.
+    Implementation of the L{WorkflowEngine} method.
     '''
     self.logger.debug(">> dispose %s", job_id)
     with self.__lock:
       self.kill(job_id)
-      self.__jobServer.deleteJob(job_id)
+      self._database_server.deleteJob(job_id)
     self.logger.debug("<< dispose")
 
 
@@ -422,19 +444,19 @@ class DrmaaWorkflowEngine( object ):
   
   def restartWorkflow(self, wf_id):
     
-    workflow = self.__jobServer.getWorkflow(wf_id)
+    workflow = self._database_server.getWorkflow(wf_id)
     with self.__lock:
       to_restart = False
       undone_jobs = []
       for node in workflow.full_nodes:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           node_status = self.__getNodeStatus(node)
-          if node_status == DrmaaJobScheduler.NODE_FAILED:
+          if node_status == DrmaaWorkflowEngine.NODE_FAILED:
             #clear all the information related to the previous job submission
-            self.__jobServer.setSubmissionInformation(node.job_id, None, None)
-            self.__jobServer.setJobStatus(node.job_id, constants.NOT_SUBMITTED)
-          if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
-            registered_job = DrmaaJobScheduler.RegisteredJob(node)
+            self._database_server.setSubmissionInformation(node.job_id, None, None)
+            self._database_server.setJobStatus(node.job_id, constants.NOT_SUBMITTED)
+          if node_status != DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS:
+            registered_job = DrmaaWorkflowEngine.RegisteredJob(node)
             self.__jobs[node.job_id] = registered_job
             undone_jobs.append(node)
            
@@ -446,7 +468,7 @@ class DrmaaWorkflowEngine( object ):
           for dep in workflow.full_dependencies:
             if dep[1] == job: 
               node_status = self.__getNodeStatus(dep[0])
-              if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
+              if node_status != DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS:
                 node_to_run = False
                 
           if node_to_run: 
@@ -460,21 +482,21 @@ class DrmaaWorkflowEngine( object ):
     
     #First, do the universal resource path translation to check possible errors
     for node in workflow.nodes:
-      if isinstance(node, JobTemplate):
+      if isinstance(node, Job):
         for command_el in node.command:
-          if isinstance(command_el, UniversalResourcePath):
-            command_el.local_path = self.__UniversalResourcePathTranslation(command_el)
-        if node.stdout_file and isinstance(node.stdout_file, UniversalResourcePath):
-          node.stdout_file = self.__UniversalResourcePathTranslation(node.stdout_file)
-        if node.stderr_file and isinstance(node.stderr_file, UniversalResourcePath):
-          node.stderr_file = self.__UniversalResourcePathTranslation(node.stderr_file)
-        if node.working_directory and isinstance(node.working_directory, UniversalResourcePath):
-          node.working_directory = self.__UniversalResourcePathTranslation(node.working_directory)
-        if node.stdin and isinstance(node.stdin, UniversalResourcePath):
-          node.stdin = self.__UniversalResourcePathTranslation(node.stdin)
+          if isinstance(command_el, SharedResourcePath):
+            command_el.local_path = self.__SharedResourcePathTranslation(command_el)
+        if node.stdout_file and isinstance(node.stdout_file, SharedResourcePath):
+          node.stdout_file = self.__SharedResourcePathTranslation(node.stdout_file)
+        if node.stderr_file and isinstance(node.stderr_file, SharedResourcePath):
+          node.stderr_file = self.__SharedResourcePathTranslation(node.stderr_file)
+        if node.working_directory and isinstance(node.working_directory, SharedResourcePath):
+          node.working_directory = self.__SharedResourcePathTranslation(node.working_directory)
+        if node.stdin and isinstance(node.stdin, SharedResourcePath):
+          node.stdin = self.__SharedResourcePathTranslation(node.stdin)
      ######################################################
  
-    workflow_id = self.__jobServer.addWorkflow(self.__user_id, expiration_date, name)
+    workflow_id = self._database_server.addWorkflow(self.__user_id, expiration_date, name)
     workflow.wf_id = workflow_id 
     workflow.name = name
     
@@ -485,47 +507,47 @@ class DrmaaWorkflowEngine( object ):
           matching_node = node 
           break
       if not matching_node: 
-        raise JobSchedulerError("Workflow submission: The localfile path \"" + local_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
+        raise WorkflowEngineError("Workflow submission: The localfile path \"" + local_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
       else: 
         return matching_node
     
     if not workflow.full_nodes:
       workflow.full_nodes = set(workflow.nodes)
-      # get back the full nodes looking for fileTransfer nodes in the JobTemplate node
+      # get back the full nodes looking for fileTransfer nodes in the Job node
       for node in workflow.nodes:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           for ft in node.referenced_input_files:
             if isinstance(ft, FileTransfer):  workflow.full_nodes.add(ft)
           for ft in node.referenced_output_files:
             if isinstance(ft, FileTransfer): workflow.full_nodes.add(ft)
           
-    # the missing dependencies between JobTemplate and FileTransfer will be added 
+    # the missing dependencies between Job and FileTransfer will be added 
     workflow.full_dependencies = set(workflow.dependencies)
    
     w_js = []
     w_fts = []
-    # Register FileTransfer to the JobServers
+    # Register FileTransfer to the database server
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
         if node.remote_paths:
-          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+          node.local_path = self._database_server.generateLocalFilePath(self.__user_id)
           os.mkdir(node.local_path)
         else:
-          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_path)
-        self.__jobServer.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id, node.remote_paths)
+          node.local_path = self._database_server.generateLocalFilePath(self.__user_id, node.remote_path)
+        self._database_server.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.READY_TO_TRANSFER, workflow_id, node.remote_paths)
         w_fts.append(node)
       elif isinstance(node, FileRetrieving):
         if node.remote_paths:
-          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+          node.local_path = self._database_server.generateLocalFilePath(self.__user_id)
           os.mkdir(node.local_path)
         else:
-          node.local_path = self.__jobServer.generateLocalFilePath(self.__user_id, node.remote_path)
-        self.__jobServer.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id, node.remote_paths)
+          node.local_path = self._database_server.generateLocalFilePath(self.__user_id, node.remote_path)
+        self._database_server.addTransfer(node.local_path, node.remote_path, expiration_date, self.__user_id, constants.TRANSFER_NOT_READY, workflow_id, node.remote_paths)
         w_fts.append(node)
-      elif isinstance(node, JobTemplate):
+      elif isinstance(node, Job):
         w_js.append(node)
     
-    # Job attributs conversion and job registration to the JobServer:
+    # Job attributs conversion and job registration to the database server:
     for job in w_js:
       # command
       new_command = []
@@ -534,7 +556,7 @@ class DrmaaWorkflowEngine( object ):
           new_command.append(os.path.join(command_el[0].local_path, command_el[1]))
         elif isinstance(command_el, FileTransfer):
           new_command.append(command_el.local_path)
-        elif isinstance(command_el, UniversalResourcePath):
+        elif isinstance(command_el, SharedResourcePath):
           new_command.append(command_el.local_path)
         else:
           new_command.append(command_el)
@@ -573,7 +595,7 @@ class DrmaaWorkflowEngine( object ):
       registered_job = self.__registerJob(job, workflow_id)
       job.job_id = registered_job.jobTemplate.job_id
      
-    self.__jobServer.setWorkflow(workflow_id, workflow, self.__user_id)
+    self._database_server.setWorkflow(workflow_id, workflow, self.__user_id)
     self.__workflows[workflow_id] = workflow
     
     # run nodes without dependencies
@@ -582,14 +604,14 @@ class DrmaaWorkflowEngine( object ):
       for dep in workflow.full_dependencies:
         torun = torun and not dep[1] == node
       if torun:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
           
     return workflow
      
   #def __isWFNodeCompleted(self, node):
     #competed = False
-    #if isinstance(node, JobTemplate):
+    #if isinstance(node, Job):
       #if node.job_id: 
         #completed = True
         #if node.job_id in self.__jobs :
@@ -597,11 +619,11 @@ class DrmaaWorkflowEngine( object ):
           #completed = status == constants.DONE or status == constants.FAILED
     #if isinstance(node, FileSending):
       #if node.local_path:
-        #status = self.__jobServer.getTransferStatus(node.local_path)
+        #status = self._database_server.getTransferStatus(node.local_path)
         #completed = status == constants.TRANSFERED
     #if isinstance(node, FileRetrieving):
       #if node.local_path:
-        #status = self.__jobServer.getTransferStatus(node.local_path)
+        #status = self._database_server.getTransferStatus(node.local_path)
         #completed = status == constants.READY_TO_TRANSFER
     #return completed
       
@@ -611,43 +633,43 @@ class DrmaaWorkflowEngine( object ):
   NODE_FAILED="node_failed"
 
   def __getNodeStatus(self, node):
-    if isinstance(node, JobTemplate):
+    if isinstance(node, Job):
       if not node.job_id:
-        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+        return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
       if not node.job_id in self.__jobs:
-        status = self.__jobServer.getJobStatus(node.job_id)[0]
+        status = self._database_server.getJobStatus(node.job_id)[0]
         if status == constants.DONE:
-          job = self.__jobServer.getJob(node.job_id)
+          job = self._database_server.getJob(node.job_id)
       else:
         job = self.__jobs[node.job_id]
         status = job.status
       if status == constants.NOT_SUBMITTED:
-        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+        return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
       if status == constants.FAILED:
-        return DrmaaJobScheduler.NODE_FAILED
+        return DrmaaWorkflowEngine.NODE_FAILED
       if status == constants.DONE:
         if not job.exit_value == 0 or job.terminating_signal != None or not job.exit_status == constants.FINISHED_REGULARLY:
-          return DrmaaJobScheduler.NODE_FAILED
-        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
-      return DrmaaJobScheduler.NODE_IN_PROGRESS
+          return DrmaaWorkflowEngine.NODE_FAILED
+        return DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS
+      return DrmaaWorkflowEngine.NODE_IN_PROGRESS
     if isinstance(node, FileSending):
-      if not node.local_path: return DrmaaJobScheduler.NODE_NOT_PROCESSED
-      status = self.__jobServer.getTransferStatus(node.local_path)
+      if not node.local_path: return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
+      status = self._database_server.getTransferStatus(node.local_path)
       if status == constants.TRANSFERED:
-        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
+        return DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS
       if status == constants.TRANSFER_NOT_READY or status == constants.READY_TO_TRANSFER:
-        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+        return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
       if status == constants.TRANSFERING:
-        return DrmaaJobScheduler.NODE_IN_PROGRESS
+        return DrmaaWorkflowEngine.NODE_IN_PROGRESS
     if isinstance(node, FileRetrieving):
-      if not node.local_path: return DrmaaJobScheduler.NODE_NOT_PROCESSED
-      status = self.__jobServer.getTransferStatus(node.local_path)
+      if not node.local_path: return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
+      status = self._database_server.getTransferStatus(node.local_path)
       if status == constants.TRANSFERED or status == constants.READY_TO_TRANSFER:
-        return DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS
+        return DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS
       if status == constants.TRANSFER_NOT_READY:
-        return DrmaaJobScheduler.NODE_NOT_PROCESSED
+        return DrmaaWorkflowEngine.NODE_NOT_PROCESSED
       if status == constants.TRANSFERING:
-        return DrmaaJobScheduler.NODE_IN_PROGRESS
+        return DrmaaWorkflowEngine.NODE_IN_PROGRESS
    
   def __workflowProcessing(self, endedJobs=[], endedTransfers=[]):
     '''
@@ -668,7 +690,7 @@ class DrmaaWorkflowEngine( object ):
       
         if job.jobTemplate.referenced_output_files:
           for local_path in job.jobTemplate.referenced_output_files:
-            self.__jobServer.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
+            self._database_server.setTransferStatus(local_path, constants.READY_TO_TRANSFER)
             
         if not job.jobTemplate.workflow_id == -1 and job.jobTemplate.workflow_id in self.__workflows:
           workflow = self.__workflows[job.jobTemplate.workflow_id]
@@ -684,14 +706,14 @@ class DrmaaWorkflowEngine( object ):
       to_abort = set([])
       for workflow in wf_to_process:
         for node in workflow.full_nodes:
-          if isinstance(node, JobTemplate):
+          if isinstance(node, Job):
             to_inspect = False
             if node.job_id in self.__jobs:
               status = self.__jobs[node.job_id].status
               to_inspect = status == constants.NOT_SUBMITTED
             #print "node " + node.name + " status " + status[0] + " to inspect " + repr(to_inspect)
           if isinstance(node, FileTransfer):
-            status = self.__jobServer.getTransferStatus(node.local_path)
+            status = self._database_server.getTransferStatus(node.local_path)
             to_inspect = status == constants.TRANSFER_NOT_READY
             #print "node " + node.name + " status " + status + " to inspect " + repr(to_inspect)
           if to_inspect:
@@ -702,22 +724,22 @@ class DrmaaWorkflowEngine( object ):
                 #self.logger.debug("   node " + node.name + " dep: " + dep[0].name + " ---> " + dep[1].name)
                 node_status = self.__getNodeStatus(dep[0])
                 #self.logger.debug("   dep[0] status" + repr(node_status))
-                if node_status != DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS:
+                if node_status != DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS:
                   node_to_run = False
-                  if isinstance(dep[1], JobTemplate) and isinstance(dep[0], JobTemplate) and not dep[1] in to_abort and node_status == DrmaaJobScheduler.NODE_FAILED  :
+                  if isinstance(dep[1], Job) and isinstance(dep[0], Job) and not dep[1] in to_abort and node_status == DrmaaWorkflowEngine.NODE_FAILED  :
                       to_abort.add(dep[1]) 
                       break
                   
             if node_to_run: 
-              if isinstance(node, JobTemplate):
+              if isinstance(node, Job):
                 self.logger.debug("  ---- Job to run : " + node.name + " " + repr(node.command))
               to_run.append(node)
         
       for node in to_run:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           self.__drmaaJobSubmission(self.__jobs[node.job_id])
         if isinstance(node,FileTransfer):
-          self.__jobServer.setTransferStatus(node.local_path, constants.READY_TO_TRANSFER)
+          self._database_server.setTransferStatus(node.local_path, constants.READY_TO_TRANSFER)
       
       # if a job fails the whole workflow branch has to be stopped
       # look for the node in the branch to abort
@@ -725,17 +747,17 @@ class DrmaaWorkflowEngine( object ):
       while previous_size != len(to_abort):
         previous_size = len(to_abort)
         for dep in workflow.full_dependencies:
-          if isinstance(dep[1], JobTemplate) and dep[0] in to_abort and not dep[1] in to_abort:
+          if isinstance(dep[1], Job) and dep[0] in to_abort and not dep[1] in to_abort:
             to_abort.add(dep[1])
             break
           
       # stop the whole branch
       for node in to_abort:
-        if isinstance(node, JobTemplate) and node.job_id in self.__jobs.keys():
+        if isinstance(node, Job) and node.job_id in self.__jobs.keys():
           self.logger.debug("  ---- Failure: job to abort " + node.name)
           assert(self.__jobs[node.job_id].status == constants.NOT_SUBMITTED)
-          self.__jobServer.setJobStatus(node.job_id, constants.FAILED)
-          self.__jobServer.setJobExitInfo(node.job_id, constants.EXIT_ABORTED, None, None, None)
+          self._database_server.setJobStatus(node.job_id, constants.FAILED)
+          self._database_server.setJobExitInfo(node.job_id, constants.EXIT_ABORTED, None, None, None)
           del self.__jobs[node.job_id]
         
     # delete ended workflows:
@@ -743,16 +765,16 @@ class DrmaaWorkflowEngine( object ):
     for workflow_id, workflow in self.__workflows.items():
       finished = True
       for node in workflow.full_nodes:
-        if isinstance(node, JobTemplate):
+        if isinstance(node, Job):
           node_status = self.__getNodeStatus(node)
-          finished = finished and (node_status == DrmaaJobScheduler.NODE_ENDED_WITH_SUCCESS or node_status == DrmaaJobScheduler.NODE_FAILED)
+          finished = finished and (node_status == DrmaaWorkflowEngine.NODE_ENDED_WITH_SUCCESS or node_status == DrmaaWorkflowEngine.NODE_FAILED)
           if not finished: break
       if finished: 
         finished_workfows.append(workflow_id)
     for workflow_id in finished_workfows:
       self.logger.debug("  ~~~~ END OF WORKFLOW " + repr(workflow_id) + " ~~~~")
       del self.__workflows[workflow_id]
-      self.__jobServer.setWorkflowStatus(workflow_id, constants.WORKFLOW_DONE)
+      self._database_server.setWorkflowStatus(workflow_id, constants.WORKFLOW_DONE)
     self.logger.debug("<<< workflowProcessing")
     
 
@@ -767,7 +789,7 @@ class DrmaaWorkflowEngine( object ):
 
   def stop( self, job_id ):
     '''
-    Implementation of the L{JobScheduler} method.
+    Implementation of the L{WorkflowEngine} method.
     '''
     self.logger.debug(">> stop")
     status_changed = False
@@ -775,7 +797,7 @@ class DrmaaWorkflowEngine( object ):
       if job_id in self.__jobs:
         drmaaJobId = self.__jobs[job_id].drmaa_id
       else:
-        drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+        drmaaJobId = self._database_server.getDrmaaJobId(job_id)
       if drmaaJobId:
         status = self.__drmaa.jobStatus(drmaaJobId) 
         self.logger.debug("   status : " + status)
@@ -795,7 +817,7 @@ class DrmaaWorkflowEngine( object ):
     
   def restart( self, job_id ):
     '''
-    Implementation of the L{JobScheduler} method.
+    Implementation of the L{WorkflowEngine} method.
     '''
     self.logger.debug(">> restart")
     status_changed = False
@@ -803,7 +825,7 @@ class DrmaaWorkflowEngine( object ):
       if job_id in self.__jobs:
         drmaaJobId = self.__jobs[job_id].drmaa_id
       else:
-        drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+        drmaaJobId = self._database_server.getDrmaaJobId(job_id)
       if drmaaJobId:
         status = self.__drmaa.jobStatus(drmaaJobId) 
         
@@ -824,26 +846,26 @@ class DrmaaWorkflowEngine( object ):
 
   def kill( self, job_id ):
     '''
-    Implementation of the L{JobScheduler} method.
+    Implementation of the L{WorkflowEngine} method.
     '''
     self.logger.debug(">> kill")
         
     with self.__lock:
-      (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
+      (status, last_status_update) = self._database_server.getJobStatus(job_id)
 
       if status and not status == constants.DONE and not status == constants.FAILED:
-        drmaaJobId = self.__jobServer.getDrmaaJobId(job_id)
+        drmaaJobId = self._database_server.getDrmaaJobId(job_id)
         if drmaaJobId:
           self.logger.debug("terminate job %s drmaa id %s with status %s", job_id, drmaaJobId, status)
           self.__drmaa.terminate(drmaaJobId)
         
-          self.__jobServer.setJobExitInfo(job_id, 
+          self._database_server.setJobExitInfo(job_id, 
                                           constants.USER_KILLED,
                                           None,
                                           None,
                                           None)
           
-          self.__jobServer.setJobStatus(job_id, constants.FAILED)
+          self._database_server.setJobStatus(job_id, constants.FAILED)
         if job_id in self.__jobs.keys():
           del self.__jobs[job_id]
         
@@ -855,44 +877,48 @@ class DrmaaWorkflowEngine( object ):
     self.logger.debug(">> __waitForStatusUpdate")
     drmaaActionTime = datetime.now()
     time.sleep(refreshment_interval)
-    (status, last_status_update) = self.__jobServer.getJobStatus(job_id)
+    (status, last_status_update) = self._database_server.getJobStatus(job_id)
     while status and not status == constants.DONE and not status == constants.FAILED and last_status_update < drmaaActionTime:
       time.sleep(refreshment_interval)
-      (status, last_status_update) = self.__jobServer.getJobStatus(job_id) 
+      (status, last_status_update) = self._database_server.getJobStatus(job_id) 
       if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
-        raise JobSchedulerError('Could not get back status of job %s. The process updating its status failed.' %(job_id), self.logger)
+        raise WorkflowEngineError('Could not get back status of job %s. The process updating its status failed.' %(job_id), self.logger)
     self.logger.debug("<< __waitForStatusUpdate")
 
 
-class WorkflowEngine( object ):
+class WorkflowEngine(object):
   
-  def __init__( self, job_server, drmaa_job_scheduler = None,  parallel_job_submission_info = None, universal_path_translation = None):
+  def __init__( self, 
+                database_server, 
+                drmaa_workflow_engine = None,  
+                parallel_job_submission_info = None, 
+                path_translation = None):
     ''' 
-    @type  job_server: L{JobServer}
-    @type  drmaa_job_scheduler: L{DrmaaJobScheduler} or None
-    @param drmaa_job_scheduler: object of type L{DrmaaJobScheduler} to delegate all the tasks related to the DRMS. If None a new instance is created.
+    @type  database_server: L{WorkflowDatabaseServer}
+    @type  drmaa_workflow_engine: L{DrmaaWorkflowEngine} or None
+    @param drmaa_workflow_engine: object of type L{DrmaaWorkflowEngine} to 
+    delegate all the tasks related to the DRMS and management of submitted 
+    jobs and workflow. If None a new instance is created.
     '''
     
     self.logger = logging.getLogger('ljp.js')
     
     Pyro.core.initClient()
 
-    # Drmaa Job Scheduler
-    if drmaa_job_scheduler:
-      self.__drmaaJS = drmaa_job_scheduler
+    if drmaa_workflow_engine:
+      self.__drmaa_wf_engine = drmaa_workflow_engine
     else:
-      #print "parallel_job_submission_info" + repr(parallel_job_submission_info)
-      self.__drmaaJS = DrmaaJobScheduler(job_server, parallel_job_submission_info, universal_path_translation)
+      self._drmaa_wf_engine = DrmaaWorkflowEngine(database_server,      
+                                                   parallel_job_submission_info, path_translation)
     
-    # Job Server
-    self.__jobServer= job_server
+    self._database_server= database_server
     
     try:
-      userLogin = pwd.getpwuid(os.getuid())[0]
+      user_login = pwd.getpwuid(os.getuid())[0]
     except Exception, e:
-      raise JobSchedulerError("Couldn't identify user %s: %s \n" %(type(e), e), self.logger)
+      raise WorkflowEngineError("Couldn't identify user %s: %s \n" %(type(e), e), self.logger)
     
-    self.__user_id = self.__jobServer.registerUser(userLogin)
+    self.__user_id = self._database_server.registerUser(user_login)
     
 
   def __del__( self ):
@@ -919,12 +945,12 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     if remote_paths:
-      local_path = self.__jobServer.generateLocalFilePath(self.__user_id)
+      local_path = self._database_server.generateLocalFilePath(self.__user_id)
       os.mkdir(local_path)
     else:
-      local_path = self.__jobServer.generateLocalFilePath(self.__user_id, remote_path)
+      local_path = self._database_server.generateLocalFilePath(self.__user_id, remote_path)
     expirationDate = datetime.now() + timedelta(hours=disposal_timeout) 
-    self.__jobServer.addTransfer(local_path, remote_path, expirationDate, self.__user_id, -1, remote_paths)
+    self._database_server.addTransfer(local_path, remote_path, expirationDate, self.__user_id, -1, remote_paths)
     return local_path
   
   @staticmethod
@@ -936,7 +962,7 @@ class WorkflowEngine( object ):
         full_path_list = []
         for element in os.listdir(path):
           full_path_list.append(os.path.join(path, element))
-        contents = JobScheduler.__contents(full_path_list, md5_hash)
+        contents = WorkflowEngine.__contents(full_path_list, md5_hash)
         result.append((os.path.basename(path), contents, None))
       else:
         if md5_hash:
@@ -961,18 +987,18 @@ class WorkflowEngine( object ):
         md5_hash = hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
       elif os.path.isdir(local_path):
-        contents = JobScheduler.__contents([local_path])
+        contents = WorkflowEngine.__contents([local_path])
         (cumulated_file_size, dir_element_action_info) = self.__initializeDirectory(local_path, contents)
         transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
     else: #remote_paths
       full_path_list = []
       for element in os.listdir(local_path):
         full_path_list.append(os.path.join(local_path, element))
-      contents = JobScheduler.__contents(full_path_list)
+      contents = WorkflowEngine.__contents(full_path_list)
       (cumulated_file_size, dir_element_action_info) = self.__initializeDirectory(local_path, contents)
       transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
 
-    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)     
+    self._database_server.setTransferActionInfo(local_path, transfer_action_info)     
     return (transfer_action_info, contents)
 
   def initializeFileSending(self, local_path, file_size, md5_hash = None):
@@ -982,8 +1008,8 @@ class WorkflowEngine( object ):
     transfer_action_info = (file_size, md5_hash, constants.FILE_SENDING)
     f = open(local_path, 'w')
     f.close()
-    self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
-    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)
+    self._database_server.setTransferStatus(local_path, constants.TRANSFERING)
+    self._database_server.setTransferActionInfo(local_path, transfer_action_info)
     return transfer_action_info
 
 
@@ -1028,8 +1054,8 @@ class WorkflowEngine( object ):
     cumulated_file_size, dir_element_action_info = self.__initializeDirectory(local_path, contents)
     transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
     self.__createDirStructure(local_path, contents)
-    self.__jobServer.setTransferStatus(local_path, constants.TRANSFERING)
-    self.__jobServer.setTransferActionInfo(local_path, transfer_action_info)
+    self._database_server.setTransferStatus(local_path, constants.TRANSFERING)
+    self._database_server.setTransferActionInfo(local_path, transfer_action_info)
     return transfer_action_info
     
   
@@ -1045,13 +1071,13 @@ class WorkflowEngine( object ):
     if fs > file_size:
       # Reset file_size   
       open(local_path, 'wb')
-      raise JobSchedulerError('sendPiece: Transmitted data exceed expected file size.')
+      raise WorkflowEngineError('sendPiece: Transmitted data exceed expected file size.')
     elif fs == file_size:
       if md5_hash is not None:
         if hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() != md5_hash:
           # Reset file
           open( local_path, 'wb' )
-          raise JobSchedulerError('sendPiece: Transmission error detected.')
+          raise WorkflowEngineError('sendPiece: Transmission error detected.')
         else:
           return True
       else:
@@ -1066,24 +1092,24 @@ class WorkflowEngine( object ):
     '''
     if not relative_path:
       # File case
-      (file_size, md5_hash, transfer_type) = self.__jobServer.getTransferActionInfo(local_path)
+      (file_size, md5_hash, transfer_type) = self._database_server.getTransferActionInfo(local_path)
       transfer_ended = self.__sendToFile(local_path, data, file_size, md5_hash)
       if transfer_ended:
-        self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
+        self._database_server.setTransferStatus(local_path, constants.TRANSFERED)
         self.signalTransferEnded(local_path)
       
     else:
       # Directory case
-      (cumulated_size, dir_element_action_info, transfer_type) = self.__jobServer.getTransferActionInfo(local_path)
+      (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.getTransferActionInfo(local_path)
       if not relative_path in dir_element_action_info:
-        raise JobSchedulerError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
+        raise WorkflowEngineError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
       (file_size, md5_hash) = dir_element_action_info[relative_path]
       transfer_ended = self.__sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
       
       if transfer_ended:
         cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transferProgressionStatus(local_path, (cumulated_size, dir_element_action_info, transfer_type))
         if cumulated_transmissions == cumulated_file_size:
-          self.__jobServer.setTransferStatus(local_path, constants.TRANSFERED)
+          self._database_server.setTransferStatus(local_path, constants.TRANSFERED)
           self.signalTransferEnded(local_path)
       
     return transfer_ended
@@ -1111,31 +1137,31 @@ class WorkflowEngine( object ):
     Set a transfer status. 
     '''
      
-    if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
+    if not self._database_server.isUserTransfer(local_path, self.__user_id) :
       #print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
     
-    self.__jobServer.setTransferStatus(local_path, status)
+    self._database_server.setTransferStatus(local_path, status)
 
   def cancelTransfer(self, local_path):
     '''
     Implementation of the L{Jobs} method.
     '''
     
-    if not self.__jobServer.isUserTransfer(local_path, self.__user_id) :
+    if not self._database_server.isUserTransfer(local_path, self.__user_id) :
       #print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_path
       return
 
-    self.__jobServer.removeTransfer(local_path)
+    self._database_server.removeTransfer(local_path)
     
   def signalTransferEnded(self, local_path):
     '''
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
-    workflow_id = self.__jobServer.getTransferInformation(local_path)[3]
+    workflow_id = self._database_server.getTransferInformation(local_path)[3]
     if workflow_id != -1:
-      self.__jobServer.addWorkflowEndedTransfer(workflow_id, local_path)
+      self._database_server.addWorkflowEndedTransfer(workflow_id, local_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -1146,18 +1172,18 @@ class WorkflowEngine( object ):
     '''
     Submits a job to the system. 
     
-    @type  jobTemplate: L{JobTemplate}
+    @type  jobTemplate: L{Job}
     @param jobTemplate: job informations 
     '''
 
     if len(jobTemplate.command) == 0:
-      raise JobSchedulerError("Submission error: the command must contain at least one element \n", self.logger)
+      raise WorkflowEngineError("Submission error: the command must contain at least one element \n", self.logger)
 
     # check the required_local_input_files, required_local_output_file and stdin ?
     
     
     
-    job_id = self.__drmaaJS.submit(jobTemplate)
+    job_id = self._drmaa_wf_engine.submit(jobTemplate)
     
     return job_id
 
@@ -1169,11 +1195,11 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    if not self._database_server.isUserJob(job_id, self.__user_id):
       #print "Couldn't dispose job %d. It doesn't exist or is not owned by the current user \n" % job_id
       return 
     
-    self.__drmaaJS.dispose(job_id)
+    self._drmaa_wf_engine.dispose(job_id)
 
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -1184,23 +1210,23 @@ class WorkflowEngine( object ):
     '''
     if not expiration_date:
       expiration_date = datetime.now() + timedelta(days=7)
-    return self.__drmaaJS.submitWorkflow(workflow, expiration_date, name)
+    return self._drmaa_wf_engine.submitWorkflow(workflow, expiration_date, name)
   
   def disposeWorkflow(self, workflow_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(workflow_id, self.__user_id):
       #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return
     
-    self.__jobServer.deleteWorkflow(workflow_id)
+    self._database_server.deleteWorkflow(workflow_id)
     
   def changeWorkflowExpirationDate(self, workflow_id, new_expiration_date):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(workflow_id, self.__user_id):
       #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return False
     
@@ -1208,18 +1234,18 @@ class WorkflowEngine( object ):
       return False
     # TO DO: Add other rules?
     
-    self.__jobServer.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
+    self._database_server.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
     return True
 
   def restartWorkflow(self, workflow_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(workflow_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(workflow_id, self.__user_id):
       #print "Couldn't restart workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return False
     
-    (status, last_status_update) = self.__jobServer.getWorkflowStatus(workflow_id)
+    (status, last_status_update) = self._database_server.getWorkflowStatus(workflow_id)
     
     
     print "last status update too old = " + repr((datetime.now() - last_status_update < timedelta(seconds=refreshment_interval*5))) 
@@ -1227,8 +1253,8 @@ class WorkflowEngine( object ):
       return False
     
     
-    print "self.__drmaaJS.restartWorkflow(workflow_id)"
-    self.__drmaaJS.restartWorkflow(workflow_id)
+    print "self._drmaa_wf_engine.restartWorkflow(workflow_id)"
+    self._drmaa_wf_engine.restartWorkflow(workflow_id)
     return True
     
    
@@ -1239,39 +1265,39 @@ class WorkflowEngine( object ):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    return self.__jobServer.getJobs(self.__user_id)
+    return self._database_server.getJobs(self.__user_id)
     
   def transfers(self):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    return self.__jobServer.getTransfers(self.__user_id)
+    return self._database_server.getTransfers(self.__user_id)
   
   
   def workflows(self):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    return self.__jobServer.getWorkflows(self.__user_id)
+    return self._database_server.getWorkflows(self.__user_id)
   
   def submittedWorkflow(self, wf_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    return self.__jobServer.getWorkflow(wf_id)
+    return self._database_server.getWorkflow(wf_id)
 
  
   def workflowInformation(self, wf_id):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    return self.__jobServer.getWorkflowInfo(wf_id)
+    return self._database_server.getWorkflowInfo(wf_id)
     
     
  
@@ -1281,11 +1307,11 @@ class WorkflowEngine( object ):
     '''
     #TBI raise an exception if local_path is not valid transfer??
     
-    if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
+    if not self._database_server.isUserTransfer(local_path, self.__user_id):
       #print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_path
       return
       
-    return self.__jobServer.getTransferInformation(local_path)
+    return self._database_server.getTransferInformation(local_path)
    
 
 
@@ -1293,33 +1319,33 @@ class WorkflowEngine( object ):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    if not self._database_server.isUserJob(job_id, self.__user_id):
       #print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
     
-    return self.__jobServer.getJobStatus(job_id)[0]
+    return self._database_server.getJobStatus(job_id)[0]
         
   
   def detailedWorkflowStatus(self, wf_id, groupe = None):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserWorkflow(wf_id, self.__user_id):
+    if not self._database_server.isUserWorkflow(wf_id, self.__user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    wf_status = self.__jobServer.getDetailedWorkflowStatus(wf_id)
+    wf_status = self._database_server.getDetailedWorkflowStatus(wf_id)
     return wf_status
         
         
   def transferStatus(self, local_path):
-    if not self.__jobServer.isUserTransfer(local_path, self.__user_id):
+    if not self._database_server.isUserTransfer(local_path, self.__user_id):
       #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
       return
-    transfer_status = self.__jobServer.getTransferStatus(local_path)  
+    transfer_status = self._database_server.getTransferStatus(local_path)  
     return transfer_status
         
   def transferActionInfo(self,local_path):
-    return self.__jobServer.getTransferActionInfo(local_path)
+    return self._database_server.getTransferActionInfo(local_path)
  
   def transferProgressionStatus(self, local_path, transfer_action_info):
     if transfer_action_info[2] == constants.FILE_SENDING:
@@ -1347,11 +1373,11 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
   
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    if not self._database_server.isUserJob(job_id, self.__user_id):
       #print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
   
-    dbJob = self.__jobServer.getJob(job_id)
+    dbJob = self._database_server.getJob(job_id)
     exit_status = dbJob.exit_status
     exit_value = dbJob.exit_value
     terminating_signal =dbJob.terminating_signal
@@ -1365,11 +1391,11 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    if not self._database_server.isUserJob(job_id, self.__user_id):
       #print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
     
-    dbJob = self.__jobServer.getJob(job_id)
+    dbJob = self._database_server.getJob(job_id)
     name_description = dbJob.name_description 
     command = dbJob.command
     submission_date = dbJob.submission_date
@@ -1377,10 +1403,10 @@ class WorkflowEngine( object ):
     return (name_description, command, submission_date)
     
   def getStdOutErrTransferActionInfo(self, job_id):
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
+    if not self._database_server.isUserJob(job_id, self.__user_id):
       return
     
-    stdout_file, stderr_file = self.__jobServer.getStdOutErrFilePath(job_id)
+    stdout_file, stderr_file = self._database_server.getStdOutErrFilePath(job_id)
     
     stdout_transfer_action_info = None
     stderr_transfer_action_info = None
@@ -1405,37 +1431,37 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
     for jid in job_ids:
-      if not self.__jobServer.isUserJob(jid, self.__user_id):
-        raise JobSchedulerError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid, self.logger)
+      if not self._database_server.isUserJob(jid, self.__user_id):
+        raise WorkflowEngineError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid, self.logger)
       
-    #self.__drmaaJS.wait(job_ids, timeout)
+    #self._drmaa_wf_engine.wait(job_ids, timeout)
     self.logger.debug("        waiting...")
     
     waitForever = timeout < 0
     startTime = datetime.now()
     for jid in job_ids:
-      (status, last_status_update) = self.__jobServer.getJobStatus(jid)
+      (status, last_status_update) = self._database_server.getJobStatus(jid)
       if status:
         self.logger.debug("wait        job %s status: %s", jid, status)
         delta = datetime.now()-startTime
         delta_status_update = datetime.now() - last_status_update
         while status and not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
           time.sleep(refreshment_interval)
-          (status, last_status_update) = self.__jobServer.getJobStatus(jid) 
+          (status, last_status_update) = self._database_server.getJobStatus(jid) 
           self.logger.debug("wait        job %s status: %s last update %s, now %s", jid, status, repr(last_status_update), repr(datetime.now()))
           delta = datetime.now() - startTime
           if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
-            raise JobSchedulerError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
+            raise WorkflowEngineError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
     
 
   def stop( self, job_id ):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
+    if not self._database_server.isUserJob(job_id, self.__user_id):
+      raise WorkflowEngineError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
-    self.__drmaaJS.stop(job_id)
+    self._drmaa_wf_engine.stop(job_id)
    
   
   
@@ -1443,10 +1469,10 @@ class WorkflowEngine( object ):
     '''
     Implementation of soma.jobs.jobClient.Jobs API
     '''
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
+    if not self._database_server.isUserJob(job_id, self.__user_id):
+      raise WorkflowEngineError( "Could not restart job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
-    self.__drmaaJS.restart(job_id)
+    self._drmaa_wf_engine.restart(job_id)
 
 
   def kill( self, job_id ):
@@ -1454,9 +1480,9 @@ class WorkflowEngine( object ):
     Implementation of soma.jobs.jobClient.Jobs API
     '''
 
-    if not self.__jobServer.isUserJob(job_id, self.__user_id):
-      raise JobSchedulerError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
+    if not self._database_server.isUserJob(job_id, self.__user_id):
+      raise WorkflowEngineError( "Could not kill job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
-    self.__drmaaJS.kill(job_id)
+    self._drmaa_wf_engine.kill(job_id)
 
 

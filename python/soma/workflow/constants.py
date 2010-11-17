@@ -93,29 +93,29 @@ CFG_CLUSTER_ADDRESS = 'cluster_address'
 CFG_SUBMITTING_MACHINES = 'submitting_machines'
 OCFG_DRMS = 'drms'
 
-#Job server
+#database server
 
 CFG_DATABASE_FILE = 'database_file'
-CFG_TMP_FILE_DIR_PATH = 'tmp_file_dir_path'
-CFG_JOB_SERVER_NAME = 'job_server_name'
+CFG_TRANSFERED_FILES_DIR = 'transfered_files_dir_path'
+CFG_SERVER_NAME = 'server_name'
 CFG_NAME_SERVER_HOST ='name_server_host'
 
-OCFG_JOB_SERVER_LOG_FILE = 'job_server_log_file'
-OCFG_JOB_SERVER_LOG_LEVEL = 'job_server_logging_level'
-OCFG_JOB_SERVER_LOG_FORMAT = 'job_server_logging_format'
+OCFG_SERVER_LOG_FILE = 'server_log_file'
+OCFG_SERVER_LOG_LEVEL = 'server_logging_level'
+OCFG_SERVER_LOG_FORMAT = 'server_logging_format'
 
-#User local process
+#Engine
 
-CFG_SRC_LOCAL_PROCESS = 'src_local_process'
+CFG_START_ENGINE_SCRIPT = 'start_engine_script'
 
-OCFG_LOCAL_PROCESSES_LOG_DIR = 'job_processes_log_dir_path'
-OCFG_LOCAL_PROCESSES_LOG_LEVEL = 'job_processes_logging_level'
-OCFG_LOCAL_PROCESSES_LOG_FORMAT = 'job_processes_logging_format'
+OCFG_ENGINE_LOG_DIR = 'engine_log_dir_path'
+OCFG_ENGINE_LOG_LEVEL = 'engine_logging_level'
+OCFG_ENGINE_LOG_FORMAT = 'engine_logging_format'
 
-#Universal path translation files 
+#Shared resource path translation files 
 #specify the translation files (if any) associated to a namespace
 #eg. translation_files = brainvisa{/home/toto/.brainvisa/translation.sjtr} namespace2{path/translation1.sjtr} namespace2{path/translation2.sjtr}
-OCFG_U_PATH_TRANSLATION_FILES = 'universal_path_translation_files' 
+OCFG_PATH_TRANSLATION_FILES = 'path_translation_files' 
 
 # Parallel job configuration :
 # DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
@@ -133,11 +133,5 @@ PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 
 
 
-# client section
-
-OCFG_SECTION_CLIENT = 'CLIENT'
-OCFG_CLIENT_LOG_FILE = 'client_log_file'
-OCFG_CLIENT_LOG_FORMAT = 'client_log_format'
-OCFG_CLIENT_LOG_LEVEL = 'client_log_level'
 
 
