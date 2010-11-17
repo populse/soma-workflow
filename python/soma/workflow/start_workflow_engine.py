@@ -154,6 +154,7 @@ if __name__=="__main__":
   
     logger.info('Pyro object ' + engine_name + ' is ready.')
     
+
     # connection check
     connection_checker = ConnectionChecker()
     uri_cc = daemon.connect(connection_checker, 'connection_checker')
