@@ -92,9 +92,7 @@ if __name__=="__main__":
     ###########################
     # Parallel job specific information
     parallel_config= {}
-    for parallel_info in constants.PARALLEL_JOB_ENV + \ 
-                         constants.PARALLEL_DRMAA_ATTRIBUTES + \
-                         constants.PARALLEL_CONFIGURATIONS:
+    for parallel_info in constants.PARALLEL_JOB_ENV + constants.PARALLEL_DRMAA_ATTRIBUTES + constants.PARALLEL_CONFIGURATIONS:
       if config.has_option(section, parallel_info):
         parallel_config[parallel_info] = config.get(section, 
                                                     parallel_info)

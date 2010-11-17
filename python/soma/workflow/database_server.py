@@ -1,3 +1,5 @@
+from __future__ import with_statement 
+
 '''
 @author: Yann Cointepas
 @author: Soizic Laguitton
@@ -14,12 +16,9 @@ jobs and file transfer objects but also the status of the actions which can be
 done on the objects (submission of a job or a workflow, transfering a file...). 
 '''
 
-
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------------
-
-from __future__ import with_statement 
 
 import sqlite3
 import threading
@@ -32,7 +31,6 @@ from datetime import timedelta
 from datetime import datetime
 
 import soma.jobs.constants as constants
-
 
 __docformat__ = "epytext en"
 

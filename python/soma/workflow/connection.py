@@ -1,5 +1,5 @@
-from __future__ import with_statement
 
+from __future__ import with_statement
 
 '''
 @author: Soizic Laguitton
@@ -20,6 +20,8 @@ connected.
 
 requirements: Pyro and Paramiko must be installed on the remote machine.
 '''
+
+
 
 #-------------------------------------------------------------------------------
 # Imports
