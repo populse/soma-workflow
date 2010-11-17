@@ -269,7 +269,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode = mode #'local_no_disconnection' #(local debug)#      
+    self._mode =  mode #  'local_no_disconnection' #(local debug)#   
     
     #########
     # LOCAL #
@@ -292,7 +292,7 @@ class WorkflowController(object):
     # LOCAL DEBUG #
     ###############
     if self._mode == 'local_no_disconnection': # DEBUG
-      from soma.workflow.WorkflowEngine import WorkflowEngine
+      from soma.workflow.engine import WorkflowEngine
       import logging
       import Pyro.naming
       import Pyro.core
@@ -300,7 +300,7 @@ class WorkflowController(object):
       
       # log file 
       if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
-        logfilepath = config.get(section, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
+        logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
 
         logging.basicConfig(
           filename=logfilepath,
@@ -324,7 +324,7 @@ class WorkflowController(object):
     
       server_name = config.get(resource_id, CFG_SERVER_NAME)
       try:
-        uri = ns.resolve(job_server_name)
+        uri = ns.resolve(server_name)
         logger.info('Server URI:'+ repr(uri))
       except NamingError,x:
         logger.critical('Couldn\'t find' + server_name + ' nameserver says:',x)

@@ -19,8 +19,8 @@ if __name__=="__main__":
   from Pyro.errors import PyroError, NamingError
   
   import soma.workflow.engine
-  import soma.worflow.connection 
-  import soma.workflow.constants as contants
+  import soma.workflow.connection 
+  import soma.workflow.constants as constants
 
         
   ###### WorkflowEngine pyro object
@@ -68,7 +68,7 @@ if __name__=="__main__":
     logger.info(" ")
     logger.info("****************************************************")
     logger.info("****************************************************")
-  
+   
     ###########################
     # Looking for the database_server
     Pyro.core.initClient()
@@ -78,17 +78,19 @@ if __name__=="__main__":
       ns = locator.getNS()
     else: 
       ns = locator.getNS(host=name_server_host)
-  
+
     server_name = config.get(section, constants.CFG_SERVER_NAME)
+
     try:
       uri = ns.resolve(server_name)
       logger.info('Server URI:'+ repr(uri))
     except NamingError,x:
-      logger.critical('Couldn\'t find' + server_name + ' nameserver says:',
-                      x)
+      logger.critical('Couldn\'t find' + server_name + ' nameserver says:',x)
       raise SystemExit
     database_server = Pyro.core.getProxyForURI(uri)
     
+    
+
     ###########################
     # Parallel job specific information
     parallel_config= {}
@@ -135,8 +137,10 @@ if __name__=="__main__":
     #Pyro.config.PYRO_MULTITHREADED = 0
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()
+
+
     
-    drmaa_engine = soma.workflow.engine.DrmaaWorkflowEngine(jobServer, 
+    drmaa_engine = soma.workflow.engine.DrmaaWorkflowEngine(database_server, 
                                                             parallel_config, 
                                                             path_translation)
     

@@ -22,7 +22,7 @@ class JobsControler(object):
     if not result or not os.path.exists( result ):
       result = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'jobs.cfg' )
       if not os.path.exists( result ):
-        raise RuntimeError( 'Cannot find soma-jobs configuration file. Perhaps SOMA_WORKFLOW_CONFIG is not proprely set.' )
+        raise RuntimeError( 'Cannot find soma-workflow configuration file. Perhaps SOMA_WORKFLOW_CONFIG is not proprely set.' )
     return result
   
   
@@ -31,20 +31,19 @@ class JobsControler(object):
     somajobs_config = ConfigParser.ConfigParser()
     somajobs_config.read( self.getConfigFile() )
     for cid in somajobs_config.sections():
-      if cid != OCFG_SECTION_CLIENT:
-        resource_ids.append(cid)
+      resource_ids.append(cid)
         
     return resource_ids
         
   def getConnection(self, resource_id, login, password, test_no):
-    try: 
-      connection = WorkflowController( self.getConfigFile(),
+    #try: 
+    connection = WorkflowController( self.getConfigFile(),
                                        resource_id, 
                                        login, 
                                        password,
                                        log=test_no)
-    except Exception, e:
-      return (None, "%s: %s" %(type(e),e) )
+    #except Exception, e:
+      #return (None, "%s: %s" %(type(e),e) )
       
     return (connection, "") 
     
@@ -272,6 +271,8 @@ class WorkflowExamples(object):
     '''
     @type with_tranfers: boolean
     '''
+    print "test config file " + test_config_file_path
+
     test_config = ConfigParser.ConfigParser()
     test_config.read(test_config_file_path)
     

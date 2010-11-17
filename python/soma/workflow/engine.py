@@ -124,7 +124,7 @@ class DrmaaWorkflowEngine(object):
     
     self._drmaa = DrmaaJobs()
     # patch for pbs-torque drmaa ##
-    jobTemplateId = self._drmaa.allocateJob()
+    jobTemplateId = self._drmaa.allocateJobTemplate()
     self._drmaa.setCommand(jobTemplateId, "echo", [])
     self._drmaa.setAttribute(jobTemplateId, "drmaa_output_path", "[void]:/dev/null")
     self._drmaa.setAttribute(jobTemplateId, "drmaa_error_path", "[void]:/dev/null")
@@ -317,7 +317,7 @@ class DrmaaWorkflowEngine(object):
     
     with self._lock:
       
-      drmaaJobId = self._drmaa.allocateJob()
+      drmaaJobId = self._drmaa.allocateJobTemplate()
       self._drmaa.setCommand(drmaaJobId, job.jobTemplate.command[0], job.jobTemplate.command[1:])
     
       self._drmaa.setAttribute(drmaaJobId, "drmaa_output_path", "[void]:" + job.jobTemplate.stdout_file)
@@ -350,7 +350,7 @@ class DrmaaWorkflowEngine(object):
       self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
 
       drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
-      self._drmaa.deleteJob(drmaaJobId)
+      self._drmaa.deleteJobTemplate(drmaaJobId)
      
       if drmaaSubmittedJobId == "":
         self.logger.error("Could not submit job: Drmaa problem.");
@@ -438,7 +438,7 @@ class DrmaaWorkflowEngine(object):
     self.logger.debug(">> dispose %s", job_id)
     with self._lock:
       self.kill(job_id)
-      self._database_server.deleteJob(job_id)
+      self._database_server.deleteJobTemplate(job_id)
     self.logger.debug("<< dispose")
 
 

@@ -136,7 +136,7 @@ soma_wf_cfg.add_section(s)
 #Engine
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
-soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/soizic/soma-workflow-server/logs/')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/soizic/soma_workflow_server/logs/')
 #Computing resource
 soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES, 'is206464')
 soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,     'is206464')
@@ -144,16 +144,16 @@ soma_wf_cfg.set(s, OCFG_DRMS,               'SGE')
 #Server
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
-soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/soizic/soma-workflow-server/logs/log_server')
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/soizic/soma_workflow_server/logs/log_server')
 soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'is206464')
 soma_wf_cfg.set(s, CFG_SERVER_NAME,          'workflow_server')
-soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/soizic/soma-workflow-server/transfered_files/')
-soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/soizic/soma-workflow-server/soma_workflow.db') 
+soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/soizic/soma_workflow_server/transfered_files/')
+soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/soizic/soma_workflow_server/soma_workflow.db') 
 #Shared resource path translation file
-soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/soizic/soma-workflow-server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/soizic/.brainvisa/soma-workflow.translation}')
+soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/soizic/soma_workflow_server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/soizic/.brainvisa/soma-workflow.translation}')
 
 
 
 #####################################################"
-with open('soma-workflow.cfg', 'wb') as configfile:
+with open('soma_workflow.cfg', 'wb') as configfile:
     soma_wf_cfg.write(configfile)

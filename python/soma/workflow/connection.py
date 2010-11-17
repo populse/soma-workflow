@@ -86,7 +86,7 @@ class RemoteConnection( object ):
     import paramiko #required only on client host
     
     if not login:
-      raise JobConnectionError("Remote connection requires a login")
+      raise ConnectionError("Remote connection requires a login")
    
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
@@ -108,12 +108,12 @@ class RemoteConnection( object ):
     line = stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
-    if not line: raise JobConnectionError("Can't read workflow engine Pyro uri.")
+    if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
     workflow_engine_uri = line.split()[1] 
     line = stdout.readline()
     while line and line.split()[0] != "connectionChecker":
       line = stdout.readline()
-    if not line: raise JobConnectionError("Can't read workflow engine Pyro uri.")
+    if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 
     client.close()
     
@@ -162,7 +162,7 @@ class RemoteConnection( object ):
         tunnelSet = True
     
     if attempts > maxattemps: 
-      raise JobConnectionError("The ssh tunnel could not be started within " + repr(maxattemps) + " seconds. The waiting time delay might need to be extended. See the configuration file")
+      raise ConnectionError("The ssh tunnel could not be started within " + repr(maxattemps) + " seconds. The waiting time delay might need to be extended. See the configuration file")
 
     # create the connection holder objet for #
     # a clean disconnection in any case      #
@@ -213,13 +213,13 @@ class LocalConnection( object ):
     while line and line.split()[0] != pyro_objet_name:
       line = engine_process.stdout.readline()
     if not line: 
-      raise JobConnectionError("Can't read workflow engine Pyro uri.")
+      raise ConnectionError("Can't read workflow engine Pyro uri.")
     workflow_engine_uri = line.split()[1] 
     line = engine_process.stdout.readline()
     while line and line.split()[0] != "connectionChecker":
       line = engine_process.stdout.readline()
     if not line: 
-      raise JobConnectionError("Can't read workflow engine Pyro uri.")
+      raise ConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 
     
     # create the proxies                     #
@@ -317,10 +317,10 @@ class Tunnel(threading.Thread):
                                               (self.chain_host, self.chain_port),
                                               self.request.getpeername())
       except Exception, e:
-        raise JobConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,self.chain_port,repr(e)), self.logger)
+        raise ConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,self.chain_port,repr(e)), self.logger)
   
       if self.__chan is None:
-        raise JobConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
+        raise ConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
                 (self.chain_host, self.chain_port), self.logger)
   
       self.logger.info('Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port)))
