@@ -3,6 +3,12 @@ import ConfigParser
 
 cfg = ConfigParser.ConfigParser()
 
+cfg.add_section('is2064645')
+# jobs file directories
+cfg.set('is2064645', 'job_examples_dir', "/home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/test/jobExamples")
+cfg.set('is2064645', 'job_output_dir', "/home/soizic/output/")
+# mode: 'remote' or 'local' (the login and password will be asked in the remote case)
+
 
 cfg.add_section('soizic-vaio')
 # jobs file directories

@@ -48,10 +48,10 @@ class Job(object):
   Job representation in a soma-workflow. 
   Workflow node type.
   
-  The job parameters are identical to the WorkflowController.submit method 
+  The job parameters are identical to the WorkflowController.submit_job method 
   arguments except that referenced_input_files and references_output_files 
   must be sequences of L{FileTransfer}.
-  (See the WorkflowController.submit method for a description of each parameter)
+  (See the WorkflowController.submit_job method for a description of each parameter)
   '''
   def __init__( self, 
                 command,
@@ -399,23 +399,28 @@ class WorkflowController(object):
   #job remote input files: rfin_1, rfin_2, ..., rfin_n 
   #job remote output files: rfout_1, rfout_2, ..., rfout_m  
   
-  #Call registerTransfer for each output file:
-  lfout_1 = wf_controller.registerTransfer(rfout_1)
-  lfout_2 = wf_controller.registerTransfer(rfout_2)
+  #Call register_transfer for each transfer file:
+  lfout_1 = wf_controller.register_transfer(rfout_1)
+  lfout_2 = wf_controller.register_transfer(rfout_2)
   ...
-  lfout_n = wf_controller.registerTransfer(rfout_m)
+  lfout_n = wf_controller.register_transfer(rfout_m)
+
+  lfin_1= wf_controller.register_transfer(rfin_1)
+  lfin_2= wf_controller.register_transfer(rfin_2)
+  ...
+  lfin_n= wf_controller.register_transfer(rfin_n)
   
   #Call send for each input file:
-  lfin_1= wf_controller.send(rfin_1)
-  lfin_2= wf_controller.send(rfin_2)
+  wf_controller.send(lfin_1)
+  wf_controller.send(lfin_1)
   ...
-  lfin_n= wf_controller.send(rfin_n)
+  wf_controller.send(lfin_1)
     
   #Job submittion: don't forget to reference local input and output files 
-  job_id = wf_controller.submit(['python', '/somewhere/something.py'], 
+  job_id = wf_controller.submit_job(['python', '/somewhere/something.py'], 
                        [lfin_1, lfin_2, ..., lfin_n],
                        [lfout_1, lfout_2, ..., lfout_n])
-  wf_controller.wait(job_id)
+  wf_controller.wait_job(job_id)
   
   #After Job execution, transfer back the output file
   wf_controller.retrieve(lfout_1)
@@ -433,34 +438,14 @@ class WorkflowController(object):
   Example:
     
   #transfer of a SPM image file
-  fout_1 = wf_controller.registerTransfer(remote_path = 'mypath/myimage.img', 
+  fout_1 = wf_controller.register_transfer(remote_path = 'mypath/myimage.img', 
                                  remote_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
   ...
   wf_controller.retrive(fout_1)
  
   '''
-    
-  def send(self, remote_input, disposal_timeout = 168, remote_paths=None, buffer_size = 512**2):
-    '''
-    Transfers a remote file to a local directory. 
-   
-    @type  remote_input: string 
-    @param remote_input: remote path of input file
-    @type  disposalTimeout: int
-    @param disposalTimeout:  The local file and transfer information is 
-    automatically disposed after disposal_timeout hours, except if a job 
-    references it as input. Default delay is 168 hours (7 days).
-    @type remote_paths: sequence of string or None
-    @type remote_paths: sequence of file to transfer if transfering a 
-    file serie or if the file format involve serveral files of directories.
-    @rtype: string 
-    @return: local path where the remote file was copied
-    '''
-    local_path = self.registerTransfer(remote_input, disposal_timeout, remote_paths)
-    self.sendRegisteredTransfer(local_path, buffer_size)
-
-    
-  def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
+        
+  def register_transfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
     '''
     Generates a unique local path and save the (local_path, remote_path) association.
     
@@ -468,7 +453,7 @@ class WorkflowController(object):
     @param remote_path: remote path of file
     @type  disposalTimeout: int
     @param disposalTimeout: The local file and transfer information is 
-    automatically disposed after disposal_timeout hours, except if a job 
+    automatically deleted after disposal_timeout hours, except if a job 
     references it as output or input. Default delay is 168 hours (7 days).
     @type remote_paths: sequence of string or None
     @type remote_paths: sequence of file to transfer if transfering a 
@@ -476,51 +461,41 @@ class WorkflowController(object):
     @rtype: string or sequence of string
     @return: local file path associated with the remote file
     '''
-    return self._engine_proxy.registerTransfer(remote_path, disposal_timeout, remote_paths)
+    return self._engine_proxy.register_transfer(remote_path, disposal_timeout, remote_paths)
 
-  def sendRegisteredTransfer(self, local_path, buffer_size = 512**2):
+  def send(self, local_path, buffer_size = 512**2):
     '''
     Transfers one or several remote file(s) to a local directory. The local_path 
-    must have been generated using the registerTransfer method. 
-        
-      local_path = send(remote_path)
-      
-    is strictly equivalent to :
-    
-      local_path = registerTransfer(remote_path)
-      sendRegisteredTransfer(local_path)
-    
-    Use registerTransfer + sendRegisteredTransfer when the local_path
-    is needed before transfering to file.
+    must have been generated using the register_transfer method. 
     '''
     
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
     transfer_action_info = self._engine_proxy.transferActionInfo(local_path)
     if not transfer_action_info:
-      init_info = self.initializeSendingTransfer(local_path)
+      init_info = self.initialize_sending_transfer(local_path)
     if not remote_paths:
       if os.path.isfile(remote_path):
         if transfer_action_info:
-          self.__sendFile(remote_path, 
+          self._send_file(remote_path, 
                           local_path, 
                           buffer_size, 
                           transmitted = transfer_action[1])
         else:
-          self.__sendFile(remote_path, 
+          self._send_file(remote_path, 
                           local_path, 
                           buffer_size)
                           
       elif os.path.isdir(remote_path):
         if transfer_action_info:
           for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-            self.__sendFile(remote_path, 
+            self._send_file(remote_path, 
                             local_path, 
                             buffer_size, 
                             transmitted, 
                             relative_path)
         else:
           for relative_path in init_info[1]:
-            self.__sendFile(remote_path, 
+            self._send_file(remote_path, 
                             local_path, 
                             buffer_size,
                             transmitted = 0,
@@ -528,14 +503,14 @@ class WorkflowController(object):
     else:
       if transfer_action_info:
         for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-          self.__sendFile(os.path.dirname(remote_path), 
+          self._send_file(os.path.dirname(remote_path), 
                           local_path, 
                           buffer_size, 
                           transmitted,
                           relative_path)
       else:
         for relative_path in init_info[1]:
-          self.__sendFile(os.path.dirname(remote_path), 
+          self._send_file(os.path.dirname(remote_path), 
                           local_path, 
                           buffer_size, 
                           transmitted = 0,
@@ -554,12 +529,12 @@ class WorkflowController(object):
     @param local_path: local path 
     '''
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
-    transfer_action_info = self.initializeRetrievingTransfer(local_path)
+    transfer_action_info = self.initialize_retrieving_transfer(local_path)
     
     if transfer_action_info[2] == FILE_RETRIEVING:
       # file case
       (file_size, md5_hash, transfer_type) = transfer_action_info
-      self.__retrieveFile(remote_path, 
+      self._retrieve_file(remote_path, 
                           local_path, 
                           file_size, 
                           md5_hash, 
@@ -570,7 +545,7 @@ class WorkflowController(object):
       
       for relative_path, file_info in file_transfer_info.iteritems(): 
         (file_size, md5_hash) = file_info
-        self.__retrieveFile(remote_path, 
+        self._retrieve_file(remote_path, 
                             local_path, 
                             file_size, 
                             md5_hash, 
@@ -578,7 +553,7 @@ class WorkflowController(object):
                             relative_path)
     
 
-  def __sendFile(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
+  def _send_file(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
     if relative_path:
       r_path = os.path.join(remote_path, relative_path)
     else:
@@ -588,11 +563,11 @@ class WorkflowController(object):
       f.seek(transmitted)
     transfer_ended = False
     while not transfer_ended:
-      transfer_ended = self.sendPiece(local_path, f.read(buffer_size), relative_path)
+      transfer_ended = self.send_piece(local_path, f.read(buffer_size), relative_path)
     f.close()
 
 
-  def __retrieveFile(self, remote_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
+  def _retrieve_file(self, remote_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
     if relative_path:
       r_path = os.path.join(os.path.dirname(remote_path), relative_path)
     else:
@@ -604,20 +579,20 @@ class WorkflowController(object):
       #open(r_path, 'wb')
     transfer_ended = False
     while not transfer_ended :
-      data = self.retrievePiece(local_path, buffer_size, fs, relative_path)
+      data = self.retrieve_piece(local_path, buffer_size, fs, relative_path)
       f.write(data)
       fs = f.tell()
       if fs > file_size:
          f.close()
          open(r_path, 'wb')
-         raise Exception('retrievePiece: Transmitted data exceed expected file size.')
+         raise Exception('retrieve_piece: Transmitted data exceed expected file size.')
       elif fs == file_size:
         if md5_hash is not None:
           if hashlib.md5( open( r_path, 'rb' ).read() ).hexdigest() != md5_hash:
             # Reset file
             f.close()
             open( r_path, 'wb' )
-            raise Exception('retrievePiece: Transmission error detected.')
+            raise Exception('retrieve_piece: Transmission error detected.')
           else:
             transfer_ended = True
         else:
@@ -626,7 +601,7 @@ class WorkflowController(object):
 
           
   @staticmethod
-  def __contents(path_seq, md5_hash=False):
+  def _contents(path_seq, md5_hash=False):
     result = []
     for path in path_seq:
       s = os.stat(path)
@@ -634,7 +609,7 @@ class WorkflowController(object):
         full_path_list = []
         for element in os.listdir(path):
           full_path_list.append(os.path.join(path, element))
-        contents = WorkflowController.__contents(full_path_list, md5_hash)
+        contents = WorkflowController._contents(full_path_list, md5_hash)
         result.append((os.path.basename(path), contents, None))
       else:
         if md5_hash:
@@ -644,7 +619,7 @@ class WorkflowController(object):
     return result
         
         
-  def initializeSendingTransfer(self, local_path):
+  def initialize_sending_transfer(self, local_path):
     '''
     Initializes the transfer action (from client to server) and returns the transfer action information.
     
@@ -661,15 +636,15 @@ class WorkflowController(object):
         md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = self._engine_proxy.initializeFileSending(local_path, file_size, md5_hash)
       elif os.path.isdir(remote_path):
-        contents = WorkflowController.__contents([remote_path])
+        contents = WorkflowController._contents([remote_path])
         transfer_action_info = self._engine_proxy.initializeDirSending(local_path, contents)
     else: #remote_paths
-      contents = self.__contents(remote_paths)
+      contents = self._contents(remote_paths)
       transfer_action_info = self._engine_proxy.initializeDirSending(local_path,contents)
     return transfer_action_info
   
         
-  def sendPiece(self, local_path, data, relative_path=None):
+  def send_piece(self, local_path, data, relative_path=None):
     '''
     Sends a piece of data to a registered transfer (identified by local_path).
 
@@ -684,12 +659,12 @@ class WorkflowController(object):
     '''
     status = self._engine_proxy.transferStatus(local_path)
     if not status == TRANSFERING:
-      self.initializeSendingTransfer(local_path)
-    transfer_ended = self._engine_proxy.sendPiece(local_path, data, relative_path)
+      self.initialize_sending_transfer(local_path)
+    transfer_ended = self._engine_proxy.send_piece(local_path, data, relative_path)
     return transfer_ended
 
 
-  def initializeRetrievingTransfer(self, local_path):
+  def initialize_retrieving_transfer(self, local_path):
     '''
     Initializes the transfer action (from server to client) and returns the transfer action information.
     
@@ -701,11 +676,11 @@ class WorkflowController(object):
     (transfer_action_info, contents) = self._engine_proxy.initializeRetrivingTransfer(local_path)
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
     if contents:
-      self.__createDirStructure(os.path.dirname(remote_path), contents)
+      self._create_dir_structure(os.path.dirname(remote_path), contents)
     return transfer_action_info
     
 
-  def __createDirStructure(self, path, contents, subdirectory = ""):
+  def _create_dir_structure(self, path, contents, subdirectory = ""):
     if not os.path.isdir(path):
       print "create " + repr(path)
       os.makedirs(path)
@@ -717,10 +692,10 @@ class WorkflowController(object):
         print "to create " + repr(full_path)
         if not os.path.isdir(full_path):
           os.mkdir(full_path)
-        self.__createDirStructure(path, description, relative_path)
+        self._create_dir_structure(path, description, relative_path)
    
    
-  def retrievePiece(self, local_path, buffer_size, transmitted, relative_path=None):
+  def retrieve_piece(self, local_path, buffer_size, transmitted, relative_path=None):
     '''
     Retrieves a piece of data from a file or directory (identified by local_path).
     
@@ -735,27 +710,27 @@ class WorkflowController(object):
     @rtype: data
     @return: piece of data read from the file at the position already_transmitted
     '''
-    data = self._engine_proxy.retrievePiece(local_path, buffer_size, transmitted, relative_path)
+    data = self._engine_proxy.retrieve_piece(local_path, buffer_size, transmitted, relative_path)
     return data
     
    
-  def cancelTransfer(self, local_path):
+  def delete_transfer(self, local_path):
     '''
     Deletes the local file or directory and the associated transfer information.
     If some jobs reference the local file(s) as input or output, the transfer won't be 
-    deleted immediately but as soon as all the jobs will be disposed.
+    deleted immediately but as soon as all the jobs will be deleted.
     
     @type local_path: string
     @param local_path: local path associated with a transfer (ie 
     belongs to the list returned by L{transfers}    
     '''
-    self._engine_proxy.cancelTransfer(local_path)
+    self._engine_proxy.delete_transfer(local_path)
     
 
   ########## JOB SUBMISSION ##################################################
 
   '''
-  L{submit} method submits a job for execution to the cluster. 
+  L{submit_job} method submits a job for execution to the cluster. 
   A job identifier is returned and can be used to inspect and 
   control the job.
   
@@ -763,20 +738,20 @@ class WorkflowController(object):
     import soma.workflow.client
       
     wf_controller = soma.workflow.client.WorkflowController()
-    job_id = wf_controller.submit( ['python', '/somewhere/something.py'] )
-    wf_controller.stop(job_id)
+    job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
+    wf_controller.stop_job(job_id)
     wf_controller.restart(job_id)
-    wf_controller.wait([job_id])
+    wf_controller.wait_job([job_id])
     exitinfo = wf_controller.exitInformation(job_id)
-    wf_controller.dispose(job_id)
+    wf_controller.delete_job(job_id)
   '''
 
-  def submit( self,
+  def submit_job( self,
               command,
               referenced_input_files=None,
               referenced_output_files=None,
               stdin=None,
-              join_stderrout=False,
+              join_stderrout=True,
               disposal_timeout=168,
               name_description=None,
               stdout_file=None,
@@ -787,7 +762,7 @@ class WorkflowController(object):
     '''
     Submits a job for execution to the cluster. A job identifier is returned and 
     can be used to inspect and control the job.
-    If the job used transfered files (L{send} and L{registerTransfer} 
+    If the job used transfered files (L{send} and L{register_transfer} 
     methods) The list of involved local input and output file must be specified to 
     guarantee that the files will exist during the whole job life. 
     
@@ -818,7 +793,7 @@ class WorkflowController(object):
     @param disposal_timeout: Number of hours before the job is considered to have been 
     forgotten by the submitter. Passed that delay, the job is destroyed and its
     resources released (including standard output and error files) as if the 
-    user had called L{kill} and L{dispose}.
+    user had called L{kill} and L{delete_job}.
     Default delay is 168 hours (7 days).
     
     @type  name_description: string
@@ -853,7 +828,7 @@ class WorkflowController(object):
 
     '''
 
-    job_id = self._engine_proxy.submit(Job(command,
+    job_id = self._engine_proxy.submit_job(Job(command,
                                     referenced_input_files,
                                     referenced_output_files,
                                     stdin,
@@ -867,20 +842,20 @@ class WorkflowController(object):
     return job_id
    
 
-  def dispose( self, job_id ):
+  def delete_job( self, job_id ):
     '''
     Frees all the resources allocated to the submitted job on the database 
     server. After this call, the C{job_id} becomes invalid and
     cannot be used anymore. 
-    To avoid that jobs create non handled files, L{dispose} kills the job if 
+    To avoid that jobs create non handled files, L{delete_job} kills the job if 
     it's running.
 
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{jobs} or the submission 
-    methods L{submit}, L{customSubmit} or L{submitWithTransfer})
+    methods L{submit_job}, L{customSubmit} or L{submitWithTransfer})
     '''
     
-    self._engine_proxy.dispose(job_id)
+    self._engine_proxy.delete_job(job_id)
     
 
   ########## WORKFLOW SUBMISSION ####################################
@@ -943,7 +918,7 @@ class WorkflowController(object):
   def transfers(self):
     '''
     Returns the transfers currently owned by the user as a sequence of local file path 
-    returned by the L{registerTransfer} method. 
+    returned by the L{register_transfer} method. 
     
     @rtype: sequence of string
     @return: sequence of local file path.
@@ -1003,7 +978,7 @@ class WorkflowController(object):
     Returns the status of a submitted job.
     
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     @rtype:  C{JobStatus} or None
     @return: the status of the job, if its valid and own by the current user, None 
     otherwise. See the list of status: constants.JOBS_STATUS.
@@ -1027,7 +1002,7 @@ class WorkflowController(object):
      # special processing for transfer status:
     new_transfer_status = []
     for local_path, remote_path, status, transfer_action_info in wf_status[1]:
-      progression = self.__progression(local_path, remote_path, transfer_action_info)
+      progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
       new_transfer_status.append((local_path, (status, progression)))
       
     new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
@@ -1050,12 +1025,12 @@ class WorkflowController(object):
     status = self._engine_proxy.transferStatus(local_path)
     transfer_action_info =  self._engine_proxy.transferActionInfo(local_path)
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
-    progression = self.__progression(local_path, remote_path, transfer_action_info)
+    progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
     return (status, progression)
       
             
             
-  def __progression(self, local_path, remote_path, transfer_action_info):
+  def _transfer_progress(self, local_path, remote_path, transfer_action_info):
     progression_info = None
     if transfer_action_info == None :
       progression_info = None
@@ -1093,7 +1068,7 @@ class WorkflowController(object):
     Gives the information related to the end of the job.
    
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     @rtype:  tuple (exit_status, exit_value, term_signal, resource_usage) or None
     @return: It may be C{None} if the job is not valid. 
         - exit_status: The status of the terminated job. See the list of status
@@ -1113,7 +1088,7 @@ class WorkflowController(object):
     submission date.
     
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     @rtype: tuple or None
     @return: (name_description, command, submission_date) it may be C{None} if the job 
     is not valid. 
@@ -1130,7 +1105,7 @@ class WorkflowController(object):
     
     open(stdout_file_path, 'wb') 
     if local_stdout_file and stdout_transfer_action_info:
-      self.__retrieveFile(stdout_file_path, 
+      self._retrieve_file(stdout_file_path, 
                           local_stdout_file, 
                           stdout_transfer_action_info[0], 
                           stdout_transfer_action_info[1], 
@@ -1139,7 +1114,7 @@ class WorkflowController(object):
     if stderr_file_path:
       open(stderr_file_path, 'wb') 
       if local_stderr_file and stderr_transfer_action_info:
-          self.__retrieveFile(stderr_file_path, 
+          self._retrieve_file(stderr_file_path, 
                               local_stderr_file, 
                               stderr_transfer_action_info[0], 
                               stderr_transfer_action_info[1], 
@@ -1149,7 +1124,7 @@ class WorkflowController(object):
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_ids, timeout = -1):
+  def wait_job( self, job_ids, timeout = -1):
     '''
     Waits for all the specified jobs to finish execution or fail. 
     The job_id must be valid.
@@ -1160,28 +1135,28 @@ class WorkflowController(object):
     @param timeout: the call exits before timout seconds. a negative value 
     means to wait indefinetely for the result. 0 means to return immediately
     '''
-    self._engine_proxy.wait(job_ids, timeout)
+    self._engine_proxy.wait_job(job_ids, timeout)
 
-  def stop( self, job_id ):
+  def stop_job( self, job_id ):
     '''
     Temporarily stops the job until the method L{restart} is called. The job 
     is held if it was waiting in a queue and suspended if was running. 
     The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     '''
-    self._engine_proxy.stop(job_id)
+    self._engine_proxy.stop_job(job_id)
    
   
   
   def restart( self, job_id ):
     '''
-    Restarts a job previously stopped by the L{stop} method.
+    Restarts a job previously stopped by the L{stop_job} method.
     The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     '''
     self._engine_proxy.restart(job_id)
 
@@ -1190,12 +1165,12 @@ class WorkflowController(object):
     '''
     Definitely terminates a job execution. After a L{kill}, a job is still in
     the list returned by L{jobs} and it can still be inspected by methods like
-    L{status} or L{output}. To completely erase a job, it is necessary to call
-    the L{dispose} method.
+    L{status} or L{output}. To completely delete a job, it is necessary to call
+    the L{delete_job} method.
     The job_id must be valid.
     
     @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit} or L{jobs})
+    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     '''
     self._engine_proxy.kill(job_id)
 

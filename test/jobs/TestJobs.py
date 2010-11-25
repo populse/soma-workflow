@@ -1,6 +1,4 @@
 import unittest
-import soma.jobs.jobClient
-import soma.jobs.constants as constants
 import time
 import os
 import getpass
@@ -11,6 +9,9 @@ from datetime import datetime
 from datetime import timedelta
 
 
+import soma.workflow.constants as constants
+from soma.workflow.client import WorkflowController
+from soma.workflow.gui.jobsControler import JobsControler
 
 
 def checkFiles(files, filesModels, tolerance = 0):
@@ -53,7 +54,7 @@ def identicalFiles(filepath1, filepath2):
 class JobExamples(object):
   '''
   Job submission example.
-  Each method submit 1 job and return the tuple (job_id, local_ouput_files, std_out_err)
+  Each method submits 1 job and return the tuple (job_id, local_ouput_files, std_out_err)
   => pipeline of 4 jobs with file transfer: submitJob1, submitJob2, submitJob3, and 
   submitJob4 methods. 
   => job raising an exception with file transfer: submitExceptionJob
@@ -96,14 +97,18 @@ class JobExamples(object):
     self.jobs = jobs
   
   def submitJob1(self, time=2):
-    self.l_file11 = self.jobs.registerTransfer(self.outpath + "file11", self.tr_timeout) 
-    self.l_file12 = self.jobs.registerTransfer(self.outpath + "file12", self.tr_timeout) 
+    self.l_file11 = self.jobs.register_transfer(self.outpath + "file11", self.tr_timeout) 
+    self.l_file12 = self.jobs.register_transfer(self.outpath + "file12", self.tr_timeout) 
     
-    self.l_file0 = self.jobs.send(self.inpath + "complete/" + "file0", self.tr_timeout) 
-    l_script1 = self.jobs.send(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
-    l_stdin1 = self.jobs.send(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    self.l_file0 = self.jobs.register_transfer(self.inpath + "complete/" + "file0", self.tr_timeout) 
+    l_script1 = self.jobs.register_transfer(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
+    l_stdin1 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+
+    self.jobs.send(self.l_file0) 
+    self.jobs.send(l_script1) 
+    self.jobs.send(l_stdin1) 
     
-    job1id = self.jobs.submit( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, repr(time)], 
+    job1id = self.jobs.submit_job( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, repr(time)], 
                                [self.l_file0, l_script1, l_stdin1], 
                                [self.l_file11, self.l_file12], 
                                l_stdin1, False, self.jobs_timeout, "job1 with transfers") 
@@ -112,12 +117,15 @@ class JobExamples(object):
   
 
   def submitJob2(self, time=2):
-    self.l_file2 = self.jobs.registerTransfer(self.outpath + "file2", self.tr_timeout) 
+    self.l_file2 = self.jobs.register_transfer(self.outpath + "file2", self.tr_timeout) 
 
-    l_script2 = self.jobs.send(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
-    l_stdin2 = self.jobs.send(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    l_script2 = self.jobs.register_transfer(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
+    l_stdin2 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
   
-    job2id = self.jobs.submit( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, repr(time)], 
+    self.jobs.send(l_script2) 
+    self.jobs.send(l_stdin2) 
+  
+    job2id = self.jobs.submit_job( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, repr(time)], 
                                [self.l_file0, self.l_file11, l_script2, l_stdin2], 
                                [self.l_file2], 
                                l_stdin2, False, self.jobs_timeout, "job2 with transfers") 
@@ -125,12 +133,15 @@ class JobExamples(object):
 
 
   def submitJob3(self, time=2):
-    self.l_file3 = self.jobs.registerTransfer(self.outpath + "file3", self.tr_timeout) 
+    self.l_file3 = self.jobs.register_transfer(self.outpath + "file3", self.tr_timeout) 
     
-    l_script3 = self.jobs.send(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
-    l_stdin3 = self.jobs.send(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
+    l_script3 = self.jobs.register_transfer(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
+    l_stdin3 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
     
-    job3id = self.jobs.submit( [self.python, l_script3, self.l_file12, self.l_file3, repr(time)], 
+    self.jobs.send(l_script3) 
+    self.jobs.send(l_stdin3) 
+
+    job3id = self.jobs.submit_job( [self.python, l_script3, self.l_file12, self.l_file3, repr(time)], 
                                [self.l_file12, l_script3, l_stdin3], 
                                [self.l_file3], 
                                l_stdin3, False,  self.jobs_timeout, "job3 with transfers") 
@@ -139,12 +150,15 @@ class JobExamples(object):
   
   
   def submitJob4(self):
-    self.l_file4 = self.jobs.registerTransfer(self.outpath + "file4", self.tr_timeout) 
+    self.l_file4 = self.jobs.register_transfer(self.outpath + "file4", self.tr_timeout) 
   
-    l_script4 = self.jobs.send(self.inpath + "complete/" + "job4.py", self.tr_timeout) 
-    l_stdin4 = self.jobs.send(self.inpath + "complete/" + "stdin4", self.tr_timeout) 
+    l_script4 = self.jobs.register_transfer(self.inpath + "complete/" + "job4.py", self.tr_timeout) 
+    l_stdin4 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin4", self.tr_timeout) 
   
-    job4id = self.jobs.submit( [self.python, l_script4, self.l_file2, self.l_file3, self.l_file4], 
+    self.jobs.send(l_script4) 
+    self.jobs.send(l_stdin4) 
+ 
+    job4id = self.jobs.submit_job( [self.python, l_script4, self.l_file2, self.l_file3, self.l_file4], 
                                [self.l_file2, self.l_file3, l_script4, l_stdin4], 
                                [self.l_file4], 
                                l_stdin4, False, self.jobs_timeout, "job4 with transfers") 
@@ -152,9 +166,11 @@ class JobExamples(object):
   
   
   def submitExceptionJob(self):
-    l_script = self.jobs.send(self.inpath + "simple/exceptionJob.py", self.tr_timeout)
-    
-    jobid = self.jobs.submit( [self.python, l_script], 
+    l_script = self.jobs.register_transfer(self.inpath + "simple/exceptionJob.py", self.tr_timeout)
+  
+    self.jobs.send(l_script)
+  
+    jobid = self.jobs.submit_job( [self.python, l_script], 
                               [l_script], 
                               [], 
                               None, False, self.jobs_timeout, "job with exception") 
@@ -167,7 +183,7 @@ class JobExamples(object):
     stderr = self.outpath + "stderr_local_custom_submission"
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    jobId = self.jobs.submit( command = [self.python, 
+    jobId = self.jobs.submit_job( command = [self.python, 
                                         self.inpath + "complete/" + "job1.py", 
                                         self.inpath + "complete/" + "file0",
                                         file11, 
@@ -187,7 +203,7 @@ class JobExamples(object):
   def localSubmission(self):
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    jobId = self.jobs.submit(command = [ self.python, 
+    jobId = self.jobs.submit_job(command = [ self.python, 
                                           self.inpath + "complete/" + "job1.py", 
                                           self.inpath + "complete/" + "file0",
                                           file11, 
@@ -204,9 +220,11 @@ class JobExamples(object):
     
     #compilation 
     
-    l_source = self.jobs.send(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
+    l_source = self.jobs.register_transfer(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
     
-    l_object = self.jobs.registerTransfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
+    self.jobs.send(l_source)
+
+    l_object = self.jobs.register_transfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
     #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
     #/opt/mpich/gnu/bin/
     
@@ -215,7 +233,7 @@ class JobExamples(object):
     
     print "l_source = " + l_source
     print "l_object = " + l_object
-    compil1jobId = self.jobs.submit( command = [ mpibin+"/mpicc", 
+    compil1jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
                                                   "-c", l_source, 
                                                   "-o", l_object ], 
                                       referenced_input_files = [l_source],
@@ -224,12 +242,12 @@ class JobExamples(object):
                                       disposal_timeout = self.jobs_timeout,
                                       name_description = "job compil1 mpi")
     
-    self.jobs.wait([compil1jobId])
+    self.jobs.wait_job([compil1jobId])
     
-    l_bin = self.jobs.registerTransfer(self.outpath + "simple_mpi", self.tr_timeout) 
+    l_bin = self.jobs.register_transfer(self.outpath + "simple_mpi", self.tr_timeout) 
     print "l_bin = " + l_bin
     
-    compil2jobId = self.jobs.submit( command = [ mpibin+"/mpicc", 
+    compil2jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
                                                 "-o", l_bin, 
                                                 l_object ], 
                                     referenced_input_files = [l_object],
@@ -238,22 +256,24 @@ class JobExamples(object):
                                     disposal_timeout = self.jobs_timeout,
                                     name_description = "job compil2 mpi")
     
-    self.jobs.wait([compil2jobId])
-    self.jobs.cancelTransfer(l_object)
+    self.jobs.wait_job([compil2jobId])
+    self.jobs.erase_transfer(l_object)
 
     
     # mpi job submission
-    script = self.jobs.send(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
+    script = self.jobs.register_transfer(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
     
-    jobId = self.jobs.submit( command = [ script, repr(node_num), l_bin], 
+    self.jobs.send(script)
+
+    jobId = self.jobs.submit_job( command = [ script, repr(node_num), l_bin], 
                               referenced_input_files = [script, l_bin],
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
                               name_description = "parallel job mpi",
                               parallel_job_info = (constants.OCFG_PARALLEL_PC_MPI,node_num))
 
-    self.jobs.dispose(compil1jobId)
-    self.jobs.dispose(compil2jobId)
+    self.jobs.delete_job(compil1jobId)
+    self.jobs.delete_job(compil2jobId)
     
 
     return (jobId, [l_source], None)
@@ -264,26 +284,23 @@ class JobsTest(unittest.TestCase):
   Abstract class for jobs common tests.
   '''
   @staticmethod
-  def setupConnection():
+  def setupConnection(resource_id, login, password, test_no):
+    
+    JobsTest.login = login
+    JobsTest.password = password
+    JobsTest.resource_id = resource_id
+
     JobsTest.test_config = ConfigParser.ConfigParser()
     JobsTest.test_config.read('TestJobs.cfg')
     JobsTest.hostname = socket.gethostname()
     
-    if JobsTest.test_config.get(JobsTest.hostname, 'mode') == 'remote':
-      print "Ressource => " + JobsTest.test_config.get(JobsTest.hostname, 'ressource_id')
-      print "login: ",
-      JobsTest.login = raw_input()
-      JobsTest.password = getpass.getpass()
-    else:
-      JobsTest.login = None
-      JobsTest.password = None
+  
     
-    
-    JobsTest.jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
-                                    JobsTest.test_config.get(JobsTest.hostname, 'ressource_id'), 
-                                    JobsTest.login, 
-                                    JobsTest.password,
-                                    log="1")
+    JobsTest.jobs = WorkflowController( os.environ["SOMA_JOBS_CONFIG"],
+                                              resource_id, 
+                                              login, 
+                                              password,
+                                              log=test_no)
   
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
@@ -303,7 +320,7 @@ class JobsTest(unittest.TestCase):
    
   def tearDown(self):
     for jid in self.myJobs:
-      JobsTest.jobs.dispose(jid)
+      JobsTest.jobs.delete_job(jid)
     remainingJobs = frozenset(JobsTest.jobs.jobs())
     self.failUnless(len(remainingJobs.intersection(self.myJobs)) == 0)
      
@@ -313,7 +330,7 @@ class JobsTest(unittest.TestCase):
     self.failUnless(res.issuperset(self.myJobs))
      
   def test_wait(self):
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     for jid in self.myJobs:
       status = JobsTest.jobs.status(jid)
       self.failUnless(status == constants.DONE or 
@@ -323,7 +340,7 @@ class JobsTest(unittest.TestCase):
   def test_wait2(self):
     startTime = datetime.now()
     interval = 5
-    JobsTest.jobs.wait(self.myJobs, interval)
+    JobsTest.jobs.wait_job(self.myJobs, interval)
     delta = datetime.now() - startTime
     if delta < timedelta(seconds=interval):
       for jid in self.myJobs:
@@ -336,7 +353,7 @@ class JobsTest(unittest.TestCase):
    
   def test_stop(self):
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.stop(jobid)
+    JobsTest.jobs.stop_job(jobid)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE or
                     status == constants.FAILED or 
@@ -348,7 +365,7 @@ class JobsTest(unittest.TestCase):
     
   def test_restart(self):
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.stop(jobid)
+    JobsTest.jobs.stop_job(jobid)
     JobsTest.jobs.restart(jobid)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(not status == constants.USER_ON_HOLD and  
@@ -371,19 +388,7 @@ class JobsTest(unittest.TestCase):
   def testResult(self):
     raise Exception('JobTest is an abstract class. testResult must be implemented in subclass')
  
-  def copystdouterr(self, jobid, stdoutPath, stderrPath):
-    f = open(stdoutPath, 'w')
-    line = JobsTest.jobs.stdoutReadLine(jobid)
-    while line:
-      f.write(line)
-      line = JobsTest.jobs.stdoutReadLine(jobid)
-    f.close()
-    f = open(stderrPath, 'w')
-    line = JobsTest.jobs.stderrReadLine(jobid)
-    while line:
-      f.write(line)
-      line = JobsTest.jobs.stderrReadLine(jobid)
-    f.close()
+ 
  
  
 class LocalCustomSubmission(JobsTest):
@@ -407,7 +412,7 @@ class LocalCustomSubmission(JobsTest):
   
   def testResult(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -451,7 +456,7 @@ class LocalSubmission(JobsTest):
       
   def testResult(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -474,7 +479,7 @@ class LocalSubmission(JobsTest):
     # checking stdout and stderr
     stdout = JobsTest.outpath + "/stdout_local_submission"
     stderr = JobsTest.outpath + "/stderr_local_submission"
-    self.copystdouterr(self.myJobs[0], stdout, stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[0], stdout, stderr)
     self.outputFiles.append(stdout)
     self.outputFiles.append(stderr)
     
@@ -500,7 +505,7 @@ class SubmissionWithTransfer(JobsTest):
       
   def testResult(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -526,7 +531,7 @@ class SubmissionWithTransfer(JobsTest):
     # checking stdout and stderr
     remote_stdout = JobsTest.outpath + "/stdout_submit_with_transfer"
     remote_stderr = JobsTest.outpath + "/stderr_submit_with_transfer"
-    self.copystdouterr(self.myJobs[0], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[0], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
   
@@ -548,7 +553,7 @@ class EndedJobWithTransfer(JobsTest):
     self.outputFiles = info[1]
     self.remoteFiles = []
 
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
    
   def tearDown(self):
     JobsTest.tearDown(self)
@@ -573,7 +578,7 @@ class JobPipelineWithTransfer(JobsTest):
     self.myJobs.append(info1[0]) 
     self.outputFiles.extend(info1[1])
 
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(self.myJobs[0])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
@@ -595,7 +600,7 @@ class JobPipelineWithTransfer(JobsTest):
     self.myJobs.append(info3[0]) 
     self.outputFiles.extend(info3[1])
 
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(self.myJobs[1])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
@@ -634,7 +639,7 @@ class JobPipelineWithTransfer(JobsTest):
       
   def testResult(self):
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -663,25 +668,25 @@ class JobPipelineWithTransfer(JobsTest):
     # checking stdout and stderr
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    self.copystdouterr(self.myJobs[0], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[0], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
     
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    self.copystdouterr(self.myJobs[1], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[1], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
   
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    self.copystdouterr(self.myJobs[2], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[2], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
     
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    self.copystdouterr(self.myJobs[3], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[3], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
    
@@ -708,7 +713,7 @@ class ExceptionJobTest(JobsTest):
    
   def testResult(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE or constants.FAILED,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -722,7 +727,7 @@ class ExceptionJobTest(JobsTest):
     # checking stdout and stderr
     remote_stdout = JobsTest.outpath + "/stdout_exception_job"
     remote_stderr = JobsTest.outpath + "/stderr_exception_job"
-    self.copystdouterr(jobid, remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(jobid, remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
     
@@ -746,7 +751,7 @@ class DisconnectionTest(JobsTest):
     self.myJobs.append(info1[0]) 
     self.outputFiles.extend(info1[1])
 
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(self.myJobs[0])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
@@ -775,11 +780,11 @@ class DisconnectionTest(JobsTest):
     time.sleep(20)
     print ".... Reconnection"
 
-    JobsTest.jobs = soma.jobs.jobClient.Jobs(os.environ["SOMA_JOBS_CONFIG"],
-                                             JobsTest.test_config.get(JobsTest.hostname, 'ressource_id'), 
-                                             JobsTest.login, 
-                                             JobsTest.password,
-                                             log="2")
+    JobsTest.jobs = WorkflowController(os.environ["SOMA_JOBS_CONFIG"],
+                                       JobsTest.resource_id, 
+                                       JobsTest.login, 
+                                       JobsTest.password,
+                                       log="2")
 
 
     JobsTest.jobExamples.setNewConnection(JobsTest.jobs)
@@ -789,11 +794,13 @@ class DisconnectionTest(JobsTest):
     #pass
     JobsTest.tearDown(self)
     for file in self.remoteFiles:
-      if os.path.isfile(file): os.remove(file)
+      if os.path.isfile(file): 
+        print "remove " + file 
+        os.remove(file)
       
   def testResult(self):
 
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(self.myJobs[1])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
@@ -824,7 +831,7 @@ class DisconnectionTest(JobsTest):
     self.outputFiles.extend(info4[1])
 
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
@@ -853,25 +860,25 @@ class DisconnectionTest(JobsTest):
     # checking stdout and stderr
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    self.copystdouterr(self.myJobs[0], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[0], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
     
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    self.copystdouterr(self.myJobs[1], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[1], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
   
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    self.copystdouterr(self.myJobs[2], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[2], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
     
     remote_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
     remote_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    self.copystdouterr(self.myJobs[3], remote_stdout, remote_stderr)
+    JobsTest.jobs.retrieveStdOutErr(self.myJobs[3], remote_stdout, remote_stderr)
     self.remoteFiles.append(remote_stdout)
     self.remoteFiles.append(remote_stderr)
    
@@ -901,7 +908,7 @@ class MPIParallelJobTest(JobsTest):
       
   def testResult(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait(self.myJobs)
+    JobsTest.jobs.wait_job(self.myJobs)
     
     status = JobsTest.jobs.status(jobid)
     self.failUnless(status == constants.DONE,
@@ -935,37 +942,99 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  #all = False
-  all = True
   
-  JobsTest.setupConnection()
-  
-  suite_list = []
-  if all:
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalCustomSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(LocalSubmission))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(SubmissionWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionJobTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(JobPipelineWithTransfer))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(DisconnectionTest))
-    suite_list.append(unittest.TestLoader().loadTestsFromTestCase(EndedJobWithTransfer))
-    #suite_list.append(unittest.TestLoader().loadTestsFromTestCase(MPIParallelJobTest))
 
+  controller = JobsControler("") # use Workflow example generation ?
+  
+  sys.stdout.write("----- SomaJobsTest -------------\n")
+  resource_ids = controller.getRessourceIds()
+  
+  # Resource
+  sys.stdout.write("Configured resources:\n")
+  for i in range(0, len(resource_ids)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(resource_ids[i]) + "\n")
+  sys.stdout.write("Select a resource number: ")
+  resource_index = int(sys.stdin.readline())
+  resource_id = resource_ids[resource_index]
+  sys.stdout.write("Selected resource => " + repr(resource_id) + "\n")
+  sys.stdout.write("---------------------------------\n")
+  login = None
+  password = None
+  if controller.isRemoteConnection(resource_id):
+    sys.stdout.write("This is a remote connection\n")
+    sys.stdout.write("login:")
+    login = sys.stdin.readline()
+    login = login.rstrip()
+    password = getpass.getpass()
+  sys.stdout.write("Login => " + repr(login) + "\n")
+  sys.stdout.write("---------------------------------\n")
+  
+  # Job type
+  job_types = ["LocalCustomSubmission", "LocalSubmission", "SubmissionWithTransfer", "ExceptionJobTest", "JobPipelineWithTransfer", "DisconnectionTest", "EndedJobWithTransfer", "MPIParallelJobTest"]
+  sys.stdout.write("Jobs example to test: \n")
+  sys.stdout.write("all -> all \n")
+  for i in range(0, len(job_types)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(job_types[i]) + "\n")
+  sys.stdout.write("Select one or several job type : \n")
+  selected_job_type_indexes = []
+  line = sys.stdin.readline()
+  line = line.rstrip()
+  if line == "all":
+    selected_job_type = job_types
+    sys.stdout.write("Selected job types: all \n")
   else:
-    
-    minimal = ['testResult']#'test_wait2'] #, 'test_wait' ]
+    for strindex in line.split(" "):
+      selected_job_type_indexes.append(int(strindex))
+    selected_job_type = []
+    sys.stdout.write("Selected job types: \n" )
+    for job_type_index in selected_job_type_indexes:
+      selected_job_type.append(job_types[int(job_type_index)])
+      sys.stdout.write("  => " + repr(job_types[int(job_type_index)])  + "\n")
 
-    tests = minimal
-    
-    #suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
-    #suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
-    #suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+  # Test type
+  sys.stdout.write("---------------------------------\n")
+  test_types = ["testResult", "test_jobs", "test_wait", "test_wait2", "test_stop", "test_restart", "test_kill", "testResult", ]
+  sys.stdout.write("Tests to perform: \n")
+  sys.stdout.write("all -> all \n")
+  for i in range(0, len(test_types)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(test_types[i]) + "\n")
+  sys.stdout.write("Select one or several test : \n")
+  selected_test_type_indexes = []
+  line = sys.stdin.readline()
+  line = line.rstrip()
+  if line == "all":
+    selected_test_type = test_types
+    sys.stdout.write("Selected test types: all \n")
+  else:
+    for strindex in line.split(" "):
+      selected_test_type_indexes.append(int(strindex))
+    selected_test_type = []
+    sys.stdout.write("Selected test types: \n")
+    for test_type_index in selected_test_type_indexes:
+      selected_test_type.append(test_types[int(test_type_index)])
+      sys.stdout.write("  => " + repr(test_types[int(test_type_index)])  + "\n")
+  sys.stdout.write("---------------------------------\n")
+
+  JobsTest.setupConnection(resource_id, login, password, "1")
+  suite_list =  []
+  tests = selected_test_type
+  if "LocalCustomSubmission" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(LocalCustomSubmission, tests)))
+  if "LocalSubmission" in selected_job_type:
+    print "tests = " + repr(tests)
+    suite_list.append(unittest.TestSuite(map(LocalSubmission, tests)))
+  if "SubmissionWithTransfer" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(SubmissionWithTransfer, tests)))
+  if "ExceptionJobTest" in selected_job_type:
     suite_list.append(unittest.TestSuite(map(ExceptionJobTest, tests)))
-    #suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
-    #suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
-    #suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
-    #suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
-
+  if "JobPipelineWithTransfer" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(JobPipelineWithTransfer, tests)))
+  if "DisconnectionTest" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(DisconnectionTest, tests)))
+  if "EndedJobWithTransfer" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(EndedJobWithTransfer, tests)))
+  if "MPIParallelJobTest" in selected_job_type:
+    suite_list.append(unittest.TestSuite(map(MPIParallelJobTest, tests)))
 
   alltests = unittest.TestSuite(suite_list)
   unittest.TextTestRunner(verbosity=2).run(alltests)

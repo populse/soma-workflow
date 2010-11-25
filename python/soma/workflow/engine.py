@@ -223,19 +223,19 @@ class DrmaaWorkflowEngine(object):
 
   ########## JOB SUBMISSION #################################################
 
-  def submit(self, jobTemplate):
+  def submit_job(self, jobTemplate):
     
     '''
     Implementation of the L{WorkflowEngine} method.
     '''
-    self.logger.debug(">> submit")
+    self.logger.debug(">> submit_job")
 
     jobTemplateCopy = copy.deepcopy(jobTemplate)
       
     registered_job = self._registerJob(jobTemplateCopy)
     
     self._drmaaJobSubmission(registered_job)
-    self.logger.debug("<< submit")
+    self.logger.debug("<< submit_job")
     return registered_job.jobTemplate.job_id
   
       
@@ -431,15 +431,15 @@ class DrmaaWorkflowEngine(object):
     return local_path
     
 
-  def dispose( self, job_id ):
+  def delete_job( self, job_id ):
     '''
     Implementation of the L{WorkflowEngine} method.
     '''
-    self.logger.debug(">> dispose %s", job_id)
+    self.logger.debug(">> delete_job %s", job_id)
     with self._lock:
       self.kill(job_id)
-      self._database_server.deleteJobTemplate(job_id)
-    self.logger.debug("<< dispose")
+      self._database_server.deleteJob(job_id)
+    self.logger.debug("<< delete_job")
 
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -689,7 +689,7 @@ class DrmaaWorkflowEngine(object):
       wf_to_process = set([])
       for job_id in endedJobs:
         job = self._jobs[job_id]
-        self.logger.debug("  ==> ended job: " + job.jobTemplate.name)     
+        self.logger.debug("  ==> ended job: " + repr(job.jobTemplate.name))     
       
         if job.jobTemplate.referenced_output_files:
           for local_path in job.jobTemplate.referenced_output_files:
@@ -790,11 +790,11 @@ class DrmaaWorkflowEngine(object):
   ########## JOB CONTROL VIA DRMS ########################################
   
 
-  def stop( self, job_id ):
+  def stop_job( self, job_id ):
     '''
     Implementation of the L{WorkflowEngine} method.
     '''
-    self.logger.debug(">> stop")
+    self.logger.debug(">> stop_job")
     status_changed = False
     with self._lock:
       if job_id in self._jobs:
@@ -815,7 +815,7 @@ class DrmaaWorkflowEngine(object):
         
     if status_changed:
       self._waitForStatusUpdate(job_id)
-    self.logger.debug("<< stop")
+    self.logger.debug("<< stop_job")
     
     
   def restart( self, job_id ):
@@ -936,14 +936,14 @@ class WorkflowEngine(object):
     owned by the user. 
     A transfer will associate remote file path to unique local file path.
   
-  Use L{registerTransfer} then L{writeLine} or scp or 
+  Use L{register_transfer} then L{writeLine} or scp or 
   shutil.copy to transfer input file from the remote to the local 
   environment.
-  Use L{registerTransfer} and once the job has run use L{readline} or scp or
+  Use L{register_transfer} and once the job has run use L{readline} or scp or
   shutil.copy to transfer the output file from the local to the remote environment.
   '''
 
-  def registerTransfer(self, remote_path, disposal_timeout=168, remote_paths = None): 
+  def register_transfer(self, remote_path, disposal_timeout=168, remote_paths = None): 
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
@@ -1074,13 +1074,13 @@ class WorkflowEngine(object):
     if fs > file_size:
       # Reset file_size   
       open(local_path, 'wb')
-      raise WorkflowEngineError('sendPiece: Transmitted data exceed expected file size.')
+      raise WorkflowEngineError('send_piece: Transmitted data exceed expected file size.')
     elif fs == file_size:
       if md5_hash is not None:
         if hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() != md5_hash:
           # Reset file
           open( local_path, 'wb' )
-          raise WorkflowEngineError('sendPiece: Transmission error detected.')
+          raise WorkflowEngineError('send_piece: Transmission error detected.')
         else:
           return True
       else:
@@ -1088,7 +1088,7 @@ class WorkflowEngine(object):
     else:
       return False
 
-  def sendPiece(self, local_path, data, relative_path=None):
+  def send_piece(self, local_path, data, relative_path=None):
     '''
     @rtype : boolean
     @return : transfer ended
@@ -1105,7 +1105,7 @@ class WorkflowEngine(object):
       # Directory case
       (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.getTransferActionInfo(local_path)
       if not relative_path in dir_element_action_info:
-        raise WorkflowEngineError('sendPiece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
+        raise WorkflowEngineError('send_piece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
       (file_size, md5_hash) = dir_element_action_info[relative_path]
       transfer_ended = self._sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
       
@@ -1118,7 +1118,7 @@ class WorkflowEngine(object):
     return transfer_ended
   
 
-  def retrievePiece(self, local_path, buffer_size, transmitted, relative_path = None):
+  def retrieve_piece(self, local_path, buffer_size, transmitted, relative_path = None):
     '''
     Implementation of the L{Jobs} method.
     '''
@@ -1146,7 +1146,7 @@ class WorkflowEngine(object):
     
     self._database_server.setTransferStatus(local_path, status)
 
-  def cancelTransfer(self, local_path):
+  def delete_transfer(self, local_path):
     '''
     Implementation of the L{Jobs} method.
     '''
@@ -1170,7 +1170,7 @@ class WorkflowEngine(object):
   ########## JOB SUBMISSION ##################################################
 
   
-  def submit( self,
+  def submit_job( self,
               jobTemplate):
     '''
     Submits a job to the system. 
@@ -1186,23 +1186,23 @@ class WorkflowEngine(object):
     
     
     
-    job_id = self._drmaa_wf_engine.submit(jobTemplate)
+    job_id = self._drmaa_wf_engine.submit_job(jobTemplate)
     
     return job_id
 
 
 
 
-  def dispose( self, job_id ):
+  def delete_job( self, job_id ):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
     
     if not self._database_server.isUserJob(job_id, self._user_id):
-      #print "Couldn't dispose job %d. It doesn't exist or is not owned by the current user \n" % job_id
+      #print "Couldn't delete job %d. It doesn't exist or is not owned by the current user \n" % job_id
       return 
     
-    self._drmaa_wf_engine.dispose(job_id)
+    self._drmaa_wf_engine.delete_job(job_id)
 
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -1220,7 +1220,7 @@ class WorkflowEngine(object):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     if not self._database_server.isUserWorkflow(workflow_id, self._user_id):
-      #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      #print "Couldn't delete workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return
     
     self._database_server.deleteWorkflow(workflow_id)
@@ -1230,7 +1230,7 @@ class WorkflowEngine(object):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     if not self._database_server.isUserWorkflow(workflow_id, self._user_id):
-      #print "Couldn't dispose workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
+      #print "Couldn't delete workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
       return False
     
     if new_expiration_date < datetime.now(): 
@@ -1429,7 +1429,7 @@ class WorkflowEngine(object):
   ########## JOB CONTROL VIA DRMS ########################################
   
   
-  def wait( self, job_ids, timeout = -1):
+  def wait_job( self, job_ids, timeout = -1):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
@@ -1457,14 +1457,14 @@ class WorkflowEngine(object):
             raise WorkflowEngineError('Could not wait for job %s. The process updating its status failed.' %(jid), self.logger)
     
 
-  def stop( self, job_id ):
+  def stop_job( self, job_id ):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
     if not self._database_server.isUserJob(job_id, self._user_id):
       raise WorkflowEngineError( "Could not stop job %d. It doesn't exist or is owned by a different user \n" %job_id, self.logger)
     
-    self._drmaa_wf_engine.stop(job_id)
+    self._drmaa_wf_engine.stop_job(job_id)
    
   
   

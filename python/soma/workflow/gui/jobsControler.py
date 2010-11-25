@@ -139,7 +139,7 @@ class JobsControler(object):
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
     for transmitted, local_path in to_transfer:
       print "send to " + local_path + " already transmitted size =" + repr(transmitted)
-      connection.sendRegisteredTransfer(local_path, buffer_size)
+      connection.send(local_path, buffer_size)
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
@@ -474,9 +474,9 @@ class WorkflowExamples(object):
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = Group([job2, job3], 'group_1')
-    group_2 = Group([job1, group_1], 'group_2')
-    mainGroup = Group([group_2, job4])
+    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
+    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
+    mainGroup = WorkflowNodeGroup([group_2, job4])
     
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
@@ -513,9 +513,9 @@ class WorkflowExamples(object):
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = Group([job2, job3], 'group_1')
-    group_2 = Group([job1, group_1], 'group_2')
-    mainGroup = Group([group_2, job4])
+    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
+    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
+    mainGroup = WorkflowNodeGroup([group_2, job4])
     
     workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
     
@@ -535,10 +535,10 @@ class WorkflowExamples(object):
     dependencies.extend(workflow2.dependencies)
     dependencies.extend(workflow3.dependencies)
     
-    group1 = Group(workflow1.mainGroup.elements, "simple example")
-    group2 = Group(workflow2.mainGroup.elements, "simple with exception in Job1")
-    group3 = Group(workflow3.mainGroup.elements, "simple with exception in Job3")
-    mainGroup = Group([group1, group2, group3])
+    group1 = WorkflowNodeGroup(workflow1.mainGroup.elements, "simple example")
+    group2 = WorkflowNodeGroup(workflow2.mainGroup.elements, "simple with exception in Job1")
+    group3 = WorkflowNodeGroup(workflow3.mainGroup.elements, "simple with exception in Job3")
+    mainGroup = WorkflowNodeGroup([group1, group2, group3])
      
     groups = [group1, group2, group3]
     groups.extend(workflow1.groups)
