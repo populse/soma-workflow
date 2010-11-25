@@ -15,6 +15,106 @@ from functools import partial
 from soma.jobs import constants
 
 
+def find_executable( name, path=None ):
+  '''
+  Return the absolute file name for an executable by looking for a name
+  in a given path. If path is not given or None, os.environ[ 'PATH' ] 
+  is used. If the executable cannot be found, None is returned
+  '''
+  access_mode = os.F_OK | os.X_OK
+  if os.path.isabs( name ):
+    if os.access( name, access_mode ) and not os.path.isdir( name ):
+      return name
+  else:
+    if path is None:
+      path = os.environ.get( 'PATH', '' )
+    path = path.split( os.pathsep )
+    for p in path:
+      fp = os.path.join( p, name )
+      if os.access( fp, access_mode ) and not os.path.isdir( fp ):
+        return fp
+  return None
+
+
+
+def spawn_daemon_unix( executable, command, stdin=None, stdout=None, stderr=None, cwd=None, env=None ):
+  '''
+  Spawn a completely detached subprocess.
+  '''
+  abs_executable = find_executable( executable )
+  if executable is None:
+    raise ValueError( 'Cannot find executable: %s' % executable )
+  
+  # fork the first time (to make a non-session-leader child process)
+  read_pid, write_pid = os.pipe()
+  pid = os.fork()
+  if pid != 0:
+    # parent (calling) process is all done
+    os.waitpid( pid, 0 )
+    return int( os.read( read_pid, 50 ) )
+  else:
+    # detach from controlling terminal (to make child a session-leader)
+    os.setsid()
+    pid = os.fork()
+    if pid != 0:
+      # child process: Just write the pid of the grandchild process and exit
+      os.write( write_pid, str( pid ) )
+      os._exit(0)
+    else:
+      if cwd:
+        os.chdir( cwd )
+      
+      # grandchild process now non-session-leader, detached from parent
+      # grandchild process must now close all open files
+      try:
+        maxfd = os.sysconf( 'SC_OPEN_MAX' )
+      except ( AttributeError, ValueError ):
+        maxfd = 1024
+    
+      for fd in xrange( maxfd ):
+        try:
+          os.close(fd)
+        except OSError: # ERROR, fd wasn't open to begin with (ignored)
+          pass
+    
+      if stdin:
+        fd = os.open( stdin, os.O_RDONLY )
+      else:
+        fd = os.open( '/dev/null', os.O_RDONLY )
+      os.dup2( fd, 0 )
+      os.close( fd )
+      if stdout:
+        fd = os.open( stdout, os.O_WRONLY | os.O_CREAT )
+      else:
+        fd = os.open( '/dev/null', os.O_WRONLY ) # Unix only !
+      os.dup2( fd, 1 )
+      os.close( fd )
+      if stderr:
+        if stderr == stdout:
+          os.dup2( 1, 2 )
+        else:
+          fd = os.open( stderr, os.O_WRONLY | os.O_CREAT )
+          os.dup2( fd, 2 )
+          os.close( fd )
+      else:
+        fd = os.open( '/dev/null', os.O_WRONLY ) # Unix only !
+        os.dup2( fd, 2 )
+        os.close( fd )
+
+      # and finally let's execute the executable for the daemon!
+      print '!command!', command
+      try:
+        if env is None:
+          os.execv( abs_executable, command )
+        else:
+          os.execve( abs_executable, command, env )
+      except Exception, e:
+        # oops, we're cut off from the world, let's just give up
+        os._exit( 255 )
+
+spawn_daemon = spawn_daemon_unix
+
+
 class LocalJobs( object ):
   def __init__( self, directory ):
     self.directory = directory
@@ -40,48 +140,20 @@ class LocalJobs( object ):
 
   def start( self, job_id ):
     status_file = os.path.join( self.directory, job_id )
+    
     status = pickle.load( open( status_file )  )
     fd, return_file = mkstemp( dir=self.directory, prefix='return_' )
     os.close( fd )
     status[ 'return_file' ] = return_file
     command = status[ 'command' ]
-    
-    args = [ sys.executable, '-u', '-c', 'import os; print >> open( "%(return_file)s", "a" ), os.spawnv( os.P_WAIT, "%(program)s", %(args)s )' % { 'return_file': return_file, 'program': command[0], 'args': repr( command ) } ]
-    stdin = status[ 'stdin' ]
-    if stdin:
-      stdin = os.open( stdin, os.O_RDONLY )
-    else:
-      stdin = os.open( '/dev/null', os.O_RDONLY ) # Unix only !
-    stdout = status[ 'stdout' ]
-    if stdout:
-      stdout = os.open( stdout, os.O_WRONLY | os.O_CREAT )
-    else:
-      stdout = os.open( '/dev/null', os.O_WRONLY ) # Unix only !
-    stderr = status[ 'stderr' ]
-    if stderr:
-      if stderr == status[ 'stdout' ]:
-        stderr = stdout
-      else:
-        stderr = os.open( stderr, os.O_WRONLY | os.O_CREAT )
-    else:
-      stderr = os.open( '/dev/null', os.O_WRONLY ) # Unix only !
-    cpid = os.fork()
-    if cpid:
-      os.waitpid( cpid, 0 )
-      status = pickle.load( open( status_file )  )
-      pid = status[ 'pid' ]
-    else:
-      popen = Popen( args, stdin=stdin, stdout=stdout, stderr=stderr, cwd=status[ 'working_directory' ], close_fds=True ) # ! Unix only
-    # status[ 'pid' ] = popen.pid
-    status[ 'pid' ] = os.spawnv( os.P_NOWAITO, args[0], args ) # ! Unix only
+    executable = find_executable( command[0] )
+    if executable is None:
+      raise ValueError( 'Cannot find executable: %s' % command[0] )
+  
+    args = [ sys.executable, '-u', '-c', 'import os; print >> open( "%(return_file)s", "a" ), os.spawnv( os.P_WAIT, "%(program)s", %(args)s )' % { 'return_file': return_file, 'program': executable, 'args': repr( command ) } ]
+    status[ 'pid' ] = spawn_daemon( sys.executable, args, stdin=status[ 'stdin' ], stdout=status[ 'stdout' ], stderr=status[ 'stderr' ], cwd=status[ 'working_directory' ] )
     status[ 'status' ] = constants.RUNNING
     pickle.dump( status, open( status_file, 'wb' ) ) 
-    if stdin:
-      os.close( stdin )
-    if stdout:
-      os.close( stdout )
-    if stderr:
-      os.close( stderr )
 
 
 
@@ -103,7 +175,7 @@ class LocalJobs( object ):
     status = pickle.load( open( status_file )  )
     if status[ 'pid' ] is not None:
       try:
-        kill( status[ 'pid' ], signal )
+        os.kill( status[ 'pid' ], signal )
         signal_sent = True
       except OSError, e:
         if e.errno == errno.ESRCH: # ESRCH <=> 'No such process'
@@ -180,10 +252,13 @@ class LocalJobs( object ):
     return ( s, pid, status[ 'return_value' ] )
 
 
+
 if __name__ == '__main__':
   jobs = LocalJobs( '/tmp/jobs' )
-  job_id = jobs.create( '/tmp/toto' )
+  job_id = jobs.create( ( '/tmp/toto', 'one', 'two', 'three' ) )
   jobs.start( job_id )
   print jobs.status( job_id )
+  jobs.kill( job_id )
   print jobs.wait( job_id )
+  jobs.dispose( job_id )
 
