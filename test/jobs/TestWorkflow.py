@@ -47,7 +47,7 @@ def printSubmittedWorkflow(ouput_dir, jobs, workflow, cmpt):#, dot_file_path, gr
     print >> file, ar[0].name + " -> " + ar[1].name
   for node in workflow.nodes:
     if isinstance(node, JobTemplate):
-      status = jobs.status(node.job_id)
+      status = jobs.job_status(node.job_id)
       if status == NOT_SUBMITTED:
         print >> file, node.name + "[shape=box];"
       else:
@@ -58,7 +58,7 @@ def printSubmittedWorkflow(ouput_dir, jobs, workflow, cmpt):#, dot_file_path, gr
         else:
           print >> file, node.name + "[shape=box label="+ node.name + "_"+status+", style=filled, color=red];"#\"0.9,0.7,0.7\"];"
     if isinstance(node, FileTransfer):
-      status = jobs.transferStatus(node.local_file_path)
+      status = jobs.transfer_status(node.local_file_path)
       #if status == TRANSFER_NOT_READY:
       #  print >> file, node.name + "[shape=box];"
       if status == READY_TO_TRANSFER:
@@ -215,7 +215,7 @@ if __name__ == '__main__':
                                 #log=test_no)
    
    
-  submitted_workflow = jobs.submitWorkflow(myWorkflow)
+  submitted_workflow = jobs.submit_workflow(myWorkflow)
   print submitted_workflow
  
  
@@ -232,7 +232,7 @@ if __name__ == '__main__':
   cmpt = 3
   for node in submitted_workflow.full_nodes:
     if isinstance(node, FileSending):
-      if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
+      if jobs.transfer_status(node.local_file_path) == READY_TO_TRANSFER:
         jobs.send(node.local_file_path)
         #printSubmittedWorkflow(jobs, submitted_workflow, cmpt)
         #cmpt = cmpt+1
@@ -246,8 +246,8 @@ if __name__ == '__main__':
   
   for node in submitted_workflow.full_nodes:
     if isinstance(node, FileRetrieving):
-      print "Transfer " + node.name + " status: " + jobs.transferStatus(node.local_file_path)
-      if jobs.transferStatus(node.local_file_path) == READY_TO_TRANSFER:
+      print "Transfer " + node.name + " status: " + jobs.transfer_status(node.local_file_path)
+      if jobs.transfer_status(node.local_file_path) == READY_TO_TRANSFER:
         jobs.retrieve(node.local_file_path)
   time.sleep(6)
       

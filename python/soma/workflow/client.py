@@ -269,7 +269,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode =  mode #  'local_no_disconnection' #(local debug)#   
+    self._mode =  mode #   'local_no_disconnection' #(local debug)#  
     
     #########
     # LOCAL #
@@ -299,6 +299,7 @@ class WorkflowController(object):
       from Pyro.errors import PyroError, NamingError
       
       # log file 
+      print "config_file " + repr(config_file)
       if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
         logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
 
@@ -657,7 +658,7 @@ class WorkflowController(object):
     @rtype : boolean
     @return: the file transfer ended (=> but not necessarily the transfer associated to local_path)
     '''
-    status = self._engine_proxy.transferStatus(local_path)
+    status = self._engine_proxy.transfer_status(local_path)
     if not status == TRANSFERING:
       self.initialize_sending_transfer(local_path)
     transfer_ended = self._engine_proxy.send_piece(local_path, data, relative_path)
@@ -740,9 +741,9 @@ class WorkflowController(object):
     wf_controller = soma.workflow.client.WorkflowController()
     job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
     wf_controller.stop_job(job_id)
-    wf_controller.restart(job_id)
+    wf_controller.restart_job(job_id)
     wf_controller.wait_job([job_id])
-    exitinfo = wf_controller.exitInformation(job_id)
+    exitinfo = wf_controller.job_termination_status(job_id)
     wf_controller.delete_job(job_id)
   '''
 
@@ -793,7 +794,7 @@ class WorkflowController(object):
     @param disposal_timeout: Number of hours before the job is considered to have been 
     forgotten by the submitter. Passed that delay, the job is destroyed and its
     resources released (including standard output and error files) as if the 
-    user had called L{kill} and L{delete_job}.
+    user had called L{kill_job} and L{delete_job}.
     Default delay is 168 hours (7 days).
     
     @type  name_description: string
@@ -860,7 +861,7 @@ class WorkflowController(object):
 
   ########## WORKFLOW SUBMISSION ####################################
   
-  def submitWorkflow(self, workflow, expiration_date=None, name = None):
+  def submit_workflow(self, workflow, expiration_date=None, name = None):
     '''
     Submits a workflow to the system and returns the id of each 
     submitted workflow element (Job or file transfer).
@@ -872,17 +873,17 @@ class WorkflowController(object):
     @return: The workflow compemented by the id of each submitted 
     workflow element.
     '''
-    submittedWF =  self._engine_proxy.submitWorkflow(workflow, expiration_date, name)
+    submittedWF =  self._engine_proxy.submit_workflow(workflow, expiration_date, name)
     return submittedWF
   
   
-  def disposeWorkflow(self, workflow_id):
+  def delete_workflow(self, workflow_id):
     '''
     Removes a workflow and all its associated nodes (file transfers and jobs)
     '''
-    self._engine_proxy.disposeWorkflow(workflow_id)
+    self._engine_proxy.delete_workflow(workflow_id)
     
-  def changeWorkflowExpirationDate(self, workflow_id, new_expiration_date):
+  def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
     Ask a new expiration date for the workflow.
     Return True if the workflow expiration date was set to the new date.
@@ -891,15 +892,15 @@ class WorkflowController(object):
     @type  expiration_date: datetime.datetime
     @rtype: boolean
     '''
-    return self._engine_proxy.changeWorkflowExpirationDate(workflow_id, new_expiration_date)
+    return self._engine_proxy.change_workflow_expiration_date(workflow_id, new_expiration_date)
   
-  def restartWorkflow(self, workflow_id):
+  def restart_workflow(self, workflow_id):
     '''
     The jobs which failed in the previous submission will be submitted again.
     The workflow execution must be done.
     Return true if the workflow was resubmitted.
     '''
-    return self._engine_proxy.restartWorkflow(workflow_id)
+    return self._engine_proxy.restart_workflow(workflow_id)
     
 
   ########## MONITORING #############################################
@@ -946,14 +947,14 @@ class WorkflowController(object):
     return self._engine_proxy.workflowInformation(wf_id)
     
   
-  def submittedWorkflow(self, wf_id):
+  def workflow(self, wf_id):
     '''
     Returns the submitted workflow.
     
     @rtype: L{Workflow}
     @return: submitted workflow
     '''
-    return self._engine_proxy.submittedWorkflow(wf_id)
+    return self._engine_proxy.workflow(wf_id)
     
   def transferInformation(self, local_path):
     '''
@@ -973,7 +974,7 @@ class WorkflowController(object):
    
   
   
-  def status( self, job_id ):
+  def job_status( self, job_id ):
     '''
     Returns the status of a submitted job.
     
@@ -983,10 +984,10 @@ class WorkflowController(object):
     @return: the status of the job, if its valid and own by the current user, None 
     otherwise. See the list of status: constants.JOBS_STATUS.
     '''
-    return self._engine_proxy.status(job_id)
+    return self._engine_proxy.job_status(job_id)
   
   
-  def detailedWorkflowStatus(self, wf_id, group = None):
+  def workflow_nodes_status(self, wf_id, group = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and requests to the database.
@@ -995,7 +996,7 @@ class WorkflowController(object):
     @param wf_id: The workflow identifier
     @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
     '''
-    wf_status = self._engine_proxy.detailedWorkflowStatus(wf_id)
+    wf_status = self._engine_proxy.workflow_nodes_status(wf_id)
     if not wf_status:
       # TBI raise ...
       return
@@ -1009,20 +1010,20 @@ class WorkflowController(object):
     return new_wf_status
     
   
-  def transferStatus(self, local_path):
+  def transfer_status(self, local_path):
     '''
     Returns the status of a transfer and the information related to the transfer in progress in such case. 
     
     @type  local_path: string
     @param local_path: 
-    @rtype: tuple  (C{TransferStatus} or None, tuple or None)
+    @rtype: tuple  (C{transfer_status} or None, tuple or None)
     @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
              [1] None if the transfer status in not constants.TRANSFERING
                  if it's a file transfer: tuple (file size, size already transfered)
                  if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''
     
-    status = self._engine_proxy.transferStatus(local_path)
+    status = self._engine_proxy.transfer_status(local_path)
     transfer_action_info =  self._engine_proxy.transferActionInfo(local_path)
     local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
     progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
@@ -1063,7 +1064,7 @@ class WorkflowController(object):
     
     
 
-  def exitInformation(self, job_id ):
+  def job_termination_status(self, job_id ):
     '''
     Gives the information related to the end of the job.
    
@@ -1079,7 +1080,7 @@ class WorkflowController(object):
         - resource_usage: resource usage information as given by the cluser 
           distributed resource management system (DRMS).
     '''
-    return self._engine_proxy.exitInformation(job_id)
+    return self._engine_proxy.job_termination_status(job_id)
     
  
   def jobInformation(self, job_id):
@@ -1096,7 +1097,7 @@ class WorkflowController(object):
     return self._engine_proxy.jobInformation(job_id)
     
     
-  def retrieveStdOutErr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
+  def retrieve_job_stdouterr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
     '''
     Copy the job standard error to a file.
     '''
@@ -1139,7 +1140,7 @@ class WorkflowController(object):
 
   def stop_job( self, job_id ):
     '''
-    Temporarily stops the job until the method L{restart} is called. The job 
+    Temporarily stops the job until the method L{restart_job} is called. The job 
     is held if it was waiting in a queue and suspended if was running. 
     The job_id must be valid.
     
@@ -1150,7 +1151,7 @@ class WorkflowController(object):
    
   
   
-  def restart( self, job_id ):
+  def restart_job( self, job_id ):
     '''
     Restarts a job previously stopped by the L{stop_job} method.
     The job_id must be valid.
@@ -1158,12 +1159,12 @@ class WorkflowController(object):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     '''
-    self._engine_proxy.restart(job_id)
+    self._engine_proxy.restart_job(job_id)
 
 
-  def kill( self, job_id ):
+  def kill_job( self, job_id ):
     '''
-    Definitely terminates a job execution. After a L{kill}, a job is still in
+    Definitely terminates a job execution. After a L{kill_job}, a job is still in
     the list returned by L{jobs} and it can still be inspected by methods like
     L{status} or L{output}. To completely delete a job, it is necessary to call
     the L{delete_job} method.
@@ -1172,7 +1173,7 @@ class WorkflowController(object):
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     '''
-    self._engine_proxy.kill(job_id)
+    self._engine_proxy.kill_job(job_id)
 
     
     

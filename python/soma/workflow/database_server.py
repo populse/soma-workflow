@@ -124,7 +124,7 @@ Job server database tables:
     status
 '''
 
-def createDatabase(database_file):
+def create_database(database_file):
   connection = sqlite3.connect(database_file, timeout=5, isolation_level="EXCLUSIVE")
   cursor = connection.cursor()
   cursor.execute('''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -192,7 +192,7 @@ def createDatabase(database_file):
 
 
 
-def printTables(database_file):
+def print_tables(database_file):
   
   connection = sqlite3.connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
   cursor = connection.cursor()
@@ -375,18 +375,18 @@ class WorkflowDatabaseServer( object ):
     the files will be transfered
     '''
         
-    self.__tmp_file_dir_path = tmp_file_dir_path
-    self.__database_file = database_file
+    self._tmp_file_dir_path = tmp_file_dir_path
+    self._database_file = database_file
      
-    self.__lock = threading.RLock()
+    self._lock = threading.RLock()
    
     self.logger = logging.getLogger('jobServer')
     
-    with self.__lock:
+    with self._lock:
       if not os.path.isfile(database_file):
         print "Database creation " + database_file
         self.logger.info("Database creation " + database_file)
-        createDatabase(database_file)
+        create_database(database_file)
       
       
       
@@ -394,27 +394,27 @@ class WorkflowDatabaseServer( object ):
    pass 
     
     
-  def __connect(self):
+  def _connect(self):
     try:
-      connection = sqlite3.connect(self.__database_file, timeout = 10, isolation_level = "EXCLUSIVE")
+      connection = sqlite3.connect(self._database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
         raise WorkflowDatabaseServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
     return connection
   
-  def __userTransferDirPath(self, login, user_id):
-    path = os.path.join(self.__tmp_file_dir_path,login+"_"+repr(user_id))
+  def _user_transfer_dir_path(self, login, user_id):
+    path = os.path.join(self._tmp_file_dir_path,login+"_"+repr(user_id))
     return path# supposes simple logins. Or use only the user id ? 
   
   
-  def registerUser(self, login):
+  def register_user(self, login):
     '''
     Register a user so that he can submit job.
     
     @rtype: C{UserIdentifier}
     @return: user identifier
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM users WHERE login=?', [login]).next()[0]
@@ -425,12 +425,12 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error registerUser %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error register_user %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
-      personal_path = self.__userTransferDirPath(login, user_id)
+      personal_path = self._user_transfer_dir_path(login, user_id)
       if not os.path.isdir(personal_path):
         os.mkdir(personal_path)
       
@@ -442,9 +442,9 @@ class WorkflowDatabaseServer( object ):
     Delete all expired jobs, transfers and workflows, except transfers which are requested 
     by valid job.
     '''
-    self.removeNonRegisteredFiles()
-    with self.__lock:
-      connection = self.__connect()
+    self.remove_non_registered_files()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
         
       try:
@@ -466,8 +466,8 @@ class WorkflowDatabaseServer( object ):
                                                           WHERE id=?''', 
                                                           [job_id]).next()
           if not custom:
-            self.__removeFile(self.__stringConversion(stdof))
-            self.__removeFile(self.__stringConversion(stdef))
+            self.__removeFile(self._string_conversion(stdof))
+            self.__removeFile(self._string_conversion(stdef))
         
         cursor.execute('DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
         
@@ -507,47 +507,47 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       connection.close()
      
-  def removeNonRegisteredFiles(self):
+  def remove_non_registered_files(self):
     registered_local_paths = []
     registered_users = []
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         for row in cursor.execute('SELECT local_file_path FROM transfers'):
           local_path = row[0]
-          registered_local_paths.append(self.__stringConversion(local_path))
+          registered_local_paths.append(self._string_conversion(local_path))
         for row in cursor.execute('SELECT stdout_file FROM jobs'):
           stdout_file = row[0]
           if stdout_file:   
-            registered_local_paths.append(self.__stringConversion(stdout_file))
+            registered_local_paths.append(self._string_conversion(stdout_file))
         for row in cursor.execute('SELECT stderr_file FROM jobs'):
           stderr_file = row[0]
           if stderr_file:
-            registered_local_paths.append(self.__stringConversion(stderr_file))
+            registered_local_paths.append(self._string_conversion(stderr_file))
         for row in cursor.execute('SELECT id, login FROM users'):
           user_id, login = row
           registered_users.append((user_id, login))
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error removeNonRegisteredFiles %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error remove_non_registered_files %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
     
     for user_info in registered_users:
       user_id, login = user_info
-      directory_path = self.__userTransferDirPath(login, user_id) 
+      directory_path = self._user_transfer_dir_path(login, user_id) 
       for name in os.listdir(directory_path):
         local_path = os.path.join(directory_path,name)
         if not local_path in registered_local_paths:
-          self.logger.debug("removeNonRegisteredFiles, not registered " + local_path + " to delete!")
+          self.logger.debug("remove_non_registered_files, not registered " + local_path + " to delete!")
           self.__removeFile(local_path)
   
      
      
-  def generateLocalFilePath(self, user_id, remote_file_path=None):
+  def generate_local_file_path(self, user_id, remote_file_path=None):
     '''
     Generates free local file path for transfers. 
     The user_id must be valid.
@@ -560,21 +560,21 @@ class WorkflowDatabaseServer( object ):
     @rtype: string
     @return: free local file path
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[0]#supposes that the user_id is valid
-        login = self.__stringConversion(login)
+        login = self._string_conversion(login)
         cursor.execute('INSERT INTO fileCounter (foo) VALUES (?)', [0])
         file_num = cursor.lastrowid
       except Exception, e:
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error generateLocalFilePath %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error generate_local_file_path %s: %s \n' %(type(e), e), self.logger) 
       
-      userDirPath = self.__userTransferDirPath(login, user_id) 
+      userDirPath = self._user_transfer_dir_path(login, user_id) 
       if remote_file_path == None:
         newFilePath = os.path.join(userDirPath, repr(file_num))
         #newFilePath += repr(file_num)
@@ -610,7 +610,7 @@ class WorkflowDatabaseServer( object ):
   #####################################"
   # TRANSFERS 
   
-  def addTransfer(self, local_file_path, remote_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, remote_paths = None):
+  def add_transfer(self, local_file_path, remote_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, remote_paths = None):
     '''
     Adds a transfer to the database.
     
@@ -632,8 +632,8 @@ class WorkflowDatabaseServer( object ):
     else:
       remote_path_std = None
      
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO transfers 
@@ -643,13 +643,13 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error addTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error add_transfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
 
 
-  def removeTransfer(self, local_file_path):
+  def remove_transfer(self, local_file_path):
     '''
     Set the expiration date of the transfer associated to the local file path 
     to today (yesterday?). That way it will be disposed as soon as no job will need it.
@@ -658,8 +658,8 @@ class WorkflowDatabaseServer( object ):
     @param local_file_path: local file path to identifying the transfer 
     record to delete.
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       yesterday = date.today() - timedelta(days=1)
       try:
@@ -668,13 +668,13 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error removeTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error remove_transfer %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       self.clean()
         
-  def getTransferInformation(self, local_file_path):
+  def get_transfer_information(self, local_file_path):
     '''
     Returns the information related to the transfer associated to the local file path.
     The local_file_path must be associated to a transfer.
@@ -684,8 +684,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple
     @returns: (local_file_path, remote_file_path, expiration_date, workflow_id, remote_paths)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
@@ -704,26 +704,26 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getTransferInformation %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_transfer_information %s: %s \n' %(type(e), e), self.logger) 
       if info:
         if info[4]:
-          remote_paths = self.__stringConversion(info[4]).split(file_separator)
+          remote_paths = self._string_conversion(info[4]).split(file_separator)
         else: 
           remote_paths = None
-        result = (self.__stringConversion(info[0]), self.__stringConversion(info[1]), self.__strToDateConversion(info[2]), info[3], remote_paths)
+        result = (self._string_conversion(info[0]), self._string_conversion(info[1]), self._str_to_date_conversion(info[2]), info[3], remote_paths)
       else:
         result = (None, None, None, -1, None)
       cursor.close()
       connection.close()
     return result
   
-  def getTransferStatus(self, local_file_path):
+  def get_transfer_status(self, local_file_path):
     '''
     Returns the transferstatus sored in the database.
     Returns None if the local_file_path is not associated to a transfer.
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
@@ -734,16 +734,16 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_transfer_status %s: %s \n' %(type(e), e), self.logger) 
       if status:
-        status = self.__stringConversion(status)
+        status = self._string_conversion(status)
       cursor.close()
       connection.close()
  
     return status
       
   
-  def setTransferStatus(self, local_file_path, status):
+  def set_transfer_status(self, local_file_path, status):
     '''
     Updates the transfer status in the database.
     The status must be valid (ie a string among the transfer status 
@@ -752,9 +752,9 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: transfer status as defined in constants.FILE_TRANSFER_STATUS
     '''
-    with self.__lock:
+    with self._lock:
       # TBI if the status is not valid raise an exception ??
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
@@ -764,19 +764,19 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_transfer_status %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
 
-  def setTransferActionInfo(self, local_file_path, info):
+  def set_transfer_action_info(self, local_file_path, info):
     '''
     Save data necessary for the transfer itself.
     In the case of a file transfer, info is a tuple (file size, md5 hash)
     In the case of a directory transfer, info is a tuple (cumulated file size, file transfer info)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
@@ -787,18 +787,18 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_transfer_action_info %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
       
-  def getTransferActionInfo(self, local_file_path):
+  def get_transfer_action_info(self, local_file_path):
     '''
     Returns data necessary to the transfer itself.
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
@@ -809,9 +809,9 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getTransferActionInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_transfer_action_info %s: %s \n' %(type(e), e), self.logger) 
       
-      pickled_info = self.__stringConversion(pickled_info)
+      pickled_info = self._string_conversion(pickled_info)
       if pickled_info:
         info = pickle.loads(pickled_info)
       else:
@@ -822,20 +822,20 @@ class WorkflowDatabaseServer( object ):
     return info
 
   
-  def addWorkflowEndedTransfer(self, workflow_id, local_file_path):
+  def add_workflow_ended_transfer(self, workflow_id, local_file_path):
     '''
     To signal that a transfer belonging to a workflow finished.
     '''
     separator = ", "
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
         if not count == 0 :
           str_ended_transfers = cursor.execute('SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0] 
           if str_ended_transfers != None:
-            ended_transfers = self.__stringConversion(str_ended_transfers).split(separator)
+            ended_transfers = self._string_conversion(str_ended_transfers).split(separator)
             ended_transfers.append(local_file_path)
             str_ended_transfers = separator.join(ended_transfers)
           else:
@@ -845,33 +845,33 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error add_workflow_ended_transfer %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
     
 
-  def popWorkflowEndedTransfer(self, workflow_id):
+  def pop_workflow_ended_transfer(self, workflow_id):
     '''
     Returns the ended transfers for a workflow and clear the ended transfer list.
     '''
     separator = ", "
     ended_transfers = []
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
         if not count == 0 :
           str_ended_transfers = cursor.execute('SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0] 
           if str_ended_transfers != None:
-            ended_transfers = self.__stringConversion(str_ended_transfers).split(separator)
+            ended_transfers = self._string_conversion(str_ended_transfers).split(separator)
           cursor.execute('UPDATE workflows SET ended_transfers=? WHERE id=?', (None, workflow_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setTransferStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_transfer_status %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -880,7 +880,7 @@ class WorkflowDatabaseServer( object ):
   ###############################################
   # WORKFLOWS
   
-  def addWorkflow(self, user_id, expiration_date, name = None):
+  def add_workflow(self, user_id, expiration_date, name = None):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -890,8 +890,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{WorkflowIdentifier}
     @return: the identifier of the workflow
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO workflows 
@@ -912,7 +912,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error addWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error add_workflow %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       wf_id = cursor.lastrowid
       cursor.close()
@@ -920,15 +920,15 @@ class WorkflowDatabaseServer( object ):
 
     return wf_id
   
-  def deleteWorkflow(self, wf_id):
+  def delete_workflow(self, wf_id):
     '''
     Remove the workflow from the database. Remove all associated jobs and transfers.
     
     @type wf_id: C{WorkflowIdentifier}
     '''
-    with self.__lock:
+    with self._lock:
       # set expiration date to yesterday + clean() ?
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       
       yesterday = date.today() - timedelta(days=1)
@@ -941,14 +941,14 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error delete_job %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()
       connection.close()
       self.clean()
 
-  def setWorkflow(self, wf_id, workflow, user_id):
+  def set_workflow(self, wf_id, workflow, user_id):
     '''
     Saves the workflow in a file and register the file path in the database.
     
@@ -956,8 +956,8 @@ class WorkflowDatabaseServer( object ):
     @type  workflow: L{Workflow}
     '''
     pickled_workflow = pickle.dumps(workflow)
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('UPDATE workflows SET pickled_workflow=? WHERE id=?', (pickled_workflow, wf_id))
@@ -965,20 +965,20 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_workflow %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
-  def changeWorkflowExpirationDate(self, wf_id, new_date):
+  def change_workflow_expiration_date(self, wf_id, new_date):
     '''
     Change the workflow expiration date.
     
     @type wf_id: C{WorflowIdentifier}
     @type new_date: datetime.datetime
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('UPDATE workflows SET expiration_date=? WHERE id=?', (new_date, wf_id))
@@ -986,12 +986,12 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error changeWorkflowExpirationDate %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error change_workflow_expiration_date %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
-  def getWorkflow(self, wf_id):
+  def get_workflow(self, wf_id):
     '''
     Returns the workflow object.
     The wf_id must be valid.
@@ -1000,8 +1000,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{Workflow}
     @return: workflow object
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         pickled_workflow = cursor.execute('''SELECT  
@@ -1010,11 +1010,11 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getWorkflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_workflow %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
-    pickled_workflow = self.__stringConversion(pickled_workflow)
+    pickled_workflow = self._string_conversion(pickled_workflow)
     if pickled_workflow:
       workflow = pickle.loads(pickled_workflow)
     else:
@@ -1022,7 +1022,7 @@ class WorkflowDatabaseServer( object ):
  
     return workflow
   
-  def getWorkflowInfo(self, wf_id):
+  def get_workflow_info(self, wf_id):
     '''
     Returns a tuple with the workflow expiration date and name
     The wf_id must be valid.
@@ -1031,8 +1031,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: (date, string)
     @return: (expiration_date, name)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         expiration_date, name = cursor.execute('''SELECT  
@@ -1042,16 +1042,16 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getWorkflowInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_workflow_info %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
-    expiration_date = self.__strToDateConversion(expiration_date)
-    name = self.__stringConversion(name)
+    expiration_date = self._str_to_date_conversion(expiration_date)
+    name = self._string_conversion(name)
     return (expiration_date, name)
   
   
-  def setWorkflowStatus(self, wf_id, status):
+  def set_workflow_status(self, wf_id, status):
     '''
     Updates the workflow status in the database.
     The status must be valid (ie a string among the workflow status 
@@ -1060,9 +1060,9 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: workflow status as defined in constants.WORKFLOW_STATUS
     '''
-    with self.__lock:
+    with self._lock:
       # TBI if the status is not valid raise an exception ??
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('''SELECT count(*) 
@@ -1080,20 +1080,20 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setWorkflowStatus %s: %s \n' %(type(e), e), 
+        raise WorkflowDatabaseServerError('Error set_workflow_status %s: %s \n' %(type(e), e), 
                               self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
     
-  def getWorkflowStatus(self, wf_id):
+  def get_workflow_status(self, wf_id):
     '''
     Returns the workflow status stored in the database 
     (updated by L{DrmaaWorkflowEngine}) and the date of its last update.
     Returns (None, None) if the wf_id is not valid.
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('''SELECT count(*) 
@@ -1109,17 +1109,17 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), 
+        raise WorkflowDatabaseServerError('Error get_workflow_status %s: %s \n' %(type(e), e), 
                               self.logger) 
-      status = self.__stringConversion(status)
-      date = self.__strToDateConversion(strdate)
+      status = self._string_conversion(status)
+      date = self._str_to_date_conversion(strdate)
       cursor.close()
       connection.close()
     return (status, date)
     
   
   
-  def getDetailedWorkflowStatus(self, wf_id):
+  def get_detailed_workflow_status(self, wf_id):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     requests to the database.
@@ -1133,8 +1133,8 @@ class WorkflowDatabaseServer( object ):
                    sequence of tuple (transfer_id, status), 
                    workflow_status)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
     
       try:
@@ -1158,9 +1158,9 @@ class WorkflowDatabaseServer( object ):
                                      FROM jobs WHERE workflow_id=?''', [wf_id]):
           job_id, status, exit_status, exit_value, term_signal, resource_usage, submission_date, execution_date, ending_date = row
           
-          submission_date = self.__strToDateConversion(submission_date)
-          execution_date = self.__strToDateConversion(execution_date)
-          ending_date = self.__strToDateConversion(ending_date)
+          submission_date = self._str_to_date_conversion(submission_date)
+          execution_date = self._str_to_date_conversion(execution_date)
+          ending_date = self._str_to_date_conversion(ending_date)
           
           
           workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date)))
@@ -1173,11 +1173,11 @@ class WorkflowDatabaseServer( object ):
                                      FROM transfers WHERE workflow_id=?''', [wf_id]):
           local_file_path, remote_file_path, status, pickled_info = row
             
-          local_file_path = self.__stringConversion(local_file_path)
-          remote_file_path = self.__stringConversion(remote_file_path)
-          status = self.__stringConversion(status)
+          local_file_path = self._string_conversion(local_file_path)
+          remote_file_path = self._string_conversion(remote_file_path)
+          status = self._string_conversion(status)
           
-          pickled_info = self.__stringConversion(pickled_info)
+          pickled_info = self._string_conversion(pickled_info)
           if pickled_info:
             transfer_action_info = pickle.loads(pickled_info)
           else:
@@ -1188,7 +1188,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getWorkflowStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_workflow_status %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -1198,7 +1198,7 @@ class WorkflowDatabaseServer( object ):
   ###########################################
   # JOBS 
   
-  def addJob( self, dbJob):
+  def add_job( self, dbJob):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -1208,8 +1208,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{JobIdentifier}
     @return: the identifier of the job
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO jobs 
@@ -1276,7 +1276,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error addJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error add_job %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       job_id = cursor.lastrowid
       cursor.close()
@@ -1298,16 +1298,16 @@ class WorkflowDatabaseServer( object ):
     return job_id
    
    
-  def deleteJob(self, job_id):
+  def delete_job(self, job_id):
     '''
     Remove the job from the database. Remove all associated transfered files if
     their expiration date passed and they are not used by any other job.
     
     @type job_id: 
     '''
-    with self.__lock:
+    with self._lock:
       # set expiration date to yesterday + clean() ?
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       
       yesterday = date.today() - timedelta(days=1)
@@ -1319,7 +1319,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error deleteJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error delete_job %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()
@@ -1328,7 +1328,7 @@ class WorkflowDatabaseServer( object ):
 
 
 
-  def setJobStatus(self, job_id, status):
+  def set_job_status(self, job_id, status):
     '''
     Updates the job status in the database.
     The status must be valid (ie a string among the job status 
@@ -1337,18 +1337,18 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: job status as defined in constants.JOB_STATUS
     '''
-    with self.__lock:
+    with self._lock:
       # TBI if the status is not valid raise an exception ??
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
         if not count == 0 :
           
           previous_status, execution_date, ending_date = cursor.execute('SELECT status, execution_date, ending_date FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
-          previous_status = self.__stringConversion(previous_status)
-          execution_date = self.__strToDateConversion(execution_date)
-          ending_date = self.__strToDateConversion(ending_date)
+          previous_status = self._string_conversion(previous_status)
+          execution_date = self._str_to_date_conversion(execution_date)
+          ending_date = self._str_to_date_conversion(ending_date)
           if previous_status != status:
             if not execution_date and status == constants.RUNNING:
               execution_date = datetime.now()
@@ -1362,19 +1362,19 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setJobStatus %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_job_status %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
-  def getJobStatus(self, job_id):
+  def get_job_status(self, job_id):
     '''
     Returns the job status stored in the database (updated by L{DrmaaWorkflowEngine}) and 
     the date of its last update.
     Returns (None, None) if the job_id is not valid.
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
@@ -1385,15 +1385,15 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getJobStatus %s: %s \n' %(type(e), e), self.logger) 
-      status = self.__stringConversion(status)
-      date = self.__strToDateConversion(strdate)
+        raise WorkflowDatabaseServerError('Error get_job_status %s: %s \n' %(type(e), e), self.logger) 
+      status = self._string_conversion(status)
+      date = self._str_to_date_conversion(strdate)
       cursor.close()
       connection.close()
  
     return (status, date)
 
-  def setSubmissionInformation(self, job_id, drmaa_id, submission_date):
+  def set_submission_information(self, job_id, drmaa_id, submission_date):
     '''
     Set the submission information of the job and reset information 
     related to the job submission (execution_date, ending_date, 
@@ -1404,8 +1404,8 @@ class WorkflowDatabaseServer( object ):
     @type  submission_date: date or None
     @param submission_date: submission date if the job was submitted
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''UPDATE jobs 
@@ -1435,12 +1435,12 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setSubmissionInformation %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_submission_information %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
       
-  def getDrmaaJobId(self, job_id):
+  def get_drmaa_job_id(self, job_id):
     '''
     Returns the DRMAA job id associated with the job.
     Returns None if the job_id is not valid.
@@ -1449,8 +1449,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: string
     @return: DRMAA job identifier (job identifier on DRMS if submitted via DRMAA)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
@@ -1461,12 +1461,12 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getDrmaaJobId %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_drmaa_job_id %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       return drmaa_id
 
-  def getStdOutErrFilePath(self, job_id):
+  def get_std_out_err_file_path(self, job_id):
     '''
     Returns the path of the standard output and error files.
     The job_id must be valid.
@@ -1475,8 +1475,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple
     @return: (stdout_file_path, stderr_file_path)
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
@@ -1486,11 +1486,11 @@ class WorkflowDatabaseServer( object ):
         raise WorkflowDatabaseServerError('Error %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-    stdout_file_path = self.__stringConversion(result[0])
-    stderr_file_path = self.__stringConversion(result[1])
+    stdout_file_path = self._string_conversion(result[0])
+    stderr_file_path = self._string_conversion(result[1])
     return (stdout_file_path, stderr_file_path)
 
-  def setJobExitInfo(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
+  def set_job_exit_info(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
     '''
     Record the job exit status in the database.
     The status must be valid (ie a string among the exit job status 
@@ -1510,9 +1510,9 @@ class WorkflowDatabaseServer( object ):
     @param resource_usage: contain the resource usage information of
     the job.
     '''
-    with self.__lock:
+    with self._lock:
       # TBI if the status is not valid raise an exception ??
-      connection = self.__connect()
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
@@ -1532,19 +1532,19 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error setJobExitInfo %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error set_job_exit_info %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
 
-  def getJob(self, job_id):
+  def get_job(self, job_id):
     '''
     returns the job information stored in the database.
     The job_id must be valid.
     @rtype: L{DBJob}
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       try:
         user_id,             \
@@ -1601,47 +1601,47 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getJob %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_job %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     
     dbJob = DBJob(user_id,
     
-                  self.__strToDateConversion(expiration_date),
+                  self._str_to_date_conversion(expiration_date),
                   join_errout,
-                  self.__stringConversion(stdout_file),
+                  self._string_conversion(stdout_file),
                   custom_submission,
                   
                   drmaa_id,
-                  self.__stringConversion(status),
-                  self.__strToDateConversion(last_status_update),
+                  self._string_conversion(status),
+                  self._str_to_date_conversion(last_status_update),
                   workflow_id,
                   
-                  self.__stringConversion(command),
-                  self.__stringConversion(stdin_file),
-                  self.__stringConversion(stderr_file),
-                  self.__stringConversion(working_directory),
-                  self.__stringConversion(parallel_config_name),
+                  self._string_conversion(command),
+                  self._string_conversion(stdin_file),
+                  self._string_conversion(stderr_file),
+                  self._string_conversion(working_directory),
+                  self._string_conversion(parallel_config_name),
                   max_node_number,
                   
-                  self.__stringConversion(name_description),
-                  self.__strToDateConversion(submission_date),
-                  self.__strToDateConversion(execution_date),
-                  self.__strToDateConversion(ending_date),
-                  self.__stringConversion(exit_status),
+                  self._string_conversion(name_description),
+                  self._str_to_date_conversion(submission_date),
+                  self._str_to_date_conversion(execution_date),
+                  self._str_to_date_conversion(ending_date),
+                  self._string_conversion(exit_status),
                   exit_value,
-                  self.__stringConversion(terminating_signal),
-                  self.__stringConversion(resource_usage))
+                  self._string_conversion(terminating_signal),
+                  self._string_conversion(resource_usage))
     return dbJob
 
 
-  def __stringConversion(self, string):
+  def _string_conversion(self, string):
     if string: 
       return string.encode('utf-8')
     else: 
       return string
   
-  def __strToDateConversion(self,strdate):
+  def _str_to_date_conversion(self,strdate):
     if strdate:
       date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
     else:
@@ -1651,7 +1651,7 @@ class WorkflowDatabaseServer( object ):
   ###############################################
   # INPUTS/OUTPUTS
 
-  def registerInputs(self, job_id, local_input_files):
+  def register_inputs(self, job_id, local_input_files):
     '''
     Register associations between a job and input file path.
     
@@ -1659,8 +1659,8 @@ class WorkflowDatabaseServer( object ):
     @type  local_input_files: sequence of string
     @param local_input_files: local input file paths 
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       for file in local_input_files:
         try:
@@ -1670,13 +1670,13 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise WorkflowDatabaseServerError('Error registerInputs %s: %s \n' %(type(e), e), self.logger) 
+          raise WorkflowDatabaseServerError('Error register_inputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
     
     
-  def registerOutputs(self, job_id, local_output_files):
+  def register_outputs(self, job_id, local_output_files):
     '''
     Register associations between a job and output file path.
     
@@ -1684,8 +1684,8 @@ class WorkflowDatabaseServer( object ):
     @type  local_input_files: sequence of string
     @param local_input_files: local output file paths 
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       for file in local_output_files:
         try:
@@ -1695,7 +1695,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-          raise WorkflowDatabaseServerError('Error registerOutputs %s: %s \n' %(type(e), e), self.logger) 
+          raise WorkflowDatabaseServerError('Error register_outputs %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.commit()
       connection.close()
@@ -1705,7 +1705,7 @@ class WorkflowDatabaseServer( object ):
   ################### DATABASE QUERYING ##############################
   
   #JOBS
-  def isUserJob(self, job_id, user_id):
+  def is_user_job(self, job_id, user_id):
     '''
     Check that the job exists and is own by the user.
     
@@ -1714,8 +1714,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: bool
     @returns: the job exists and is owned by the user
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       result = False
       try:
@@ -1726,12 +1726,12 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error isUserJob jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error is_user_job jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
   
-  def getJobs(self, user_id):
+  def get_jobs(self, user_id):
     '''
     Returns the jobs owned by the user.
     
@@ -1739,8 +1739,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of C{JobIdentifier}
     @returns: jobs owned by the user
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       job_ids = []
       try:
@@ -1750,7 +1750,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getJobs %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
           
       cursor.close()
       connection.close()
@@ -1759,7 +1759,7 @@ class WorkflowDatabaseServer( object ):
   
   #TRANSFERS
   
-  def isUserTransfer(self, local_file_path, user_id):
+  def is_user_transfer(self, local_file_path, user_id):
     '''
     Check that a local file path match with a transfer and that the transfer 
     is owned by the user.
@@ -1769,8 +1769,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: bool
     @returns: the local file path match with a transfer owned by the user
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       result = False
       try:
@@ -1781,13 +1781,13 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error isUserTransfer %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error is_user_transfer %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
     
     
-  def getTransfers(self, user_id):
+  def get_transfers(self, user_id):
     '''
     Returns the transfers owned by the user.
     
@@ -1795,19 +1795,19 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of local file path
     @returns: local file path associated with a transfer owned by the user
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       local_file_paths = []
       try:
         for row in cursor.execute('SELECT local_file_path FROM transfers WHERE user_id=?', [user_id]):
           local_file = row[0]
-          local_file = self.__stringConversion(local_file)
+          local_file = self._string_conversion(local_file)
           local_file_paths.append(local_file)
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getTransfers %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_transfers %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return local_file_paths
@@ -1815,7 +1815,7 @@ class WorkflowDatabaseServer( object ):
 
   #WORKFLOWS
   
-  def isUserWorkflow(self, wf_id, user_id):
+  def is_user_workflow(self, wf_id, user_id):
     '''
     Check that the workflows exists and is own by the user.
     
@@ -1824,8 +1824,8 @@ class WorkflowDatabaseServer( object ):
     @rtype: bool
     @returns: the workflow exists and is owned by the user
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       result = False
       try:
@@ -1836,20 +1836,20 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error isUserWorkflow wfid=%d, userid=%s. Error %s: %s \n' %(repr(wf_id), repr(user_id), type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error is_user_workflow wfid=%d, userid=%s. Error %s: %s \n' %(repr(wf_id), repr(user_id), type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return result
   
-  def getWorkflows(self, user_id):
+  def get_workflows(self, user_id):
     '''
     Returns the workflows owned by the user.
     
     @type user_id: C{UserIdentifier}
     @rtype: sequence of workflows id
     '''
-    with self.__lock:
-      connection = self.__connect()
+    with self._lock:
+      connection = self._connect()
       cursor = connection.cursor()
       wf_ids = []
       try:
@@ -1860,7 +1860,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error getWorkflows %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_workflows %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
     return wf_ids

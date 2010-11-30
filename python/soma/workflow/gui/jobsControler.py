@@ -85,7 +85,7 @@ class JobsControler(object):
     return result
     
   def getWorkflow(self, wf_id, connection):
-    workflow = connection.submittedWorkflow(wf_id)
+    workflow = connection.workflow(wf_id)
     expiration_date = connection.workflowInformation(wf_id)[0]
     return (workflow, expiration_date)
   
@@ -112,25 +112,25 @@ class JobsControler(object):
       file.close()
     
     
-  def submitWorkflow(self, workflow, name, expiration_date, connection):
-    return connection.submitWorkflow(workflow=workflow,
+  def submit_workflow(self, workflow, name, expiration_date, connection):
+    return connection.submit_workflow(workflow=workflow,
                                      expiration_date=expiration_date,
                                      name=name) 
                                     
-  def restartWorkflow(self, workflow, connection):
-    return connection.restartWorkflow(workflow.wf_id)
+  def restart_workflow(self, workflow, connection):
+    return connection.restart_workflow(workflow.wf_id)
                                     
-  def deleteWorkflow(self, wf_id, connection):
-    return connection.disposeWorkflow(wf_id)
+  def delete_workflow(self, wf_id, connection):
+    return connection.delete_workflow(wf_id)
   
-  def changeWorkflowExpirationDate(self, wf_id, date, connection):
-    return connection.changeWorkflowExpirationDate(wf_id, date)
+  def change_workflow_expiration_date(self, wf_id, date, connection):
+    return connection.change_workflow_expiration_date(wf_id, date)
     
   def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
     for node in workflow.full_nodes:
       if isinstance(node, FileSending):
-        status, info = connection.transferStatus(node.local_path)
+        status, info = connection.transfer_status(node.local_path)
         if status == READY_TO_TRANSFER:
           to_transfer.append((0, node.local_path))
         if status == TRANSFERING:
@@ -145,7 +145,7 @@ class JobsControler(object):
     to_transfer = []
     for node in workflow.full_nodes:
       if isinstance(node, FileRetrieving):
-        status, info = connection.transferStatus(node.local_path)
+        status, info = connection.transfer_status(node.local_path)
         if status == READY_TO_TRANSFER:
           to_transfer.append((0, node.local_path))
         if status == TRANSFERING:
@@ -187,11 +187,11 @@ class JobsControler(object):
           #if node.job_id == -1:
             #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
           #else:
-            #status = connection.status(node.job_id)
+            #status = connection.job_status(node.job_id)
             #if status == NOT_SUBMITTED:
               #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
             #elif status == DONE:
-              #exit_status, exit_value, term_signal, resource_usage = connection.exitInformation(node.job_id)
+              #exit_status, exit_value, term_signal, resource_usage = connection.job_termination_status(node.job_id)
               #if exit_status == FINISHED_REGULARLY and exit_value == 0:
                 #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
               #else: 
@@ -204,7 +204,7 @@ class JobsControler(object):
           #if not node.local_path:
             #print >> file, names[node][0] + "[label="+ names[node][1] +"];"
           #else:
-            #status = connection.transferStatus(node.local_path)[0]
+            #status = connection.transfer_status(node.local_path)[0]
             #if status == TRANSFER_NOT_READY:
               #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
             #elif status == READY_TO_TRANSFER:
@@ -224,11 +224,11 @@ class JobsControler(object):
         if node.job_id == -1:
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
-          status = connection.status(node.job_id)
+          status = connection.job_status(node.job_id)
           if status == NOT_SUBMITTED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == DONE:
-            exit_status, exit_value, term_signal, resource_usage = connection.exitInformation(node.job_id)
+            exit_status, exit_value, term_signal, resource_usage = connection.job_termination_status(node.job_id)
             if exit_status == FINISHED_REGULARLY and exit_value == 0:
               print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
             else: 
@@ -241,7 +241,7 @@ class JobsControler(object):
         if not node.local_path:
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
-          status = connection.transferStatus(node.local_path)[0]
+          status = connection.transfer_status(node.local_path)[0]
           if status == TRANSFER_NOT_READY:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:

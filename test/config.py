@@ -66,7 +66,7 @@ soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/soizic/soma-jobs-server/log_jobServer')
 soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'None')
-soma_wf_cfg.set(s, CFG_SERVER_NAME,          'JobServer')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,          'soma_workflow_database_server')
 soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/soizic/soma-jobs-server/jobFiles/')
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/soizic/soma-jobs-server/jobs.db')
 
@@ -95,7 +95,7 @@ soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT, "%(asctime)s => line %(lineno)s: %(me
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,  'DEBUG')
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,   '/home/sl225510/soma-jobs-server/logs/log_jobServer')
 soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,   'gabriel.intra.cea.fr')
-soma_wf_cfg.set(s, CFG_SERVER_NAME,        'JobServer')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,        'soma_workflow_database_server')
 soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR,  '/home/sl225510/soma-jobs-server/jobFiles/')
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,      '/home/sl225510/soma-jobs-server/jobs.db')
 
@@ -119,7 +119,7 @@ soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT, "%(asctime)s => line %(lineno)s: %(me
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,  'DEBUG')
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,   '/home/cea/soma-jobs-server/logs/log_jobServer')
 soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,       'hipip0')
-soma_wf_cfg.set(s, CFG_SERVER_NAME,        'JobServer')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,        'soma_workflow_database_server')
 soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR,      '/home/cea/soma-jobs-server/jobFiles/')
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,          '/home/cea/soma-jobs-server/jobs.db')
 #Shared resource path translation file

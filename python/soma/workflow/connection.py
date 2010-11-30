@@ -123,15 +123,17 @@ class RemoteConnection( object ):
     print "Pyro object port: " + repr(engine_pyro_daemon_port)
   
     # find an available port              #
-    remote_pyro_daemon_port = searchAvailablePort()
-    print "client pyro object port: " + repr(remote_pyro_daemon_port)
+    client_pyro_daemon_port = searchAvailablePort()
+    print "client pyro object port: " + repr(client_pyro_daemon_port)
 
     
     # tunnel creation                      #
     self.__transport = paramiko.Transport((cluster_address, 22))
     self.__transport.setDaemon(True)
     self.__transport.connect(username = login, password = password)
-    tunnel = Tunnel(remote_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
+    print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
+    print "   port: " + repr(client_pyro_daemon_port) + " host: " + repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
+    tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
     tunnel.start()
 
     # create the proxies                     #
@@ -139,9 +141,9 @@ class RemoteConnection( object ):
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
   
     # setting the proxies to use the tunnel  #
-    self.workflow_engine.URI.port = remote_pyro_daemon_port
+    self.workflow_engine.URI.port = client_pyro_daemon_port
     self.workflow_engine.URI.address = 'localhost'
-    connection_checker.URI.port = remote_pyro_daemon_port
+    connection_checker.URI.port = client_pyro_daemon_port
     connection_checker.URI.address = 'localhost'
     
     # waiting for the tunnel to be set
