@@ -111,7 +111,7 @@ class RemoteConnection( object ):
     if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
     workflow_engine_uri = line.split()[1] 
     line = stdout.readline()
-    while line and line.split()[0] != "connectionChecker":
+    while line and line.split()[0] != "connection_checker":
       line = stdout.readline()
     if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 

@@ -36,14 +36,14 @@ class JobsControler(object):
     return resource_ids
         
   def getConnection(self, resource_id, login, password, test_no):
-    #try: 
-    connection = WorkflowController( self.getConfigFile(),
+    try: 
+      connection = WorkflowController( self.getConfigFile(),
                                        resource_id, 
                                        login, 
                                        password,
                                        log=test_no)
-    #except Exception, e:
-      #return (None, "%s: %s" %(type(e),e) )
+    except Exception, e:
+      return (None, "%s: %s" %(type(e),e) )
       
     return (connection, "") 
     
