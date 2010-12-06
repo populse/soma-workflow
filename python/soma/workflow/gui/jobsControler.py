@@ -18,12 +18,13 @@ class JobsControler(object):
    
   @staticmethod
   def getConfigFile():
-    result = os.environ.get( 'SOMA_WORKFLOW_CONFIG' )
-    if not result or not os.path.exists( result ):
-      result = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'jobs.cfg' )
-      if not os.path.exists( result ):
+    conf_file = os.environ.get( 'SOMA_WORKFLOW_CONFIG' )
+    if not conf_file or not os.path.exists( conf_file ):
+      conf_file = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'soma_workflow.cfg' )
+      if not os.path.exists( conf_file ):
         raise RuntimeError( 'Cannot find soma-workflow configuration file. Perhaps SOMA_WORKFLOW_CONFIG is not proprely set.' )
-    return result
+    print "Configuration file: " + repr(conf_file)
+    return conf_file
   
   
   def getRessourceIds(self):

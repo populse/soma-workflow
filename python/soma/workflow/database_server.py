@@ -433,6 +433,7 @@ class WorkflowDatabaseServer( object ):
       personal_path = self._user_transfer_dir_path(login, user_id)
       if not os.path.isdir(personal_path):
         os.mkdir(personal_path)
+        os.chmod(personal_path, 0775)
       
       return user_id
   
@@ -1281,19 +1282,6 @@ class WorkflowDatabaseServer( object ):
       job_id = cursor.lastrowid
       cursor.close()
       connection.close()
-
-    # create standard output files (not mandatory but useful for "tail -f" kind of function)
-    try:  
-      tmp = open(dbJob.stdout_file, 'w')
-      tmp.close()
-    except IOError, e:
-      raise WorkflowDatabaseServerError("Could not create the standard output file %s: %s \n"  %(type(e), e), self.logger)
-    if dbJob.stderr_file:
-      try:
-        tmp = open(dbJob.stderr_file, 'w')
-        tmp.close()
-      except IOError, e:
-        raise WorkflowDatabaseServerError("Could not create the standard error file %s: %s \n"  %(type(e), e), self.logger)
 
     return job_id
    

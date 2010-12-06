@@ -100,6 +100,10 @@ if __name__=="__main__":
                                                     parallel_info)
     #############################
     
+    drmaa_implem = None
+    if config.has_option(section, constants.OCFG_DRMAA_IMPLEMENTATION):
+      drmaa_implem = config.get(section, constants.OCFG_DRMAA_IMPLEMENTATION)
+    
     #############################
     # Translation files specific information 
     path_translation = None
@@ -142,7 +146,8 @@ if __name__=="__main__":
     
     drmaa_engine = soma.workflow.engine.DrmaaWorkflowEngine(database_server, 
                                                             parallel_config, 
-                                                            path_translation)
+                                                            path_translation,
+                                                            drmaa_implem)
     
     engine = WorkflowEngine(database_server, drmaa_engine)
     engine_lock = threading.Lock()

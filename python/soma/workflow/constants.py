@@ -91,7 +91,7 @@ OCFG => Optional
 '''
 CFG_CLUSTER_ADDRESS = 'cluster_address'
 CFG_SUBMITTING_MACHINES = 'submitting_machines'
-OCFG_DRMS = 'drms'
+OCFG_DRMAA_IMPLEMENTATION = 'drmaa_implementation'
 
 #database server
 

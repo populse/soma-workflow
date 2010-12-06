@@ -14,61 +14,32 @@ from soma.workflow.constants import *
 soma_wf_cfg = ConfigParser.ConfigParser()
 
 
-##########################
-# NEUROSPIN TEST CLUSTER #
-##########################
 
-#s = 'neurospin_test_cluster'
+################
+# TEST CLUSTER #
+################
 
-#soma_wf_cfg.add_section(s)
+s = 'test_cluster'
 
-##Parallel job specific submission information
-#soma_wf_cfg.set(s, OCFG_PARALLEL_COMMAND,      "-pe  {config_name} {max_node}") 
-#soma_wf_cfg.set(s, OCFG_PARALLEL_PC_MPI,       'mpi')
-#soma_wf_cfg.set(s, OCFG_PARALLEL_ENV_MPI_BIN,  '/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/')
-#soma_wf_cfg.set(s, OCFG_PARALLEL_ENV_NODE_FILE, '$TMPDIR/machines')
-##Engine
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s : %(message)s      %(threadName)s')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/neurospin/tmp/Soizic/soma_workflow_files/logs/')
-##Computing resource
-#soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES, "is143016")# is204723")
-#soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,     "is143016")
-#soma_wf_cfg.set(s, OCFG_DRMS,               'SGE') 
-##Server
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/volatile/laguitton/log_soma_workflow_server')
-#soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'is143016')
-#soma_wf_cfg.set(s, CFG_SERVER_NAME,          'soma_workflow_server')
-#soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/neurospin/tmp/Soizic/soma_workflow_files/')
-#soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/volatile/laguitton/soma_workflow.db')
-##Shared resource path translation file
-#soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/neurospin/tmp/Soizic/jobFiles/translation_files/job_examples.sjtr} brainvisa{/home/sl225510/.brainvisa/soma-workflow.translation}')
-
-##########################
-# SOIZIC HOME CLUSTER #
-##########################
-
-#s = 'soizic_home_cluster'
-
-#soma_wf_cfg.add_section(s)
-##Engine
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL, 'DEBUG')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,   '/home/soizic/soma-jobs-server/logs/')
-##Computing resource
-#soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES, "soizic-vaio")
-#soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,     "soizic-vaio")
-#soma_wf_cfg.set(s, OCFG_DRMS,               'SGE')
-##Server
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/soizic/soma-jobs-server/log_jobServer')
-#soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'None')
-#soma_wf_cfg.set(s, CFG_SERVER_NAME,          'soma_workflow_database_server')
-#soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/soizic/soma-jobs-server/jobFiles/')
-#soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/soizic/soma-jobs-server/jobs.db')
+soma_wf_cfg.add_section(s)
+#Engine
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/sl225510/soma-workflow-server/logs/')
+#Computing resource
+soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'is143016')
+soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'is143016')
+soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'SGE') 
+#Server
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/sl225510/soma-workflow-server/logs/log_server')
+soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'is143016')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,          'workflow_server')
+soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/sl225510/soma-workflow-server/transfered-files/')
+soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/sl225510/soma-workflow-server/soma_workflow.db') 
+#Shared resource path translation file
+soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/sl225510/soma-workflow-server/translation-file-examples/job_examples.translation}  brainvisa{/home/sl225510/.brainvisa/soma-workflow.translation}')
 
 ###############
 # DSV CLUSTER #
@@ -87,9 +58,9 @@ soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lin
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/i2bm-research/soma-workflow/server/logs/')
 #Computing resource
-soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES, 'gabriel.intra.cea.fr')
-soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,     'gabriel.intra.cea.fr')
-soma_wf_cfg.set(s, OCFG_DRMS,               'PBS') 
+soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'gabriel.intra.cea.fr')
+soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'gabriel.intra.cea.fr')
+soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'PBS') 
 #Server
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
@@ -100,9 +71,6 @@ soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/i2bm-research/soma-workflow/
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/i2bm-research/soma-workflow/server/soma_workflow.db')
 #Shared resource path translation file
 soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/i2bm-research/soma-workflow/server/translation_files/example/job_examples.sjtr}  brainvisa{/home/i2bm-research/soma-workflow/server/translation_files/brainvisa/soma-workflow.translation}')
-
-
-
 
 
 #################
@@ -119,7 +87,7 @@ soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/i2bm-research/som
 ##Computing resource
 #soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,    'hipip0')
 #soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,        'hipipcluster')
-#soma_wf_cfg.set(s, OCFG_DRMS,               'SGE') 
+#soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION,  'SGE') 
 ##Server
 #soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT, "%(asctime)s => line %(lineno)s: %(message)s")
 #soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,  'DEBUG')
@@ -144,9 +112,9 @@ soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lin
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
 soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/soizic/soma_workflow_server/logs/')
 #Computing resource
-soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES, 'is206464')
-soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,     'is206464')
-soma_wf_cfg.set(s, OCFG_DRMS,               'SGE') 
+soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'is206464')
+soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'is206464')
+soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'SGE') 
 #Server
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')

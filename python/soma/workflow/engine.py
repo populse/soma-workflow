@@ -105,8 +105,9 @@ class DrmaaWorkflowEngine(object):
 
   def __init__(self, 
                database_server, 
-               parallel_job_submission_info = None, 
-               path_translation = None):
+               parallel_job_submission_info=None, 
+               path_translation=None,
+               drmaa_implementation=None):
     '''
     Opens a connection to the pool of machines and to the data server L{WorkflowDatabaseServer}.
 
@@ -136,6 +137,8 @@ class DrmaaWorkflowEngine(object):
     self.logger.debug("Parallel job submission info: %s", repr(parallel_job_submission_info))
     self._parallel_job_submission_info = parallel_job_submission_info
     self._path_translation = path_translation
+    
+    self._drmaa_implementation = drmaa_implementation
 
     try:
       userLogin = pwd.getpwuid(os.getuid())[0] 
@@ -199,7 +202,7 @@ class DrmaaWorkflowEngine(object):
             del self._jobs[job_id]
           self._jobsEnded = len( self._jobs) == 0 
           
-        logger_su.debug("---------- all jobs done : " + repr(self._jobsEnded))
+        #logger_su.debug("---------- all jobs done : " + repr(self._jobsEnded))
         time.sleep(interval)
     
     
@@ -268,7 +271,15 @@ class DrmaaWorkflowEngine(object):
       
     if jobTemplate.parallel_job_info:
       parallel_config_name, max_node_number = jobTemplate.parallel_job_info
-       
+      
+    if self._drmaa_implementation == "PBS":
+      new_command = []
+      for command_el in jobTemplate.command:
+        command_el = command_el.replace('"', '\\\"')
+        new_command.append("\"" + command_el + "\"")
+      jobTemplate.command = new_command
+      self.logger.debug("PBS case, new command:" + repr(jobTemplate.command))
+     
        
     command_info = ""
     for command_element in jobTemplate.command:
@@ -291,6 +302,21 @@ class DrmaaWorkflowEngine(object):
                                         parallel_config_name = parallel_config_name,
                                         max_node_number = max_node_number,
                                         name_description = jobTemplate.name_description))
+                                        
+                                        
+      # create standard output files (not mandatory but useful for "tail -f" kind of function)
+      try:  
+        tmp = open(jobTemplate.stdout_file, 'w')
+        tmp.close()
+      except IOError, e:
+        raise WorkflowEngineError("Could not create the standard output file %s: %s \n"  %(type(e), e), self.logger)
+      if jobTemplate.stderr_file:
+        try:
+          tmp = open(jobTemplate.stderr_file, 'w')
+          tmp.close()
+        except IOError, e:
+          raise WorkflowEngineError("Could not create the standard error file %s: %s \n"  %(type(e), e), self.logger)
+      
                                       
       if jobTemplate.referenced_input_files:
         self._database_server.register_inputs(job_id, jobTemplate.referenced_input_files)
@@ -563,6 +589,8 @@ class DrmaaWorkflowEngine(object):
           new_command.append(command_el.local_path)
         else:
           new_command.append(command_el)
+      self.logger.debug("DRMAA implementation: " + repr(self._drmaa_implementation))
+      self.logger.debug(repr(new_command))
       job.command = new_command
       
       # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
@@ -895,7 +923,8 @@ class WorkflowEngine(object):
                 database_server, 
                 drmaa_workflow_engine = None,  
                 parallel_job_submission_info = None, 
-                path_translation = None):
+                path_translation = None,
+                drmaa_implementation=None):
     ''' 
     @type  database_server: L{WorkflowDatabaseServer}
     @type  drmaa_workflow_engine: L{DrmaaWorkflowEngine} or None
@@ -912,7 +941,8 @@ class WorkflowEngine(object):
       self._drmaa_wf_engine = drmaa_workflow_engine
     else:
       self._drmaa_wf_engine = DrmaaWorkflowEngine(database_server,      
-                                                   parallel_job_submission_info, path_translation)
+                                                   parallel_job_submission_info, path_translation,
+                                                   drmaa_implementation)
     
     self._database_server= database_server
     
