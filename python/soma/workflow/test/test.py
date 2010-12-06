@@ -284,17 +284,13 @@ class JobsTest(unittest.TestCase):
   Abstract class for jobs common tests.
   '''
   @staticmethod
-  def setupConnection(resource_id, login, password, test_no):
+  def setupConnection(resource_id, login, password, test_no, output_dir):
     
     JobsTest.login = login
     JobsTest.password = password
     JobsTest.resource_id = resource_id
 
-    JobsTest.test_config = ConfigParser.ConfigParser()
-    JobsTest.test_config.read('TestJobs.cfg')
     JobsTest.hostname = socket.gethostname()
-    
-  
     
     JobsTest.jobs = WorkflowController( os.environ["SOMA_WORKFLOW_CONFIG"],
                                               resource_id, 
@@ -302,17 +298,21 @@ class JobsTest(unittest.TestCase):
                                               password,
                                               log=test_no)
   
+    job_examples_dir = os.environ["SOMA_WORKFLOW_EXAMPLES"]
+    if not job_examples_dir:
+       raise RuntimeError( 'The environment variable SOMA_WORKFLOW_EXAMPLE_DIR must be set.')
+    
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
   
     JobsTest.jobExamples = JobExamples(JobsTest.jobs, 
-                              JobsTest.test_config.get(JobsTest.hostname, 'job_examples_dir'), 
-                              JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir'), 
-                              JobsTest.test_config.get(JobsTest.hostname, 'python'),
+                              job_examples_dir, 
+                              output_dir, 
+                              'python',
                               JobsTest.transfer_timeout, 
                               JobsTest.jobs_timeout)   
   
-    JobsTest.outpath = JobsTest.test_config.get(JobsTest.hostname, 'job_output_dir')
+    JobsTest.outpath = output_dir
                                    
   def setUp(self):
     raise Exception('JobTest is an abstract class. SetUp must be implemented in subclass')
@@ -942,7 +942,11 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  
+  if len(sys.argv) != 2:
+    sys.stdout.write("The program takes 1 parameter: the output directory")
+    sys.exit(1) 
+
+  output_dir = sys.argv[1]
 
   controller = JobsControler("") # use Workflow example generation ?
   
@@ -1015,7 +1019,7 @@ if __name__ == '__main__':
       sys.stdout.write("  => " + repr(test_types[int(test_type_index)])  + "\n")
   sys.stdout.write("---------------------------------\n")
 
-  JobsTest.setupConnection(resource_id, login, password, "1")
+  JobsTest.setupConnection(resource_id, login, password, "1", output_dir)
   suite_list =  []
   tests = selected_test_type
   if "LocalCustomSubmission" in selected_job_type:
