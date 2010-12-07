@@ -45,12 +45,12 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkBox_universal_resource_path">
+    <widget class="QCheckBox" name="checkBox_shared_resource_path">
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="text">
-      <string>with universal resource paths</string>
+      <string>with shared resource paths</string>
      </property>
     </widget>
    </item>

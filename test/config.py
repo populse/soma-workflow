@@ -39,7 +39,7 @@ soma_wf_cfg.set(s, CFG_SERVER_NAME,          'workflow_server')
 soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/sl225510/soma-workflow-server/transfered-files/')
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/sl225510/soma-workflow-server/soma_workflow.db') 
 #Shared resource path translation file
-soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/sl225510/soma-workflow-server/translation-file-examples/job_examples.translation}  brainvisa{/home/sl225510/.brainvisa/soma-workflow.translation}')
+soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/sl225510/soma-workflow-server/translation-files/examples/job_examples.translation}  brainvisa{/home/sl225510/.brainvisa/soma-workflow.translation}')
 
 ###############
 # DSV CLUSTER #

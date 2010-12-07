@@ -10,11 +10,8 @@ import commands
 
 class JobsControler(object):
   
-  def __init__(self, test_config_file_path, test_no = 1):
-    
-    # Test config 
-    self.test_config_file_path = test_config_file_path
-    self.test_no = 1
+  def __init__(self):
+    pass
    
   @staticmethod
   def getConfigFile():
@@ -94,9 +91,21 @@ class JobsControler(object):
   def getWorkflowExampleList(self):
     return ["simple", "multiple", "with exception 1", "with exception 2"]
     
-  def generateWorkflowExample(self, with_file_transfer, with_universal_resource_path, example_type, file_path):
+  def generateWorkflowExample(self, 
+                              with_file_transfer, 
+                              with_shared_resource_path, 
+                              example_type, 
+                              workflow_file_path):
+    
+    job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
+    output_example_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
+    if not job_examples_dir or not output_example_dir:
+       raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLE_DIR and SOMA_WORKFLOW_EX_OUT must be set.')
 
-    wfExamples = WorkflowExamples(with_tranfers = with_file_transfer, test_config_file_path = self.test_config_file_path, test_no = self.test_no, with_universal_resource_path = with_universal_resource_path)
+    wfExamples = WorkflowExamples(with_tranfers=with_file_transfer, 
+                                  examples_dir=job_examples_dir, 
+                                  output_dir=output_example_dir, 
+                                  with_shared_resource_path=with_shared_resource_path)
     workflow = None
     if example_type == 0:
       workflow = wfExamples.simpleExample()
@@ -108,7 +117,7 @@ class JobsControler(object):
       workflow = wfExamples.simpleExampleWithException2()
       
     if workflow:
-      file = open(file_path, 'w')
+      file = open(workflow_file_path, 'w')
       pickle.dump(workflow, file)
       file.close()
     
@@ -268,45 +277,42 @@ class WorkflowExamples(object):
   
   
   
-  def __init__(self, with_tranfers, test_config_file_path, test_no, with_universal_resource_path = False):
+  def __init__(self, with_tranfers, examples_dir, output_dir, with_shared_resource_path = False):
     '''
     @type with_tranfers: boolean
     '''
-    print "test config file " + test_config_file_path
-
-    test_config = ConfigParser.ConfigParser()
-    test_config.read(test_config_file_path)
+    self.examples_dir = examples_dir
     
-    hostname = socket.gethostname()
-    self.examples_dir = test_config.get(hostname, 'job_examples_dir')
-    self.output_dir = test_config.get(hostname, 'job_output_dir') + repr(test_no) + "/"
-    
+    self.output_dir = output_dir
+    if not os.path.isdir(output_dir):
+      os.mkdir(output_dir)
+       
     self.with_transfers = with_tranfers
-    self.with_universal_resource_path = with_universal_resource_path
+    self.with_shared_resource_path = with_shared_resource_path
     
     
-    if self.with_universal_resource_path:
+    if self.with_shared_resource_path:
       # inputs
-      self.file0 = SharedResourcePath("complete/" + "file0", "example", "job_dir", 168)
-      self.script1 = SharedResourcePath("complete/" + "job1.py", "example", "job_dir", 168)
-      self.stdin1 = SharedResourcePath("complete/" + "stdin1", "example", "job_dir", 168)
-      self.script2 = SharedResourcePath("complete/" + "job2.py", "example", "job_dir", 168)
-      self.stdin2 = SharedResourcePath("complete/" + "stdin2", "example", "job_dir", 168)
-      self.script3 = SharedResourcePath("complete/" + "job3.py", "example", "job_dir", 168)
-      self.stdin3 = SharedResourcePath("complete/" + "stdin3", "example", "job_dir", 168)
-      self.script4 = SharedResourcePath("complete/" + "job4.py", "example", "job_dir", 168)
-      self.stdin4 = SharedResourcePath("complete/" + "stdin4", "example", "job_dir", 168)
+      self.file0 = SharedResourcePath(os.path.join("complete", "file0"), "example", "job_dir", 168)
+      self.script1 = SharedResourcePath(os.path.join("complete", "job1.py"), "example", "job_dir", 168)
+      self.stdin1 = SharedResourcePath(os.path.join("complete", "stdin1"), "example", "job_dir", 168)
+      self.script2 = SharedResourcePath(os.path.join("complete", "job2.py"), "example", "job_dir", 168)
+      self.stdin2 = SharedResourcePath(os.path.join("complete", "stdin2"), "example", "job_dir", 168)
+      self.script3 = SharedResourcePath(os.path.join("complete", "job3.py"), "example", "job_dir", 168)
+      self.stdin3 = SharedResourcePath(os.path.join("complete", "stdin3"), "example", "job_dir", 168)
+      self.script4 = SharedResourcePath(os.path.join("complete", "job4.py"), "example", "job_dir", 168)
+      self.stdin4 = SharedResourcePath(os.path.join("complete", "stdin4"), "example", "job_dir", 168)
       
       self.exceptionJobScript = SharedResourcePath("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
       
       if self.with_transfers:
         print "transfers !!!"
         # outputs
-        self.file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
-        self.file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
-        self.file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
-        self.file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
-        self.file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
+        self.file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
+        self.file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
+        self.file2 = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
+        self.file3 = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
+        self.file4 = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
       else:
         # outputs
         self.file11 = SharedResourcePath("file11", "example", "output_dir", 168)
@@ -315,50 +321,52 @@ class WorkflowExamples(object):
         self.file3 = SharedResourcePath("file3", "example", "output_dir",168)
         self.file4 = SharedResourcePath("file4", "example", "output_dir",168)
       
-    elif self.with_transfers and not self.with_universal_resource_path:
+    elif self.with_transfers and not self.with_shared_resource_path:
       # outputs
-      self.file11 = FileRetrieving(self.output_dir + "file11", 168, "file11")
-      self.file12 = FileRetrieving(self.output_dir + "file12", 168, "file12")
-      self.file2 = FileRetrieving(self.output_dir + "file2", 168, "file2")
-      self.file3 = FileRetrieving(self.output_dir + "file3", 168, "file3")
-      self.file4 = FileRetrieving(self.output_dir + "file4", 168, "file4")
+      self.file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
+      self.file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
+      self.file2  = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
+      self.file3  = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
+      self.file4  = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
       
       # inputs
-      self.file0 = FileSending(self.examples_dir + "complete/" + "file0", 168, "file0")
-      self.script1 = FileSending(self.examples_dir + "complete/" + "job1.py", 168, "job1_py")
-      self.stdin1 = FileSending(self.examples_dir + "complete/" + "stdin1", 168, "stdin1")
-      self.script2 = FileSending(self.examples_dir + "complete/" + "job2.py", 168, "job2_py")
-      self.stdin2 = FileSending(self.examples_dir + "complete/" + "stdin2", 168, "stdin2")
-      self.script3 = FileSending(self.examples_dir + "complete/" + "job3.py", 168, "job3_py")
-      self.stdin3 = FileSending(self.examples_dir + "complete/" + "stdin3", 168, "stdin3")
-      self.script4 = FileSending(self.examples_dir + "complete/" + "job4.py", 168, "job4_py")
-      self.stdin4 = FileSending(self.examples_dir + "complete/" + "stdin4", 168, "stdin4")
+      complete_path = os.path.join(self.examples_dir, "complete")
+      self.file0   = FileSending(os.path.join(complete_path, "file0"), 168, "file0")
+      self.script1 = FileSending(os.path.join(complete_path, "job1.py"), 168, "job1_py")
+      self.stdin1  = FileSending(os.path.join(complete_path, "stdin1"), 168, "stdin1")
+      self.script2 = FileSending(os.path.join(complete_path, "job2.py"), 168, "job2_py")
+      self.stdin2  = FileSending(os.path.join(complete_path, "stdin2"), 168, "stdin2")
+      self.script3 = FileSending(os.path.join(complete_path, "job3.py"), 168, "job3_py")
+      self.stdin3  = FileSending(os.path.join(complete_path, "stdin3"), 168, "stdin3")
+      self.script4 = FileSending(os.path.join(complete_path, "job4.py"), 168, "job4_py")
+      self.stdin4  = FileSending(os.path.join(complete_path, "stdin4"), 168, "stdin4")
       
-      self.exceptionJobScript = FileSending(self.examples_dir + "simple/exceptionJob.py", 168, "exception_job")
+      self.exceptionJobScript = FileSending(os.path.join(self.examples_dir, "simple/exceptionJob.py"), 168, "exception_job")
     else:
       # outputs
-      self.file11 = self.output_dir + "file11"
-      self.file12 = self.output_dir + "file12"
-      self.file2 = self.output_dir + "file2"
-      self.file3 = self.output_dir + "file3"
-      self.file4 = self.output_dir + "file4"
+      self.file11 = os.path.join(self.output_dir, "file11")
+      self.file12 = os.path.join(self.output_dir, "file12")
+      self.file2 = os.path.join(self.output_dir, "file2")
+      self.file3 = os.path.join(self.output_dir, "file3")
+      self.file4 = os.path.join(self.output_dir, "file4")
       
       # inputs
-      self.file0 = self.examples_dir + "complete/" + "file0"
-      self.script1 = self.examples_dir + "complete/" + "job1.py"
-      self.stdin1 = self.examples_dir + "complete/" + "stdin1"
-      self.script2 = self.examples_dir + "complete/" + "job2.py"
-      self.stdin2 = self.examples_dir + "complete/" + "stdin2"
-      self.script3 = self.examples_dir + "complete/" + "job3.py"
-      self.stdin3 = self.examples_dir + "complete/" + "stdin3"
-      self.script4 = self.examples_dir + "complete/" + "job4.py"
-      self.stdin4 = self.examples_dir + "complete/" + "stdin4"
+      complete_path = os.path.join(self.examples_dir, "complete")
+      self.file0   = os.path.join(complete_path, "file0") 
+      self.script1 = os.path.join(complete_path, "job1.py")
+      self.stdin1  = os.path.join(complete_path, "stdin1")
+      self.script2 = os.path.join(complete_path, "job2.py")
+      self.stdin2  = os.path.join(complete_path, "stdin2")
+      self.script3 = os.path.join(complete_path, "job3.py")
+      self.stdin3  = os.path.join(complete_path, "stdin3")
+      self.script4 = os.path.join(complete_path, "job4.py")
+      self.stdin4  = os.path.join(complete_path, "stdin4")
       
-      self.exceptionJobScript = self.examples_dir + "simple/exceptionJob.py"
+      self.exceptionJobScript = os.path.join(self.examples_dir, "simple/exceptionJob.py")
       
   def job1(self):
     if self.with_transfers: 
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
                           [self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
@@ -374,7 +382,7 @@ class WorkflowExamples(object):
     
   def job2(self):
     if self.with_transfers: 
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
                           [self.file0, self.file11, self.script2, self.stdin2], 
                           [self.file2], 
@@ -390,7 +398,7 @@ class WorkflowExamples(object):
     
   def job3(self):
     if self.with_transfers: 
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], 
                             [self.file12, self.script3, self.stdin3], 
                             [self.file3], 
@@ -406,7 +414,7 @@ class WorkflowExamples(object):
     
   def job4(self):
     if self.with_transfers: 
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
                            [self.file2, self.file3, self.script4, self.stdin4], 
                            [self.file4], 
@@ -450,7 +458,7 @@ class WorkflowExamples(object):
                                                           
     # jobs
     if self.with_transfers:
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job1 = Job(["python", self.exceptionJobScript], 
                           [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
                           [self.file11, self.file12], 
@@ -492,7 +500,7 @@ class WorkflowExamples(object):
     job4 = self.job4()
     
     if self.with_transfers:
-      if not self.with_universal_resource_path:
+      if not self.with_shared_resource_path:
         job3 = Job(["python", self.exceptionJobScript],
                           [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
                           [self.file3],

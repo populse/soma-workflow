@@ -10,7 +10,7 @@ if __name__=="__main__":
   
   app = QtGui.QApplication(sys.argv)
   
-  workflowControler = JobsControler("TestJobs.cfg", 1) 
+  workflowControler = JobsControler() 
   clientModel = ClientModel()
   
   workflowWidget = WorkflowWidget(workflowControler, clientModel)

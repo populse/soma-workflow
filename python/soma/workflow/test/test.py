@@ -284,7 +284,12 @@ class JobsTest(unittest.TestCase):
   Abstract class for jobs common tests.
   '''
   @staticmethod
-  def setupConnection(resource_id, login, password, test_no, output_dir):
+  def setupConnection(resource_id, 
+                      login, 
+                      password, 
+                      test_no, 
+                      job_examples_dir, 
+                      output_dir):
     
     JobsTest.login = login
     JobsTest.password = password
@@ -297,10 +302,6 @@ class JobsTest(unittest.TestCase):
                                               login, 
                                               password,
                                               log=test_no)
-  
-    job_examples_dir = os.environ["SOMA_WORKFLOW_EXAMPLES"]
-    if not job_examples_dir:
-       raise RuntimeError( 'The environment variable SOMA_WORKFLOW_EXAMPLE_DIR must be set.')
     
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
@@ -942,13 +943,12 @@ class MPIParallelJobTest(JobsTest):
 
 if __name__ == '__main__':
   
-  if len(sys.argv) != 2:
-    sys.stdout.write("The program takes 1 parameter: the output directory")
-    sys.exit(1) 
-
-  output_dir = sys.argv[1]
-
-  controller = JobsControler("") # use Workflow example generation ?
+  job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
+  output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
+  if not job_examples_dir or not output_dir:
+    raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLE_DIR and SOMA_WORKFLOW_EX_OUT must be set.')
+    
+  controller = JobsControler() # use Workflow example generation ?
   
   sys.stdout.write("----- SomaJobsTest -------------\n")
   resource_ids = controller.getRessourceIds()
@@ -1019,7 +1019,12 @@ if __name__ == '__main__':
       sys.stdout.write("  => " + repr(test_types[int(test_type_index)])  + "\n")
   sys.stdout.write("---------------------------------\n")
 
-  JobsTest.setupConnection(resource_id, login, password, "1", output_dir)
+  JobsTest.setupConnection(resource_id, 
+                           login, 
+                           password, 
+                           "1", 
+                           job_examples_dir, 
+                           output_dir)
   suite_list =  []
   tests = selected_test_type
   if "LocalCustomSubmission" in selected_job_type:

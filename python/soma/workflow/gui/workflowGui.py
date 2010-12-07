@@ -221,12 +221,19 @@ class WorkflowWidget(QtGui.QMainWindow):
     ui.comboBox_example_type.addItems(self.controler.getWorkflowExampleList())
     if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
       with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
-      with_universal_resource_path = ui.checkBox_universal_resource_path.checkState() == QtCore.Qt.Checked
+      with_shared_resource_path = ui.checkBox_shared_resource_path.checkState() == QtCore.Qt.Checked
       example_type = ui.comboBox_example_type.currentIndex()
-      file_path = QtGui.QFileDialog.getSaveFileName(self, "Create a workflow example");
+      file_path = QtGui.QFileDialog.getSaveFileName(self, 
+                                                    "Create a workflow example")
       if file_path:
-        self.controler.generateWorkflowExample(with_file_transfer, with_universal_resource_path, example_type, file_path)
-
+        try:
+          self.controler.generateWorkflowExample(with_file_transfer, 
+                                                with_shared_resource_path,
+                                                example_type, 
+                                                file_path)
+        except RuntimeError, e:
+          QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
+        
   @QtCore.pyqtSlot()
   def submit_workflow(self):
     assert(self.model.current_workflow)
