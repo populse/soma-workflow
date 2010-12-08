@@ -89,7 +89,7 @@ class JobsControler(object):
   
   
   def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test"]
     
   def generateWorkflowExample(self, 
                               with_file_transfer, 
@@ -115,6 +115,9 @@ class JobsControler(object):
       workflow = wfExamples.simpleExampleWithException1()
     elif example_type == 3:
       workflow = wfExamples.simpleExampleWithException2()
+    elif example_type == 4:
+     workflow = wfExamples.command_test()
+      
       
     if workflow:
       file = open(workflow_file_path, 'w')
@@ -290,145 +293,222 @@ class WorkflowExamples(object):
     self.with_transfers = with_tranfers
     self.with_shared_resource_path = with_shared_resource_path
     
+    # local path
     
-    if self.with_shared_resource_path:
-      # inputs
-      self.file0 = SharedResourcePath(os.path.join("complete", "file0"), "example", "job_dir", 168)
-      self.script1 = SharedResourcePath(os.path.join("complete", "job1.py"), "example", "job_dir", 168)
-      self.stdin1 = SharedResourcePath(os.path.join("complete", "stdin1"), "example", "job_dir", 168)
-      self.script2 = SharedResourcePath(os.path.join("complete", "job2.py"), "example", "job_dir", 168)
-      self.stdin2 = SharedResourcePath(os.path.join("complete", "stdin2"), "example", "job_dir", 168)
-      self.script3 = SharedResourcePath(os.path.join("complete", "job3.py"), "example", "job_dir", 168)
-      self.stdin3 = SharedResourcePath(os.path.join("complete", "stdin3"), "example", "job_dir", 168)
-      self.script4 = SharedResourcePath(os.path.join("complete", "job4.py"), "example", "job_dir", 168)
-      self.stdin4 = SharedResourcePath(os.path.join("complete", "stdin4"), "example", "job_dir", 168)
+    complete_path = os.path.join(self.examples_dir, "complete")
+    self.lo_file0   = os.path.join(complete_path, "file0") 
+    self.lo_script1 = os.path.join(complete_path, "job1.py")
+    self.lo_stdin1  = os.path.join(complete_path, "stdin1")
+    self.lo_script2 = os.path.join(complete_path, "job2.py")
+    self.lo_stdin2  = os.path.join(complete_path, "stdin2")
+    self.lo_script3 = os.path.join(complete_path, "job3.py")
+    self.lo_stdin3  = os.path.join(complete_path, "stdin3")
+    self.lo_script4 = os.path.join(complete_path, "job4.py")
+    self.lo_stdin4  = os.path.join(complete_path, "stdin4")
+    self.lo_exceptionJobScript = os.path.join(self.examples_dir, 
+                                              "simple/exceptionJob.py")
+    self.lo_cmd_check_script = os.path.join(self.examples_dir, 
+                                            "command/argument_check.py")
+    
+    self.lo_file11 = os.path.join(self.output_dir, "file11")
+    self.lo_file12 = os.path.join(self.output_dir, "file12")
+    self.lo_file2 = os.path.join(self.output_dir, "file2")
+    self.lo_file3 = os.path.join(self.output_dir, "file3")
+    self.lo_file4 = os.path.join(self.output_dir, "file4")
+    
+    # Shared resource path
+    
+    self.sh_file0   = SharedResourcePath("complete/file0", "example", "job_dir", 168)
+    self.sh_script1 = SharedResourcePath("complete/job1.py", "example", "job_dir", 168)
+    self.sh_stdin1  = SharedResourcePath("complete/stdin1", "example", "job_dir", 168)
+    self.sh_script2 = SharedResourcePath("complete/job2.py", "example", "job_dir", 168)
+    self.sh_stdin2  = SharedResourcePath("complete/stdin2", "example", "job_dir", 168)
+    self.sh_script3 = SharedResourcePath("complete/job3.py", "example", "job_dir", 168)
+    self.sh_stdin3  = SharedResourcePath("complete/stdin3", "example", "job_dir", 168)
+    self.sh_script4 = SharedResourcePath("complete/job4.py", "example", "job_dir", 168)
+    self.sh_stdin4  = SharedResourcePath("complete/stdin4", "example", "job_dir", 168)
+    self.sh_exceptionJobScript = SharedResourcePath("simple/exceptionJob.py", 
+                                                    "example", 
+                                                    "job_dir", 168)
+    self.sh_cmd_check_script = SharedResourcePath("command/argument_check.py",
+                                                  "example",
+                                                  "job_dir", 168)
+    
+    self.sh_file11 = SharedResourcePath("file11", "example", "output_dir", 168)
+    self.sh_file12 = SharedResourcePath("file12", "example", "output_dir",168)
+    self.sh_file2 = SharedResourcePath("file2", "example", "output_dir",168)
+    self.sh_file3 = SharedResourcePath("file3", "example", "output_dir",168)
+    self.sh_file4 = SharedResourcePath("file4", "example", "output_dir",168)
+    
+    # Transfers
+    
+    complete_path = os.path.join(self.examples_dir, "complete")
+    self.tr_file0   = FileSending(os.path.join(complete_path, "file0"), 168, "file0")
+    self.tr_script1 = FileSending(os.path.join(complete_path, "job1.py"), 168, "job1_py")
+    self.tr_stdin1  = FileSending(os.path.join(complete_path, "stdin1"), 168, "stdin1")
+    self.tr_script2 = FileSending(os.path.join(complete_path, "job2.py"), 168, "job2_py")
+    self.tr_stdin2  = FileSending(os.path.join(complete_path, "stdin2"), 168, "stdin2")
+    self.tr_script3 = FileSending(os.path.join(complete_path, "job3.py"), 168, "job3_py")
+    self.tr_stdin3  = FileSending(os.path.join(complete_path, "stdin3"), 168, "stdin3")
+    self.tr_script4 = FileSending(os.path.join(complete_path, "job4.py"), 168, "job4_py")
+    self.tr_stdin4  = FileSending(os.path.join(complete_path, "stdin4"), 168, "stdin4")
+    self.tr_exceptionJobScript = FileSending(os.path.join(self.examples_dir, 
+                                                          "simple/exceptionJob.py"), 
+                                                          168, "exception_job")
+    self.tr_cmd_check_script = FileSending(os.path.join(self.examples_dir, 
+                                                        "command/argument_check.py"),
+                                                        168, "cmd_check")
       
-      self.exceptionJobScript = SharedResourcePath("simple/exceptionJob.py", "example", "job_dir", 168, "exception_job")
-      
-      if self.with_transfers:
-        print "transfers !!!"
-        # outputs
-        self.file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
-        self.file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
-        self.file2 = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
-        self.file3 = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
-        self.file4 = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
-      else:
-        # outputs
-        self.file11 = SharedResourcePath("file11", "example", "output_dir", 168)
-        self.file12 = SharedResourcePath("file12", "example", "output_dir",168)
-        self.file2 = SharedResourcePath("file2", "example", "output_dir",168)
-        self.file3 = SharedResourcePath("file3", "example", "output_dir",168)
-        self.file4 = SharedResourcePath("file4", "example", "output_dir",168)
-      
-    elif self.with_transfers and not self.with_shared_resource_path:
-      # outputs
-      self.file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
-      self.file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
-      self.file2  = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
-      self.file3  = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
-      self.file4  = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
-      
-      # inputs
-      complete_path = os.path.join(self.examples_dir, "complete")
-      self.file0   = FileSending(os.path.join(complete_path, "file0"), 168, "file0")
-      self.script1 = FileSending(os.path.join(complete_path, "job1.py"), 168, "job1_py")
-      self.stdin1  = FileSending(os.path.join(complete_path, "stdin1"), 168, "stdin1")
-      self.script2 = FileSending(os.path.join(complete_path, "job2.py"), 168, "job2_py")
-      self.stdin2  = FileSending(os.path.join(complete_path, "stdin2"), 168, "stdin2")
-      self.script3 = FileSending(os.path.join(complete_path, "job3.py"), 168, "job3_py")
-      self.stdin3  = FileSending(os.path.join(complete_path, "stdin3"), 168, "stdin3")
-      self.script4 = FileSending(os.path.join(complete_path, "job4.py"), 168, "job4_py")
-      self.stdin4  = FileSending(os.path.join(complete_path, "stdin4"), 168, "stdin4")
-      
-      self.exceptionJobScript = FileSending(os.path.join(self.examples_dir, "simple/exceptionJob.py"), 168, "exception_job")
-    else:
-      # outputs
-      self.file11 = os.path.join(self.output_dir, "file11")
-      self.file12 = os.path.join(self.output_dir, "file12")
-      self.file2 = os.path.join(self.output_dir, "file2")
-      self.file3 = os.path.join(self.output_dir, "file3")
-      self.file4 = os.path.join(self.output_dir, "file4")
-      
-      # inputs
-      complete_path = os.path.join(self.examples_dir, "complete")
-      self.file0   = os.path.join(complete_path, "file0") 
-      self.script1 = os.path.join(complete_path, "job1.py")
-      self.stdin1  = os.path.join(complete_path, "stdin1")
-      self.script2 = os.path.join(complete_path, "job2.py")
-      self.stdin2  = os.path.join(complete_path, "stdin2")
-      self.script3 = os.path.join(complete_path, "job3.py")
-      self.stdin3  = os.path.join(complete_path, "stdin3")
-      self.script4 = os.path.join(complete_path, "job4.py")
-      self.stdin4  = os.path.join(complete_path, "stdin4")
-      
-      self.exceptionJobScript = os.path.join(self.examples_dir, "simple/exceptionJob.py")
+    self.tr_file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
+    self.tr_file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
+    self.tr_file2 = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
+    self.tr_file3 = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
+    self.tr_file4 = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
+    
       
   def job1(self):
-    if self.with_transfers: 
-      if not self.with_shared_resource_path:
-        job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
-                          [self.file0, self.script1, self.stdin1], 
-                          [self.file11, self.file12], 
-                          self.stdin1, False, 168, "job1")
-      else:
-        job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], 
-                          [], 
-                          [self.file11, self.file12], 
-                          self.stdin1, False, 168, "job1")
+    if self.with_transfers and not self.with_shared_resource_path: 
+      job1 = Job(["python", self.tr_script1, self.tr_file0,  self.tr_file11, self.tr_file12, "20"], 
+                  [self.tr_file0, self.tr_script1, self.tr_stdin1], 
+                  [self.tr_file11, self.tr_file12], 
+                  self.tr_stdin1, False, 168, "job1")
+    elif self.with_transfers and self.with_shared_resource_path:
+      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.tr_file11, self.tr_file12, "20"], 
+                  [], 
+                  [self.tr_file11, self.tr_file12], 
+                  self.sh_stdin1, False, 168, "job1")
+    elif not self.with_transfers and self.with_shared_resource_path:
+      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.sh_file11, self.sh_file12, "20"], 
+                  None, 
+                  None, 
+                  self.sh_stdin1, False, 168, "job1")
     else:
-      job1 = Job(["python", self.script1, self.file0,  self.file11, self.file12, "20"], None, None, self.stdin1, False, 168, "job1")
+      job1 = Job( ["python", self.lo_script1, self.lo_file0,  self.lo_file11, self.lo_file12, "20"], 
+                  None, 
+                  None, 
+                  self.lo_stdin1,  False, 168, "job1")
     return job1
     
   def job2(self):
-    if self.with_transfers: 
-      if not self.with_shared_resource_path:
-        job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
-                          [self.file0, self.file11, self.script2, self.stdin2], 
-                          [self.file2], 
-                          self.stdin2, False, 168, "job2")
-      else:
-        job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], 
-                          [], 
-                          [self.file2], 
-                          self.stdin2, False, 168, "job2")
+    if self.with_transfers and not self.with_shared_resource_path:
+      job2 = Job( ["python", self.tr_script2, self.tr_file11,  self.tr_file0, self.tr_file2, "30"], 
+                  [self.tr_file0, self.tr_file11, self.tr_script2, self.tr_stdin2], 
+                  [self.tr_file2], 
+                  self.tr_stdin2, False, 168, "job2")
+    elif self.with_transfers and self.with_shared_resource_path:
+      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.tr_file2, "30"], 
+                  [], 
+                  [self.tr_file2], 
+                  self.sh_stdin2, False, 168, "job2")
+    elif not self.with_transfers and self.with_shared_resource_path:
+      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.sh_file2, "30"], 
+                  None, 
+                  None, 
+                  self.sh_stdin2, False, 168, "job2")
     else:
-      job2 = Job(["python", self.script2, self.file11,  self.file0, self.file2, "30"], None, None, self.stdin2, False, 168, "job2")
+      job2 = Job( ["python", self.lo_script2, self.lo_file11,  self.lo_file0, self.lo_file2, "30"], 
+                  None, 
+                  None, 
+                  self.lo_stdin2, False, 168, "job2")
     return job2
     
   def job3(self):
-    if self.with_transfers: 
-      if not self.with_shared_resource_path:
-        job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], 
-                            [self.file12, self.script3, self.stdin3], 
-                            [self.file3], 
-                            self.stdin3, False, 168, "job3")
-      else:
-        job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], 
-                           [], 
-                           [self.file3], 
-                           self.stdin3, False, 168, "job3")
+    if self.with_transfers and not self.with_shared_resource_path:
+      job3 = Job( ["python", self.tr_script3, self.tr_file12,  self.tr_file3, "30"], 
+                  [self.tr_file12, self.tr_script3, self.tr_stdin3], 
+                  [self.tr_file3], 
+                  self.tr_stdin3, False, 168, "job3")
+    elif self.with_transfers and self.with_shared_resource_path:
+      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.tr_file3, "30"], 
+                  [], 
+                  [self.tr_file3], 
+                  self.sh_stdin3, False, 168, "job3")
+    elif not self.with_transfers and self.with_shared_resource_path:
+      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.sh_file3, "30"], 
+                  None, 
+                  None, 
+                  self.sh_stdin3, False, 168, "job3")
     else:
-      job3 = Job(["python", self.script3, self.file12,  self.file3, "30"], None, None, self.stdin3, False, 168, "job3")
+      job3 = Job( ["python", self.lo_script3, self.lo_file12,  self.lo_file3, "30"], 
+                  None, 
+                  None, 
+                  self.lo_stdin3,  False, 168, "job3")
     return job3
     
   def job4(self):
-    if self.with_transfers: 
-      if not self.with_shared_resource_path:
-        job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
-                           [self.file2, self.file3, self.script4, self.stdin4], 
-                           [self.file4], 
-                           self.stdin4, False, 168, "job4")
-      else:
-        job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], 
-                           [], 
-                           [self.file4], 
-                           self.stdin4, False, 168, "job4")
+    if self.with_transfers and not self.with_shared_resource_path:
+      job4 = Job( ["python", self.tr_script4, self.tr_file2,  self.tr_file3, self.tr_file4, "10"], 
+                  [self.tr_file2, self.tr_file3, self.tr_script4, self.tr_stdin4], 
+                  [self.tr_file4], 
+                  self.tr_stdin4, False, 168, "job4")
+    elif self.with_transfers and self.with_shared_resource_path:
+      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.tr_file4, "10"], 
+                  [], 
+                  [self.tr_file4], 
+                  self.sh_stdin4, False, 168, "job4")
+    elif not self.with_transfers and self.with_shared_resource_path:
+      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.sh_file4, "10"], 
+                  None, 
+                  None, 
+                  self.sh_stdin4, False, 168, "job4")
     else:
-      job4 = Job(["python", self.script4, self.file2,  self.file3, self.file4, "10"], None, None, self.stdin4, False, 168, "job4")
+      job4 = Job( ["python", self.lo_script4, self.lo_file2,  self.lo_file3, self.lo_file4, "10"], 
+                  None, 
+                  None, 
+                  self.lo_stdin4, False, 168, "job4")
     return job4
     
+  def job_test_command_1(self):
+    if self.with_transfers:
+      test_command = Job( ["python", 
+                           self.tr_cmd_check_script,
+                           [self.tr_script1, self.tr_script2, self.tr_script3], 
+                           "[13.5, 14.5, 15.0]",
+                           '[13.5, 14.5, 15.0]',
+                           "['un', 'deux', 'trois']",
+                           '["un", "deux", "trois"]'],
+                          [self.tr_cmd_check_script, self.tr_script1, self.tr_script2, self.tr_script3],
+                          [],
+                          None, False, 168, "test_command_1")
+    elif self.with_shared_resource_path:
+      test_command = Job( ["python", self.sh_cmd_check_script,
+                           [self.sh_script1, self.sh_script2, self.sh_script3],
+                           "[13.5, 14.5, 15.0]",
+                           '[13.5, 14.5, 15.0]',
+                           "['un', 'deux', 'trois']",
+                           '["un", "deux", "trois"]'],
+                          None,
+                          None,
+                          None, False, 168, "test_command_1")
+    else:
+      test_command = Job( ["python", self.lo_cmd_check_script, 
+                           [self.lo_script1, self.lo_script2, self.lo_script3],
+                           "[13.5, 14.5, 15.0]",
+                           '[13.5, 14.5, 15.0]',
+                           "['un', 'deux', 'trois']",
+                           '["un", "deux", "trois"]'],
+                          None,
+                          None,
+                          None, False, 168, "test_command_1")
+    
+    return test_command
+    
 
+  def command_test(self):
+    
+    # jobs
+    test_command_job = self.job_test_command_1()
+        
+    # building the workflow
+    nodes = [test_command_job]
+    
+    dependencies = []
+    
+    mainGroup = WorkflowNodeGroup([test_command_job])
+    
+    workflow = Workflow(nodes, dependencies, mainGroup, [])
+    
+    return workflow
       
   def simpleExample(self):
     
@@ -457,19 +537,26 @@ class WorkflowExamples(object):
   def simpleExampleWithException1(self):
                                                           
     # jobs
-    if self.with_transfers:
-      if not self.with_shared_resource_path:
-        job1 = Job(["python", self.exceptionJobScript], 
-                          [self.exceptionJobScript, self.file0, self.script1, self.stdin1], 
-                          [self.file11, self.file12], 
-                          self.stdin1, False, 168, "job1 with exception")
-      else:
-        job1 = Job(["python", self.exceptionJobScript], 
+    if self.with_transfers and not self.with_shared_resource_path:
+      job1 = Job( ["python", self.tr_exceptionJobScript], 
+                  [self.tr_exceptionJobScript, self.tr_file0, self.tr_script1, self.tr_stdin1], 
+                  [self.tr_file11, self.tr_file12], 
+                  self.tr_stdin1, False, 168, "job1 with exception")
+    elif self.with_transfers and self.with_shared_resource_path:
+      job1 = Job( ["python", self.sh_exceptionJobScript], 
                   [], 
-                  [self.file11, self.file12], 
-                  self.stdin1, False, 168, "job1 with exception")
+                  [self.tr_file11, self.tr_file12], 
+                  self.sh_stdin1, False, 168, "job1 with exception")
+    elif not self.with_transfers and self.with_shared_resource_path:
+      job1 = Job( ["python", self.sh_exceptionJobScript], 
+                  None, 
+                  None, 
+                  self.sh_stdin1, False, 168, "job1 with exception")
     else:
-      job1 = Job(["python", self.exceptionJobScript], None, None,  self.stdin1, False, 168, "job1 with exception")                   
+      job1 = Job( ["python", self.lo_exceptionJobScript], 
+                  None, 
+                  None,  
+                  self.lo_stdin1, False, 168, "job1 with exception")                   
     
     job2 = self.job2()
     job3 = self.job3()
@@ -499,19 +586,26 @@ class WorkflowExamples(object):
     job2 = self.job2()
     job4 = self.job4()
     
-    if self.with_transfers:
-      if not self.with_shared_resource_path:
-        job3 = Job(["python", self.exceptionJobScript],
-                          [self.exceptionJobScript, self.file12, self.script3, self.stdin3],
-                          [self.file3],
-                          None, False, 168, "job3 with exception")
-      else:
-        job3 = Job(["python", self.exceptionJobScript],
-                          [],
-                          [self.file3],
-                          None, False, 168, "job3 with exception")
+    if self.with_transfers and not self.with_shared_resource_path:
+      job3 = Job( ["python", self.tr_exceptionJobScript],
+                  [self.tr_exceptionJobScript, self.tr_file12, self.tr_script3, self.tr_stdin3],
+                  [self.tr_file3],
+                  self.tr_stdin3, False, 168, "job3 with exception")
+    elif self.with_transfers and not self.with_shared_resource_path:
+      job3 = Job( ["python", self.sh_exceptionJobScript],
+                  [],
+                  [self.tr_file3],
+                  self.sh_stdin3, False, 168, "job3 with exception")
+    elif self.with_transfers and not self.with_shared_resource_path:
+      job3 = Job( ["python", self.sh_exceptionJobScript],
+                  None,
+                  None,
+                  self.sh_stdin3, False, 168, "job3 with exception")
     else:
-      job3 = Job(["python", self.exceptionJobScript], None, None, None, False, 168, "job3 with exception")
+      job3 = Job( ["python", self.lo_exceptionJobScript], 
+                  None, 
+                  None, 
+                  self.lo_stdin3, False, 168, "job3 with exception")
       
       
            

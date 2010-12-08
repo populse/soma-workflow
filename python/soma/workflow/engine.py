@@ -283,7 +283,7 @@ class DrmaaWorkflowEngine(object):
        
     command_info = ""
     for command_element in jobTemplate.command:
-      command_info = command_info + " " + command_element
+      command_info = command_info + " " + repr(command_element)
       
     with self._lock:
       job_id = self._database_server.add_job( soma.workflow.database_server.DBJob(
@@ -515,6 +515,10 @@ class DrmaaWorkflowEngine(object):
         for command_el in node.command:
           if isinstance(command_el, SharedResourcePath):
             command_el.local_path = self._shared_resource_path_translation(command_el)
+          elif isinstance(command_el, list):
+            for list_el in command_el:
+              if isinstance(list_el, SharedResourcePath):
+                list_el.local_path =  self._shared_resource_path_translation(list_el)
         if node.stdout_file and isinstance(node.stdout_file, SharedResourcePath):
           node.stdout_file = self._shared_resource_path_translation(node.stdout_file)
         if node.stderr_file and isinstance(node.stderr_file, SharedResourcePath):
@@ -536,7 +540,7 @@ class DrmaaWorkflowEngine(object):
           matching_node = node 
           break
       if not matching_node: 
-        raise WorkflowEngineError("Workflow submission: The localfile path \"" + local_path + "\" doesn't match with a workflow FileTransfer node.", self.logger)
+        raise WorkflowEngineError("Workflow submission: The localfile path \"" + repr(local_path) + "\" doesn't match with a workflow FileTransfer node.", self.logger)
       else: 
         return matching_node
     
@@ -580,17 +584,40 @@ class DrmaaWorkflowEngine(object):
     for job in w_js:
       # command
       new_command = []
+      self.logger.debug("job.command " + repr(job.command))
       for command_el in job.command:
-        if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
+        if isinstance(command_el, list):
+          new_list = []
+          for list_el in command_el:
+            if isinstance(list_el, tuple) and  isinstance(list_el[0], FileTransfer):
+              new_list.append(os.path.join(list_el[0].local_path, list_el[1])) 
+            elif isinstance(list_el, FileTransfer):
+              new_list.append(list_el.local_path)
+            elif isinstance(list_el, SharedResourcePath):
+              new_list.append(list_el.local_path)
+            elif isinstance(list_el, str):
+              new_list.append(list_el)
+            else:
+              self.logger.debug("!!!!!!!!!!!!! " + repr(list_el) + " doesn't have an appropriate type !!!")
+              ##TBI raise an exception and unregister everything on the server
+              ## or do this type checking before any registration on the server ?
+              pass
+          new_command.append(str(repr(new_list)))
+        elif isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
           new_command.append(os.path.join(command_el[0].local_path, command_el[1]))
         elif isinstance(command_el, FileTransfer):
           new_command.append(command_el.local_path)
         elif isinstance(command_el, SharedResourcePath):
           new_command.append(command_el.local_path)
-        else:
+        elif isinstance(command_el, str):
           new_command.append(command_el)
-      self.logger.debug("DRMAA implementation: " + repr(self._drmaa_implementation))
-      self.logger.debug(repr(new_command))
+        else:
+          self.logger.debug("!!!!!!!!!!!!! " + repr(command_el) + " doesn't have an appropriate type !!!")
+          ##TBI raise an exception and unregister everything on the server
+          ## or do this type checking before any registration on the server ?
+          pass
+        
+      self.logger.debug("new_command " + repr(new_command))
       job.command = new_command
       
       # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
@@ -612,8 +639,9 @@ class DrmaaWorkflowEngine(object):
           new_referenced_output_files.append(output_file.local_path)
           workflow.full_dependencies.add((job, output_file))
         else:
-          oft_node = assert_is_a_workflow_node(output_file)
-          new_referenced_output_files.append(output_file)
+          oft_node = assert_is_a_workflow_node(output_file) 
+          # TBI error management !!! => unregister the workflow !!
+           new_referenced_output_files.append(output_file)
           workflow.full_dependencies.add((job, oft_node))
       job.referenced_output_files = new_referenced_output_files
       

@@ -1,7 +1,6 @@
 import sys
-
-print sys.argv
+cmpt = 0
 for arg in sys.argv:
-  print arg
+  print repr(cmpt) + " => " + repr(arg)
+  cmpt = cmpt + 1
 
-return 0

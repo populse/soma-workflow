@@ -49,8 +49,36 @@ class Job(object):
   Workflow node type.
   
   The job parameters are identical to the WorkflowController.submit_job method 
-  arguments except that referenced_input_files and references_output_files 
-  must be sequences of L{FileTransfer}.
+  arguments except command, referenced_input_files and references_output_files.
+  
+  @type  command: sequence of string, 
+                              L{SharedResourcePath},
+                              L{FileTransfer},
+                              tuple (relative path, L{FileTransfer}),
+                              sequence of L{SharedResourcePath},
+                              sequence of L{FileTransfer},
+                              and/or sequence of tuple 
+                              (relative path, L{FileTransfer})
+  @param command: The command to execute. 
+                  On the computing resource side, the L{SharedResourcePath} and
+                  L{FileTransfer} objects will be replaced by the appropriate 
+                  path before the job execution.
+                  The tuple (absolute path, L{FileTransfer}) can be use to 
+                  refer to a file in a transfered directory. The tuple will be 
+                  replaced by the path:
+                  "computing_resource_dir_path/absolute_path"
+                  The sequence(s) of L{SharedResourcePath}, L{FileTransfer},
+                  and tuple (absolute path, L{FileTransfer}) will be replaced 
+                  by the string:
+                  "['/somewhere/file1', '/somewhere/file2', '/somewhere/path3']"
+                  
+  @type referenced_input_files: sequence of L{FileTransfer}
+  @param referenced_input_files: list of all tranfered input file required
+                                 for the job to run.
+  @type referenced_output_files: sequence of L{FileTransfer}
+  @param referenced_input_files: list of all transfered output file required
+                                 for the job to run.
+                                 
   (See the WorkflowController.submit_job method for a description of each parameter)
   '''
   def __init__( self, 
@@ -120,7 +148,8 @@ class SharedResourcePath(object):
 class FileTransfer(object):
   '''
   Workflow node type.
-  File transfer representation in a workflow.
+  Abstract class (use FileSending or FileRetrieving) 
+  File/directory transfer representation in a workflow.
   Use remote_paths if the transfer involves several associated files and/or directories, eg:
         - file serie 
         - in the case of file format associating several file and/or directories
@@ -141,7 +170,6 @@ class FileTransfer(object):
 
     self.remote_path = remote_path
     self.disposal_timeout = disposal_timeout
-   
 
     self.remote_paths = remote_paths
     self.local_path = None
@@ -149,7 +177,7 @@ class FileTransfer(object):
 class FileSending(FileTransfer):
   '''
   Workflow node type.
-  File transfer for an input file.
+  File/directory transfer for an input file.
   '''
   def __init__( self,
                 remote_path, 
@@ -162,7 +190,7 @@ class FileSending(FileTransfer):
 class FileRetrieving(FileTransfer):
   '''
   Workflow node type.
-  File transfer for an output file.
+  File/directory transfer for an output file.
   '''
   def __init__( self,
                 remote_path, 
@@ -269,7 +297,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode =  mode #   'local_no_disconnection' #(local debug)#  
+    self._mode =   mode #'local_no_disconnection' #(local debug)#     
     
     #########
     # LOCAL #
