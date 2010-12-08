@@ -641,7 +641,7 @@ class DrmaaWorkflowEngine(object):
         else:
           oft_node = assert_is_a_workflow_node(output_file) 
           # TBI error management !!! => unregister the workflow !!
-           new_referenced_output_files.append(output_file)
+          new_referenced_output_files.append(output_file)
           workflow.full_dependencies.add((job, oft_node))
       job.referenced_output_files = new_referenced_output_files
       
