@@ -89,7 +89,7 @@ class JobsControler(object):
   
   
   def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer"]
     
   def generateWorkflowExample(self, 
                               with_file_transfer, 
@@ -117,6 +117,8 @@ class JobsControler(object):
       workflow = wfExamples.simpleExampleWithException2()
     elif example_type == 4:
      workflow = wfExamples.command_test()
+    elif example_type == 5:
+     workflow = wfExamples.special_transfer_test()
       
       
     if workflow:
@@ -295,7 +297,9 @@ class WorkflowExamples(object):
     
     # local path
     
+    
     complete_path = os.path.join(self.examples_dir, "complete")
+    self.lo_in_dir = self.examples_dir
     self.lo_file0   = os.path.join(complete_path, "file0") 
     self.lo_script1 = os.path.join(complete_path, "job1.py")
     self.lo_stdin1  = os.path.join(complete_path, "stdin1")
@@ -309,6 +313,10 @@ class WorkflowExamples(object):
                                               "simple/exceptionJob.py")
     self.lo_cmd_check_script = os.path.join(self.examples_dir, 
                                             "command/argument_check.py")
+                                            
+    self.lo_dir_contents_script = os.path.join(self.examples_dir, 
+                                            "special_transfers/dir_contents.py")
+    
     
     self.lo_file11 = os.path.join(self.output_dir, "file11")
     self.lo_file12 = os.path.join(self.output_dir, "file12")
@@ -317,7 +325,7 @@ class WorkflowExamples(object):
     self.lo_file4 = os.path.join(self.output_dir, "file4")
     
     # Shared resource path
-    
+    self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
     self.sh_file0   = SharedResourcePath("complete/file0", "example", "job_dir", 168)
     self.sh_script1 = SharedResourcePath("complete/job1.py", "example", "job_dir", 168)
     self.sh_stdin1  = SharedResourcePath("complete/stdin1", "example", "job_dir", 168)
@@ -333,6 +341,10 @@ class WorkflowExamples(object):
     self.sh_cmd_check_script = SharedResourcePath("command/argument_check.py",
                                                   "example",
                                                   "job_dir", 168)
+    self.sh_dir_contents_script = SharedResourcePath("special_transfers/dir_contents.py",
+                                                     "example",
+                                                     "job_dir", 168)
+   
     
     self.sh_file11 = SharedResourcePath("file11", "example", "output_dir", 168)
     self.sh_file12 = SharedResourcePath("file12", "example", "output_dir",168)
@@ -343,6 +355,7 @@ class WorkflowExamples(object):
     # Transfers
     
     complete_path = os.path.join(self.examples_dir, "complete")
+    self.tr_in_dir = FileSending(self.examples_dir, 168, "in_dir")
     self.tr_file0   = FileSending(os.path.join(complete_path, "file0"), 168, "file0")
     self.tr_script1 = FileSending(os.path.join(complete_path, "job1.py"), 168, "job1_py")
     self.tr_stdin1  = FileSending(os.path.join(complete_path, "stdin1"), 168, "stdin1")
@@ -358,6 +371,9 @@ class WorkflowExamples(object):
     self.tr_cmd_check_script = FileSending(os.path.join(self.examples_dir, 
                                                         "command/argument_check.py"),
                                                         168, "cmd_check")
+    self.tr_dir_contents_script = FileSending(os.path.join(self.examples_dir, 
+                                                        "special_transfers/dir_contents.py"),
+                                                        168, "dir_contents")
       
     self.tr_file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
     self.tr_file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
@@ -493,6 +509,43 @@ class WorkflowExamples(object):
     
     return test_command
     
+    
+  def job_test_dir_contents(self):
+    if self.with_transfers:
+      test_command = Job( ["python", 
+                           self.tr_dir_contents_script,
+                           self.tr_in_dir],
+                          [self.tr_dir_contents_script, self.tr_in_dir],
+                          [],
+                          None, False, 168, "dir_contents")
+    elif self.with_shared_resource_path:
+      test_command = Job( ["python", self.sh_dir_contents_script, self.sh_script1],
+                          None,
+                          None,
+                          None, False, 168, "dir_contents")
+    else:
+      test_command = Job( ["python", self.lo_dir_contents_script, self.lo_in_dir],
+                          None,
+                          None,
+                          None, False, 168, "dir_contents")
+    
+    return test_command
+    
+  def special_transfer_test(self):
+     # jobs
+    test_dir_contents = self.job_test_dir_contents()
+        
+    # building the workflow
+    nodes = [test_dir_contents]
+    
+    dependencies = []
+    
+    mainGroup = WorkflowNodeGroup([test_dir_contents])
+    
+    workflow = Workflow(nodes, dependencies, mainGroup, [])
+    
+    return workflow
+      
 
   def command_test(self):
     

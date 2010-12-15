@@ -1099,6 +1099,9 @@ class WorkflowEngine(object):
     return (cumulated_file_size, dir_element_action_info)
 
   def _createDirStructure(self, local_path, contents, subdirectory = ""):
+    if not os.path.isdir(local_path):
+      os.makedirs(local_path)
+    
     for item, description, md5_hash in contents:
       relative_path = os.path.join(subdirectory,item)
       full_path = os.path.join(local_path, relative_path)

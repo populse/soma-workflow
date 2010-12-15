@@ -297,7 +297,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode =   mode #'local_no_disconnection' #(local debug)#     
+    self._mode =  mode # 'local_no_disconnection' #(local debug)#     
     
     #########
     # LOCAL #
@@ -665,7 +665,10 @@ class WorkflowController(object):
         md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = self._engine_proxy.initializeFileSending(local_path, file_size, md5_hash)
       elif os.path.isdir(remote_path):
-        contents = WorkflowController._contents([remote_path])
+        full_path_list = []
+        for element in os.listdir(remote_path):
+          full_path_list.append(os.path.join(remote_path, element))
+        contents = WorkflowController._contents(full_path_list)
         transfer_action_info = self._engine_proxy.initializeDirSending(local_path, contents)
     else: #remote_paths
       contents = self._contents(remote_paths)
