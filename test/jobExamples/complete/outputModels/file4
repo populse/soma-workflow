@@ -1,0 +1,42 @@
+4****************job4***********************
+4 2****************job2**************
+4 2 1****************job1**************
+4 2 1 1 Ingredients
+4 2 1 3     * 1 1/2 cups all-purpose flour
+4 2 1 5     * 1 teaspoon salt
+4 2 1 7     * 1 1/4 cups milk
+4 2 1 9     * 3 tablespoons butter, melted
+4 2 1 11 Directions
+4 2 1 13    1. In a large bowl, sift together the flour, baking powder, salt and sugar. Make a well in the center and pour in the milk, egg and melted butter; mix until smooth.
+4 2 1 15 
+4 2 1 
+4 2 1 job1 out1: stdin comment:
+4 2 1 job1 in1
+4 2 1******************************************************
+4 2 
+4 2  # lines:16 2 
+4 2 job2: stdin comment:
+4 2 job1 in1
+4 2******************************************************
+4 3****************job3***********************
+4 3 1****************job1**************
+4 3 1 0 
+4 3 1 2 
+4 3 1 4     * 3 1/2 teaspoons baking powder
+4 3 1 6     * 1 tablespoon white sugar
+4 3 1 8     * 1 egg
+4 3 1 10 
+4 3 1 12 
+4 3 1 14    2. Heat a lightly oiled griddle or frying pan over medium high heat. Pour or scoop the batter onto the griddle, using approximately 1/4 cup for each pancake. Brown on both sides and serve hot.
+4 3 1 
+4 3 1 job1 out2: stdin comment:************
+4 3 1 job1 in2
+4 3 1******************************************************
+4 3 
+4 3 job3: stdin comment:
+4 3 job3 in
+4 3*************************************************************
+4 
+4 job4: stdin comment:
+4 job4 in
+4******************************************************
