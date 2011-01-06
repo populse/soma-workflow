@@ -351,29 +351,19 @@ class JobsTest(unittest.TestCase):
                         'Job %s status after wait: %s' %(self.myJobs[0], status))
     else:
       self.failUnless( abs(delta-timedelta(seconds=interval)) < timedelta(seconds=1))
-   
-  def test_stop(self):
-    jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.stop_job(jobid)
-    status = JobsTest.jobs.job_status(jobid)
-    self.failUnless(status == constants.DONE or
-                    status == constants.FAILED or 
-                    status == constants.USER_ON_HOLD or 
-                    status == constants.USER_SYSTEM_ON_HOLD or
-                    status == constants.USER_SUSPENDED or
-                    status == constants.USER_SYSTEM_SUSPENDED,
-                    'Job status after stop: %s' %status)
     
   def test_restart(self):
-    jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.stop_job(jobid)
-    JobsTest.jobs.restart_job(jobid)
-    status = JobsTest.jobs.job_status(jobid)
-    self.failUnless(not status == constants.USER_ON_HOLD and  
-                    not status == constants.USER_SYSTEM_ON_HOLD and
-                    not status == constants.USER_SUSPENDED and
-                    not status == constants.USER_SYSTEM_SUSPENDED,
-                    'Job status after restart: %s' %status)
+    # TBI
+    pass
+    #jobid = self.myJobs[len(self.myJobs)-1]
+    #JobsTest.jobs.stop_job(jobid)
+    #JobsTest.jobs.restart_job(jobid)
+    #status = JobsTest.jobs.job_status(jobid)
+    #self.failUnless(not status == constants.USER_ON_HOLD and  
+                    #not status == constants.USER_SYSTEM_ON_HOLD and
+                    #not status == constants.USER_SUSPENDED and
+                    #not status == constants.USER_SYSTEM_SUSPENDED,
+                    #'Job status after restart: %s' %status)
    
   def test_kill(self):
     jobid = self.myJobs[0]
@@ -386,8 +376,8 @@ class JobsTest(unittest.TestCase):
     self.failUnless(exitStatus == constants.USER_KILLED or exitStatus == constants.FINISHED_REGULARLY, 
                     'Job exit status after kill: %s' %exitStatus)
                     
-  def testResult(self):
-    raise Exception('JobTest is an abstract class. testResult must be implemented in subclass')
+  def test_result(self):
+    raise Exception('JobTest is an abstract class. test_result must be implemented in subclass')
  
  
  
@@ -411,7 +401,7 @@ class LocalCustomSubmission(JobsTest):
     for file in self.stdouterrFiles:
       if os.path.isfile(file): os.remove(file)
   
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(jobid)
@@ -455,7 +445,7 @@ class LocalSubmission(JobsTest):
     for file in self.outputFiles:
       if os.path.isfile(file): os.remove(file)
       
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(jobid)
@@ -504,7 +494,7 @@ class SubmissionWithTransfer(JobsTest):
     for file in self.remoteFiles:
       if os.path.isfile(file): os.remove(file)
       
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(jobid)
@@ -559,7 +549,7 @@ class EndedJobWithTransfer(JobsTest):
   def tearDown(self):
     JobsTest.tearDown(self)
   
-  def testResult(self):
+  def test_result(self):
     self.failUnless(True)
 
     
@@ -638,7 +628,7 @@ class JobPipelineWithTransfer(JobsTest):
     for file in self.remoteFiles:
       if os.path.isfile(file): os.remove(file)
       
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[len(self.myJobs)-1]
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(jobid)
@@ -712,7 +702,7 @@ class ExceptionJobTest(JobsTest):
     for file in self.remoteFiles:
       if os.path.isfile(file): os.remove(file)
    
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(jobid)
@@ -799,7 +789,7 @@ class DisconnectionTest(JobsTest):
         print "remove " + file 
         os.remove(file)
       
-  def testResult(self):
+  def test_result(self):
 
     JobsTest.jobs.wait_job(self.myJobs)
     status = JobsTest.jobs.job_status(self.myJobs[1])
@@ -907,7 +897,7 @@ class MPIParallelJobTest(JobsTest):
     #for file in self.outputFiles:
       #if os.path.isfile(file): os.remove(file)
       
-  def testResult(self):
+  def test_result(self):
     jobid = self.myJobs[0]
     JobsTest.jobs.wait_job(self.myJobs)
     
@@ -946,7 +936,7 @@ if __name__ == '__main__':
   job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
   output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
   if not job_examples_dir or not output_dir:
-    raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLE_DIR and SOMA_WORKFLOW_EX_OUT must be set.')
+    raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
     
   controller = JobsControler() # use Workflow example generation ?
   
@@ -997,7 +987,7 @@ if __name__ == '__main__':
 
   # Test type
   sys.stdout.write("---------------------------------\n")
-  test_types = ["testResult", "test_jobs", "test_wait", "test_wait2", "test_stop", "test_restart", "test_kill", "testResult", ]
+  test_types = ["test_result", "test_jobs", "test_wait", "test_wait2", "test_kill", "test_restart"]
   sys.stdout.write("Tests to perform: \n")
   sys.stdout.write("all -> all \n")
   for i in range(0, len(test_types)):

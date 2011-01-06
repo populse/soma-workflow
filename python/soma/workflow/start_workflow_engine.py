@@ -22,15 +22,15 @@ if __name__=="__main__":
   import soma.workflow.connection 
   import soma.workflow.constants as constants
 
-        
+
   ###### WorkflowEngine pyro object
   class WorkflowEngine(Pyro.core.SynchronizedObjBase, 
                        soma.workflow.engine.WorkflowEngine):
-    def __init__(self, database_server, drmaa_workflow_engine):
+    def __init__(self, database_server, engine_loop):
       Pyro.core.SynchronizedObjBase.__init__(self)
       soma.workflow.engine.WorkflowEngine.__init__(self, 
                                                    database_server, 
-                                                   drmaa_workflow_engine)
+                                                   engine_loop)
     pass
     
   class ConnectionChecker(Pyro.core.ObjBase, 
@@ -64,7 +64,7 @@ if __name__=="__main__":
         level=eval("logging." + \
                    config.get(section, constants.OCFG_ENGINE_LOG_LEVEL)))
     
-    logger = logging.getLogger('ljp')
+    logger = logging.getLogger('engine')
     logger.info(" ")
     logger.info("****************************************************")
     logger.info("****************************************************")
@@ -89,7 +89,6 @@ if __name__=="__main__":
       raise SystemExit
     database_server = Pyro.core.getProxyForURI(uri)
     
-    
 
     ###########################
     # Parallel job specific information
@@ -99,11 +98,31 @@ if __name__=="__main__":
         parallel_config[parallel_info] = config.get(section, 
                                                     parallel_info)
     #############################
-    
+    # Drmaa implementation
     drmaa_implem = None
     if config.has_option(section, constants.OCFG_DRMAA_IMPLEMENTATION):
       drmaa_implem = config.get(section, constants.OCFG_DRMAA_IMPLEMENTATION)
-    
+
+    #############################
+    # Job limits per queue
+    queue_limits = {}
+    if config.has_option(section, constants.OCFG_MAX_JOB_IN_QUEUE):
+      logger.info("Job limits per queue:")
+      queue_limits_str = config.get(section, constants.OCFG_MAX_JOB_IN_QUEUE)
+      for info_str in queue_limits_str.split():
+        info = info_str.split("{")
+        if len(info[0]) == 0:
+          queue_name = None
+        else:
+          queue_name = info[0]
+        max_job = int(info[1].rstrip("}"))
+        queue_limits[queue_name] = max_job
+        logger.info(" " + repr(queue_name) + " " 
+                    " => " + repr(max_job))
+      logger.info("End of queue limit list")
+    else:
+      logger.info("No job limit on queues")
+
     #############################
     # Translation files specific information 
     path_translation = None
@@ -116,8 +135,8 @@ if __name__=="__main__":
         ns_file = ns_file_str.split("{")
         namespace = ns_file[0]
         filename = ns_file[1].rstrip("}")
-        logger.info(" -namespace: " + namespace + \
-                    ", translation file: " + filename)
+        logger.info(" * " + namespace + \
+                    " : " + filename)
         try: 
           f = open(filename, "r")
         except IOError, e:
@@ -131,7 +150,7 @@ if __name__=="__main__":
             if len(splitted_line) > 1:
               uuid = splitted_line[0]
               contents = splitted_line[1].rstrip()
-              logger.info("      uuid: " + uuid + "   translation:" + contents)
+              logger.info("  uuid: " + uuid + " => " + contents)
               path_translation[namespace][uuid] = contents
             line = f.readline()
           f.close()
@@ -142,24 +161,28 @@ if __name__=="__main__":
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()
 
+    drmaa = soma.workflow.engine.Drmaa(drmaa_implem, 
+                                       parallel_config)
 
+    engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
+                                                          drmaa,
+                                                          path_translation,
+                                                          queue_limits)
     
-    drmaa_engine = soma.workflow.engine.DrmaaWorkflowEngine(database_server, 
-                                                            parallel_config, 
-                                                            path_translation,
-                                                            drmaa_implem)
-    
-    engine = WorkflowEngine(database_server, drmaa_engine)
-    engine_lock = threading.Lock()
+    workflow_engine = WorkflowEngine(database_server, 
+                                     engine_loop)
+
+    engine_loop_thread = soma.workflow.engine.EngineLoopThread(engine_loop)
+    engine_loop_thread.setDaemon(True)
+    engine_loop_thread.start()
     
     # connection to the pyro daemon and output its URI 
-    uri_engine = daemon.connect(engine, engine_name)
+    uri_engine = daemon.connect(workflow_engine, engine_name)
     sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
     sys.stdout.flush()
   
     logger.info('Pyro object ' + engine_name + ' is ready.')
     
-
     # connection check
     connection_checker = ConnectionChecker()
     uri_cc = daemon.connect(connection_checker, 'connection_checker')
@@ -168,8 +191,8 @@ if __name__=="__main__":
     
     # Daemon request loop thread
     logger.info("daemon port = " + repr(daemon.port))
-    daemon_request_loop_thread = threading.Thread(name = "daemon.requestLoop", 
-                                                  target = daemon.requestLoop) 
+    daemon_request_loop_thread = threading.Thread(name="pyro_request_loop", 
+                                                  target=daemon.requestLoop) 
   
     daemon_request_loop_thread.daemon = True
     daemon_request_loop_thread.start() 
@@ -190,17 +213,20 @@ if __name__=="__main__":
     logger.info("******** client disconnection **********************")
     daemon.shutdown(disconnect=True) #stop the request loop
     daemon.sock.close() # free the port
+    
     del(daemon) 
-    del(engine)
+    del(workflow_engine)
     
     logger.info("******** second mode: waiting for jobs to finish****")
     jobs_running = True
     while jobs_running:
-      jobs_running = not drmaa_engine.areJobsDone()
+      jobs_running = not engine_loop.are_jobs_and_workflow_done()
       time.sleep(1)
     
     logger.info("******** jobs are done ! ***************************")
+    engine_loop_thread.stop()
     sys.exit()
+    
     
   
   if not len(sys.argv) == 3 and not len(sys.argv) == 4:

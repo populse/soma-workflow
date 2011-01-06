@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 
 from soma.workflow.constants import *
 from soma.workflow.client import Job, SharedResourcePath, FileTransfer, FileSending, FileRetrieving, WorkflowNodeGroup, Workflow, WorkflowController
+import soma.workflow.engine
 import socket
 import os
 import ConfigParser
@@ -24,6 +26,14 @@ class JobsControler(object):
     return conf_file
   
   
+  def get_configured_queues(self, resource_id):
+    queues = [" "] # default queue
+    somajobs_config = ConfigParser.ConfigParser()
+    somajobs_config.read( self.getConfigFile() )
+    if somajobs_config.has_option(resource_id, OCFG_QUEUES):      
+      queues.extend(somajobs_config.get(resource_id, OCFG_QUEUES).split())
+    return queues
+
   def getRessourceIds(self):
     resource_ids = []
     somajobs_config = ConfigParser.ConfigParser()
@@ -62,6 +72,7 @@ class JobsControler(object):
     file = open(file_path, "r")
     workflow = pickle.load(file)
     file.close()
+
     return workflow
   
   def saveWorkflowToFile(self, file_path, workflow):
@@ -89,7 +100,7 @@ class JobsControler(object):
   
   
   def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer", "hundred of jobs", "ten jobs"]
     
   def generateWorkflowExample(self, 
                               with_file_transfer, 
@@ -100,7 +111,7 @@ class JobsControler(object):
     job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
     output_example_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
     if not job_examples_dir or not output_example_dir:
-       raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLE_DIR and SOMA_WORKFLOW_EX_OUT must be set.')
+       raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
 
     wfExamples = WorkflowExamples(with_tranfers=with_file_transfer, 
                                   examples_dir=job_examples_dir, 
@@ -116,9 +127,13 @@ class JobsControler(object):
     elif example_type == 3:
       workflow = wfExamples.simpleExampleWithException2()
     elif example_type == 4:
-     workflow = wfExamples.command_test()
+      workflow = wfExamples.command_test()
     elif example_type == 5:
-     workflow = wfExamples.special_transfer_test()
+      workflow = wfExamples.special_transfer_test()
+    elif example_type == 6:
+      workflow = wfExamples.hundred_of_jobs()
+    elif example_type == 7:
+      workflow = wfExamples.ten_jobs()
       
       
     if workflow:
@@ -127,10 +142,21 @@ class JobsControler(object):
       file.close()
     
     
-  def submit_workflow(self, workflow, name, expiration_date, connection):
-    return connection.submit_workflow(workflow=workflow,
-                                     expiration_date=expiration_date,
-                                     name=name) 
+  def submit_workflow(self, 
+                      workflow, 
+                      name, 
+                      expiration_date,
+                      queue,
+                      connection):
+    
+    wf_id = connection.submit_workflow( workflow=workflow,
+                                        expiration_date=expiration_date,
+                                        name=name,
+                                        queue=queue) 
+    wf = connection.workflow(wf_id)
+
+    return wf
+  
                                     
   def restart_workflow(self, workflow, connection):
     return connection.restart_workflow(workflow.wf_id)
@@ -142,14 +168,14 @@ class JobsControler(object):
     return connection.change_workflow_expiration_date(wf_id, date)
     
   def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
+   
     to_transfer = []
-    for node in workflow.full_nodes:
-      if isinstance(node, FileSending):
-        status, info = connection.transfer_status(node.local_path)
-        if status == READY_TO_TRANSFER:
-          to_transfer.append((0, node.local_path))
-        if status == TRANSFERING:
-          to_transfer .append((info[1], node.local_path))
+    for ft in workflow.transfers.itervalues():
+      status, info = connection.transfer_status(ft.local_path)
+      if status == READY_TO_TRANSFER:
+        to_transfer.append((0, ft.local_path))
+      if status == TRANSFERING:
+        to_transfer.append((info[1], ft.local_path))
           
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
     for transmitted, local_path in to_transfer:
@@ -158,13 +184,12 @@ class JobsControler(object):
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
-    for node in workflow.full_nodes:
-      if isinstance(node, FileRetrieving):
-        status, info = connection.transfer_status(node.local_path)
-        if status == READY_TO_TRANSFER:
-          to_transfer.append((0, node.local_path))
-        if status == TRANSFERING:
-          to_transfer .append((info[1], node.local_path))
+    for ft in workflow.transfers.itervalues():
+      status, info = connection.transfer_status(ft.local_path)
+      if status == READY_TO_TRANSFER:
+        to_transfer.append((0, ft.local_path))
+      if status == TRANSFERING:
+        to_transfer .append((info[1], ft.local_path))
 
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
     for transmitted, local_path in to_transfer:
@@ -191,44 +216,6 @@ class JobsControler(object):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
     print >> file, "digraph G {"
-    #if workflow.full_nodes:
-      #for node in workflow.full_nodes:
-        #current_id = current_id + 1
-        #names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
-      #for ar in workflow.full_dependencies:
-        #print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
-      #for node in workflow.full_nodes:
-        #if isinstance(node, Job):
-          #if node.job_id == -1:
-            #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
-          #else:
-            #status = connection.job_status(node.job_id)
-            #if status == NOT_SUBMITTED:
-              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-            #elif status == DONE:
-              #exit_status, exit_value, term_signal, resource_usage = connection.job_termination_status(node.job_id)
-              #if exit_status == FINISHED_REGULARLY and exit_value == 0:
-                #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
-              #else: 
-                #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
-            #elif status == FAILED:
-              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
-            #else:
-              #print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-        #if isinstance(node, FileTransfer):
-          #if not node.local_path:
-            #print >> file, names[node][0] + "[label="+ names[node][1] +"];"
-          #else:
-            #status = connection.transfer_status(node.local_path)[0]
-            #if status == TRANSFER_NOT_READY:
-              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-            #elif status == READY_TO_TRANSFER:
-              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
-            #elif status == TRANSFERING:
-              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-            #elif status == TRANSFERED:
-              #print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
-    #else:
     for node in workflow.nodes:
       current_id = current_id + 1
       names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
@@ -313,6 +300,7 @@ class WorkflowExamples(object):
                                               "simple/exceptionJob.py")
     self.lo_cmd_check_script = os.path.join(self.examples_dir, 
                                             "command/argument_check.py")
+    self.lo_sleep_script = os.path.join(self.examples_dir, "simple/sleep_job.py")
                                             
     self.lo_dir_contents_script = os.path.join(self.examples_dir, 
                                             "special_transfers/dir_contents.py")
@@ -341,6 +329,9 @@ class WorkflowExamples(object):
     self.sh_cmd_check_script = SharedResourcePath("command/argument_check.py",
                                                   "example",
                                                   "job_dir", 168)
+    self.sh_sleep_script = SharedResourcePath("simple/sleep_job.py", 
+                                              "example", 
+                                              "job_dir", 168)
     self.sh_dir_contents_script = SharedResourcePath("special_transfers/dir_contents.py",
                                                      "example",
                                                      "job_dir", 168)
@@ -371,6 +362,9 @@ class WorkflowExamples(object):
     self.tr_cmd_check_script = FileSending(os.path.join(self.examples_dir, 
                                                         "command/argument_check.py"),
                                                         168, "cmd_check")
+    self.tr_sleep_script = FileSending(os.path.join(self.examples_dir, 
+                                                    "simple/sleep_job.py"), 
+                                                     168, "sleep_job")
     self.tr_dir_contents_script = FileSending(os.path.join(self.examples_dir, 
                                                         "special_transfers/dir_contents.py"),
                                                         168, "dir_contents")
@@ -530,6 +524,26 @@ class WorkflowExamples(object):
                           None, False, 168, "dir_contents")
     
     return test_command
+    
+    
+  def job_sleep(self, period):
+    if self.with_transfers:
+      job = Job( ["python", self.tr_sleep_script, repr(period)],
+                 [self.tr_sleep_script],
+                 [],
+                 None, False, 168, "sleep " + repr(period) + " s")
+    elif self.with_shared_resource_path:
+      job = Job( ["python", self.sh_sleep_script, repr(period)],
+                 None,
+                 None,
+                 None, False, 168, "sleep " + repr(period) + " s")
+    else:
+      job = Job( ["python", self.lo_sleep_script, repr(period)],
+                 None,
+                 None,
+                 None, False, 168, "sleep " + repr(period) + " s")
+    
+    return job
     
   def special_transfer_test(self):
      # jobs
@@ -702,4 +716,35 @@ class WorkflowExamples(object):
     groups.extend(workflow3.groups)
     
     workflow = Workflow(nodes, dependencies, mainGroup, groups)
+    return workflow
+  
+  
+  def ten_jobs(self):
+      
+    nodes = []
+    for i in range(0,10):
+      job = self.job_sleep(60)
+      nodes.append(job)
+     
+    dependencies = []
+    
+    mainGroup = WorkflowNodeGroup(nodes)
+    
+    workflow = Workflow(nodes, dependencies, mainGroup, [])
+    
+    return workflow
+  
+  def hundred_of_jobs(self):
+    
+    nodes = []
+    for i in range(0,100):
+      job = self.job_sleep(60)
+      nodes.append(job)
+     
+    dependencies = []
+    
+    mainGroup = WorkflowNodeGroup(nodes)
+    
+    workflow = Workflow(nodes, dependencies, mainGroup, [])
+    
     return workflow

@@ -3,6 +3,7 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
 from soma.workflow.client import Workflow, WorkflowNodeGroup, FileSending, FileRetrieving, FileTransfer, SharedResourcePath, Job
 from soma.workflow.constants import *
+import soma.workflow.engine
 import time
 import threading
 import os
@@ -245,16 +246,24 @@ class WorkflowWidget(QtGui.QMainWindow):
     ui.resource_label.setText(self.model.current_resource_id)
     ui.lineedit_wf_name.setText("")
     ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
-    
+    queues = self.controler.get_configured_queues(self.model.current_resource_id)
+    ui.combo_queue.addItems(queues)
+
     if submission_dlg.exec_() == QtGui.QDialog.Accepted:
       name = unicode(ui.lineedit_wf_name.text())
       if name == "": name = None
       qtdt = ui.dateTimeEdit_expiration.dateTime()
       date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                       qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+      queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
+      if queue == " ": queue = None
       while True:
         try:
-          workflow = self.controler.submit_workflow(self.model.current_workflow.server_workflow, name, date, self.model.current_connection)
+          workflow = self.controler.submit_workflow(self.model.current_workflow.server_workflow, 
+                                         name, 
+                                         date,
+                                         queue,
+                                         self.model.current_connection)
         except ConnectionClosedError, e:
           if not self.reconnectAfterConnectionClosed():
             return
@@ -958,7 +967,9 @@ class PlotView(QtGui.QWidget):
             x_max = j.ending_date
         else:
           self.axes.plot([j.execution_date, datetime.now()], [nb_jobs, nb_jobs])
-          
+        labels = self.axes.get_xticklabels()
+        for l in labels:
+          l.update( { 'rotation' : 80 } )
   
     if nb_jobs:
       self.axes.set_ylim(0, nb_jobs+1)
@@ -1445,6 +1456,7 @@ class ClientWorkflow(object):
   
   def __init__(self, workflow):
     
+    print("wf " +repr(workflow))
     self.name = workflow.name 
     self.wf_id = workflow.wf_id
     
@@ -1466,19 +1478,10 @@ class ClientWorkflow(object):
     # retrieving the set of job and the set of file transfers
     w_js = set([]) 
     w_fts = set([]) 
-    if not workflow.full_nodes:
-      for node in workflow.nodes:
-        if isinstance(node, Job):
-          w_js.add(node)
-        elif isinstance(node, FileTransfer):
-          w_fts.add(node)
-    else:
-      for node in workflow.full_nodes:
-        if isinstance(node, Job):
-          w_js.add(node)
-        elif isinstance(node, FileTransfer):
-          w_fts.add(node)
-    
+   
+    for job in workflow.nodes:
+      w_js.add(job)
+      
     # Processing the Jobs to create the corresponding ClientJob instances
     for job in w_js:
       item_id = id_cnt
@@ -1491,10 +1494,15 @@ class ClientWorkflow(object):
                                       data = job, 
                                       children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
       for ft in job.referenced_input_files:
-        if isinstance(ft, FileTransfer): w_fts.add(ft)
+        #print "ift " + repr(ft) 
+        if isinstance(ft, soma.workflow.engine.EngineTransfer) or \
+           isinstance(ft, FileTransfer): 
+          w_fts.add(ft)
+        
       for ft in job.referenced_output_files:
-        if isinstance(ft, FileTransfer): w_fts.add(ft)
-      
+        if isinstance(ft, soma.workflow.engine.EngineTransfer) or \
+           isinstance(ft, FileTransfer): 
+          w_fts.add(ft)
       
     # Create the ClientGroup instances
     self.root_item = ClientGroup( self, 
@@ -1503,8 +1511,8 @@ class ClientWorkflow(object):
                                   row = -1, 
                                   data = workflow.mainGroup, 
                                   children_nb = len(workflow.mainGroup.elements))
-                                       
-    
+                  
+
     for group in workflow.groups:
       item_id = id_cnt
       id_cnt = id_cnt + 1
@@ -1515,7 +1523,7 @@ class ClientWorkflow(object):
                                           row = -1, 
                                           data = group, 
                                           children_nb = len(group.elements))
-    
+
     # parent and children research for jobs and groups
     for item in self.items.values():
       if isinstance(item, ClientGroup) or isinstance(item, ClientJob):
@@ -1531,15 +1539,16 @@ class ClientWorkflow(object):
     
     # processing the file transfers
     def compFileTransfers(ft1, ft2): 
-      if isinstance(ft1, FileTransfer):
+      if isinstance(ft1, FileTransfer) or isinstance(ft1, EngineTransfer):
         str1 = ft1.name
       else: str1 = ft1
-      if isinstance(ft2, FileTransfer):
+      if isinstance(ft2, FileTransfer) or isinstance(ft1, EngineTransfer):
         str2 = ft2.name
       else: str2 = ft2
       return cmp(str1, str2)
       
     for ft in w_fts:
+      #print " ft " + repr(ft)
       self.ids[ft] = []
       for job in w_js:
         ref_in = list(job.referenced_input_files)
@@ -1547,6 +1556,7 @@ class ClientWorkflow(object):
         ref_out = list(job.referenced_output_files)
         ref_out.sort(compFileTransfers)
         if ft in ref_in or ft.local_path in ref_in:
+          #print " ft in ref_in of job " + repr(job)
           item_id = id_cnt
           id_cnt = id_cnt + 1
           if ft.local_path in self.server_file_transfers.keys():
@@ -1563,7 +1573,9 @@ class ClientWorkflow(object):
                                                       row = row, 
                                                       data = ft)
           self.items[self.ids[job]].children[row]=item_id
+          #print repr(job.name) + " " + repr(self.items[self.ids[job]].children)
         if ft in ref_out or ft.local_path in ref_out:
+          #print " ft in ref_out of job " + repr(job)
           item_id = id_cnt
           id_cnt = id_cnt + 1
           if ft.local_path in self.server_file_transfers.keys():
@@ -1580,6 +1592,10 @@ class ClientWorkflow(object):
                                                       row = row, 
                                                       data = ft)
           self.items[self.ids[job]].children[row]=item_id
+          #print repr(job.name) + " " + repr(self.items[self.ids[job]].children)
+
+    #for item in self.items.itervalues():
+      #print repr(item.children)
           
     #end = datetime.now() - begining
     #print " <== end building worflow " + repr(end.seconds)

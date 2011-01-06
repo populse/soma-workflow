@@ -19,6 +19,9 @@ USER_SUSPENDED="user_suspended"
 USER_SYSTEM_SUSPENDED="user_system_suspended"
 DONE="done"
 FAILED="failed"
+DELETE_PENDING="delete_pending"
+KILL_PENDING="kill_pending"
+SUBMISSION_PENDING="submission_pending"
 JOB_STATUS = [NOT_SUBMITTED,
               UNDETERMINED, 
               QUEUED_ACTIVE,
@@ -30,7 +33,10 @@ JOB_STATUS = [NOT_SUBMITTED,
               USER_SUSPENDED,
               USER_SYSTEM_SUSPENDED,
               DONE,
-              FAILED]
+              FAILED,
+              DELETE_PENDING,
+              KILL_PENDING,
+              SUBMISSION_PENDING]
 
 '''
 Exit job status:
@@ -81,7 +87,8 @@ WORKFLOW_IN_PROGRESS = "workflow_in_progress"
 WORKFLOW_DONE = "workflow_done"
 WORKFLOW_STATUS = [ WORKFLOW_NOT_STARTED, 
                     WORKFLOW_IN_PROGRESS, 
-                    WORKFLOW_DONE]
+                    WORKFLOW_DONE,
+                    DELETE_PENDING]
 
 
 '''
@@ -92,6 +99,16 @@ OCFG => Optional
 CFG_CLUSTER_ADDRESS = 'cluster_address'
 CFG_SUBMITTING_MACHINES = 'submitting_machines'
 OCFG_DRMAA_IMPLEMENTATION = 'drmaa_implementation'
+
+#queues
+#OCFG_QUEUES is a list of queue name separated by white spaces.
+#ex: "queue1 queue2"
+#OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
+#in the queue for one user. The engine won't submit more than N job at once. The 
+#also wait for the job to leave the queue before submitting new jobs.
+#syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1} queue2{max_nb_job2}"
+OCFG_QUEUES = 'queues'
+OCFG_MAX_JOB_IN_QUEUE = 'max_jobs_in_queue' 
 
 #database server
 

@@ -61,6 +61,8 @@ soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/i2bm-research/soma-workflow/se
 soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'gabriel.intra.cea.fr')
 soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'gabriel.intra.cea.fr')
 soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'PBS') 
+soma_wf_cfg.set(s, OCFG_QUEUES,               'run32')
+soma_wf_cfg.set(s, OCFG_MAX_JOB_IN_QUEUE, "{1} run32{5}")
 #Server
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
@@ -115,6 +117,8 @@ soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/soizic/soma_workflow_server/lo
 soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'is206464')
 soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'is206464')
 soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'SGE') 
+#soma_wf_cfg.set(s, OCFG_QUEUES, 'run32 run16')
+#soma_wf_cfg.set(s, OCFG_MAX_JOB_IN_QUEUE, "{1} run16{5}")
 #Server
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
 soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')

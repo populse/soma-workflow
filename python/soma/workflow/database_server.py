@@ -30,7 +30,7 @@ from datetime import date
 from datetime import timedelta
 from datetime import datetime
 
-import soma.jobs.constants as constants
+import soma.workflow.constants as constants
 
 __docformat__ = "epytext en"
 
@@ -86,6 +86,7 @@ Job server database tables:
       custom_submission  : boolean 
       parallel_config_name : string, optional
       max_node_number      : int, optional
+      queue               : string, optional
 
     => for user and administrator usage
       name_description   : string, optional 
@@ -148,6 +149,7 @@ def create_database(database_file):
                                        custom_submission    BOOLEAN NOT NULL,
                                        parallel_config_name TEXT,
                                        max_node_number      INTEGER,
+                                       queue                TEXT,
                                        
                                        name_description     TEXT,
                                        submission_date      DATE,
@@ -190,7 +192,16 @@ def create_database(database_file):
   connection.commit()
   connection.close()
 
+def print_job_status(database_file):
+  connection = sqlite3.connect(database_file, timeout = 5, isolation_level = "EXCLUSIVE")
+  cursor = connection.cursor()
 
+  for row in cursor.execute('SELECT id, status, queue FROM jobs'):
+    job_id, status, queue = row
+    print "job_id: " + repr(job_id) + " status: " + repr(status) + " queue " + repr(queue)
+
+  cursor.close()
+  connection.close()
 
 def print_tables(database_file):
   
@@ -249,24 +260,25 @@ class DBJob(object):
     
               drmaa_id = None,
               status = constants.NOT_SUBMITTED,
-              last_status_update = None,
-              workflow_id = None,
+              last_status_update=None,
+              workflow_id=None,
               
-              command = None,
-              stdin_file = None,
-              stderr_file = None,
-              working_directory = None,
-              parallel_config_name = None,
-              max_node_number = 1,
+              command=None,
+              stdin_file=None,
+              stderr_file=None,
+              working_directory=None,
+              parallel_config_name=None,
+              max_node_number=1,
+              queue=None,
               
-              name_description = None,
-              submission_date = None,
-              execution_date = None,
-              ending_date =None,
-              exit_status = None,
-              exit_value = None,
-              terminating_signal = None,
-              resource_usage = None):
+              name_description=None,
+              submission_date=None,
+              execution_date=None,
+              ending_date=None,
+              exit_status=None,
+              exit_value=None,
+              terminating_signal=None,
+              resource_usage=None):
               
     '''
     @type user_id: C{UserIdentifier}
@@ -305,6 +317,8 @@ class DBJob(object):
                                  in WorkflowDatabaseServer.
     @type  max_node_number: int 
     @param max_node_number: maximum of node requested by the job to run
+    @type  queue: str or None
+    @param queue: name of the queue used to submit the job.
     
     @type  name_description: string
     @param name_description: optional description of the job.  
@@ -342,6 +356,7 @@ class DBJob(object):
     self.custom_submission = custom_submission
     self.parallel_config_name = parallel_config_name
     self.max_node_number = max_node_number
+    self.queue = queue
     
     self.name_description = name_description
     self.submission_date = submission_date
@@ -1052,7 +1067,7 @@ class WorkflowDatabaseServer( object ):
     return (expiration_date, name)
   
   
-  def set_workflow_status(self, wf_id, status):
+  def set_workflow_status(self, wf_id, status, force = False):
     '''
     Updates the workflow status in the database.
     The status must be valid (ie a string among the workflow status 
@@ -1070,13 +1085,20 @@ class WorkflowDatabaseServer( object ):
                                   FROM workflows 
                                   WHERE id=?''', [wf_id]).next()[0]
         if not count == 0 :
-          cursor.execute('''UPDATE workflows 
-                          SET status=?, 
-                          last_status_update=? 
-                          WHERE id=?''', 
-                          (status, 
-                          datetime.now(), 
-                          wf_id))
+          prev_status = cursor.execute('''SELECT status 
+                                          FROM workflows WHERE id=?''',
+                                          [wf_id]).next()[0]
+          prev_status = self._string_conversion(prev_status)
+          if force or \
+             (prev_status != constants.DELETE_PENDING and \
+              prev_status != constants.KILL_PENDING):
+            cursor.execute('''UPDATE workflows 
+                            SET status=?, 
+                            last_status_update=? 
+                            WHERE id=?''', 
+                            (status, 
+                            datetime.now(), 
+                            wf_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1231,6 +1253,7 @@ class WorkflowDatabaseServer( object ):
                           custom_submission,
                           parallel_config_name,
                           max_node_number,
+                          queue,
                                        
                           name_description,
                           submission_date,
@@ -1245,7 +1268,7 @@ class WorkflowDatabaseServer( object ):
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?,
-                                  ?, ?, ?)''',
+                                  ?, ?, ?, ?)''',
                          (dbJob.user_id,
                         
                           dbJob.drmaa_id, 
@@ -1263,6 +1286,7 @@ class WorkflowDatabaseServer( object ):
                           dbJob.custom_submission,
                           dbJob.parallel_config_name,
                           dbJob.max_node_number,
+                          dbJob.queue,
                           
                           dbJob.name_description,
                           dbJob.submission_date,
@@ -1316,7 +1340,7 @@ class WorkflowDatabaseServer( object ):
 
 
 
-  def set_job_status(self, job_id, status):
+  def set_job_status(self, job_id, status, force = False):
     '''
     Updates the job status in the database.
     The status must be valid (ie a string among the job status 
@@ -1332,25 +1356,41 @@ class WorkflowDatabaseServer( object ):
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
         if not count == 0 :
-          
-          previous_status, execution_date, ending_date = cursor.execute('SELECT status, execution_date, ending_date FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
+          (previous_status, 
+           execution_date, 
+           ending_date) = cursor.execute(''' SELECT status, 
+                                                    execution_date, 
+                                                    ending_date 
+                                             FROM jobs WHERE id=?''',
+                                             [job_id]).next()#supposes that the job_id is valid
           previous_status = self._string_conversion(previous_status)
           execution_date = self._str_to_date_conversion(execution_date)
           ending_date = self._str_to_date_conversion(ending_date)
           if previous_status != status:
             if not execution_date and status == constants.RUNNING:
               execution_date = datetime.now()
-            if not ending_date and status == constants.DONE or status == constants.FAILED:
+            if not ending_date and status == constants.DONE or \
+               status == constants.FAILED:
               ending_date = datetime.now()
               if not execution_date :
                 execution_date = datetime.now()
-          
-          cursor.execute('UPDATE jobs SET status=?, last_status_update=?, execution_date=?, ending_date=? WHERE id=?', (status, datetime.now(), execution_date, ending_date, job_id))
+          if force or \
+             (previous_status != constants.DELETE_PENDING and \
+              previous_status != constants.KILL_PENDING):
+            cursor.execute('''UPDATE jobs SET status=?, 
+                                              last_status_update=?,
+                                              execution_date=?, 
+                                              ending_date=? WHERE id=?''',
+                                              (status, datetime.now(),
+                                               execution_date, ending_date,
+                                               job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_job_status %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError("Error set_job_status " 
+                                           "%s: %s \n" %(type(e), e),
+                                           self.logger) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -1552,6 +1592,7 @@ class WorkflowDatabaseServer( object ):
         custom_submission,   \
         parallel_config_name,\
         max_node_number,     \
+        queue,               \
                              \
         name_description,    \
         submission_date,     \
@@ -1577,6 +1618,7 @@ class WorkflowDatabaseServer( object ):
                                           custom_submission,
                                           parallel_config_name,
                                           max_node_number,
+                                          queue,
                                           
                                           name_description,
                                           submission_date,
@@ -1611,6 +1653,7 @@ class WorkflowDatabaseServer( object ):
                   self._string_conversion(working_directory),
                   self._string_conversion(parallel_config_name),
                   max_node_number,
+                  self._string_conversion(queue),
                   
                   self._string_conversion(name_description),
                   self._str_to_date_conversion(submission_date),
@@ -1745,6 +1788,81 @@ class WorkflowDatabaseServer( object ):
       return job_ids
   
   
+  def nb_queued_jobs(self, user_id, queue_name):
+    '''
+    Returns the number of job of the user with the status 
+    constants.QUEUED_ACTIVE in the queue queue_name.
+    
+    @type user_id: C{UserIdentifier}
+    @type queue_name: str
+    @rtype: int
+    '''
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        #print "queue_name " + repr(queue_name)
+        if queue_name != None:
+          count = cursor.execute("SELECT count(*) FROM jobs WHERE " 
+                                 "user_id=? and ( status=? or status=?) " 
+                                 "and queue=?", 
+                                 [user_id, 
+                                  constants.QUEUED_ACTIVE,
+                                  constants.UNDETERMINED, 
+                                  queue_name]).next()[0]
+        else:
+          count = cursor.execute("SELECT count(*) FROM jobs WHERE " 
+                                 "user_id=? and ( status=? or status=?) " 
+                                 "and queue ISNULL", 
+                                 [user_id, 
+                                  constants.QUEUED_ACTIVE,
+                                  constants.UNDETERMINED]).next()[0]
+        #print "count " + repr(count)
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error nb_queued_jobs %s: %s \n' %(type(e), e), self.logger) 
+          
+      cursor.close()
+      connection.close()
+      return count
+
+
+  def jobs_to_delete_and_kill(self, user_id):
+    '''
+    Returns the id of the job with the status constants.DELETE_PENDING
+
+    @type user_id: C{UserIdentifier}
+    @rtype: sequence of C{JobIdentifier}
+    @returns: job with status constants.DELETE_PENDING
+    '''
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      job_to_delete_ids = []
+      job_to_kill_ids = []
+      try:
+        for row in cursor.execute("SELECT id FROM jobs " 
+                                  "WHERE user_id=? AND status=?",
+                                  [user_id, constants.DELETE_PENDING]):
+          jid = row[0]
+          job_to_delete_ids.append(jid)
+        for row in cursor.execute("SELECT id FROM jobs " 
+                                  "WHERE user_id=? AND status=?",
+                                  [user_id, constants.KILL_PENDING]):
+          jid = row[0]
+          job_to_kill_ids.append(jid)
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
+          
+      cursor.close()
+      connection.close()
+      return (job_to_delete_ids, job_to_kill_ids)
+
+
+
   #TRANSFERS
   
   def is_user_transfer(self, local_file_path, user_id):
@@ -1841,9 +1959,9 @@ class WorkflowDatabaseServer( object ):
       cursor = connection.cursor()
       wf_ids = []
       try:
-        for row in cursor.execute('SELECT id FROM workflows WHERE user_id=?', [user_id]):
+        for row in cursor.execute("SELECT id FROM workflows " 
+                                  "WHERE user_id=?", [user_id]):
           wf_id = row[0]
-          
           wf_ids.append(wf_id)
       except Exception, e:
         cursor.close()
@@ -1853,6 +1971,39 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     return wf_ids
   
+
+  def workflows_to_delete_and_kill(self, user_id):
+    '''
+    Returns the id of the workfows with the status constants.DELETE_PENDING
+
+    @type user_id: C{UserIdentifier}
+    @rtype: sequence of C{WorkflowIdentifier}
+    @returns: workflows with status constants.DELETE_PENDING
+    '''
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      wf_to_delete_ids = []
+      wf_to_kill_ids = []
+      try:
+        for row in cursor.execute("SELECT id FROM workflows " 
+                                  "WHERE user_id=? AND status=?",
+                                  [user_id, constants.DELETE_PENDING]):
+          wf_id = row[0]
+          wf_to_delete_ids.append(wf_id)
+        for row in cursor.execute("SELECT id FROM workflows " 
+                                  "WHERE user_id=? AND status=?",
+                                  [user_id, constants.KILL_PENDING]):
+          wf_id = row[0]
+          wf_to_kill_ids.append(wf_id)
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
+          
+      cursor.close()
+      connection.close()
+      return (wf_to_delete_ids, wf_to_kill_ids)
 
 
   #######################################################################

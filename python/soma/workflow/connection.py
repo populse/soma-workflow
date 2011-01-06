@@ -99,6 +99,7 @@ class RemoteConnection( object ):
     
     # run the workflow engine process and get back the    #
     # WorkflowEngine and ConnectionChecker URIs       #
+    #command = "python -m cProfile -o /home/sl225510/profile /home/i2bm-research/brainvisa/source/wip-soma-workflow/python/soma/workflow/start_workflow_engine.py %s %s %s" %(resource_id, pyro_objet_name, log) 
     command = "python -m soma.workflow.start_workflow_engine %s %s %s" %(resource_id, pyro_objet_name, log) 
     print "start engine command: " + command
     client = paramiko.SSHClient()
@@ -201,6 +202,10 @@ class LocalConnection( object ):
 
     # run the workflow engine process and get back the  
     # workflow_engine and ConnectionChecker URIs  
+    #command = "python -m cProfile -o /home/sl225510/profile /home/sl225510/svn/brainvisa/perso/laguitton/wip/trunk/python/soma/workflow/start_workflow_engine.py %s %s %s" %( 
+                                     #resource_id, 
+                                     #pyro_objet_name, 
+                                     #log) 
     command = "python -m soma.workflow.start_workflow_engine %s %s %s" %( 
                                      resource_id, 
                                      pyro_objet_name, 
