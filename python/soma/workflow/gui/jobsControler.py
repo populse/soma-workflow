@@ -100,7 +100,7 @@ class JobsControler(object):
   
   
   def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer", "hundred of jobs", "ten jobs"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer", "hundred of jobs", "ten jobs", "fake pipelineT1"]
     
   def generateWorkflowExample(self, 
                               with_file_transfer, 
@@ -134,6 +134,8 @@ class JobsControler(object):
       workflow = wfExamples.hundred_of_jobs()
     elif example_type == 7:
       workflow = wfExamples.ten_jobs()
+    elif example_type == 8:
+      workflow = wfExamples.fake_pipelineT1()
       
       
     if workflow:
@@ -746,5 +748,44 @@ class WorkflowExamples(object):
     mainGroup = WorkflowNodeGroup(nodes)
     
     workflow = Workflow(nodes, dependencies, mainGroup, [])
-    
+  
     return workflow
+
+
+  def fake_pipelineT1(self):
+    
+    nodes = []
+    dependencies = []
+    groups = []
+    mainGroupList = []
+    for i in range(0, 100):
+      job1 = self.job_sleep(60) 
+      job1.name = "Brain extraction"
+      nodes.append(job1)
+      job2 = self.job_sleep(120) 
+      job2.name ="Gray/white segmentation"
+      nodes.append(job2)
+      job3 = self.job_sleep(400) 
+      job3.name = "Left hemisphere sulci recognition"
+      nodes.append(job3)
+      job4 = self.job_sleep(400) 
+      job4.name = "Right hemisphere sulci recognition"
+      nodes.append(job4)
+
+      dependencies.append((job1, job2))
+      dependencies.append((job2, job3))
+      dependencies.append((job2, job4))
+      
+      groupSulci = WorkflowNodeGroup([job3, job4], "Sulci recognition")
+      groupPt1 = WorkflowNodeGroup([job1, job2, groupSulci], "sulci recognition -- subject " + repr(i))
+
+      groups.append(groupSulci)
+      groups.append(groupPt1)
+      mainGroupList.append(groupPt1) 
+      
+    mainGroup = WorkflowNodeGroup(mainGroupList)
+   
+    workflow = Workflow(nodes, dependencies, mainGroup, groups)
+
+    return workflow
+    
