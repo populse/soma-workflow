@@ -68,6 +68,7 @@ class EngineLoopThread(threading.Thread):
     self.time_interval = refreshment_interval
   
   def run(self):
+    #cProfile.runctx("self.engine_loop.start_loop(self.time_interval)", globals(), locals(), "/home/sl225510/profile")
     self.engine_loop.start_loop(self.time_interval)
 
   def stop(self):
