@@ -1038,34 +1038,6 @@ class WorkflowDatabaseServer( object ):
  
     return workflow
   
-  def get_workflow_info(self, wf_id):
-    '''
-    Returns a tuple with the workflow expiration date and name
-    The wf_id must be valid.
-    
-    @type wf_id: C{WorflowIdentifier}
-    @rtype: (date, string)
-    @return: (expiration_date, name)
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
-        expiration_date, name = cursor.execute('''SELECT  
-                                                  expiration_date,
-                                                  name
-                                                  FROM workflows WHERE id=?''', [wf_id]).next()#supposes that the wf_id is valid
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error get_workflow_info %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.close()
-      
-    expiration_date = self._str_to_date_conversion(expiration_date)
-    name = self._string_conversion(name)
-    return (expiration_date, name)
-  
   
   def set_workflow_status(self, wf_id, status, force = False):
     '''
@@ -1762,22 +1734,44 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     return result
   
-  def get_jobs(self, user_id):
+  def get_jobs(self, user_id, job_ids=None):
     '''
-    Returns the jobs owned by the user.
+    Returns the jobs owned by the user or
+    specified in the sequence job_ids
     
     @type user_id: C{UserIdentifier}
     @rtype: sequence of C{JobIdentifier}
     @returns: jobs owned by the user
     '''
+    if not job_ids:
+      request = '''SELECT id, 
+                          name_description, 
+                          command, 
+                          submission_date 
+                    FROM jobs 
+                    WHERE user_id=? and ( workflow_id ISNULL or workflow_id=-1 )'''
+      argument = [user_id]
+    else:
+      request = '''SELECT id, 
+                          name_description, 
+                          command, 
+                          submission_date 
+                  FROM jobs WHERE id IN (? '''
+      for i in range(1, len(job_ids)):
+        request = request + ",? "
+      request = request + ")"
+      argument = job_ids
+
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      job_ids = []
+      result = {}
       try:
-        for row in cursor.execute('SELECT id FROM jobs WHERE user_id=?', [user_id]):
-          jid = row[0]
-          job_ids.append(jid)
+        for row in cursor.execute(request, argument):
+          jid, name, command, submission_date = row
+          result[jid]=(self._string_conversion(name), 
+                       self._string_conversion(command), 
+                       self._str_to_date_conversion(submission_date))
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1785,7 +1779,8 @@ class WorkflowDatabaseServer( object ):
           
       cursor.close()
       connection.close()
-      return job_ids
+
+      return result
   
   
   def nb_queued_jobs(self, user_id, queue_name):
@@ -1855,7 +1850,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error jobs_to_delete_and_kill %s: %s \n' %(type(e), e), self.logger) 
           
       cursor.close()
       connection.close()
@@ -1893,30 +1888,56 @@ class WorkflowDatabaseServer( object ):
     return result
     
     
-  def get_transfers(self, user_id):
+  def get_transfers(self, user_id, transfer_ids=None):
     '''
-    Returns the transfers owned by the user.
+    Returns the transfers owned by the user or
+    specified in the sequence transfer_ids
     
     @type user_id: C{UserIdentifier}
     @rtype: sequence of local file path
     @returns: local file path associated with a transfer owned by the user
     '''
+    if not transfer_ids:
+      request = '''SELECT local_file_path,
+                          remote_file_path, 
+                          expiration_date, 
+                          remote_paths 
+                    FROM transfers 
+                    WHERE user_id=? and (workflow_id ISNULL or workflow_id=-1 )'''
+      argument = [user_id]
+    else:
+      request = '''SELECT local_file_path,
+                          remote_file_path, 
+                          expiration_date, 
+                          remote_paths 
+                  FROM transfers WHERE local_file_path IN (? '''
+      for i in range(1, len(transfer_ids)):
+        request = request + ",? "
+      request = request + ")"
+      argument = transfer_ids
+      
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      local_file_paths = []
+      result = {}
       try:
-        for row in cursor.execute('SELECT local_file_path FROM transfers WHERE user_id=?', [user_id]):
-          local_file = row[0]
+        for row in cursor.execute(request,argument):
+          local_file, remote_file_path, expiration_date, remote_paths = row
           local_file = self._string_conversion(local_file)
-          local_file_paths.append(local_file)
+          if remote_paths:
+            remote_paths = self._string_conversion(remote_paths).split(file_separator)
+          else: 
+            remote_paths = None
+          result[local_file] = (self._string_conversion(remote_file_path),
+                                self._str_to_date_conversion(expiration_date),
+                                remote_paths)
       except Exception, e:
         cursor.close()
         connection.close()
         raise WorkflowDatabaseServerError('Error get_transfers %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-    return local_file_paths
+    return result
    
 
   #WORKFLOWS
@@ -1947,29 +1968,42 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     return result
   
-  def get_workflows(self, user_id):
+  def get_workflows(self, user_id, workflow_ids=None):
     '''
-    Returns the workflows owned by the user.
+    Returns information about the workflows owned by the user or
+    specified in the sequence workflow_ids
     
     @type user_id: C{UserIdentifier}
     @rtype: sequence of workflows id
     '''
+    if not workflow_ids:
+      request = "SELECT id, name, expiration_date FROM workflows WHERE user_id=?"
+      argument = [user_id]
+    else:
+      request = '''SELECT id, name, expiration_date 
+                   FROM workflows WHERE id IN (? '''
+      for i in range(1, len(workflow_ids)):
+        request = request + ",? "
+      request = request + ")"
+      argument = workflow_ids
+  
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      wf_ids = []
+      result = {}
+                       
       try:
-        for row in cursor.execute("SELECT id FROM workflows " 
-                                  "WHERE user_id=?", [user_id]):
-          wf_id = row[0]
-          wf_ids.append(wf_id)
+        for row in cursor.execute(request, argument):
+          wf_id, name, expiration_date = row
+          result[wf_id] = (self._string_conversion(name),
+                          self._str_to_date_conversion(expiration_date))
       except Exception, e:
         cursor.close()
         connection.close()
         raise WorkflowDatabaseServerError('Error get_workflows %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
-    return wf_ids
+    return result
   
 
   def workflows_to_delete_and_kill(self, user_id):
@@ -1999,7 +2033,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error workflows_to_delete_and_kill %s: %s \n' %(type(e), e), self.logger) 
           
       cursor.close()
       connection.close()

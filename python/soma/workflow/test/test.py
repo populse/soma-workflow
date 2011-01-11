@@ -322,12 +322,12 @@ class JobsTest(unittest.TestCase):
   def tearDown(self):
     for jid in self.myJobs:
       JobsTest.jobs.delete_job(jid)
-    remainingJobs = frozenset(JobsTest.jobs.jobs())
+    remainingJobs = frozenset(JobsTest.jobs.jobs().keys())
     self.failUnless(len(remainingJobs.intersection(self.myJobs)) == 0)
      
                                    
   def test_jobs(self):
-    res = set(JobsTest.jobs.jobs())
+    res = set(JobsTest.jobs.jobs().keys())
     self.failUnless(res.issuperset(self.myJobs))
      
   def test_wait(self):
@@ -510,7 +510,7 @@ class SubmissionWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transferInformation(file)[1]
+      remote_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(remote_file)
       JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
@@ -645,7 +645,7 @@ class JobPipelineWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transferInformation(file)[1]
+      remote_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(remote_file)
       JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
@@ -837,7 +837,7 @@ class DisconnectionTest(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transferInformation(file)[1]
+      remote_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(remote_file)
       JobsTest.jobs.retrieve(file)
       self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)

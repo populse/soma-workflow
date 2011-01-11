@@ -1158,12 +1158,13 @@ class WorkflowEngineLoop(object):
         # --- 1. Jobs and workflow deletion and kill ------------------------
         # Get the jobs and workflow with the status DELETE_PENDING 
         # and KILL_PENDING
-        (jobs_to_delete, jobs_to_kill) =    self._database_server.jobs_to_delete_and_kill(self._user_id)
+        (jobs_to_delete, jobs_to_kill) = self._database_server.jobs_to_delete_and_kill(self._user_id)
         (wf_to_delete, wf_to_kill) = self._database_server.workflows_to_delete_and_kill(self._user_id)
-        
+
         # Delete and kill properly the jobs and workflows in _jobs and _workflows
         for job_id in jobs_to_kill + jobs_to_delete:
           if job_id in self._jobs:
+            self.logger.debug(" stop job " + repr(job_id))
             self._stop_job(job_id,  self._jobs[job_id])
             if job_id in jobs_to_delete:
               self.logger.debug("Delete job : " + repr(job_id))
@@ -1267,7 +1268,7 @@ class WorkflowEngineLoop(object):
              (job.status == constants.DONE or \
               job.status == constants.FAILED):
               ended_job_ids.append(job_id)
-          #self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
+          self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
 
         for job_id, job in ended_jobs.iteritems():
           self._database_server.set_job_exit_info(job_id, 
@@ -1370,23 +1371,22 @@ class WorkflowEngineLoop(object):
       self._database_server.set_job_status( job_id, 
                                             job.status, 
                                             force = True)
-    elif job.drmaa_id and \
-        not job.status == constants.DONE and \
-        not job.status == constants.FAILED:
+    else:
+      if job.drmaa_id:
         self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id))
         self._engine_drmaa.kill_job(job.drmaa_id)
-        job.status = constants.FAILED
-        job.exit_status = constants.USER_KILLED
-        self._database_server.set_job_exit_info(job_id,
-                                                constants.USER_KILLED,
-                                                None,
-                                                None,
-                                                None)
-        self._database_server.set_job_status(job_id, 
-                                             constants.FAILED, 
-                                             force = True)
-    elif job in self._pending_queues[job.queue]:
+      elif job in self._pending_queues[job.queue]:
         self._pending_queues[job.queue].remove(job)
+      job.status = constants.FAILED
+      job.exit_status = constants.USER_KILLED
+      self._database_server.set_job_exit_info(job_id,
+                                              constants.USER_KILLED,
+                                              None,
+                                              None,
+                                              None)
+      self._database_server.set_job_status(job_id, 
+                                            constants.FAILED, 
+                                            force = True)
     
 
   def _stop_wf(self, wf_id):
@@ -1502,9 +1502,20 @@ class WorkflowEngine(object):
           result.append( ( os.path.basename(path), s.st_size, None ) )
     return result
 
+  def transfer_information(self, local_path):
+    '''
+    @rtype: tuple (string, string, date, int, sequence)
+    @return: (local_file_path, 
+              remote_file_path, 
+              expiration_date, 
+              workflow_id,
+              remote_paths)
+    '''
+    return self._database_server.get_transfer_information(local_path)
+
 
   def initializeRetrivingTransfer(self, local_path):
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.transfer_information(local_path)
     status = self.transfer_status(local_path)
     if status != constants.READY_TO_TRANSFER:
       self.logger.debug("!!!! transfer " + local_path + "is not READY_TO_TRANSFER")
@@ -1734,8 +1745,12 @@ class WorkflowEngine(object):
       self._database_server.delete_job(job_id)
     else:
       self._database_server.set_job_status(job_id, constants.DELETE_PENDING)
-      self._wait_job_status_update(job_id)
-
+      try:
+        self._wait_job_status_update(job_id)
+      except WorkflowEngineError, e:
+        self.logger.debug(e)
+        #TBI => add a warning => the jobs may need to be killed using the DRMS directly !
+        self._database_server.delete_job(job_id)
 
   ########## WORKFLOW SUBMISSION ############################################
   
@@ -1815,25 +1830,25 @@ class WorkflowEngine(object):
   ########## SERVER STATE MONITORING ########################################
 
 
-  def jobs(self):
+  def jobs(self, job_ids=None):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    return self._database_server.get_jobs(self._user_id)
+    return self._database_server.get_jobs(self._user_id, job_ids)
     
 
-  def transfers(self):
+  def transfers(self, transfer_ids=None):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    return self._database_server.get_transfers(self._user_id)
+    return self._database_server.get_transfers(self._user_id, transfer_ids)
   
   
-  def workflows(self):
+  def workflows(self, workflow_ids=None):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    return self._database_server.get_workflows(self._user_id)
+    return self._database_server.get_workflows(self._user_id, workflow_ids)
   
 
   def workflow(self, wf_id):
@@ -1844,31 +1859,8 @@ class WorkflowEngine(object):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
     return self._database_server.get_workflow(wf_id)
-
- 
-  def workflowInformation(self, wf_id):
-    '''
-    Implementation of soma.workflow.client.WorkflowController API
-    '''
-    if not self._database_server.is_user_workflow(wf_id, self._user_id):
-      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
-      return
-    return self._database_server.get_workflow_info(wf_id)
-    
-
-  def transferInformation(self, local_path):
-    '''
-    Implementation of soma.workflow.client.WorkflowController API
-    '''
-    #TBI raise an exception if local_path is not valid transfer??
-    if not self._database_server.is_user_transfer(local_path, self._user_id):
-      #print "Couldn't get transfer information of %s. It doesn't exist or is owned by a different user \n" % local_path
-      return
-      
-    return self._database_server.get_transfer_information(local_path)
-   
-
-  def job_status( self, job_id ):
+  
+  def job_status(self, job_id):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
@@ -1878,6 +1870,17 @@ class WorkflowEngine(object):
     
     return self._database_server.get_job_status(job_id)[0]
         
+  
+  def workflow_status(self, wf_id):
+    '''
+    Implementation of soma.workflow.client.WorkflowController API
+    '''
+    if not self._database_server.is_user_workflow(wf_id, self._user_id):
+      #print "Could get the workflow status of workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
+      return
+    
+    return self._database_server.get_workflow_status(job_id)[0]
+    
   
   def workflow_nodes_status(self, wf_id, groupe = None):
     '''
@@ -1942,23 +1945,6 @@ class WorkflowEngine(object):
     resource_usage = dbJob.resource_usage
     
     return (exit_status, exit_value, terminating_signal, resource_usage)
-    
- 
-  def jobInformation(self, job_id):
-    '''
-    Implementation of soma.workflow.client.WorkflowController API
-    '''
-    
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      #print "Could get information about job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return
-    
-    dbJob = self._database_server.get_job(job_id)
-    name_description = dbJob.name_description 
-    command = dbJob.command
-    submission_date = dbJob.submission_date
-    
-    return (name_description, command, submission_date)
     
 
   def stdouterr_transfer_action_info(self, job_id):
@@ -2044,13 +2030,11 @@ class WorkflowEngine(object):
     
     status = self._database_server.get_job_status(job_id)[0]
     if status != constants.DONE and status != constants.FAILED:
-
       self._database_server.set_job_status(job_id, 
                                           constants.KILL_PENDING)
-
+      
       self._wait_job_status_update(job_id)
 
-   
   def _wait_job_status_update(self, job_id):
     
     self.logger.debug(">> _wait_job_status_update")
@@ -2062,7 +2046,7 @@ class WorkflowEngine(object):
       time.sleep(refreshment_interval)
       (status, last_status_update) = self._database_server.get_job_status(job_id) 
       if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
-        raise WorkflowEngineError("Could not get back status of job %s. "
+        raise WorkflowEngineError("Could not wait for job status update of %s. "
                                   "The process updating its status failed." %(job_id), self.logger)
     self.logger.debug("<< _wait_job_status_update")
 

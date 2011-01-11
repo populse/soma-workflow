@@ -81,21 +81,11 @@ class JobsControler(object):
     file.close()
   
   def getSubmittedWorkflows(self, connection):
-    '''
-    returns a list of tuple:
-    - workflow id
-    - expiration date
-    - workflow name
-    '''
-    result = []
-    for wf_id in connection.workflows():
-      expiration_date, name = connection.workflowInformation(wf_id)
-      result.append((wf_id, expiration_date, name))
-    return result
+    return connection.workflows()
     
   def getWorkflow(self, wf_id, connection):
     workflow = connection.workflow(wf_id)
-    expiration_date = connection.workflowInformation(wf_id)[0]
+    expiration_date = connection.workflows([wf_id])[wf_id][1]
     return (workflow, expiration_date)
   
   

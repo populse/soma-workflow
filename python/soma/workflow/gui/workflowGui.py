@@ -531,8 +531,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
     self.ui.list_widget_submitted_wfs.clear()
-    for wf_info in submittedWorflows:
-      wf_id, expiration_date, workflow_name = wf_info
+    for wf_id, wf_info in submittedWorflows.iteritems():
+      workflow_name, expiration_date = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
       item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
       item.setData(QtCore.Qt.UserRole, wf_id)

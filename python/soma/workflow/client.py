@@ -515,7 +515,7 @@ class WorkflowController(object):
     must have been generated using the register_transfer method. 
     '''
     
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
     transfer_action_info = self._engine_proxy.transfer_action_info(local_path)
     if not transfer_action_info:
       init_info = self.initialize_sending_transfer(local_path)
@@ -574,7 +574,7 @@ class WorkflowController(object):
     @type  local_path: string 
     @param local_path: local path 
     '''
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
     transfer_action_info = self.initialize_retrieving_transfer(local_path)
     
     if transfer_action_info[2] == FILE_RETRIEVING:
@@ -674,7 +674,7 @@ class WorkflowController(object):
              in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
     '''
     
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
     if not remote_paths:
       if os.path.isfile(remote_path):
         stat = os.stat(remote_path)
@@ -723,7 +723,7 @@ class WorkflowController(object):
     '''
     
     (transfer_action_info, contents) = self._engine_proxy.initializeRetrivingTransfer(local_path)
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
     if contents:
       self._create_dir_structure(os.path.dirname(remote_path), contents)
     return transfer_action_info
@@ -968,46 +968,55 @@ class WorkflowController(object):
   ########## MONITORING #############################################
 
 
-  def jobs(self):
+  def jobs(self, job_ids=None):
     '''
-    Returns the identifier of the submitted and not diposed jobs.
+    Submitted jobs which are not part of a workflow.
+    If a sequence of job id is given, the function returns general information 
+    about these jobs.
+    Returns a dictionary of job identifier associated to general information.
 
-    @rtype:  sequence of C{JobIdentifier}
-    @return: series of job identifiers
+    @rtype:  dictionary: job identifiers -> tuple (string, string, date))
+    @return: job_id -> (name/description, command, submission date)
     '''
     
-    return self._engine_proxy.jobs()
+    return self._engine_proxy.jobs(job_ids)
     
-  def transfers(self):
+  def transfers(self, transfer_ids=None):
     '''
-    Returns the transfers currently owned by the user as a sequence of local file path 
-    returned by the L{register_transfer} method. 
+    Transfers which are not part of a workflow.
+    If a sequence of transfer id is given, the function returns general 
+    information about these transfers.
+    Returns a dictionary of transfer identifiers associated to general 
+    information.
     
-    @rtype: sequence of string
-    @return: sequence of local file path.
+    @type  s
+    @rtype: dictionary: string -> tuple(string, 
+                                        string, 
+                                        date,  
+                                        None or sequence of string)
+    @return: transfer_id -> ( -remote_path: remote file or directory path
+                              -expiration_date: after this date the local file 
+                              will be deleted, unless an existing job has 
+                              declared this file as output or input.
+                              -remote_paths: sequence of file or directory path 
+                              or None
+                            )
     '''
- 
-    return self._engine_proxy.transfers()
+    return self._engine_proxy.transfers(transfer_ids)
 
-  def workflows(self):
+  def workflows(self, workflow_ids=None):
     '''
-    Returns the identifiers of the submitted workflows.
+    Workflows submitted. 
+    If a sequence of workflow id is given, the function returns general 
+    information about these workflows.
+    Returns a dictionary of workflow identifiers associated to general 
+    information.
     
-    @rtype: sequence of C{WorkflowIdentifier}
+    @rtype: dictionary: workflow identifier -> tupe(date, string)
+    @return: workflow_id -> (workflow_name, expiration_date)
     '''
-    return self._engine_proxy.workflows()
+    return self._engine_proxy.workflows(workflow_ids)
   
-  def workflowInformation(self, wf_id):
-    '''
-    Returns a tuple: 
-      - expiration date
-      - workflow name
-      
-    @rtype: (date, name)
-    @return: (expiration date, workflow name) 
-    '''
-    return self._engine_proxy.workflowInformation(wf_id)
-    
   
   def workflow(self, wf_id):
     '''
@@ -1017,25 +1026,8 @@ class WorkflowController(object):
     @return: submitted workflow
     '''
     return self._engine_proxy.workflow(wf_id)
-    
-  def transferInformation(self, local_path):
-    '''
-    The local_path must belong to the list of paths returned by L{transfers}.
-    Returns the information related to the file transfer corresponding to the 
-    local_path.
-
-    @rtype: tuple (local_path, remote_path, expiration_date)
-    @return:
-        -local_path: path of the local file or directory
-        -remote_path: remote file or directory path
-        -expiration_date: after this date the local file will be deleted, unless an
-        existing job has declared this file as output or input.
-        -remote_paths: sequence of file or directory path or None
-    '''
-    return self._engine_proxy.transferInformation(local_path)
    
-  
-  
+   
   def job_status( self, job_id ):
     '''
     Returns the status of a submitted job.
@@ -1044,9 +1036,22 @@ class WorkflowController(object):
     @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
     @rtype:  C{JobStatus} or None
     @return: the status of the job, if its valid and own by the current user, None 
-    otherwise. See the list of status: constants.JOBS_STATUS.
+    otherwise. See the list of status: constants.JOB_STATUS.
     '''
     return self._engine_proxy.job_status(job_id)
+  
+  
+  def workflow_status(self, wf_id):
+    '''
+    Returns the status of the submitted workflow.
+    
+    @type  wf_id: Workflow identifier
+    @param wf_id: The workflow identifier.
+    @rtype: string
+    @return: the workflow status, if its valid and own by the current use, None
+    otherwise. See the list of status: constants.WORKFLOW_STATUS
+    '''
+    return self._engine_proxy.workflow_status(wf_id)
   
   
   def workflow_nodes_status(self, wf_id, group = None):
@@ -1087,7 +1092,7 @@ class WorkflowController(object):
     
     status = self._engine_proxy.transfer_status(local_path)
     transfer_action_info =  self._engine_proxy.transfer_action_info(local_path)
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transferInformation(local_path)
+    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
     progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
     return (status, progression)
       
@@ -1122,9 +1127,6 @@ class WorkflowController(object):
        
     return progression_info
     
-    
-    
-    
 
   def job_termination_status(self, job_id ):
     '''
@@ -1143,20 +1145,6 @@ class WorkflowController(object):
           distributed resource management system (DRMS).
     '''
     return self._engine_proxy.job_termination_status(job_id)
-    
- 
-  def jobInformation(self, job_id):
-    '''
-    Gives general information about the job: name/description, command and 
-    submission date.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
-    @rtype: tuple or None
-    @return: (name_description, command, submission_date) it may be C{None} if the job 
-    is not valid. 
-    '''
-    return self._engine_proxy.jobInformation(job_id)
     
     
   def retrieve_job_stdouterr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
