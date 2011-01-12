@@ -191,7 +191,7 @@ class JobExamples(object):
                               stdin = self.inpath + "complete/" + "stdin1",
                               join_stderrout=False,
                               disposal_timeout = self.jobs_timeout,
-                              name_description = "job1 local custom submission",
+                              name = "job1 local custom submission",
                               stdout_file=stdout,
                               stderr_file=stderr,
                               working_directory=self.outpath )
@@ -211,7 +211,7 @@ class JobExamples(object):
                               stdin = self.inpath + "complete/" + "stdin1",
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
-                              name_description = "job1 local submission")
+                              name = "job1 local submission")
     return (jobId,
             [file11, file12],
             None)
@@ -240,7 +240,7 @@ class JobExamples(object):
                                       referenced_output_files = [l_object],
                                       join_stderrout=False, 
                                       disposal_timeout = self.jobs_timeout,
-                                      name_description = "job compil1 mpi")
+                                      name = "job compil1 mpi")
     
     self.jobs.wait_job([compil1jobId])
     
@@ -254,7 +254,7 @@ class JobExamples(object):
                                     referenced_output_files = [l_bin],
                                     join_stderrout=False, 
                                     disposal_timeout = self.jobs_timeout,
-                                    name_description = "job compil2 mpi")
+                                    name = "job compil2 mpi")
     
     self.jobs.wait_job([compil2jobId])
     self.jobs.erase_transfer(l_object)
@@ -269,7 +269,7 @@ class JobExamples(object):
                               referenced_input_files = [script, l_bin],
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
-                              name_description = "parallel job mpi",
+                              name = "parallel job mpi",
                               parallel_job_info = (constants.OCFG_PARALLEL_PC_MPI,node_num))
 
     self.jobs.delete_job(compil1jobId)

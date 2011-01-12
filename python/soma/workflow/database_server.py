@@ -89,7 +89,7 @@ Job server database tables:
       queue               : string, optional
 
     => for user and administrator usage
-      name_description   : string, optional 
+      name               : string, optional 
       submission_date    : date 
       execution_date     : date
       ending_date        : date
@@ -151,7 +151,7 @@ def create_database(database_file):
                                        max_node_number      INTEGER,
                                        queue                TEXT,
                                        
-                                       name_description     TEXT,
+                                       name                 TEXT,
                                        submission_date      DATE,
                                        execution_date       DATE,
                                        ending_date          DATE,
@@ -222,8 +222,8 @@ def print_tables(database_file):
   print "==== workflows table: ========"
   for row in cursor.execute('SELECT * FROM workflows'):
     print row
-    #id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name_description, drmaa_id,     working_directory = row
-    #print 'id=', repr(id).rjust(3), 'submission_date=', repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3), 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file', repr(stdout_file).rjust(10), 'stderr_file', repr(stderr_file).rjust(10), 'join_errout', repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10), 'name_description', repr(name_description).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10), 'working_directory', repr(working_directory).rjust(10)
+    #id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name, drmaa_id,     working_directory = row
+    #print 'id=', repr(id).rjust(3), 'submission_date=', repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3), 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file', repr(stdout_file).rjust(10), 'stderr_file', repr(stderr_file).rjust(10), 'join_errout', repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10), 'name', repr(name).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10), 'working_directory', repr(working_directory).rjust(10)
   
   print "==== jobs table: ========"
   for row in cursor.execute('SELECT * FROM jobs'):
@@ -271,7 +271,7 @@ class DBJob(object):
               max_node_number=1,
               queue=None,
               
-              name_description=None,
+              name=None,
               submission_date=None,
               execution_date=None,
               ending_date=None,
@@ -320,8 +320,8 @@ class DBJob(object):
     @type  queue: str or None
     @param queue: name of the queue used to submit the job.
     
-    @type  name_description: string
-    @param name_description: optional description of the job.  
+    @type  name: string
+    @param name: optional name of the job.  
     @type  exit_status: string 
     @param exit_status: exit status string as defined in L{WorkflowDatabaseServer}
     @type  exit_value: int or None
@@ -358,7 +358,7 @@ class DBJob(object):
     self.max_node_number = max_node_number
     self.queue = queue
     
-    self.name_description = name_description
+    self.name = name
     self.submission_date = submission_date
     self.execution_date = execution_date
     self.ending_date = ending_date
@@ -1227,7 +1227,7 @@ class WorkflowDatabaseServer( object ):
                           max_node_number,
                           queue,
                                        
-                          name_description,
+                          name,
                           submission_date,
                           execution_date,
                           ending_date,
@@ -1260,7 +1260,7 @@ class WorkflowDatabaseServer( object ):
                           dbJob.max_node_number,
                           dbJob.queue,
                           
-                          dbJob.name_description,
+                          dbJob.name,
                           dbJob.submission_date,
                           dbJob.execution_date,
                           dbJob.ending_date,
@@ -1566,7 +1566,7 @@ class WorkflowDatabaseServer( object ):
         max_node_number,     \
         queue,               \
                              \
-        name_description,    \
+        name,                \
         submission_date,     \
         execution_date,      \
         ending_date,         \
@@ -1592,7 +1592,7 @@ class WorkflowDatabaseServer( object ):
                                           max_node_number,
                                           queue,
                                           
-                                          name_description,
+                                          name,
                                           submission_date,
                                           execution_date,
                                           ending_date,
@@ -1627,7 +1627,7 @@ class WorkflowDatabaseServer( object ):
                   max_node_number,
                   self._string_conversion(queue),
                   
-                  self._string_conversion(name_description),
+                  self._string_conversion(name),
                   self._str_to_date_conversion(submission_date),
                   self._str_to_date_conversion(execution_date),
                   self._str_to_date_conversion(ending_date),
@@ -1745,7 +1745,7 @@ class WorkflowDatabaseServer( object ):
     '''
     if not job_ids:
       request = '''SELECT id, 
-                          name_description, 
+                          name, 
                           command, 
                           submission_date 
                     FROM jobs 
@@ -1753,7 +1753,7 @@ class WorkflowDatabaseServer( object ):
       argument = [user_id]
     else:
       request = '''SELECT id, 
-                          name_description, 
+                          name, 
                           command, 
                           submission_date 
                   FROM jobs WHERE id IN (? '''

@@ -560,7 +560,7 @@ class EngineJob(soma.workflow.client.Job):
                           
                           parallel_config_name = parallel_config_name,
                           max_node_number = max_node_number,
-                          name_description = self.name_description)
+                          name = self.name)
                                        
     job_id = database_server.add_job(db_job)
                                         

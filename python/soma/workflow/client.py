@@ -109,12 +109,12 @@ class Job(object):
                 stdin=None,
                 join_stderrout=False,
                 disposal_timeout=168,
-                name_description=None,
+                name=None,
                 stdout_file=None,
                 stderr_file=None,
                 working_directory=None,
                 parallel_job_info=None):
-    self.name = name_description
+    self.name = name
     self.command = command
     if referenced_input_files: 
       self.referenced_input_files = referenced_input_files
@@ -125,7 +125,6 @@ class Job(object):
     self.stdin = stdin
     self.join_stderrout = join_stderrout
     self.disposal_timeout = disposal_timeout
-    self.name_description = name_description
     self.stdout_file = stdout_file
     self.stderr_file = stderr_file
     self.working_directory = working_directory
@@ -850,7 +849,7 @@ class WorkflowController(object):
               stdin=None,
               join_stderrout=True,
               disposal_timeout=168,
-              name_description=None,
+              name=None,
               stdout_file=None,
               stderr_file=None,
               working_directory=None,
@@ -894,8 +893,8 @@ class WorkflowController(object):
     user had called L{kill_job} and L{delete_job}.
     Default delay is 168 hours (7 days).
     
-    @type  name_description: string
-    @param name_description: optional job name or description for user usage only
+    @type  name: string
+    @param name: optional job name for user usage only
  
     @type  stdout_file: string
     @param stdout_file: this argument can be set to choose the file where the job's 
@@ -935,7 +934,7 @@ class WorkflowController(object):
                                     stdin,
                                     join_stderrout,
                                     disposal_timeout,
-                                    name_description,
+                                    name,
                                     stdout_file,
                                     stderr_file,
                                     working_directory,
@@ -1024,7 +1023,7 @@ class WorkflowController(object):
     Returns a dictionary of job identifier associated to general information.
 
     @rtype:  dictionary: job identifiers -> tuple (string, string, date))
-    @return: job_id -> (name/description, command, submission date)
+    @return: job_id -> (name, command, submission date)
     '''
     
     return self._engine_proxy.jobs(job_ids)
