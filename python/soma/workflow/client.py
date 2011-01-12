@@ -130,10 +130,6 @@ class Job(object):
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
     
-    self.job_id = -1
-    self.workflow_id = -1
-
-    
     
 class SharedResourcePath(object):
   '''
@@ -159,13 +155,7 @@ class SharedResourcePath(object):
                relative_path,
                namespace,
                uuid,
-               disposal_timeout = 168,
-               name = None):#,
-               #relative_paths = None):
-    if name:
-      self.name = name
-    else:
-      self.name = namespace + "::" + uuid + "::" + relative_path
+               disposal_timeout = 168):
    
     self.relative_path = relative_path
     self.namespace = namespace
@@ -174,7 +164,6 @@ class SharedResourcePath(object):
 
 class FileTransfer(object):
   '''
-  Workflow node type.
   Abstract class (use FileSending or FileRetrieving) 
   File/directory transfer representation in a workflow.
   Use remote_paths if the transfer involves several associated files and/or directories, eg:
@@ -205,7 +194,6 @@ class FileTransfer(object):
     self.disposal_timeout = disposal_timeout
 
     self.remote_paths = remote_paths
-    self.local_path = None
 
 class FileSending(FileTransfer):
   '''
@@ -290,7 +278,6 @@ class Workflow(object):
     @param mainGroup: (optional) lower level group.  
     '''
     
-    self.wf_id = -1
     self.name = None
     self.nodes = nodes
     self.dependencies = dependencies
