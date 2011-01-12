@@ -82,6 +82,26 @@ class Job(object):
                                  
   (See the WorkflowController.submit_job method for a description of each parameter)
   '''
+  name = None
+
+  command = None
+
+  referenced_input_files = None
+
+  referenced_output_files = None
+
+  stdin = None
+
+  join_stderrout = None
+
+  stdout_file = None
+
+  stderr_file = None
+  
+  working_directory = None
+
+  parallel_job_info = None
+
   def __init__( self, 
                 command,
                 referenced_input_files=None,
@@ -129,6 +149,13 @@ class SharedResourcePath(object):
   the SharedResourcePath objects are replaced by the absolut path of the file on the resource,
   provided the namespace and database are configured on the cluster (OCFG_U_PATH_TRANSLATION_FILES).   
   '''
+  
+  relative_path = None
+  
+  namespace = None
+
+  uuid = None
+
   def __init__(self,
                relative_path,
                namespace,
@@ -158,6 +185,12 @@ class FileTransfer(object):
   In this case, set remote_path to one the files (eq: .img).
   In other cases (1 file or 1 directory) the remote_paths must be set to None.
   '''
+  name = None
+
+  remote_path = None
+
+  remote_paths = None
+
   def __init__( self,
                 remote_path, 
                 disposal_timeout = 168,
@@ -206,6 +239,10 @@ class WorkflowNodeGroup(object):
   However groups has only a displaying role, it doesn't have
   any impact on the workflow execution.
   '''
+  name = None
+
+  elements = None
+
   def __init__(self, elements, name = None):
     '''
     @type  elements: sequence of Job and WorkflowNodeGroup
@@ -225,6 +262,17 @@ class Workflow(object):
   '''
   Workflow to be submitted using an instance of the WorkflowController class.
   '''
+  name = None
+
+  nodes = None
+
+  dependencies = None
+
+  groups = None
+
+  mainGroup = None
+  
+
   def __init__(self, 
                nodes, 
                dependencies, 

@@ -268,34 +268,15 @@ class Drmaa(object):
     self._drmaa.terminate(job_drmaa_id)
 
 
-class EngineTransfer(soma.workflow.client.FileTransfer):
-  '''
-  Abstract class use EngineSendTransfer and EngineRetrieveTransfer.
-  '''
 
-  # status as defined in constants.FILE_TRANSFER_STATUS
-  status = None
-
-  wf_id = None
-
-  logger = None
-
-  def __init__(self, client_file_transfer, wf_id=-1):
-  
-    client_ft_copy = copy.deepcopy(client_file_transfer)
-    super(EngineTransfer, self).__init__(client_ft_copy.remote_path,
-                                         client_ft_copy.disposal_timeout,
-                                         client_ft_copy.name,
-                                         client_ft_copy.remote_paths)
-
-    def register(self, database_server, user_id):
-      raise Exception("EngineTransfer is an abstract class.")
-
-
-class EngineSendTransfer(EngineTransfer):
+class EngineSendTransfer(FileSending):
 
   def __init__(self, client_file_sending):
-    super(EngineSendTransfer, self).__init__(client_file_sending)
+    client_ft_copy = copy.deepcopy(client_file_sending)
+    super(EngineSendTransfer, self).__init__(client_ft_copy.remote_path,
+                                             client_ft_copy.disposal_timeout,
+                                             client_ft_copy.name,
+                                             client_ft_copy.remote_paths)
 
   def register(self, 
                database_server, 
@@ -329,14 +310,16 @@ class EngineSendTransfer(EngineTransfer):
     exist = self.status == constants.TRANSFERED
     return exist
   
-  
 
-  
-    
-class EngineRetrieveTransfer(EngineTransfer):
+
+class EngineRetrieveTransfer(FileRetrieving):
 
   def __init__(self, client_file_retrieving):
-    super(EngineRetrieveTransfer, self).__init__(client_file_retrieving)
+    client_ft_copy = copy.deepcopy(client_file_retrieving)
+    super(EngineRetrieveTransfer, self).__init__(client_ft_copy.remote_path,
+                                             client_ft_copy.disposal_timeout,
+                                             client_ft_copy.name,
+                                             client_ft_copy.remote_paths)
     
   def register(self, 
                database_server, 
@@ -426,7 +409,8 @@ class EngineJob(soma.workflow.client.Job):
 
   def convert_command(self, ft_conv):
     '''
-    @type ft_conv: dictionary FileTransfer => EngineTransfer
+    @type ft_conv: dictionary FileSending => EngineSendTransfer 
+                              FileRetrieving => EngineRetrieveTransfer
     '''
     logger = logging.getLogger('engine.EngineJob')
     new_command = []
@@ -436,14 +420,16 @@ class EngineJob(soma.workflow.client.Job):
         new_list = []
         for list_el in command_el:
           if isinstance(list_el, tuple) and \
-            isinstance(list_el[0], EngineTransfer):
+            ( isinstance(list_el[0], EngineSendTransfer) or \
+              isinstance(list_el[0], EngineRetrieveTransfer)):
             new_list.append(os.path.join(list_el[0].local_path,
                                          list_el[1])) 
           elif isinstance(list_el, tuple) and \
             isinstance(list_el[0], FileTransfer):
             new_list.append(os.path.join(ft_conv[list_el[0]].local_path,
                                          list_el[1])) 
-          elif isinstance(list_el, EngineTransfer):
+          elif isinstance(list_el, EngineSendTransfer) or \
+               isinstance(list_el, EngineRetrieveTransfer):
             new_list.append(list_el.local_path)
           elif isinstance(list_el, FileTransfer):
             new_list.append(ft_conv[list_el].local_path)
@@ -456,14 +442,16 @@ class EngineJob(soma.workflow.client.Job):
             pass
         new_command.append(str(repr(new_list)))
       elif isinstance(command_el, tuple) and \
-          isinstance(command_el[0], EngineTransfer):
+          ( isinstance(command_el[0], EngineSendTransfer) or \
+            isinstance(command_el[0], EngineRetrieveTransfer) ):
         new_command.append(os.path.join(command_el[0].local_path, 
                                         command_el[1]))
       elif isinstance(command_el, tuple) and \
            isinstance(command_el[0], FileTransfer):
         new_command.append(os.path.join(ft_conv[command_el[0]].local_path,
                                         command_el[1]))
-      elif isinstance(command_el, EngineTransfer):
+      elif isinstance(command_el, EngineSendTransfer) or \
+           isinstance(command_el, EngineRetrieveTransfer):
         new_command.append(command_el.local_path)
       elif isinstance(command_el, FileTransfer):
         new_command.append(ft_conv[command_el].local_path)
@@ -481,16 +469,18 @@ class EngineJob(soma.workflow.client.Job):
 
   def convert_stdin(self, ft_conv):
     if self.stdin:
-      if isinstance(self.stdin, EngineTransfer):
+      if isinstance(self.stdin, EngineSendTransfer) or \
+         isinstance(self.stdin, EngineRetrieveTransfer) :
         self.stdin = self.stdin.local_path 
-      if isinstance(self.stdin, FileTransfer):
+      elif isinstance(self.stdin, FileTransfer):
         self.stdin = ft_conv[self.stdin].local_path 
 
   def convert_referenced_transfers(self, ft_conv):
     # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
     new_referenced_input_files = []
     for input_file in self.referenced_input_files:
-      if isinstance(input_file, EngineTransfer):
+      if isinstance(input_file, EngineSendTransfer) or \
+         isinstance(input_file, EngineRetrieveTransfer) :
         #new_referenced_input_files.append(input_file.local_path)
         new_referenced_input_files.append(input_file)
       elif isinstance(input_file, FileTransfer):
@@ -505,7 +495,8 @@ class EngineJob(soma.workflow.client.Job):
     # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
     new_referenced_output_files = []
     for output_file in self.referenced_output_files:
-      if isinstance(output_file, EngineTransfer):
+      if isinstance(output_file, EngineSendTransfer) or \
+         isinstance(output_file, EngineRetrieveTransfer):
         #new_referenced_output_files.append(output_file.local_path)
         new_referenced_output_files.append(output_file)
       elif isinstance(output_file, FileTransfer):
@@ -592,7 +583,7 @@ class EngineJob(soma.workflow.client.Job):
     if self.referenced_input_files:
       str_referenced_input_files = []
       for ft in self.referenced_input_files:
-        if isinstance(ft, EngineTransfer):
+        if isinstance(ft, FileTransfer):
           local_path = ft.local_path
         else:
           local_path = ft
@@ -601,7 +592,7 @@ class EngineJob(soma.workflow.client.Job):
     if self.referenced_output_files:
       str_referenced_ouput_files = []
       for ft in self.referenced_output_files:
-        if isinstance(ft, EngineTransfer):
+        if isinstance(ft, FileTransfer):
           local_path = ft.local_path
         else:
           local_path = ft
@@ -654,7 +645,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
   queue = None
   # dict job_id => EngineJob
   jobs = None
-  # dict tr_id => EngineTransfer
+  # dict tr_id => EngineSendTransfer or EngineRetrieveTransfer
   transfers = None
 
   #logger = None
@@ -703,7 +694,8 @@ class EngineWorkflow(soma.workflow.client.Workflow):
   def _register_jobs(self, database_server):
     '''
     Register the transfers and jobs.
-    Transform every Job and FileTransfer to EngineJob and EngineTransfer
+    Transform every Job to and EngineJob
+    and FileTransfer to EngineSendTransfer or EngineRetrieveTransfer
     '''
     logger = logging.getLogger('engine.EngineWorkflow') 
 
@@ -730,7 +722,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
           file_transfers.add(ft)
 
     # First loop to register FileTransfer to the database server.
-    ft_conv = {} # dictonary FileTransfer => EngineTransfer 
+    ft_conv = {} # dictonary FileTransfer => EngineRetrieveTransfer or  EngineSendTransfer
     self.transfers =  {}
     
     for ft in file_transfers:
@@ -1207,7 +1199,7 @@ class WorkflowEngineLoop(object):
                 wf_to_inspect.add(job.workflow_id)
               if job.status == constants.DONE:
                 for ft in job.referenced_output_files:
-                  if isinstance(ft, EngineTransfer):
+                  if isinstance(ft, FileTransfer):
                     local_path = ft.local_path
                   else:
                     local_path = ft

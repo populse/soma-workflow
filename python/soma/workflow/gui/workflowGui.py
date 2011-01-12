@@ -1495,13 +1495,11 @@ class ClientWorkflow(object):
                                       children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
       for ft in job.referenced_input_files:
         #print "ift " + repr(ft) 
-        if isinstance(ft, soma.workflow.engine.EngineTransfer) or \
-           isinstance(ft, FileTransfer): 
+        if isinstance(ft, FileTransfer): 
           w_fts.add(ft)
         
       for ft in job.referenced_output_files:
-        if isinstance(ft, soma.workflow.engine.EngineTransfer) or \
-           isinstance(ft, FileTransfer): 
+        if isinstance(ft, FileTransfer): 
           w_fts.add(ft)
       
     # Create the ClientGroup instances
@@ -1539,10 +1537,10 @@ class ClientWorkflow(object):
     
     # processing the file transfers
     def compFileTransfers(ft1, ft2): 
-      if isinstance(ft1, FileTransfer) or isinstance(ft1, EngineTransfer):
+      if isinstance(ft1, FileTransfer):
         str1 = ft1.name
       else: str1 = ft1
-      if isinstance(ft2, FileTransfer) or isinstance(ft1, EngineTransfer):
+      if isinstance(ft2, FileTransfer):
         str2 = ft2.name
       else: str2 = ft2
       return cmp(str1, str2)
