@@ -1124,8 +1124,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     self.standby_icon=GRAY
     self.transfer_ready_icon=BLUE
     self.failed_icon=RED
-    self.running_icon=GREEN
-    self.done_icon=LIGHT_BLUE
+    self.running_icon=LIGHT_BLUE
+    self.done_icon=GREEN
     
     #self.standby_icon = QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/hourglass.png')
     #self.failed_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/abort.png')
@@ -1232,6 +1232,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           if role == QtCore.Qt.DecorationRole:
             if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
               return self.done_icon
+            elif status == DONE and exit_status == None:
+              return self.running_icon
             else:
               return self.failed_icon
               
@@ -1728,6 +1730,8 @@ class ClientGroup(ClientWorkflowItem):
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if item.status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
             self.done.append(item)
+          elif item.status == DONE and exit_status == None:
+            self.running.append(item)
           else:
             self.failed.append(item)
         else:
