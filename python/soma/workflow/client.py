@@ -166,34 +166,34 @@ class FileTransfer(object):
   '''
   Abstract class (use FileSending or FileRetrieving) 
   File/directory transfer representation in a workflow.
-  Use remote_paths if the transfer involves several associated files and/or directories, eg:
+  Use client_paths if the transfer involves several associated files and/or directories, eg:
         - file serie 
         - in the case of file format associating several file and/or directories
           (ex: a SPM image is stored in 2 files: .img and .hdr)
-  In this case, set remote_path to one the files (eq: .img).
-  In other cases (1 file or 1 directory) the remote_paths must be set to None.
+  In this case, set client_path to one the files (eq: .img).
+  In other cases (1 file or 1 directory) the client_paths must be set to None.
   '''
   name = None
 
-  remote_path = None
+  client_path = None
 
-  remote_paths = None
+  client_paths = None
 
   def __init__( self,
-                remote_path, 
+                client_path, 
                 disposal_timeout = 168,
                 name = None,
-                remote_paths = None):
+                client_paths = None):
     if name:
       ft_name = name
     else:
-      ft_name = remote_path + "transfer"
+      ft_name = client_path + "transfer"
     self.name = ft_name
 
-    self.remote_path = remote_path
+    self.client_path = client_path
     self.disposal_timeout = disposal_timeout
 
-    self.remote_paths = remote_paths
+    self.client_paths = client_paths
 
 class FileSending(FileTransfer):
   '''
@@ -201,11 +201,14 @@ class FileSending(FileTransfer):
   File/directory transfer for an input file.
   '''
   def __init__( self,
-                remote_path, 
+                client_path, 
                 disposal_timeout = 168,
                 name = None,
-                remote_paths = None):
-    super(FileSending, self).__init__(remote_path, disposal_timeout, name, remote_paths)
+                client_paths = None):
+    super(FileSending, self).__init__(client_path, 
+                                      disposal_timeout, 
+                                      name, 
+                                      client_paths)
    
 
 class FileRetrieving(FileTransfer):
@@ -214,11 +217,14 @@ class FileRetrieving(FileTransfer):
   File/directory transfer for an output file.
   '''
   def __init__( self,
-                remote_path, 
+                client_path, 
                 disposal_timeout = 168,
                 name = None,
-                remote_paths = None):
-    super(FileRetrieving, self).__init__(remote_path, disposal_timeout, name, remote_paths)
+                client_paths = None):
+    super(FileRetrieving, self).__init__(client_path, 
+                                         disposal_timeout, 
+                                         name, 
+                                         client_paths)
     
 class WorkflowNodeGroup(object):
   '''
@@ -470,13 +476,13 @@ class WorkflowController(object):
   ########## FILE TRANSFER ###############################################
     
   '''
-  The file transfer methods must be used when submitting a job from a remote
-  machine
+  The file transfer methods must be used when the data is located on the
+  client machine and not reachable from the computing resource
   
   Example:
   
-  #job remote input files: rfin_1, rfin_2, ..., rfin_n 
-  #job remote output files: rfout_1, rfout_2, ..., rfout_m  
+  #job client input files: rfin_1, rfin_2, ..., rfin_n 
+  #job client output files: rfout_1, rfout_2, ..., rfout_m  
   
   #Call register_transfer for each transfer file:
   lfout_1 = wf_controller.register_transfer(rfout_1)
@@ -507,74 +513,74 @@ class WorkflowController(object):
   ...
   wf_controller.retrieve(lfout_m)
   
-  When sending or registering a transfer, use remote_paths if the transfer involves several associated files and/or directories:
+  When sending or registering a transfer, use client_paths if the transfer involves several associated files and/or directories:
           - when transfering a file serie 
           - in the case of file format associating several file and/or directories
             (ex: a SPM image is stored in 2 files: .img and .hdr)
-  In this case, set remote_path to one the files (eq: .img).
-  In other cases (1 file or 1 directory) the remote_paths must be set to None.
+  In this case, set client_path to one the files (eq: .img).
+  In other cases (1 file or 1 directory) the client_paths must be set to None.
   
   Example:
     
   #transfer of a SPM image file
-  fout_1 = wf_controller.register_transfer(remote_path = 'mypath/myimage.img', 
-                                 remote_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
+  fout_1 = wf_controller.register_transfer(client_path = 'mypath/myimage.img', 
+                                 client_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
   ...
   wf_controller.retrive(fout_1)
  
   '''
         
-  def register_transfer(self, remote_path, disposal_timeout=168, remote_paths=None): 
+  def register_transfer(self, client_path, disposal_timeout=168, client_paths=None): 
     '''
-    Generates a unique local path and save the (local_path, remote_path) association.
+    Generates a unique local path and save the (local_path, client_path) association.
     
-    @type  remote_path: string
-    @param remote_path: remote path of file
+    @type  client_path: string
+    @param client_path: client path of file
     @type  disposalTimeout: int
     @param disposalTimeout: The local file and transfer information is 
     automatically deleted after disposal_timeout hours, except if a job 
     references it as output or input. Default delay is 168 hours (7 days).
-    @type remote_paths: sequence of string or None
-    @type remote_paths: sequence of file to transfer if transfering a 
+    @type client_paths: sequence of string or None
+    @type client_paths: sequence of file to transfer if transfering a 
     file serie or if the file format involve serveral file of directories.
     @rtype: string or sequence of string
-    @return: local file path associated with the remote file
+    @return: local file path associated with the client file
     '''
-    return self._engine_proxy.register_transfer(remote_path, disposal_timeout, remote_paths)
+    return self._engine_proxy.register_transfer(client_path, disposal_timeout, client_paths)
 
   def send(self, local_path, buffer_size = 512**2):
     '''
-    Transfers one or several remote file(s) to a local directory. The local_path 
+    Transfers one or several client file(s) to a local directory. The local_path 
     must have been generated using the register_transfer method. 
     '''
     
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(local_path)
     transfer_action_info = self._engine_proxy.transfer_action_info(local_path)
     if not transfer_action_info:
       init_info = self.initialize_sending_transfer(local_path)
-    if not remote_paths:
-      if os.path.isfile(remote_path):
+    if not client_paths:
+      if os.path.isfile(client_path):
         if transfer_action_info:
-          self._send_file(remote_path, 
+          self._send_file(client_path, 
                           local_path, 
                           buffer_size, 
                           transmitted = transfer_action[1])
         else:
-          self._send_file(remote_path, 
+          self._send_file(client_path, 
                           local_path, 
                           buffer_size)
                           
-      elif os.path.isdir(remote_path):
+      elif os.path.isdir(client_path):
         if transfer_action_info:
           for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-            self._send_file(remote_path, 
+            self._send_file(client_path, 
                             local_path, 
                             buffer_size, 
                             transmitted, 
                             relative_path)
         else:
           for relative_path in init_info[1]:
-            self._send_file(remote_path, 
+            self._send_file(client_path, 
                             local_path, 
                             buffer_size,
                             transmitted = 0,
@@ -582,14 +588,14 @@ class WorkflowController(object):
     else:
       if transfer_action_info:
         for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-          self._send_file(os.path.dirname(remote_path), 
+          self._send_file(os.path.dirname(client_path), 
                           local_path, 
                           buffer_size, 
                           transmitted,
                           relative_path)
       else:
         for relative_path in init_info[1]:
-          self._send_file(os.path.dirname(remote_path), 
+          self._send_file(os.path.dirname(client_path), 
                           local_path, 
                           buffer_size, 
                           transmitted = 0,
@@ -599,21 +605,21 @@ class WorkflowController(object):
 
   def retrieve(self, local_path, buffer_size = 512**2):
     '''
-    If local_path is a file path: copies the local file to the associated remote file path.
-    If local_path is a directory path: copies the contents of the directory to the associated remote directory.
+    If local_path is a file path: copies the local file to the associated client file path.
+    If local_path is a directory path: copies the contents of the directory to the associated client directory.
     The local path must belong to the user's transfers (ie belong to 
     the sequence returned by the L{transfers} method). 
     
     @type  local_path: string 
     @param local_path: local path 
     '''
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(local_path)
     transfer_action_info = self.initialize_retrieving_transfer(local_path)
     
     if transfer_action_info[2] == FILE_RETRIEVING:
       # file case
       (file_size, md5_hash, transfer_type) = transfer_action_info
-      self._retrieve_file(remote_path, 
+      self._retrieve_file(client_path, 
                           local_path, 
                           file_size, 
                           md5_hash, 
@@ -624,7 +630,7 @@ class WorkflowController(object):
       
       for relative_path, file_info in file_transfer_info.iteritems(): 
         (file_size, md5_hash) = file_info
-        self._retrieve_file(remote_path, 
+        self._retrieve_file(client_path, 
                             local_path, 
                             file_size, 
                             md5_hash, 
@@ -632,11 +638,11 @@ class WorkflowController(object):
                             relative_path)
     
 
-  def _send_file(self, remote_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
+  def _send_file(self, client_path, local_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
     if relative_path:
-      r_path = os.path.join(remote_path, relative_path)
+      r_path = os.path.join(client_path, relative_path)
     else:
-      r_path = remote_path
+      r_path = client_path
     f = open(r_path, 'rb')
     if transmitted:
       f.seek(transmitted)
@@ -646,11 +652,11 @@ class WorkflowController(object):
     f.close()
 
 
-  def _retrieve_file(self, remote_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
+  def _retrieve_file(self, client_path, local_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
     if relative_path:
-      r_path = os.path.join(os.path.dirname(remote_path), relative_path)
+      r_path = os.path.join(os.path.dirname(client_path), relative_path)
     else:
-      r_path = remote_path
+      r_path = client_path
     print "copy file to " + repr(r_path)
     f = open(r_path, 'ab')
     fs = f.tell()
@@ -707,21 +713,21 @@ class WorkflowController(object):
              in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
     '''
     
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
-    if not remote_paths:
-      if os.path.isfile(remote_path):
-        stat = os.stat(remote_path)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(local_path)
+    if not client_paths:
+      if os.path.isfile(client_path):
+        stat = os.stat(client_path)
         file_size = stat.st_size
-        md5_hash = hashlib.md5( open( remote_path, 'rb' ).read() ).hexdigest() 
+        md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = self._engine_proxy.initializeFileSending(local_path, file_size, md5_hash)
-      elif os.path.isdir(remote_path):
+      elif os.path.isdir(client_path):
         full_path_list = []
-        for element in os.listdir(remote_path):
-          full_path_list.append(os.path.join(remote_path, element))
+        for element in os.listdir(client_path):
+          full_path_list.append(os.path.join(client_path, element))
         contents = WorkflowController._contents(full_path_list)
         transfer_action_info = self._engine_proxy.initializeDirSending(local_path, contents)
-    else: #remote_paths
-      contents = self._contents(remote_paths)
+    else: #client_paths
+      contents = self._contents(client_paths)
       transfer_action_info = self._engine_proxy.initializeDirSending(local_path,contents)
     return transfer_action_info
   
@@ -756,9 +762,9 @@ class WorkflowController(object):
     '''
     
     (transfer_action_info, contents) = self._engine_proxy.initializeRetrivingTransfer(local_path)
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(local_path)
     if contents:
-      self._create_dir_structure(os.path.dirname(remote_path), contents)
+      self._create_dir_structure(os.path.dirname(client_path), contents)
     return transfer_action_info
     
 
@@ -1027,11 +1033,11 @@ class WorkflowController(object):
                                         string, 
                                         date,  
                                         None or sequence of string)
-    @return: transfer_id -> ( -remote_path: remote file or directory path
+    @return: transfer_id -> ( -client_path: client file or directory path
                               -expiration_date: after this date the local file 
                               will be deleted, unless an existing job has 
                               declared this file as output or input.
-                              -remote_paths: sequence of file or directory path 
+                              -client_paths: sequence of file or directory path 
                               or None
                             )
     '''
@@ -1102,8 +1108,8 @@ class WorkflowController(object):
       return
      # special processing for transfer status:
     new_transfer_status = []
-    for local_path, remote_path, status, transfer_action_info in wf_status[1]:
-      progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
+    for local_path, client_path, status, transfer_action_info in wf_status[1]:
+      progression = self._transfer_progress(local_path, client_path, transfer_action_info)
       new_transfer_status.append((local_path, (status, progression)))
       
     new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
@@ -1125,13 +1131,13 @@ class WorkflowController(object):
     
     status = self._engine_proxy.transfer_status(local_path)
     transfer_action_info =  self._engine_proxy.transfer_action_info(local_path)
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self._engine_proxy.transfer_information(local_path)
-    progression = self._transfer_progress(local_path, remote_path, transfer_action_info)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(local_path)
+    progression = self._transfer_progress(local_path, client_path, transfer_action_info)
     return (status, progression)
       
             
             
-  def _transfer_progress(self, local_path, remote_path, transfer_action_info):
+  def _transfer_progress(self, local_path, client_path, transfer_action_info):
     progression_info = None
     if transfer_action_info == None :
       progression_info = None
@@ -1140,8 +1146,8 @@ class WorkflowController(object):
     elif transfer_action_info[2] == FILE_RETRIEVING or transfer_action_info[2] == DIR_RETRIEVING:
       if transfer_action_info[2] == FILE_RETRIEVING:
         (file_size, md5_hash, transfer_type) = transfer_action_info
-        if os.path.isfile(remote_path):
-          transmitted = os.stat(remote_path).st_size
+        if os.path.isfile(client_path):
+          transmitted = os.stat(client_path).st_size
         else:
           transmitted = 0
         progression_info = (file_size, transmitted)
@@ -1149,7 +1155,7 @@ class WorkflowController(object):
         (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
         files_transfer_status = []
         for relative_path, (file_size, md5_hash) in file_transfer_info.iteritems():
-          full_path = os.path.join(os.path.dirname(remote_path), relative_path)
+          full_path = os.path.join(os.path.dirname(client_path), relative_path)
           if os.path.isfile(full_path):
             transmitted = os.stat(full_path).st_size
           else:

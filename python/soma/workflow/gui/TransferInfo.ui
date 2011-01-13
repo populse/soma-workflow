@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>521</width>
     <height>300</height>
    </rect>
   </property>
@@ -41,12 +41,12 @@
     <item row="2" column="0">
      <widget class="QLabel" name="label_5">
       <property name="text">
-       <string>User path:</string>
+       <string>Client path:</string>
       </property>
      </widget>
     </item>
     <item row="2" column="1">
-     <widget class="QLineEdit" name="remote_path">
+     <widget class="QLineEdit" name="client_path">
       <property name="frame">
        <bool>false</bool>
       </property>
@@ -65,12 +65,12 @@
     <item row="4" column="0">
      <widget class="QLabel" name="label_7">
       <property name="text">
-       <string>Cluster file path:</string>
+       <string>Comp resource path:</string>
       </property>
      </widget>
     </item>
     <item row="4" column="1">
-     <widget class="QLineEdit" name="local_path">
+     <widget class="QLineEdit" name="cr_path">
       <property name="frame">
        <bool>false</bool>
       </property>
@@ -100,7 +100,7 @@
      </widget>
     </item>
     <item row="3" column="1">
-     <widget class="QComboBox" name="remote_paths"/>
+     <widget class="QComboBox" name="client_paths"/>
     </item>
    </layout>
   </widget>

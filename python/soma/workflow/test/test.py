@@ -487,11 +487,11 @@ class SubmissionWithTransfer(JobsTest):
     info = JobsTest.jobExamples.submitJob1()
     self.myJobs.append(info[0]) 
     self.outputFiles = info[1]
-    self.remoteFiles = []
+    self.clientFiles = []
    
   def tearDown(self):
     JobsTest.tearDown(self)
-    for file in self.remoteFiles:
+    for file in self.clientFiles:
       if os.path.isfile(file): os.remove(file)
       
   def test_result(self):
@@ -510,23 +510,23 @@ class SubmissionWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transfers([file])[file][0]
-      self.failUnless(remote_file)
+      client_file = JobsTest.jobs.transfers([file])[file][0]
+      self.failUnless(client_file)
       JobsTest.jobs.retrieve(file)
-      self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
-      self.remoteFiles.append(remote_file)
+      self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
+      self.clientFiles.append(client_file)
    
-    (correct, msg) = checkFiles(self.remoteFiles, JobsTest.jobExamples.job1OutputFileModels)
+    (correct, msg) = checkFiles(self.clientFiles, JobsTest.jobExamples.job1OutputFileModels)
     self.failUnless(correct, msg)
     
     # checking stdout and stderr
-    remote_stdout = JobsTest.outpath + "/stdout_submit_with_transfer"
-    remote_stderr = JobsTest.outpath + "/stderr_submit_with_transfer"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_submit_with_transfer"
+    client_stderr = JobsTest.outpath + "/stderr_submit_with_transfer"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
   
-    (correct, msg) = checkFiles(self.remoteFiles[2:5], JobsTest.jobExamples.job1stdouterrModels)
+    (correct, msg) = checkFiles(self.clientFiles[2:5], JobsTest.jobExamples.job1stdouterrModels)
     self.failUnless(correct, msg)
     
     
@@ -542,7 +542,7 @@ class EndedJobWithTransfer(JobsTest):
     info = JobsTest.jobExamples.submitJob1()
     self.myJobs.append(info[0]) 
     self.outputFiles = info[1]
-    self.remoteFiles = []
+    self.clientFiles = []
 
     JobsTest.jobs.wait_job(self.myJobs)
    
@@ -560,7 +560,7 @@ class JobPipelineWithTransfer(JobsTest):
   def setUp(self):
     self.myJobs = []
     self.myTransfers = []
-    self.remoteFiles = []
+    self.clientFiles = []
     self.outputFiles = []
     
     # Job1 
@@ -625,7 +625,7 @@ class JobPipelineWithTransfer(JobsTest):
    
   def tearDown(self):
     JobsTest.tearDown(self)
-    for file in self.remoteFiles:
+    for file in self.clientFiles:
       if os.path.isfile(file): os.remove(file)
       
   def test_result(self):
@@ -645,44 +645,44 @@ class JobPipelineWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transfers([file])[file][0]
-      self.failUnless(remote_file)
+      client_file = JobsTest.jobs.transfers([file])[file][0]
+      self.failUnless(client_file)
       JobsTest.jobs.retrieve(file)
-      self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
-      self.remoteFiles.append(remote_file)
+      self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
+      self.clientFiles.append(client_file)
     
     models = JobsTest.jobExamples.job1OutputFileModels + JobsTest.jobExamples.job2OutputFileModels + JobsTest.jobExamples.job3OutputFileModels + JobsTest.jobExamples.job4OutputFileModels
-    (correct, msg) = checkFiles(self.remoteFiles, models)
+    (correct, msg) = checkFiles(self.clientFiles, models)
     self.failUnless(correct, msg)
     
 
     # checking stdout and stderr
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
     
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
   
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
     
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
    
     models = JobsTest.jobExamples.job1stdouterrModels + JobsTest.jobExamples.job2stdouterrModels + JobsTest.jobExamples.job3stdouterrModels + JobsTest.jobExamples.job4stdouterrModels
-    (correct, msg) = checkFiles(self.remoteFiles[5:13], models)
+    (correct, msg) = checkFiles(self.clientFiles[5:13], models)
     self.failUnless(correct, msg)
 
                     
@@ -695,11 +695,11 @@ class ExceptionJobTest(JobsTest):
     self.myTransfers = []
     info = JobsTest.jobExamples.submitExceptionJob()
     self.myJobs.append(info[0])
-    self.remoteFiles = []
+    self.clientFiles = []
     
   def tearDown(self):
     JobsTest.tearDown(self)
-    for file in self.remoteFiles:
+    for file in self.clientFiles:
       if os.path.isfile(file): os.remove(file)
    
   def test_result(self):
@@ -716,13 +716,13 @@ class ExceptionJobTest(JobsTest):
     self.failUnless(exitValue == 1,
                     'Job exit value: %d' %exitValue)
     # checking stdout and stderr
-    remote_stdout = JobsTest.outpath + "/stdout_exception_job"
-    remote_stderr = JobsTest.outpath + "/stderr_exception_job"
-    JobsTest.jobs.retrieve_job_stdouterr(jobid, remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_exception_job"
+    client_stderr = JobsTest.outpath + "/stderr_exception_job"
+    JobsTest.jobs.retrieve_job_stdouterr(jobid, client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
     
-    (identical, msg) = checkFiles(self.remoteFiles, JobsTest.jobExamples.exceptionjobstdouterr,1)
+    (identical, msg) = checkFiles(self.clientFiles, JobsTest.jobExamples.exceptionjobstdouterr,1)
     self.failUnless(identical, msg)
 
     
@@ -733,7 +733,7 @@ class DisconnectionTest(JobsTest):
   def setUp(self):
     self.myJobs = []
     self.myTransfers = []
-    self.remoteFiles = []
+    self.clientFiles = []
     self.outputFiles = []
     
     # Job1 
@@ -784,7 +784,7 @@ class DisconnectionTest(JobsTest):
   def tearDown(self):
     #pass
     JobsTest.tearDown(self)
-    for file in self.remoteFiles:
+    for file in self.clientFiles:
       if os.path.isfile(file): 
         print "remove " + file 
         os.remove(file)
@@ -837,44 +837,44 @@ class DisconnectionTest(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      remote_file = JobsTest.jobs.transfers([file])[file][0]
-      self.failUnless(remote_file)
+      client_file = JobsTest.jobs.transfers([file])[file][0]
+      self.failUnless(client_file)
       JobsTest.jobs.retrieve(file)
-      self.failUnless(os.path.isfile(remote_file), 'File %s doesn t exit' %file)
-      self.remoteFiles.append(remote_file)
+      self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
+      self.clientFiles.append(client_file)
     
     models = JobsTest.jobExamples.job1OutputFileModels + JobsTest.jobExamples.job2OutputFileModels + JobsTest.jobExamples.job3OutputFileModels + JobsTest.jobExamples.job4OutputFileModels
-    (correct, msg) = checkFiles(self.remoteFiles, models)
+    (correct, msg) = checkFiles(self.clientFiles, models)
     self.failUnless(correct, msg)
     
 
     # checking stdout and stderr
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
     
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
   
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
     
-    remote_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
-    remote_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], remote_stdout, remote_stderr)
-    self.remoteFiles.append(remote_stdout)
-    self.remoteFiles.append(remote_stderr)
+    client_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
+    client_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
+    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
+    self.clientFiles.append(client_stdout)
+    self.clientFiles.append(client_stderr)
    
     models = JobsTest.jobExamples.job1stdouterrModels + JobsTest.jobExamples.job2stdouterrModels + JobsTest.jobExamples.job3stdouterrModels + JobsTest.jobExamples.job4stdouterrModels
-    (correct, msg) = checkFiles(self.remoteFiles[5:13], models,1)
+    (correct, msg) = checkFiles(self.clientFiles[5:13], models,1)
     self.failUnless(correct, msg)
     #pass
 
@@ -955,7 +955,7 @@ if __name__ == '__main__':
   login = None
   password = None
   if controller.isRemoteConnection(resource_id):
-    sys.stdout.write("This is a remote connection\n")
+    sys.stdout.write("This is a client connection\n")
     sys.stdout.write("login:")
     login = sys.stdin.readline()
     login = login.rstrip()

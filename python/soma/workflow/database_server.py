@@ -101,13 +101,13 @@ Job server database tables:
   
   Transfer
     local file path
-    remote file path (optional)
+    client file path (optional)
     transfer date
     expiration date
     user_id
     workflow_id (optional)
     status
-    remote_paths
+    client_paths
     transfer_action_info
 
   Input/Ouput junction table
@@ -162,13 +162,13 @@ def create_database(database_file):
                                        )''')
 
   cursor.execute('''CREATE TABLE transfers (local_file_path  TEXT PRIMARY KEY NOT NULL, 
-                                            remote_file_path TEXT,
+                                            client_file_path TEXT,
                                             transfer_date    DATE,
                                             expiration_date  DATE NOT NULL,
                                             user_id          INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
                                             workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflows (id),
                                             status           VARCHAR(255) NOT NULL,
-                                            remote_paths     TEXT,
+                                            client_paths     TEXT,
                                             transfer_action_info  TEXT)''')
 
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
@@ -216,8 +216,8 @@ def print_tables(database_file):
   print "==== transfers table: ===="
   for row in cursor.execute('SELECT * FROM transfers'):
     print row
-    #local_file_path, remote_file_path, transfer_date, expiration_date, user_id = row
-    #print '| local_file_path', repr(local_file_path).ljust(25), '| remote_file_path=', repr(remote_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
+    #local_file_path, client_file_path, transfer_date, expiration_date, user_id = row
+    #print '| local_file_path', repr(local_file_path).ljust(25), '| client_file_path=', repr(client_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
   
   print "==== workflows table: ========"
   for row in cursor.execute('SELECT * FROM workflows'):
@@ -563,15 +563,15 @@ class WorkflowDatabaseServer( object ):
   
      
      
-  def generate_local_file_path(self, user_id, remote_file_path=None):
+  def generate_local_file_path(self, user_id, client_file_path=None):
     '''
     Generates free local file path for transfers. 
     The user_id must be valid.
     
     @type  user_id: C{UserIdentifier}
     @param user_id: user identifier
-    @type  remote_file_path: string
-    @param remote_file_path: the generated name can derivate from 
+    @type  client_file_path: string
+    @param client_file_path: the generated name can derivate from 
     this path.
     @rtype: string
     @return: free local file path
@@ -591,18 +591,18 @@ class WorkflowDatabaseServer( object ):
         raise WorkflowDatabaseServerError('Error generate_local_file_path %s: %s \n' %(type(e), e), self.logger) 
       
       userDirPath = self._user_transfer_dir_path(login, user_id) 
-      if remote_file_path == None:
+      if client_file_path == None:
         newFilePath = os.path.join(userDirPath, repr(file_num))
         #newFilePath += repr(file_num)
       else:
-        remote_base_name  = os.path.basename(remote_file_path)
-        iextention = remote_base_name.find(".")
+        client_base_name  = os.path.basename(client_file_path)
+        iextention = client_base_name.find(".")
         if iextention == -1 :
-          newFilePath = os.path.join(userDirPath, remote_base_name + '_' + repr(file_num))
-          #newFilePath += remote_file_path[remote_file_path.rfind("/")+1:] + '_' + repr(file_num) 
+          newFilePath = os.path.join(userDirPath, client_base_name + '_' + repr(file_num))
+          #newFilePath += client_file_path[client_file_path.rfind("/")+1:] + '_' + repr(file_num) 
         else: 
-          newFilePath = os.path.join(userDirPath, remote_base_name[0:iextention] + '_' + repr(file_num) + remote_base_name[iextention:])
-          #newFilePath += remote_file_path[remote_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + remote_file_path[iextention:]
+          newFilePath = os.path.join(userDirPath, client_base_name[0:iextention] + '_' + repr(file_num) + client_base_name[iextention:])
+          #newFilePath += client_file_path[client_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + client_file_path[iextention:]
       cursor.close()
       connection.commit()
       connection.close()
@@ -626,35 +626,35 @@ class WorkflowDatabaseServer( object ):
   #####################################"
   # TRANSFERS 
   
-  def add_transfer(self, local_file_path, remote_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, remote_paths = None):
+  def add_transfer(self, local_file_path, client_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, client_paths = None):
     '''
     Adds a transfer to the database.
     
     @type local_file_path: string
-    @type  remote_file_path: string or None
-    @param remote_file_path: C{None} for job standard output or error only.
+    @type  client_file_path: string or None
+    @param client_file_path: C{None} for job standard output or error only.
     @type expiration_date: date
     @type user_id:  C{UserIdentifier}
     @type  status: string as defined in constants.FILE_TRANSFER_STATUS
     @param status: job transfer status (used when the transfer belong to a workflow)
     @type  workflow_id: C{WorkflowIdentifier}
     @param workflow_id: None or identifier of the workflow the transfer belongs to
-    @type  remote_paths: sequence of string or None
-    @param remote_paths: sequence of remote file or directory if transfering a 
+    @type  client_paths: sequence of string or None
+    @param client_paths: sequence of client file or directory if transfering a 
     file serie or if the file format involve serveral files of directories.
     '''
-    if remote_paths:
-      remote_path_std = file_separator.join(remote_paths)
+    if client_paths:
+      client_path_std = file_separator.join(client_paths)
     else:
-      remote_path_std = None
+      client_path_std = None
      
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO transfers 
-                        (local_file_path, remote_file_path, transfer_date, expiration_date, user_id, workflow_id, status, remote_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (local_file_path, remote_file_path, date.today(), expiration_date, user_id, workflow_id, status, remote_path_std))
+                        (local_file_path, client_file_path, transfer_date, expiration_date, user_id, workflow_id, status, client_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (local_file_path, client_file_path, date.today(), expiration_date, user_id, workflow_id, status, client_path_std))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -698,7 +698,7 @@ class WorkflowDatabaseServer( object ):
     
     @type local_file_path: string
     @rtype: tuple
-    @returns: (local_file_path, remote_file_path, expiration_date, workflow_id, remote_paths)
+    @returns: (local_file_path, client_file_path, expiration_date, workflow_id, client_paths)
     '''
     with self._lock:
       connection = self._connect()
@@ -708,10 +708,10 @@ class WorkflowDatabaseServer( object ):
         if not count == 0 :
           info = cursor.execute('''SELECT 
                                    local_file_path, 
-                                   remote_file_path, 
+                                   client_file_path, 
                                    expiration_date, 
                                    workflow_id,
-                                   remote_paths 
+                                   client_paths 
                                    FROM transfers 
                                    WHERE local_file_path=?''', 
                                    [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
@@ -723,10 +723,10 @@ class WorkflowDatabaseServer( object ):
         raise WorkflowDatabaseServerError('Error get_transfer_information %s: %s \n' %(type(e), e), self.logger) 
       if info:
         if info[4]:
-          remote_paths = self._string_conversion(info[4]).split(file_separator)
+          client_paths = self._string_conversion(info[4]).split(file_separator)
         else: 
-          remote_paths = None
-        result = (self._string_conversion(info[0]), self._string_conversion(info[1]), self._str_to_date_conversion(info[2]), info[3], remote_paths)
+          client_paths = None
+        result = (self._string_conversion(info[0]), self._string_conversion(info[1]), self._str_to_date_conversion(info[2]), info[3], client_paths)
       else:
         result = (None, None, None, -1, None)
       cursor.close()
@@ -1162,14 +1162,14 @@ class WorkflowDatabaseServer( object ):
                           
         # transfers 
         for row in cursor.execute('''SELECT local_file_path, 
-                                            remote_file_path,
+                                            client_file_path,
                                             status,
                                             transfer_action_info
                                      FROM transfers WHERE workflow_id=?''', [wf_id]):
-          local_file_path, remote_file_path, status, pickled_info = row
+          local_file_path, client_file_path, status, pickled_info = row
             
           local_file_path = self._string_conversion(local_file_path)
-          remote_file_path = self._string_conversion(remote_file_path)
+          client_file_path = self._string_conversion(client_file_path)
           status = self._string_conversion(status)
           
           pickled_info = self._string_conversion(pickled_info)
@@ -1178,7 +1178,7 @@ class WorkflowDatabaseServer( object ):
           else:
             transfer_action_info = None
             
-          workflow_status[1].append((local_file_path, remote_file_path, status, transfer_action_info))
+          workflow_status[1].append((local_file_path, client_file_path, status, transfer_action_info))
           
       except Exception, e:
         cursor.close()
@@ -1899,17 +1899,17 @@ class WorkflowDatabaseServer( object ):
     '''
     if not transfer_ids:
       request = '''SELECT local_file_path,
-                          remote_file_path, 
+                          client_file_path, 
                           expiration_date, 
-                          remote_paths 
+                          client_paths 
                     FROM transfers 
                     WHERE user_id=? and (workflow_id ISNULL or workflow_id=-1 )'''
       argument = [user_id]
     else:
       request = '''SELECT local_file_path,
-                          remote_file_path, 
+                          client_file_path, 
                           expiration_date, 
-                          remote_paths 
+                          client_paths 
                   FROM transfers WHERE local_file_path IN (? '''
       for i in range(1, len(transfer_ids)):
         request = request + ",? "
@@ -1922,15 +1922,15 @@ class WorkflowDatabaseServer( object ):
       result = {}
       try:
         for row in cursor.execute(request,argument):
-          local_file, remote_file_path, expiration_date, remote_paths = row
+          local_file, client_file_path, expiration_date, client_paths = row
           local_file = self._string_conversion(local_file)
-          if remote_paths:
-            remote_paths = self._string_conversion(remote_paths).split(file_separator)
+          if client_paths:
+            client_paths = self._string_conversion(client_paths).split(file_separator)
           else: 
-            remote_paths = None
-          result[local_file] = (self._string_conversion(remote_file_path),
+            client_paths = None
+          result[local_file] = (self._string_conversion(client_file_path),
                                 self._str_to_date_conversion(expiration_date),
-                                remote_paths)
+                                client_paths)
       except Exception, e:
         cursor.close()
         connection.close()

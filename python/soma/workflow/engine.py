@@ -277,10 +277,10 @@ class EngineSendTransfer(FileSending):
 
   def __init__(self, client_file_sending):
     client_ft_copy = copy.deepcopy(client_file_sending)
-    super(EngineSendTransfer, self).__init__(client_ft_copy.remote_path,
+    super(EngineSendTransfer, self).__init__(client_ft_copy.client_path,
                                              client_ft_copy.disposal_timeout,
                                              client_ft_copy.name,
-                                             client_ft_copy.remote_paths)
+                                             client_ft_copy.client_paths)
 
   def register(self, 
                database_server, 
@@ -291,19 +291,19 @@ class EngineSendTransfer(FileSending):
     if exp_date == None:
       exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
 
-    if self.remote_paths:
+    if self.client_paths:
       self.local_path = database_server.generate_local_file_path(user_id)
       os.mkdir(self.local_path)
     else:
       self.local_path = database_server.generate_local_file_path(user_id, 
-                                                               self.remote_path)
+                                                               self.client_path)
     database_server.add_transfer( self.local_path, 
-                                  self.remote_path, 
+                                  self.client_path, 
                                   exp_date, 
                                   user_id,
                                   constants.READY_TO_TRANSFER, 
                                   wf_id, 
-                                  self.remote_paths)
+                                  self.client_paths)
 
     self.status = constants.READY_TO_TRANSFER
 
@@ -324,10 +324,10 @@ class EngineRetrieveTransfer(FileRetrieving):
 
   def __init__(self, client_file_retrieving):
     client_ft_copy = copy.deepcopy(client_file_retrieving)
-    super(EngineRetrieveTransfer, self).__init__(client_ft_copy.remote_path,
+    super(EngineRetrieveTransfer, self).__init__(client_ft_copy.client_path,
                                              client_ft_copy.disposal_timeout,
                                              client_ft_copy.name,
-                                             client_ft_copy.remote_paths)
+                                             client_ft_copy.client_paths)
     
   def register(self, 
                database_server, 
@@ -338,19 +338,19 @@ class EngineRetrieveTransfer(FileRetrieving):
     if exp_date == None:
       exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
 
-    if self.remote_paths:
+    if self.client_paths:
       self.local_path = database_server.generate_local_file_path(user_id)
       os.mkdir(self.local_path)
     else:
       self.local_path = database_server.generate_local_file_path(user_id, 
-                                                               self.remote_path)
+                                                               self.client_path)
     database_server.add_transfer( self.local_path, 
-                                  self.remote_path, 
+                                  self.client_path, 
                                   exp_date, 
                                   user_id, 
                                   constants.TRANSFER_NOT_READY, 
                                   wf_id, 
-                                  self.remote_paths)
+                                  self.client_paths)
 
     self.status = constants.TRANSFER_NOT_READY
     
@@ -1000,7 +1000,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
       self.jobs[job_id].terminating_signal = term_signal
    
     for ft_info in wf_status[1]:
-      local_path, remote_path, status, transfer_action_info = ft_info 
+      local_path, client_path, status, transfer_action_info = ft_info 
       self.transfers[local_path].status = status
 
     done = True
@@ -1462,32 +1462,32 @@ class WorkflowEngine(object):
   For the following methods:
     Local means that it is located on a directory shared by the machines 
     of the computing resource.
-    Remote means that it is located on a remote machine or on any directory 
+    Remote means that it is located on a client machine or on any directory 
     owned by the user. 
-    A transfer will associate remote file path to unique local file path.
+    A transfer will associate client file path to unique local file path.
   
   Use L{register_transfer} then L{writeLine} or scp or 
-  shutil.copy to transfer input file from the remote to the local 
+  shutil.copy to transfer input file from the client to the local 
   environment.
   Use L{register_transfer} and once the job has run use L{readline} or scp or
-  shutil.copy to transfer the output file from the local to the remote 
+  shutil.copy to transfer the output file from the local to the client 
   environment.
   '''
 
   def register_transfer(self, 
-                        remote_path, 
+                        client_path, 
                         disposal_timeout=168, 
-                        remote_paths = None): 
+                        client_paths = None): 
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if remote_paths:
+    if client_paths:
       local_path = self._database_server.generate_local_file_path(self._user_id)
       os.mkdir(local_path)
     else:
-      local_path = self._database_server.generate_local_file_path(self._user_id, remote_path)
+      local_path = self._database_server.generate_local_file_path(self._user_id, client_path)
     expirationDate = datetime.now() + timedelta(hours=disposal_timeout) 
-    self._database_server.add_transfer(local_path, remote_path, expirationDate, self._user_id, -1, remote_paths)
+    self._database_server.add_transfer(local_path, client_path, expirationDate, self._user_id, -1, client_paths)
     return local_path
   
 
@@ -1513,16 +1513,16 @@ class WorkflowEngine(object):
     '''
     @rtype: tuple (string, string, date, int, sequence)
     @return: (local_file_path, 
-              remote_file_path, 
+              client_file_path, 
               expiration_date, 
               workflow_id,
-              remote_paths)
+              client_paths)
     '''
     return self._database_server.get_transfer_information(local_path)
 
 
   def initializeRetrivingTransfer(self, local_path):
-    local_path, remote_path, expiration_date, workflow_id, remote_paths = self.transfer_information(local_path)
+    local_path, client_path, expiration_date, workflow_id, client_paths = self.transfer_information(local_path)
     status = self.transfer_status(local_path)
     if status != constants.READY_TO_TRANSFER:
       self.logger.debug("!!!! transfer " + local_path + "is not READY_TO_TRANSFER")
@@ -1530,7 +1530,7 @@ class WorkflowEngine(object):
       return (None, None)
     contents = None
     transfer_action_info = None
-    if not remote_paths:
+    if not client_paths:
       if os.path.isfile(local_path):
         stat = os.stat(local_path)
         file_size = stat.st_size
@@ -1540,7 +1540,7 @@ class WorkflowEngine(object):
         contents = WorkflowEngine._contents([local_path])
         (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(local_path, contents)
         transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
-    else: #remote_paths
+    else: #client_paths
       full_path_list = []
       for element in os.listdir(local_path):
         full_path_list.append(os.path.join(local_path, element))
@@ -1566,7 +1566,7 @@ class WorkflowEngine(object):
 
   def _initializeDirectory(self, local_path, contents, subdirectory = ""):
     '''
-    Initialize local directory from the contents of remote directory.
+    Initialize local directory from the contents of client directory.
 
     @rtype : tuple (int, dictionary)
     @return : (cumulated file size, dictionary : relative file path => (file_size, md5_hash))

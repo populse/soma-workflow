@@ -826,13 +826,13 @@ class TransferInfoWidget(QtGui.QTabWidget):
     
     setLabelFromString(self.ui.transfer_name, self.transfer_item.data.name)
     setLabelFromString(self.ui.transfer_status, self.transfer_item.transfer_status)
-    setLabelFromString(self.ui.remote_path, self.transfer_item.data.remote_path)
-    setLabelFromString(self.ui.local_path, self.transfer_item.local_path)
+    setLabelFromString(self.ui.client_path, self.transfer_item.data.client_path)
+    setLabelFromString(self.ui.cr_path, self.transfer_item.local_path)
     
-    if self.transfer_item.data.remote_paths:
-      self.ui.remote_paths.insertItems(0, self.transfer_item.data.remote_paths)
+    if self.transfer_item.data.client_paths:
+      self.ui.client_paths.insertItems(0, self.transfer_item.data.client_paths)
     else:
-      self.ui.remote_paths.clear()
+      self.ui.client_paths.clear()
     
 
 class GroupInfoWidget(QtGui.QWidget):
@@ -1811,9 +1811,9 @@ class GuiJob(GuiWorkflowItem):
     cmd_seq = []
     for command_el in data.command:
       if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
-        cmd_seq.append("<FileTransfer " + command_el[0].remote_path + " >")
+        cmd_seq.append("<FileTransfer " + command_el[0].client_path + " >")
       elif isinstance(command_el, FileTransfer):
-        cmd_seq.append("<FileTransfer " + command_el.remote_path + " >")
+        cmd_seq.append("<FileTransfer " + command_el.client_path + " >")
       elif isinstance(command_el, SharedResourcePath):
         cmd_seq.append("<SharedResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
       elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
