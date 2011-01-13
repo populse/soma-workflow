@@ -163,30 +163,30 @@ class JobsControler(object):
    
     to_transfer = []
     for ft in workflow.transfers.itervalues():
-      status, info = connection.transfer_status(ft.local_path)
+      status, info = connection.transfer_status(ft.engine_path)
       if status == READY_TO_TRANSFER:
-        to_transfer.append((0, ft.local_path))
+        to_transfer.append((0, ft.engine_path))
       if status == TRANSFERING:
-        to_transfer.append((info[1], ft.local_path))
+        to_transfer.append((info[1], ft.engine_path))
           
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, local_path in to_transfer:
-      print "send to " + local_path + " already transmitted size =" + repr(transmitted)
-      connection.send(local_path, buffer_size)
+    for transmitted, engine_path in to_transfer:
+      print "send to " + engine_path + " already transmitted size =" + repr(transmitted)
+      connection.send(engine_path, buffer_size)
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
     for ft in workflow.transfers.itervalues():
-      status, info = connection.transfer_status(ft.local_path)
+      status, info = connection.transfer_status(ft.engine_path)
       if status == READY_TO_TRANSFER:
-        to_transfer.append((0, ft.local_path))
+        to_transfer.append((0, ft.engine_path))
       if status == TRANSFERING:
-        to_transfer .append((info[1], ft.local_path))
+        to_transfer .append((info[1], ft.engine_path))
 
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, local_path in to_transfer:
-      print "retrieve " + local_path + " already transmitted size" + repr(transmitted)
-      connection.retrieve(local_path, buffer_size)
+    for transmitted, engine_path in to_transfer:
+      print "retrieve " + engine_path + " already transmitted size" + repr(transmitted)
+      connection.retrieve(engine_path, buffer_size)
 
           
   def printWorkflow(self, workflow, connection):
@@ -232,10 +232,10 @@ class JobsControler(object):
           else:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
       if isinstance(node, FileTransfer):
-        if not node.local_path:
+        if not node.engine_path:
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
-          status = connection.transfer_status(node.local_path)[0]
+          status = connection.transfer_status(node.engine_path)[0]
           if status == TRANSFER_NOT_READY:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
           elif status == READY_TO_TRANSFER:

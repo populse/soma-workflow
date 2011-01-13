@@ -271,7 +271,7 @@ class Drmaa(object):
 
 class EngineSendTransfer(FileSending):
 
-  local_path = None
+  engine_path = None
 
   status = None
 
@@ -292,12 +292,12 @@ class EngineSendTransfer(FileSending):
       exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
 
     if self.client_paths:
-      self.local_path = database_server.generate_local_file_path(user_id)
-      os.mkdir(self.local_path)
+      self.engine_path = database_server.generate_file_path(user_id)
+      os.mkdir(self.engine_path)
     else:
-      self.local_path = database_server.generate_local_file_path(user_id, 
+      self.engine_path = database_server.generate_file_path(user_id, 
                                                                self.client_path)
-    database_server.add_transfer( self.local_path, 
+    database_server.add_transfer( self.engine_path, 
                                   self.client_path, 
                                   exp_date, 
                                   user_id,
@@ -307,7 +307,7 @@ class EngineSendTransfer(FileSending):
 
     self.status = constants.READY_TO_TRANSFER
 
-    return self.local_path
+    return self.engine_path
 
 
   def files_exist_on_server(self):
@@ -318,7 +318,7 @@ class EngineSendTransfer(FileSending):
 
 class EngineRetrieveTransfer(FileRetrieving):
 
-  local_path = None
+  engine_path = None
 
   status = None
 
@@ -339,12 +339,12 @@ class EngineRetrieveTransfer(FileRetrieving):
       exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
 
     if self.client_paths:
-      self.local_path = database_server.generate_local_file_path(user_id)
-      os.mkdir(self.local_path)
+      self.engine_path = database_server.generate_file_path(user_id)
+      os.mkdir(self.engine_path)
     else:
-      self.local_path = database_server.generate_local_file_path(user_id, 
+      self.engine_path = database_server.generate_file_path(user_id, 
                                                                self.client_path)
-    database_server.add_transfer( self.local_path, 
+    database_server.add_transfer( self.engine_path, 
                                   self.client_path, 
                                   exp_date, 
                                   user_id, 
@@ -354,7 +354,7 @@ class EngineRetrieveTransfer(FileRetrieving):
 
     self.status = constants.TRANSFER_NOT_READY
     
-    return self.local_path
+    return self.engine_path
 
 
   def files_exist_on_server(self):
@@ -434,17 +434,17 @@ class EngineJob(soma.workflow.client.Job):
           if isinstance(list_el, tuple) and \
             ( isinstance(list_el[0], EngineSendTransfer) or \
               isinstance(list_el[0], EngineRetrieveTransfer)):
-            new_list.append(os.path.join(list_el[0].local_path,
+            new_list.append(os.path.join(list_el[0].engine_path,
                                          list_el[1])) 
           elif isinstance(list_el, tuple) and \
             isinstance(list_el[0], FileTransfer):
-            new_list.append(os.path.join(ft_conv[list_el[0]].local_path,
+            new_list.append(os.path.join(ft_conv[list_el[0]].engine_path,
                                          list_el[1])) 
           elif isinstance(list_el, EngineSendTransfer) or \
                isinstance(list_el, EngineRetrieveTransfer):
-            new_list.append(list_el.local_path)
+            new_list.append(list_el.engine_path)
           elif isinstance(list_el, FileTransfer):
-            new_list.append(ft_conv[list_el].local_path)
+            new_list.append(ft_conv[list_el].engine_path)
           elif type(list_el) in types.StringTypes: 
             new_list.append(list_el)
           else:
@@ -456,17 +456,17 @@ class EngineJob(soma.workflow.client.Job):
       elif isinstance(command_el, tuple) and \
           ( isinstance(command_el[0], EngineSendTransfer) or \
             isinstance(command_el[0], EngineRetrieveTransfer) ):
-        new_command.append(os.path.join(command_el[0].local_path, 
+        new_command.append(os.path.join(command_el[0].engine_path, 
                                         command_el[1]))
       elif isinstance(command_el, tuple) and \
            isinstance(command_el[0], FileTransfer):
-        new_command.append(os.path.join(ft_conv[command_el[0]].local_path,
+        new_command.append(os.path.join(ft_conv[command_el[0]].engine_path,
                                         command_el[1]))
       elif isinstance(command_el, EngineSendTransfer) or \
            isinstance(command_el, EngineRetrieveTransfer):
-        new_command.append(command_el.local_path)
+        new_command.append(command_el.engine_path)
       elif isinstance(command_el, FileTransfer):
-        new_command.append(ft_conv[command_el].local_path)
+        new_command.append(ft_conv[command_el].engine_path)
       elif type(command_el) in types.StringTypes: 
         new_command.append(command_el)
       else:
@@ -483,20 +483,20 @@ class EngineJob(soma.workflow.client.Job):
     if self.stdin:
       if isinstance(self.stdin, EngineSendTransfer) or \
          isinstance(self.stdin, EngineRetrieveTransfer) :
-        self.stdin = self.stdin.local_path 
+        self.stdin = self.stdin.engine_path 
       elif isinstance(self.stdin, FileTransfer):
-        self.stdin = ft_conv[self.stdin].local_path 
+        self.stdin = ft_conv[self.stdin].engine_path 
 
   def convert_referenced_transfers(self, ft_conv):
-    # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
+    # referenced_input_files => replace the FileTransfer objects by the corresponding engine_path
     new_referenced_input_files = []
     for input_file in self.referenced_input_files:
       if isinstance(input_file, EngineSendTransfer) or \
          isinstance(input_file, EngineRetrieveTransfer) :
-        #new_referenced_input_files.append(input_file.local_path)
+        #new_referenced_input_files.append(input_file.engine_path)
         new_referenced_input_files.append(input_file)
       elif isinstance(input_file, FileTransfer):
-        #new_referenced_input_files.append(ft_conv[input_file].local_path)
+        #new_referenced_input_files.append(ft_conv[input_file].engine_path)
         new_referenced_input_files.append(ft_conv[input_file])
       else: 
         #ift_node = self._assert_is_a_workflow_node(input_file)
@@ -504,15 +504,15 @@ class EngineJob(soma.workflow.client.Job):
         new_referenced_input_files.append(input_file)
     self.referenced_input_files= new_referenced_input_files
 
-    # referenced_input_files => replace the FileTransfer objects by the corresponding local_path
+    # referenced_input_files => replace the FileTransfer objects by the corresponding engine_path
     new_referenced_output_files = []
     for output_file in self.referenced_output_files:
       if isinstance(output_file, EngineSendTransfer) or \
          isinstance(output_file, EngineRetrieveTransfer):
-        #new_referenced_output_files.append(output_file.local_path)
+        #new_referenced_output_files.append(output_file.engine_path)
         new_referenced_output_files.append(output_file)
       elif isinstance(output_file, FileTransfer):
-        #new_referenced_output_files.append(ft_conv[output_file].local_path)
+        #new_referenced_output_files.append(ft_conv[output_file].engine_path)
         new_referenced_output_files.append(ft_conv[output_file])
       else:
         #oft_node = self._assert_is_a_workflow_node(output_file) 
@@ -541,8 +541,8 @@ class EngineJob(soma.workflow.client.Job):
     max_node_number = 1
 
     if not self.stdout_file:
-      self.stdout_file = database_server.generate_local_file_path(self._user_id)
-      self.stderr_file = database_server.generate_local_file_path(self._user_id)
+      self.stdout_file = database_server.generate_file_path(self._user_id)
+      self.stderr_file = database_server.generate_file_path(self._user_id)
       custom_submission = False #the std out and err file has to be removed with the job
     else:
       custom_submission = True #the std out and err file won't to be removed with the job
@@ -596,19 +596,19 @@ class EngineJob(soma.workflow.client.Job):
       str_referenced_input_files = []
       for ft in self.referenced_input_files:
         if isinstance(ft, FileTransfer):
-          local_path = ft.local_path
+          engine_path = ft.engine_path
         else:
-          local_path = ft
-        str_referenced_input_files.append(local_path)
+          engine_path = ft
+        str_referenced_input_files.append(engine_path)
       database_server.register_inputs(job_id, str_referenced_input_files)
     if self.referenced_output_files:
       str_referenced_ouput_files = []
       for ft in self.referenced_output_files:
         if isinstance(ft, FileTransfer):
-          local_path = ft.local_path
+          engine_path = ft.engine_path
         else:
-          local_path = ft
-        str_referenced_ouput_files.append(local_path)
+          engine_path = ft
+        str_referenced_ouput_files.append(engine_path)
       database_server.register_outputs(job_id, str_referenced_ouput_files)
 
     
@@ -648,7 +648,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
   # user id
   _user_id = None
   # path translation for each namespace a dictionary holding the traduction 
-  #(association uuid => local path)
+  #(association uuid => engine path)
   # dictionary, namespace => uuid => path
   _path_translation = None
   # workflow status as defined in constants.WORKFLOW_STATUS
@@ -746,7 +746,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                                  self._user_id,
                                  self.exp_date,
                                  self.wf_id)
-        self.transfers[engine_transfer.local_path] = engine_transfer
+        self.transfers[engine_transfer.engine_path] = engine_transfer
         ft_conv[ft] = engine_transfer
         
       elif isinstance(ft, FileRetrieving):
@@ -755,7 +755,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                                  self._user_id,
                                  self.exp_date,
                                  self.wf_id)
-        self.transfers[engine_transfer.local_path] = engine_transfer
+        self.transfers[engine_transfer.engine_path] = engine_transfer
         ft_conv[ft] = engine_transfer
 
 
@@ -847,16 +847,16 @@ class EngineWorkflow(soma.workflow.client.Workflow):
       new_command = []
       for command_el in job.command:
         if isinstance(command_el, SharedResourcePath):
-          command_el.local_path = self._translate(command_el, 
+          command_el.engine_path = self._translate(command_el, 
                                                   self._path_translation)
-          new_command.append(command_el.local_path)
+          new_command.append(command_el.engine_path)
         elif isinstance(command_el, list):
           new_list = []
           for list_el in command_el:
             if isinstance(list_el, SharedResourcePath):
-              list_el.local_path =  self._translate(list_el, 
+              list_el.engine_path =  self._translate(list_el, 
                                                     self._path_translation)
-              new_list.append(list_el.local_path)
+              new_list.append(list_el.engine_path)
             else:
               new_list.append(list_el)
           new_command.append(new_list)
@@ -1000,8 +1000,8 @@ class EngineWorkflow(soma.workflow.client.Workflow):
       self.jobs[job_id].terminating_signal = term_signal
    
     for ft_info in wf_status[1]:
-      local_path, client_path, status, transfer_action_info = ft_info 
-      self.transfers[local_path].status = status
+      engine_path, client_path, status, transfer_action_info = ft_info 
+      self.transfers[engine_path].status = status
 
     done = True
     for job in self.nodes:
@@ -1049,7 +1049,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     '''
     @type urp: L{SharedResourcePath}
     @rtype: string
-    @returns: path in the local environment
+    @returns: path in the engine environment
     '''
     logger = logging.getLogger('engine.EngineWorkflow')
     if not path_translation:
@@ -1064,9 +1064,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                                 "does'nt exist for the namespace %s." %
                                 (urp.uuid, urp.namespace), logger)
     
-    local_path = os.path.join(path_translation[urp.namespace][urp.uuid],
+    engine_path = os.path.join(path_translation[urp.namespace][urp.uuid],
                               urp.relative_path)
-    return local_path
+    return engine_path
 
     
     
@@ -1092,7 +1092,7 @@ class WorkflowEngineLoop(object):
   # user_id
   _user_id = None
   # for each namespace a dictionary holding the traduction 
-  #  (association uuid => local path)
+  #  (association uuid => engine path)
   # dictionary, namespace => uuid => path
   _path_translation = None
   # max number of job for some queues
@@ -1214,10 +1214,10 @@ class WorkflowEngineLoop(object):
               if job.status == constants.DONE:
                 for ft in job.referenced_output_files:
                   if isinstance(ft, FileTransfer):
-                    local_path = ft.local_path
+                    engine_path = ft.engine_path
                   else:
-                    local_path = ft
-                  self._database_server.set_transfer_status(local_path, 
+                    engine_path = ft
+                  self._database_server.set_transfer_status(engine_path, 
                                                   constants.READY_TO_TRANSFER)
                      
               ended_jobs[job.job_id] = job
@@ -1227,8 +1227,8 @@ class WorkflowEngineLoop(object):
 
 
         # --- 3. Get back transfered status ----------------------------------
-        for local_path, transfer in wf_transfers.iteritems():
-          status = self._database_server.get_transfer_status(local_path)
+        for engine_path, transfer in wf_transfers.iteritems():
+          status = self._database_server.get_transfer_status(engine_path)
           transfer.status = status
 
         for wf_id in self._workflows.iterkeys():
@@ -1464,13 +1464,13 @@ class WorkflowEngine(object):
     of the computing resource.
     Remote means that it is located on a client machine or on any directory 
     owned by the user. 
-    A transfer will associate client file path to unique local file path.
+    A transfer will associate client file path to unique engine file path.
   
   Use L{register_transfer} then L{writeLine} or scp or 
-  shutil.copy to transfer input file from the client to the local 
+  shutil.copy to transfer input file from the client to the engine 
   environment.
   Use L{register_transfer} and once the job has run use L{readline} or scp or
-  shutil.copy to transfer the output file from the local to the client 
+  shutil.copy to transfer the output file from the engine to the client 
   environment.
   '''
 
@@ -1482,13 +1482,13 @@ class WorkflowEngine(object):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     if client_paths:
-      local_path = self._database_server.generate_local_file_path(self._user_id)
-      os.mkdir(local_path)
+      engine_path = self._database_server.generate_file_path(self._user_id)
+      os.mkdir(engine_path)
     else:
-      local_path = self._database_server.generate_local_file_path(self._user_id, client_path)
+      engine_path = self._database_server.generate_file_path(self._user_id, client_path)
     expirationDate = datetime.now() + timedelta(hours=disposal_timeout) 
-    self._database_server.add_transfer(local_path, client_path, expirationDate, self._user_id, -1, client_paths)
-    return local_path
+    self._database_server.add_transfer(engine_path, client_path, expirationDate, self._user_id, -1, client_paths)
+    return engine_path
   
 
   @staticmethod
@@ -1509,64 +1509,64 @@ class WorkflowEngine(object):
           result.append( ( os.path.basename(path), s.st_size, None ) )
     return result
 
-  def transfer_information(self, local_path):
+  def transfer_information(self, engine_path):
     '''
     @rtype: tuple (string, string, date, int, sequence)
-    @return: (local_file_path, 
+    @return: (engine_file_path, 
               client_file_path, 
               expiration_date, 
               workflow_id,
               client_paths)
     '''
-    return self._database_server.get_transfer_information(local_path)
+    return self._database_server.get_transfer_information(engine_path)
 
 
-  def initializeRetrivingTransfer(self, local_path):
-    local_path, client_path, expiration_date, workflow_id, client_paths = self.transfer_information(local_path)
-    status = self.transfer_status(local_path)
+  def initializeRetrivingTransfer(self, engine_path):
+    engine_path, client_path, expiration_date, workflow_id, client_paths = self.transfer_information(engine_path)
+    status = self.transfer_status(engine_path)
     if status != constants.READY_TO_TRANSFER:
-      self.logger.debug("!!!! transfer " + local_path + "is not READY_TO_TRANSFER")
+      self.logger.debug("!!!! transfer " + engine_path + "is not READY_TO_TRANSFER")
       # TBI raise
       return (None, None)
     contents = None
     transfer_action_info = None
     if not client_paths:
-      if os.path.isfile(local_path):
-        stat = os.stat(local_path)
+      if os.path.isfile(engine_path):
+        stat = os.stat(engine_path)
         file_size = stat.st_size
-        md5_hash = hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() 
+        md5_hash = hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
-      elif os.path.isdir(local_path):
-        contents = WorkflowEngine._contents([local_path])
-        (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(local_path, contents)
+      elif os.path.isdir(engine_path):
+        contents = WorkflowEngine._contents([engine_path])
+        (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, contents)
         transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
     else: #client_paths
       full_path_list = []
-      for element in os.listdir(local_path):
-        full_path_list.append(os.path.join(local_path, element))
+      for element in os.listdir(engine_path):
+        full_path_list.append(os.path.join(engine_path, element))
       contents = WorkflowEngine._contents(full_path_list)
-      (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(local_path, contents)
+      (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, contents)
       transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
 
-    self._database_server.set_transfer_action_info(local_path, transfer_action_info)     
+    self._database_server.set_transfer_action_info(engine_path, transfer_action_info)     
     return (transfer_action_info, contents)
 
 
-  def initializeFileSending(self, local_path, file_size, md5_hash = None):
+  def initializeFileSending(self, engine_path, file_size, md5_hash = None):
     '''
     Initialize the transfer of a file.
     '''
     transfer_action_info = (file_size, md5_hash, constants.FILE_SENDING)
-    f = open(local_path, 'w')
+    f = open(engine_path, 'w')
     f.close()
-    self._database_server.set_transfer_status(local_path, constants.TRANSFERING)
-    self._database_server.set_transfer_action_info(local_path, transfer_action_info)
+    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING)
+    self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
     return transfer_action_info
 
 
-  def _initializeDirectory(self, local_path, contents, subdirectory = ""):
+  def _initializeDirectory(self, engine_path, contents, subdirectory = ""):
     '''
-    Initialize local directory from the contents of client directory.
+    Initialize engine directory from the contents of client directory.
 
     @rtype : tuple (int, dictionary)
     @return : (cumulated file size, dictionary : relative file path => (file_size, md5_hash))
@@ -1575,10 +1575,10 @@ class WorkflowEngine(object):
     cumulated_file_size = 0
     for item, description, md5_hash in contents:
       relative_path = os.path.join(subdirectory,item)
-      full_path = os.path.join(local_path, relative_path)
+      full_path = os.path.join(engine_path, relative_path)
       if isinstance(description, list):
         #os.mkdir(full_path)
-        sub_size, sub_dir_element_action_info = self._initializeDirectory( local_path, description, relative_path)
+        sub_size, sub_dir_element_action_info = self._initializeDirectory( engine_path, description, relative_path)
         cumulated_file_size += sub_size
         dir_element_action_info.update(sub_dir_element_action_info)
       else:
@@ -1589,49 +1589,49 @@ class WorkflowEngine(object):
     return (cumulated_file_size, dir_element_action_info)
 
 
-  def _createDirStructure(self, local_path, contents, subdirectory = ""):
-    if not os.path.isdir(local_path):
-      os.makedirs(local_path)
+  def _createDirStructure(self, engine_path, contents, subdirectory = ""):
+    if not os.path.isdir(engine_path):
+      os.makedirs(engine_path)
     
     for item, description, md5_hash in contents:
       relative_path = os.path.join(subdirectory,item)
-      full_path = os.path.join(local_path, relative_path)
+      full_path = os.path.join(engine_path, relative_path)
       if isinstance(description, list):
         if not os.path.isdir(full_path):
           os.mkdir(full_path)
-        self._createDirStructure( local_path, description, relative_path)
+        self._createDirStructure( engine_path, description, relative_path)
     
 
-  def initializeDirSending(self, local_path, contents):
+  def initializeDirSending(self, engine_path, contents):
     '''
     Initialize the transfer of a directory.
     '''
-    cumulated_file_size, dir_element_action_info = self._initializeDirectory(local_path, contents)
+    cumulated_file_size, dir_element_action_info = self._initializeDirectory(engine_path, contents)
     transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
-    self._createDirStructure(local_path, contents)
-    self._database_server.set_transfer_status(local_path, constants.TRANSFERING)
-    self._database_server.set_transfer_action_info(local_path, transfer_action_info)
+    self._createDirStructure(engine_path, contents)
+    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING)
+    self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
     return transfer_action_info
     
   
-  def _sendToFile(self, local_path, data, file_size, md5_hash = None):
+  def _sendToFile(self, engine_path, data, file_size, md5_hash = None):
     '''
     @rtype: boolean
     @return: transfer ended
     '''
-    file = open(local_path, 'ab')
+    file = open(engine_path, 'ab')
     file.write(data)
     fs = file.tell()
     file.close()
     if fs > file_size:
       # Reset file_size   
-      open(local_path, 'wb')
+      open(engine_path, 'wb')
       raise WorkflowEngineError('send_piece: Transmitted data exceed expected file size.')
     elif fs == file_size:
       if md5_hash is not None:
-        if hashlib.md5( open( local_path, 'rb' ).read() ).hexdigest() != md5_hash:
+        if hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() != md5_hash:
           # Reset file
-          open( local_path, 'wb' )
+          open( engine_path, 'wb' )
           raise WorkflowEngineError('send_piece: Transmission error detected.')
         else:
           return True
@@ -1641,46 +1641,46 @@ class WorkflowEngine(object):
       return False
 
 
-  def send_piece(self, local_path, data, relative_path=None):
+  def send_piece(self, engine_path, data, relative_path=None):
     '''
     @rtype : boolean
     @return : transfer ended
     '''
     if not relative_path:
       # File case
-      (file_size, md5_hash, transfer_type) = self._database_server.get_transfer_action_info(local_path)
-      transfer_ended = self._sendToFile(local_path, data, file_size, md5_hash)
+      (file_size, md5_hash, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
+      transfer_ended = self._sendToFile(engine_path, data, file_size, md5_hash)
       if transfer_ended:
-        self._database_server.set_transfer_status(local_path, constants.TRANSFERED)
-        self.signalTransferEnded(local_path)
+        self._database_server.set_transfer_status(engine_path, constants.TRANSFERED)
+        self.signalTransferEnded(engine_path)
       
     else:
       # Directory case
-      (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.get_transfer_action_info(local_path)
+      (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
       if not relative_path in dir_element_action_info:
-        raise WorkflowEngineError('send_piece: the file %s doesn t belong to the transfer %s' %(relative_path, local_path))
+        raise WorkflowEngineError('send_piece: the file %s doesn t belong to the transfer %s' %(relative_path, engine_path))
       (file_size, md5_hash) = dir_element_action_info[relative_path]
-      transfer_ended = self._sendToFile(os.path.join(local_path, relative_path), data, file_size, md5_hash)
+      transfer_ended = self._sendToFile(os.path.join(engine_path, relative_path), data, file_size, md5_hash)
       
       if transfer_ended:
-        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transfer_progression_status(local_path, (cumulated_size, dir_element_action_info, transfer_type))
+        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transfer_progression_status(engine_path, (cumulated_size, dir_element_action_info, transfer_type))
         if cumulated_transmissions == cumulated_file_size:
-          self._database_server.set_transfer_status(local_path, constants.TRANSFERED)
-          self.signalTransferEnded(local_path)
+          self._database_server.set_transfer_status(engine_path, constants.TRANSFERED)
+          self.signalTransferEnded(engine_path)
       
     return transfer_ended
 
 
-  def retrieve_piece(self, local_path, buffer_size, transmitted, relative_path = None):
+  def retrieve_piece(self, engine_path, buffer_size, transmitted, relative_path = None):
     '''
     Implementation of the L{Jobs} method.
     '''
     if relative_path:
-      local_full_path = os.path.join(local_path, relative_path)
+      engine_full_path = os.path.join(engine_path, relative_path)
     else:
-      local_full_path = local_path
+      engine_full_path = engine_path
       
-    f = open(local_full_path, 'rb')
+    f = open(engine_full_path, 'rb')
     if transmitted:
       f.seek(transmitted)
     data = f.read(buffer_size)
@@ -1688,36 +1688,36 @@ class WorkflowEngine(object):
     return data
 
     
-  def set_transfer_status(self, local_path, status):
+  def set_transfer_status(self, engine_path, status):
     '''
     Set a transfer status. 
     '''
-    if not self._database_server.is_user_transfer(local_path, self._user_id) :
-      #print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % local_path
+    if not self._database_server.is_user_transfer(engine_path, self._user_id) :
+      #print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % engine_path
       return
     
-    self._database_server.set_transfer_status(local_path, status)
+    self._database_server.set_transfer_status(engine_path, status)
 
 
-  def delete_transfer(self, local_path):
+  def delete_transfer(self, engine_path):
     '''
     Implementation of the L{Jobs} method.
     '''
-    if not self._database_server.is_user_transfer(local_path, self._user_id) :
-      #print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % local_path
+    if not self._database_server.is_user_transfer(engine_path, self._user_id) :
+      #print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % engine_path
       return
 
-    self._database_server.remove_transfer(local_path)
+    self._database_server.remove_transfer(engine_path)
 
     
-  def signalTransferEnded(self, local_path):
+  def signalTransferEnded(self, engine_path):
     '''
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
-    workflow_id = self._database_server.get_transfer_information(local_path)[3]
+    workflow_id = self._database_server.get_transfer_information(engine_path)[3]
     if workflow_id != -1:
-      self._database_server.add_workflow_ended_transfer(workflow_id, local_path)
+      self._database_server.add_workflow_ended_transfer(workflow_id, engine_path)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -1900,31 +1900,31 @@ class WorkflowEngine(object):
     return wf_status
         
         
-  def transfer_status(self, local_path):
+  def transfer_status(self, engine_path):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_transfer(local_path, self._user_id):
-      #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %local_path
+    if not self._database_server.is_user_transfer(engine_path, self._user_id):
+      #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %engine_path
       return
-    transfer_status = self._database_server.get_transfer_status(local_path)  
+    transfer_status = self._database_server.get_transfer_status(engine_path)  
     return transfer_status
         
 
-  def transfer_action_info(self,local_path):
-    return self._database_server.get_transfer_action_info(local_path)
+  def transfer_action_info(self,engine_path):
+    return self._database_server.get_transfer_action_info(engine_path)
 
  
-  def transfer_progression_status(self, local_path, transfer_action_info):
+  def transfer_progression_status(self, engine_path, transfer_action_info):
     if transfer_action_info[2] == constants.FILE_SENDING:
       (file_size, md5_hash, transfer_type) = transfer_action_info
-      transmitted = os.stat(local_path).st_size
+      transmitted = os.stat(engine_path).st_size
       return (file_size, transmitted)
     elif transfer_action_info[2] == constants.DIR_SENDING:
       (cumulated_file_size, dir_element_action_info, transfer_type) = transfer_action_info
       files_transfer_status = []
       for relative_path, (file_size, md5_hash) in dir_element_action_info.iteritems():
-        full_path = os.path.join(local_path, relative_path)
+        full_path = os.path.join(engine_path, relative_path)
         if os.path.isfile(full_path):
           transmitted = os.stat(full_path).st_size
         else:

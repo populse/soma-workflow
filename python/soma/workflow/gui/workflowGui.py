@@ -827,7 +827,7 @@ class TransferInfoWidget(QtGui.QTabWidget):
     setLabelFromString(self.ui.transfer_name, self.transfer_item.data.name)
     setLabelFromString(self.ui.transfer_status, self.transfer_item.transfer_status)
     setLabelFromString(self.ui.client_path, self.transfer_item.data.client_path)
-    setLabelFromString(self.ui.cr_path, self.transfer_item.local_path)
+    setLabelFromString(self.ui.cr_path, self.transfer_item.engine_path)
     
     if self.transfer_item.data.client_paths:
       self.ui.client_paths.insertItems(0, self.transfer_item.data.client_paths)
@@ -1261,7 +1261,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         else:
           display = "output: " + item.data.name
         
-      if not item.local_path:
+      if not item.engine_path:
         if role == QtCore.Qt.DisplayRole:
           return display
       else:
@@ -1579,10 +1579,10 @@ class GuiWorkflow(object):
                                                 row = row, 
                                                 data = ft)
           self.items[item_id] = gui_transfer
-          if gui_transfer.local_path in self.server_file_transfers.keys():
-            self.server_file_transfers[gui_transfer.local_path].append(item_id)
+          if gui_transfer.engine_path in self.server_file_transfers.keys():
+            self.server_file_transfers[gui_transfer.engine_path].append(item_id)
           else:
-            self.server_file_transfers[gui_transfer.local_path] = [ item_id ]
+            self.server_file_transfers[gui_transfer.engine_path] = [ item_id ]
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
         if ft in ref_out: #
@@ -1595,10 +1595,10 @@ class GuiWorkflow(object):
                                                       row = row, 
                                                       data = ft)
           self.items[item_id] = gui_ft
-          if gui_ft.local_path in self.server_file_transfers.keys():
-            self.server_file_transfers[gui_ft.local_path].append(item_id)
+          if gui_ft.engine_path in self.server_file_transfers.keys():
+            self.server_file_transfers[gui_ft.engine_path].append(item_id)
           else:
-            self.server_file_transfers[gui_ft.local_path] = [ item_id ]
+            self.server_file_transfers[gui_ft.engine_path] = [ item_id ]
           
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
@@ -1642,8 +1642,8 @@ class GuiWorkflow(object):
     
     #updating file transfer
     for transfer_info in wf_status[1]:
-      local_file_path, complete_status = transfer_info 
-      for item_id in self.server_file_transfers[local_file_path]:
+      engine_file_path, complete_status = transfer_info 
+      for item_id in self.server_file_transfers[engine_file_path]:
         item = self.items[item_id]
         data_changed = item.updateState(complete_status) or data_changed
     
@@ -1943,9 +1943,9 @@ class GuiInputTransfer(GuiTransfer):
     
     if isinstance(data, EngineRetrieveTransfer) or \
        isinstance(data, EngineSendTransfer):
-      self.local_path = data.local_path
+      self.engine_path = data.engine_path
     else:
-      self.local_path = None
+      self.engine_path = None
     
 class GuiOutputTransfer(GuiTransfer):
   
@@ -1959,7 +1959,7 @@ class GuiOutputTransfer(GuiTransfer):
   
     if isinstance(data, EngineRetrieveTransfer) or \
        isinstance(data, EngineSendTransfer):
-      self.local_path = data.local_path
+      self.engine_path = data.engine_path
     else:
-      self.local_path = None
+      self.engine_path = None
 

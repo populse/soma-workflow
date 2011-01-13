@@ -100,7 +100,7 @@ Job server database tables:
      
   
   Transfer
-    local file path
+    engine file path
     client file path (optional)
     transfer date
     expiration date
@@ -112,7 +112,7 @@ Job server database tables:
 
   Input/Ouput junction table
     job_id 
-    local file path (transferid)
+    engine file path (transferid)
     input or output
     
   Workflows
@@ -161,7 +161,7 @@ def create_database(database_file):
                                        resource_usage       TEXT
                                        )''')
 
-  cursor.execute('''CREATE TABLE transfers (local_file_path  TEXT PRIMARY KEY NOT NULL, 
+  cursor.execute('''CREATE TABLE transfers (engine_file_path  TEXT PRIMARY KEY NOT NULL, 
                                             client_file_path TEXT,
                                             transfer_date    DATE,
                                             expiration_date  DATE NOT NULL,
@@ -172,9 +172,9 @@ def create_database(database_file):
                                             transfer_action_info  TEXT)''')
 
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
-                                      local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
+                                      engine_file_path  TEXT NOT NULL CONSTRAINT known_engine_file REFERENCES transfers (engine_file_path),
                                       is_input         BOOLEAN NOT NULL,
-                                      PRIMARY KEY (job_id, local_file_path, is_input))''')
+                                      PRIMARY KEY (job_id, engine_file_path, is_input))''')
                                       
   cursor.execute('''CREATE TABLE fileCounter (count INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                               foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
@@ -216,8 +216,8 @@ def print_tables(database_file):
   print "==== transfers table: ===="
   for row in cursor.execute('SELECT * FROM transfers'):
     print row
-    #local_file_path, client_file_path, transfer_date, expiration_date, user_id = row
-    #print '| local_file_path', repr(local_file_path).ljust(25), '| client_file_path=', repr(client_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
+    #engine_file_path, client_file_path, transfer_date, expiration_date, user_id = row
+    #print '| engine_file_path', repr(engine_file_path).ljust(25), '| client_file_path=', repr(client_file_path).ljust(25) , '| transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=', repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2), ' |'
   
   print "==== workflows table: ========"
   for row in cursor.execute('SELECT * FROM workflows'):
@@ -231,8 +231,8 @@ def print_tables(database_file):
   
   print "==== ios table: ========="
   for row in cursor.execute('SELECT * FROM ios'):
-    job_id, local_file_path, is_input = row
-    print '| job_id=', repr(job_id).rjust(2), '| local_file_path=', repr(local_file_path).ljust(25), '| is_input=', repr(is_input).rjust(2), ' |'
+    job_id, engine_file_path, is_input = row
+    print '| job_id=', repr(job_id).rjust(2), '| engine_file_path=', repr(engine_file_path).ljust(25), '| is_input=', repr(is_input).rjust(2), ' |'
   
   
   #print "==== file counter table: ========="
@@ -492,20 +492,20 @@ class WorkflowDatabaseServer( object ):
         
         # get back the expired transfers
         expiredTransfers = []
-        for row in cursor.execute('SELECT local_file_path FROM transfers WHERE expiration_date < ?', [date.today()]):
+        for row in cursor.execute('SELECT engine_file_path FROM transfers WHERE expiration_date < ?', [date.today()]):
           expiredTransfers.append(row[0])
         
         # check that they are not currently used (as an input of output of a job)
         transfersToDelete = []
-        for local_file_path in expiredTransfers:
-          count = cursor.execute('SELECT count(*) FROM ios WHERE local_file_path=?', [local_file_path]).next()[0]
+        for engine_file_path in expiredTransfers:
+          count = cursor.execute('SELECT count(*) FROM ios WHERE engine_file_path=?', [engine_file_path]).next()[0]
           if count == 0 :
-            transfersToDelete.append(local_file_path)
+            transfersToDelete.append(engine_file_path)
       
-        # delete transfers data and associated local file
-        for local_file_path in transfersToDelete:
-          cursor.execute('DELETE FROM transfers WHERE local_file_path=?', [local_file_path])
-          self.__removeFile(local_file_path)
+        # delete transfers data and associated engine file
+        for engine_file_path in transfersToDelete:
+          cursor.execute('DELETE FROM transfers WHERE engine_file_path=?', [engine_file_path])
+          self.__removeFile(engine_file_path)
         
         ############################################################################
         # Workflows
@@ -524,23 +524,23 @@ class WorkflowDatabaseServer( object ):
       connection.close()
      
   def remove_non_registered_files(self):
-    registered_local_paths = []
+    registered_engine_paths = []
     registered_users = []
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        for row in cursor.execute('SELECT local_file_path FROM transfers'):
-          local_path = row[0]
-          registered_local_paths.append(self._string_conversion(local_path))
+        for row in cursor.execute('SELECT engine_file_path FROM transfers'):
+          engine_path = row[0]
+          registered_engine_paths.append(self._string_conversion(engine_path))
         for row in cursor.execute('SELECT stdout_file FROM jobs'):
           stdout_file = row[0]
           if stdout_file:   
-            registered_local_paths.append(self._string_conversion(stdout_file))
+            registered_engine_paths.append(self._string_conversion(stdout_file))
         for row in cursor.execute('SELECT stderr_file FROM jobs'):
           stderr_file = row[0]
           if stderr_file:
-            registered_local_paths.append(self._string_conversion(stderr_file))
+            registered_engine_paths.append(self._string_conversion(stderr_file))
         for row in cursor.execute('SELECT id, login FROM users'):
           user_id, login = row
           registered_users.append((user_id, login))
@@ -556,16 +556,16 @@ class WorkflowDatabaseServer( object ):
       user_id, login = user_info
       directory_path = self._user_transfer_dir_path(login, user_id) 
       for name in os.listdir(directory_path):
-        local_path = os.path.join(directory_path,name)
-        if not local_path in registered_local_paths:
-          self.logger.debug("remove_non_registered_files, not registered " + local_path + " to delete!")
-          self.__removeFile(local_path)
+        engine_path = os.path.join(directory_path,name)
+        if not engine_path in registered_engine_paths:
+          self.logger.debug("remove_non_registered_files, not registered " + engine_path + " to delete!")
+          self.__removeFile(engine_path)
   
      
      
-  def generate_local_file_path(self, user_id, client_file_path=None):
+  def generate_file_path(self, user_id, client_file_path=None):
     '''
-    Generates free local file path for transfers. 
+    Generates file path for transfers. 
     The user_id must be valid.
     
     @type  user_id: C{UserIdentifier}
@@ -574,7 +574,7 @@ class WorkflowDatabaseServer( object ):
     @param client_file_path: the generated name can derivate from 
     this path.
     @rtype: string
-    @return: free local file path
+    @return: file path
     '''
     with self._lock:
       connection = self._connect()
@@ -588,7 +588,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error generate_local_file_path %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error generate_file_path %s: %s \n' %(type(e), e), self.logger) 
       
       userDirPath = self._user_transfer_dir_path(login, user_id) 
       if client_file_path == None:
@@ -626,11 +626,11 @@ class WorkflowDatabaseServer( object ):
   #####################################"
   # TRANSFERS 
   
-  def add_transfer(self, local_file_path, client_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, client_paths = None):
+  def add_transfer(self, engine_file_path, client_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, client_paths = None):
     '''
     Adds a transfer to the database.
     
-    @type local_file_path: string
+    @type engine_file_path: string
     @type  client_file_path: string or None
     @param client_file_path: C{None} for job standard output or error only.
     @type expiration_date: date
@@ -653,8 +653,8 @@ class WorkflowDatabaseServer( object ):
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO transfers 
-                        (local_file_path, client_file_path, transfer_date, expiration_date, user_id, workflow_id, status, client_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (local_file_path, client_file_path, date.today(), expiration_date, user_id, workflow_id, status, client_path_std))
+                        (engine_file_path, client_file_path, transfer_date, expiration_date, user_id, workflow_id, status, client_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (engine_file_path, client_file_path, date.today(), expiration_date, user_id, workflow_id, status, client_path_std))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -665,13 +665,13 @@ class WorkflowDatabaseServer( object ):
       connection.close()
 
 
-  def remove_transfer(self, local_file_path):
+  def remove_transfer(self, engine_file_path):
     '''
-    Set the expiration date of the transfer associated to the local file path 
+    Set the expiration date of the transfer associated to the engine file path 
     to today (yesterday?). That way it will be disposed as soon as no job will need it.
     
-    @type  local_file_path: string
-    @param local_file_path: local file path to identifying the transfer 
+    @type  engine_file_path: string
+    @param engine_file_path: engine file path to identifying the transfer 
     record to delete.
     '''
     with self._lock:
@@ -679,7 +679,7 @@ class WorkflowDatabaseServer( object ):
       cursor = connection.cursor()
       yesterday = date.today() - timedelta(days=1)
       try:
-        cursor.execute('UPDATE transfers SET expiration_date=? WHERE local_file_path=?', (yesterday, local_file_path))
+        cursor.execute('UPDATE transfers SET expiration_date=? WHERE engine_file_path=?', (yesterday, engine_file_path))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -690,31 +690,31 @@ class WorkflowDatabaseServer( object ):
       connection.close()
       self.clean()
         
-  def get_transfer_information(self, local_file_path):
+  def get_transfer_information(self, engine_file_path):
     '''
-    Returns the information related to the transfer associated to the local file path.
-    The local_file_path must be associated to a transfer.
-    Returns (None, None, None, -1, None) if the local_file_path is not associated to a transfer.
+    Returns the information related to the transfer associated to the engine file path.
+    The engine_file_path must be associated to a transfer.
+    Returns (None, None, None, -1, None) if the engine_file_path is not associated to a transfer.
     
-    @type local_file_path: string
+    @type engine_file_path: string
     @rtype: tuple
-    @returns: (local_file_path, client_file_path, expiration_date, workflow_id, client_paths)
+    @returns: (engine_file_path, client_file_path, expiration_date, workflow_id, client_paths)
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
           info = cursor.execute('''SELECT 
-                                   local_file_path, 
+                                   engine_file_path, 
                                    client_file_path, 
                                    expiration_date, 
                                    workflow_id,
                                    client_paths 
                                    FROM transfers 
-                                   WHERE local_file_path=?''', 
-                                   [local_file_path]).next() #supposes that the local_file_path is associated to a transfer
+                                   WHERE engine_file_path=?''', 
+                                   [engine_file_path]).next() #supposes that the engine_file_path is associated to a transfer
         else: 
           info = None
       except Exception, e:
@@ -733,18 +733,18 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     return result
   
-  def get_transfer_status(self, local_file_path):
+  def get_transfer_status(self, engine_file_path):
     '''
     Returns the transferstatus sored in the database.
-    Returns None if the local_file_path is not associated to a transfer.
+    Returns None if the engine_file_path is not associated to a transfer.
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
-          status = cursor.execute('SELECT status FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]#supposes that the local_file_path is associated to a transfer
+          status = cursor.execute('SELECT status FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]#supposes that the engine_file_path is associated to a transfer
         else:
           status = None
       except Exception, e:
@@ -759,7 +759,7 @@ class WorkflowDatabaseServer( object ):
     return status
       
   
-  def set_transfer_status(self, local_file_path, status):
+  def set_transfer_status(self, engine_file_path, status):
     '''
     Updates the transfer status in the database.
     The status must be valid (ie a string among the transfer status 
@@ -773,9 +773,9 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
-          cursor.execute('UPDATE transfers SET status=? WHERE local_file_path=?', (status, local_file_path))
+          cursor.execute('UPDATE transfers SET status=? WHERE engine_file_path=?', (status, engine_file_path))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -785,7 +785,7 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
 
-  def set_transfer_action_info(self, local_file_path, info):
+  def set_transfer_action_info(self, engine_file_path, info):
     '''
     Save data necessary for the transfer itself.
     In the case of a file transfer, info is a tuple (file size, md5 hash)
@@ -795,10 +795,10 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
           pickled_info = pickle.dumps(info)
-          cursor.execute('UPDATE transfers SET transfer_action_info=? WHERE local_file_path=?', (pickled_info, local_file_path))
+          cursor.execute('UPDATE transfers SET transfer_action_info=? WHERE engine_file_path=?', (pickled_info, engine_file_path))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -809,7 +809,7 @@ class WorkflowDatabaseServer( object ):
       connection.close()
       
       
-  def get_transfer_action_info(self, local_file_path):
+  def get_transfer_action_info(self, engine_file_path):
     '''
     Returns data necessary to the transfer itself.
     '''
@@ -817,9 +817,9 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
-          pickled_info = cursor.execute('SELECT transfer_action_info FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]#supposes that the local_file_path is associated to a transfer
+          pickled_info = cursor.execute('SELECT transfer_action_info FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]#supposes that the engine_file_path is associated to a transfer
         else:
           pickled_info = None
       except Exception, e:
@@ -838,7 +838,7 @@ class WorkflowDatabaseServer( object ):
     return info
 
   
-  def add_workflow_ended_transfer(self, workflow_id, local_file_path):
+  def add_workflow_ended_transfer(self, workflow_id, engine_file_path):
     '''
     To signal that a transfer belonging to a workflow finished.
     '''
@@ -852,10 +852,10 @@ class WorkflowDatabaseServer( object ):
           str_ended_transfers = cursor.execute('SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0] 
           if str_ended_transfers != None:
             ended_transfers = self._string_conversion(str_ended_transfers).split(separator)
-            ended_transfers.append(local_file_path)
+            ended_transfers.append(engine_file_path)
             str_ended_transfers = separator.join(ended_transfers)
           else:
-            str_ended_transfers = local_file_path
+            str_ended_transfers = engine_file_path
           cursor.execute('UPDATE workflows SET ended_transfers=? WHERE id=?', (str_ended_transfers, workflow_id))
       except Exception, e:
         connection.rollback()
@@ -1161,14 +1161,14 @@ class WorkflowDatabaseServer( object ):
           workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date)))
                           
         # transfers 
-        for row in cursor.execute('''SELECT local_file_path, 
+        for row in cursor.execute('''SELECT engine_file_path, 
                                             client_file_path,
                                             status,
                                             transfer_action_info
                                      FROM transfers WHERE workflow_id=?''', [wf_id]):
-          local_file_path, client_file_path, status, pickled_info = row
+          engine_file_path, client_file_path, status, pickled_info = row
             
-          local_file_path = self._string_conversion(local_file_path)
+          engine_file_path = self._string_conversion(engine_file_path)
           client_file_path = self._string_conversion(client_file_path)
           status = self._string_conversion(status)
           
@@ -1178,7 +1178,7 @@ class WorkflowDatabaseServer( object ):
           else:
             transfer_action_info = None
             
-          workflow_status[1].append((local_file_path, client_file_path, status, transfer_action_info))
+          workflow_status[1].append((engine_file_path, client_file_path, status, transfer_action_info))
           
       except Exception, e:
         cursor.close()
@@ -1654,21 +1654,21 @@ class WorkflowDatabaseServer( object ):
   ###############################################
   # INPUTS/OUTPUTS
 
-  def register_inputs(self, job_id, local_input_files):
+  def register_inputs(self, job_id, engine_input_files):
     '''
     Register associations between a job and input file path.
     
     @type job_id: C{JobIdentifier}
-    @type  local_input_files: sequence of string
-    @param local_input_files: local input file paths 
+    @type  engine_input_files: sequence of string
+    @param engine_input_files: engine input file paths 
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      for local_path in local_input_files:
+      for engine_path in engine_input_files:
         try:
-          cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, local_path, True))
+          cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
+                        (job_id, engine_path, True))
         except Exception, e:
           connection.rollback()
           cursor.close()
@@ -1679,21 +1679,21 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     
     
-  def register_outputs(self, job_id, local_output_files):
+  def register_outputs(self, job_id, engine_output_files):
     '''
     Register associations between a job and output file path.
     
     @type job_id: C{JobIdentifier}
-    @type  local_input_files: sequence of string
-    @param local_input_files: local output file paths 
+    @type  engine_input_files: sequence of string
+    @param engine_input_files: engine output file paths 
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      for local_path in local_output_files:
+      for engine_path in engine_output_files:
         try:
-          cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, local_path, False))
+          cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
+                        (job_id, engine_path, False))
         except Exception, e:
           connection.rollback()
           cursor.close()
@@ -1860,24 +1860,24 @@ class WorkflowDatabaseServer( object ):
 
   #TRANSFERS
   
-  def is_user_transfer(self, local_file_path, user_id):
+  def is_user_transfer(self, engine_file_path, user_id):
     '''
-    Check that a local file path match with a transfer and that the transfer 
+    Check that a engine file path match with a transfer and that the transfer 
     is owned by the user.
     
-    @type local_file_path: string
+    @type engine_file_path: string
     @type user_id: C{UserIdentifier}
     @rtype: bool
-    @returns: the local file path match with a transfer owned by the user
+    @returns: the engine file path match with a transfer owned by the user
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       result = False
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE local_file_path=?', [local_file_path]).next()[0]
+        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
         if not count == 0 :
-          owner_id = cursor.execute('SELECT user_id FROM transfers WHERE local_file_path=?',  [local_file_path]).next()[0] 
+          owner_id = cursor.execute('SELECT user_id FROM transfers WHERE engine_file_path=?',  [engine_file_path]).next()[0] 
           result = (owner_id==user_id)
       except Exception, e:
         cursor.close()
@@ -1894,11 +1894,11 @@ class WorkflowDatabaseServer( object ):
     specified in the sequence transfer_ids
     
     @type user_id: C{UserIdentifier}
-    @rtype: sequence of local file path
-    @returns: local file path associated with a transfer owned by the user
+    @rtype: sequence of engine file path
+    @returns: engine file path associated with a transfer owned by the user
     '''
     if not transfer_ids:
-      request = '''SELECT local_file_path,
+      request = '''SELECT engine_file_path,
                           client_file_path, 
                           expiration_date, 
                           client_paths 
@@ -1906,11 +1906,11 @@ class WorkflowDatabaseServer( object ):
                     WHERE user_id=? and (workflow_id ISNULL or workflow_id=-1 )'''
       argument = [user_id]
     else:
-      request = '''SELECT local_file_path,
+      request = '''SELECT engine_file_path,
                           client_file_path, 
                           expiration_date, 
                           client_paths 
-                  FROM transfers WHERE local_file_path IN (? '''
+                  FROM transfers WHERE engine_file_path IN (? '''
       for i in range(1, len(transfer_ids)):
         request = request + ",? "
       request = request + ")"
@@ -1922,13 +1922,13 @@ class WorkflowDatabaseServer( object ):
       result = {}
       try:
         for row in cursor.execute(request,argument):
-          local_file, client_file_path, expiration_date, client_paths = row
-          local_file = self._string_conversion(local_file)
+          engine_file, client_file_path, expiration_date, client_paths = row
+          engine_file = self._string_conversion(engine_file)
           if client_paths:
             client_paths = self._string_conversion(client_paths).split(file_separator)
           else: 
             client_paths = None
-          result[local_file] = (self._string_conversion(client_file_path),
+          result[engine_file] = (self._string_conversion(client_file_path),
                                 self._str_to_date_conversion(expiration_date),
                                 client_paths)
       except Exception, e:
