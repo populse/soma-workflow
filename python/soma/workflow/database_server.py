@@ -174,7 +174,7 @@ def create_database(database_file):
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
                                       local_file_path  TEXT NOT NULL CONSTRAINT known_local_file REFERENCES transfers (local_file_path),
                                       is_input         BOOLEAN NOT NULL,
-                                      PRIMARY KEY (job_id, local_file_path))''')
+                                      PRIMARY KEY (job_id, local_file_path, is_input))''')
                                       
   cursor.execute('''CREATE TABLE fileCounter (count INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                               foo INTEGER)''') #!!! FIND A CLEANER WAY !!!
@@ -1665,10 +1665,10 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      for file in local_input_files:
+      for local_path in local_input_files:
         try:
           cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, file, True))
+                        (job_id, local_path, True))
         except Exception, e:
           connection.rollback()
           cursor.close()
@@ -1690,10 +1690,10 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      for file in local_output_files:
+      for local_path in local_output_files:
         try:
           cursor.execute('INSERT INTO ios (job_id, local_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, file, False))
+                        (job_id, local_path, False))
         except Exception, e:
           connection.rollback()
           cursor.close()

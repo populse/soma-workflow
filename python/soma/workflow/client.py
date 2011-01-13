@@ -258,7 +258,6 @@ class Workflow(object):
   groups = None
 
   mainGroup = None
-  
 
   def __init__(self, 
                nodes, 

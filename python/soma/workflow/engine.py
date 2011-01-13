@@ -271,6 +271,10 @@ class Drmaa(object):
 
 class EngineSendTransfer(FileSending):
 
+  local_path = None
+
+  status = None
+
   def __init__(self, client_file_sending):
     client_ft_copy = copy.deepcopy(client_file_sending)
     super(EngineSendTransfer, self).__init__(client_ft_copy.remote_path,
@@ -313,6 +317,10 @@ class EngineSendTransfer(FileSending):
 
 
 class EngineRetrieveTransfer(FileRetrieving):
+
+  local_path = None
+
+  status = None
 
   def __init__(self, client_file_retrieving):
     client_ft_copy = copy.deepcopy(client_file_retrieving)
@@ -357,8 +365,12 @@ class EngineRetrieveTransfer(FileRetrieving):
 
 class EngineJob(soma.workflow.client.Job):
   
+  # job id
+  job_id = None
+  # workflow id 
+  workflow_id = None
   # user_id
-  _user_id = None
+  _user_id = None  
   # string
   drmaa_id = None
   # name of the queue to be used to submit jobs, str
@@ -631,6 +643,8 @@ class EngineJob(soma.workflow.client.Job):
 
 class EngineWorkflow(soma.workflow.client.Workflow):
   
+  # workflow id
+  wf_id = None
   # user id
   _user_id = None
   # path translation for each namespace a dictionary holding the traduction 

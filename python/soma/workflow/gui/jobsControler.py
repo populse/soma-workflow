@@ -150,8 +150,8 @@ class JobsControler(object):
     return wf
   
                                     
-  def restart_workflow(self, workflow, connection):
-    return connection.restart_workflow(workflow.wf_id)
+  def restart_workflow(self, workflow_id, connection):
+    return connection.restart_workflow(workflow_id)
                                     
   def delete_workflow(self, wf_id, connection):
     return connection.delete_workflow(wf_id)
