@@ -1071,6 +1071,17 @@ class WorkflowDatabaseServer( object ):
                             (status, 
                             datetime.now(), 
                             wf_id))
+            if status == constants.WARNING:
+              print "WARNING"
+              cursor.execute('''UPDATE jobs
+                                SET status=?
+                                WHERE workflow_id=? and 
+                                      not status ISNULL and
+                                      not status=? and not status=? ''',
+                                (constants.WARNING,
+                                 wf_id, 
+                                 constants.DONE, 
+                                 constants.FAILED))
       except Exception, e:
         connection.rollback()
         cursor.close()

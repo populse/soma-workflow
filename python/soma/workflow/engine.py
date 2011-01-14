@@ -984,7 +984,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     return (to_run, ended_jobs, status)
 
   def restart(self, database_server):
-    assert(self.status == constants.WORKFLOW_DONE)
+    assert(self.status == constants.WORKFLOW_DONE or self.status == constants.WARNING)
     to_restart = False
     undone_jobs = []
    
@@ -1752,11 +1752,7 @@ class WorkflowEngine(object):
       self._database_server.delete_job(job_id)
     else:
       self._database_server.set_job_status(job_id, constants.DELETE_PENDING)
-      try:
-        self._wait_job_status_update(job_id)
-      except WorkflowEngineError, e:
-        self.logger.debug(e)
-        #TBI => add a warning => the jobs may need to be killed using the DRMS directly !
+      if not self._wait_job_status_update(job_id):
         self._database_server.delete_job(job_id)
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -1787,13 +1783,8 @@ class WorkflowEngine(object):
     else:
       self._database_server.set_workflow_status(workflow_id, 
                                                 constants.DELETE_PENDING)
-      try:
-        self._wait_wf_status_update(workflow_id)
-      except WorkflowEngineError, e:
-        #TBI => add a warning => the jobs may need to be killed using the DRMS directly !
-        self._database_server.delete_workflow(workflow_id)
-
-
+      if not self._wait_wf_status_update(workflow_id):
+       self._database_server.delete_workflow(workflow_id)
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
@@ -1822,13 +1813,8 @@ class WorkflowEngine(object):
     
     (status, last_status_update) = self._database_server.get_workflow_status(workflow_id)
     
-    self.logger.debug("last status update too old = " + repr((datetime.now() - last_status_update < timedelta(seconds=refreshment_interval*5))))
-    self.logger.debug("status " + repr(status))
-
-    if not last_status_update or \
-      (datetime.now() - last_status_update < timedelta(seconds=refreshment_interval*5) and \
-      status != constants.WORKFLOW_DONE):
-        return False
+    if status != constants.WORKFLOW_DONE and status != constants.WARNING:
+      return False
 
     self._engine_loop.restart_workflow(workflow_id)
     return True
@@ -1875,7 +1861,16 @@ class WorkflowEngine(object):
       #print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
     
-    return self._database_server.get_job_status(job_id)[0]
+    # check the date of the last status update
+    status, last_status_update = self._database_server.get_job_status(job_id)
+    if status and not status == constants.DONE and \
+       not status == constants.FAILED and \
+       last_status_update and \
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+      self._database_server.set_job_status(job_id, constants.WARNING)
+      return constants.WARNING
+
+    return status
         
   
   def workflow_status(self, wf_id):
@@ -1886,7 +1881,16 @@ class WorkflowEngine(object):
       #print "Could get the workflow status of workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
     
-    return self._database_server.get_workflow_status(job_id)[0]
+    status, last_status_update = self._database_server.get_workflow_status(wf_id)
+
+    if status and \
+       not status == constants.WORKFLOW_DONE and \
+       last_status_update and \
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+      self._database_server.set_workflow_status(wf_id, constants.WARNING)
+      return constants.WARNING
+
+    return status
     
   
   def workflow_nodes_status(self, wf_id, groupe = None):
@@ -1896,6 +1900,14 @@ class WorkflowEngine(object):
     if not self._database_server.is_user_workflow(wf_id, self._user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
+
+    status, last_status_update = self._database_server.get_workflow_status(wf_id)
+    if status and \
+       not status == constants.WORKFLOW_DONE and \
+       last_status_update and \
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+      self._database_server.set_workflow_status(wf_id, constants.WARNING)
+
     wf_status = self._database_server.get_detailed_workflow_status(wf_id)
     return wf_status
         
@@ -2040,7 +2052,9 @@ class WorkflowEngine(object):
       self._database_server.set_job_status(job_id, 
                                           constants.KILL_PENDING)
       
-      self._wait_job_status_update(job_id)
+      if not self._wait_job_status_update(job_id):
+        self._database_server.set_job_status(job_id, 
+                                             constants.WARNING)
 
   def _wait_job_status_update(self, job_id):
     
@@ -2053,10 +2067,11 @@ class WorkflowEngine(object):
       time.sleep(refreshment_interval)
       (status, last_status_update) = self._database_server.get_job_status(job_id) 
       if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
-        raise WorkflowEngineError("Could not wait for job status update of %s. "
-                                  "The process updating its status failed." %(job_id), self.logger)
+        self.logger.debug("<< _wait_job_status_update: could not wait for job status update of %s. "
+                          "The process updating its status failed." %(job_id))
+        return False
     self.logger.debug("<< _wait_job_status_update")
-
+    return True
 
   def _wait_wf_status_update(self, wf_id):  
     self.logger.debug(">> _wait_wf_status_update")
@@ -2071,7 +2086,7 @@ class WorkflowEngine(object):
        last_status_update) = self._database_server.get_workflow_status(wf_id) 
       if last_status_update and \
          datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*5):
-        raise WorkflowEngineError("Could not get back status of wf %s. " 
-                                  "The process updating its status failed." %(wf_id), self.logger)
+        self.logger.debug("<< _wait_wf_status_update")
+        return False
     self.logger.debug("<< _wait_wf_status_update")
-    
+    return True

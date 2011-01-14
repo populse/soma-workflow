@@ -90,7 +90,8 @@ WORKFLOW_DONE = "workflow_done"
 WORKFLOW_STATUS = [ WORKFLOW_NOT_STARTED, 
                     WORKFLOW_IN_PROGRESS, 
                     WORKFLOW_DONE,
-                    DELETE_PENDING]
+                    DELETE_PENDING,
+                    WARNING]
 
 
 '''
