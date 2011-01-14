@@ -19,7 +19,6 @@ from Pyro.errors import ConnectionClosedError
 
 
 
-
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
 RED=QtGui.QColor(255,100,50)
@@ -1120,17 +1119,21 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     '''
     super(WorkflowItemModel, self).__init__(parent)
     self.workflow = gui_workflow 
-    
-    self.standby_icon=GRAY
-    self.transfer_ready_icon=BLUE
-    self.failed_icon=RED
-    self.running_icon=LIGHT_BLUE
-    self.done_icon=GREEN
-    
-    #self.standby_icon = QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/hourglass.png')
-    #self.failed_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/abort.png')
-    #self.running_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/forward.png')
-    #self.done_icon=QtGui.QIcon('/volatile/laguitton/build-dir/python/soma/jobs/gui/icons/ok.png')
+
+    self.group_done_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_done.png"))
+    self.group_failed_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_failed.png"))
+    self.group_running_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_running.png"))
+    self.group_no_status_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_no_status.png"))
+
+    self.running_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/running.png"))
+    self.failed_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/failed.png"))
+    self.done_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/success.png"))
+    self.pending_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/pending.png"))
+    self.queued_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/queued.png"))
+    self.undetermined_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/undetermined.png"))
+    self.warning_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/warning.png"))
+    self.kill_delete_pending_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/kill_delete_pending.png"))
+    self.no_status_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/no_status.png"))
     
   def index(self, row, column, parent=QtCore.QModelIndex()):
     if row < 0 or not column == 0:
@@ -1192,38 +1195,33 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         font.setBold(True)
         return font
       if role == QtCore.Qt.DisplayRole:
-     
         return item.data.name
       else:
-        #if item.status == GuiGroup.GP_NOT_SUBMITTED:
-          #if role == QtCore.Qt.DecorationRole:
-            #return self.standby_icon
-            ##return GRAY
+        if item.status == GuiGroup.GP_NO_STATUS:
+          if role == QtCore.Qt.DecorationRole:
+            return self.group_no_status_icon
+        if item.status == GuiGroup.GP_NOT_SUBMITTED:
+          if role == QtCore.Qt.DecorationRole:
+            return QtGui.QIcon()
         if item.status == GuiGroup.GP_DONE:
           if role == QtCore.Qt.DecorationRole:
-            return self.done_icon
+            return self.group_done_icon
         if item.status == GuiGroup.GP_FAILED:
           if role == QtCore.Qt.DecorationRole:
-            return self.failed_icon
+            return self.group_failed_icon
         if item.status == GuiGroup.GP_RUNNING:
           if role == QtCore.Qt.DecorationRole:
-            return self.running_icon
+            return self.group_running_icon
     
     #### Jobs ####
     if isinstance(item, GuiJob): 
       if item.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
           return item.data.name
+        if role == QtCore.Qt.DecorationRole:
+            return self.no_status_icon
       else:
         status = item.status
-        #status = self.jobs.job_status(item.job_id)
-        # not submitted
-        if status == NOT_SUBMITTED:
-          if role == QtCore.Qt.DisplayRole:
-            return item.data.name
-          if role == QtCore.Qt.DecorationRole:
-            return QtGui.QIcon() #self.standby_icon
-            #return GRAY
         # Done or Failed
         if status == DONE or status == FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
@@ -1233,16 +1231,32 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
             if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
               return self.done_icon
             elif status == DONE and exit_status == None:
-              return self.running_icon
+              return self.undetermined_icon
             else:
               return self.failed_icon
               
-          
-        # Running
+
         if role == QtCore.Qt.DisplayRole:
-          return item.data.name + " " + status #" running..."
+          return item.data.name #+ " " + status 
+
         if role == QtCore.Qt.DecorationRole:
-          return self.running_icon
+          if status == NOT_SUBMITTED:
+            return QtGui.QIcon()
+          if status == UNDETERMINED:
+            return self.undetermined_icon
+          elif status == QUEUED_ACTIVE:
+            return self.queued_icon
+          elif status == RUNNING:
+            return self.running_icon
+          elif status == DELETE_PENDING or status == KILL_PENDING:
+            return self.kill_delete_pending_icon
+          elif status == SUBMISSION_PENDING:
+            return self.pending_icon
+          elif status == WARNING:
+            return self.warning_icon
+          else: #SYSTEM_ON_HOLD USER_ON_HOLD USER_SYSTEM_ON_HOLD
+                #SYSTEM_SUSPENDED USER_SUSPENDED USER_SYSTEM_SUSPENDED
+            return self.warning_icon
         
     #### FileTransfers ####
     if isinstance(item, GuiTransfer):
@@ -1683,6 +1697,7 @@ class GuiGroup(GuiWorkflowItem):
   GP_DONE = "done"
   GP_FAILED = "failed"
   GP_RUNNING = "running"
+  GP_NO_STATUS = "no_status"
   
   def __init__(self,
                gui_workflow,
@@ -1695,7 +1710,7 @@ class GuiGroup(GuiWorkflowItem):
     
     self.gui_workflow = gui_workflow
     
-    self.status = GuiGroup.GP_NOT_SUBMITTED
+    self.status = GuiGroup.GP_NO_STATUS
     
     self.not_sub = []
     self.done = []
@@ -1728,10 +1743,16 @@ class GuiGroup(GuiWorkflowItem):
     self.done = []
     self.failed = []
     self.running = []
+
+    no_status = False
     
     for child in self.children:
       item = self.gui_workflow.items[child]
       if isinstance(item, GuiJob):
+        if item.job_id == -1:
+          print "no status !!!"
+          no_status = True
+          break
         # TO DO : explore files 
         if item.status == NOT_SUBMITTED:
           self.not_sub.append(item)
@@ -1768,7 +1789,9 @@ class GuiGroup(GuiWorkflowItem):
           self.last_end_date = item.last_end_date 
         self.theoretical_serial_time = self.theoretical_serial_time + item.theoretical_serial_time
            
-    if len(self.failed) > 0:
+    if no_status:
+      new_status = GuiGroup.GP_NO_STATUS
+    elif len(self.failed) > 0:
       new_status = GuiGroup.GP_FAILED
     elif len(self.not_sub) == 0 and len(self.failed) == 0 and len(self.running) == 0:
       new_status = GuiGroup.GP_DONE

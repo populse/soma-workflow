@@ -22,6 +22,7 @@ FAILED="failed"
 DELETE_PENDING="delete_pending"
 KILL_PENDING="kill_pending"
 SUBMISSION_PENDING="submission_pending"
+WARNING="warning"
 JOB_STATUS = [NOT_SUBMITTED,
               UNDETERMINED, 
               QUEUED_ACTIVE,
@@ -36,7 +37,8 @@ JOB_STATUS = [NOT_SUBMITTED,
               FAILED,
               DELETE_PENDING,
               KILL_PENDING,
-              SUBMISSION_PENDING]
+              SUBMISSION_PENDING,
+              WARNING]
 
 '''
 Exit job status:
