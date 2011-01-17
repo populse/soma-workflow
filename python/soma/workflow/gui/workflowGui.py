@@ -100,6 +100,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
     self.connect(self.model, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
+    self.updateCurrentWorkflowStatus)
 
     self.resource_list = self.controler.getRessourceIds()
     self.ui.combo_resources.addItems(self.resource_list)
@@ -449,6 +451,7 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.itemInfoWidget.clear()
       
       self.ui.wf_name.clear()
+      self.ui.wf_status.clear()
      
       self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       self.ui.dateTimeEdit_expiration.setEnabled(False)
@@ -478,6 +481,8 @@ class WorkflowWidget(QtGui.QMainWindow):
           self.ui.wf_name.setText(self.model.current_workflow.name)
         else:
           self.ui.wf_name.clear()
+
+        self.ui.wf_status.setText("not submitted")
          
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
         self.ui.dateTimeEdit_expiration.setEnabled(True)
@@ -500,6 +505,8 @@ class WorkflowWidget(QtGui.QMainWindow):
         else: 
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
         
+        self.ui.wf_status.setText(self.model.current_workflow.wf_status)
+
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
@@ -518,6 +525,10 @@ class WorkflowWidget(QtGui.QMainWindow):
           if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
             self.ui.list_widget_submitted_wfs.setCurrentRow(i)
             break
+
+  @QtCore.pyqtSlot()  
+  def updateCurrentWorkflowStatus(self):
+    self.ui.wf_status.setText(self.model.current_workflow.wf_status)
        
           
   @QtCore.pyqtSlot()  
