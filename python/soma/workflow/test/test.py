@@ -353,17 +353,15 @@ class JobsTest(unittest.TestCase):
       self.failUnless( abs(delta-timedelta(seconds=interval)) < timedelta(seconds=1))
     
   def test_restart(self):
-    # TBI
-    pass
-    #jobid = self.myJobs[len(self.myJobs)-1]
-    #JobsTest.jobs.stop_job(jobid)
-    #JobsTest.jobs.restart_job(jobid)
-    #status = JobsTest.jobs.job_status(jobid)
-    #self.failUnless(not status == constants.USER_ON_HOLD and  
-                    #not status == constants.USER_SYSTEM_ON_HOLD and
-                    #not status == constants.USER_SUSPENDED and
-                    #not status == constants.USER_SYSTEM_SUSPENDED,
-                    #'Job status after restart: %s' %status)
+    jobid = self.myJobs[len(self.myJobs)-1]
+    JobsTest.jobs.kill_job(jobid)
+    JobsTest.jobs.restart_job(jobid)
+    status = JobsTest.jobs.job_status(jobid)
+    self.failUnless(not status == constants.USER_ON_HOLD and  
+                    not status == constants.USER_SYSTEM_ON_HOLD and
+                    not status == constants.USER_SUSPENDED and
+                    not status == constants.USER_SYSTEM_SUSPENDED,
+                    'Job status after restart: %s' %status)
    
   def test_kill(self):
     jobid = self.myJobs[0]

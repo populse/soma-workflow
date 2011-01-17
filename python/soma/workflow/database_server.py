@@ -75,6 +75,7 @@ Job server database tables:
       workflowId         : int, optional
       stdout_file        : file path
       stderr_file        : file path, optional
+      pickled_engine_job 
       
     => used to submit the job
       command            : string
@@ -97,6 +98,7 @@ Job server database tables:
       exit_value         : int, optional
       terminating_signal : string, optional
       resource_usage_file  : string, optional
+
      
   
   Transfer
@@ -118,7 +120,7 @@ Job server database tables:
   Workflows
     id,
     user_id,
-    pickled_workflow,
+    pickled_engine_workflow,
     expiration_date,
     name,
     ended_transfered, 
@@ -158,7 +160,9 @@ def create_database(database_file):
                                        exit_status          VARCHAR(255),
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
-                                       resource_usage       TEXT
+                                       resource_usage       TEXT,
+
+                                       pickled_engine_job   TEXT
                                        )''')
 
   cursor.execute('''CREATE TABLE transfers (engine_file_path  TEXT PRIMARY KEY NOT NULL, 
@@ -181,7 +185,7 @@ def create_database(database_file):
                                               
   cursor.execute('''CREATE TABLE workflows (id               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                                            user_id           INTEGER NOT NULL CONSTRAINT known_user REFERENCES users (id),
-                                           pickled_workflow   TEXT,
+                                           pickled_engine_workflow   TEXT,
                                            expiration_date    DATE NOT NULL,
                                            name               TEXT,
                                            ended_transfers    TEXT,
@@ -912,7 +916,7 @@ class WorkflowDatabaseServer( object ):
       try:
         cursor.execute('''INSERT INTO workflows 
                          (user_id,
-                          pickled_workflow,
+                          pickled_engine_workflow,
                           expiration_date,
                           name,
                           status, 
@@ -976,7 +980,7 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('UPDATE workflows SET pickled_workflow=? WHERE id=?', (pickled_workflow, wf_id))
+        cursor.execute('UPDATE workflows SET pickled_engine_workflow=? WHERE id=?', (pickled_workflow, wf_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1007,13 +1011,13 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
       
-  def get_workflow(self, wf_id):
+  def get_engine_workflow(self, wf_id):
     '''
-    Returns the workflow object.
+    Returns a EngineWorkflow object.
     The wf_id must be valid.
     
     @type wf_id: C{WorflowIdentifier}
-    @rtype: C{Workflow}
+    @rtype: C{EngineWorkflow}
     @return: workflow object
     '''
     with self._lock:
@@ -1021,12 +1025,12 @@ class WorkflowDatabaseServer( object ):
       cursor = connection.cursor()
       try:
         pickled_workflow = cursor.execute('''SELECT  
-                                              pickled_workflow
+                                              pickled_engine_workflow
                                               FROM workflows WHERE id=?''', [wf_id]).next()[0]#supposes that the wf_id is valid
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_workflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error get_engine_workflow %s: %s \n' %(type(e), e), self.logger) 
       cursor.close()
       connection.close()
       
@@ -1204,7 +1208,7 @@ class WorkflowDatabaseServer( object ):
   ###########################################
   # JOBS 
   
-  def add_job( self, dbJob):
+  def add_job( self, dbJob, engine_job):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -1214,6 +1218,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{JobIdentifier}
     @return: the identifier of the job
     '''
+   
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1246,12 +1251,14 @@ class WorkflowDatabaseServer( object ):
                           exit_status,
                           exit_value,
                           terminating_signal,
-                          resource_usage)
+                          resource_usage,
+
+                          pickled_engine_job)
                           VALUES (?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?)''',
+                                  ?, ?, ?, ?, ?)''',
                          (dbJob.user_id,
                         
                           dbJob.drmaa_id, 
@@ -1278,20 +1285,60 @@ class WorkflowDatabaseServer( object ):
                           dbJob.exit_status,
                           dbJob.exit_value,
                           dbJob.terminating_signal,
-                          dbJob.resource_usage
+                          dbJob.resource_usage,
+
+                          None
                           ))
+        
+        job_id = cursor.lastrowid
+        engine_job.job_id = job_id
+        pickled_engine_job = pickle.dumps(engine_job)
+        cursor.execute('UPDATE jobs SET pickled_engine_job=? WHERE id=?',
+                       (pickled_engine_job, job_id))
+
       except Exception, e:
         connection.rollback()
         cursor.close()
         connection.close()
         raise WorkflowDatabaseServerError('Error add_job %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
-      job_id = cursor.lastrowid
       cursor.close()
       connection.close()
 
     return job_id
    
+  
+  def get_engine_job(self, job_id):
+    '''
+    Returns a EngineJob object.
+    The job_id must be valid.
+    
+    @type job_id: C{JobIdentifier}
+    @rtype: C{EngineJob}
+    @return: workflow object
+    '''
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        pickled_job = cursor.execute('''SELECT  
+                                      pickled_engine_job
+                                      FROM jobs WHERE id=?''', [job_id]).next()[0]#supposes that the job_id is valid
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error get_engine_job %s: %s \n' %(type(e), e), self.logger) 
+      cursor.close()
+      connection.close()
+      
+    pickled_job = self._string_conversion(pickled_job)
+    if pickled_job:
+      job = pickle.loads(pickled_job)
+    else:
+      job = None
+ 
+    return job
+
    
   def delete_job(self, job_id):
     '''

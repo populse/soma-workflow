@@ -1124,6 +1124,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     self.group_failed_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_failed.png"))
     self.group_running_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_running.png"))
     self.group_no_status_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_no_status.png"))
+    self.group_warning_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/group_warning.png"))
 
     self.running_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/running.png"))
     self.failed_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/failed.png"))
@@ -1212,6 +1213,9 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         if item.status == GuiGroup.GP_RUNNING:
           if role == QtCore.Qt.DecorationRole:
             return self.group_running_icon
+        if item.status == GuiGroup.GP_WARNING:
+          if role == QtCore.Qt.DecorationRole:
+            return self.group_warning_icon
     
     #### Jobs ####
     if isinstance(item, GuiJob): 
@@ -1698,6 +1702,7 @@ class GuiGroup(GuiWorkflowItem):
   GP_FAILED = "failed"
   GP_RUNNING = "running"
   GP_NO_STATUS = "no_status"
+  GP_WARNING = "warning"
   
   def __init__(self,
                gui_workflow,
@@ -1745,15 +1750,18 @@ class GuiGroup(GuiWorkflowItem):
     self.running = []
 
     no_status = False
+    warning = False
     
     for child in self.children:
       item = self.gui_workflow.items[child]
+      # TO DO : explore files 
       if isinstance(item, GuiJob):
         if item.job_id == -1:
-          print "no status !!!"
           no_status = True
           break
-        # TO DO : explore files 
+        if item.status == WARNING:
+          warning = True
+          break
         if item.status == NOT_SUBMITTED:
           self.not_sub.append(item)
         elif item.status == DONE or item.status == FAILED:
@@ -1791,6 +1799,8 @@ class GuiGroup(GuiWorkflowItem):
            
     if no_status:
       new_status = GuiGroup.GP_NO_STATUS
+    elif warning:
+      new_status = GuiGroup.GP_WARNING
     elif len(self.failed) > 0:
       new_status = GuiGroup.GP_FAILED
     elif len(self.not_sub) == 0 and len(self.failed) == 0 and len(self.running) == 0:

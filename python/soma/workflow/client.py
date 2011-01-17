@@ -827,7 +827,7 @@ class WorkflowController(object):
       
     wf_controller = soma.workflow.client.WorkflowController()
     job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
-    wf_controller.stop_job(job_id)
+    wf_controller.kill_job(job_id)
     wf_controller.restart_job(job_id)
     wf_controller.wait_job([job_id])
     exitinfo = wf_controller.job_termination_status(job_id)
@@ -1240,9 +1240,10 @@ class WorkflowController(object):
    
   
   def restart_job( self, job_id ):
-    '''
-    Restarts a job which status is constants.FAILED.
+    '''   
+    Restarts a job which status is constants.FAILED or constants.WARNING.
     The job_id must be valid.
+    Return True if the job was restarted.
     
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{submit_job} or L{jobs})

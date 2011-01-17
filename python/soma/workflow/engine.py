@@ -49,6 +49,9 @@ from soma.pipeline.somadrmaajobssip import DrmaaJobs
 
 __docformat__ = "epytext en"
 refreshment_interval = 1 #seconds
+# if the last status update is older than the refreshment_timeout 
+# the status is changed into WARNING
+refreshment_timeout = 10 #seconds
 
 #-----------------------------------------------------------------------------
 # Classes and functions
@@ -574,7 +577,7 @@ class EngineJob(soma.workflow.client.Job):
                           max_node_number = max_node_number,
                           name = self.name)
                                        
-    job_id = database_server.add_job(db_job)
+    job_id = database_server.add_job(db_job, self)
                                         
     # create standard output files 
     try:  
@@ -626,10 +629,11 @@ class EngineJob(soma.workflow.client.Job):
     return done
 
   def failed(self):
-    failed = self.is_done() and \
+    failed = (self.is_done() and \
               ((self.exit_value != 0 and self.exit_value != None) or \
               self.exit_status != constants.FINISHED_REGULARLY or \
-              self.terminating_signal != None)
+              self.terminating_signal != None)) or \
+             self.status == constants.WARNING
     return failed
 
   def ended_with_success(self):
@@ -1406,9 +1410,9 @@ class WorkflowEngineLoop(object):
                                               force = True)
 
 
-  def restart_workflow(self, wf_id):
-    workflow = self._database_server.get_workflow(wf_id)
-    workflow.status = self._database_server.get_workflow_status(workflow.wf_id)[0]
+  def restart_workflow(self, wf_id, status):
+    workflow = self._database_server.get_engine_workflow(wf_id)
+    workflow.status = status
     (jobs_to_run, workflow.status) = workflow.restart(self._database_server)
     for job in jobs_to_run:
       self._pend_for_submission(job)
@@ -1416,9 +1420,19 @@ class WorkflowEngineLoop(object):
     with self._lock:
       self._workflows[wf_id] = workflow
 
-  def restart_job(self, job_id):
-    pass
-    #TBI
+  def restart_job(self, job_id, status):
+    job = self._database_server.get_engine_job(job_id)
+    job.status = status
+    if job.workflow_id == -1:
+      # submit
+      self._pend_for_submission(job)
+      # add to the engine managed job list
+      with self._lock:
+        self._jobs[job.job_id] = job
+    else:
+      
+      pass
+      #TBI
 
 
 class WorkflowEngine(object):
@@ -1816,7 +1830,7 @@ class WorkflowEngine(object):
     if status != constants.WORKFLOW_DONE and status != constants.WARNING:
       return False
 
-    self._engine_loop.restart_workflow(workflow_id)
+    self._engine_loop.restart_workflow(workflow_id, status)
     return True
     
    
@@ -1851,7 +1865,7 @@ class WorkflowEngine(object):
     if not self._database_server.is_user_workflow(wf_id, self._user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
       return
-    return self._database_server.get_workflow(wf_id)
+    return self._database_server.get_engine_workflow(wf_id)
   
   def job_status(self, job_id):
     '''
@@ -1866,7 +1880,7 @@ class WorkflowEngine(object):
     if status and not status == constants.DONE and \
        not status == constants.FAILED and \
        last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
       self._database_server.set_job_status(job_id, constants.WARNING)
       return constants.WARNING
 
@@ -1886,7 +1900,7 @@ class WorkflowEngine(object):
     if status and \
        not status == constants.WORKFLOW_DONE and \
        last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
       self._database_server.set_workflow_status(wf_id, constants.WARNING)
       return constants.WARNING
 
@@ -1905,7 +1919,7 @@ class WorkflowEngine(object):
     if status and \
        not status == constants.WORKFLOW_DONE and \
        last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
       self._database_server.set_workflow_status(wf_id, constants.WARNING)
 
     wf_status = self._database_server.get_detailed_workflow_status(wf_id)
@@ -2019,7 +2033,7 @@ class WorkflowEngine(object):
                             repr(last_status_update), 
                             repr(datetime.now()))
           delta = datetime.now() - startTime
-          if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*10):
+          if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
             raise WorkflowEngineError("wait_job: Could not wait for job %s. " 
                                       "The process updating its " 
                                       "status failed." %(jid), 
@@ -2034,7 +2048,15 @@ class WorkflowEngine(object):
       raise WorkflowEngineError("Could not restart job %d. It doesn't exist" 
                                 "or is owned by a different user \n" %job_id,
                                 self.logger)
-    # TBI 
+    
+
+    (status, last_status_update) = self._database_server.get_job_status(job_id)
+    
+    if status != constants.FAILED and status != constants.WARNING:
+      return False
+
+    self._engine_loop.restart_job(job_id, status)
+    return True
 
 
   def kill_job( self, job_id ):
@@ -2066,7 +2088,7 @@ class WorkflowEngine(object):
     while status and not status == constants.DONE and not status == constants.FAILED and last_status_update < action_time:
       time.sleep(refreshment_interval)
       (status, last_status_update) = self._database_server.get_job_status(job_id) 
-      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*5):
+      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
         self.logger.debug("<< _wait_job_status_update: could not wait for job status update of %s. "
                           "The process updating its status failed." %(job_id))
         return False
@@ -2085,7 +2107,7 @@ class WorkflowEngine(object):
       (status, 
        last_status_update) = self._database_server.get_workflow_status(wf_id) 
       if last_status_update and \
-         datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*5):
+         datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*refreshment_timeout):
         self.logger.debug("<< _wait_wf_status_update")
         return False
     self.logger.debug("<< _wait_wf_status_update")
