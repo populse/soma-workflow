@@ -386,7 +386,7 @@ class EngineJob(soma.workflow.client.Job):
   exit_status = None
   # contains operating system exit value if the status is FINISHED_REGULARLY. 
   # int or None
-  exit_status = None
+  exit_value = None
 
   str_rusage = None
   # contain a representation of the signal if the status is FINISHED_TERM_SIG.
@@ -558,26 +558,14 @@ class EngineJob(soma.workflow.client.Job):
     command_info = ""
     for command_element in self.command:
       command_info = command_info + " " + repr(command_element)
-      
-    db_job = soma.workflow.database_server.DBJob(
-                          user_id = self._user_id, 
-                          custom_submission = custom_submission,
-                          expiration_date = exp_date, 
-                          command = command_info,
-                          workflow_id = self.workflow_id,
-                          queue = self.queue,
-                          
-                          stdin_file = self.stdin, 
-                          join_errout = self.join_stderrout,
-                          stdout_file = self.stdout_file,
-                          stderr_file = self.stderr_file,
-                          working_directory = self.working_directory,
-                          
-                          parallel_config_name = parallel_config_name,
-                          max_node_number = max_node_number,
-                          name = self.name)
-                                       
-    job_id = database_server.add_job(db_job, self)
+
+    job_id = database_server.add_job(user_id=self._user_id, 
+                                     engine_job=self,
+                                     custom_submission=custom_submission,
+                                     expiration_date=exp_date, 
+                                     command=command_info,
+                                     parallel_config_name=parallel_config_name,
+                                     max_node_number=max_node_number)
                                         
     # create standard output files 
     try:  
@@ -1970,14 +1958,10 @@ class WorkflowEngine(object):
     if not self._database_server.is_user_job(job_id, self._user_id):
       #print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
       return
-  
-    dbJob = self._database_server.get_job(job_id)
-    exit_status = dbJob.exit_status
-    exit_value = dbJob.exit_value
-    terminating_signal =dbJob.terminating_signal
-    resource_usage = dbJob.resource_usage
     
-    return (exit_status, exit_value, terminating_signal, resource_usage)
+    job_exit_info= self._database_server.get_job_exit_info(job_id)
+    
+    return job_exit_info
     
 
   def stdouterr_transfer_action_info(self, job_id):

@@ -69,35 +69,62 @@ Job server database tables:
     
     => used by the job system (DrmaaWorkflowEngine, WorkflowDatabaseServer)
       drmaa_id           : string, None if not submitted
+                           submitted job DRMAA identifier
       expiration_date    : date
       status             : string
+                           job status as defined in constants.JOB_STATUS
       last_status_update : date
-      workflowId         : int, optional
+      workflow_id        : int, optional
+                           id of the workflow the job belongs to. 
+                           None if it doesn't belong to any.
       stdout_file        : file path
       stderr_file        : file path, optional
       pickled_engine_job 
       
     => used to submit the job
-      command            : string
-      stdin_file         : file path, optional 
-      join_errout        : boolean
+      command             : string
+                            job command
+      stdin_file          : file path, optional
+                            job's standard input as a path to a file. 
+                            C{None} if the job doesn't require an input stream.
+      join_errout         : boolean
+                            C{True} if the standard error should be 
+                            redirect in the same file as the standard output
       (stdout_file        : file path)
+                             job's standard output as a path to a file
       (stderr_file        : file path, optional)
-      working_directory  : dir path, optional
-      custom_submission  : boolean 
+                            job's standard output as a path to a file
+      working_directory   : dir path, optional
+                            path of the job working directory.
+      custom_submission   : boolean 
+                            C{True} if it was a custom submission. 
+                            If C{True} the standard output files won't 
+                            be deleted with the job.
       parallel_config_name : string, optional
+                             if the job is made to run on several nodes: 
+                             name of the parallel configuration as defined 
+                                 in constants.PARALLEL_CONFIGURATIONS.
       max_node_number      : int, optional
-      queue               : string, optional
+                             maximum of node requested by the job to run
+      queue                : string, optional
+                             name of the queue used to submit the job.
 
     => for user and administrator usage
       name               : string, optional 
+                           optional name of the job.  
       submission_date    : date 
       execution_date     : date
       ending_date        : date
       exit_status        : string, optional
+                           exit status string as defined in constants.JOB_EXIT_STATUS
       exit_value         : int, optional
+                           if the status is FINISHED_REGULARLY, it contains the operating 
       terminating_signal : string, optional
+                           if the status is FINISHED_TERM_SIG, it contain a 
+                           representation  of the signal that caused the termination of the job.
+    system exit code of the job.
       resource_usage_file  : string, optional
+                             contain the resource usage information of the job.
 
      
   
@@ -246,132 +273,6 @@ def print_tables(database_file):
   
   cursor.close()
   connection.close()
-
-
-
-class DBJob(object):
-  '''
-  Job as defined in the DB.
-  '''
-  
-  def __init__(self,
-              user_id,
-    
-              expiration_date,
-              join_errout,
-              stdout_file,
-              custom_submission,
-    
-              drmaa_id = None,
-              status = constants.NOT_SUBMITTED,
-              last_status_update=None,
-              workflow_id=None,
-              
-              command=None,
-              stdin_file=None,
-              stderr_file=None,
-              working_directory=None,
-              parallel_config_name=None,
-              max_node_number=1,
-              queue=None,
-              
-              name=None,
-              submission_date=None,
-              execution_date=None,
-              ending_date=None,
-              exit_status=None,
-              exit_value=None,
-              terminating_signal=None,
-              resource_usage=None):
-              
-    '''
-    @type user_id: C{UserIdentifier}
-    @type expiration_date: date
-    @type  drmaa_id: string or None
-    @param drmaa_id: submitted job DRMAA identifier
-    @type  status: string
-    @param status: job status as defined in constants.JOB_STATUS
-    @type  last_status_update: date
-    @param last_status_update: last status update date
-    @type  workflow_id: int
-    @param workflow_id: id of the workflow the job belongs to. 
-                        None if it doesn't belong to any.
-                        
-    @type  command: string
-    @param command: job command
-    @type  stdin_file: string
-    @param stdin_file: job's standard input as a path to a file. 
-                       C{None} if the job doesn't require an input stream.
-    @type  join_stderrout: bool
-    @param join_stderrout: C{True} if the standard error should be 
-                           redirect in the same file as the standard output.
-    @type  stdout_file: string
-    @param stdout_file: job's standard output as a path to a file
-    @type  stderr_file: string
-    @param stderr_file: job's standard output as a path to a file
-    @type   working_directory: string
-    @param  working_directory: path of the job working directory.
-    @type custom_submission: Boolean
-    @type custom_submission: C{True} if it was a custom submission. 
-                             If C{True} the standard output files won't 
-                             be deleted with the job.
-    @type  parallel_config_name: None or string 
-    @param parallel_config_name: if the job is made to run on several nodes: 
-                                 name of the paralle configuration as defined 
-                                 in WorkflowDatabaseServer.
-    @type  max_node_number: int 
-    @param max_node_number: maximum of node requested by the job to run
-    @type  queue: str or None
-    @param queue: name of the queue used to submit the job.
-    
-    @type  name: string
-    @param name: optional name of the job.  
-    @type  exit_status: string 
-    @param exit_status: exit status string as defined in L{WorkflowDatabaseServer}
-    @type  exit_value: int or None
-    @param exit_value: if the status is FINISHED_REGULARLY, it contains the operating 
-    system exit code of the job.
-    @type  terminating_signal: string or None
-    @param terminating_signal: if the status is FINISHED_TERM_SIG, it contain a representation 
-    of the signal that caused the termination of the job.
-    @type  resource_usage: string 
-    @param resource_usage: contain the resource usage information of
-    the job.
-    
-    @rtype: C{JobIdentifier}
-    @return: the identifier of the job
-    '''
-              
-              
-    self.user_id = user_id
-    
-    self.drmaa_id = drmaa_id
-    self.expiration_date = expiration_date
-    self.status = status
-    self.last_status_update = last_status_update
-    self.workflow_id = workflow_id
-    
-    self.command = command
-    self.stdin_file = stdin_file
-    self.join_errout = join_errout
-    self.stdout_file = stdout_file
-    self.stderr_file = stderr_file
-    self.working_directory = working_directory
-    self.custom_submission = custom_submission
-    self.parallel_config_name = parallel_config_name
-    self.max_node_number = max_node_number
-    self.queue = queue
-    
-    self.name = name
-    self.submission_date = submission_date
-    self.execution_date = execution_date
-    self.ending_date = ending_date
-    
-    self.exit_status = exit_status
-    self.exit_value = exit_value
-    self.terminating_signal = terminating_signal
-    self.resource_usage = resource_usage
-
 
 
 class WorkflowDatabaseServerError( Exception ):
@@ -1208,12 +1109,32 @@ class WorkflowDatabaseServer( object ):
   ###########################################
   # JOBS 
   
-  def add_job( self, dbJob, engine_job):
+  def add_job( self, 
+               user_id,
+               engine_job,
+               custom_submission,
+               expiration_date, 
+               command,
+               parallel_config_name,
+               max_node_number
+               ):
     '''
     Adds a job to the database and returns its identifier.
     
-    @type  dbJob: L{DBJob}
-    @param dbJob: Job information.
+    @type user_id: C{UserIdentifier}
+    @type engine_job: EngineJob
+    @type custom_submission: Boolean
+    @type custom_submission: C{True} if it was a custom submission. 
+                             If C{True} the standard output files won't 
+                             be deleted with the job.
+    @type expiration_date: date
+    @type  command: string
+    @type  parallel_config_name: None or string 
+    @param parallel_config_name: if the job is made to run on several nodes: 
+                                 name of the paralle configuration as defined 
+                                 in WorkflowDatabaseServer.
+    @type  max_node_number: int 
+    @param max_node_number: maximum of node requested by the job to run
     
     @rtype: C{JobIdentifier}
     @return: the identifier of the job
@@ -1259,35 +1180,35 @@ class WorkflowDatabaseServer( object ):
                                   ?, ?, ?, ?, ?, 
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?)''',
-                         (dbJob.user_id,
+                         (user_id,
                         
-                          dbJob.drmaa_id, 
-                          dbJob.expiration_date, 
-                          dbJob.status,
+                          None, #drmaa_id
+                          expiration_date, 
+                          constants.NOT_SUBMITTED, #status
                           datetime.now(), #last_status_update
-                          dbJob.workflow_id,
+                          engine_job.workflow_id,
                         
-                          dbJob.command,
-                          dbJob.stdin_file,
-                          dbJob.join_errout,
-                          dbJob.stdout_file,
-                          dbJob.stderr_file,
-                          dbJob.working_directory,
-                          dbJob.custom_submission,
-                          dbJob.parallel_config_name,
-                          dbJob.max_node_number,
-                          dbJob.queue,
+                          command,
+                          engine_job.stdin,
+                          engine_job.join_stderrout,
+                          engine_job.stdout_file,
+                          engine_job.stderr_file,
+                          engine_job.working_directory,
+                          custom_submission,
+                          parallel_config_name,
+                          max_node_number,
+                          engine_job.queue,
                           
-                          dbJob.name,
-                          dbJob.submission_date,
-                          dbJob.execution_date,
-                          dbJob.ending_date,
-                          dbJob.exit_status,
-                          dbJob.exit_value,
-                          dbJob.terminating_signal,
-                          dbJob.resource_usage,
+                          engine_job.name,
+                          None, #submission_date,
+                          None, #execution_date,
+                          None, #ending_date,
+                          None, #exit_status,
+                          None, #exit_value,
+                          None, #terminating_signal,
+                          None, #resource_usage,
 
-                          None
+                          None #pickled_engine_job
                           ))
         
         job_id = cursor.lastrowid
@@ -1548,6 +1469,38 @@ class WorkflowDatabaseServer( object ):
     stderr_file_path = self._string_conversion(result[1])
     return (stdout_file_path, stderr_file_path)
 
+  def get_job_exit_info(self, job_id):
+    '''
+    Returns the job exit informations.
+
+    @type job_id: C{JobIdentifier}
+    @rtype: tuple
+    @return: (exit_status, exit_value, terminating_signal, resource_usage)
+    '''
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        result = cursor.execute('''SELECT exit_status, 
+                                          exit_value,
+                                          terminating_signal,
+                                          resource_usage
+                                FROM jobs WHERE id=?''',
+                                [job_id]).next()#supposes that the job_id is valid
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error %s: %s \n' %(type(e), e), self.logger) 
+      cursor.close()
+      connection.close()
+    exit_status = self._string_conversion(result[0])
+    exit_value = result[1]
+    terminating_signal = self._string_conversion(result[2])
+    resource_usage = self._string_conversion(result[3])
+
+    return (exit_status, exit_value, terminating_signal, resource_usage)
+
+
   def set_job_exit_info(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
     '''
     Record the job exit status in the database.
@@ -1594,107 +1547,6 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       cursor.close()
       connection.close()
-
-  def get_job(self, job_id):
-    '''
-    returns the job information stored in the database.
-    The job_id must be valid.
-    @rtype: L{DBJob}
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
-        user_id,             \
-                             \
-        drmaa_id,            \
-        expiration_date,     \
-        status,              \
-        last_status_update,  \
-        workflow_id,         \
-                             \
-        command,             \
-        stdin_file,          \
-        join_errout,         \
-        stdout_file,         \
-        stderr_file,         \
-        working_directory,   \
-        custom_submission,   \
-        parallel_config_name,\
-        max_node_number,     \
-        queue,               \
-                             \
-        name,                \
-        submission_date,     \
-        execution_date,      \
-        ending_date,         \
-        exit_status,         \
-        exit_value,          \
-        terminating_signal,  \
-        resource_usage = cursor.execute('''SELECT user_id,
-              
-                                          drmaa_id,
-                                          expiration_date,
-                                          status,
-                                          last_status_update,
-                                          workflow_id,
-                                          
-                                          command,
-                                          stdin_file,
-                                          join_errout,
-                                          stdout_file,
-                                          stderr_file,
-                                          working_directory,
-                                          custom_submission,
-                                          parallel_config_name,
-                                          max_node_number,
-                                          queue,
-                                          
-                                          name,
-                                          submission_date,
-                                          execution_date,
-                                          ending_date,
-                                          exit_status,
-                                          exit_value,
-                                          terminating_signal,
-                                          resource_usage FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error get_job %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.close()
-    
-    dbJob = DBJob(user_id,
-    
-                  self._str_to_date_conversion(expiration_date),
-                  join_errout,
-                  self._string_conversion(stdout_file),
-                  custom_submission,
-                  
-                  drmaa_id,
-                  self._string_conversion(status),
-                  self._str_to_date_conversion(last_status_update),
-                  workflow_id,
-                  
-                  self._string_conversion(command),
-                  self._string_conversion(stdin_file),
-                  self._string_conversion(stderr_file),
-                  self._string_conversion(working_directory),
-                  self._string_conversion(parallel_config_name),
-                  max_node_number,
-                  self._string_conversion(queue),
-                  
-                  self._string_conversion(name),
-                  self._str_to_date_conversion(submission_date),
-                  self._str_to_date_conversion(execution_date),
-                  self._str_to_date_conversion(ending_date),
-                  self._string_conversion(exit_status),
-                  exit_value,
-                  self._string_conversion(terminating_signal),
-                  self._string_conversion(resource_usage))
-    return dbJob
-
 
   def _string_conversion(self, string):
     if string: 
