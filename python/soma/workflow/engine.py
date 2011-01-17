@@ -1852,7 +1852,7 @@ class WorkflowEngine(object):
     '''
     if not self._database_server.is_user_workflow(wf_id, self._user_id):
       #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
-      return
+      return None
     return self._database_server.get_engine_workflow(wf_id)
   
   def job_status(self, job_id):

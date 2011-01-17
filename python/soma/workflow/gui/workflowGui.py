@@ -158,6 +158,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
+
+    self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
     
     self.showMaximized()
     
@@ -326,7 +328,11 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.model.setCurrentWorkflow(wf_id)
       else:
         (workflow, expiration_date) = self.controler.getWorkflow(wf_id, self.model.current_connection)
-        self.model.addWorkflow(workflow, expiration_date)
+        if workflow != None:
+          self.model.addWorkflow(workflow, expiration_date)
+        else:
+          self.updateWorkflowList()
+          self.model.clearCurrentWorkflow()
     else:
       self.model.clearCurrentWorkflow()
     
@@ -514,9 +520,12 @@ class WorkflowWidget(QtGui.QMainWindow):
             break
        
           
-        
-        
-        
+  @QtCore.pyqtSlot()  
+  def refreshWorkflowList(self):
+    self.updateWorkflowList()
+    self.model.clearCurrentWorkflow()
+
+
   def updateWorkflowList(self):
     
     while True:

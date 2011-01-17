@@ -84,8 +84,12 @@ class JobsControler(object):
     return connection.workflows()
     
   def getWorkflow(self, wf_id, connection):
+    
     workflow = connection.workflow(wf_id)
-    expiration_date = connection.workflows([wf_id])[wf_id][1]
+    if workflow:
+      expiration_date = connection.workflows([wf_id])[wf_id][1]
+    else:
+      expiration_date = None
     return (workflow, expiration_date)
   
   
