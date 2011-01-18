@@ -60,14 +60,21 @@ JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
 '''
 File transfer status:
 '''
-TRANSFER_NOT_READY ="transfer_not_ready"
-READY_TO_TRANSFER ="ready_to_transfer"
-TRANSFERING="transfering"
-TRANSFERED="transfered"
-FILE_TRANSFER_STATUS = [TRANSFER_NOT_READY,
-                        READY_TO_TRANSFER,
-                        TRANSFERING,
-                        TRANSFERED]
+FILES_DONT_EXIST = "don't exist"
+FILES_ON_CLIENT = "on client side"
+FILES_ON_CR = "on computing resource side"
+FILES_ON_CLIENT_AND_CR = "on both sides"
+TRANSFERING_FROM_CLIENT_TO_CR = "transfering client->cr"
+TRANSFERING_FROM_CR_TO_CLIENT = "transfering cr->client"
+FILES_UNDER_EDITION = "under edition"
+FILE_TRANSFER_STATUS__ = [FILES_DONT_EXIST,
+                          FILES_ON_CLIENT,
+                          FILES_ON_CR,
+                          FILES_ON_CLIENT_AND_CR,
+                          TRANSFERING_FROM_CLIENT_TO_CR,
+                          TRANSFERING_FROM_CR_TO_CLIENT,
+                          FILES_UNDER_EDITION]
+
 
 '''
 Transfer type

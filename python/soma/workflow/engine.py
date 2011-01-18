@@ -39,7 +39,7 @@ import itertools
 import types
 
 import soma.workflow.constants as constants
-from soma.workflow.client import Job, FileTransfer, FileSending, FileRetrieving, Workflow, SharedResourcePath, WorkflowNodeGroup
+from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, WorkflowNodeGroup
 import soma.workflow.database_server 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
 
@@ -271,19 +271,21 @@ class Drmaa(object):
     self._drmaa.terminate(job_drmaa_id)
 
 
-
-class EngineSendTransfer(FileSending):
-
+class EngineTransfer(FileTransfer):
+  
   engine_path = None
 
   status = None
 
-  def __init__(self, client_file_sending):
-    client_ft_copy = copy.deepcopy(client_file_sending)
-    super(EngineSendTransfer, self).__init__(client_ft_copy.client_path,
-                                             client_ft_copy.disposal_timeout,
-                                             client_ft_copy.name,
-                                             client_ft_copy.client_paths)
+  def __init__(self, client_file_transfer):
+    client_ft_copy = copy.deepcopy(client_file_transfer)
+    exist_on_client = client_ft_copy.initial_status == constants.FILES_ON_CLIENT
+    super(EngineTransfer, self).__init__( exist_on_client,
+                                          client_ft_copy.client_path,
+                                          client_ft_copy.disposal_timeout,
+                                          client_ft_copy.name,
+                                          client_ft_copy.client_paths)
+    self.status = self.initial_status
 
   def register(self, 
                database_server, 
@@ -304,65 +306,17 @@ class EngineSendTransfer(FileSending):
                                   self.client_path, 
                                   exp_date, 
                                   user_id,
-                                  constants.READY_TO_TRANSFER, 
+                                  self.status, 
                                   wf_id, 
                                   self.client_paths)
 
-    self.status = constants.READY_TO_TRANSFER
-
     return self.engine_path
 
-
   def files_exist_on_server(self):
-    exist = self.status == constants.TRANSFERED
-    return exist
-  
 
-
-class EngineRetrieveTransfer(FileRetrieving):
-
-  engine_path = None
-
-  status = None
-
-  def __init__(self, client_file_retrieving):
-    client_ft_copy = copy.deepcopy(client_file_retrieving)
-    super(EngineRetrieveTransfer, self).__init__(client_ft_copy.client_path,
-                                             client_ft_copy.disposal_timeout,
-                                             client_ft_copy.name,
-                                             client_ft_copy.client_paths)
-    
-  def register(self, 
-               database_server, 
-               user_id, 
-               exp_date=None, 
-               wf_id=-1):
-
-    if exp_date == None:
-      exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
-
-    if self.client_paths:
-      self.engine_path = database_server.generate_file_path(user_id)
-      os.mkdir(self.engine_path)
-    else:
-      self.engine_path = database_server.generate_file_path(user_id, 
-                                                               self.client_path)
-    database_server.add_transfer( self.engine_path, 
-                                  self.client_path, 
-                                  exp_date, 
-                                  user_id, 
-                                  constants.TRANSFER_NOT_READY, 
-                                  wf_id, 
-                                  self.client_paths)
-
-    self.status = constants.TRANSFER_NOT_READY
-    
-    return self.engine_path
-
-
-  def files_exist_on_server(self):
-    exist = self.status == constants.TRANSFERED or \
-            self.status == constants.READY_TO_TRANSFER
+    exist = self.status == constants.FILES_ON_CR or \
+            self.status == constants.FILES_ON_CLIENT_AND_CR or \
+            self.status == constants.TRANSFERING_FROM_CR_TO_CLIENT
     return exist
 
 
@@ -424,8 +378,7 @@ class EngineJob(soma.workflow.client.Job):
 
   def convert_command(self, ft_conv):
     '''
-    @type ft_conv: dictionary FileSending => EngineSendTransfer 
-                              FileRetrieving => EngineRetrieveTransfer
+    @type ft_conv: dictionary FileTransfer => EngineTransfer 
     '''
     logger = logging.getLogger('engine.EngineJob')
     new_command = []
@@ -435,16 +388,14 @@ class EngineJob(soma.workflow.client.Job):
         new_list = []
         for list_el in command_el:
           if isinstance(list_el, tuple) and \
-            ( isinstance(list_el[0], EngineSendTransfer) or \
-              isinstance(list_el[0], EngineRetrieveTransfer)):
+             isinstance(list_el[0], EngineTransfer):
             new_list.append(os.path.join(list_el[0].engine_path,
                                          list_el[1])) 
           elif isinstance(list_el, tuple) and \
             isinstance(list_el[0], FileTransfer):
             new_list.append(os.path.join(ft_conv[list_el[0]].engine_path,
                                          list_el[1])) 
-          elif isinstance(list_el, EngineSendTransfer) or \
-               isinstance(list_el, EngineRetrieveTransfer):
+          elif isinstance(list_el, EngineTransfer):
             new_list.append(list_el.engine_path)
           elif isinstance(list_el, FileTransfer):
             new_list.append(ft_conv[list_el].engine_path)
@@ -457,16 +408,14 @@ class EngineJob(soma.workflow.client.Job):
             pass
         new_command.append(str(repr(new_list)))
       elif isinstance(command_el, tuple) and \
-          ( isinstance(command_el[0], EngineSendTransfer) or \
-            isinstance(command_el[0], EngineRetrieveTransfer) ):
+           isinstance(command_el[0], EngineTransfer):
         new_command.append(os.path.join(command_el[0].engine_path, 
                                         command_el[1]))
       elif isinstance(command_el, tuple) and \
            isinstance(command_el[0], FileTransfer):
         new_command.append(os.path.join(ft_conv[command_el[0]].engine_path,
                                         command_el[1]))
-      elif isinstance(command_el, EngineSendTransfer) or \
-           isinstance(command_el, EngineRetrieveTransfer):
+      elif isinstance(command_el, EngineTransfer):
         new_command.append(command_el.engine_path)
       elif isinstance(command_el, FileTransfer):
         new_command.append(ft_conv[command_el].engine_path)
@@ -484,8 +433,7 @@ class EngineJob(soma.workflow.client.Job):
 
   def convert_stdin(self, ft_conv):
     if self.stdin:
-      if isinstance(self.stdin, EngineSendTransfer) or \
-         isinstance(self.stdin, EngineRetrieveTransfer) :
+      if isinstance(self.stdin, EngineTransfer):
         self.stdin = self.stdin.engine_path 
       elif isinstance(self.stdin, FileTransfer):
         self.stdin = ft_conv[self.stdin].engine_path 
@@ -494,8 +442,7 @@ class EngineJob(soma.workflow.client.Job):
     # referenced_input_files => replace the FileTransfer objects by the corresponding engine_path
     new_referenced_input_files = []
     for input_file in self.referenced_input_files:
-      if isinstance(input_file, EngineSendTransfer) or \
-         isinstance(input_file, EngineRetrieveTransfer) :
+      if isinstance(input_file, EngineTransfer):
         #new_referenced_input_files.append(input_file.engine_path)
         new_referenced_input_files.append(input_file)
       elif isinstance(input_file, FileTransfer):
@@ -510,8 +457,7 @@ class EngineJob(soma.workflow.client.Job):
     # referenced_input_files => replace the FileTransfer objects by the corresponding engine_path
     new_referenced_output_files = []
     for output_file in self.referenced_output_files:
-      if isinstance(output_file, EngineSendTransfer) or \
-         isinstance(output_file, EngineRetrieveTransfer):
+      if isinstance(output_file, EngineTransfer):
         #new_referenced_output_files.append(output_file.engine_path)
         new_referenced_output_files.append(output_file)
       elif isinstance(output_file, FileTransfer):
@@ -651,7 +597,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
   queue = None
   # dict job_id => EngineJob
   jobs = None
-  # dict tr_id => EngineSendTransfer or EngineRetrieveTransfer
+  # dict tr_id => EngineTransfer
   transfers = None
 
   #logger = None
@@ -701,7 +647,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     '''
     Register the transfers and jobs.
     Transform every Job to and EngineJob
-    and FileTransfer to EngineSendTransfer or EngineRetrieveTransfer
+    and FileTransfer to EngineTransfer
     '''
     logger = logging.getLogger('engine.EngineWorkflow') 
 
@@ -728,28 +674,18 @@ class EngineWorkflow(soma.workflow.client.Workflow):
           file_transfers.add(ft)
 
     # First loop to register FileTransfer to the database server.
-    ft_conv = {} # dictonary FileTransfer => EngineRetrieveTransfer or  EngineSendTransfer
+    ft_conv = {} # dictonary FileTransfer => EngineTransfer
     self.transfers =  {}
     
     for ft in file_transfers:
-      if isinstance(ft, FileSending):
-        engine_transfer = EngineSendTransfer(ft)
-        engine_transfer.register(database_server, 
+      if isinstance(ft, FileTransfer):
+        engine_transfer = EngineTransfer(ft)
+        engine_transfer.register(database_server,
                                  self._user_id,
                                  self.exp_date,
                                  self.wf_id)
         self.transfers[engine_transfer.engine_path] = engine_transfer
         ft_conv[ft] = engine_transfer
-        
-      elif isinstance(ft, FileRetrieving):
-        engine_transfer = EngineRetrieveTransfer(ft)
-        engine_transfer.register(database_server, 
-                                 self._user_id,
-                                 self.exp_date,
-                                 self.wf_id)
-        self.transfers[engine_transfer.engine_path] = engine_transfer
-        ft_conv[ft] = engine_transfer
-
 
     # Second loop to convert Job attributs and 
     # register it to the database server. 
@@ -878,6 +814,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
       to_run=True
       for ft in job.referenced_input_files:
         if not ft.files_exist_on_server():
+          if ft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+              #TBI stop the transfer
+              pass 
           to_run = False
           break 
       if to_run:
@@ -917,11 +856,15 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         running.append(job)
       logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
       if job.status == constants.NOT_SUBMITTED:
-        # a job is run when all its dependencies succeed and all its 
-        # referenced_input_files are in the TRANSFERED or READY_TO_TRANSFER state
+        # a job can start to run when all its dependencies succeed and 
+        # all its input files are in the FILES_ON_CR or 
+        # FILES_ON_CLIENT_AND_CR or TRANSFERING_FROM_CLIENT_TO_CR
         job_to_run = True 
         for ft in job.referenced_input_files:
           if not ft.files_exist_on_server():
+            if ft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+              #TBI stop the transfer
+              pass 
             job_to_run = False
             break
         for dep in self.dependencies:
@@ -1016,6 +959,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         job_to_run = True # a node is run when all its dependencies succeed
         for ft in job.referenced_input_files:
           if not ft.files_exist_on_server():
+            if ft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+              #TBI stop the transfer
+              pass 
             job_to_run = False
             break 
         if job_to_run:
@@ -1210,7 +1156,7 @@ class WorkflowEngineLoop(object):
                   else:
                     engine_path = ft
                   self._database_server.set_transfer_status(engine_path, 
-                                                  constants.READY_TO_TRANSFER)
+                                                  constants.FILES_ON_CR)
                      
               ended_jobs[job.job_id] = job
               self.logger.debug("  => exit_status " + repr(job.exit_status))
@@ -1526,8 +1472,10 @@ class WorkflowEngine(object):
   def initializeRetrivingTransfer(self, engine_path):
     engine_path, client_path, expiration_date, workflow_id, client_paths = self.transfer_information(engine_path)
     status = self.transfer_status(engine_path)
-    if status != constants.READY_TO_TRANSFER:
-      self.logger.debug("!!!! transfer " + engine_path + "is not READY_TO_TRANSFER")
+    if status != constants.FILES_ON_CR and \
+       status != constants.FILES_ON_CLIENT_AND_CR and \
+       status != constants.TRANSFERING_FROM_CR_TO_CLIENT:
+      self.logger.debug("!!!! transfer " + engine_path + " doesn't exist on engine side")
       # TBI raise
       return (None, None)
     contents = None
@@ -1561,7 +1509,7 @@ class WorkflowEngine(object):
     transfer_action_info = (file_size, md5_hash, constants.FILE_SENDING)
     f = open(engine_path, 'w')
     f.close()
-    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING)
+    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING_FROM_CLIENT_TO_CR)
     self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
     return transfer_action_info
 
@@ -1611,7 +1559,7 @@ class WorkflowEngine(object):
     cumulated_file_size, dir_element_action_info = self._initializeDirectory(engine_path, contents)
     transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
     self._createDirStructure(engine_path, contents)
-    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING)
+    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING_FROM_CLIENT_TO_CR)
     self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
     return transfer_action_info
     
@@ -1653,7 +1601,7 @@ class WorkflowEngine(object):
       (file_size, md5_hash, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
       transfer_ended = self._sendToFile(engine_path, data, file_size, md5_hash)
       if transfer_ended:
-        self._database_server.set_transfer_status(engine_path, constants.TRANSFERED)
+        self._database_server.set_transfer_status(engine_path, constants.FILES_ON_CLIENT_AND_CR)
         self.signalTransferEnded(engine_path)
       
     else:
@@ -1667,7 +1615,7 @@ class WorkflowEngine(object):
       if transfer_ended:
         cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transfer_progression_status(engine_path, (cumulated_size, dir_element_action_info, transfer_type))
         if cumulated_transmissions == cumulated_file_size:
-          self._database_server.set_transfer_status(engine_path, constants.TRANSFERED)
+          self._database_server.set_transfer_status(engine_path, constants.FILES_ON_CLIENT_AND_CR)
           self.signalTransferEnded(engine_path)
       
     return transfer_ended

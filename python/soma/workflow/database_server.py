@@ -531,7 +531,7 @@ class WorkflowDatabaseServer( object ):
   #####################################"
   # TRANSFERS 
   
-  def add_transfer(self, engine_file_path, client_file_path, expiration_date, user_id, status = constants.READY_TO_TRANSFER, workflow_id = -1, client_paths = None):
+  def add_transfer(self, engine_file_path, client_file_path, expiration_date, user_id, status, workflow_id = -1, client_paths = None):
     '''
     Adds a transfer to the database.
     

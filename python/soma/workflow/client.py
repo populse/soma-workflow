@@ -14,9 +14,9 @@ The contrustor takes a resource id, login and password as parameters and
 connects to the resource. One WorkflowController instance is connected to 
 only one resource.
 
-The other classes (Workflow, Job, FileTransfer, FileSending, FileRetrieving, 
-SharedResourcePath and WorkflowNodeGroup) are made to build the jobs, worklfows, 
-and file transfers objects to be used in the WorkflowControler interface.
+The other classes (Workflow, Job, FileTransfer,SharedResourcePath and 
+WorkflowNodeGroup) are made to build the jobs, worklfows, and file transfers 
+objects to be used in the WorkflowControler interface.
 
 Definitions:
 A Parallel job is a job requiring more than one node to run.
@@ -47,7 +47,6 @@ from soma.workflow.constants import *
 class Job(object):
   '''
   Job representation in a soma-workflow. 
-  Workflow node type.
   
   The job parameters are identical to the WorkflowController.submit_job method 
   arguments except command, referenced_input_files and references_output_files.
@@ -164,7 +163,6 @@ class SharedResourcePath(object):
 
 class FileTransfer(object):
   '''
-  Abstract class (use FileSending or FileRetrieving) 
   File/directory transfer representation in a workflow.
   Use client_paths if the transfer involves several associated files and/or directories, eg:
         - file serie 
@@ -173,17 +171,38 @@ class FileTransfer(object):
   In this case, set client_path to one the files (eq: .img).
   In other cases (1 file or 1 directory) the client_paths must be set to None.
   '''
-  name = None
 
+  # client path
+  # string
   client_path = None
 
+  # sequence of file to transfer if transfering a file serie or if the file 
+  # format involve serveral files of directories.
+  # sequence of string or None
   client_paths = None
 
+  # intial status 
+  # constants.FILES_DONT_EXIST for output file(s) 
+  #     the files will be created by a job on the computing resource side.
+  # constants.FILES_ON_CLIENT for input file(s) 
+  #     the files will need to be transfered on the computing resource side
+  initial_status = None
+
+  # int (hours)
+  disposal_timeout = None
+
+  # name of the file transfer 
+  # defaut: "client path transfer"
+  # string
+  name = None
+
   def __init__( self,
+                files_exist_on_client,
                 client_path, 
                 disposal_timeout = 168,
                 name = None,
-                client_paths = None):
+                client_paths = None,
+                ):
     if name:
       ft_name = name
     else:
@@ -194,37 +213,12 @@ class FileTransfer(object):
     self.disposal_timeout = disposal_timeout
 
     self.client_paths = client_paths
+  
+    if files_exist_on_client:
+      self.initial_status = FILES_ON_CLIENT
+    else:
+      self.initial_status = FILES_DONT_EXIST
 
-class FileSending(FileTransfer):
-  '''
-  Workflow node type.
-  File/directory transfer for an input file.
-  '''
-  def __init__( self,
-                client_path, 
-                disposal_timeout = 168,
-                name = None,
-                client_paths = None):
-    super(FileSending, self).__init__(client_path, 
-                                      disposal_timeout, 
-                                      name, 
-                                      client_paths)
-   
-
-class FileRetrieving(FileTransfer):
-  '''
-  Workflow node type.
-  File/directory transfer for an output file.
-  '''
-  def __init__( self,
-                client_path, 
-                disposal_timeout = 168,
-                name = None,
-                client_paths = None):
-    super(FileRetrieving, self).__init__(client_path, 
-                                         disposal_timeout, 
-                                         name, 
-                                         client_paths)
     
 class WorkflowNodeGroup(object):
   '''
@@ -268,8 +262,7 @@ class Workflow(object):
   def __init__(self, 
                nodes, 
                dependencies, 
-               mainGroup = None, 
-               groups = [], 
+               mainGroup = None,                groups = [], 
                disposal_timeout = 168,):
     '''
     @type  node: sequence of L{Job} 
@@ -746,7 +739,7 @@ class WorkflowController(object):
     @return: the file transfer ended (=> but not necessarily the transfer associated to engine_path)
     '''
     status = self._engine_proxy.transfer_status(engine_path)
-    if not status == TRANSFERING:
+    if not status == TRANSFERING_FROM_CLIENT_TO_CR:
       self.initialize_sending_transfer(engine_path)
     transfer_ended = self._engine_proxy.send_piece(engine_path, data, relative_path)
     return transfer_ended
@@ -1124,7 +1117,8 @@ class WorkflowController(object):
     @param engine_path: 
     @rtype: tuple  (C{transfer_status} or None, tuple or None)
     @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
-             [1] None if the transfer status in not constants.TRANSFERING
+             [1] None if the transfer status in not constants.TRANSFERING_FROM_CLIENT_TO_CR or 
+                 constants.TRANSFERING_FROM_CR_TO_CLIENT
                  if it's a file transfer: tuple (file size, size already transfered)
                  if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''

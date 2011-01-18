@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from soma.workflow.constants import *
-from soma.workflow.client import Job, SharedResourcePath, FileTransfer, FileSending, FileRetrieving, WorkflowNodeGroup, Workflow, WorkflowController
+from soma.workflow.client import Job, SharedResourcePath, FileTransfer,  WorkflowNodeGroup, Workflow, WorkflowController
 import soma.workflow.engine
 import socket
 import os
@@ -168,9 +168,9 @@ class JobsControler(object):
     to_transfer = []
     for ft in workflow.transfers.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
-      if status == READY_TO_TRANSFER:
+      if status == FILES_ON_CLIENT:
         to_transfer.append((0, ft.engine_path))
-      if status == TRANSFERING:
+      if status == TRANSFERING_FROM_CR_TO_CLIENT:
         to_transfer.append((info[1], ft.engine_path))
           
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
@@ -182,9 +182,9 @@ class JobsControler(object):
     to_transfer = []
     for ft in workflow.transfers.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
-      if status == READY_TO_TRANSFER:
+      if status == FILES_ON_CR:
         to_transfer.append((0, ft.engine_path))
-      if status == TRANSFERING:
+      if status == TRANSFERING_FROM_CR_TO_CLIENT:
         to_transfer .append((info[1], ft.engine_path))
 
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
@@ -240,13 +240,13 @@ class JobsControler(object):
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
           status = connection.transfer_status(node.engine_path)[0]
-          if status == TRANSFER_NOT_READY:
+          if status == FILES_DONT_EXIST:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-          elif status == READY_TO_TRANSFER:
+          elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR or status == FILES_ON_CLIENT:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
-          elif status == TRANSFERING:
+          elif status == TRANSFERING_FROM_CLIENT_TO_CR or status == TRANSFERING_FROM_CR_TO_CLIENT:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-          elif status == TRANSFERED:
+          elif status == FILES_UNDER_EDITION:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
           
     print >> file, "}"
@@ -342,34 +342,34 @@ class WorkflowExamples(object):
     # Transfers
     
     complete_path = os.path.join(self.examples_dir, "complete")
-    self.tr_in_dir = FileSending(self.examples_dir, 168, "in_dir")
-    self.tr_file0   = FileSending(os.path.join(complete_path, "file0"), 168, "file0")
-    self.tr_script1 = FileSending(os.path.join(complete_path, "job1.py"), 168, "job1_py")
-    self.tr_stdin1  = FileSending(os.path.join(complete_path, "stdin1"), 168, "stdin1")
-    self.tr_script2 = FileSending(os.path.join(complete_path, "job2.py"), 168, "job2_py")
-    self.tr_stdin2  = FileSending(os.path.join(complete_path, "stdin2"), 168, "stdin2")
-    self.tr_script3 = FileSending(os.path.join(complete_path, "job3.py"), 168, "job3_py")
-    self.tr_stdin3  = FileSending(os.path.join(complete_path, "stdin3"), 168, "stdin3")
-    self.tr_script4 = FileSending(os.path.join(complete_path, "job4.py"), 168, "job4_py")
-    self.tr_stdin4  = FileSending(os.path.join(complete_path, "stdin4"), 168, "stdin4")
-    self.tr_exceptionJobScript = FileSending(os.path.join(self.examples_dir, 
+    self.tr_in_dir = FileTransfer(True, self.examples_dir, 168, "in_dir")
+    self.tr_file0   = FileTransfer(True,os.path.join(complete_path, "file0"), 168, "file0")
+    self.tr_script1 = FileTransfer(True,os.path.join(complete_path, "job1.py"), 168, "job1_py")
+    self.tr_stdin1  = FileTransfer(True,os.path.join(complete_path, "stdin1"), 168, "stdin1")
+    self.tr_script2 = FileTransfer(True,os.path.join(complete_path, "job2.py"), 168, "job2_py")
+    self.tr_stdin2  = FileTransfer(True,os.path.join(complete_path, "stdin2"), 168, "stdin2")
+    self.tr_script3 = FileTransfer(True,os.path.join(complete_path, "job3.py"), 168, "job3_py")
+    self.tr_stdin3  = FileTransfer(True,os.path.join(complete_path, "stdin3"), 168, "stdin3")
+    self.tr_script4 = FileTransfer(True,os.path.join(complete_path, "job4.py"), 168, "job4_py")
+    self.tr_stdin4  = FileTransfer(True,os.path.join(complete_path, "stdin4"), 168, "stdin4")
+    self.tr_exceptionJobScript = FileTransfer(True,os.path.join(self.examples_dir, 
                                                           "simple/exceptionJob.py"), 
                                                           168, "exception_job")
-    self.tr_cmd_check_script = FileSending(os.path.join(self.examples_dir, 
+    self.tr_cmd_check_script = FileTransfer(True,os.path.join(self.examples_dir, 
                                                         "command/argument_check.py"),
                                                         168, "cmd_check")
-    self.tr_sleep_script = FileSending(os.path.join(self.examples_dir, 
+    self.tr_sleep_script = FileTransfer(True,os.path.join(self.examples_dir, 
                                                     "simple/sleep_job.py"), 
                                                      168, "sleep_job")
-    self.tr_dir_contents_script = FileSending(os.path.join(self.examples_dir, 
+    self.tr_dir_contents_script = FileTransfer(True,os.path.join(self.examples_dir, 
                                                         "special_transfers/dir_contents.py"),
                                                         168, "dir_contents")
       
-    self.tr_file11 = FileRetrieving(os.path.join(self.output_dir, "file11"), 168, "file11")
-    self.tr_file12 = FileRetrieving(os.path.join(self.output_dir, "file12"), 168, "file12")
-    self.tr_file2 = FileRetrieving(os.path.join(self.output_dir, "file2"), 168, "file2")
-    self.tr_file3 = FileRetrieving(os.path.join(self.output_dir, "file3"), 168, "file3")
-    self.tr_file4 = FileRetrieving(os.path.join(self.output_dir, "file4"), 168, "file4")
+    self.tr_file11 = FileTransfer(False,os.path.join(self.output_dir, "file11"), 168, "file11")
+    self.tr_file12 = FileTransfer(False,os.path.join(self.output_dir, "file12"), 168, "file12")
+    self.tr_file2 = FileTransfer(False,os.path.join(self.output_dir, "file2"), 168, "file2")
+    self.tr_file3 = FileTransfer(False,os.path.join(self.output_dir, "file3"), 168, "file3")
+    self.tr_file4 = FileTransfer(False,os.path.join(self.output_dir, "file4"), 168, "file4")
     
       
   def job1(self):

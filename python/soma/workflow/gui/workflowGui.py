@@ -1,9 +1,9 @@
 from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-from soma.workflow.client import Workflow, WorkflowNodeGroup, FileSending, FileRetrieving, FileTransfer, SharedResourcePath, Job
+from soma.workflow.client import Workflow, WorkflowNodeGroup, FileTransfer, SharedResourcePath, Job
 from soma.workflow.constants import *
-from soma.workflow.engine import EngineWorkflow, EngineJob, EngineRetrieveTransfer, EngineSendTransfer
+from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
 import time
 import threading
 import os
@@ -1287,14 +1287,14 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       if isinstance(item, GuiInputTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(RED)
-        if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
+        if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
           display = "input: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "input: " + item.data.name
       if isinstance(item, GuiOutputTransfer):
         if role == QtCore.Qt.ForegroundRole:
           return QtGui.QBrush(BLUE)
-        if item.transfer_status == TRANSFERING or item.transfer_status == READY_TO_TRANSFER:
+        if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
           display = "output: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "output: " + item.data.name
@@ -1306,18 +1306,28 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
           return display + " => " + status
-        if status == TRANSFER_NOT_READY:
+        if status == FILES_DONT_EXIST:
           if role == QtCore.Qt.DecorationRole:
             return GRAY
-        if status == READY_TO_TRANSFER:
+        if status == FILES_ON_CLIENT:
           if role == QtCore.Qt.DecorationRole:
-            return BLUE
-        if status == TRANSFERING:
+            return GRAY
+        if status == FILES_ON_CR:
           if role == QtCore.Qt.DecorationRole:
-            return GREEN
-        if status == TRANSFERED:
+            return GRAY
+        if status == FILES_ON_CLIENT_AND_CR:
           if role == QtCore.Qt.DecorationRole:
-            return LIGHT_BLUE
+            return GRAY
+        if status == TRANSFERING_FROM_CLIENT_TO_CR:
+          if role == QtCore.Qt.DecorationRole:
+            return GRAY
+        if status == TRANSFERING_FROM_CR_TO_CLIENT:
+          if role == QtCore.Qt.DecorationRole:
+            return GRAY
+        if status == FILES_UNDER_EDITION:
+          if role == QtCore.Qt.DecorationRole:
+            return GRAY
+      
     
     return QtCore.QVariant()
     
@@ -1994,8 +2004,7 @@ class GuiInputTransfer(GuiTransfer):
                children_nb = 0 ):
     super(GuiInputTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
-    if isinstance(data, EngineRetrieveTransfer) or \
-       isinstance(data, EngineSendTransfer):
+    if isinstance(data, EngineTransfer):
       self.engine_path = data.engine_path
     else:
       self.engine_path = None
@@ -2010,8 +2019,7 @@ class GuiOutputTransfer(GuiTransfer):
                children_nb = 0 ):
     super(GuiOutputTransfer, self).__init__(it_id, parent, row, data, children_nb)
   
-    if isinstance(data, EngineRetrieveTransfer) or \
-       isinstance(data, EngineSendTransfer):
+    if isinstance(data, EngineTransfer):
       self.engine_path = data.engine_path
     else:
       self.engine_path = None
