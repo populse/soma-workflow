@@ -1155,6 +1155,16 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     self.warning_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/warning.png"))
     self.kill_delete_pending_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/kill_delete_pending.png"))
     self.no_status_icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/no_status.png"))
+
+
+    self.transfer_files_dont_exit = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfer_files_dont_exist.png"))
+    self.transfer_files_on_client = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfer_files_on_client.png"))
+    self.transfer_files_on_both = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfer_files_on_both.png"))
+    self.transfer_files_on_cr = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfer_files_on_cr.png"))
+    self.transfering_from_client_to_cr = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfering_from_client_to_cr.png"))
+    self.transfering_from_cr_to_client = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/transfering_from_cr_to_client.png"))
+    self.files_under_edition = QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/files_under_edition.png"))
+
     
   def index(self, row, column, parent=QtCore.QModelIndex()):
     if row < 0 or not column == 0:
@@ -1285,19 +1295,19 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     #### FileTransfers ####
     if isinstance(item, GuiTransfer):
       if isinstance(item, GuiInputTransfer):
-        if role == QtCore.Qt.ForegroundRole:
-          return QtGui.QBrush(RED)
+        #if role == QtCore.Qt.ForegroundRole:
+          #return QtGui.QBrush(RED)
         if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
-          display = "input: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+          display = "in: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
-          display = "input: " + item.data.name
+          display = "in: " + item.data.name
       if isinstance(item, GuiOutputTransfer):
-        if role == QtCore.Qt.ForegroundRole:
-          return QtGui.QBrush(BLUE)
+        #if role == QtCore.Qt.ForegroundRole:
+          #return QtGui.QBrush(BLUE)
         if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
-          display = "output: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+          display = "out: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
         else:
-          display = "output: " + item.data.name
+          display = "out: " + item.data.name
         
       if not item.engine_path:
         if role == QtCore.Qt.DisplayRole:
@@ -1305,28 +1315,28 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       else:
         status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
-          return display + " => " + status
+          return display #+ " => " + status
         if status == FILES_DONT_EXIST:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfer_files_dont_exit
         if status == FILES_ON_CLIENT:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfer_files_on_client
         if status == FILES_ON_CR:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfer_files_on_cr
         if status == FILES_ON_CLIENT_AND_CR:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfer_files_on_both
         if status == TRANSFERING_FROM_CLIENT_TO_CR:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfering_from_client_to_cr
         if status == TRANSFERING_FROM_CR_TO_CLIENT:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.transfering_from_cr_to_client
         if status == FILES_UNDER_EDITION:
           if role == QtCore.Qt.DecorationRole:
-            return GRAY
+            return self.files_under_edition
       
     
     return QtCore.QVariant()
