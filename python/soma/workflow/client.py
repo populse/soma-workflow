@@ -197,7 +197,7 @@ class FileTransfer(object):
   name = None
 
   def __init__( self,
-                files_exist_on_client,
+                is_input,
                 client_path, 
                 disposal_timeout = 168,
                 name = None,
@@ -214,7 +214,7 @@ class FileTransfer(object):
 
     self.client_paths = client_paths
   
-    if files_exist_on_client:
+    if is_input:
       self.initial_status = FILES_ON_CLIENT
     else:
       self.initial_status = FILES_DONT_EXIST
@@ -431,9 +431,9 @@ class WorkflowController(object):
               splitted_line = line.split(None,1)
               if len(splitted_line) > 1:
                 uuid = splitted_line[0]
-                contents = splitted_line[1].rstrip()
-                logger.info("    uuid: " + uuid + "   translation:" + contents)
-                path_translation[namespace][uuid] = contents
+                content = splitted_line[1].rstrip()
+                logger.info("    uuid: " + uuid + "   translation:" + content)
+                path_translation[namespace][uuid] = content
               line = f.readline()
             f.close()
           
@@ -472,39 +472,41 @@ class WorkflowController(object):
   The file transfer methods must be used when the data is located on the
   client machine and not reachable from the computing resource
   
-  Example:
+  Example of a Job submission with file transfer outside of a workflow:
   
-  #job client input files: rfin_1, rfin_2, ..., rfin_n 
-  #job client output files: rfout_1, rfout_2, ..., rfout_m  
+  #job client input files path on client: cfin_1, cfin_2, ..., rfin_n 
+  #job client output files path on: cfout_1, rfout_2, ..., rfout_m  
   
-  #Call register_transfer for each transfer file:
-  lfout_1 = wf_controller.register_transfer(rfout_1)
-  lfout_2 = wf_controller.register_transfer(rfout_2)
+  #Call register_transfer for each transfer file and get back the transfer id:
+  in_1_trid= wf_controller.register_transfer(True, rfin_1)
+  in_2_trid= wf_controller.register_transfer(True, rfin_2)
   ...
-  lfout_n = wf_controller.register_transfer(rfout_m)
+  in_n_trid= wf_controller.register_transfer(True, rfin_n)
 
-  lfin_1= wf_controller.register_transfer(rfin_1)
-  lfin_2= wf_controller.register_transfer(rfin_2)
+  out_1_trid = wf_controller.register_transfer(False, cfout_1)
+  out_2_trid = wf_controller.register_transfer(False, cfout_2)
   ...
-  lfin_n= wf_controller.register_transfer(rfin_n)
+  out_n_trid = wf_controller.register_transfer(False, cfout_m)
   
-  #Call send for each input file:
-  wf_controller.send(lfin_1)
-  wf_controller.send(lfin_1)
+  # Transfer input files:
+  wf_controller.transfer_files(in_1_trid)
+  wf_controller.transfer_files(in_2_trid)
   ...
-  wf_controller.send(lfin_1)
+  wf_controller.transfer_files(in_n_trid)
     
-  #Job submittion: don't forget to reference engine input and output files 
-  job_id = wf_controller.submit_job(['python', '/somewhere/something.py'], 
-                       [lfin_1, lfin_2, ..., lfin_n],
-                       [lfout_1, lfout_2, ..., lfout_n])
+  #Job submittion: 
+  # use the transfer id in the command or stdin argument when needed
+  # don't forget to reference engine input and output files 
+  job_id = wf_controller.submit_job(['python', trid_in_1], 
+                                    [in_1_trid, in_2_trid, ..., in_n_trid],
+                                    [out_1_trid, out_2_trid, ..., out_n_trid])
   wf_controller.wait_job(job_id)
   
   #After Job execution, transfer back the output file
-  wf_controller.retrieve(lfout_1)
-  wf_controller.retrieve(lfout_2)
+  wf_controller.transfer_files(out_1_trid)
+  wf_controller.transfer_files(out_2_trid)
   ...
-  wf_controller.retrieve(lfout_m)
+  wf_controller.transfer_files(out_n_trid)
   
   When sending or registering a transfer, use client_paths if the transfer involves several associated files and/or directories:
           - when transfering a file serie 
@@ -523,10 +525,20 @@ class WorkflowController(object):
  
   '''
         
-  def register_transfer(self, client_path, disposal_timeout=168, client_paths=None): 
+  def register_transfer(self, 
+                        is_input,
+                        client_path, 
+                        disposal_timeout=168, 
+                        name = None,
+                        client_paths=None): 
     '''
-    Generates a unique engine path and save the (engine_path, client_path) association.
-    
+    Register a transfer needed for Jobs submitted outside a workflow.
+    Return the transfer id.
+    @type  is_input: boolean
+    @param is_input: True if the files are input files existing on the client
+                     side.
+                     False if the files are output files which will be created
+                     by a job on the computing resource
     @type  client_path: string
     @param client_path: client path of file
     @type  disposalTimeout: int
@@ -536,102 +548,134 @@ class WorkflowController(object):
     @type client_paths: sequence of string or None
     @type client_paths: sequence of file to transfer if transfering a 
     file serie or if the file format involve serveral file of directories.
-    @rtype: string or sequence of string
-    @return: engine file path associated with the client file
+    @rtype: string
+    @return: transfer id
     '''
-    return self._engine_proxy.register_transfer(client_path, disposal_timeout, client_paths)
+    return self._engine_proxy.register_transfer(FileTransfer(is_input,
+                                                      client_path,
+                                                      disposal_timeout, 
+                                                      name,
+                                                      client_paths))
 
-  def send(self, engine_path, buffer_size = 512**2):
+  def transfer_files(self, transfer_id, buffer_size = 512**2):
     '''
-    Transfers one or several client file(s) to a engine directory. The engine_path 
-    must have been generated using the register_transfer method. 
-    '''
-    
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(engine_path)
-    transfer_action_info = self._engine_proxy.transfer_action_info(engine_path)
-    if not transfer_action_info:
-      init_info = self.initialize_sending_transfer(engine_path)
-    if not client_paths:
-      if os.path.isfile(client_path):
-        if transfer_action_info:
-          self._send_file(client_path, 
-                          engine_path, 
-                          buffer_size, 
-                          transmitted = transfer_action[1])
-        else:
-          self._send_file(client_path, 
-                          engine_path, 
-                          buffer_size)
-                          
-      elif os.path.isdir(client_path):
-        if transfer_action_info:
-          for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-            self._send_file(client_path, 
-                            engine_path, 
-                            buffer_size, 
-                            transmitted, 
-                            relative_path)
-        else:
-          for relative_path in init_info[1]:
-            self._send_file(client_path, 
-                            engine_path, 
-                            buffer_size,
-                            transmitted = 0,
-                            relative_path = relative_path)
-    else:
-      if transfer_action_info:
-        for relative_path, (file_size, transmitted) in transfer_action_info[1].iteritems():
-          self._send_file(os.path.dirname(client_path), 
-                          engine_path, 
-                          buffer_size, 
-                          transmitted,
-                          relative_path)
-      else:
-        for relative_path in init_info[1]:
-          self._send_file(os.path.dirname(client_path), 
-                          engine_path, 
-                          buffer_size, 
-                          transmitted = 0,
-                          relative_path = relative_path)
-        
-    
+    Does the actual file(s) transfer.
+    If the files are only located on the client side (transfer status: constants.FILES_ON_CLIENT) the transfer is done from the client to 
+    the computing resource.
+    If the files are localted on the computing reource side (transfer status:
+    constants.FILES_ON_CR or constants.FILES_ON_CLIENT_AND_CR) the transfer is 
+    done from the computing resouce to the client.
+    The files are transfered piece by piece. The size of each piece can be
+    tuned using the buffer_size argument.
 
-  def retrieve(self, engine_path, buffer_size = 512**2):
+    @rtype: Boolean
+    @return: the transfer was done
     '''
-    If engine_path is a file path: copies the engine file to the associated client file path.
-    If engine_path is a directory path: copies the contents of the directory to the associated client directory.
-    The engine path must belong to the user's transfers (ie belong to 
-    the sequence returned by the L{transfers} method). 
-    
-    @type  engine_path: string 
-    @param engine_path: engine path 
-    '''
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(engine_path)
-    transfer_action_info = self.initialize_retrieving_transfer(engine_path)
-    
-    if transfer_action_info[2] == FILE_RETRIEVING:
-      # file case
-      (file_size, md5_hash, transfer_type) = transfer_action_info
-      self._retrieve_file(client_path, 
-                          engine_path, 
-                          file_size, 
-                          md5_hash, 
-                          buffer_size)
-    elif transfer_action_info[2] == DIR_RETRIEVING:
-      # dir case
-      (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
+
+    status = self._engine_proxy.transfer_status(transfer_id)
+    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
+
+    transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
+
+    if status == FILES_ON_CLIENT:
+      # transfer from client to computing resource
+      transfer_from_scratch = False
+      if not transfer_action_info or \
+         transfer_action[2] == FILE_RETRIEVING or \
+         transfer_action[2] == DIR_RETRIEVING:
+        # transfer reset
+        transfer_from_scratch = True
+        transfer_action_info = self.initialize_transfer(transfer_id)
       
-      for relative_path, file_info in file_transfer_info.iteritems(): 
-        (file_size, md5_hash) = file_info
-        self._retrieve_file(client_path, 
-                            engine_path, 
-                            file_size, 
-                            md5_hash, 
+      if transfer_action_info[2] == FILE_SENDING:
+        if not transfer_from_scratch:
+          (file_size, transmitted) = self._engine_proxy.transfer_progression_status(engine_path, transfer_action_info)
+        else:
+          transmitted = 0
+        self._transfer_file_to_cr(client_path,
+                                  transfer_id,
+                                  buffer_size,
+                                  transmitted)
+        return True
+
+      elif transfer_action_info[2] == DIR_SENDING:
+        if not client_paths:
+          for relative_path in transfer_action_info[1]:
+            if transfer_from_scratch:
+              transmitted = 0
+            else:
+              pass
+              #TBI transmitted value ?
+            self._transfer_file_to_cr(client_path, 
+                            transfer_id, 
                             buffer_size,
-                            relative_path)
+                            transmitted = transmitted,
+                            relative_path = relative_path)
+          return True
+        else:
+          for relative_path in transfer_action_info[1]:
+            if transfer_from_scratch:
+              transmitted = 0
+            else:
+              pass
+              #TBI transmitted value ?
+            self._transfer_file_to_cr(os.path.dirname(client_path), 
+                            transfer_id, 
+                            buffer_size, 
+                            transmitted = transmitted,
+                            relative_path = relative_path)
+          return True
+
+    elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
+      # transfer from computing resource to client
+      transfer_from_scratch = False
+      if not transfer_action_info or \
+         transfer_action[2] == FILE_SENDING or \
+         transfer_action[2] == DIR_SENDING:
+        transfer_action_info = self.initialize_transfer(transfer_id)
+        transfer_from_scratch = True
+        # TBI remove existing files 
+
+      if transfer_action_info[2] == FILE_RETRIEVING:
+        # file case
+        (file_size, md5_hash, transfer_type) = transfer_action_info
+        self._transfer_file_from_cr(client_path, 
+                                    transfer_id, 
+                                    file_size, 
+                                    md5_hash, 
+                                    buffer_size)
+        return True
+      elif transfer_action_info[2] == DIR_RETRIEVING:
+        # dir case
+        (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
+        for relative_path, file_info in file_transfer_info.iteritems(): 
+          (file_size, md5_hash) = file_info
+          self._transfer_file_from_cr(client_path, 
+                                      transfer_id, 
+                                      file_size, 
+                                      md5_hash, 
+                                      buffer_size,
+                                      relative_path)
+        return True 
+    else:
+      return False
     
 
-  def _send_file(self, client_path, engine_path, buffer_size = 512**2, transmitted = 0, relative_path = None):
+  def _transfer_file_to_cr(self, 
+                           client_path, 
+                           engine_path, 
+                           buffer_size = 512**2, 
+                           transmitted = 0, 
+                           relative_path = None):
+    '''
+    Transfer a file from the client to the computing resource.
+
+    @param client_path: file path on the client side
+    @param engine_path: file path on the computing resource side
+    @param buffer_size: the file is transfered piece by piece of size buffer_size
+    @param transmitted: size already transfered
+    '''
+      
     if relative_path:
       r_path = os.path.join(client_path, relative_path)
     else:
@@ -641,11 +685,27 @@ class WorkflowController(object):
       f.seek(transmitted)
     transfer_ended = False
     while not transfer_ended:
-      transfer_ended = self.send_piece(engine_path, f.read(buffer_size), relative_path)
+      transfer_ended = self.write_to_computing_resource_file(engine_path,   
+                                                       f.read(buffer_size),
+                                                       relative_path)
     f.close()
 
 
-  def _retrieve_file(self, client_path, engine_path, file_size, md5_hash, buffer_size = 512**2, relative_path = None):
+  def _transfer_file_from_cr(self, 
+                             client_path, 
+                             engine_path, 
+                             file_size, 
+                             md5_hash, 
+                             buffer_size = 512**2, 
+                             relative_path = None):
+    '''
+    Transfer a file from the computing resource to client side.
+
+    @param client_path: file path on the client side
+    @param engine_path: file path on the computing resource side
+    @param buffer_size: the file is transfered piece by piece of size buffer_size
+    @param transmitted: size already transfered
+    '''
     if relative_path:
       r_path = os.path.join(os.path.dirname(client_path), relative_path)
     else:
@@ -657,144 +717,127 @@ class WorkflowController(object):
       #open(r_path, 'wb')
     transfer_ended = False
     while not transfer_ended :
-      data = self.retrieve_piece(engine_path, buffer_size, fs, relative_path)
+      data = self.read_from_computing_resource_file(engine_path, 
+                                                    buffer_size, 
+                                                    fs, 
+                                                    relative_path)
       f.write(data)
       fs = f.tell()
       if fs > file_size:
          f.close()
          open(r_path, 'wb')
-         raise Exception('retrieve_piece: Transmitted data exceed expected file size.')
+         raise Exception('read_from_computing_resource_file: Transmitted data exceed expected file size.')
       elif fs == file_size:
         if md5_hash is not None:
           if hashlib.md5( open( r_path, 'rb' ).read() ).hexdigest() != md5_hash:
             # Reset file
             f.close()
             open( r_path, 'wb' )
-            raise Exception('retrieve_piece: Transmission error detected.')
+            raise Exception('read_from_computing_resource_file: Transmission error detected.')
           else:
             transfer_ended = True
         else:
           transfer_ended = True   
     f.close()
 
-          
-  @staticmethod
-  def _contents(path_seq, md5_hash=False):
-    result = []
-    for path in path_seq:
-      s = os.stat(path)
-      if stat.S_ISDIR(s.st_mode):
-        full_path_list = []
-        for element in os.listdir(path):
-          full_path_list.append(os.path.join(path, element))
-        contents = WorkflowController._contents(full_path_list, md5_hash)
-        result.append((os.path.basename(path), contents, None))
-      else:
-        if md5_hash:
-          result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
-        else:
-          result.append( ( os.path.basename(path), s.st_size, None ) )
-    return result
-        
-        
-  def initialize_sending_transfer(self, engine_path):
+  
+  def initialize_transfer(self, transfer_id):
     '''
-    Initializes the transfer action (from client to server) and returns the transfer action information.
-    
+    Initializes the transfer and returns the transfer action information.
+
     @rtype: tuple 
     @return: in the case of a file transfer: tuple (file_size, md5_hash)
              in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
     '''
-    
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(engine_path)
-    if not client_paths:
-      if os.path.isfile(client_path):
-        stat = os.stat(client_path)
-        file_size = stat.st_size
-        md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
-        transfer_action_info = self._engine_proxy.initializeFileSending(engine_path, file_size, md5_hash)
-      elif os.path.isdir(client_path):
-        full_path_list = []
-        for element in os.listdir(client_path):
-          full_path_list.append(os.path.join(client_path, element))
-        contents = WorkflowController._contents(full_path_list)
-        transfer_action_info = self._engine_proxy.initializeDirSending(engine_path, contents)
-    else: #client_paths
-      contents = self._contents(client_paths)
-      transfer_action_info = self._engine_proxy.initializeDirSending(engine_path,contents)
-    return transfer_action_info
-  
-        
-  def send_piece(self, engine_path, data, relative_path=None):
-    '''
-    Sends a piece of data to a registered transfer (identified by engine_path).
+    status = self._engine_proxy.transfer_status(transfer_id)
+    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
 
-    @type  engine_path: string
-    @param engine_path: transfer id
+    if status == FILES_ON_CLIENT:
+      if not client_paths:
+        if os.path.isfile(client_path):
+          stat = os.stat(client_path)
+          file_size = stat.st_size
+          md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
+          transfer_action_info = self._engine_proxy.init_file_transfer_to_cr(transfer_id, 
+                                                      file_size, 
+                                                      md5_hash)
+        elif os.path.isdir(client_path):
+          full_path_list = []
+          for element in os.listdir(client_path):
+            full_path_list.append(os.path.join(client_path, element))
+          content = dir_content(full_path_list)
+          transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id, content)
+      else: #client_paths
+        content = dir_content(client_paths)
+        transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id,content)
+      return transfer_action_info
+    elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
+      (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
+      if dir_content:
+        create_dir_structure(os.path.dirname(client_path), content)
+      return transfer_action_info
+    
+    return None
+    
+
+  def write_to_computing_resource_file(self, 
+                                       transfer_id, 
+                                       data, 
+                                       relative_path=None):
+    '''
+    Write a piece of data to a file locate on the computing resouce.
+
+    @type  transfer_id: string
+    @param transfer_id: transfer id
     @type  data: data
     @param data: data to write to the file
     @type  relative_path: relative file path
-    @param relative_path: If engine_path is a file, relative_path should be None. If engine_path is a directory, relative_path is mandatory. 
+    @param relative_path: Mandatory to identify the file concerned if is the    
+                          transfer_id correspond to a directory transfer. 
+                          None if it concerns only one file.
     @rtype : boolean
-    @return: the file transfer ended (=> but not necessarily the transfer associated to engine_path)
+    @return: the file transfer ended. Note that if the transfer_id correspond to
+    a directory transfer, it doesn't mean that the whole directory transfer ended. 
     '''
-    status = self._engine_proxy.transfer_status(engine_path)
+
+    status = self._engine_proxy.transfer_status(transfer_id)
     if not status == TRANSFERING_FROM_CLIENT_TO_CR:
-      self.initialize_sending_transfer(engine_path)
-    transfer_ended = self._engine_proxy.send_piece(engine_path, data, relative_path)
+      self.initialize_transfer(transfer_id)
+    transfer_ended = self._engine_proxy.write_to_computing_resource_file(
+                                                                  transfer_id, 
+                                                                  data, 
+                                                                  relative_path)
     return transfer_ended
 
-
-  def initialize_retrieving_transfer(self, engine_path):
+  def read_from_computing_resource_file(self, 
+                                        transfer_id, 
+                                        buffer_size, 
+                                        transmitted,
+                                        relative_path=None):
     '''
-    Initializes the transfer action (from server to client) and returns the transfer action information.
+    Read a piece of data from a file located on the computing resource.
     
-    @rtype: tuple 
-    @return: in the case of a file transfer: tuple (file_size, md5_hash)
-             in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
-    '''
-    
-    (transfer_action_info, contents) = self._engine_proxy.initializeRetrivingTransfer(engine_path)
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(engine_path)
-    if contents:
-      self._create_dir_structure(os.path.dirname(client_path), contents)
-    return transfer_action_info
-    
-
-  def _create_dir_structure(self, path, contents, subdirectory = ""):
-    if not os.path.isdir(path):
-      print "create " + repr(path)
-      os.makedirs(path)
-
-    for item, description, md5_hash in contents:
-      relative_path = os.path.join(subdirectory,item)
-      full_path = os.path.join(path, relative_path)
-      if isinstance(description, list):
-        print "to create " + repr(full_path)
-        if not os.path.isdir(full_path):
-          os.mkdir(full_path)
-        self._create_dir_structure(path, description, relative_path)
-   
-   
-  def retrieve_piece(self, engine_path, buffer_size, transmitted, relative_path=None):
-    '''
-    Retrieves a piece of data from a file or directory (identified by engine_path).
-    
-    @type  engine_path: string
-    @param engine_path: transfer id
+    @type  transfer_id: string
+    @param transfer_id: transfer id
     @type  transmitted: int
     @param transmitted: size of the data already retrieved
     @type  buffer_size: int
     @param buffer_size: size of the piece to retrieve
     @type  relative_path: file path
-    @param relative_path: If engine_path is a file, relative_path should be None. If engine_path is a directory, relative_path is mandatory. 
+    @param relative_path: Mandatory to identify the file concerned if is the    
+                          transfer_id correspond to a directory transfer. 
+                          None if it concerns only one file.
     @rtype: data
-    @return: piece of data read from the file at the position already_transmitted
+    @return: piece of data read from the file at the position transmitted
     '''
-    data = self._engine_proxy.retrieve_piece(engine_path, buffer_size, transmitted, relative_path)
+    
+    data = self._engine_proxy.read_from_computing_resource_file(transfer_id, 
+                                                                buffer_size, 
+                                                                transmitted,
+                                                                relative_path)
     return data
     
-   
+     
   def delete_transfer(self, engine_path):
     '''
     Deletes the engine file or directory and the associated transfer information.
@@ -1189,7 +1232,7 @@ class WorkflowController(object):
     
     open(stdout_file_path, 'wb') 
     if engine_stdout_file and stdout_transfer_action_info:
-      self._retrieve_file(stdout_file_path, 
+      self._transfer_file_from_cr(stdout_file_path, 
                           engine_stdout_file, 
                           stdout_transfer_action_info[0], 
                           stdout_transfer_action_info[1], 
@@ -1198,7 +1241,7 @@ class WorkflowController(object):
     if stderr_file_path:
       open(stderr_file_path, 'wb') 
       if engine_stderr_file and stderr_transfer_action_info:
-          self._retrieve_file(stderr_file_path, 
+          self._transfer_file_from_cr(stderr_file_path, 
                               engine_stderr_file, 
                               stderr_transfer_action_info[0], 
                               stderr_transfer_action_info[1], 
@@ -1245,6 +1288,30 @@ class WorkflowController(object):
     self._engine_proxy.restart_job(job_id)
 
 
+def dir_content(path_seq, md5_hash=False):
+  result = []
+  for path in path_seq:
+    s = os.stat(path)
+    if stat.S_ISDIR(s.st_mode):
+      full_path_list = []
+      for element in os.listdir(path):
+        full_path_list.append(os.path.join(path, element))
+      content = dir_content(full_path_list, md5_hash)
+      result.append((os.path.basename(path), content, None))
+    else:
+      if md5_hash:
+        result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
+      else:
+        result.append( ( os.path.basename(path), s.st_size, None ) )
+  return result
     
-    
-    
+def create_dir_structure(path, content, subdirectory = ""):
+  if not os.path.isdir(path):
+    os.makedirs(path)
+  for item, description, md5_hash in content:
+    relative_path = os.path.join(subdirectory,item)
+    full_path = os.path.join(path, relative_path)
+    if isinstance(description, list):
+      if not os.path.isdir(full_path):
+        os.mkdir(full_path)
+      create_dir_structure(path, description, relative_path)

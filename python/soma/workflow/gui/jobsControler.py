@@ -176,7 +176,7 @@ class JobsControler(object):
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
     for transmitted, engine_path in to_transfer:
       print "send to " + engine_path + " already transmitted size =" + repr(transmitted)
-      connection.send(engine_path, buffer_size)
+      connection.transfer_files(engine_path, buffer_size)
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
@@ -190,7 +190,7 @@ class JobsControler(object):
     to_transfer = sorted(to_transfer, key = lambda element: element[1])
     for transmitted, engine_path in to_transfer:
       print "retrieve " + engine_path + " already transmitted size" + repr(transmitted)
-      connection.retrieve(engine_path, buffer_size)
+      connection.transfer_files(engine_path, buffer_size)
 
           
   def printWorkflow(self, workflow, connection):

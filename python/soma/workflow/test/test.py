@@ -97,83 +97,128 @@ class JobExamples(object):
     self.jobs = jobs
   
   def submitJob1(self, time=2):
-    self.l_file11 = self.jobs.register_transfer(self.outpath + "file11", self.tr_timeout) 
-    self.l_file12 = self.jobs.register_transfer(self.outpath + "file12", self.tr_timeout) 
+    self.file11_trid = self.jobs.register_transfer(False, 
+                                                self.outpath + "file11", 
+                                                self.tr_timeout) 
+    self.file12_trid = self.jobs.register_transfer(False,
+                                                   self.outpath + "file12",
+                                                   self.tr_timeout) 
     
-    self.l_file0 = self.jobs.register_transfer(self.inpath + "complete/" + "file0", self.tr_timeout) 
-    l_script1 = self.jobs.register_transfer(self.inpath + "complete/" + "job1.py", self.tr_timeout) 
-    l_stdin1 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    self.file0_trid = self.jobs.register_transfer(True,
+                                               self.inpath + "complete/" + "file0", 
+                                               self.tr_timeout) 
+    script1_trid = self.jobs.register_transfer(True,
+                                               self.inpath + "complete/" + "job1.py", 
+                                               self.tr_timeout) 
+    stdin1_trid = self.jobs.register_transfer(True, 
+                                              self.inpath + "complete/" + "stdin1", 
+                                              self.tr_timeout) 
 
-    self.jobs.send(self.l_file0) 
-    self.jobs.send(l_script1) 
-    self.jobs.send(l_stdin1) 
+    self.jobs.transfer_files(self.file0_trid) 
+    self.jobs.transfer_files(script1_trid) 
+    self.jobs.transfer_files(stdin1_trid) 
     
-    job1id = self.jobs.submit_job( [self.python, l_script1, self.l_file0, self.l_file11, self.l_file12, repr(time)], 
-                               [self.l_file0, l_script1, l_stdin1], 
-                               [self.l_file11, self.l_file12], 
-                               l_stdin1, False, self.jobs_timeout, "job1 with transfers") 
+    job1id = self.jobs.submit_job( [self.python, script1_trid, self.file0_trid, self.file11_trid, self.file12_trid, repr(time)], 
+                               [self.file0_trid, script1_trid, stdin1_trid], 
+                               [self.file11_trid, self.file12_trid], 
+                               stdin1_trid, 
+                               False, 
+                               self.jobs_timeout, 
+                               "job1 with transfers") 
                                     
-    return (job1id, [self.l_file11, self.l_file12], None)
+    return (job1id, [self.file11_trid, self.file12_trid], None)
   
 
   def submitJob2(self, time=2):
-    self.l_file2 = self.jobs.register_transfer(self.outpath + "file2", self.tr_timeout) 
+    self.file2_trid = self.jobs.register_transfer(False,
+                                               self.outpath + "file2", 
+                                               self.tr_timeout) 
 
-    l_script2 = self.jobs.register_transfer(self.inpath + "complete/" + "job2.py", self.tr_timeout) 
-    l_stdin2 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin1", self.tr_timeout) 
+    script2_trid = self.jobs.register_transfer(True,
+                                               self.inpath + "complete/" + "job2.py", 
+                                                self.tr_timeout) 
+    stdin2_trid = self.jobs.register_transfer(True, 
+                                              self.inpath + "complete/" + "stdin1", 
+                                              self.tr_timeout) 
   
-    self.jobs.send(l_script2) 
-    self.jobs.send(l_stdin2) 
+    self.jobs.transfer_files(script2_trid) 
+    self.jobs.transfer_files(stdin2_trid) 
   
-    job2id = self.jobs.submit_job( [self.python, l_script2, self.l_file11, self.l_file0, self.l_file2, repr(time)], 
-                               [self.l_file0, self.l_file11, l_script2, l_stdin2], 
-                               [self.l_file2], 
-                               l_stdin2, False, self.jobs_timeout, "job2 with transfers") 
-    return (job2id, [self.l_file2], None)
+    job2id = self.jobs.submit_job( [self.python, script2_trid, self.file11_trid, self.file0_trid, self.file2_trid, repr(time)], 
+                                   [self.file0_trid, self.file11_trid, script2_trid, stdin2_trid], 
+                                   [self.file2_trid], 
+                                   stdin2_trid, 
+                                   False, 
+                                   self.jobs_timeout, 
+                                  "job2 with transfers") 
+    return (job2id, [self.file2_trid], None)
 
 
   def submitJob3(self, time=2):
-    self.l_file3 = self.jobs.register_transfer(self.outpath + "file3", self.tr_timeout) 
+    self.file3_trid = self.jobs.register_transfer(False,
+                                               self.outpath + "file3",
+                                               self.tr_timeout) 
     
-    l_script3 = self.jobs.register_transfer(self.inpath + "complete/" + "job3.py", self.tr_timeout) 
-    l_stdin3 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin3", self.tr_timeout) 
+    script3_trid = self.jobs.register_transfer(True, 
+                                                self.inpath + "complete/" + "job3.py", 
+                                                self.tr_timeout) 
+    stdin3_trid = self.jobs.register_transfer(True,
+                                              self.inpath + "complete/" + "stdin3", 
+                                               self.tr_timeout) 
     
-    self.jobs.send(l_script3) 
-    self.jobs.send(l_stdin3) 
+    self.jobs.transfer_files(script3_trid) 
+    self.jobs.transfer_files(stdin3_trid) 
 
-    job3id = self.jobs.submit_job( [self.python, l_script3, self.l_file12, self.l_file3, repr(time)], 
-                               [self.l_file12, l_script3, l_stdin3], 
-                               [self.l_file3], 
-                               l_stdin3, False,  self.jobs_timeout, "job3 with transfers") 
+    job3id = self.jobs.submit_job( [self.python, script3_trid, self.file12_trid, self.file3_trid, repr(time)], 
+                               [self.file12_trid, script3_trid, stdin3_trid], 
+                               [self.file3_trid], 
+                               stdin3_trid, 
+                               False,  
+                               self.jobs_timeout, 
+                               "job3 with transfers") 
   
-    return (job3id, [self.l_file3], None)
+    return (job3id, [self.file3_trid], None)
   
   
   def submitJob4(self):
-    self.l_file4 = self.jobs.register_transfer(self.outpath + "file4", self.tr_timeout) 
+    self.file4_trid = self.jobs.register_transfer(False,
+                                                  self.outpath + "file4",
+                                                  self.tr_timeout) 
   
-    l_script4 = self.jobs.register_transfer(self.inpath + "complete/" + "job4.py", self.tr_timeout) 
-    l_stdin4 = self.jobs.register_transfer(self.inpath + "complete/" + "stdin4", self.tr_timeout) 
+    script4_trid = self.jobs.register_transfer(True,
+                                               self.inpath + "complete/" + "job4.py", 
+                                               self.tr_timeout) 
+    stdin4_trid = self.jobs.register_transfer(True,
+                                              self.inpath + "complete/" + "stdin4", 
+                                              self.tr_timeout) 
   
-    self.jobs.send(l_script4) 
-    self.jobs.send(l_stdin4) 
+    self.jobs.transfer_files(script4_trid) 
+    self.jobs.transfer_files(stdin4_trid) 
  
-    job4id = self.jobs.submit_job( [self.python, l_script4, self.l_file2, self.l_file3, self.l_file4], 
-                               [self.l_file2, self.l_file3, l_script4, l_stdin4], 
-                               [self.l_file4], 
-                               l_stdin4, False, self.jobs_timeout, "job4 with transfers") 
-    return (job4id, [self.l_file4], None)
+    job4id = self.jobs.submit_job( [self.python, script4_trid, self.file2_trid, self.file3_trid, self.file4_trid], 
+                               [self.file2_trid, self.file3_trid, script4_trid, stdin4_trid], 
+                               [self.file4_trid], 
+                               stdin4_trid, 
+                               False, 
+                               self.jobs_timeout, 
+                               "job4 with transfers") 
+    return (job4id, [self.file4_trid], None)
   
   
   def submitExceptionJob(self):
-    l_script = self.jobs.register_transfer(self.inpath + "simple/exceptionJob.py", self.tr_timeout)
+    script_trid = self.jobs.register_transfer(True,
+                                              self.inpath + "simple/exceptionJob.py",
+                                              self.tr_timeout)
   
-    self.jobs.send(l_script)
+    self.jobs.transfer_files(script_trid)
   
-    jobid = self.jobs.submit_job( [self.python, l_script], 
-                              [l_script], 
+    jobid = self.jobs.submit_job( [self.python, script_trid], 
+                              [script_trid], 
                               [], 
-                              None, False, self.jobs_timeout, "job with exception") 
+                              None, 
+                              False, 
+                              self.jobs_timeout, 
+                              "job with exception") 
     
     return (jobid, None, None)
 
@@ -220,53 +265,61 @@ class JobExamples(object):
     
     #compilation 
     
-    l_source = self.jobs.register_transfer(self.inpath + "mpi/simple_mpi.c", self.tr_timeout)
+    source_trid = self.jobs.register_transfer(True, 
+                                              self.inpath + "mpi/simple_mpi.c",
+                                              self.tr_timeout)
     
-    self.jobs.send(l_source)
+    self.jobs.transfer_files(source_trid)
 
-    l_object = self.jobs.register_transfer(self.outpath + "simple_mpi.o", self.tr_timeout) 
+    object_trid = self.jobs.register_transfer(False,
+                                              self.outpath + "simple_mpi.o",
+                                              self.tr_timeout) 
     #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
     #/opt/mpich/gnu/bin/
     
     mpibin = self.jobs.config.get(self.jobs.resource_id, constants.OCFG_PARALLEL_ENV_MPI_BIN)
     print "mpibin = " + mpibin
     
-    print "l_source = " + l_source
-    print "l_object = " + l_object
+    print "source_trid = " + source_trid
+    print "object_trid = " + object_trid
     compil1jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
-                                                  "-c", l_source, 
-                                                  "-o", l_object ], 
-                                      referenced_input_files = [l_source],
-                                      referenced_output_files = [l_object],
+                                                  "-c", source_trid, 
+                                                  "-o", object_trid ], 
+                                      referenced_input_files = [source_trid],
+                                      referenced_output_files = [object_trid],
                                       join_stderrout=False, 
                                       disposal_timeout = self.jobs_timeout,
                                       name = "job compil1 mpi")
     
     self.jobs.wait_job([compil1jobId])
     
-    l_bin = self.jobs.register_transfer(self.outpath + "simple_mpi", self.tr_timeout) 
-    print "l_bin = " + l_bin
+    bin_trid = self.jobs.register_transfer(True,
+                                        self.outpath + "simple_mpi",
+                                        self.tr_timeout) 
+    print "bin_trid= " + bin_trid
     
     compil2jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
-                                                "-o", l_bin, 
-                                                l_object ], 
-                                    referenced_input_files = [l_object],
-                                    referenced_output_files = [l_bin],
+                                                "-o", bin_trid, 
+                                                object_trid ], 
+                                    referenced_input_files = [object_trid],
+                                    referenced_output_files = [bin_trid],
                                     join_stderrout=False, 
                                     disposal_timeout = self.jobs_timeout,
                                     name = "job compil2 mpi")
     
     self.jobs.wait_job([compil2jobId])
-    self.jobs.erase_transfer(l_object)
+    self.jobs.delete_transfer(object_trid)
 
     
     # mpi job submission
-    script = self.jobs.register_transfer(self.inpath + "mpi/simple_mpi.sh", self.tr_timeout)
+    script = self.jobs.register_transfer(True,
+                                         self.inpath + "mpi/simple_mpi.sh",
+                                         self.tr_timeout)
     
-    self.jobs.send(script)
+    self.jobs.transfer_files(script)
 
-    jobId = self.jobs.submit_job( command = [ script, repr(node_num), l_bin], 
-                              referenced_input_files = [script, l_bin],
+    jobId = self.jobs.submit_job( command = [ script, repr(node_num), bin_trid], 
+                              referenced_input_files = [script, bin_trid],
                               join_stderrout=False, 
                               disposal_timeout = self.jobs_timeout,
                               name = "parallel job mpi",
@@ -276,7 +329,7 @@ class JobExamples(object):
     self.jobs.delete_job(compil2jobId)
     
 
-    return (jobId, [l_source], None)
+    return (jobId, [source_trid], None)
           
      
 class JobsTest(unittest.TestCase):
@@ -510,7 +563,7 @@ class SubmissionWithTransfer(JobsTest):
     for file in self.outputFiles:
       client_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.retrieve(file)
+      JobsTest.jobs.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
    
@@ -645,7 +698,7 @@ class JobPipelineWithTransfer(JobsTest):
     for file in self.outputFiles:
       client_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.retrieve(file)
+      JobsTest.jobs.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
     
@@ -837,7 +890,7 @@ class DisconnectionTest(JobsTest):
     for file in self.outputFiles:
       client_file = JobsTest.jobs.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.retrieve(file)
+      JobsTest.jobs.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
     
