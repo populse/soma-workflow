@@ -765,16 +765,16 @@ class WorkflowController(object):
           full_path_list = []
           for element in os.listdir(client_path):
             full_path_list.append(os.path.join(client_path, element))
-          content = dir_content(full_path_list)
+          content = WorkflowController.dir_content(full_path_list)
           transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id, content)
       else: #client_paths
-        content = dir_content(client_paths)
+        content = WorkflowController.dir_content(client_paths)
         transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id,content)
       return transfer_action_info
     elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
       (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
       if dir_content:
-        create_dir_structure(os.path.dirname(client_path), content)
+        WorkflowController.create_dir_structure(os.path.dirname(client_path), content)
       return transfer_action_info
     
     return None
@@ -1288,30 +1288,32 @@ class WorkflowController(object):
     self._engine_proxy.restart_job(job_id)
 
 
-def dir_content(path_seq, md5_hash=False):
-  result = []
-  for path in path_seq:
-    s = os.stat(path)
-    if stat.S_ISDIR(s.st_mode):
-      full_path_list = []
-      for element in os.listdir(path):
-        full_path_list.append(os.path.join(path, element))
-      content = dir_content(full_path_list, md5_hash)
-      result.append((os.path.basename(path), content, None))
-    else:
-      if md5_hash:
-        result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
+  @staticmethod
+  def dir_content(path_seq, md5_hash=False):
+    result = []
+    for path in path_seq:
+      s = os.stat(path)
+      if stat.S_ISDIR(s.st_mode):
+        full_path_list = []
+        for element in os.listdir(path):
+          full_path_list.append(os.path.join(path, element))
+        content = WorkflowController.dir_content(full_path_list, md5_hash)
+        result.append((os.path.basename(path), content, None))
       else:
-        result.append( ( os.path.basename(path), s.st_size, None ) )
-  return result
-    
-def create_dir_structure(path, content, subdirectory = ""):
-  if not os.path.isdir(path):
-    os.makedirs(path)
-  for item, description, md5_hash in content:
-    relative_path = os.path.join(subdirectory,item)
-    full_path = os.path.join(path, relative_path)
-    if isinstance(description, list):
-      if not os.path.isdir(full_path):
-        os.mkdir(full_path)
-      create_dir_structure(path, description, relative_path)
+        if md5_hash:
+          result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
+        else:
+          result.append( ( os.path.basename(path), s.st_size, None ) )
+    return result
+
+  @staticmethod     
+  def create_dir_structure(path, content, subdirectory = ""):
+    if not os.path.isdir(path):
+      os.makedirs(path)
+    for item, description, md5_hash in content:
+      relative_path = os.path.join(subdirectory,item)
+      full_path = os.path.join(path, relative_path)
+      if isinstance(description, list):
+        if not os.path.isdir(full_path):
+          os.mkdir(full_path)
+        WorkflowController.create_dir_structure(path, description, relative_path)

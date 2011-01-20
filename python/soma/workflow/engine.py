@@ -39,7 +39,8 @@ import itertools
 import types
 
 import soma.workflow.constants as constants
-from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, WorkflowNodeGroup, dir_content, create_dir_structure
+from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, WorkflowNodeGroup, WorkflowController
+#, dir_content, create_dir_structure
 import soma.workflow.database_server 
 from soma.pipeline.somadrmaajobssip import DrmaaJobs
 
@@ -438,6 +439,14 @@ class EngineJob(soma.workflow.client.Job):
       elif isinstance(self.stdin, FileTransfer):
         self.stdin = ft_conv[self.stdin].engine_path 
 
+  def convert_working_dir(self, ft_conv):
+    if self.working_directory:
+      if isinstance(self.working_directory, EngineTransfer):
+        self.working_directory = self.working_directory.engine_path 
+      elif isinstance(self.working_directory, FileTransfer):
+        self.working_directory = ft_conv[self.working_directory].engine_path 
+
+
   def convert_referenced_transfers(self, ft_conv):
     # referenced_input_files => replace the FileTransfer objects by the corresponding engine_path
     new_referenced_input_files = []
@@ -693,6 +702,8 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                              workflow_id=self.wf_id)
       engine_job.convert_command(ft_conv)
       engine_job.convert_stdin(ft_conv)
+      engine_job.convert_working_dir(ft_conv)
+      logger.debug("WORKING DIRECTORY " + repr(engine_job.working_directory))
       engine_job.convert_referenced_transfers(ft_conv)
       engine_job.register(database_server, 
                           self._user_id, 
@@ -1471,14 +1482,14 @@ class WorkflowEngine(object):
         md5_hash = hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
       elif os.path.isdir(engine_path):
-        content = dir_content([engine_path])
+        content = WorkflowController.dir_content([engine_path])
         (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
         transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
     else: #client_paths
       full_path_list = []
       for element in os.listdir(engine_path):
         full_path_list.append(os.path.join(engine_path, element))
-      content = dir_content(full_path_list)
+      content = WorkflowController.dir_content(full_path_list)
       (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
       transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
 
@@ -1506,7 +1517,7 @@ class WorkflowEngine(object):
     '''
     cumulated_file_size, dir_element_action_info = self._initializeDirectory(engine_path, content)
     transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
-    create_dir_structure(engine_path, content)
+    WorkflowController.create_dir_structure(engine_path, content)
     self._database_server.set_transfer_status(engine_path, constants.TRANSFERING_FROM_CLIENT_TO_CR)
     self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
     return transfer_action_info
