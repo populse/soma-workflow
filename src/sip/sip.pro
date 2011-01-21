@@ -1,7 +1,7 @@
 TEMPLATE = sip
 TARGET  = somadrmaajobssip
 
-LIBBDIR = python/soma/pipeline/
+LIBBDIR = python/soma/workflow/
 
 #!include ../../config-sip
 

@@ -1,4 +1,4 @@
-#include <soma/pipeline/drmaa/drmaa.h>
+#include <soma/workflow/drmaa/drmaa.h>
 
 #ifdef  __cplusplus
 extern "C" {

@@ -42,7 +42,7 @@ import soma.workflow.constants as constants
 from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, WorkflowNodeGroup, WorkflowController
 #, dir_content, create_dir_structure
 import soma.workflow.database_server 
-from soma.pipeline.somadrmaajobssip import DrmaaJobs
+from soma.workflow.somadrmaajobssip import DrmaaJobs
 
 #-----------------------------------------------------------------------------
 # Globals and constants

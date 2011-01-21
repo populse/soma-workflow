@@ -1,11 +1,11 @@
 // Define the SIP wrapper to the jobs library.
 
-%Module soma.pipeline.somadrmaajobssip 0
+%Module soma.workflow.somadrmaajobssip 0
 
 class DrmaaJobs {
 
 %TypeHeaderCode
- #include <soma/pipeline/drmaajobs.h>
+ #include <soma/workflow/drmaajobs.h>
 %End
 
 public:

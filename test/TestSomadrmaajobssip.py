@@ -1,4 +1,4 @@
-from soma.pipeline.somadrmaajobssip import DrmaaJobs
+from soma.workflow.somadrmaajobssip import DrmaaJobs
 import time
 
 drmaajobs = DrmaaJobs()

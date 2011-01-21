@@ -4,7 +4,7 @@ file( GLOB sources RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURC
 
 
 set( headers ${headers} drmaa/drmaa.h )
-BRAINVISA_COPY_AND_INSTALL_HEADERS( headers soma/pipeline headersTarget )
+BRAINVISA_COPY_AND_INSTALL_HEADERS( headers soma/workflow headersTarget )
 
 add_library( drmaa SHARED drmaa/drmaa_empty.c )
 set_property( TARGET drmaa PROPERTY LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" )
