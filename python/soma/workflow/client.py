@@ -496,7 +496,7 @@ class WorkflowController(object):
     
   #Job submittion: 
   # use the transfer id in the command or stdin argument when needed
-  # don't forget to reference engine input and output files 
+  # don't forget to reference input and output file transfers
   job_id = wf_controller.submit_job(['python', trid_in_1], 
                                     [in_1_trid, in_2_trid, ..., in_n_trid],
                                     [out_1_trid, out_2_trid, ..., out_n_trid])
@@ -542,9 +542,10 @@ class WorkflowController(object):
     @type  client_path: string
     @param client_path: client path of file
     @type  disposalTimeout: int
-    @param disposalTimeout: The engine file and transfer information is 
-    automatically deleted after disposal_timeout hours, except if a job 
-    references it as output or input. Default delay is 168 hours (7 days).
+    @param disposalTimeout: The file copied on the computing resource side and
+    all the transfer information areautomatically deleted after disposal_timeout
+    hours, except if a job references it as output or input. Default delay is
+    168 hours (7 days).
     @type client_paths: sequence of string or None
     @type client_paths: sequence of file to transfer if transfering a 
     file serie or if the file format involve serveral file of directories.
@@ -838,17 +839,17 @@ class WorkflowController(object):
     return data
     
      
-  def delete_transfer(self, engine_path):
+  def delete_transfer(self, transfer_id):
     '''
-    Deletes the engine file or directory and the associated transfer information.
-    If some jobs reference the engine file(s) as input or output, the transfer won't be 
-    deleted immediately but as soon as all the jobs will be deleted.
+    Deletes the file or directory copied on the computing resource side and the 
+    associated transfer information.
+    If some jobs reference these file(s) as input or output, the transfer won't 
+    be deleted immediately but as soon as all the jobs will be deleted.
     
-    @type engine_path: string
-    @param engine_path: engine path associated with a transfer (ie 
-    belongs to the list returned by L{transfers}    
+    @type transfer_id: string
+    @param transfer_id: transfer id
     '''
-    self._engine_proxy.delete_transfer(engine_path)
+    self._engine_proxy.delete_transfer(transfer_id)
     
 
   ########## JOB SUBMISSION ##################################################
@@ -888,8 +889,8 @@ class WorkflowController(object):
     Submits a job for execution to the cluster. A job identifier is returned and 
     can be used to inspect and control the job.
     If the job used transfered files (L{send} and L{register_transfer} 
-    methods) The list of involved engine input and output file must be specified to 
-    guarantee that the files will exist during the whole job life. 
+    methods) the list of involved file transfer must be specified using the 
+    arguments: referenced_input_files and referenced_output_files. 
     
     Every path must be reachable from the computing resource 
 
@@ -1064,15 +1065,15 @@ class WorkflowController(object):
     Returns a dictionary of transfer identifiers associated to general 
     information.
     
-    @type  s
     @rtype: dictionary: string -> tuple(string, 
                                         string, 
                                         date,  
                                         None or sequence of string)
     @return: transfer_id -> ( -client_path: client file or directory path
-                              -expiration_date: after this date the engine file 
-                              will be deleted, unless an existing job has 
-                              declared this file as output or input.
+                              -expiration_date: after this date the file copied
+                              on the computing resource and all the transfer 
+                              information will be deleted, unless an existing 
+                              job has declared this file as output or input.
                               -client_paths: sequence of file or directory path 
                               or None
                             )
@@ -1152,12 +1153,11 @@ class WorkflowController(object):
     return new_wf_status
     
   
-  def transfer_status(self, engine_path):
+  def transfer_status(self, transfer_id):
     '''
     Returns the status of a transfer and the information related to the transfer in progress in such case. 
     
-    @type  engine_path: string
-    @param engine_path: 
+    @type  transfer_id: string
     @rtype: tuple  (C{transfer_status} or None, tuple or None)
     @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
              [1] None if the transfer status in not constants.TRANSFERING_FROM_CLIENT_TO_CR or 
@@ -1166,10 +1166,10 @@ class WorkflowController(object):
                  if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''
     
-    status = self._engine_proxy.transfer_status(engine_path)
-    transfer_action_info =  self._engine_proxy.transfer_action_info(engine_path)
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(engine_path)
-    progression = self._transfer_progress(engine_path, client_path, transfer_action_info)
+    status = self._engine_proxy.transfer_status(transfer_id)
+    transfer_action_info =  self._engine_proxy.transfer_action_info(transfer_id)
+    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
+    progression = self._transfer_progress(transfer_id, client_path, transfer_action_info)
     return (status, progression)
       
             
