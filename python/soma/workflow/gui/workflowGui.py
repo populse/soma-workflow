@@ -288,6 +288,8 @@ class WorkflowWidget(QtGui.QMainWindow):
       QtGui.QMessageBox.warning(self, 
                                 "Restart workflow", 
                                 "The workflow is already running.")
+    else:
+      self.model.restartCurrentWorkflow()
   
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
@@ -1473,6 +1475,9 @@ class GuiModel(QtCore.QObject):
       self.current_workflow.updateState(wf_status)
       self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       self.hold = False
+
+  def restartCurrentWorkflow(self):
+    self.current_workflow.restart()
     
   def delete_workflow(self):
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
@@ -1714,7 +1719,15 @@ class GuiWorkflow(object):
     self.wf_status = wf_status[2]
     
     return data_changed
-        
+
+  def restart(self):
+    for item in self.items.itervalues():
+      if isinstance(item, GuiJob):
+        item.stdout = ""
+        item.stderr = ""
+        item.submission_date = None
+        item.execution_date = None
+        item.ending_date = None
 
 class GuiWorkflowItem(object):
   '''
@@ -1946,7 +1959,7 @@ class GuiJob(GuiWorkflowItem):
       while line:
         stderr = stderr + line + "\n"
         line = f.readline()
-      self.stderr =stderr
+      self.stderr = stderr
       f.close()
       
       

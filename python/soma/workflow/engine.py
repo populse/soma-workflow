@@ -954,6 +954,10 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         job.exit_value = None
         job.terminating_signal = None
         job.drmaa_id = None
+        stdout = open(job.stdout_file, "w")
+        stdout.close()
+        stderr = open(job.stderr_file, "w")
+        stderr.close()
         database_server.set_submission_information(job.job_id, None, None)
         database_server.set_job_status(job.job_id, constants.NOT_SUBMITTED)
       if not job.ended_with_success():
