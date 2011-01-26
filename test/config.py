@@ -114,27 +114,29 @@ soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/i2bm-research/som
 # HIPIP CLUSTER #
 #################
 
-#s = 'HiPiP_cluster'
+s = 'HiPiP_cluster'
 
-#soma_wf_cfg.add_section(s)
-##Engine
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
-#soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/cea/soma-jobs-server/logs/')
-##Computing resource
-#soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,    'hipip0')
-#soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,        'hipipcluster')
-#soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION,  'SGE') 
-##Server
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT, "%(asctime)s => line %(lineno)s: %(message)s")
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,  'DEBUG')
-#soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,   '/home/cea/soma-jobs-server/logs/log_jobServer')
-#soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,       'hipip0')
-#soma_wf_cfg.set(s, CFG_SERVER_NAME,        'soma_workflow_database_server')
-#soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR,      '/home/cea/soma-jobs-server/jobFiles/')
-#soma_wf_cfg.set(s, CFG_DATABASE_FILE,          '/home/cea/soma-jobs-server/jobs.db')
-##Shared resource path translation file
-#soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/cea/soma-jobs-server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/cea/.brainvisa/soma-workflow.translation}')
+soma_wf_cfg.add_section(s)
+#Engine
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/cea/soma_workflow/server/logs/')
+#Computing resource
+soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,    'hipip0')
+soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,        '129.184.11.53')
+soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION,  'SGE') 
+#soma_wf_cfg.set(s, OCFG_QUEUES,               ??)
+#soma_wf_cfg.set(s, OCFG_MAX_JOB_IN_QUEUE, ??)
+#Server
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT, "%(asctime)s => line %(lineno)s: %(message)s")
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,  'DEBUG')
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,   '/home/cea/soma_workflow/server/logs/log_server')
+soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,       'hipip0')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,            'soma_workflow_database_server')
+soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR,   '/home/cea/soma_workflow/server/transfered_files/')
+soma_wf_cfg.set(s, CFG_DATABASE_FILE,          '/home/cea/soma_workflow/server/soma_workflow.db')
+#Shared resource path translation file
+soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/cea/soma-jobs-server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/cea/.brainvisa/soma-workflow.translation}')
 
 
 ##################
