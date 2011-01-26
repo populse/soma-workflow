@@ -14,6 +14,41 @@ from soma.workflow.constants import *
 soma_wf_cfg = ConfigParser.ConfigParser()
 
 
+###############
+# CCRT Titane #
+###############
+
+
+s = 'CCRT_titane'
+
+soma_wf_cfg.add_section(s)
+#Parallel job specific submission information
+#soma_wf_cfg.set(s, OCFG_PARALLEL_COMMAND,      "-l nodes={max_node}") 
+#soma_wf_cfg.set(s, OCFG_PARALLEL_PC_MPI,       'mpi')
+#soma_wf_cfg.set(s, OCFG_PARALLEL_ENV_MPI_BIN,  '/opt/mpich/gnu/bin/')
+#soma_wf_cfg.set(s, OCFG_PARALLEL_ENV_NODE_FILE,'$PBS_NODEFILE')
+#Engine
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_FORMAT, '%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_LEVEL,  'DEBUG')
+soma_wf_cfg.set(s, OCFG_ENGINE_LOG_DIR,    '/home/cont003/sl225510/soma_workflow/server/logs/')
+#Computing resource
+soma_wf_cfg.set(s, CFG_SUBMITTING_MACHINES,   'titane996')
+soma_wf_cfg.set(s, CFG_CLUSTER_ADDRESS,       'titane.ccc.cea.fr')
+soma_wf_cfg.set(s, OCFG_DRMAA_IMPLEMENTATION, 'LSF') 
+#soma_wf_cfg.set(s, OCFG_QUEUES,               'test')
+#soma_wf_cfg.set(s, OCFG_MAX_JOB_IN_QUEUE, "{1} test{3}")
+#Server
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_LEVEL,    'DEBUG')
+soma_wf_cfg.set(s, OCFG_SERVER_LOG_FILE,     '/home/cont003/sl225510/soma_workflow/server/logs/log_server')
+soma_wf_cfg.set(s, CFG_NAME_SERVER_HOST,     'titane996')
+soma_wf_cfg.set(s, CFG_SERVER_NAME,          'soma_workflow_database_server')
+soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR, '/home/cont003/sl225510/soma_workflow/server/transfered_files/')
+soma_wf_cfg.set(s, CFG_DATABASE_FILE,        '/home/cont003/sl225510/soma_workflow/server/soma_workflow.db')
+#Shared resource path translation file
+#soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/i2bm-research/soma-workflow/server/translation_files/example/job_examples.sjtr}  brainvisa{/home/i2bm-research/soma-workflow/server/translation_files/brainvisa/soma-workflow.translation}')
+
+
 
 ################
 # TEST CLUSTER #
