@@ -52,7 +52,7 @@ __docformat__ = "epytext en"
 refreshment_interval = 1 #seconds
 # if the last status update is older than the refreshment_timeout 
 # the status is changed into WARNING
-refreshment_timeout = 10 #seconds
+refreshment_timeout = 60 #seconds
 
 #-----------------------------------------------------------------------------
 # Classes and functions
