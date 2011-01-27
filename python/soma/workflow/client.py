@@ -330,7 +330,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode = mode #  'local_no_disconnection' #(local debug)#       
+    self._mode = mode # 'local_no_disconnection' #(local debug)#        
 
     #########
     # LOCAL #
@@ -649,14 +649,25 @@ class WorkflowController(object):
       elif transfer_action_info[2] == DIR_RETRIEVING:
         # dir case
         (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
-        for relative_path, file_info in file_transfer_info.iteritems(): 
-          (file_size, md5_hash) = file_info
-          self._transfer_file_from_cr(client_path, 
-                                      transfer_id, 
-                                      file_size, 
-                                      md5_hash, 
-                                      buffer_size,
-                                      relative_path)
+        if client_paths:
+          for relative_path, file_info in file_transfer_info.iteritems(): 
+            (file_size, md5_hash) = file_info
+            self._transfer_file_from_cr(os.path.dirname(client_path), 
+                                        transfer_id, 
+                                        file_size, 
+                                        md5_hash, 
+                                        buffer_size,
+                                        relative_path)
+        else:
+          for relative_path, file_info in file_transfer_info.iteritems(): 
+            (file_size, md5_hash) = file_info
+            self._transfer_file_from_cr(client_path, 
+                                        transfer_id, 
+                                        file_size, 
+                                        md5_hash, 
+                                        buffer_size,
+                                        relative_path)
+            
         return True 
     else:
       return False
@@ -708,7 +719,7 @@ class WorkflowController(object):
     @param transmitted: size already transfered
     '''
     if relative_path:
-      r_path = os.path.join(os.path.dirname(client_path), relative_path)
+      r_path = os.path.join(client_path, relative_path)
     else:
       r_path = client_path
     print "copy file to " + repr(r_path)
@@ -775,7 +786,12 @@ class WorkflowController(object):
     elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
       (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
       if dir_content:
-        WorkflowController.create_dir_structure(os.path.dirname(client_path), content)
+        if client_paths:
+          WorkflowController.create_dir_structure(os.path.dirname(client_path), 
+                                                  dir_content)
+        else:
+          WorkflowController.create_dir_structure(client_path, 
+                                                  dir_content)
       return transfer_action_info
     
     return None

@@ -1486,7 +1486,10 @@ class WorkflowEngine(object):
         md5_hash = hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() 
         transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
       elif os.path.isdir(engine_path):
-        content = WorkflowController.dir_content([engine_path])
+        full_path_list = []
+        for element in os.listdir(engine_path):
+          full_path_list.append(os.path.join(engine_path, element))
+        content = WorkflowController.dir_content(full_path_list)
         (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
         transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
     else: #client_paths

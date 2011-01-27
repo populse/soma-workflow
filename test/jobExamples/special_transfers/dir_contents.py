@@ -1,6 +1,7 @@
 import sys
 import os
 import stat
+import shutil
 
 def contents(path_seq):
   result = []
@@ -19,17 +20,23 @@ def contents(path_seq):
 
 
 if len(sys.argv) != 2:
-  sys.stdout.write("The program take 1 argument: a directory path.")
+  sys.stdout.write("The program take 2 arguments: a directory path.\n")
+  sys.stdout.write("      1. a directory input path.\n")
+  sys.stdout.write("      2. a directory output path. \n")
   
-dir_path = sys.argv[1]
-dir_path = os.path.abspath(dir_path)
+dir_path_in = sys.argv[1]
+dir_path_in = os.path.abspath(dir_path_in)
+dir_path_out = sys.argv[2]
+dir_path_out = os.path.abspath(dir_path_out)
 
-sys.stdout.write("directory path: " + repr(dir_path) + "\n")
+sys.stdout.write("directory path: " + repr(dir_path_in) + "\n")
 sys.stdout.write(" \n")
 
-
 full_path_list = []
-for element in os.listdir(dir_path):
-  full_path_list.append(os.path.join(dir_path, element))
+for element in os.listdir(dir_path_in):
+  full_path_list.append(os.path.join(dir_path_in, element))
 
 contents(full_path_list)
+
+shutil.copytree(dir_path_in, dir_path_out)
+sys.stdout.write("the directory was copied from " + dir_path_in + " to " + dir_path_out + " .")

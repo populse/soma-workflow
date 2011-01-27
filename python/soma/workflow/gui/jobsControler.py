@@ -307,6 +307,7 @@ class WorkflowExamples(object):
     self.lo_file2 = os.path.join(self.output_dir, "file2")
     self.lo_file3 = os.path.join(self.output_dir, "file3")
     self.lo_file4 = os.path.join(self.output_dir, "file4")
+    self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
     
     # Shared resource path
     self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
@@ -338,7 +339,8 @@ class WorkflowExamples(object):
     self.sh_file2 = SharedResourcePath("file2", "example", "output_dir",168)
     self.sh_file3 = SharedResourcePath("file3", "example", "output_dir",168)
     self.sh_file4 = SharedResourcePath("file4", "example", "output_dir",168)
-    
+    self.sh_out_dir = FileTransfer("transfered_dir", "example", "output_dir", 168) 
+
     # Transfers
     
     complete_path = os.path.join(self.examples_dir, "complete")
@@ -370,6 +372,7 @@ class WorkflowExamples(object):
     self.tr_file2 = FileTransfer(False,os.path.join(self.output_dir, "file2"), 168, "file2")
     self.tr_file3 = FileTransfer(False,os.path.join(self.output_dir, "file3"), 168, "file3")
     self.tr_file4 = FileTransfer(False,os.path.join(self.output_dir, "file4"), 168, "file4")
+    self.tr_out_dir = FileTransfer(False, os.path.join(self.output_dir, "transfered_dir"), 168, "out_dir")
     
       
   def job1(self):
@@ -504,17 +507,24 @@ class WorkflowExamples(object):
     if self.with_transfers:
       test_command = Job( ["python", 
                            self.tr_dir_contents_script,
-                           self.tr_in_dir],
+                           self.tr_in_dir,
+                           self.tr_out_dir],
                           [self.tr_dir_contents_script, self.tr_in_dir],
-                          [],
+                          [self.tr_out_dir],
                           None, False, 168, "dir_contents")
     elif self.with_shared_resource_path:
-      test_command = Job( ["python", self.sh_dir_contents_script, self.sh_script1],
+      test_command = Job( ["python", 
+                           self.sh_dir_contents_script, 
+                           self.sh_in_dir,
+                           self.sh_out_dir],
                           None,
                           None,
                           None, False, 168, "dir_contents")
     else:
-      test_command = Job( ["python", self.lo_dir_contents_script, self.lo_in_dir],
+      test_command = Job( ["python", 
+                            self.lo_dir_contents_script, 
+                            self.lo_in_dir,
+                            self.lo_out_dir],
                           None,
                           None,
                           None, False, 168, "dir_contents")
