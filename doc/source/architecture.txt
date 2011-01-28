@@ -1,0 +1,20 @@
+=====================
+Architecture overview
+=====================
+..
+  The soma-workflow architecture allows the client to access remote computing 
+  resource and to disconnect at any time. The WorkflowEngine process, which runs 
+  on the computing resource side, is in charge of submitting the workflow's jobs
+  to the DRMS at the right time. 
+
+.. image:: images/architecture_overview_reduced.*
+
+Dependencies
+============
+
+..
+  Soma-workflow uses DRMAA to interface the distributed resource management 
+  systems. It was tested with Condor, Sun Grid Engine, Torque/PBS and LSF.
+  It uses ssh via the Paramiko module.
+
+.. image:: images/third_parties_reduced.*

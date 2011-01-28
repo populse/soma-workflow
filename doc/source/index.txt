@@ -1,0 +1,94 @@
+.. soma-workflow documentation master file, created by
+   sphinx-quickstart on Fri Jan 28 10:45:12 2011.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to soma-workflow's documentation!
+=========================================
+
+Soma-workflow's objective is to provide a simple and single way to submit 
+and monitor parallel computing to any computing resource (laptops, 
+workstation farms, clusters...). 
+
+The submission, control and monitoring is done via a simple Python application 
+programming interface (API) or a graphical user interface (GUI). 
+
+Soma-workflow uses existing distributed resource management systems (such as 
+GirdEngine, Condor, Torque/PBS, LSF..) installed on the parallel resources to 
+execute the jobs. 
+
+Soma-workflow is an open source Python application.
+
+The site is under construction.
+
+
+Main Features
+=============
+
+..
+  - file transfers
+  - disconnection
+
+Workflows
+=========
+
+.. image:: images/workflow_example_reduced.*
+
+
+Requirements
+============
+
+
+Contents
+========
+
+Under construction.
+
+.. toctree::
+   :maxdepth: 1
+
+   overview.txt
+   gui.txt
+   architecture.txt
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+:Release: |release|
+:Date: |today|
+
+
+
+
+
+..
+  overview 
+  
+  Introduction
+  Main features
+
+  user's manual
+
+  Introduction
+  Requirements
+  Overview of the architecture 
+  Installation 
+  Workflow, job and file transfers
+  Using the GUI
+  Using the python API
+  Examples
+  
+
+  administrator's manual  
+
+  Introduction
+  Requirements
+  System architecture 
+  Plan the installation
+    What will be installed?
+    System configuration
+  Installation and test of the installation
+
+
+

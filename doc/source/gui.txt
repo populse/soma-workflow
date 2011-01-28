@@ -1,0 +1,6 @@
+============
+GUI overview
+============
+
+.. image:: images/gui_overview.*
+
