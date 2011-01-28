@@ -3,6 +3,13 @@ import os
 import stat
 import shutil
 
+'''
+Takes 2 parameters: path of the input directory 
+                    path of the output directory
+The program lists the contents of the input directory and copy the content of 
+the input directory in the output directory.
+'''
+
 def contents(path_seq):
   result = []
   for path in path_seq:
@@ -19,11 +26,12 @@ def contents(path_seq):
   return result
 
 
-if len(sys.argv) != 2:
-  sys.stdout.write("The program take 2 arguments: a directory path.\n")
+if len(sys.argv) != 3:
+  sys.stdout.write("The program takes 2 arguments:\n")
   sys.stdout.write("      1. a directory input path.\n")
   sys.stdout.write("      2. a directory output path. \n")
-  
+  sys.exit()
+
 dir_path_in = sys.argv[1]
 dir_path_in = os.path.abspath(dir_path_in)
 dir_path_out = sys.argv[2]

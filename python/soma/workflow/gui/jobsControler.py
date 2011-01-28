@@ -94,7 +94,7 @@ class JobsControler(object):
   
   
   def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "directory transfer", "hundred of jobs", "ten jobs", "fake pipelineT1"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1"]
     
   def generateWorkflowExample(self, 
                               with_file_transfer, 
@@ -280,9 +280,9 @@ class WorkflowExamples(object):
     
     # local path
     
-    
     complete_path = os.path.join(self.examples_dir, "complete")
     self.lo_in_dir = self.examples_dir
+    self.lo_img_file = os.path.join(self.examples_dir, "special_transfers/example.img")
     self.lo_file0   = os.path.join(complete_path, "file0") 
     self.lo_script1 = os.path.join(complete_path, "job1.py")
     self.lo_stdin1  = os.path.join(complete_path, "stdin1")
@@ -300,7 +300,7 @@ class WorkflowExamples(object):
                                             
     self.lo_dir_contents_script = os.path.join(self.examples_dir, 
                                             "special_transfers/dir_contents.py")
-    
+    self.lo_mff_script = os.path.join(self.examples_dir, "special_transfers/multiple_file_format.py")
     
     self.lo_file11 = os.path.join(self.output_dir, "file11")
     self.lo_file12 = os.path.join(self.output_dir, "file12")
@@ -308,9 +308,11 @@ class WorkflowExamples(object):
     self.lo_file3 = os.path.join(self.output_dir, "file3")
     self.lo_file4 = os.path.join(self.output_dir, "file4")
     self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
-    
+    self.lo_img_out_file = os.path.join(self.output_dir, "example.img")
+  
     # Shared resource path
     self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
+    self.sh_img_file = SharedResourcePath("special_transfers/example.img", "example", "job_dir", 168)
     self.sh_file0   = SharedResourcePath("complete/file0", "example", "job_dir", 168)
     self.sh_script1 = SharedResourcePath("complete/job1.py", "example", "job_dir", 168)
     self.sh_stdin1  = SharedResourcePath("complete/stdin1", "example", "job_dir", 168)
@@ -332,6 +334,8 @@ class WorkflowExamples(object):
     self.sh_dir_contents_script = SharedResourcePath("special_transfers/dir_contents.py",
                                                      "example",
                                                      "job_dir", 168)
+    self.sh_mff_script = SharedResourcePath("special_transfers/multiple_file_format.py", 
+                       "example", "job_dir", 168)
    
     
     self.sh_file11 = SharedResourcePath("file11", "example", "output_dir", 168)
@@ -339,12 +343,20 @@ class WorkflowExamples(object):
     self.sh_file2 = SharedResourcePath("file2", "example", "output_dir",168)
     self.sh_file3 = SharedResourcePath("file3", "example", "output_dir",168)
     self.sh_file4 = SharedResourcePath("file4", "example", "output_dir",168)
-    self.sh_out_dir = FileTransfer("transfered_dir", "example", "output_dir", 168) 
+    self.sh_out_dir = SharedResourcePath("transfered_dir", "example", "output_dir", 168) 
+    self.sh_img_out_file = SharedResourcePath("example.img", "example", "output_dir", 168)
 
     # Transfers
     
     complete_path = os.path.join(self.examples_dir, "complete")
     self.tr_in_dir = FileTransfer(True, self.examples_dir, 168, "in_dir")
+    self.tr_img_file = FileTransfer(True, 
+                                    os.path.join(self.examples_dir, 
+                                                 "special_transfers/dir_contents.py"), 
+                                    128, 
+                                    "img_file", 
+                                    [ os.path.join(self.examples_dir, "special_transfers/example.img"),
+                                      os.path.join(self.examples_dir, "special_transfers/example.hdr")])
     self.tr_file0   = FileTransfer(True,os.path.join(complete_path, "file0"), 168, "file0")
     self.tr_script1 = FileTransfer(True,os.path.join(complete_path, "job1.py"), 168, "job1_py")
     self.tr_stdin1  = FileTransfer(True,os.path.join(complete_path, "stdin1"), 168, "stdin1")
@@ -366,6 +378,7 @@ class WorkflowExamples(object):
     self.tr_dir_contents_script = FileTransfer(True,os.path.join(self.examples_dir, 
                                                         "special_transfers/dir_contents.py"),
                                                         168, "dir_contents")
+    self.tr_mff_script = FileTransfer(True, os.path.join(self.examples_dir, "special_transfers/multiple_file_format.py"), 168, "mdd_script")
       
     self.tr_file11 = FileTransfer(False,os.path.join(self.output_dir, "file11"), 168, "file11")
     self.tr_file12 = FileTransfer(False,os.path.join(self.output_dir, "file12"), 168, "file12")
@@ -373,7 +386,13 @@ class WorkflowExamples(object):
     self.tr_file3 = FileTransfer(False,os.path.join(self.output_dir, "file3"), 168, "file3")
     self.tr_file4 = FileTransfer(False,os.path.join(self.output_dir, "file4"), 168, "file4")
     self.tr_out_dir = FileTransfer(False, os.path.join(self.output_dir, "transfered_dir"), 168, "out_dir")
-    
+    self.tr_img_out_file = FileTransfer(False, 
+                                        os.path.join(self.output_dir, "example.img"), 
+                                        168, 
+                                        "img_out",
+                                        [os.path.join(self.output_dir, "example.img"),
+                                         os.path.join(self.output_dir, "example.hdr")])
+  
       
   def job1(self):
     if self.with_transfers and not self.with_shared_resource_path: 
@@ -505,31 +524,59 @@ class WorkflowExamples(object):
     
   def job_test_dir_contents(self):
     if self.with_transfers:
-      test_command = Job( ["python", 
-                           self.tr_dir_contents_script,
-                           self.tr_in_dir,
-                           self.tr_out_dir],
-                          [self.tr_dir_contents_script, self.tr_in_dir],
-                          [self.tr_out_dir],
-                          None, False, 168, "dir_contents")
+      job = Job(["python", 
+                self.tr_dir_contents_script,
+                self.tr_in_dir,
+                self.tr_out_dir],
+                [self.tr_dir_contents_script, self.tr_in_dir],
+                [self.tr_out_dir],
+                None, False, 168, "dir_contents")
     elif self.with_shared_resource_path:
-      test_command = Job( ["python", 
-                           self.sh_dir_contents_script, 
-                           self.sh_in_dir,
-                           self.sh_out_dir],
-                          None,
-                          None,
-                          None, False, 168, "dir_contents")
+      job = Job(["python", 
+                self.sh_dir_contents_script, 
+                self.sh_in_dir,
+                self.sh_out_dir],
+                None,
+                None,
+                None, False, 168, "dir_contents")
     else:
-      test_command = Job( ["python", 
-                            self.lo_dir_contents_script, 
-                            self.lo_in_dir,
-                            self.lo_out_dir],
-                          None,
-                          None,
-                          None, False, 168, "dir_contents")
+      job = Job(["python", 
+                self.lo_dir_contents_script, 
+                self.lo_in_dir,
+                self.lo_out_dir],
+                None,
+                None,
+                None, False, 168, "dir_contents")
     
-    return test_command
+    return job
+
+  def job_test_multi_file_format(self):
+    if self.with_transfers:
+      job = Job( ["python", 
+                  self.tr_mff_script,
+                  (self.tr_img_file, "example.img"),
+                  (self.tr_img_out_file, "example.img")],
+                [self.tr_mff_script, self.tr_img_file],
+                [self.tr_img_out_file],
+                None, False, 168, "multi file format test")
+    elif self.with_shared_resource_path:
+      job = Job( ["python", 
+                  self.sh_mff_script, 
+                  self.sh_img_file,
+                  self.sh_img_out_file],
+                None,
+                None,
+                None, False, 168, "multi file format test")
+    else:
+      job = Job( ["python", 
+                  self.lo_mff_script, 
+                  self.lo_img_file,
+                  self.lo_img_out_file],
+                None,
+                None,
+                None, False, 168, "multi file format test")
+    
+    return job
     
     
   def job_sleep(self, period):
@@ -554,13 +601,13 @@ class WorkflowExamples(object):
   def special_transfer_test(self):
      # jobs
     test_dir_contents = self.job_test_dir_contents()
+    test_multi_file_format = self.job_test_multi_file_format()
         
     # building the workflow
-    nodes = [test_dir_contents]
-    
+    nodes = [test_dir_contents, test_multi_file_format]
     dependencies = []
     
-    mainGroup = WorkflowNodeGroup([test_dir_contents])
+    mainGroup = WorkflowNodeGroup(nodes)
     
     workflow = Workflow(nodes, dependencies, mainGroup, [])
     
