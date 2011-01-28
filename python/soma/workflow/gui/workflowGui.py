@@ -106,7 +106,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.resource_list = self.controler.getRessourceIds()
     self.ui.combo_resources.addItems(self.resource_list)
     
-    self.setWindowTitle("Workflows")
+    self.setWindowTitle("soma-workflow")
    
     self.treeWidget = WorkflowTree(self.model, self)
     treeWidgetLayout = QtGui.QVBoxLayout()
@@ -434,7 +434,7 @@ class WorkflowWidget(QtGui.QMainWindow):
   
   @QtCore.pyqtSlot()
   def currentConnectionChanged(self):
-    self.setWindowTitle("Workflows - " + self.model.current_resource_id)
+    self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
     self.updateWorkflowList()
     self.model.clearCurrentWorkflow()
     index = self.ui.combo_resources.findText(self.model.current_resource_id)
@@ -992,7 +992,14 @@ class PlotView(QtGui.QWidget):
   
     if nb_jobs:
       self.axes.set_ylim(0, nb_jobs+1)
+
+    #self.axes.set_xticklabels(self.axes.get_xticks(), rotation=80)
+    #pylab.xticks(rotation=80)
     
+    self.axes.set_xlabel("Time")
+    self.axes.set_ylabel("Jobs")
+    self.figure.autofmt_xdate(rotation=80)
+
     self.canvas.draw()
     
     self.update()
@@ -1057,6 +1064,10 @@ class PlotView(QtGui.QWidget):
     
     if nb_proc_max != 0:
       self.axes.set_ylim(0, nb_proc_max+1)
+
+    self.axes.set_xlabel("Time")
+    self.axes.set_ylabel("Nb of proc")
+    self.figure.autofmt_xdate(rotation=80)
   
     self.canvas.draw()
     self.update()
