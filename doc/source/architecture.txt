@@ -1,6 +1,9 @@
-=====================
-Architecture overview
-=====================
+============
+Architecture
+============
+
+Overview
+========
 ..
   The soma-workflow architecture allows the client to access remote computing 
   resource and to disconnect at any time. The WorkflowEngine process, which runs 

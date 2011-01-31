@@ -51,26 +51,4 @@ File transfers
 
 
 
-Requirements
-============
-
-on the client side
-------------------
-
-* Python *version 2.5 or more*
-* `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
-* `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*
-
-
-on the computing resource side
-------------------------------
-
-* A distributed resource management system (DRMS) such as Grid Engine, Condor, 
-  Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
-* Python *version 2.5 or more*
-* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
-* `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
-
-
 

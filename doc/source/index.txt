@@ -27,10 +27,13 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    overview.txt
+   client_install_config.txt
+   server_install_config.txt
    gui.txt
+   client_API.txt
    architecture.txt
 
 * :ref:`genindex`
