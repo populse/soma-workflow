@@ -67,26 +67,30 @@ FILES_ON_CLIENT_AND_CR = "on both sides"
 TRANSFERING_FROM_CLIENT_TO_CR = "transfering client->cr"
 TRANSFERING_FROM_CR_TO_CLIENT = "transfering cr->client"
 FILES_UNDER_EDITION = "under edition"
-FILE_TRANSFER_STATUS__ = [FILES_DONT_EXIST,
-                          FILES_ON_CLIENT,
-                          FILES_ON_CR,
-                          FILES_ON_CLIENT_AND_CR,
-                          TRANSFERING_FROM_CLIENT_TO_CR,
-                          TRANSFERING_FROM_CR_TO_CLIENT,
-                          FILES_UNDER_EDITION]
+FILE_TRANSFER_STATUS = [FILES_DONT_EXIST,
+                        FILES_ON_CLIENT,
+                        FILES_ON_CR,
+                        FILES_ON_CLIENT_AND_CR,
+                        TRANSFERING_FROM_CLIENT_TO_CR,
+                        TRANSFERING_FROM_CR_TO_CLIENT,
+                        FILES_UNDER_EDITION]
 
 
 '''
 Transfer type
 '''
-FILE_SENDING = "file_sending"
-FILE_RETRIEVING = "file_retrieving"
-DIR_SENDING = "directory_sending"
-DIR_RETRIEVING = "directory_retrieving"
-TRANSFER_TYPE = [FILE_SENDING, 
-                 FILE_RETRIEVING, 
-                 DIR_SENDING,
-                 FILE_SENDING]
+TR_FILE_C_TO_CR = "file transfer form client to cr"
+TR_DIR_C_TO_CR = "dir transfer from client to cr"
+TR_MFF_C_TO_CR = "multi file format from client to cr"
+TR_FILE_CR_TO_C = "file transfer form cr to client"
+TR_DIR_CR_TO_C = "dir transfer from cr to client"
+TR_MFF_CR_TO_C = "multi file format from cr to client"
+TRANSFER_TYPES = [TR_FILE_C_TO_CR,
+                  TR_DIR_C_TO_CR,
+                  TR_MFF_C_TO_CR,
+                  TR_FILE_CR_TO_C,
+                  TR_DIR_CR_TO_C,
+                  TR_MFF_CR_TO_C]
 
 '''
 Workflow status:
@@ -132,8 +136,6 @@ OCFG_SERVER_LOG_LEVEL = 'server_logging_level'
 OCFG_SERVER_LOG_FORMAT = 'server_logging_format'
 
 #Engine
-
-CFG_START_ENGINE_SCRIPT = 'start_engine_script'
 
 OCFG_ENGINE_LOG_DIR = 'engine_log_dir_path'
 OCFG_ENGINE_LOG_LEVEL = 'engine_logging_level'

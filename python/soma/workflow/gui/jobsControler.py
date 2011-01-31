@@ -170,7 +170,7 @@ class JobsControler(object):
       status, info = connection.transfer_status(ft.engine_path)
       if status == FILES_ON_CLIENT:
         to_transfer.append((0, ft.engine_path))
-      if status == TRANSFERING_FROM_CR_TO_CLIENT:
+      if status == TRANSFERING_FROM_CLIENT_TO_CR:
         to_transfer.append((info[1], ft.engine_path))
           
     to_transfer = sorted(to_transfer, key = lambda element: element[1])

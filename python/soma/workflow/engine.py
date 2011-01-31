@@ -1484,22 +1484,24 @@ class WorkflowEngine(object):
         stat = os.stat(engine_path)
         file_size = stat.st_size
         md5_hash = hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() 
-        transfer_action_info = (file_size, md5_hash, constants.FILE_RETRIEVING)
+        transfer_action_info = (file_size, md5_hash, constants.TR_FILE_CR_TO_C)
       elif os.path.isdir(engine_path):
         full_path_list = []
         for element in os.listdir(engine_path):
           full_path_list.append(os.path.join(engine_path, element))
         content = WorkflowController.dir_content(full_path_list)
         (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
-        transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
+        transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.TR_DIR_CR_TO_C)
     else: #client_paths
       full_path_list = []
       for element in os.listdir(engine_path):
         full_path_list.append(os.path.join(engine_path, element))
       content = WorkflowController.dir_content(full_path_list)
       (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
-      transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_RETRIEVING)
+      transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.TR_MFF_CR_TO_C)
 
+    self._database_server.set_transfer_status(engine_path,    
+    constants.TRANSFERING_FROM_CR_TO_CLIENT)
     self._database_server.set_transfer_action_info(engine_path, transfer_action_info)     
     return (transfer_action_info, content)
 
@@ -1508,7 +1510,7 @@ class WorkflowEngine(object):
     '''
     Initialize the transfer of a file from the client to the computing resource
     '''
-    transfer_action_info = (file_size, md5_hash, constants.FILE_SENDING)
+    transfer_action_info = (file_size, md5_hash, constants.TR_FILE_C_TO_CR)
     f = open(engine_path, 'w')
     f.close()
     self._database_server.set_transfer_status(engine_path,    
@@ -1517,16 +1519,21 @@ class WorkflowEngine(object):
                                                    transfer_action_info)
     return transfer_action_info
 
-  def init_dir_transfer_to_cr(self, engine_path, content):
+  def init_dir_transfer_to_cr(self, engine_path, content, transfer_type):
     '''
     Initialize the transfer of a directory from the client to the computing 
-    resource
+    resource. 
+    Transfer_type => TR_DIR_C_TO_CR or TR_MFF_C_TO_CR
     '''
     cumulated_file_size, dir_element_action_info = self._initializeDirectory(engine_path, content)
-    transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.DIR_SENDING)
+    transfer_action_info = (cumulated_file_size, 
+                            dir_element_action_info, 
+                            transfer_type)
     WorkflowController.create_dir_structure(engine_path, content)
-    self._database_server.set_transfer_status(engine_path, constants.TRANSFERING_FROM_CLIENT_TO_CR)
-    self._database_server.set_transfer_action_info(engine_path, transfer_action_info)
+    self._database_server.set_transfer_status(engine_path, 
+                                        constants.TRANSFERING_FROM_CLIENT_TO_CR)
+    self._database_server.set_transfer_action_info(engine_path, 
+                                                   transfer_action_info)
     return transfer_action_info
 
 
@@ -1575,7 +1582,7 @@ class WorkflowEngine(object):
       # Directory case
       (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
       if not relative_path in dir_element_action_info:
-        raise WorkflowEngineError('send_piece: the file %s doesn t belong to the transfer %s' %(relative_path, engine_path))
+        raise WorkflowEngineError('write_to_computing_resource_file: the file %s doesn t belong to the transfer %s' %(relative_path, engine_path))
       (file_size, md5_hash) = dir_element_action_info[relative_path]
       transfer_ended = self._write_to_file(os.path.join(engine_path, relative_path), data, file_size, md5_hash)
       
@@ -1633,6 +1640,7 @@ class WorkflowEngine(object):
       f.seek(transmitted)
     data = f.read(buffer_size)
     f.close()
+    
     return data
 
     
@@ -1640,10 +1648,6 @@ class WorkflowEngine(object):
     '''
     Set a transfer status. 
     '''
-    if not self._database_server.is_user_transfer(engine_path, self._user_id) :
-      #print "Couldn't set transfer status %s. It doesn't exist or is not owned by the current user \n" % engine_path
-      return
-    
     self._database_server.set_transfer_status(engine_path, status)
 
 
@@ -1876,11 +1880,12 @@ class WorkflowEngine(object):
 
  
   def transfer_progression_status(self, engine_path, transfer_action_info):
-    if transfer_action_info[2] == constants.FILE_SENDING:
+    if transfer_action_info[2] == constants.TR_FILE_C_TO_CR:
       (file_size, md5_hash, transfer_type) = transfer_action_info
       transmitted = os.stat(engine_path).st_size
       return (file_size, transmitted)
-    elif transfer_action_info[2] == constants.DIR_SENDING:
+    elif transfer_action_info[2] == constants.TR_DIR_C_TO_CR or \
+         transfer_action_info[2] == constants.TR_MFF_C_TO_CR:
       (cumulated_file_size, dir_element_action_info, transfer_type) = transfer_action_info
       files_transfer_status = []
       for relative_path, (file_size, md5_hash) in dir_element_action_info.iteritems():

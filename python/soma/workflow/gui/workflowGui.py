@@ -295,11 +295,14 @@ class WorkflowWidget(QtGui.QMainWindow):
   def transferInputFiles(self):
     def transfer(self):
       try:
+        self.ui.action_transfer_infiles.setEnabled(False)
         self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
       except ConnectionClosedError, e:
+        self.ui.action_transfer_infiles.setEnabled(True)
         pass
       except SystemExit, e:
         pass
+      self.ui.action_transfer_infiles.setEnabled(True)
     thread = threading.Thread(name = "TransferInputFiles",
                               target = transfer,
                               args =([self]))
@@ -310,11 +313,13 @@ class WorkflowWidget(QtGui.QMainWindow):
   def transferOutputFiles(self):
     def transfer(self):
       try:
+        self.ui.action_transfer_outfiles.setEnabled(False)
         self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
       except ConnectionClosedError, e:
-        pass
+        self.ui.action_transfer_outfiles.setEnabled(True)
       except SystemExit, e:
         pass
+      self.ui.action_transfer_outfiles.setEnabled(True)
     thread = threading.Thread(name = "TransferOuputFiles",
                               target = transfer,
                               args =([self]))
