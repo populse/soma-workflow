@@ -2,23 +2,68 @@
 Client installation and configuration
 =====================================
 
+This page describes the installation and configuration of the soma-workflow
+client. The installation of a client supposes that one or several soma-workflow 
+database servers are installed on one or serveral remote of local computing
+resources (see :ref:`server`).
+
 
 Requirements
 ============
 
 * Python *version 2.5 or more*
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
-* `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*
+* `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in   
+  only required if the computing resource is remote. 
+* For the GUI: Qt *version 4.6.2 or more* and PyQt *version 4.7.2 or more* 
+
+Installation
+============
+
+..
+  The client only need the soma-workflow modules to be installed and the
+  soma_workflow_gui file to be located in the PATH
+
+1. *Install the soma-workflow python modules and command.* (under construction)
+
+2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/soma-workflow/config. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable.
+
+
+.. _client_configuration:
 
 Configuration
 =============
 
-CFG_CLUSTER_ADDRESS
-CFG_SUBMITTING_MACHINES
+The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax.
 
-Optional:
+There is one section for each computing resource (that is for each soma-workflow
+database server). 
 
-OCFG_QUEUES
+Only three items are required:
+ 
+  * CFG_CLUSTER_ADDRESS
+  * CFG_SUBMITTING_MACHINES
+  * OCFG_QUEUES 
+
+The two first items are mandatory and the last one is 
+optional. The values of these configuration items are set up at each 
+soma-workflow server installation (see :ref:`server_configuration`). Ask these item 
+values to the soma-workflow administrator if you didn't install the server yourself.  
+
+Configuration file example: ::
+
+  [Titan]
+
+  CFG_CLUSTER_ADDRESS     = titan.mylab.fr
+  CFG_SUBMITTING_MACHINES = titan0
+  
+  OCFG_QUEUES = test long 
+
+
+  [LabDesktops]
+
+  CFG_CLUSTER_ADDRESS     = mydesktop.mylab.fr
+  CFG_SUBMITTING_MACHINES = mydesktop
 
 
 Start the GUI
@@ -26,9 +71,12 @@ Start the GUI
 
 The command *soma_workflow_gui* starts the GUI.
 
+See :ref:`gui` for the GUI documentation.
 
-Use the python API
+
+Use the Python API
 ==================
 
-import soma.workflow.client as client
-wf_controller = client.WorkflowController("my_resource", login, password)
+Import the soma.workflow.client module to use the Python API.
+
+See :ref:`client_api` for soma-workflow Python API documentation.

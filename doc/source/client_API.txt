@@ -1,3 +1,5 @@
+.. _client_api:
+
 ==========
 client API
 ==========
