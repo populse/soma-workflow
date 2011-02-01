@@ -6,22 +6,4 @@ Python API
 
 The client classes are in the module: soma.workflow.client
 
-Workflow classes
-================
-
-The classes Workflow, Job, FileTransfer, SharedResourcePath.
-
-
-Simple Workflow example
------------------------
-
-Workflow with file transfer example
------------------------------------
-
-Workflow with SharedResourcePath example
-----------------------------------------
-
-
-Workflow controller API
-=======================
 

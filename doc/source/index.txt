@@ -18,7 +18,7 @@ as Grid Engine, Condor, Torque/PBS, LSF..) installed on the computing resources
 to execute the jobs. 
 
 Soma-workflow is an open source Python application.
-The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here <ttps://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_.
+The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here. <ttps://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_
 
 
 **The documentation is under construction.**
@@ -65,11 +65,13 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   overview.txt
+   concepts.txt
    client_install_config.txt
    server_install_config.txt
-   gui.txt
+   workflow_creation.txt
    client_API.txt
+   gui.txt
+   examples.txt
    architecture.txt
 
 ..
