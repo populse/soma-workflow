@@ -1,7 +1,7 @@
 .. _client_api:
 
 ==========
-client API
+Python API
 ==========
 
 The client classes are in the module: soma.workflow.client

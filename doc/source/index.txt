@@ -6,21 +6,57 @@
 Welcome to soma-workflow documentation!
 =======================================
 
-Soma-workflow objective is to provide a homogeneous and single way to submit 
-and monitor parallel computing to any computing resource (laptops, 
-workstation farms, clusters...). 
+Soma-workflow provides a homogeneous and single way to submit and monitor 
+parallel computing to various computing resources (laptops, workstation farms, clusters...). 
 
-The submission, control and monitoring is done via a simple Python application 
-programming interface (API) or a graphical user interface (GUI). 
+The submission, control and monitoring of jobs and workflows is done via a 
+simple Python application programming interface (API) and/or a graphical user
+interface (GUI). 
 
-Soma-workflow uses existing distributed resource management systems (such as 
-Grid Engine, Condor, Torque/PBS, LSF..) installed on the computing resources to 
-execute the jobs. 
+Soma-workflow uses existing distributed resource management systems (DRMS) (such
+as Grid Engine, Condor, Torque/PBS, LSF..) installed on the computing resources 
+to execute the jobs. 
 
 Soma-workflow is an open source Python application.
-The sources can be found `here. <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ 
+The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here <ttps://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_.
+
 
 **The documentation is under construction.**
+
+
+Main Features
+=============
+
+  **Unified interface for many resources:** 
+    Submission of jobs or workflows with an unique interface to various 
+    computing resources possibly managed by various systems (such as Grid
+    Engine, Condor, Torque/PBS, LSF..)
+
+  **Python API and Graphical User Interface:**
+    The GUI provides an easy and quick way of monitoring and control workflow on
+    various ressources.
+
+  **Workflow engine:**
+    Soma-workflow enables the user to build his workflows (set of jobs and 
+    dependencies between jobs) and handles the execution of jobs on computing 
+    resource according to the jobs dependencies. 
+
+  **Remote access to computing resources** 
+    The communication with a remote computing resource is done transparently for 
+    the user. The communication between the client and the remote computing 
+    resource is done with in a ssh port forwarding tunnel. 
+
+  **Disconnections:** 
+    The client/server architecture allow the user to close the client 
+    application at any time. The workflows and jobs execution aren't stopped. 
+    The user can open a client at any time to check the status of his 
+    work.
+
+  **File transfers:** 
+    If the user machine and the computing resource don't have a shared file
+    system, soma-workflow can manage file transfers between the client and the 
+    computing resource. *This feature is available but need to be optimized to
+    speed up the transfers.*
 
 
 Contents

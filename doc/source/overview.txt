@@ -1,36 +1,21 @@
+======================
+Soma-workflow concepts
+======================
+
+
+Job
+===
+
+A job is mainly defined by a command (blue boxes on the figure). 
+
+
+Workflow
 ========
-Overview
-========
 
-**The documentation is under construction.**
+A workflow is a set of jobs (blue boxes on the figure) with execution dependencies between jobs (arrows on the figure). 
 
-Main Features
-=============
-
-* **Unified interface for many resources:** Submission of jobs or workflows with 
-  an unique interface to computing resource managed by various systems (such as 
-  Grid Engine, Condor, Torque/PBS, LSF..)
-* **Two interfaces:** a Python API and a GUI
-* **Remote access to computing resources:** The communication with the computing
-  resource is done within a ssh port forwarding tunnel and is transparent for 
-  the user.
-* **Disconnections:** The client/server architecture allow the user to close the
-  client application at any time. The workflows and jobs execution aren't 
-  stopped. The user can open a client at any time to check the status of his 
-  work.
-* **File transfers:** If the user machine and the computing resource don't 
-  have a shared file system, Soma-workflow can manage file transfers between the 
-  client and the computing resource. 
-
-
-Job and workflow definition
-===========================
-
-* A **job** is mainly defined by a command (blue boxes on the figure). 
-
-* A **workflow** is a set of jobs with execution dependencies between jobs 
-  (arrows on the figure). A dependency from a job A to a job B means that the 
-  job A won't start before the job B is done. 
+A dependency from a job A to a job B means that the job A won't start before the
+job B is done. 
 
 .. figure:: images/workflow_example_reduced.*
 
@@ -47,6 +32,10 @@ dependencies.
 
 File transfers
 ==============
+
+
+Shared resource path
+====================
 
 
 

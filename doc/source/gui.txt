@@ -1,8 +1,8 @@
 .. _gui:
 
-===
-GUI 
-===
+========================
+Graphical User Interface 
+========================
 
 .. image:: images/gui_overview.*
 
