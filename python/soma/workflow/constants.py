@@ -110,9 +110,9 @@ Soma job configuration items
 CFG => Mandatory items
 OCFG => Optional
 '''
-CFG_CLUSTER_ADDRESS = 'cluster_address'
-CFG_SUBMITTING_MACHINES = 'submitting_machines'
-OCFG_DRMAA_IMPLEMENTATION = 'drmaa_implementation'
+CFG_CLUSTER_ADDRESS = 'CFG_CLUSTER_ADDRESS'
+CFG_SUBMITTING_MACHINES = 'CFG_SUBMITTING_MACHINES'
+OCFG_DRMAA_IMPLEMENTATION = 'OCFG_DRMAA_IMPLEMENTATION'
 
 #queues
 #OCFG_QUEUES is a list of queue name separated by white spaces.
@@ -121,43 +121,43 @@ OCFG_DRMAA_IMPLEMENTATION = 'drmaa_implementation'
 #in the queue for one user. The engine won't submit more than N job at once. The 
 #also wait for the job to leave the queue before submitting new jobs.
 #syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1} queue2{max_nb_job2}"
-OCFG_QUEUES = 'queues'
-OCFG_MAX_JOB_IN_QUEUE = 'max_jobs_in_queue' 
+OCFG_QUEUES = 'OCFG_QUEUES'
+OCFG_MAX_JOB_IN_QUEUE = 'OCFG_MAX_JOB_IN_QUEUE' 
 
 #database server
 
-CFG_DATABASE_FILE = 'database_file'
-CFG_TRANSFERED_FILES_DIR = 'transfered_files_dir_path'
-CFG_SERVER_NAME = 'server_name'
-CFG_NAME_SERVER_HOST ='name_server_host'
+CFG_DATABASE_FILE = 'CFG_DATABASE_FILE'
+CFG_TRANSFERED_FILES_DIR = 'CFG_TRANSFERED_FILES_DIR'
+CFG_SERVER_NAME = 'CFG_SERVER_NAME'
+CFG_NAME_SERVER_HOST ='CFG_NAME_SERVER_HOST'
 
-OCFG_SERVER_LOG_FILE = 'server_log_file'
-OCFG_SERVER_LOG_LEVEL = 'server_logging_level'
-OCFG_SERVER_LOG_FORMAT = 'server_logging_format'
+OCFG_SERVER_LOG_FILE = 'OCFG_SERVER_LOG_FILE'
+OCFG_SERVER_LOG_LEVEL = 'OCFG_SERVER_LOG_LEVEL'
+OCFG_SERVER_LOG_FORMAT = 'OCFG_SERVER_LOG_FORMAT'
 
 #Engine
 
-OCFG_ENGINE_LOG_DIR = 'engine_log_dir_path'
-OCFG_ENGINE_LOG_LEVEL = 'engine_logging_level'
-OCFG_ENGINE_LOG_FORMAT = 'engine_logging_format'
+OCFG_ENGINE_LOG_DIR = 'OCFG_ENGINE_LOG_DIR'
+OCFG_ENGINE_LOG_LEVEL = 'OCFG_ENGINE_LOG_LEVEL'
+OCFG_ENGINE_LOG_FORMAT = 'OCFG_ENGINE_LOG_FORMAT'
 
 #Shared resource path translation files 
 #specify the translation files (if any) associated to a namespace
 #eg. translation_files = brainvisa{/home/toto/.brainvisa/translation.sjtr} namespace2{path/translation1.sjtr} namespace2{path/translation2.sjtr}
-OCFG_PATH_TRANSLATION_FILES = 'path_translation_files' 
+OCFG_PATH_TRANSLATION_FILES = 'OCFG_PATH_TRANSLATION_FILES' 
 
 # Parallel job configuration :
 # DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
 OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
-OCFG_PARALLEL_JOB_CATEGORY = "drmaa_job_category"
+OCFG_PARALLEL_JOB_CATEGORY = "OCFG_PARALLEL_JOB_CATEGORY"
 PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
 # kinds of parallel jobs (items can be added by administrator)
 OCFG_PARALLEL_PC_MPI="MPI"
 OCFG_PARALLEL_PC_OPEN_MP="OpenMP"
 PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
 # parallel job environment variables for the execution machine (items can be added by administrators) 
-OCFG_PARALLEL_ENV_MPI_BIN = 'SOMA_JOB_MPI_BIN'
-OCFG_PARALLEL_ENV_NODE_FILE = 'SOMA_JOB_NODE_FILE'
+OCFG_PARALLEL_ENV_MPI_BIN = 'OCFG_PARALLEL_ENV_MPI_BIN'
+OCFG_PARALLEL_ENV_NODE_FILE = 'OCFG_PARALLEL_ENV_NODE_FILE'
 PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 
 
