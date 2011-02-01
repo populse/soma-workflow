@@ -27,7 +27,7 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    overview.txt
    client_install_config.txt

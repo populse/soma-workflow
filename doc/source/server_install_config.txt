@@ -14,21 +14,215 @@ Requirements
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
 
 
-The implementation of DRMAA tested successfully with soma-workflow:
+The implementations of DRMAA tested successfully with soma-workflow:
   
-  ===================  =========================
+  ===================  ==========================
   DRMS                 DRMAA implementation
-  ===================  =========================
-  Torque 2.0.0         FedStage PBS DRMAA 1.0
+  ===================  ==========================
+  Torque 2.0.0         FedStage PBS DRMAA 1.0*
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
-  ===================  =========================
+  ===================  ==========================
+
+\* set soma-workflow OCFG_DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
+using this implementation
+
 ..
-  LSF 7.0              FedStage LSF DRMAA 1.0.3 
+  LSF 7.0              FedStage LSF DRMAA 1.0.3
 
-Plan the installation filling the configuration file
-====================================================
+Intallation
+===========
+
+1. *svn export/ cmake . / make / make install* (under construction)
+
+3. Choose a resource identifier for the computing resource, ex: "Titan"
+
+2. Start a Pyro name server with the command pyro-ns -m 
+
+4. Run the command python -m soma.workflow.start_database_server "Titan". The command will:
+
+  * start the database server
+  * create the sqlite database if the database file doesn't exist 
+  * register the database server to the Pyro name server
+
+Configuration
+=============
+
+The configuration items are defined in the soma.workflow.constants module.
+Some items are mandatory (starting with CFG) other are optional (starting with
+OCG).
+
+The configuration file are generated with the `ConfigParser <http://docs.python.org/library/configparser.html>`_  module.
+All the configuration item are define in the same section. The name of the 
+section is the resource identifier (ex: "Titan").
 
 
-Installation 
-============
+..
+  import ConfigParser
+  from soma.workflow.constants import *
+  
+  cfg = ConfigParser.ConfigParser()
+
+  cr = "Titan"
+  cfg.add_section(cr)
+  
+  cfg.set(cr, CFG_DATABASE_FILE,        "path/soma_workflow.db")
+  cfg.set(cr, CFG_TRANSFERED_FILES_DIR, "path/transfered_files")
+  cfg.set(cr, CFG_NAME_SERVER_HOST,     "titan0")
+  cfg.set(cr, CFG_SERVER_NAME,          "soma_workflow_server_for_titan")
+  
+  # optional limitation of the jobs in various queues
+  cfg.set(cr, OCFG_MAX_JOB_IN_QUEUE,    "{10} test{50} long{3}")
+
+  # optional logging
+  cfg.set(cr, OCFG_SERVER_LOG_FILE,     "path/logs/log_server")
+  cfg.set(cr, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
+  cfg.set(cr, OCFG_SERVER_LOG_LEVEL,    'ERROR')
+  cfg.set(cr, OCFG_ENGINE_LOG_DIR,     "path/logs/")
+  cfg.set(cr, OCFG_ENGINE_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
+  cfg.set(cr, OCFG_ENGINE_LOG_LEVEL,    'ERROR')
+
+  # remote access information
+  cfg.set(s, CFG_SUBMITTING_MACHINES,   'titan0')
+  cfg.set(s, CFG_CLUSTER_ADDRESS,       'titan.mylab.fr')
+
+  f = open('soma_workflow.cfg', 'wb')
+  soma_wf_cfg.write(f)
+  f.close()
+
+Example: ::
+
+  [Titan]
+
+  CFG_DATABASE_FILE        = path/soma_workflow.db
+  CFG_TRANSFERED_FILES_DIR = path/transfered_files
+  CFG_NAME_SERVER_HOST     = titan0
+  CFG_SERVER_NAME          = soma_workflow_server_for_titan
+  
+  # optional limitation of the jobs in various queues
+  OCFG_MAX_JOB_IN_QUEUE = {10} test{50} long{3}
+
+  # optional logging
+  OCFG_SERVER_LOG_FILE   = path/logs/log_server
+  OCFG_SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  OCFG_SERVER_LOG_LEVEL  = ERROR
+  OCFG_ENGINE_LOG_DIR    = path/logs/
+  OCFG_ENGINE_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  OCFG_ENGINE_LOG_LEVEL  = ERROR
+
+  # remote access information
+  CFG_SUBMITTING_MACHINES = titan0
+  CFG_CLUSTER_ADDRESS     = titan.mylab.fr
+
+
+
+
+Configuration items required on the server side:
+------------------------------------------------
+
+The soma-workflow database server is registered in a Pyro name server. To set up the communication between the workflow engine process (cf figure??) and the workflow database server. The workflow engine process queries the Pyro name server for the location of the database server. The database is a sqlite database (stored in a file).
+  
+  **CFG_DATABASE_FILE** = 'database_file'
+    Path of the sqlite database file.
+
+  **CFG_TRANSFERED_FILES_DIR** = 'transfered_files_dir_path'
+    Path of the directory where the transfered files will be copied.
+
+
+  **CFG_NAME_SERVER_HOST** ='name_server_host'
+    Host where the Pyro name server runs.
+    
+  **CFG_SERVER_NAME** = 'server_name'
+    Name of the database server regitered on the Pyro name server.
+
+
+
+Configuration items optional on the server side:
+------------------------------------------------
+
+  **OCFG_MAX_JOB_IN_QUEUE** = 'max_jobs_in_queue' 
+    Maximum number of job in each queue. If a queue doesn't appear here, 
+    soma-workflow considers that there is no limitation.
+    The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
+
+  **OCFG_PATH_TRANSLATION_FILES** = 'path_translation_files'
+    Specify here the shared resource path translation files, mandatory to use 
+    the SharedResourcePath objects (cf ?). Each translation file is associated 
+    with a namespace.
+    The syntax is "namespace_1{translation_file_path_11} 
+    namespace1{translation_file_path_12} namespace2{translation_file_path_2}"
+
+  **OCFG_DRMAA_IMPLEMENTATION** = 'drmaa_implementation'
+    Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
+    otherwise it doesn't has to be set.
+    Soma-workflow is designed to be independant of the DRMS and the DRMAA 
+    implementation. However, we found two bugs in the FedStage PBS DRMAA 1.0 
+    implementation, and correct it temporarily writing specific code for this 
+    implementation in soma-workflow at 2 locations (soma.workflow.engine Drmaa 
+    class: __init__ and submit_job method). 
+
+Logging configuration:
+
+  **OCFG_SERVER_LOG_FILE** = 'server_log_file'
+    Server log file path.
+
+  **OCFG_SERVER_LOG_LEVEL** = 'server_logging_level'
+    Server logging level as defined in the `logging 
+    <http://docs.python.org/library/logging.html>`_ module.
+
+  **OCFG_SERVER_LOG_FORMAT** = 'server_logging_format'
+    Server logging format as defined in the `logging <http://docs.python.org/library/logging.html>`_ module.
+
+  **OCFG_ENGINE_LOG_DIR** = 'engine_log_dir_path'
+    Directory path where to store Workflow Engine log files.
+
+  **OCFG_ENGINE_LOG_LEVEL** = 'engine_logging_level'
+    Workflow Engine logging level as defined in the `logging 
+    <http://docs.python.org/library/logging.html>`_ module.
+
+  **OCFG_ENGINE_LOG_FORMAT** = 'engine_logging_format'
+    Workflow Engine logging level as defined in the `logging 
+    <http://docs.python.org/library/logging.html>`_ module.
+
+Parallel job configuration:
+---------------------------
+
+The items described here concern the parallel job configuration. A parallel job
+uses serveral CPU and involve parallel code: MPI, OpenMP for example. 
+
+**under construction**
+
+..
+  OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
+  OCFG_PARALLEL_JOB_CATEGORY = "drmaa_job_category"
+
+  .. 
+    PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
+
+  OCFG_PARALLEL_PC_MPI="MPI"
+  OCFG_PARALLEL_PC_OPEN_MP="OpenMP"
+
+  ..
+    PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
+
+  OCFG_PARALLEL_ENV_MPI_BIN = 'SOMA_JOB_MPI_BIN'
+  OCFG_PARALLEL_ENV_NODE_FILE = 'SOMA_JOB_NODE_FILE'
+
+  ..
+    PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
+ 
+
+Configuration items required on the client side:
+------------------------------------------------
+
+  **CFG_CLUSTER_ADDRESS** = 'cluster_address'
+    Optional on server, Mandatory on client side
+
+  **CFG_SUBMITTING_MACHINES** = 'submitting_machines'
+    Optional on server, Mandatory on client side
+
+Configuration items optional on the client side:
+------------------------------------------------
+
+  **OCFG_QUEUES** = 'queues'
+    
