@@ -47,9 +47,22 @@ if __name__=="__main__":
     
     #########################
     # reading configuration 
+    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
+    if not os.path.isfile(config_path):
+      config_path = os.path.expanduser("~/.soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = "/etc/soma-workflow.cfg"
+    if not os.path.isfile(config_path):
+      raise Exception("Can't find the soma-workflow configuration file \n")
+
     config = ConfigParser.ConfigParser()
-    config_file_path = os.environ['SOMA_WORKFLOW_CONFIG']
-    config.read(config_file_path)
+    config.read(config_path)
     section = resource_id
     
     ###########
@@ -85,8 +98,7 @@ if __name__=="__main__":
       uri = ns.resolve(server_name)
       logger.info('Server URI:'+ repr(uri))
     except NamingError,x:
-      logger.critical('Couldn\'t find' + server_name + ' nameserver says:',x)
-      raise SystemExit
+      raise Exception('Couldn\'t find' + server_name + ' nameserver says:',x)
     database_server = Pyro.core.getProxyForURI(uri)
     
 

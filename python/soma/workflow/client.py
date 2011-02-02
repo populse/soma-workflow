@@ -295,30 +295,41 @@ class WorkflowController(object):
   Submition, controlling and monitoring of Jobs, FileTransfers and Workflows.
   '''
   def __init__(self, 
-               config_file,
                resource_id, 
                login = None, 
                password = None,
                log = ""):
     '''
-    @type  config_file: string
-    @param config_file: configuration file path
     @type  resource_id: C{ResourceIdentifier} or None
-    @param resource_id: The name of the resource to use, eg: "neurospin_test_cluster" or 
-    "DSV_cluster"... the ressource_id config must be inside the config_file.
+    @param resource_id: Identifier of the computing resource. 
     @param login and password: only required if run from a submitting machine of the cluster.
     '''
     
     
     #########################
     # reading configuration 
+    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
+    if not os.path.isfile(config_path):
+      config_path = os.path.expanduser("~/.soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = "/etc/soma-workflow.cfg"
+    if not os.path.isfile(config_path):
+      raise Exception("Can't find the soma-workflow configuration file \n")
+    
+    print "Configuration file: " + repr(config_path)
     config = ConfigParser.ConfigParser()
-    config.read(config_file)
+    config.read(config_path)
     self.resource_id = resource_id
     self.config = config
    
     if not config.has_section(resource_id):
-      raise Exception("Can't find section " + resource_id + " in configuration file: " + config_file)
+      raise Exception("Can't find section " + resource_id + " in configuration file: " + config_path)
 
     submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     cluster_address = config.get(resource_id, CFG_CLUSTER_ADDRESS)
@@ -361,7 +372,6 @@ class WorkflowController(object):
       from Pyro.errors import PyroError, NamingError
       
       # log file 
-      print "config_file " + repr(config_file)
       if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
         logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
 

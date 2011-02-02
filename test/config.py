@@ -10,6 +10,7 @@
 from __future__ import with_statement
 import ConfigParser
 from soma.workflow.constants import *
+import os.path
 
 soma_wf_cfg = ConfigParser.ConfigParser()
 
@@ -170,5 +171,5 @@ soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/soizic/soma_workf
 
 
 #####################################################"
-with open('soma_workflow.cfg', 'wb') as configfile:
+with open(os.path.expanduser("~/.soma-workflow.cfg"), 'wb') as configfile:
     soma_wf_cfg.write(configfile)

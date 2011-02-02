@@ -17,13 +17,20 @@ class JobsControler(object):
    
   @staticmethod
   def getConfigFile():
-    conf_file = os.environ.get( 'SOMA_WORKFLOW_CONFIG' )
-    if not conf_file or not os.path.exists( conf_file ):
-      conf_file = os.path.join( os.environ.get( 'HOME', '' ), '.brainvisa', 'soma_workflow.cfg' )
-      if not os.path.exists( conf_file ):
-        raise RuntimeError( 'Cannot find soma-workflow configuration file. Perhaps SOMA_WORKFLOW_CONFIG is not proprely set.' )
-    print "Configuration file: " + repr(conf_file)
-    return conf_file
+    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
+    if not os.path.isfile(config_path):
+      config_path = os.path.expanduser("~/.soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
+    if not os.path.isfile(config_path):
+      config_path = "/etc/soma-workflow.cfg"
+    if not os.path.isfile(config_path):
+      raise Exception("Can't find the soma-workflow configuration file \n")
+    return config_path
   
   
   def get_configured_queues(self, resource_id):
@@ -45,8 +52,7 @@ class JobsControler(object):
         
   def getConnection(self, resource_id, login, password, test_no):
     try: 
-      connection = WorkflowController( self.getConfigFile(),
-                                       resource_id, 
+      connection = WorkflowController( resource_id, 
                                        login, 
                                        password,
                                        log=test_no)

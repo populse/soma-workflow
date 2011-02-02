@@ -31,10 +31,23 @@ if __name__ == '__main__':
 
   #########################
   # reading configuration 
+  config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
+  if not os.path.isfile(config_path):
+    config_path = os.path.expanduser("~/.soma-workflow.cfg")
+  if not os.path.isfile(config_path):
+    config_path = os.path.dirname(__file__)
+    config_path = os.path.dirname(__file__)
+    config_path = os.path.dirname(__file__)
+    config_path = os.path.dirname(__file__)
+    config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
+  if not os.path.isfile(config_path):
+    config_path = "/etc/soma-workflow.cfg"
+  if not os.path.isfile(config_path):
+    raise Exception("Can't find the soma-workflow configuration file \n")
+
   config = ConfigParser.ConfigParser()
-  config_file_path = os.environ['SOMA_WORKFLOW_CONFIG']
-  print "configuration file " + config_file_path
-  config.read(config_file_path)
+  print "configuration file " + config_path
+  config.read(config_path)
   section = sys.argv[1]
  
   ###########
