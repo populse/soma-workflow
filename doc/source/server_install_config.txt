@@ -40,7 +40,7 @@ The implementations of DRMAA tested successfully with soma-workflow:
   LSF 7.0              FedStage LSF DRMAA 1.0.3**
   ===================  ==========================
 
-\* set soma-workflow OCFG_DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
+\* set soma-workflow DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
 using this implementation
 
 \** full testing in progress
@@ -69,89 +69,52 @@ Server intallation
 Server configuration
 ====================
 
-This section defined the configuration items. The mandatory items start with
-"CFG" and the optional ones start with "OCFG". 
+This section defined the required and optional configuration items. 
 
-The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax.
-
-All the configuration items are defined in one section. The name of 
+The configuration file syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. All the configuration items are defined in one section. The name of 
 the section is the resource identifier (ex: "Titan").
 
-..
-  import ConfigParser
-  from soma.workflow.constants import *
-  
-  cfg = ConfigParser.ConfigParser()
-
-  cr = "Titan"
-  cfg.add_section(cr)
-  
-  cfg.set(cr, CFG_DATABASE_FILE,        "path/soma_workflow.db")
-  cfg.set(cr, CFG_TRANSFERED_FILES_DIR, "path/transfered_files")
-  cfg.set(cr, CFG_NAME_SERVER_HOST,     "titan0")
-  cfg.set(cr, CFG_SERVER_NAME,          "soma_workflow_server_for_titan")
-  
-  # optional limitation of the jobs in various queues
-  cfg.set(cr, OCFG_MAX_JOB_IN_QUEUE,    "{10} test{50} long{3}")
-
-  # optional logging
-  cfg.set(cr, OCFG_SERVER_LOG_FILE,     "path/logs/log_server")
-  cfg.set(cr, OCFG_SERVER_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
-  cfg.set(cr, OCFG_SERVER_LOG_LEVEL,    'ERROR')
-  cfg.set(cr, OCFG_ENGINE_LOG_DIR,     "path/logs/")
-  cfg.set(cr, OCFG_ENGINE_LOG_FORMAT,   "%(asctime)s => line %(lineno)s: %(message)s")
-  cfg.set(cr, OCFG_ENGINE_LOG_LEVEL,    'ERROR')
-
-  # remote access information
-  cfg.set(s, CFG_SUBMITTING_MACHINES,   'titan0')
-  cfg.set(s, CFG_CLUSTER_ADDRESS,       'titan.mylab.fr')
-
-  f = open('soma_workflow.cfg', 'wb')
-  soma_wf_cfg.write(f)
-  f.close()
 
 Configuration file example: ::
 
   [Titan]
 
-  CFG_DATABASE_FILE        = path/soma_workflow.db
-  CFG_TRANSFERED_FILES_DIR = path/transfered_files
-  CFG_NAME_SERVER_HOST     = titan0
-  CFG_SERVER_NAME          = soma_workflow_server_for_titan
+  DATABASE_FILE        = path/soma_workflow.db
+  TRANSFERED_FILES_DIR = path/transfered_files
+  NAME_SERVER_HOST     = titan0
+  SERVER_NAME          = soma_workflow_server_for_titan
   
   # optional limitation of the jobs in various queues
-  OCFG_MAX_JOB_IN_QUEUE = {10} test{50} long{3}
+  MAX_JOB_IN_QUEUE = {10} test{50} long{3}
 
   # optional logging
-  OCFG_SERVER_LOG_FILE   = path/logs/log_server
-  OCFG_SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
-  OCFG_SERVER_LOG_LEVEL  = ERROR
-  OCFG_ENGINE_LOG_DIR    = path/logs/
-  OCFG_ENGINE_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
-  OCFG_ENGINE_LOG_LEVEL  = ERROR
+  SERVER_LOG_FILE   = path/logs/log_server
+  SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  SERVER_LOG_LEVEL  = ERROR
+  ENGINE_LOG_DIR    = path/logs/
+  ENGINE_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  ENGINE_LOG_LEVEL  = ERROR
 
   # remote access information
-  CFG_CLUSTER_ADDRESS     = titan.mylab.fr
-  CFG_SUBMITTING_MACHINES = titan0
+  CLUSTER_ADDRESS     = titan.mylab.fr
+  SUBMITTING_MACHINES = titan0
   
-
-
 
 
 Configuration items required on the server side:
 ------------------------------------------------
   
-  **CFG_DATABASE_FILE**
+  **DATABASE_FILE**
     Path of the SQLite database file. The file will be created the first time 
     the database server will be started. 
 
-  **CFG_TRANSFERED_FILES_DIR**
+  **TRANSFERED_FILES_DIR**
     Path of the directory where the transfered files will be copied.
 
-  **CFG_NAME_SERVER_HOST**
+  **NAME_SERVER_HOST**
     Host where the Pyro name server runs.
     
-  **CFG_SERVER_NAME**
+  **SERVER_NAME**
     Name of the database server regitered on the Pyro name server.
 
 
@@ -159,19 +122,19 @@ Configuration items required on the server side:
 Configuration items optional on the server side:
 ------------------------------------------------
 
-  **OCFG_MAX_JOB_IN_QUEUE**
+  **MAX_JOB_IN_QUEUE**
     Maximum number of job in each queue. If a queue doesn't appear here, 
     soma-workflow considers that there is no limitation.
     The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
 
-  **OCFG_PATH_TRANSLATION_FILES**
+  **PATH_TRANSLATION_FILES**
     Specify here the shared resource path translation files, mandatory to use 
-    the SharedResourcePath objects (cf ?). Each translation file is associated 
+    the SharedResourcePath objects (see :ref:`shared-resource-path-concept`). Each translation file is associated 
     with a namespace.
     The syntax is "namespace_1{translation_file_path_11} 
     namespace1{translation_file_path_12} namespace2{translation_file_path_2}"
 
-  **OCFG_DRMAA_IMPLEMENTATION**
+  **DRMAA_IMPLEMENTATION**
     Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
     otherwise it doesn't has to be set.
     Soma-workflow is designed to be independant of the DRMS and the DRMAA 
@@ -182,24 +145,24 @@ Configuration items optional on the server side:
 
 Logging configuration:
 
-  **OCFG_SERVER_LOG_FILE** 
+  **SERVER_LOG_FILE** 
     Server log file path.
 
-  **OCFG_SERVER_LOG_LEVEL** 
+  **SERVER_LOG_LEVEL** 
     Server logging level as defined in the `logging 
     <http://docs.python.org/library/logging.html>`_ module.
 
-  **OCFG_SERVER_LOG_FORMAT** 
+  **SERVER_LOG_FORMAT** 
     Server logging format as defined in the `logging <http://docs.python.org/library/logging.html>`_ module.
 
-  **OCFG_ENGINE_LOG_DIR** 
+  **ENGINE_LOG_DIR** 
     Directory path where to store Workflow Engine log files.
 
-  **OCFG_ENGINE_LOG_LEVEL** 
+  **ENGINE_LOG_LEVEL** 
     Workflow Engine logging level as defined in the `logging 
     <http://docs.python.org/library/logging.html>`_ module.
 
-  **OCFG_ENGINE_LOG_FORMAT** 
+  **ENGINE_LOG_FORMAT** 
     Workflow Engine logging level as defined in the `logging 
     <http://docs.python.org/library/logging.html>`_ module.
 
@@ -234,11 +197,11 @@ uses serveral CPU and involve parallel code: MPI, OpenMP for example.
 Configuration items required on the client side:
 ------------------------------------------------
 
-  **CFG_CLUSTER_ADDRESS** 
+  **CLUSTER_ADDRESS** 
     Address of the host computing resource host to log on.
     Address of the host which has to be used to access the cluster remotely.
 
-  **CFG_SUBMITTING_MACHINES** 
+  **SUBMITTING_MACHINES** 
     Address of the submitting hosts, that is the hosts from which the jobs 
     are supposed to be submitted. In most of the cases, there is only one 
     submitting host. The addresses are local on the cluster.
@@ -248,7 +211,7 @@ Configuration items required on the client side:
 Configuration items optional on the client side:
 ------------------------------------------------
 
-  **OCFG_QUEUES**
+  **QUEUES**
     List of the avalaible queues. This item is only used in the GUI to make 
     easier the selection of the queue when submitting a workflow.
     

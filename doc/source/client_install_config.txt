@@ -41,9 +41,9 @@ database server).
 
 Only three items are required:
  
-  * CFG_CLUSTER_ADDRESS
-  * CFG_SUBMITTING_MACHINES
-  * OCFG_QUEUES 
+  * CLUSTER_ADDRESS
+  * SUBMITTING_MACHINES
+  * QUEUES 
 
 The two first items are mandatory and the last one is 
 optional. The values of these configuration items are set up at each 
@@ -54,16 +54,16 @@ Configuration file example: ::
 
   [Titan]
 
-  CFG_CLUSTER_ADDRESS     = titan.mylab.fr
-  CFG_SUBMITTING_MACHINES = titan0
+  CLUSTER_ADDRESS     = titan.mylab.fr
+  SUBMITTING_MACHINES = titan0
   
-  OCFG_QUEUES = test long 
+  QUEUES = test long 
 
 
   [LabDesktops]
 
-  CFG_CLUSTER_ADDRESS     = mydesktop.mylab.fr
-  CFG_SUBMITTING_MACHINES = mydesktop
+  CLUSTER_ADDRESS     = mydesktop.mylab.fr
+  SUBMITTING_MACHINES = mydesktop
 
 
 Start the GUI
