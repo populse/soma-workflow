@@ -137,7 +137,7 @@ soma_wf_cfg.set(s, CFG_SERVER_NAME,            'soma_workflow_database_server')
 soma_wf_cfg.set(s, CFG_TRANSFERED_FILES_DIR,   '/home/cea/soma_workflow/server/transfered_files/')
 soma_wf_cfg.set(s, CFG_DATABASE_FILE,          '/home/cea/soma_workflow/server/soma_workflow.db')
 #Shared resource path translation file
-soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/cea/soma-jobs-server/translation_file_examples/job_examples.sjtr}  brainvisa{/home/cea/.brainvisa/soma-workflow.translation}')
+soma_wf_cfg.set(s, OCFG_PATH_TRANSLATION_FILES, 'example{/home/cea/soma_workflow/translation_file_examples/job_examples.sjtr}  brainvisa{/home/cea/.brainvisa/soma-workflow.translation}')
 
 
 ##################
