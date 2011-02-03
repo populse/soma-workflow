@@ -915,7 +915,6 @@ class WorkflowController(object):
       # check if the whole transfer ended
       transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
       if not transfer_action_info == None: # None if stdout and stderr
-        print "transfer_action_info " + repr(transfer_action_info)
         assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
               transfer_action_info[2] == TR_DIR_CR_TO_C or 
               transfer_action_info[2] == TR_MFF_CR_TO_C)
