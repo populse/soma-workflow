@@ -364,7 +364,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode = 'local_no_disconnection' #mode # (local debug)#        
+    self._mode = mode #'local_no_disconnection' # (local debug)#        
 
     #########
     # LOCAL #
