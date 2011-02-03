@@ -73,7 +73,6 @@ Contents
    client_API.txt
    gui.txt
    examples.txt
-   architecture.txt
 
 ..
   * :ref:`genindex`

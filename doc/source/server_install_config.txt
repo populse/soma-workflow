@@ -21,6 +21,9 @@ The database is a `SQLite <http://docs.python.org/library/sqlite3.html>`_ databa
 Requirements
 ============
 
+.. image:: images/third_parties.*
+  :scale: 50
+
 * A distributed resource management system (DRMS) such as Grid Engine, Condor, 
   Torque/PBS, LSF..
 * A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
@@ -116,7 +119,6 @@ Configuration items required on the server side:
     
   **SERVER_NAME**
     Name of the database server regitered on the Pyro name server.
-
 
 
 Configuration items optional on the server side:

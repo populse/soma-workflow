@@ -5,4 +5,6 @@ Graphical User Interface
 ========================
 
 .. image:: images/gui_overview.*
+   :scale: 60
+
 
