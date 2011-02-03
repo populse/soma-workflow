@@ -39,7 +39,7 @@ import itertools
 import types
 
 import soma.workflow.constants as constants
-from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, WorkflowNodeGroup, WorkflowController
+from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, Group, WorkflowController
 #, dir_content, create_dir_structure
 import soma.workflow.database_server 
 from soma.workflow.somadrmaajobssip import DrmaaJobs
@@ -94,7 +94,7 @@ class Drmaa(object):
   # parallel jobs. The value of parallel_job_submission is cluster dependant. 
   # The keys are:
   #  -Drmaa job template attributes 
-  #  -parallel configuration name as defined in soma.jobs.constants
+  #  -parallel configuration name as defined in soma.workflow.constants
   # dict
   _parallel_job_submission_info = None
   
@@ -225,7 +225,7 @@ class Drmaa(object):
     @param drmaa_job_template_id: id of drmaa job template
     @type  parallel_job_info: tuple (string, int)
     @param parallel_job_info: (configuration_name, max_node_num)
-    configuration_name: type of parallel job as defined in soma.jobs.constants 
+    configuration_name: type of parallel job as defined in soma.workflow.constants 
     (eg MPI, OpenMP...)
     max_node_num: maximum node number the job requests (on a unique machine or 
     separated machine depending on the parallel configuration)
@@ -601,18 +601,18 @@ class EngineWorkflow(soma.workflow.client.Workflow):
   # name of the queue to be used to submit jobs, str
   queue = None
   # dict job_id => EngineJob
-  jobs = None
+  job_dict = None
   # dict tr_id => EngineTransfer
-  transfers = None
+  transfer_dict = None
 
   #logger = None
   
   def __init__(self, client_workflow, path_translation, queue):
  
     client_workflow_copy = copy.deepcopy(client_workflow)
-    super(EngineWorkflow, self).__init__(client_workflow_copy.nodes,
+    super(EngineWorkflow, self).__init__(client_workflow_copy.jobs,
                                          client_workflow_copy.dependencies,
-                                         client_workflow_copy.mainGroup,
+                                         client_workflow_copy.root_group,
                                          client_workflow_copy.groups)
 
     self.status = constants.WORKFLOW_NOT_STARTED
@@ -642,7 +642,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                                          self.name)
     self.wf_id = wf_id
 
-    self._register_jobs(database_server) # throw possible exceptions !!!
+    self._register_jobs(database_server) 
+    # throw possible exceptions !!!
+    # TO DO => catch them
   
     database_server.set_workflow(self.wf_id, self, self._user_id)
     return wf_id
@@ -658,7 +660,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
     # recover all the file transfers
     file_transfers = set([])
-    for job in self.nodes:
+    for job in self.jobs:
       for command_el in job.command:
         if isinstance(command_el, list):
           for list_el in command_el:
@@ -680,7 +682,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
     # First loop to register FileTransfer to the database server.
     ft_conv = {} # dictonary FileTransfer => EngineTransfer
-    self.transfers =  {}
+    self.transfer_dict =  {}
     
     for ft in file_transfers:
       if isinstance(ft, FileTransfer):
@@ -689,14 +691,14 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                                  self._user_id,
                                  self.exp_date,
                                  self.wf_id)
-        self.transfers[engine_transfer.engine_path] = engine_transfer
+        self.transfer_dict[engine_transfer.engine_path] = engine_transfer
         ft_conv[ft] = engine_transfer
 
     # Second loop to convert Job attributs and 
     # register it to the database server. 
     job_conv = {}  # Job => EngineJob
-    self.jobs =  {}
-    for job in self.nodes:
+    self.job_dict =  {}
+    for job in self.jobs:
       engine_job = EngineJob(client_job=job,
                              queue=self.queue,
                              workflow_id=self.wf_id)
@@ -709,32 +711,38 @@ class EngineWorkflow(soma.workflow.client.Workflow):
                           self._user_id, 
                           self.exp_date)
       job_conv[job] = engine_job
-      self.jobs[engine_job.job_id] = engine_job
+      self.job_dict[engine_job.job_id] = engine_job
 
     
-    # End converting the nodes to EngineNodes
+    # End converting the Job to EngineJob
     new_dependencies = []
     for dep in self.dependencies:
       new_dependencies.append((job_conv[dep[0]], job_conv[dep[1]]))
     self.dependencies = new_dependencies
 
-    new_nodes = []
-    for job in self.nodes:
-      new_nodes.append(job_conv[job])
-    self.nodes = new_nodes
+    new_jobs = []
+    for job in self.jobs:
+      new_jobs.append(job_conv[job])
+    self.jobs = new_jobs
 
     group_conv = {}
-    new_groups = []
-    for group in self.groups:
-      (new_group,
-       group_conv) = self._convert_workflow_node_group(group, job_conv, group_conv)
-      new_groups.append(new_group)
-    self.groups = new_groups
-
-    if self.mainGroup:
-      (new_main_group,
-       group_conv) = self._convert_workflow_node_group(self.mainGroup, job_conv, group_conv)
-      self.mainGroup = new_main_group
+    if self.groups:
+      new_groups = []
+      for group in self.groups:
+        (new_group,
+        group_conv) = self._convert_workflow_node_group(group,   
+                                                        job_conv, 
+                                                        group_conv)
+        new_groups.append(new_group)
+      self.groups = new_groups
+    
+    new_root_group = []
+    for element in self.root_group:
+      if element in group_conv:
+        new_root_group.append(group_conv[element])
+      elif element in job_conv:
+        new_root_group.append(job_conv[element])
+    self.root_group = new_root_group
 
     #for g, gc in group_conv.iteritems():
       #print repr(g) + " ===> " + repr(gc)
@@ -746,18 +754,21 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         #print "     element: " + repr(element.name) + " " + repr(element)
 
     #print " "
-    #print "main_group " + repr(self.mainGroup) + " contains:"
-    #for element in self.mainGroup.elements:
+    #print "root_group " + repr(self.root_group) + " contains:"
+    #for element in self.root_group:
         #print "     element: " + repr(element.name) + " " + repr(element)
 
   
-  def _convert_workflow_node_group(self, group, job_conv, group_conv):
+  def _convert_workflow_node_group(self, 
+                                   group, 
+                                   job_conv, 
+                                   group_conv):
     if group in group_conv:
       return (group_conv[group], group_conv)
 
     new_elements = []
     for el in group.elements:
-      if isinstance(el, WorkflowNodeGroup):
+      if isinstance(el, Group):
         (new_el, group_conv) = self._convert_workflow_node_group(el, job_conv, group_conv)
         new_elements.append(new_el)
       elif isinstance(el, EngineJob):
@@ -768,7 +779,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         logger.debug("!!!! Wrong group element type: " + repr(el))
         # TBI raise ???
 
-    new_group = WorkflowNodeGroup(new_elements, group.name)
+    new_group = Group(new_elements, group.name)
     group_conv[group] = new_group
     return (new_group, group_conv)
 
@@ -778,7 +789,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
   def _shared_path_translation(self):
 
-    for job in self.nodes:
+    for job in self.jobs:
       new_command = []
       for command_el in job.command:
         if isinstance(command_el, SharedResourcePath):
@@ -817,7 +828,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
   def find_out_independant_jobs(self):
     independant_jobs = []
-    for job in self.nodes:
+    for job in self.jobs:
       to_run=True
       for ft in job.referenced_input_files:
         if not ft.files_exist_on_server():
@@ -856,7 +867,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     to_abort = set([])
     done = []
     running = []
-    for job in self.nodes:
+    for job in self.jobs:
       if job.is_done(): 
         done.append(job)
       elif job.is_running(): 
@@ -913,7 +924,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
     if len(running) + len(to_run) > 0:
       status = constants.WORKFLOW_IN_PROGRESS
-    elif len(done) + len(to_abort) == len(self.nodes): 
+    elif len(done) + len(to_abort) == len(self.jobs): 
       status = constants.WORKFLOW_DONE
     elif len(done) > 0:
       status = constants.WORKFLOW_IN_PROGRESS
@@ -934,19 +945,19 @@ class EngineWorkflow(soma.workflow.client.Workflow):
 
     for job_info in wf_status[0]:
       job_id, status, exit_info, date_info = job_info
-      self.jobs[job_id].status = status
+      self.job_dict[job_id].status = status
       exit_status, exit_value, term_signal, resource_usage = exit_info
-      self.jobs[job_id].exit_status = exit_status
-      self.jobs[job_id].exit_value = exit_value
-      self.jobs[job_id].str_rusage = resource_usage
-      self.jobs[job_id].terminating_signal = term_signal
+      self.job_dict[job_id].exit_status = exit_status
+      self.job_dict[job_id].exit_value = exit_value
+      self.job_dict[job_id].str_rusage = resource_usage
+      self.job_dict[job_id].terminating_signal = term_signal
    
     for ft_info in wf_status[1]:
       engine_path, client_path, status, transfer_action_info = ft_info 
-      self.transfers[engine_path].status = status
+      self.transfer_dict[engine_path].status = status
 
     done = True
-    for job in self.nodes:
+    for job in self.jobs:
       if job.failed():
         #clear all the information related to the previous job submission
         job.status = constants.NOT_SUBMITTED
@@ -965,7 +976,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
        
     to_run = []
     if undone_jobs:
-      # look for nodes to run
+      # look for jobs to run
       for job in undone_jobs:
         job_to_run = True # a node is run when all its dependencies succeed
         for ft in job.referenced_input_files:
@@ -1143,8 +1154,8 @@ class WorkflowEngineLoop(object):
         wf_transfers = {}
         for wf in self._workflows.itervalues():
           # TBI add a condition on the workflow status
-          wf_jobs.update(wf.jobs)
-          wf_transfers.update(wf.transfers)
+          wf_jobs.update(wf.job_dict)
+          wf_transfers.update(wf.transfer_dict)
         
         ended_jobs = {}
         for job in itertools.chain(self._jobs.itervalues(), wf_jobs.itervalues()):
@@ -1347,8 +1358,8 @@ class WorkflowEngineLoop(object):
 
   def _stop_wf(self, wf_id):
     wf = self._workflows[wf_id]
-    self.logger.debug("wf.jobs " + repr(wf.jobs))
-    for job_id, job in wf.jobs.iteritems():
+    self.logger.debug("wf.job_dict " + repr(wf.job_dict))
+    for job_id, job in wf.job_dict.iteritems():
       self._stop_job(job_id, job)
     self._database_server.set_workflow_status(wf_id, 
                                               constants.WORKFLOW_DONE, 
@@ -1845,7 +1856,7 @@ class WorkflowEngine(object):
     return status
     
   
-  def workflow_nodes_status(self, wf_id, groupe = None):
+  def workflow_elements_status(self, wf_id, groupe = None):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''

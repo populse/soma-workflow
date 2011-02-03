@@ -14,8 +14,7 @@ The contrustor takes a resource id, login and password as parameters and
 connects to the resource. One WorkflowController instance is connected to 
 only one resource.
 
-The other classes (Workflow, Job, FileTransfer,SharedResourcePath and 
-WorkflowNodeGroup) are made to build the jobs, worklfows, and file transfers 
+The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, worklfows, and file transfers 
 objects to be used in the WorkflowControler interface.
 
 Definitions:
@@ -45,42 +44,49 @@ from soma.workflow.constants import *
 #-------------------------------------------------------------------------------
 
 class Job(object):
-  '''
-  Job representation in a soma-workflow. 
+  #'''
+  #Job representation in soma-workflow. 
   
-  The job parameters are identical to the WorkflowController.submit_job method 
-  arguments except command, referenced_input_files and references_output_files.
+  #The job parameters are identical to the WorkflowController.submit_job method 
+  #arguments except command, referenced_input_files and references_output_files.
   
-  @type  command: sequence of string, 
-                              L{SharedResourcePath},
-                              L{FileTransfer},
-                              tuple (relative path, L{FileTransfer}),
-                              sequence of L{SharedResourcePath},
-                              sequence of L{FileTransfer},
-                              and/or sequence of tuple 
-                              (relative path, L{FileTransfer})
-  @param command: The command to execute. 
-                  On the computing resource side, the L{SharedResourcePath} and
-                  L{FileTransfer} objects will be replaced by the appropriate 
-                  path before the job execution.
-                  The tuple (absolute path, L{FileTransfer}) can be use to 
-                  refer to a file in a transfered directory. The tuple will be 
-                  replaced by the path:
-                  "computing_resource_dir_path/absolute_path"
-                  The sequence(s) of L{SharedResourcePath}, L{FileTransfer},
-                  and tuple (absolute path, L{FileTransfer}) will be replaced 
-                  by the string:
-                  "['/somewhere/file1', '/somewhere/file2', '/somewhere/path3']"
+  #@type  command: sequence of string, 
+                              #L{SharedResourcePath},
+                              #L{FileTransfer},
+                              #tuple (relative path, L{FileTransfer}),
+                              #sequence of L{SharedResourcePath},
+                              #sequence of L{FileTransfer},
+                              #and/or sequence of tuple 
+                              #(relative path, L{FileTransfer})
+  #@param command: The command to execute. 
+                  #On the computing resource side, the L{SharedResourcePath} and
+                  #L{FileTransfer} objects will be replaced by the appropriate 
+                  #path before the job execution.
+                  #The tuple (absolute path, L{FileTransfer}) can be use to 
+                  #refer to a file in a transfered directory. The tuple will be 
+                  #replaced by the path:
+                  #"computing_resource_dir_path/absolute_path"
+                  #The sequence(s) of L{SharedResourcePath}, L{FileTransfer},
+                  #and tuple (absolute path, L{FileTransfer}) will be replaced 
+                  #by the string:
+                  #"['/somewhere/file1', '/somewhere/file2', '/somewhere/path3']"
                   
-  @type referenced_input_files: sequence of L{FileTransfer}
-  @param referenced_input_files: list of all tranfered input file required
-                                 for the job to run.
-  @type referenced_output_files: sequence of L{FileTransfer}
-  @param referenced_input_files: list of all transfered output file required
-                                 for the job to run.
+  #@type referenced_input_files: sequence of L{FileTransfer}
+  #@param referenced_input_files: list of all tranfered input file required
+                                 #for the job to run.
+  #@type referenced_output_files: sequence of L{FileTransfer}
+  #@param referenced_input_files: list of all transfered output file required
+                                 #for the job to run.
                                  
-  (See the WorkflowController.submit_job method for a description of each parameter)
+  #(See the WorkflowController.submit_job method for a description of each parameter)
+  #'''
   '''
+  Job representation.
+
+  
+  '''
+
+
   name = None
 
   command = None
@@ -220,75 +226,92 @@ class FileTransfer(object):
       self.initial_status = FILES_DONT_EXIST
 
     
-class WorkflowNodeGroup(object):
+class Group(object):
   '''
-  Workflow node group: provides a hierarchical structure to a workflow.
-  However groups has only a displaying role, it doesn't have
-  any impact on the workflow execution.
+  Describes the hierachical structure of a workflow.
+  It only has a displaying role and doen't have any impact on the 
+  workflow execution.
   '''
+  #string
   name = None
 
+  #sequence of Job and/or Group
   elements = None
-
-  def __init__(self, elements, name = None):
+  
+  def __init__(self, elements, name):
     '''
-    @type  elements: sequence of Job and WorkflowNodeGroup
-    @param elements: the elements belonging to the group.
+    @type  elements: sequence of Job and/or Group
+    @param elements: the elements belonging to the group
     @type  name: string
-    @param name: name of the group. 
-    If name is None the group will be named 'group'
+    @param name: name of the group
     '''
     self.elements = elements
-    if name:
-      self.name = name
-    else: 
-      self.name = "group"
+    self.name = name
 
 
 class Workflow(object):
   '''
   Workflow to be submitted using an instance of the WorkflowController class.
   '''
+  # string
   name = None
 
-  nodes = None
+  # sequence of Job
+  jobs = None
 
+  # description of the dependencies between jobs
+  # sequence of tuple (Job, Job)
   dependencies = None
 
+  # description of the workflow hierachical structure for displaying
+  # purpose only.
+  # sequence of Job and/or Group
+  root_group = None
+
+  # sequence of Groups
   groups = None
 
-  mainGroup = None
-
   def __init__(self, 
-               nodes, 
+               jobs, 
                dependencies, 
-               mainGroup = None,                groups = [], 
+               root_group = None,
                disposal_timeout = 168,):
     '''
-    @type  node: sequence of L{Job} 
-    @param node: job in the workflow
+    @type  jobs: sequence of L{Job} 
+    @param jobs: jobs in the workflow
     @type  dependencies: sequence of tuple (node, node) a node being 
     a L{Job}
     @param dependencies: dependencies between jobs.
-    @type  groups: sequence of sequence of L{WorkflowNodeGroup} and/or L{Job}
-    @param groups: (optional) provide a hierarchical structure to a workflow for displaying purpose only
-    @type  mainGroup: L{WorkflowNodeGroup}
-    @param mainGroup: (optional) lower level group.  
+    @type  root_group: Group or sequence of Job and/or Group
+    @param root_group: recursive structure describing the hierarchical structure of a workflow. For displaying purpose only.
     '''
     
     self.name = None
-    self.nodes = nodes
+    self.jobs = jobs
     self.dependencies = dependencies
-    self.groups= groups
     self.disposal_timeout = 168
-    if mainGroup:
-      self.mainGroup = mainGroup
+    
+    # Groups
+    if root_group:
+      if isinstance(root_group, Group):
+        self.root_group = root_group.elements
+      else:
+        self.root_group = root_group
+      self.groups = []
+      to_explore = []
+      for element in self.root_group:
+        if isinstance(element, Group):
+          to_explore.append(element)
+      while to_explore:
+        group = to_explore.pop()
+        self.groups.append(group)
+        for element in group.elements:
+          if isinstance(element, Group):
+            to_explore.append(element)
     else:
-      elements = []
-      for job in self.nodes:
-        elements.append(job) 
-      self.mainGroup = WorkflowNodeGroup(elements, "main_group")
-      
+      self.root_group = self.jobs
+      self.groups = []
+
 
 class WorkflowController(object):
   '''
@@ -341,7 +364,7 @@ class WorkflowController(object):
 
     #########################
     # Connection
-    self._mode = mode # 'local_no_disconnection' #(local debug)#        
+    self._mode = 'local_no_disconnection' #mode # (local debug)#        
 
     #########
     # LOCAL #
@@ -891,23 +914,25 @@ class WorkflowController(object):
     if not data:
       # check if the whole transfer ended
       transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
-      assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
-             transfer_action_info[2] == TR_DIR_CR_TO_C or 
-             transfer_action_info[2] == TR_MFF_CR_TO_C)
-      (status, progression) = self.transfer_status(transfer_id)
-      if transfer_action_info[2] == TR_FILE_CR_TO_C:
-        (file_size, transfered) = progression
-        if file_size == transfered:
-          self._engine_proxy.set_transfer_status(transfer_id,   
-                                                 FILES_ON_CLIENT_AND_CR)
-      if transfer_action_info[2] == TR_DIR_CR_TO_C or \
-         transfer_action_info[2] == TR_MFF_CR_TO_C:
-        (cumulated_file_size, 
-        cumulated_transmissions, 
-        files_transfer_status) = progression
-        if cumulated_transmissions == cumulated_file_size:
-          self._engine_proxy.set_transfer_status(transfer_id,   
-                                                 FILES_ON_CLIENT_AND_CR)
+      if not transfer_action_info == None: # None if stdout and stderr
+        print "transfer_action_info " + repr(transfer_action_info)
+        assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
+              transfer_action_info[2] == TR_DIR_CR_TO_C or 
+              transfer_action_info[2] == TR_MFF_CR_TO_C)
+        (status, progression) = self.transfer_status(transfer_id)
+        if transfer_action_info[2] == TR_FILE_CR_TO_C:
+          (file_size, transfered) = progression
+          if file_size == transfered:
+            self._engine_proxy.set_transfer_status(transfer_id,   
+                                                  FILES_ON_CLIENT_AND_CR)
+        if transfer_action_info[2] == TR_DIR_CR_TO_C or \
+          transfer_action_info[2] == TR_MFF_CR_TO_C:
+          (cumulated_file_size, 
+          cumulated_transmissions, 
+          files_transfer_status) = progression
+          if cumulated_transmissions == cumulated_file_size:
+            self._engine_proxy.set_transfer_status(transfer_id,   
+                                                  FILES_ON_CLIENT_AND_CR)
 
     return data
     
@@ -1073,7 +1098,7 @@ class WorkflowController(object):
     submitted workflow element (Job or file transfer).
     
     @type  workflow: L{Workflow}
-    @param workflow: workflow description (nodes and node dependencies)
+    @param workflow: workflow description
     @type  expiration_date: datetime.datetime
     @type  queue: string
     @param queue: the name of the queue to be used. Default queue if None.
@@ -1090,7 +1115,7 @@ class WorkflowController(object):
   
   def delete_workflow(self, workflow_id):
     '''
-    Removes a workflow and all its associated nodes (file transfers and jobs)
+    Removes a workflow and all its associated elements (file transfers and jobs)
     '''
     self._engine_proxy.delete_workflow(workflow_id)
     
@@ -1203,7 +1228,7 @@ class WorkflowController(object):
     return self._engine_proxy.workflow_status(wf_id)
   
   
-  def workflow_nodes_status(self, wf_id, group = None):
+  def workflow_elements_status(self, wf_id, group = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and requests to the database.
@@ -1212,7 +1237,7 @@ class WorkflowController(object):
     @param wf_id: The workflow identifier
     @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
     '''
-    wf_status = self._engine_proxy.workflow_nodes_status(wf_id)
+    wf_status = self._engine_proxy.workflow_elements_status(wf_id)
     if not wf_status:
       # TBI raise ...
       return
@@ -1322,19 +1347,19 @@ class WorkflowController(object):
     open(stdout_file_path, 'wb') 
     if engine_stdout_file and stdout_transfer_action_info:
       self._transfer_file_from_cr(stdout_file_path, 
-                          engine_stdout_file, 
-                          stdout_transfer_action_info[0], 
-                          stdout_transfer_action_info[1], 
-                          buffer_size)
+                                  engine_stdout_file, 
+                                  stdout_transfer_action_info[0], 
+                                  stdout_transfer_action_info[1], 
+                                  buffer_size)
   
     if stderr_file_path:
       open(stderr_file_path, 'wb') 
       if engine_stderr_file and stderr_transfer_action_info:
           self._transfer_file_from_cr(stderr_file_path, 
-                              engine_stderr_file, 
-                              stderr_transfer_action_info[0], 
-                              stderr_transfer_action_info[1], 
-                              buffer_size)
+                                      engine_stderr_file, 
+                                      stderr_transfer_action_info[0], 
+                                      stderr_transfer_action_info[1], 
+                                      buffer_size)
     
     
   ########## JOB CONTROL VIA DRMS ########################################

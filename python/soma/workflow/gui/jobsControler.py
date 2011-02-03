@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from soma.workflow.constants import *
-from soma.workflow.client import Job, SharedResourcePath, FileTransfer,  WorkflowNodeGroup, Workflow, WorkflowController
+from soma.workflow.client import Job, SharedResourcePath, FileTransfer,  Group, Workflow, WorkflowController
 import soma.workflow.engine
 import socket
 import os
@@ -172,7 +172,7 @@ class JobsControler(object):
   def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
    
     to_transfer = []
-    for ft in workflow.transfers.itervalues():
+    for ft in workflow.transfer_dict.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
       if status == FILES_ON_CLIENT:
         to_transfer.append((0, ft.engine_path))
@@ -186,7 +186,7 @@ class JobsControler(object):
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
-    for ft in workflow.transfers.itervalues():
+    for ft in workflow.transfer_dict.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
       if status == FILES_ON_CR:
         to_transfer.append((0, ft.engine_path))
@@ -218,12 +218,12 @@ class JobsControler(object):
       os.remove(dot_file_path)
     file = open(dot_file_path, "w")
     print >> file, "digraph G {"
-    for node in workflow.nodes:
+    for node in workflow.jobs:
       current_id = current_id + 1
       names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
     for ar in workflow.dependencies:
       print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
-    for node in workflow.nodes:
+    for node in workflow.jobs:
       if isinstance(node, Job):
         if node.job_id == -1:
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
@@ -610,12 +610,10 @@ class WorkflowExamples(object):
     test_multi_file_format = self.job_test_multi_file_format()
         
     # building the workflow
-    nodes = [test_dir_contents, test_multi_file_format]
+    jobs = [test_dir_contents, test_multi_file_format]
     dependencies = []
-    
-    mainGroup = WorkflowNodeGroup(nodes)
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [])
+       
+    workflow = Workflow(jobs, dependencies)
     
     return workflow
       
@@ -626,13 +624,11 @@ class WorkflowExamples(object):
     test_command_job = self.job_test_command_1()
         
     # building the workflow
-    nodes = [test_command_job]
+    jobs = [test_command_job]
     
     dependencies = []
-    
-    mainGroup = WorkflowNodeGroup([test_command_job])
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [])
+     
+    workflow = Workflow(jobs, dependencies)
     
     return workflow
       
@@ -645,18 +641,17 @@ class WorkflowExamples(object):
     job4 = self.job4()
     
     #building the workflow
-    nodes = [job1, job2, job3, job4]
+    jobs = [job1, job2, job3, job4]
   
     dependencies = [(job1, job2), 
                     (job1, job3),
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
-    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
-    mainGroup = WorkflowNodeGroup([group_2, job4])
+    group_1 = Group(name='group_1', elements=[job2, job3])
+    group_2 = Group(name='group_2', elements=[job1, group_1])
     
-    workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+    workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
     
     return workflow
   
@@ -688,7 +683,7 @@ class WorkflowExamples(object):
     job3 = self.job3()
     job4 = self.job4()
           
-    nodes = [job1, job2, job3, job4]
+    jobs = [job1, job2, job3, job4]
   
 
     dependencies = [(job1, job2), 
@@ -696,11 +691,10 @@ class WorkflowExamples(object):
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
-    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
-    mainGroup = WorkflowNodeGroup([group_2, job4])
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+    group_1 = Group(name='group_1', elements=[job2, job3])
+    group_2 = Group(name='group_2', elements=[job1, group_1])
+   
+    workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
     
     return workflow
   
@@ -735,18 +729,17 @@ class WorkflowExamples(object):
       
       
            
-    nodes = [job1, job2, job3, job4]
+    jobs = [job1, job2, job3, job4]
 
     dependencies = [(job1, job2), 
                     (job1, job3),
                     (job2, job4), 
                     (job3, job4)]
   
-    group_1 = WorkflowNodeGroup([job2, job3], 'group_1')
-    group_2 = WorkflowNodeGroup([job1, group_1], 'group_2')
-    mainGroup = WorkflowNodeGroup([group_2, job4])
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [group_1, group_2])
+    group_1 = Group(name='group_1', elements=[job2, job3])
+    group_2 = Group(name='group_2', elements=[job1, group_1])
+     
+    workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
     
     return workflow
   
@@ -756,93 +749,81 @@ class WorkflowExamples(object):
     workflow2 = self.simpleExampleWithException1()
     workflow3 = self.simpleExampleWithException2()
     
-    nodes = workflow1.nodes
-    nodes.extend(workflow2.nodes)
-    nodes.extend(workflow3.nodes)
+    jobs = workflow1.jobs
+    jobs.extend(workflow2.jobs)
+    jobs.extend(workflow3.jobs)
     
     dependencies = workflow1.dependencies
     dependencies.extend(workflow2.dependencies)
     dependencies.extend(workflow3.dependencies)
     
-    group1 = WorkflowNodeGroup(workflow1.mainGroup.elements, "simple example")
-    group2 = WorkflowNodeGroup(workflow2.mainGroup.elements, "simple with exception in Job1")
-    group3 = WorkflowNodeGroup(workflow3.mainGroup.elements, "simple with exception in Job3")
-    mainGroup = WorkflowNodeGroup([group1, group2, group3])
+    group1 = Group(name="simple example", elements=workflow1.root_group)
+    group2 = Group(name="simple with exception in Job1",          
+                   elements=workflow2.root_group)
+    group3 = Group(name="simple with exception in Job3",
+                   elements=workflow3.root_group)
      
-    groups = [group1, group2, group3]
-    groups.extend(workflow1.groups)
-    groups.extend(workflow2.groups)
-    groups.extend(workflow3.groups)
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, groups)
+    workflow = Workflow(jobs, dependencies, root_group=[group1, group2, group3])
     return workflow
   
   
   def ten_jobs(self):
       
-    nodes = []
+    jobs = []
     for i in range(0,10):
       job = self.job_sleep(60)
-      nodes.append(job)
+      jobs.append(job)
      
     dependencies = []
     
-    mainGroup = WorkflowNodeGroup(nodes)
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [])
+    workflow = Workflow(jobs, dependencies)
     
     return workflow
   
   def hundred_of_jobs(self):
     
-    nodes = []
+    jobs = []
     for i in range(0,100):
       job = self.job_sleep(60)
-      nodes.append(job)
+      jobs.append(job)
      
     dependencies = []
-    
-    mainGroup = WorkflowNodeGroup(nodes)
-    
-    workflow = Workflow(nodes, dependencies, mainGroup, [])
+ 
+    workflow = Workflow(jobs, dependencies)
   
     return workflow
 
 
   def fake_pipelineT1(self):
-    
-    nodes = []
+    jobs = []
     dependencies = []
-    groups = []
-    mainGroupList = []
+    root_group = []
     for i in range(0, 100):
       job1 = self.job_sleep(60) 
       job1.name = "Brain extraction"
-      nodes.append(job1)
+      jobs.append(job1)
       job2 = self.job_sleep(120) 
       job2.name ="Gray/white segmentation"
-      nodes.append(job2)
+      jobs.append(job2)
       job3 = self.job_sleep(400) 
       job3.name = "Left hemisphere sulci recognition"
-      nodes.append(job3)
+      jobs.append(job3)
       job4 = self.job_sleep(400) 
       job4.name = "Right hemisphere sulci recognition"
-      nodes.append(job4)
+      jobs.append(job4)
 
       dependencies.append((job1, job2))
       dependencies.append((job2, job3))
       dependencies.append((job2, job4))
       
-      groupSulci = WorkflowNodeGroup([job3, job4], "Sulci recognition")
-      groupPt1 = WorkflowNodeGroup([job1, job2, groupSulci], "sulci recognition -- subject " + repr(i))
+      group_sulci = Group(name="Sulci recognition", 
+                          elements=[job3, job4])
+      group_subject = Group(name="sulci recognition -- subject "+ repr(i), 
+                            elements=[job1, job2, group_sulci])
 
-      groups.append(groupSulci)
-      groups.append(groupPt1)
-      mainGroupList.append(groupPt1) 
-      
-    mainGroup = WorkflowNodeGroup(mainGroupList)
+      root_group.append(group_subject)
    
-    workflow = Workflow(nodes, dependencies, mainGroup, groups)
+    workflow = Workflow(jobs, dependencies, root_group)
 
     return workflow
     

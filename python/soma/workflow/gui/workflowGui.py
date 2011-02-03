@@ -1,7 +1,7 @@
 from __future__ import with_statement
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-from soma.workflow.client import Workflow, WorkflowNodeGroup, FileTransfer, SharedResourcePath, Job
+from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job
 from soma.workflow.constants import *
 from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
 import time
@@ -1402,7 +1402,7 @@ class GuiModel(QtCore.QObject):
               else:
                 #print " ==> communication with the server " + repr(self.wf_id)
                 #begining = datetime.now()
-                wf_status = self.current_connection.workflow_nodes_status(self.current_workflow.wf_id)
+                wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
                 #end = datetime.now() - begining
                 #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
             except ConnectionClosedError, e:
@@ -1484,7 +1484,7 @@ class GuiModel(QtCore.QObject):
       self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
       self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
     try:
-      wf_status = self.current_connection.workflow_nodes_status(self.current_workflow.wf_id)
+      wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
     except ConnectionClosedError, e:
       self.emit(QtCore.SIGNAL('connection_closed_error()'))
     else: 
@@ -1551,7 +1551,7 @@ class GuiWorkflow(object):
   
   def __init__(self, workflow):
     
-    print("wf " +repr(workflow))
+    #print("wf " +repr(workflow))
     self.name = workflow.name 
   
     if isinstance(workflow, EngineWorkflow):
@@ -1577,7 +1577,7 @@ class GuiWorkflow(object):
     w_js = set([]) 
     w_fts = set([]) 
    
-    for job in workflow.nodes:
+    for job in workflow.jobs:
       w_js.add(job)
       
     # Processing the Jobs to create the corresponding GuiJob instances
@@ -1599,11 +1599,11 @@ class GuiWorkflow(object):
       
     # Create the GuiGroup instances
     self.root_item = GuiGroup( self, 
-                                  it_id = -1, 
-                                  parent = -1, 
-                                  row = -1, 
-                                  data = workflow.mainGroup, 
-                                  children_nb = len(workflow.mainGroup.elements))
+                              it_id = -1, 
+                              parent = -1, 
+                              row = -1, 
+                              data = workflow.root_group, 
+                              children_nb = len(workflow.root_group))
                   
 
     for group in workflow.groups:
@@ -1611,18 +1611,18 @@ class GuiWorkflow(object):
       id_cnt = id_cnt + 1
       ids[group] = item_id
       self.items[item_id] = GuiGroup( self,
-                                        it_id = item_id, 
-                                        parent = -1, 
-                                        row = -1, 
-                                        data = group, 
-                                        children_nb = len(group.elements))
+                                      it_id = item_id, 
+                                      parent = -1, 
+                                      row = -1, 
+                                      data = group, 
+                                      children_nb = len(group.elements))
 
     # parent and children research for jobs and groups
     for item in self.items.values():
       if isinstance(item, GuiGroup) or isinstance(item, GuiJob):
-        if item.data in workflow.mainGroup.elements:
+        if item.data in workflow.root_group:
           item.parent = -1
-          item.row = workflow.mainGroup.elements.index(item.data)
+          item.row = workflow.root_group.index(item.data)
           self.root_item.children[item.row]=item.it_id
         for group in workflow.groups:
           if item.data in group.elements:
