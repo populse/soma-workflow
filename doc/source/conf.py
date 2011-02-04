@@ -17,6 +17,7 @@ import sys, os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0,os.path.abspath("../../python/soma/workflow/"))
 
 # -- General configuration -----------------------------------------------------
 
@@ -258,3 +259,4 @@ epub_copyright = u'2011, Soizic Laguitton'
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+

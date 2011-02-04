@@ -4,13 +4,105 @@
 Examples
 ========
 
+Simple workflows
+================
 
 
-Simple Workflow
----------------
+Example 1:
+---------- 
 
-Workflow with file transfer example
------------------------------------
+Create the workflow: ::
 
-Workflow with SharedResourcePath example
-----------------------------------------
+  from soma.workflow.client import Job, Workflow, WorkflowController
+
+  job_1 = Job(command=["sleep", "60"], name="job 1")
+  job_2 = Job(command=["sleep", "60"], name="job 2")
+  job_3 = Job(command=["sleep", "60"], name="job 3")
+  job_4 = Job(command=["sleep", "60"], name="job 4")
+
+  jobs = [job_1, job_2, job_3, job_4]
+  dependencies = [(job_1, job_2), 
+                  (job_1, job_3), 
+                  (job_2, job_4), 
+                  (job_3, job_4)]
+
+  workflow = Workflow(jobs=jobs, 
+                      dependencies=dependencies)
+
+Submit the workflow: ::
+
+  controller = WorkflowController("Titan", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                             name="simple example")
+
+Run the python script and monitor the execution of the workflow using 
+the GUI (soma_workflow_gui command):
+
+.. image:: images/simple_example_gui.png
+  :scale: 60
+
+You can close and open the GUI at any time. It won't interrupt the workflow
+execution.
+
+
+Example 2: with Group
+----------------------
+
+Create the workflow: ::
+
+  from soma.workflow.client import Job, Workflow, Group, WorkflowController
+
+  jobs = []
+  dependencies = []
+  group_elements = []
+
+  first_job = Job(command=["sleep", "10"], name="first job")
+  last_job = Job(command=["sleep", "10"], name="last job")
+
+  jobs.append(first_job)
+  jobs.append(last_job)
+
+  for i in range(0, 30):
+    job = Job(command=["sleep", "60"], name="job " + repr(i))
+
+    jobs.append(job)
+
+    dependencies.append((first_job, job))
+    dependencies.append((job, last_job))
+
+    group_elements.append(job)
+    
+  
+  thirty_jobs_group = Group(elements=group_elements,
+                            name="my 30 jobs")
+
+  workflow = Workflow(jobs=jobs,
+                      dependencies= dependencies,
+                      root_group=[first_job, thirty_jobs_group, last_job])
+
+Submit the workflow: ::
+
+  controller = WorkflowController("Titan", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                             name="Simple workflow with group")
+
+
+Run the python script and monitor the execution of the workflow using 
+the GUI (soma_workflow_gui command):
+
+.. image:: images/simple_example_group_gui.png
+  :scale: 60
+  
+  
+
+Workflows with FileTransfer
+===========================
+
+**TO DO**
+
+Workflows with SharedResourcePath
+=================================
+
+**TO DO**

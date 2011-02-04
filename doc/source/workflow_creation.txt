@@ -4,37 +4,38 @@
 Workflow creation API
 =====================
 
-The workflows are created using the soma.workflow.client API, see :ref:`examples` 
-for a quick start.
+The workflows are created using the soma.workflow.client API. This page is the 
+documentation of the workflow, job and file transfer objects, 
 
-Eventually, the objective is also to generate workflows from pipeline softwares.
-The automatic workflow generation is already available for some `BrainVISA 
-<http://brainvisa.info/>`_  pipelines. 
+.. note::
+  Eventually, the objective of this API is also to generate workflows from
+  pipeline softwares. The automatic workflow generation is already available for 
+  some `BrainVISA <http://brainvisa.info/>`_  pipelines. 
 
-Job
-===
-
-.. autoclass:: soma.workflow.client.Job
-
-
-
+.. seealso:: :ref:`examples` for a quick start.
 
 Workflow
 ========
 
-.. autoclass:: soma.workflow.client.Workflow
+.. autoclass:: client.Workflow
 
 Group
 =====
 
-.. autoclass:: soma.workflow.client.Group
+.. autoclass:: client.Group
 
-File transfers
-==============
+Job
+===
 
-.. autoclass:: soma.workflow.client.FileTransfer
+.. autoclass:: client.Job
 
-Shared resource path
+
+FileTransfer
+============
+
+.. autoclass:: client.FileTransfer
+
+SharedResourcePath
 ====================
 
-.. autoclass:: soma.workflow.client.SharedResourcePath
+.. autoclass:: client.SharedResourcePath

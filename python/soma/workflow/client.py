@@ -14,7 +14,7 @@ The contrustor takes a resource id, login and password as parameters and
 connects to the resource. One WorkflowController instance is connected to 
 only one resource.
 
-The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, worklfows, and file transfers 
+The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, workflows, and file transfers 
 objects to be used in the WorkflowControler interface.
 
 Definitions:
@@ -44,69 +44,114 @@ from soma.workflow.constants import *
 #-------------------------------------------------------------------------------
 
 class Job(object):
-  #'''
-  #Job representation in soma-workflow. 
-  
-  #The job parameters are identical to the WorkflowController.submit_job method 
-  #arguments except command, referenced_input_files and references_output_files.
-  
-  #@type  command: sequence of string, 
-                              #L{SharedResourcePath},
-                              #L{FileTransfer},
-                              #tuple (relative path, L{FileTransfer}),
-                              #sequence of L{SharedResourcePath},
-                              #sequence of L{FileTransfer},
-                              #and/or sequence of tuple 
-                              #(relative path, L{FileTransfer})
-  #@param command: The command to execute. 
-                  #On the computing resource side, the L{SharedResourcePath} and
-                  #L{FileTransfer} objects will be replaced by the appropriate 
-                  #path before the job execution.
-                  #The tuple (absolute path, L{FileTransfer}) can be use to 
-                  #refer to a file in a transfered directory. The tuple will be 
-                  #replaced by the path:
-                  #"computing_resource_dir_path/absolute_path"
-                  #The sequence(s) of L{SharedResourcePath}, L{FileTransfer},
-                  #and tuple (absolute path, L{FileTransfer}) will be replaced 
-                  #by the string:
-                  #"['/somewhere/file1', '/somewhere/file2', '/somewhere/path3']"
-                  
-  #@type referenced_input_files: sequence of L{FileTransfer}
-  #@param referenced_input_files: list of all tranfered input file required
-                                 #for the job to run.
-  #@type referenced_output_files: sequence of L{FileTransfer}
-  #@param referenced_input_files: list of all transfered output file required
-                                 #for the job to run.
-                                 
-  #(See the WorkflowController.submit_job method for a description of each parameter)
-  #'''
   '''
   Job representation.
-
   
+  .. note::
+    The command is the only argument required to create a Job.
+    It's also useful to fill the job name for the workflow display in the GUI.
+
+  **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)*
+    
+    The command to execute. It can't be empty. In case of a shared file system 
+    the command is a sequence of string. 
+
+    In the other cases, the FileTransfer and SharedResourcePath objects will be 
+    replaced by the appropriate path before the job execution. 
+
+    The tuples (relative_path, FileTransfer) can be used to refer to a file in a 
+    transfered directory.
+
+    The sequences of FileTransfer, SharedResourcePath or tuple (relative_path, 
+    FileTransfer) will be replaced by the string "['path1', 'path2', 'path3']" 
+    before the job execution. The FileTransfer, SharedResourcePath or tuple
+    (relative_path, FileTransfer) are replaced by the appropriate path inside 
+    the sequence.
+
+  **name**: *string*
+    Name of the Job which will be displayed in the GUI
+  
+  **referenced_input_files**: *sequence of FileTransfer*
+    List of the TransferedFile which are input of the Job. In other words, 
+    FileTransfer which are requiered by the Job to run. It includes the
+    stdin if you use one.
+
+  **referenced_output_files**: *sequence of FileTransfer*
+    List of the TransferFile which are output of the Job. In other words, the 
+    FileTransfer which will be created or modified by the Job.
+
+  **stdin**: *string or FileTransfer or SharedRessourcePath*
+    Path to the file which will be read as input stream by the Job.
+  
+  **join_stderrout**: *boolean*
+    Specifies whether the error stream should be mixed with the output stream.
+
+  **stdout_file**: *string or FileTransfer or SharedRessourcePath*
+    Path of the file where the standard output stream of the job will be 
+    redirected.
+
+  **stderr_file**: *string or FileTransfer or SharedRessourcePath*
+    Path of the file where the standard error stream of the job will be 
+    redirected.
+
+  .. note::
+    Set stdout_file and stderr_file only if you need to redirect the standard 
+    output to a specific file. Indeed, even if they are not set the standard
+    outputs will always be available through the WorklfowController API.
+
+  **working_directory**: *string or FileTransfer or SharedRessourcePath*
+    Path of the directory where the job will be executed. The working directory
+    is useful if you Job use relative file path for example.
+
+  **parallel_job_info**: *tuple(string, int)*
+    The parallel job information must be set if the Job is parallel (ie. made to 
+    run on several CPU).
+    The parallel job information is a tuple: (name of the configuration, 
+    maximum number of CPU used by the Job).
+    The configuration name is the type of parallel Job. Example: MPI or OpenMP.
+
+  .. warning::
+    The computing resources must be configured explicitly to use this feature.
+
+  ..
+    **disposal_time_out**: int
+    Only requiered outside of a workflow
+
   '''
 
-
-  name = None
-
+  # sequence of sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)
   command = None
 
+  # string
+  name = None
+
+  # sequence of FileTransfer
   referenced_input_files = None
-
+  
+  # sequence of FileTransfer
   referenced_output_files = None
-
+ 
+  # string (path)
   stdin = None
-
+  
+  # boolean
   join_stderrout = None
 
+  # string (path)
   stdout_file = None
-
+ 
+  # string (path)
   stderr_file = None
-  
+ 
+  # string (path)
   working_directory = None
-
+  
+  # tuple(string, int)
   parallel_job_info = None
 
+  # int (in hours)
+  disposal_timeout = None
+ 
   def __init__( self, 
                 command,
                 referenced_input_files=None,
@@ -119,7 +164,10 @@ class Job(object):
                 stderr_file=None,
                 working_directory=None,
                 parallel_job_info=None):
-    self.name = name
+    if not name:
+      self.name = command[0]
+    else:
+      self.name = name
     self.command = command
     if referenced_input_files: 
       self.referenced_input_files = referenced_input_files
@@ -134,71 +182,169 @@ class Job(object):
     self.stderr_file = stderr_file
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
-    
-    
-class SharedResourcePath(object):
-  '''
-  Representation of path universaly over the resource.
-  The information required is:
-    - a namespace
-    - a database uuid
-    - the relative path of the file in the database
-  The SharedResourcePath objects can be used instead of file path to describe job 
-  (Job.command, Job.stdin, Job.stdout_file and Job.stderr_file)
-  When a Workflow or a Job is submitted to a resource with the JobClient API, 
-  the SharedResourcePath objects are replaced by the absolut path of the file on the resource,
-  provided the namespace and database are configured on the cluster (OCFG_U_PATH_TRANSLATION_FILES).   
-  '''
-  
-  relative_path = None
-  
-  namespace = None
 
-  uuid = None
 
-  def __init__(self,
-               relative_path,
-               namespace,
-               uuid,
-               disposal_timeout = 168):
-   
-    self.relative_path = relative_path
-    self.namespace = namespace
-    self.uuid = uuid
-    self.disposal_timout = disposal_timeout
+class Workflow(object):
+  '''
+  Workflow representation.
+
+  **jobs**: *sequence of Job*
+    Workflow jobs.
+
+  **dependencies**: *sequence of tuple (Job, Job)*
+    Dependencies between the jobs of the workflow.
+    If a job_a needs to be executed before a job_b can run: the tuple 
+    (job_a, job_b) must be added to the workflow dependencies. job_a and job_b
+    must belong to workflow.jobs.
+
+  **name**: *string*
+    Name of the workflow which will be displayed in the GUI. 
+    Default: workflow_id once submitted
+
+  **root_group**: *sequence of Job and/or Group*
+    Recursive description of the workflow hierarchical structure. For displaying
+    purpose only.
+
+  .. note::
+    root_group is only used to display nicely the workflow in the GUI. It
+    doesn't have any impact on the workflow execution.
+    
+    If root_group is not set, all the jobs of the workflow will be 
+    displayed at the root level in the GUI tree view.
+  '''
+  # string
+  name = None
+
+  # sequence of Job
+  jobs = None
+
+  # sequence of tuple (Job, Job)
+  dependencies = None
+
+  # sequence of Job and/or Group 
+  root_group = None
+
+  # sequence of Groups built from the root_group
+  groups = None
+
+  def __init__(self, 
+               jobs, 
+               dependencies, 
+               root_group = None,
+               disposal_timeout = 168,):
+    '''
+    TOTO
+    '''
+    self.name = None
+    self.jobs = jobs
+    self.dependencies = dependencies
+    self.disposal_timeout = 168
+    
+    # Groups
+    if root_group:
+      if isinstance(root_group, Group):
+        self.root_group = root_group.elements
+      else:
+        self.root_group = root_group
+      self.groups = []
+      to_explore = []
+      for element in self.root_group:
+        if isinstance(element, Group):
+          to_explore.append(element)
+      while to_explore:
+        group = to_explore.pop()
+        self.groups.append(group)
+        for element in group.elements:
+          if isinstance(element, Group):
+            to_explore.append(element)
+    else:
+      self.root_group = self.jobs
+      self.groups = []
+
+
+  
+class Group(object):
+  '''
+  Hierarchical structure of a workflow.
+
+  .. note:
+    It only has a displaying role and doesn't have any impact on the workflow 
+    execution.
+
+  **name**: *string*
+    Name of the Group which will be displayed in the GUI.
+
+  **elements**: *sequence of Job and/or Group*
+    The elements (Job or Group) belonging to the group.
+  '''
+  #string
+  name = None
+
+  #sequence of Job and/or Group
+  elements = None
+  
+  def __init__(self, elements, name):
+    '''
+    @type  elements: sequence of Job and/or Group
+    @param elements: the elements belonging to the group
+    @type  name: string
+    @param name: name of the group
+    '''
+    self.elements = elements
+    self.name = name
+
 
 class FileTransfer(object):
   '''
-  File/directory transfer representation in a workflow.
-  Use client_paths if the transfer involves several associated files and/or directories, eg:
-        - file serie 
-        - in the case of file format associating several file and/or directories
-          (ex: a SPM image is stored in 2 files: .img and .hdr)
-  In this case, set client_path to one the files (eq: .img).
-  In other cases (1 file or 1 directory) the client_paths must be set to None.
+  File/directory transfer representation
+  
+  .. note::
+    FileTransfers objects are only required if the user and computing resources
+    have a separated file system.
+  
+  **client_path**: *string*
+    Path of the file or directory on the user's file system.
+
+  **initial_status**: *constants.FILES_DONT_EXIST or constants.FILES_DONT_EXIST*
+    * constants.FILES_ON_CLIENT for workflow input files
+      The file(s) will need to be transfered on the computing resource side
+    * constants.FILES_DONT_EXIST for workflow output files
+      The file(s) will be created by a job on the computing resource side.
+
+  **client_paths**: sequence of string.
+    Sequence of path. Files to transfer if the FileTransfers concerns a file
+    series or if the file format involves several associated files or
+    directories (see the note below).
+
+  **name**: *string*
+    Name of the FileTransfer which will be displayed in the GUI. 
+    Default: client_path + "transfer"
+ 
+  .. note::
+    Use client_paths if the transfer involves several associated files and/or 
+    directories. Examples:
+
+      * file series
+      * file format associating several file and/or directories 
+        (ex: a SPM images are stored in 2 associated files: .img and .hdr)
+        In this case, set client_path to one the files (ex: .img) and 
+        client_paths contains all the files (ex: .img and .hdr files)
+
+     In other cases (1 file or 1 directory) the client_paths must be set to None.
   '''
 
-  # client path
   # string
   client_path = None
 
-  # sequence of file to transfer if transfering a file serie or if the file 
-  # format involve serveral files of directories.
-  # sequence of string or None
+  # sequence of string
   client_paths = None
 
-  # intial status 
-  # constants.FILES_DONT_EXIST for output file(s) 
-  #     the files will be created by a job on the computing resource side.
-  # constants.FILES_ON_CLIENT for input file(s) 
-  #     the files will need to be transfered on the computing resource side
+  # constants.FILES_DONT_EXIST constants.FILES_ON_CLIENT
   initial_status = None
 
   # int (hours)
   disposal_timeout = None
 
-  # name of the file transfer 
-  # defaut: "client path transfer"
   # string
   name = None
 
@@ -225,92 +371,51 @@ class FileTransfer(object):
     else:
       self.initial_status = FILES_DONT_EXIST
 
-    
-class Group(object):
-  '''
-  Describes the hierachical structure of a workflow.
-  It only has a displaying role and doen't have any impact on the 
-  workflow execution.
-  '''
-  #string
-  name = None
 
-  #sequence of Job and/or Group
-  elements = None
+
+
+class SharedResourcePath(object):
+  '''
+  Representation of path which is valid on either user's or computing resource 
+  file system.
+
+  .. note::
+    SharedResourcePath objects are only required if the user and computing
+    resources have a separated file system.
+
+  **namespace**: *string*
+    Namespace for the path. That way several applications can use the same 
+    identifiers without risk.
+
+  **uuid**: *string*
+    Identifier of the absolute path. 
+
+  **relative_path**: *string*
+    Relative path of the file if the absolute path is a directory path. 
+
+  .. warning::
+    The namespace and uuid must exist in the translations files configured on 
+    the computing resource side.  
+  '''
   
-  def __init__(self, elements, name):
-    '''
-    @type  elements: sequence of Job and/or Group
-    @param elements: the elements belonging to the group
-    @type  name: string
-    @param name: name of the group
-    '''
-    self.elements = elements
-    self.name = name
+  relative_path = None
+  
+  namespace = None
+
+  uuid = None
+
+  def __init__(self,
+               relative_path,
+               namespace,
+               uuid,
+               disposal_timeout = 168):
+    self.relative_path = relative_path
+    self.namespace = namespace
+    self.uuid = uuid
+    self.disposal_timout = disposal_timeout
 
 
-class Workflow(object):
-  '''
-  Workflow to be submitted using an instance of the WorkflowController class.
-  '''
-  # string
-  name = None
 
-  # sequence of Job
-  jobs = None
-
-  # description of the dependencies between jobs
-  # sequence of tuple (Job, Job)
-  dependencies = None
-
-  # description of the workflow hierachical structure for displaying
-  # purpose only.
-  # sequence of Job and/or Group
-  root_group = None
-
-  # sequence of Groups
-  groups = None
-
-  def __init__(self, 
-               jobs, 
-               dependencies, 
-               root_group = None,
-               disposal_timeout = 168,):
-    '''
-    @type  jobs: sequence of L{Job} 
-    @param jobs: jobs in the workflow
-    @type  dependencies: sequence of tuple (node, node) a node being 
-    a L{Job}
-    @param dependencies: dependencies between jobs.
-    @type  root_group: Group or sequence of Job and/or Group
-    @param root_group: recursive structure describing the hierarchical structure of a workflow. For displaying purpose only.
-    '''
-    
-    self.name = None
-    self.jobs = jobs
-    self.dependencies = dependencies
-    self.disposal_timeout = 168
-    
-    # Groups
-    if root_group:
-      if isinstance(root_group, Group):
-        self.root_group = root_group.elements
-      else:
-        self.root_group = root_group
-      self.groups = []
-      to_explore = []
-      for element in self.root_group:
-        if isinstance(element, Group):
-          to_explore.append(element)
-      while to_explore:
-        group = to_explore.pop()
-        self.groups.append(group)
-        for element in group.elements:
-          if isinstance(element, Group):
-            to_explore.append(element)
-    else:
-      self.root_group = self.jobs
-      self.groups = []
 
 
 class WorkflowController(object):
@@ -1033,7 +1138,7 @@ class WorkflowController(object):
     It won't be used if the stdout_file argument is not set. 
     
     @type  working_directory: string
-    @param working_directory: his argument can be set to choose the directory where 
+    @param working_directory: this argument can be set to choose the directory where 
     the job will be executed. (optional) 
 
     @type  parallel_job_info: tuple (string, int)

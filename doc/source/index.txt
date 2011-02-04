@@ -3,8 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
 Welcome to soma-workflow documentation!
 =======================================
+
+..
+  .. image:: images/gui_overview.*
+    :align: right
+    :scale: 40
 
 Soma-workflow provides a homogeneous and single way to submit and monitor 
 parallel computing to various computing resources (laptops, workstation farms, 
@@ -22,7 +28,8 @@ Soma-workflow is an open source Python application.
 The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here. <ttps://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_
 
 
-**The documentation is under construction.**
+.. warning:: 
+  The documentation is under construction.
 
 
 Main Features
@@ -80,40 +87,10 @@ Contents
 
 * :ref:`search`
 
-:Release: |release|
-:Date: |today|
-
-
-
-
-
 ..
-  overview 
-  
-  Introduction
-  Main features
+  :Release: |release|
+  :Date: |today|
 
-  user's manual
-
-  Introduction
-  Requirements
-  Overview of the architecture 
-  Installation 
-  Workflow, job and file transfers
-  Using the GUI
-  Using the python API
-  Examples
-  
-
-  administrator's manual  
-
-  Introduction
-  Requirements
-  System architecture 
-  Plan the installation
-    What will be installed?
-    System configuration
-  Installation and test of the installation
 
 
 
