@@ -36,7 +36,7 @@ Submit the workflow: ::
   controller.submit_workflow(workflow=workflow,
                              name="simple example")
 
-Run the python script and monitor the execution of the workflow using 
+Run the Python script and monitor the execution of the workflow using 
 the GUI (soma_workflow_gui command):
 
 .. image:: images/simple_example_gui.png
@@ -89,7 +89,7 @@ Submit the workflow: ::
                              name="Simple workflow with group")
 
 
-Run the python script and monitor the execution of the workflow using 
+Run the Python script and monitor the execution of the workflow using 
 the GUI (soma_workflow_gui command):
 
 .. image:: images/simple_example_group_gui.png

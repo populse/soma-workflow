@@ -35,6 +35,9 @@ FileTransfer
 
 .. autoclass:: client.FileTransfer
 
+
+.. _shared-resource-path-api:
+
 SharedResourcePath
 ====================
 

@@ -4,7 +4,7 @@ Client installation and configuration
 
 This page describes the installation and configuration of the soma-workflow
 client. The installation of a client supposes that one or several soma-workflow 
-database servers are installed on one or serveral remote of local computing
+database servers are installed on one or several remote of local computing
 resources (see :ref:`server`).
 
 
@@ -26,7 +26,8 @@ Installation
 
 1. *Install the soma-workflow python modules and command.* (under construction)
 
-2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/soma-workflow/config. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable.
+2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the 
+/etc/ directory.
 
 
 .. _client_configuration:

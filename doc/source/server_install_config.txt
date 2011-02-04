@@ -49,21 +49,22 @@ using this implementation
 \** full testing in progress
  
 
-Server intallation
-==================
+Server installation
+===================
 
 1. *svn export/ cmake . / make / make install* (under construction)
 
 2. Choose a resource identifier for the computing resource, ex: "Titan"
 
-3. Create a configuration file (see :ref:`server_configuration`) at the location $HOME/soma-workflow/config. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path.  
+3. Create a configuration file (see :ref:`server_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or 
+put it in the /etc/ directory.  
 
 2. Start a Pyro name server with the command pyro-ns -m 
 
 4. Run the command python -m soma.workflow.start_database_server "Titan". The command will:
 
   * start the database server
-  * create the sqlite database if the database file doesn't exist 
+  * create the SQLite database if the database file doesn't exist 
   * register the database server to the Pyro name server
 
 
@@ -120,6 +121,7 @@ Configuration items required on the server side:
   **SERVER_NAME**
     Name of the database server regitered on the Pyro name server.
 
+.. _conf_server_option:
 
 Configuration items optional on the server side:
 ------------------------------------------------
@@ -131,15 +133,18 @@ Configuration items optional on the server side:
 
   **PATH_TRANSLATION_FILES**
     Specify here the shared resource path translation files, mandatory to use 
-    the SharedResourcePath objects (see :ref:`shared-resource-path-concept`). Each translation file is associated 
-    with a namespace.
+    the SharedResourcePath objects (see :ref:`shared-resource-path-api`). 
+    Each translation file is associated with a namespace. That way several 
+    applications can use the same  identifiers without risk.
     The syntax is "namespace_1{translation_file_path_11} 
     namespace1{translation_file_path_12} namespace2{translation_file_path_2}"
+
+    **TO DO**: description of translation files.
 
   **DRMAA_IMPLEMENTATION**
     Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
     otherwise it doesn't has to be set.
-    Soma-workflow is designed to be independant of the DRMS and the DRMAA 
+    Soma-workflow is designed to be independent of the DRMS and the DRMAA 
     implementation. However, we found two bugs in the FedStage PBS DRMAA 1.0 
     implementation, and correct it temporarily writing specific code for this 
     implementation in soma-workflow at 2 locations (soma.workflow.engine Drmaa 
@@ -172,7 +177,7 @@ Parallel job configuration:
 ---------------------------
 
 The items described here concern the parallel job configuration. A parallel job
-uses serveral CPU and involve parallel code: MPI, OpenMP for example. 
+uses several CPUs and involves parallel code: MPI, OpenMP for example. 
 
 **documentation under construction**
 
@@ -214,6 +219,6 @@ Configuration items optional on the client side:
 ------------------------------------------------
 
   **QUEUES**
-    List of the avalaible queues. This item is only used in the GUI to make 
+    List of the available queues. This item is only used in the GUI to make 
     easier the selection of the queue when submitting a workflow.
     

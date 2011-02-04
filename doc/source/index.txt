@@ -41,29 +41,29 @@ Main Features
     Engine, Condor, Torque/PBS, LSF..)
 
   **Python API and Graphical User Interface:**
-    The GUI provides an easy and quick way of monitoring and control workflow on
-    various ressources.
+    The GUI provides an easy and quick way of monitoring workflows on various 
+    resources.
 
   **Workflow engine:**
-    Soma-workflow enables the user to build his workflows (set of jobs and 
+    Soma-workflow enables the user to build his workflow (a set of jobs and 
     dependencies between jobs) and handles the execution of jobs on computing 
     resource according to the jobs dependencies. 
 
   **Remote access to computing resources** 
     The communication with a remote computing resource is done transparently for 
-    the user. The communication between the client and the remote computing 
-    resource is done with in a ssh port forwarding tunnel. 
+    the user. The communication between the client application and the remote 
+    computing resource is done within a ssh port forwarding tunnel. 
 
   **Disconnections:** 
-    The client/server architecture allow the user to close the client 
+    The client/server architecture allows the user to close the client 
     application at any time. The workflows and jobs execution aren't stopped. 
     The user can open a client at any time to check the status of his 
     work.
 
   **File transfers:** 
-    If the user machine and the computing resource don't have a shared file
+    If the user's machine and the computing resource don't have a shared file
     system, soma-workflow can manage file transfers between the client and the 
-    computing resource. *This feature is available but need to be optimized to
+    computing resource. *This feature is available but needs to be optimized to
     speed up the transfers.*
 
 

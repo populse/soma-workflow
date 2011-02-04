@@ -9,13 +9,13 @@ Job, Worklfows and File Transfers
 
 **Job**
 
-  A job is mainly defined by a program command line. It doesn't necessarly need 
-  several CPU to be executed. A jobs has also a standard intput, output and 
+  A job is mainly defined by a program command line. It doesn't necessarily need 
+  several CPU to be executed. A jobs has also a standard input, output and 
   error, a working directory and can be associated to file transfers if needed 
-  (see futher in this section).
+  (see further in this section).
 
-  A parallel job is a job made to run on several CPU. The program uses parallel
-  code such as MPI, OpenMP.. 
+  A parallel job is a job made to run on several CPUs. The job program uses 
+  parallel code such as MPI, OpenMP... 
 
  
 **Workflow**
@@ -29,12 +29,13 @@ Job, Worklfows and File Transfers
   .. figure:: images/workflow_example.*
     :scale: 50 
 
-    Workflow example. The jobs are reprensented by blue boxes and the 
+    Workflow example. The jobs are represented by blue boxes and the 
     dependencies by black arrows.
 
-  Once the workflow is created (see :ref:`workflow-creation-api`), and submitted 
-  to a computing resource using the API or the GUI, soma-workflow handles the 
-  execution of the jobs. Each job starts as soon as possible considering its dependencies.
+  Once the workflow is created, and submitted to a computing resource using the 
+  API or the GUI (see :ref::ref:`examples` and :ref:`workflow-creation-api`), 
+  soma-workflow handles the execution of the jobs on the computing resource. 
+  Each job starts as soon as possible considering its dependencies.
 
 .. _file-transfers-concept:
 
@@ -43,20 +44,20 @@ Job, Worklfows and File Transfers
   The file transfers are only required when the user's file system is not 
   shared with the computing resource.
 
-  A file transfer object is a mapping between a file path of the user file system
-  and file path of the computing ressource file system.
+  A file transfer object is a mapping between a file path valid on the user file 
+  system and a file path valid on the computing resource file system.
 
   Soma-workflow handles transfers of the files or directories to and from the 
   computing resource file system. The file transfer objects are associated to 
-  jobs (as input or output) in workflows. That way the jobs won't be executed 
-  before the files were transfered on the computing resource.
+  jobs (as input or output) in workflows. That way a job will never be executed 
+  before all its input files are transfered on the computing resource.
 
 .. _shared-resource-path-concept:
 
 **Shared Resource Path**
 
   As file transfers, shared resource paths are only required when the user's
-  file system is not shared the computing resource.
+  file system is not shared by the computing resource.
   A shared resource path is a path representation that is valid on either 
   user's or computing resource file system. 
 
@@ -92,7 +93,7 @@ Here is the list of the job status.
     Transitive status. The job status is changing and be updated soon
 
   |pending| **submission_pending**
-    Due to a limitation of the number of job in the queue (see ??), the job is 
+    Due to a limitation of the number of job in the queue (see :ref:`conf_server_option`), the job is 
     waiting to be submitted to the DRMS.
   
   |queued| **queued_active**
@@ -134,7 +135,7 @@ Job exit status
 --------------- 
 
   **finished_regularly**
-    The job finished regularly. The exit value is displayed on the GUI and is available from the python API. If the value is different than 0 soma-workflow considers that the job failed.
+    The job finished regularly. The exit value is displayed on the GUI and is available from the Python API. If the value is different than 0 soma-workflow considers that the job failed.
 
   **finished_signal**
     The job finished due to a signal. The signal is displayed on the GUI and is available from the python API (depending on DRMAA implementation).
@@ -170,23 +171,21 @@ Workflow status
     Transitive status. The workflow will be deleted soon.
 
   **warning**
-    The worklfow engine process in charge of the workflow execution was killed 
-    on the computing resource side.  
-
     The workflow engine process in charge of the workflow execution was killed 
     or failed on the computing resource side. The workflow has to be restarted
     (the jobs which ended with success won't be restarted).
 
 
 .. note::
-  |warning| In case of warning status a simple solution is to restart the workflow. 
+  |warning| In case of warning status a simple solution is to restart the 
+  workflow. 
   The job which ended with success won't be restarted.
 
   However, the warning status doesn't mean that the jobs failed. In case of very 
-  long job which you don't want to restart, you can check yourself
-  the status of the job(s) on the DRMS. If some jobs are running: you have to 
-  wait for the job to finished. Afterward, update the status of each job in 
-  soma-workflow and restart the jobs.
+  long jobs which you don't want to restart, you can check yourself
+  the status of the job(s) on the DRMS. If some jobs are still running: you 
+  have to wait for the job to finished. Afterward, update the status of each job 
+  in soma-workflow and restart the jobs.
 
 
 
