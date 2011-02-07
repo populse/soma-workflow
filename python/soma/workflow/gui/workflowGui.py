@@ -1334,7 +1334,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
           return display #+ " => " + status
-        if status == FILES_DONT_EXIST:
+        if status == FILES_DO_NOT_EXIST:
           if role == QtCore.Qt.DecorationRole:
             return self.transfer_files_dont_exit
         if status == FILES_ON_CLIENT:
