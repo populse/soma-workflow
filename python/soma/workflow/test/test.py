@@ -822,8 +822,7 @@ class DisconnectionTest(JobsTest):
     time.sleep(20)
     print ".... Reconnection"
 
-    JobsTest.jobs = WorkflowController(os.environ["SOMA_WORKFLOW_CONFIG"],
-                                       JobsTest.resource_id, 
+    JobsTest.jobs = WorkflowController(JobsTest.resource_id, 
                                        JobsTest.login, 
                                        JobsTest.password,
                                        log="2")

@@ -38,15 +38,13 @@ The implementations of DRMAA tested successfully with soma-workflow:
   DRMS                 DRMAA implementation
   ===================  ==========================
   Torque 2.0.0         FedStage PBS DRMAA 1.0*
+  LSF 7.0              FedStage LSF DRMAA 1.0.3
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
-  LSF 7.0              FedStage LSF DRMAA 1.0.3**
   ===================  ==========================
 
 \* set soma-workflow DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
 using this implementation
-
-\** full testing in progress
  
 
 Server installation
@@ -220,4 +218,5 @@ Configuration items optional on the client side:
   **QUEUES**
     List of the available queues. This item is only used in the GUI to make 
     easier the selection of the queue when submitting a workflow.
+    Syntax: "queue1 queue2 queue3"
     
