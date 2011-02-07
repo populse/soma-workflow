@@ -9,8 +9,8 @@ Job, Worklfows and File Transfers
 
 **Job**
 
-  A job is mainly defined by a program command line. It doesn't necessarily need 
-  several CPU to be executed. A jobs has also a standard input, output and 
+  A job is mainly defined by a program command line. It does not necessarily 
+  need several CPU to be executed. A jobs has also a standard input, output and 
   error, a working directory and can be associated to file transfers if needed 
   (see further in this section).
 
@@ -23,7 +23,7 @@ Job, Worklfows and File Transfers
   A workflow organizes the execution of a set of jobs defining execution 
   dependencies between jobs.
 
-  A dependency from a job A to a job B means that the job A won't start before 
+  A dependency from a job A to a job B means that the job A will not start before 
   the job B is done. 
 
   .. figure:: images/workflow_example.*
@@ -73,7 +73,7 @@ DRMS, Client, Workflow Engine and Database Server
 ..
   The soma-workflow architecture allows the client to access remote computing 
   resource and to disconnect at any time. The WorkflowEngine process, which runs 
-  on the computing resource side, is in charge of submitting the workflow's jobs
+  on the computing resource side, is in charge of submitting the workflow jobs
   to the DRMS at the right time. 
 
 
@@ -102,8 +102,8 @@ Here is the list of the job status.
   |running| **running**
     The job is running on the computing resource.
 
-  |success| |failed| **done**
-    The job finished normally. However it doesn't mean that it ended with 
+  |success| or |failed| **done**
+    The job finished normally. However it does not mean that it ended with 
     success (see :ref:`job-exit-status`)
 
   |failed| **failed**
@@ -135,7 +135,7 @@ Job exit status
 --------------- 
 
   **finished_regularly**
-    The job finished regularly. The exit value is displayed on the GUI and is available from the Python API. If the value is different than 0 soma-workflow considers that the job failed.
+    The job finished regularly. The exit value is displayed on the GUI and is available from the Python API. If the value is different from 0 soma-workflow considers that the job failed.
 
   **finished_signal**
     The job finished due to a signal. The signal is displayed on the GUI and is available from the python API (depending on DRMAA implementation).
@@ -147,8 +147,9 @@ Job exit status
     The job never ran.
 
   **exit_status_undetermined**
-    The exit status can't be determined.
+    The exit status can not be determined.
 
+..
   **finished_unclear_condition**
     The job finished with unclear conditions.
 
@@ -173,18 +174,18 @@ Workflow status
   **warning**
     The workflow engine process in charge of the workflow execution was killed 
     or failed on the computing resource side. The workflow has to be restarted
-    (the jobs which ended with success won't be restarted).
+    (the jobs which ended with success will not be restarted).
 
 
 .. note::
   |warning| In case of warning status a simple solution is to restart the 
   workflow. 
-  The job which ended with success won't be restarted.
+  The job which ended with success will not be restarted.
 
-  However, the warning status doesn't mean that the jobs failed. In case of very 
-  long jobs which you don't want to restart, you can check yourself
+  However, the warning status does not mean that the jobs failed. In case of very 
+  long jobs which you do not want to restart, you can check yourself
   the status of the job(s) on the DRMS. If some jobs are still running: you 
-  have to wait for the job to finished. Afterward, update the status of each job 
+  have to wait for the job to finish. Afterward, update the status of each job 
   in soma-workflow and restart the jobs.
 
 
@@ -192,18 +193,18 @@ Workflow status
 File Transfer status
 --------------------
 
-  |tr_dont_exist| **don't exist**
-    The file(s) don't exist. For example: output files at the beginning of a
+  |tr_do_not_exist| **do not exist**
+    The file(s) do not exist. For example: output files at the beginning of a
     workflow execution.
 
   |tr_on_c| **on client side**
     The file(s) exist on the client side only. For example: input files.
 
-  |tr_on_both| **on computing resource side**
+  |tr_on_cr| **on computing resource side**
     The file(s) exist on the computing resource side only. For example: output
     files after a job ended.
 
-  |tr_on_cr| **on both sides**
+  |tr_on_both| **on both sides**
     The file(s) both on the client and computing resource side. This status 
     appears after a transfer ended. 
 
@@ -318,7 +319,7 @@ File Transfer status
                                python API (depending on DRMAA implementation).
   killed_by_user               The job was killed by the user.
   aborted                      The job never ran.
-  exit_status_undetermined     The exit status can't be determined.
+  exit_status_undetermined     The exit status can not be determined.
   finished_unclear_condition   The job finished with unclear conditions.
   ===========================  =================================================
 
@@ -340,7 +341,7 @@ File Transfer status
                                               computing resource side.
                                               The workflow has to be restarted 
                                               (the jobs which ended 
-                                              with success won't be restarted). 
+                                              with success will not be restarted). 
                       ======================  ==================================
 
 
@@ -360,7 +361,7 @@ File Transfer status
   |running|             running            The job is running on the computing 
                                            resource.
   |success| or |failed| done               The job finished normally. However it 
-                                           doesn't mean that it ended with success
+                                           does not mean that it ended with success
                                            (see :ref:`job-exit-status`)
   |failed|              failed             The job exited abnormally before
                                            finishing.

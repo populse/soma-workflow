@@ -60,14 +60,14 @@ JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
 '''
 File transfer status:
 '''
-FILES_DONT_EXIST = "don't exist"
+FILES_DO_NOT_EXIST = "do not exist"
 FILES_ON_CLIENT = "on client side"
 FILES_ON_CR = "on computing resource side"
 FILES_ON_CLIENT_AND_CR = "on both sides"
 TRANSFERING_FROM_CLIENT_TO_CR = "transfering client->cr"
 TRANSFERING_FROM_CR_TO_CLIENT = "transfering cr->client"
 FILES_UNDER_EDITION = "under edition"
-FILE_TRANSFER_STATUS = [FILES_DONT_EXIST,
+FILE_TRANSFER_STATUS = [FILES_DO_NOT_EXIST,
                         FILES_ON_CLIENT,
                         FILES_ON_CR,
                         FILES_ON_CLIENT_AND_CR,

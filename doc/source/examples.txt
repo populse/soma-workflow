@@ -42,7 +42,7 @@ the GUI (soma_workflow_gui command):
 .. image:: images/simple_example_gui.png
   :scale: 60
 
-You can close and open the GUI at any time. It won't interrupt the workflow
+You can close and open the GUI at any time. It will not interrupt the workflow
 execution.
 
 

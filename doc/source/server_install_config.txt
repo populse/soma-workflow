@@ -56,15 +56,14 @@ Server installation
 
 2. Choose a resource identifier for the computing resource, ex: "Titan"
 
-3. Create a configuration file (see :ref:`server_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or 
-put it in the /etc/ directory.  
+3. Create a configuration file (see :ref:`server_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
 
 2. Start a Pyro name server with the command pyro-ns -m 
 
 4. Run the command python -m soma.workflow.start_database_server "Titan". The command will:
 
   * start the database server
-  * create the SQLite database if the database file doesn't exist 
+  * create the SQLite database if the database file does not exist 
   * register the database server to the Pyro name server
 
 
@@ -73,7 +72,7 @@ put it in the /etc/ directory.
 Server configuration
 ====================
 
-This section defined the required and optional configuration items. 
+This section defines the required and optional configuration items. 
 
 The configuration file syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. All the configuration items are defined in one section. The name of 
 the section is the resource identifier (ex: "Titan").
@@ -127,7 +126,7 @@ Configuration items optional on the server side:
 ------------------------------------------------
 
   **MAX_JOB_IN_QUEUE**
-    Maximum number of job in each queue. If a queue doesn't appear here, 
+    Maximum number of job in each queue. If a queue does not appear here, 
     soma-workflow considers that there is no limitation.
     The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
 
@@ -143,7 +142,7 @@ Configuration items optional on the server side:
 
   **DRMAA_IMPLEMENTATION**
     Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
-    otherwise it doesn't has to be set.
+    otherwise it doesn not has to be set.
     Soma-workflow is designed to be independent of the DRMS and the DRMAA 
     implementation. However, we found two bugs in the FedStage PBS DRMAA 1.0 
     implementation, and correct it temporarily writing specific code for this 

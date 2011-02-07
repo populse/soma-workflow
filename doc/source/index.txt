@@ -25,7 +25,7 @@ as Grid Engine, Condor, Torque/PBS, LSF..) installed on the computing resources
 to execute the jobs. 
 
 Soma-workflow is an open source Python application.
-The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here. <ttps://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_
+The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here. <https://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_
 
 
 .. warning:: 
@@ -56,12 +56,12 @@ Main Features
 
   **Disconnections:** 
     The client/server architecture allows the user to close the client 
-    application at any time. The workflows and jobs execution aren't stopped. 
+    application at any time. The workflows and jobs execution are not stopped. 
     The user can open a client at any time to check the status of his 
     work.
 
   **File transfers:** 
-    If the user's machine and the computing resource don't have a shared file
+    If the user's machine and the computing resource do not have a shared file
     system, soma-workflow can manage file transfers between the client and the 
     computing resource. *This feature is available but needs to be optimized to
     speed up the transfers.*

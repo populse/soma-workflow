@@ -3,8 +3,8 @@ Client installation and configuration
 =====================================
 
 This page describes the installation and configuration of the soma-workflow
-client. The installation of a client supposes that one or several soma-workflow 
-database servers are installed on one or several remote of local computing
+client. The installation of a soma-workflow client supposes that at least one 
+oma-workflow database servers is installed on a remote or a local computing 
 resources (see :ref:`server`).
 
 
@@ -49,7 +49,7 @@ Only three items are required:
 The two first items are mandatory and the last one is 
 optional. The values of these configuration items are set up at each 
 soma-workflow server installation (see :ref:`server_configuration`). Ask these item 
-values to the soma-workflow administrator if you didn't install the server yourself.  
+values to the soma-workflow administrator if you did not install the server yourself.  
 
 Configuration file example: ::
 

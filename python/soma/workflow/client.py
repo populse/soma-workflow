@@ -49,11 +49,11 @@ class Job(object):
   
   .. note::
     The command is the only argument required to create a Job.
-    It's also useful to fill the job name for the workflow display in the GUI.
+    It is also useful to fill the job name for the workflow display in the GUI.
 
   **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)*
     
-    The command to execute. It can't be empty. In case of a shared file system 
+    The command to execute. It can not be empty. In case of a shared file system 
     the command is a sequence of string. 
 
     In the other cases, the FileTransfer and SharedResourcePath objects will be 
@@ -207,7 +207,7 @@ class Workflow(object):
 
   .. note::
     root_group is only used to display nicely the workflow in the GUI. It
-    doesn't have any impact on the workflow execution.
+    does not have any impact on the workflow execution.
     
     If root_group is not set, all the jobs of the workflow will be 
     displayed at the root level in the GUI tree view.
@@ -268,7 +268,7 @@ class Group(object):
   Hierarchical structure of a workflow.
 
   .. note:
-    It only has a displaying role and doesn't have any impact on the workflow 
+    It only has a displaying role and does not have any impact on the workflow 
     execution.
 
   **name**: *string*
@@ -300,15 +300,15 @@ class FileTransfer(object):
   
   .. note::
     FileTransfers objects are only required if the user and computing resources
-    have a separated file system.
+    have a separate file system.
   
   **client_path**: *string*
     Path of the file or directory on the user's file system.
 
-  **initial_status**: *constants.FILES_DONT_EXIST or constants.FILES_DONT_EXIST*
+  **initial_status**: *constants.FILES_DO_NOT_EXIST or constants.FILES_ON_CLIENT*
     * constants.FILES_ON_CLIENT for workflow input files
       The file(s) will need to be transfered on the computing resource side
-    * constants.FILES_DONT_EXIST for workflow output files
+    * constants.FILES_DO_NOT_EXIST for workflow output files
       The file(s) will be created by a job on the computing resource side.
 
   **client_paths**: sequence of string.
@@ -339,7 +339,7 @@ class FileTransfer(object):
   # sequence of string
   client_paths = None
 
-  # constants.FILES_DONT_EXIST constants.FILES_ON_CLIENT
+  # constants.FILES_DO_NOT_EXIST constants.FILES_ON_CLIENT
   initial_status = None
 
   # int (hours)
@@ -369,7 +369,7 @@ class FileTransfer(object):
     if is_input:
       self.initial_status = FILES_ON_CLIENT
     else:
-      self.initial_status = FILES_DONT_EXIST
+      self.initial_status = FILES_DO_NOT_EXIST
 
 
 
@@ -381,7 +381,7 @@ class SharedResourcePath(object):
 
   .. note::
     SharedResourcePath objects are only required if the user and computing
-    resources have a separated file system.
+    resources have a separate file system.
 
   **namespace**: *string*
     Namespace for the path. That way several applications can use the same 
@@ -448,7 +448,7 @@ class WorkflowController(object):
     if not config_path or not os.path.isfile(config_path):
       config_path = "/etc/soma-workflow.cfg"
     if not config_path or not os.path.isfile(config_path):
-      raise Exception("Can't find the soma-workflow configuration file \n")
+      raise Exception("Can not find the soma-workflow configuration file \n")
     
     print "Configuration file: " + repr(config_path)
     config = ConfigParser.ConfigParser()
@@ -457,7 +457,7 @@ class WorkflowController(object):
     self.config = config
    
     if not config.has_section(resource_id):
-      raise Exception("Can't find section " + resource_id + " in configuration file: " + config_path)
+      raise Exception("Can not find section " + resource_id + " in configuration file: " + config_path)
 
     submitting_machines = config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
     cluster_address = config.get(resource_id, CFG_CLUSTER_ADDRESS)
@@ -528,7 +528,7 @@ class WorkflowController(object):
         uri = ns.resolve(server_name)
         logger.info('Server URI:'+ repr(uri))
       except NamingError,x:
-        logger.critical('Couldn\'t find' + server_name + ' nameserver says:',x)
+        logger.critical('Could not find' + server_name + ' nameserver says:',x)
         raise SystemExit
       database_server= Pyro.core.getProxyForURI(uri)
   
@@ -560,7 +560,7 @@ class WorkflowController(object):
           try: 
             f = open(filename, "r")
           except IOError, e:
-            logger.info("Couldn't read the translation file: " + filename)
+            logger.info("Could not read the translation file: " + filename)
           else:
             if not namespace in path_translation.keys():
               path_translation[namespace] = {}
@@ -597,7 +597,7 @@ class WorkflowController(object):
   def disconnect(self):
     '''
     Simulates a disconnection for TEST PURPOSE ONLY.
-    !!! The current instance won't be usable anymore after this call !!!!
+    !!! The current instance will not be usable anymore after this call !!!!
     '''
     self._connection.stop()
 
@@ -634,7 +634,7 @@ class WorkflowController(object):
     
   #Job submittion: 
   # use the transfer id in the command or stdin argument when needed
-  # don't forget to reference input and output file transfers
+  # do not forget to reference input and output file transfers
   job_id = wf_controller.submit_job(['python', trid_in_1], 
                                     [in_1_trid, in_2_trid, ..., in_n_trid],
                                     [out_1_trid, out_2_trid, ..., out_n_trid])
@@ -977,7 +977,7 @@ class WorkflowController(object):
                           None if it concerns only one file.
     @rtype : boolean
     @return: the file transfer ended. Note that if the transfer_id correspond to
-    a directory transfer, it doesn't mean that the whole directory transfer ended. 
+    a directory transfer, it does not mean that the whole directory transfer ended. 
     '''
 
     status = self._engine_proxy.transfer_status(transfer_id)
@@ -1045,8 +1045,8 @@ class WorkflowController(object):
     '''
     Deletes the file or directory copied on the computing resource side and the 
     associated transfer information.
-    If some jobs reference these file(s) as input or output, the transfer won't 
-    be deleted immediately but as soon as all the jobs will be deleted.
+    If some jobs reference these file(s) as input or output, the transfer will 
+    not be deleted immediately but as soon as all the jobs will be deleted.
     
     @type transfer_id: string
     @param transfer_id: transfer id
@@ -1110,8 +1110,8 @@ class WorkflowController(object):
     file L{transfers}
     
     @type  stdin: string
-    @param stdin: job's standard input as a path to a file. C{None} if the 
-    job doesn't require an input stream.
+    @param stdin: job standard input as a path to a file. C{None} if the 
+    job does not require an input stream.
     
     @type  join_stderrout: bool
     @param join_stderrout: C{True}  if the standard error should be redirect in the 
@@ -1128,14 +1128,14 @@ class WorkflowController(object):
     @param name: optional job name for user usage only
  
     @type  stdout_file: string
-    @param stdout_file: this argument can be set to choose the file where the job's 
+    @param stdout_file: this argument can be set to choose the file where the job 
     standard output will be redirected. (optional: if it not set the user will still be
     able to read the standard output)
     @type  stderr_file: string 
-    @param stderr_file: this argument can be set to choose the file where the job's 
+    @param stderr_file: this argument can be set to choose the file where the job 
     standard error will be redirected (optional: if it not set the user will still be
     able to read the standard error output). 
-    It won't be used if the stdout_file argument is not set. 
+    It will not be used if the stdout_file argument is not set. 
     
     @type  working_directory: string
     @param working_directory: this argument can be set to choose the directory where 
@@ -1145,7 +1145,7 @@ class WorkflowController(object):
     @param parallel_job_info: (configuration_name, max_node_num) or None
     This argument must be filled if the job is made to run on several nodes (parallel job). 
     configuration_name: type of parallel job as defined in soma.workflow.constants (eg MPI, OpenMP...)
-    max_node_num: maximum node number the job requests (on a unique machine or separated machine
+    max_node_num: maximum node number the job requests (on a unique machine or separate machine
     depending on the parallel configuration)
     !! Warning !!: parallel configurations are not necessarily implemented for every cluster. 
                    This is the only argument that is likely to request a specific implementation 
@@ -1180,7 +1180,7 @@ class WorkflowController(object):
     server. After this call, the C{job_id} becomes invalid and
     cannot be used anymore. 
     To avoid that jobs create non handled files, L{delete_job} kills the job if 
-    it's running.
+    it is running.
 
     @type  job_id: C{JobIdentifier}
     @param job_id: The job identifier (returned by L{jobs} or the submission 
@@ -1366,8 +1366,8 @@ class WorkflowController(object):
     @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
              [1] None if the transfer status in not constants.TRANSFERING_FROM_CLIENT_TO_CR or 
                  constants.TRANSFERING_FROM_CR_TO_CLIENT
-                 if it's a file transfer: tuple (file size, size already transfered)
-                 if it's a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
+                 if it is a file transfer: tuple (file size, size already transfered)
+                 if it is a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
     '''
     
     status = self._engine_proxy.transfer_status(transfer_id)
@@ -1484,7 +1484,7 @@ class WorkflowController(object):
 
   def kill_job( self, job_id ):
     '''
-    Kill the job execution, the job won't be deleted of the database server. 
+    Kill the job execution, the job will not be deleted of the database server. 
     Use the L{restart_job} method to restart the job.
     The job_id must be valid.
     
