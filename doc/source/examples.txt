@@ -100,7 +100,76 @@ the GUI (soma_workflow_gui command):
 Workflows with FileTransfer
 ===========================
 
-**TO DO**
+Basic file transfer
+-------------------
+
+To run this example, create first the file "/tmp/soma_workflow_examples/myfile" 
+with any content. It will stand as an input file to transfer.
+
+Create the workflow : ::
+
+  from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
+
+  # FileTransfer creation for input files
+  myfile = FileTransfer(is_input=True,
+                      client_path="/tmp/soma_workflow_examples/myfile",
+                      name="myfile")
+
+  # FileTransfer creation for output files
+  copy_of_myfile = FileTransfer(is_input=False,
+                                client_path="/tmp/soma_workflow_examples/copy_of_myfile",
+                                name="copy of my file")
+
+  # Job and Workflow 
+  copy_job = Job(command=["cp", myfile, copy_of_myfile], 
+                name="copy",
+                referenced_input_files=[myfile],
+                referenced_output_files=[copy_of_myfile])
+
+  workflow = Workflow(jobs=[copy_job], 
+                      dependencies=[])
+
+
+Submit the workflow: ::
+
+  controller = WorkflowController("Titan", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                            name="simple transfer")
+
+Run the Python script and open the GUI:
+
+.. image:: images/file_transfer_example_gui.png
+  :scale: 60
+
+Transfer the input files, clicking the "Transfer Input Files" button:
+
+.. image:: images/file_transfer_example_gui_1.png
+  :scale: 80
+
+The job will start as soon as the transfer ended:
+
+.. image:: images/file_transfer_example_gui_2.png
+  :scale: 80
+
+When the workflow is done, transfer the output files clicking the 
+"Transfer Output Files" button:
+
+.. image:: images/file_transfer_example_gui_3.png
+  :scale: 80
+
+The progression and the end of the transfer is displayed in the GUI:
+
+.. image:: images/file_transfer_example_gui_4.png
+  :scale: 80
+
+.. seealso:: :ref:`file-transfer-status`
+
+
+Working directory transfer
+--------------------------
+
+
 
 Workflows with SharedResourcePath
 =================================
