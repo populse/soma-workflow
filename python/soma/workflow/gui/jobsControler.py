@@ -52,10 +52,9 @@ class JobsControler(object):
         
   def getConnection(self, resource_id, login, password, test_no):
     try: 
-      connection = WorkflowController( resource_id, 
-                                       login, 
-                                       password,
-                                       log=test_no)
+      connection = WorkflowController(resource_id, 
+                                      login, 
+                                      password)
     except Exception, e:
       return (None, "%s: %s" %(type(e),e) )
       

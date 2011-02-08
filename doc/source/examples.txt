@@ -158,7 +158,7 @@ When the workflow is done, transfer the output files clicking the
 .. image:: images/file_transfer_example_gui_3.png
   :scale: 80
 
-The progression and the end of the transfer is displayed in the GUI:
+The progression and the end of the transfer are displayed in the GUI.
 
 .. image:: images/file_transfer_example_gui_4.png
   :scale: 80
@@ -169,6 +169,7 @@ The progression and the end of the transfer is displayed in the GUI:
 Working directory transfer
 --------------------------
 
+**TO DO**
 
 
 Workflows with SharedResourcePath

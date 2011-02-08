@@ -340,7 +340,6 @@ class JobsTest(unittest.TestCase):
   def setupConnection(resource_id, 
                       login, 
                       password, 
-                      test_no, 
                       job_examples_dir, 
                       output_dir):
     
@@ -350,11 +349,9 @@ class JobsTest(unittest.TestCase):
 
     JobsTest.hostname = socket.gethostname()
     
-    JobsTest.jobs = WorkflowController( os.environ["SOMA_WORKFLOW_CONFIG"],
-                                              resource_id, 
-                                              login, 
-                                              password,
-                                              log=test_no)
+    JobsTest.jobs = WorkflowController(resource_id, 
+                                       login, 
+                                       password)
     
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
@@ -824,8 +821,7 @@ class DisconnectionTest(JobsTest):
 
     JobsTest.jobs = WorkflowController(JobsTest.resource_id, 
                                        JobsTest.login, 
-                                       JobsTest.password,
-                                       log="2")
+                                       JobsTest.password)
 
 
     JobsTest.jobExamples.setNewConnection(JobsTest.jobs)
@@ -1062,7 +1058,6 @@ if __name__ == '__main__':
   JobsTest.setupConnection(resource_id, 
                            login, 
                            password, 
-                           "1", 
                            job_examples_dir, 
                            output_dir)
   suite_list =  []

@@ -4,8 +4,36 @@
 Python API
 ==========
 
-The client classes are in the module: soma.workflow.client
+The submission, monitoring and control of Worklflow, Job and FileTransfer can be 
+done through the client.WorkflowController interface.
 
-**TO DO**
+This page presents the documentation of the client.WorkflowController class.
+
+.. autoclass:: client.WorkflowController(object)
+
+Setup the connection with the computing resource:
+=================================================
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.__init__
+
+
+Submission / Registration
+=========================
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.submit_workflow
+
+.. automethod:: WorkflowController.submit_job
+
+.. automethod:: WorkflowController.register_transfer
+
+
+Recover the user's Workflow, Job, and FileTransfer objects:
+===========================================================
+
+
 
 
