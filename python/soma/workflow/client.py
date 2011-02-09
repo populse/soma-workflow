@@ -412,7 +412,7 @@ class SharedResourcePath(object):
     self.relative_path = relative_path
     self.namespace = namespace
     self.uuid = uuid
-    self.disposal_timout = disposal_tWorimeout
+    self.disposal_timout = disposal_timeout
 
 
 
