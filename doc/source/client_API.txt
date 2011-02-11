@@ -36,8 +36,8 @@ Submission / Registration
 .. automethod:: WorkflowController.register_transfer
 
 
-User's Workflows, Jobs, and FileTransfers recovering
-====================================================
+User's Workflows, Jobs, and FileTransfers retrieval
+===================================================
 
 .. currentmodule:: client
 

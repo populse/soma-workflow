@@ -92,5 +92,14 @@ Contents
   :Date: |today|
 
 
+About
+=====
+
+Funded by `HiPiP <http://hipip.eu>`_ an `ITEA2 <http://www.itea2.org/>`_ project. 
+
+.. image:: images/hipip.* 
+  :scale: 40 
+
+.. image:: images/itea2.* 
 
 

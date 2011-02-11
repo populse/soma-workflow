@@ -818,7 +818,7 @@ class WorkflowController(object):
                                                       name,
                                                       client_paths))
 
-  ########## RECOVERING WORKFLOWS, JOBS and FILE TRANSFERS ###################
+  ########## WORKFLOWS, JOBS and FILE TRANSFERS RETRIEVAL ###################
 
   def workflow(self, wf_id):
     '''
