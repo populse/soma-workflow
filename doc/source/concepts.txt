@@ -80,6 +80,7 @@ DRMS, Client, Workflow Engine and Database Server
 Status
 ======
 
+.. _job-status:
 
 Job status
 ----------
@@ -154,7 +155,7 @@ Job exit status
     The job finished with unclear conditions.
 
 
-
+.. _workflow-status:
 
 Workflow status
 ---------------
@@ -194,7 +195,7 @@ Workflow status
 File Transfer status
 --------------------
 
-  |tr_do_not_exist| **do not exist**
+  |tr_dont_exist| **do not exist**
     The file(s) do not exist. For example: output files at the beginning of a
     workflow execution.
 

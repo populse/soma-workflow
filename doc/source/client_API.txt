@@ -11,8 +11,13 @@ This page presents the documentation of the client.WorkflowController class.
 
 .. autoclass:: client.WorkflowController(object)
 
-Setup the connection with the computing resource:
-=================================================
+.. contents:: WorkflowController API
+   :local:
+
+   
+
+Setup the connection with the computing resource
+================================================
 
 .. currentmodule:: client
 
@@ -31,8 +36,97 @@ Submission / Registration
 .. automethod:: WorkflowController.register_transfer
 
 
-Recover the user's Workflow, Job, and FileTransfer objects:
-===========================================================
+User's Workflows, Jobs, and FileTransfers recovering
+====================================================
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.workflow
+
+.. automethod:: WorkflowController.workflows
+
+.. automethod:: WorkflowController.jobs
+
+.. automethod:: WorkflowController.transfers
+
+
+Monitoring
+==========
+
+Workflows
+---------
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.workflow_status
+
+.. automethod:: WorkflowController.workflow_elements_status
+
+
+Jobs
+----
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.job_status
+
+.. automethod:: WorkflowController.job_termination_status
+
+.. automethod:: WorkflowController.retrieve_job_stdouterr
+
+
+File Transfers
+--------------
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.transfer_status
+
+
+Control
+=======
+
+Workflows
+---------
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.restart_workflow
+
+.. automethod:: WorkflowController.delete_workflow
+
+.. automethod:: WorkflowController.change_workflow_expiration_date
+
+
+Jobs
+----
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.wait_job
+
+.. automethod:: WorkflowController.kill_job
+
+.. automethod:: WorkflowController.restart_job
+
+.. automethod:: WorkflowController.delete_job
+
+
+File Transfers
+--------------
+
+.. currentmodule:: client
+
+.. automethod:: WorkflowController.transfer_files
+
+.. automethod:: WorkflowController.initialize_transfer
+
+.. automethod:: WorkflowController.write_to_computing_resource_file
+
+.. automethod:: WorkflowController.read_from_computing_resource_file
+
+.. automethod:: WorkflowController.delete_transfer
+
 
 
 

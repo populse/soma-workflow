@@ -433,15 +433,15 @@ class WorkflowController(object):
     *config_file_path* argument) and sets up the connection to the computing 
     resource. 
 
-    **resource_id**: *string*
-      Identifier of the computing resource to connect to.
+    * resource_id *string*
+        Identifier of the computing resource to connect to.
 
-    **login**: *string*
+    * login *string*
 
-    **password**: *string*
+    * password *string*
 
-    **config_path**: *string*
-      Optional path to the configuration file.
+    * config_path *string*
+        Optional path to the configuration file.
 
     .. note::
       The login and password are only required for a remote computing 
@@ -632,21 +632,21 @@ class WorkflowController(object):
 
     Submits a workflow to the system and returns a workflow identifier.
     
-    **workflow**: *client.Workflow*
-      Workflow descrition.
+    * workflow *client.Workflow*
+        Workflow descrition.
     
-    **expiration_date**: *datetime.datetime*
-      After this date the workflow will be deleted from the system.
+    * expiration_date *datetime.datetime*
+        After this date the workflow will be deleted from the system.
 
-    **name**: *string*
-      Optional workflow name.
+    * name *string*
+        Optional workflow name.
 
-    **queue**: *string*
-      Optional name of the queue where to submit jobs. If it is not specified
-      the jobs will be submitted to the default queue.
+    * queue *string*
+        Optional name of the queue where to submit jobs. If it is not specified
+        the jobs will be submitted to the default queue.
 
-    **returns**: int
-      Workflow identifier.
+    * returns: *int*
+        Workflow identifier.
     '''
 
     wf_id =  self._engine_proxy.submit_workflow(workflow, 
@@ -655,23 +655,6 @@ class WorkflowController(object):
                                                 queue)
     return wf_id
   
-
-  '''
-  L{submit_job} method submits a job for execution to the cluster. 
-  A job identifier is returned and can be used to inspect and 
-  control the job.
-  
-  Example:
-    import soma.workflow.client
-      
-    wf_controller = soma.workflow.client.WorkflowController("Titan")
-    job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
-    wf_controller.kill_job(job_id)
-    wf_controller.restart_job(job_id)
-    wf_controller.wait_job([job_id])
-    exitinfo = wf_controller.job_termination_status(job_id)
-    wf_controller.delete_job(job_id)
-  '''
 
   def submit_job( self,
                   command,
@@ -688,6 +671,8 @@ class WorkflowController(object):
                   queue=None):
 
     '''
+    .. note :: TO DO simplification => Job object as argument.
+    
     Submits a job **which is not part of a workflow** to the system.
     Returns a job identifier.
 
@@ -700,67 +685,68 @@ class WorkflowController(object):
     .. note::
       The command is the only argument required to create a Job.
 
-    **command**: *sequence of string*
-      The command to execute. It must contain at least one element.
+    * command *sequence of string*
+        The command to execute. It must contain at least one element.
 
-    **referenced_input_files**: *sequence of FileTransfer idenfier*
-      List of the FileTransfer identifiers which are input of the Job. 
-      In other words, FileTransfer which are requiered by the Job to run
-      It includes the stdin if you use one.
+    * referenced_input_files *sequence of FileTransfer idenfier*
+        List of the FileTransfer identifiers which are input of the Job. 
+        In other words, FileTransfer which are requiered by the Job to run
+        It includes the stdin if you use one.
 
-    **referenced_output_files**: *sequence of FileTransfer idenfier*
-      List of the FileTransfer identifiers which are output of the Job. 
-      In other words, FileTransfer  which will be created or modified by the Job.
+    * referenced_output_files *sequence of FileTransfer idenfier*
+        List of the FileTransfer identifiers which are output of the Job. 
+        In other words, FileTransfer  which will be created or modified by the 
+        Job.
     
-    **stdin**: *path or FileTransfer identifier* 
-      Path to the file which will be read as input stream by the Job.
+    * stdin *path or FileTransfer identifier* 
+        Path to the file which will be read as input stream by the Job.
 
-    **join_stderrout**: *boolean*
-      Specifies whether the error stream should be mixed with the output stream.
+    * join_stderrout *boolean*
+        Specifies whether the error stream should be mixed with the output 
+        stream.
 
-    **stdout_file**: *path or FileTransfer identifier* 
-      Path of the file where the standard output stream of the job will be 
-      redirected.
+    * stdout_file *path or FileTransfer identifier* 
+        Path of the file where the standard output stream of the job will be 
+        redirected.
 
-    **stderr_file**: *path or FileTransfer identifier* 
-      Path of the file where the standard error stream of the job will be 
-      redirected.
+    * stderr_file *path or FileTransfer identifier* 
+        Path of the file where the standard error stream of the job will be 
+        redirected.
 
-    .. note::
-      Set stdout_file and stderr_file only if you need to redirect the standard 
-      output to a specific file. Indeed, even if they are not set the standard
-      outputs will always be available through the WorklfowController API.
+        .. note::
+          Set stdout_file and stderr_file only if you need to redirect the standard 
+          output to a specific file. Indeed, even if they are not set the standard
+          outputs will always be available through the WorklfowController API.
     
-    **disposal_timeout**: *int*
-      Number of hours before the Job will be deleted. Passed that delay, the job
-      will deleted and its resources released (including standard output and 
-      error files). 
-      The default timeout is 168 hours (7 days).
+    * disposal_timeout *int*
+        Number of hours before the Job will be deleted. Passed that delay, the job
+        will deleted and its resources released (including standard output and 
+        error files).The default timeout is 168 hours (7 days).
 
-    **name**: *string*
-      Name of the job.
+    * name *string*
+        Name of the job.
     
-    **working_directory**: *path*
-       Path of the directory where the job will be executed. The working directory is useful if your Job uses relative file path for example.
+    * working_directory *path*
+        Path of the directory where the job will be executed. The working 
+        directory is useful if your Job uses relative file path for example.
 
-    **parallel_job_info**: *tuple(string, int)*
-      The parallel job information must be set if the Job is parallel (ie. made to 
-      run on several CPU).
-      The parallel job information is a tuple: (name of the configuration, 
-      maximum number of CPU used by the Job).
-      The configuration name is the type of parallel Job. Example: MPI or 
-      OpenMP.
+    * parallel_job_info *tuple(string, int)*
+        The parallel job information must be set if the Job is parallel (ie. 
+        made to run on several CPU). The parallel job information is a tuple: 
+        (name of the configuration, maximum number of CPU used by the Job).
+        The configuration name is the type of parallel Job. Example: MPI or 
+        OpenMP.
 
-      .. warning::
-        The computing resources must be configured explicitly to use this 
-        feature.
+        .. warning::
+          The computing resources must be configured explicitly to use this 
+          feature.
 
-    **queue**: *string*
-      Name of the queue where to submit the jobs. If it is not 
-      specified the job will be submitted to the default queue.
+    * queue *string*
+        Name of the queue where to submit the jobs. If it is not 
+        specified the job will be submitted to the default queue.
 
-    **returns**: int
-      Job identifier.
+    * returns: int
+        Job identifier.
     '''
 
     job_id = self._engine_proxy.submit_job(Job(command,
@@ -788,30 +774,32 @@ class WorkflowController(object):
     Registers a file transfer **which is not part of a workflow** and returns a 
     file transfer identifier.
 
-    **is_input**: *boolean*
-      True if the files are input files existing on the client side.
-      False if the files are output files which will be created by a job on 
-      the computing resource side.
+    .. note :: TO DO simplification => FileTransfer object as argument.
 
-    **client_path**: *string*
-      Path of the file or directory on the user's file system.
+    * is_input  *boolean*
+        True if the files are input files existing on the client side.
+        False if the files are output files which will be created by a job on 
+        the computing resource side.
 
-    **disposal_timeout**: *int*
-      Number of hours before the file transfer will be deleted. Passed that 
-      delay, files copied on the computing resource side and
-      all the transfer information will be deleted, except if a job still 
-      references it as output or input.
-      The default timeout is 168 hours (7 days).
+    * client_path *string*
+        Path of the file or directory on the user's file system.
 
-    **client_paths**: *sequence of string*
-       Sequence of path. Files to transfer if the FileTransfers concerns a file
-       series or if the file format involves several associated files or
-       directories (see the note below).
+    * disposal_timeout *int*
+        Number of hours before the file transfer will be deleted. Passed that 
+        delay, files copied on the computing resource side and
+        all the transfer information will be deleted, except if a job still 
+        references it as output or input.
+        The default timeout is 168 hours (7 days).
 
-    **name**: *string*
-      Name of the file transfer. Default: client_path + "transfer"
+    * client_paths *sequence of string*
+        Sequence of path. Files to transfer if the FileTransfers concerns a file
+        series or if the file format involves several associated files or
+        directories (see the note below).
 
-    **returns**: *string*
+    * name *string*
+        Name of the file transfer. Default: client_path + "transfer"
+
+    * returns: *string*
       File transfer identifier.
 
     .. note::
@@ -832,82 +820,299 @@ class WorkflowController(object):
                                                       name,
                                                       client_paths))
 
+  ########## RECOVERING WORKFLOWS, JOBS and FILE TRANSFERS ###################
 
-  ########## FILE TRANSFER ###############################################
+  def workflow(self, wf_id):
+    '''
+    * wf_id *workflow_identifier*
     
-  '''
-  The file transfer methods must be used when the data is located on the
-  client machine and not reachable from the computing resource
-  
-  Example of a Job submission with file transfer outside of a workflow:
-  
-  #job client input files path on client: cfin_1, cfin_2, ..., rfin_n 
-  #job client output files path on: cfout_1, rfout_2, ..., rfout_m  
-  
-  #Call register_transfer for each transfer file and get back the transfer id:
-  in_1_trid= wf_controller.register_transfer(True, rfin_1)
-  in_2_trid= wf_controller.register_transfer(True, rfin_2)
-  ...
-  in_n_trid= wf_controller.register_transfer(True, rfin_n)
+    * returns: *Workflow*
+    '''
+    return self._engine_proxy.workflow(wf_id)
 
-  out_1_trid = wf_controller.register_transfer(False, cfout_1)
-  out_2_trid = wf_controller.register_transfer(False, cfout_2)
-  ...
-  out_n_trid = wf_controller.register_transfer(False, cfout_m)
+  def workflows(self, workflow_ids=None):
+    '''
+    Lists the identifiers and general information about all the workflows 
+    submitted by the user, or about the workflows specified in the 
+    *workflow_ids* argument.  
+
+    * workflow_ids *sequence of workflow identifiers*
   
-  # Transfer input files:
-  wf_controller.transfer_files(in_1_trid)
-  wf_controller.transfer_files(in_2_trid)
-  ...
-  wf_controller.transfer_files(in_n_trid)
-    
-  #Job submittion: 
-  # use the transfer id in the command or stdin argument when needed
-  # do not forget to reference input and output file transfers
-  job_id = wf_controller.submit_job(['python', trid_in_1], 
-                                    [in_1_trid, in_2_trid, ..., in_n_trid],
-                                    [out_1_trid, out_2_trid, ..., out_n_trid])
-  wf_controller.wait_job(job_id)
-  
-  #After Job execution, transfer back the output file
-  wf_controller.transfer_files(out_1_trid)
-  wf_controller.transfer_files(out_2_trid)
-  ...
-  wf_controller.transfer_files(out_n_trid)
-  
-  Use the FileTransfer client_paths attribute if the transfer involves several 
-  associated files and/or directories:
-          - when transfering a file serie 
-          - in the case of file format associating several file and/or directories
-            (ex: a SPM image is stored in 2 files: .img and .hdr)
-  In this case, set client_path to one the files (eq: .img).
-  In other cases (1 file or 1 directory) the client_paths must be set to None.
-  
-  Example:
-    
-  #transfer of a SPM image file
-  fout_1 = wf_controller.register_transfer(client_path = 'mypath/myimage.img', 
-                                 client_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
-  ...
-  wf_controller.transfer_files(fout_1)
- 
-  '''
+    * returns: *dictionary: workflow identifier -> tuple(date, string)*
+        workflow_id -> (workflow_name, expiration_date)
+    '''
+    return self._engine_proxy.workflows(workflow_ids)
+
+
+  def jobs(self, job_ids=None):
+    '''
+    Lists the identifiers and general information about all the jobs submitted 
+    by the user and which are not part of a workflow, or about the jobs 
+    specified in the *job_ids* argument.
+
+    * job_ids *sequence of job identifiers*
+
+    * returns: *dictionary: job identifiers -> tuple(string, string, date)*
+        job_id -> (name, command, submission date)
+    '''
+    return self._engine_proxy.jobs(job_ids)
+
+
+  def transfers(self, transfer_ids=None):
+    '''
+    Lists the identifiers and information about all the user's file transfers 
+    which are not part of a workflow or about the file transfers specified in
+    the *transfer_ids* argument.
+
+    * transfer_ids *sequence of FileTransfer identifiers*
         
- 
+    * returns: *dictionary: string -> tuple(string, date, None or sequence of string)*
+        transfer_id -> (
+                        * client_path: client file or directory path
+                        * expiration_date: after this date the file copied
+                          on the computing resource and all the transfer 
+                          information will be deleted, unless an existing 
+                          job has declared this file as output or input.
+                        * client_paths: sequence of file or directory path or None)
+    '''
+    return self._engine_proxy.transfers(transfer_ids)
+
+  ########## WORKFLOW MONITORING #########################################
+
+  def workflow_status(self, wf_id):
+    '''
+    * wf_id *workflow identifier*
+      
+    * returns: *string or None*
+        Status of the workflow: see :ref:`workflow-status` or the list 
+        constants.WORKFLOW_STATUS.
+        None if the identifier is not valid.
+    '''
+    return self._engine_proxy.workflow_status(wf_id)
+  
+  
+  def workflow_elements_status(self, wf_id, group = None):
+    '''
+    Gets back the status of all the workflow elements at once, minimizing the
+    communication with the server and requests to the database.
+    
+    * wf_id *workflow identifier*
+
+    * returns: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
+    '''
+    wf_status = self._engine_proxy.workflow_elements_status(wf_id)
+    if not wf_status:
+      # TBI raise ...
+      return
+     # special processing for transfer status:
+    new_transfer_status = []
+    for engine_path, client_path, status, transfer_action_info in wf_status[1]:
+      progression = self._transfer_progress(engine_path, 
+                                            client_path, 
+                                            transfer_action_info)
+      new_transfer_status.append((engine_path, (status, progression)))
+      
+    new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
+    return new_wf_status
+
+
+  ########## JOB MONITORING #############################################
+
+  def job_status( self, job_id ):
+    '''
+    * job_id *job identifier*
+      
+    * returns: *string or None*
+        Status of the job: see :ref:`job-status` or the list 
+        constants.JOB_STATUS.
+        None if the identifier is not valid.
+    '''
+    return self._engine_proxy.job_status(job_id)
+
+
+  def job_termination_status(self, job_id ):
+    '''
+    Information related to the end of the job.
+   
+    * job_id *job identifier*
+
+    * returns: *tuple(string, int or None, string or None, string) or None*
+        * exit status: The status of the terminated job: see 
+          :ref:`job-exit-status` or the list constants.JOB_EXIT_STATUS.
+        * exit value: operating system exit code of the job if the job 
+          terminated normally.
+        * terminating signal: representation of the signal that caused the 
+          termination of the  job if the job terminated due to the receipt of 
+          a signal.
+        * resource usage: resource usage information as given by the DRMS. 
+    '''
+    return self._engine_proxy.job_termination_status(job_id)
+
+
+  def retrieve_job_stdouterr(self, 
+                             job_id, 
+                             stdout_file_path, 
+                             stderr_file_path = None, 
+                             buffer_size = 512**2):
+    '''
+    Write the job standard output and error to files.
+
+    * job_id *job identifier*
+
+    * stdout_file_path *string*
+        Path of the file where to copy the standard output.
+
+    * stderr_file_path *string*
+        Path of the file where to copy the standard error.
+
+    * buffer_size *int*
+        The file is transfered piece by piece of size buffer_size.
+    '''
+    
+    engine_stdout_file, stdout_transfer_action_info, engine_stderr_file, stderr_transfer_action_info = self._engine_proxy.stdouterr_transfer_action_info(job_id)
+    
+    open(stdout_file_path, 'wb') 
+    if engine_stdout_file and stdout_transfer_action_info:
+      self._transfer_file_from_cr(stdout_file_path, 
+                                  engine_stdout_file, 
+                                  stdout_transfer_action_info[0], 
+                                  stdout_transfer_action_info[1], 
+                                  buffer_size)
+  
+    if stderr_file_path:
+      open(stderr_file_path, 'wb') 
+      if engine_stderr_file and stderr_transfer_action_info:
+          self._transfer_file_from_cr(stderr_file_path, 
+                                      engine_stderr_file, 
+                                      stderr_transfer_action_info[0], 
+                                      stderr_transfer_action_info[1], 
+                                      buffer_size)
+    
+
+  ########## FILE TRANSFER MONITORING ###################################
+
+  def transfer_status(self, transfer_id):
+    '''
+    File transfer status and information related to the transfer progress.
+
+    * transfer_id *transfer identifier*
+
+    * returns: *tuple(transfer_status or None, tuple or None)*
+        * Status of the file transfer : see :ref:`file-transfer-status` or the    
+          list constants.FILE_TRANSFER_STATUS
+        * None if the transfer status in not 
+          constants.TRANSFERING_FROM_CLIENT_TO_CR or 
+          constants.TRANSFERING_FROM_CR_TO_CLIENT.
+          tuple (file size, size already transfered) if it is a file transfer.
+          tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer: 
+    '''
+    
+    status = self._engine_proxy.transfer_status(transfer_id)
+    transfer_action_info =  self._engine_proxy.transfer_action_info(transfer_id)
+    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
+    progression = self._transfer_progress(transfer_id, client_path, transfer_action_info)
+    return (status, progression)
+
+
+  ########## WORKFLOW CONTROL ############################################
+
+  def restart_workflow(self, workflow_id):
+    '''
+    Restarts the jobs of the workflow which failed. The jobs will be submitted
+    again. 
+    The workflow status has to be constants.WORKFLOW_DONE.
+    
+    * workflow_id *workflow identifier*
+
+    * returns: *boolean* 
+        True if some jobs were restarted. (TBI right error management)
+    '''
+    return self._engine_proxy.restart_workflow(workflow_id)
+    
+
+  def delete_workflow(self, workflow_id):
+    '''
+    Delete the workflow and all its associated element (FileTransfers and Jobs). The worklfow_id will become invalid and can not be used anymore. The workflow jobs which are running will be killed.
+    '''
+    self._engine_proxy.delete_workflow(workflow_id)
+
+
+  def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
+    '''
+    Set a new expiration date for the workflow.
+      
+    * workflow_id *workflow identifier*
+
+    * new_expiration_date *datetime.datetime*
+    
+    * returns: *boolean* 
+        True if the expiration date was changed.  (TBI right error management)
+    '''
+    return self._engine_proxy.change_workflow_expiration_date(workflow_id, new_expiration_date)
+
+
+  ########## JOB CONTROL #################################################
+
+  def wait_job( self, job_ids, timeout = -1):
+    '''
+    Waits for all the specified jobs to finish execution or fail. 
+    
+    * job_ids *sequence of job identifier* Jobs to wait for.
+
+    * timeout *int* 
+        The call to wait_job exits before timeout seconds.
+        A negative value means that the method will wait indefinetely.
+    '''
+    self._engine_proxy.wait_job(job_ids, timeout)
+
+  def kill_job( self, job_id ):
+    '''
+    Kill a running job. The job will not be deleted form the system. 
+    Use the restart_job method to restart the job.
+    '''
+    self._engine_proxy.kill_job(job_id)
+   
+  
+  def restart_job( self, job_id ):
+    '''   
+    Restarts a job which status is constants.FAILED or constants.WARNING.
+   
+    * job_id *job identifier*
+    * returns: *boolean* 
+        True if the job was restarted. (TBI right error management)
+    '''
+    self._engine_proxy.restart_job(job_id)
+
+
+  def delete_job( self, job_id ):
+    '''
+    Delete a job which is not part of a workflow.
+    The job_id will become invalid and can not be used anymore.
+    The job is killed if it is running.
+    '''
+    
+    self._engine_proxy.delete_job(job_id)
+
+
+  ########## FILE TRANSFER CONTROL #######################################
 
   def transfer_files(self, transfer_id, buffer_size = 512**2):
     '''
-    Does the actual file(s) transfer.
-    If the files are only located on the client side (transfer status: constants.FILES_ON_CLIENT) the transfer is done from the client to 
-    the computing resource.
-    If the files are localted on the computing reource side (transfer status:
-    constants.FILES_ON_CR or constants.FILES_ON_CLIENT_AND_CR) the transfer is 
-    done from the computing resouce to the client.
-    The files are transfered piece by piece. The size of each piece can be
-    tuned using the buffer_size argument.
+    Transfer file(s) associted to the transfer_id.
+    If the files are only located on the client side (that is the transfer 
+    status is constants.FILES_ON_CLIENT) the file(s) will be transfered from the 
+    client to the computing resource.
+    If the files are localted on the computing reource side (that is the 
+    transfer status is constants.FILES_ON_CR or constants.FILES_ON_CLIENT_AND_CR) 
+    the files will be transfered from the computing resource to the client.
+    
 
-    @rtype: Boolean
-    @return: the transfer was done
+    * transfer_id *FileTransfer identifier*
+    * buffer_size *int*
+        The files are transfered piece by piece. The size of each piece can be
+        tuned using the buffer_size argument.
+    * returns: *boolean*
+        The transfer was done. (TBI right error management)
     '''
 
     status, status_info = self.transfer_status(transfer_id)
@@ -1027,6 +1232,155 @@ class WorkflowController(object):
 
       return False
     
+ 
+
+  def initialize_transfer(self, transfer_id):
+    '''
+    Initializes the transfer and returns the transfer action information.
+
+    * transfer_id *FileTransfer identifier*
+
+    * returns: *tuple*
+        * (file_size, md5_hash) in the case of a file transfer
+        * (cumulated_size, dictionary relative path -> (file_size, md5_hash)) in
+          case of a directory transfer.
+    '''
+    status = self._engine_proxy.transfer_status(transfer_id)
+    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
+
+    if status == FILES_ON_CLIENT:
+      if not client_paths:
+        if os.path.isfile(client_path):
+          stat = os.stat(client_path)
+          file_size = stat.st_size
+          md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
+          transfer_action_info = self._engine_proxy.init_file_transfer_to_cr(transfer_id, 
+                                                      file_size, 
+                                                      md5_hash)
+        elif os.path.isdir(client_path):
+          full_path_list = []
+          for element in os.listdir(client_path):
+            full_path_list.append(os.path.join(client_path, element))
+          content = WorkflowController.dir_content(full_path_list)
+          transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id, 
+                                                     content,
+                                                     TR_DIR_C_TO_CR)
+
+      else: #client_paths
+        content = WorkflowController.dir_content(client_paths)
+        transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id,
+                                                   content,
+                                                   TR_MFF_C_TO_CR)
+      return transfer_action_info
+    elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
+      (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
+      if transfer_action_info[2] == TR_MFF_CR_TO_C:
+        WorkflowController.create_dir_structure(os.path.dirname(client_path), 
+                                                dir_content)
+      if transfer_action_info[2] == TR_DIR_CR_TO_C:
+        WorkflowController.create_dir_structure(client_path, 
+                                                dir_content)
+      return transfer_action_info
+    
+    return None
+  
+
+
+  def write_to_computing_resource_file(self, 
+                                       transfer_id, 
+                                       data, 
+                                       relative_path=None):
+    '''
+    Writes a piece of data to a file located on the computing resouce.
+
+    * transfer_id *FileTransfer identifier*
+
+    * data *string* to write to the file.
+
+    * relative_path *string*
+         Mandatory in case of a directory transfer to identify the file.
+         None in case of a file transfer.
+
+    * returns: *boolean*
+        True if the file transfer ended. (TBI right error management)
+        Note that in case of a directory transfer, it does not mean that the 
+        whole directory transfer ended. 
+    '''
+
+    status = self._engine_proxy.transfer_status(transfer_id)
+    if not status == TRANSFERING_FROM_CLIENT_TO_CR:
+      self.initialize_transfer(transfer_id)
+    transfer_ended = self._engine_proxy.write_to_computing_resource_file(
+                                                                  transfer_id, 
+                                                                  data, 
+                                                                 relative_path)
+    return transfer_ended
+
+
+  def read_from_computing_resource_file(self, 
+                                        transfer_id, 
+                                        buffer_size, 
+                                        transmitted,
+                                        relative_path=None):
+    '''
+    Reads a piece of data from a file located on the computing resource.
+
+    * transfer_id *FileTransfer identifier*
+
+    * buffer_size *int*
+        Size of the data to read.
+
+    * transmitted *int* 
+        Size of the data already read.
+
+    * relative_path *string*
+        Mandatory in case of a directory transfer to identify the file.
+        None in case of a file transfer.
+
+    * returns: *string* read from the file at the position *transmitted*
+    '''
+    
+    data = self._engine_proxy.read_from_computing_resource_file(transfer_id, 
+                                                                buffer_size, 
+                                                                transmitted,
+                                                                relative_path)
+    if not data:
+      # check if the whole transfer ended
+      transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
+      if not transfer_action_info == None: # None if stdout and stderr
+        assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
+              transfer_action_info[2] == TR_DIR_CR_TO_C or 
+              transfer_action_info[2] == TR_MFF_CR_TO_C)
+        (status, progression) = self.transfer_status(transfer_id)
+        if transfer_action_info[2] == TR_FILE_CR_TO_C:
+          (file_size, transfered) = progression
+          if file_size == transfered:
+            self._engine_proxy.set_transfer_status(transfer_id,   
+                                                  FILES_ON_CLIENT_AND_CR)
+        if transfer_action_info[2] == TR_DIR_CR_TO_C or \
+          transfer_action_info[2] == TR_MFF_CR_TO_C:
+          (cumulated_file_size, 
+          cumulated_transmissions, 
+          files_transfer_status) = progression
+          if cumulated_transmissions == cumulated_file_size:
+            self._engine_proxy.set_transfer_status(transfer_id,   
+                                                  FILES_ON_CLIENT_AND_CR)
+
+    return data
+
+
+  def delete_transfer(self, transfer_id):
+    '''
+    Delete the FileTransfer and the associated files and directories on the 
+    computing resource side. The transfer_id will become invalid and can not be 
+    used anymore. If some jobs reference the FileTransfer as an input or an 
+    output the FileTransfer will not be deleted immediately but as soon as these 
+    jobs will be deleted.
+    '''
+    self._engine_proxy.delete_transfer(transfer_id)
+
+
+  ########## PRIVATE #############################################          
 
   def _transfer_file_to_cr(self, 
                            client_path, 
@@ -1109,331 +1463,7 @@ class WorkflowController(object):
           raise Exception('read_from_computing_resource_file: Transmission error detected.')
     f.close()
 
-  
-  def initialize_transfer(self, transfer_id):
-    '''
-    Initializes the transfer and returns the transfer action information.
 
-    @rtype: tuple 
-    @return: in the case of a file transfer: tuple (file_size, md5_hash)
-             in the case of a dir transfer: tuple (cumulated_size, dictionary relative path -> (file_size, md5_hash))
-    '''
-    status = self._engine_proxy.transfer_status(transfer_id)
-    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
-
-    if status == FILES_ON_CLIENT:
-      if not client_paths:
-        if os.path.isfile(client_path):
-          stat = os.stat(client_path)
-          file_size = stat.st_size
-          md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
-          transfer_action_info = self._engine_proxy.init_file_transfer_to_cr(transfer_id, 
-                                                      file_size, 
-                                                      md5_hash)
-        elif os.path.isdir(client_path):
-          full_path_list = []
-          for element in os.listdir(client_path):
-            full_path_list.append(os.path.join(client_path, element))
-          content = WorkflowController.dir_content(full_path_list)
-          transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id, 
-                                                     content,
-                                                     TR_DIR_C_TO_CR)
-
-      else: #client_paths
-        content = WorkflowController.dir_content(client_paths)
-        transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id,
-                                                   content,
-                                                   TR_MFF_C_TO_CR)
-      return transfer_action_info
-    elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
-      (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
-      if transfer_action_info[2] == TR_MFF_CR_TO_C:
-        WorkflowController.create_dir_structure(os.path.dirname(client_path), 
-                                                dir_content)
-      if transfer_action_info[2] == TR_DIR_CR_TO_C:
-        WorkflowController.create_dir_structure(client_path, 
-                                                dir_content)
-      return transfer_action_info
-    
-    return None
-    
-
-  def write_to_computing_resource_file(self, 
-                                       transfer_id, 
-                                       data, 
-                                       relative_path=None):
-    '''
-    Write a piece of data to a file locate on the computing resouce.
-
-    @type  transfer_id: string
-    @param transfer_id: transfer id
-    @type  data: data
-    @param data: data to write to the file
-    @type  relative_path: relative file path
-    @param relative_path: Mandatory to identify the file concerned if is the    
-                          transfer_id correspond to a directory transfer. 
-                          None if it concerns only one file.
-    @rtype : boolean
-    @return: the file transfer ended. Note that if the transfer_id correspond to
-    a directory transfer, it does not mean that the whole directory transfer ended. 
-    '''
-
-    status = self._engine_proxy.transfer_status(transfer_id)
-    if not status == TRANSFERING_FROM_CLIENT_TO_CR:
-      self.initialize_transfer(transfer_id)
-    transfer_ended = self._engine_proxy.write_to_computing_resource_file(
-                                                                  transfer_id, 
-                                                                  data, 
-                                                                 relative_path)
-    return transfer_ended
-
-  def read_from_computing_resource_file(self, 
-                                        transfer_id, 
-                                        buffer_size, 
-                                        transmitted,
-                                        relative_path=None):
-    '''
-    Read a piece of data from a file located on the computing resource.
-    
-    @type  transfer_id: string
-    @param transfer_id: transfer id
-    @type  transmitted: int
-    @param transmitted: size of the data already read
-    @type  buffer_size: int
-    @param buffer_size: size of the piece to read
-    @type  relative_path: file path
-    @param relative_path: Mandatory to identify the file concerned if is the    
-                          transfer_id correspond to a directory transfer. 
-                          None if it concerns only one file.
-
-    @rtype: data
-    @return: piece of data read from the file at the position transmitted
-    '''
-    
-    data = self._engine_proxy.read_from_computing_resource_file(transfer_id, 
-                                                                buffer_size, 
-                                                                transmitted,
-                                                                relative_path)
-    if not data:
-      # check if the whole transfer ended
-      transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
-      if not transfer_action_info == None: # None if stdout and stderr
-        assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
-              transfer_action_info[2] == TR_DIR_CR_TO_C or 
-              transfer_action_info[2] == TR_MFF_CR_TO_C)
-        (status, progression) = self.transfer_status(transfer_id)
-        if transfer_action_info[2] == TR_FILE_CR_TO_C:
-          (file_size, transfered) = progression
-          if file_size == transfered:
-            self._engine_proxy.set_transfer_status(transfer_id,   
-                                                  FILES_ON_CLIENT_AND_CR)
-        if transfer_action_info[2] == TR_DIR_CR_TO_C or \
-          transfer_action_info[2] == TR_MFF_CR_TO_C:
-          (cumulated_file_size, 
-          cumulated_transmissions, 
-          files_transfer_status) = progression
-          if cumulated_transmissions == cumulated_file_size:
-            self._engine_proxy.set_transfer_status(transfer_id,   
-                                                  FILES_ON_CLIENT_AND_CR)
-
-    return data
-    
-     
-  def delete_transfer(self, transfer_id):
-    '''
-    Deletes the file or directory copied on the computing resource side and the 
-    associated transfer information.
-    If some jobs reference these file(s) as input or output, the transfer will 
-    not be deleted immediately but as soon as all the jobs will be deleted.
-    
-    @type transfer_id: string
-    @param transfer_id: transfer id
-    '''
-    self._engine_proxy.delete_transfer(transfer_id)
-    
-
-  ########## JOB SUBMISSION ##################################################
-
-
-
-  def delete_job( self, job_id ):
-    '''
-    Frees all the resources allocated to the submitted job on the database 
-    server. After this call, the C{job_id} becomes invalid and
-    cannot be used anymore. 
-    To avoid that jobs create non handled files, L{delete_job} kills the job if 
-    it is running.
-
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{jobs} or the submission 
-    methods L{submit_job}, L{customSubmit} or L{submitWithTransfer})
-    '''
-    
-    self._engine_proxy.delete_job(job_id)
-    
-
-  
-  
-  def delete_workflow(self, workflow_id):
-    '''
-    Removes a workflow and all its associated elements (file transfers and jobs)
-    '''
-    self._engine_proxy.delete_workflow(workflow_id)
-    
-  def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
-    '''
-    Ask a new expiration date for the workflow.
-    Return True if the workflow expiration date was set to the new date.
-        
-    @type  workflow_id: C{WorkflowIdentifier}
-    @type  expiration_date: datetime.datetime
-    @rtype: boolean
-    '''
-    return self._engine_proxy.change_workflow_expiration_date(workflow_id, new_expiration_date)
-  
-  def restart_workflow(self, workflow_id):
-    '''
-    The jobs which failed in the previous submission will be submitted again.
-    The workflow execution must be done.
-    Return true if the workflow was resubmitted.
-    '''
-    return self._engine_proxy.restart_workflow(workflow_id)
-    
-
-  ########## MONITORING #############################################
-
-
-  def jobs(self, job_ids=None):
-    '''
-    Submitted jobs which are not part of a workflow.
-    If a sequence of job id is given, the function returns general information 
-    about these jobs.
-    Returns a dictionary of job identifier associated to general information.
-
-    @rtype:  dictionary: job identifiers -> tuple (string, string, date))
-    @return: job_id -> (name, command, submission date)
-    '''
-    
-    return self._engine_proxy.jobs(job_ids)
-    
-  def transfers(self, transfer_ids=None):
-    '''
-    Transfers which are not part of a workflow.
-    If a sequence of transfer id is given, the function returns general 
-    information about these transfers.
-    Returns a dictionary of transfer identifiers associated to general 
-    information.
-    
-    @rtype: dictionary: string -> tuple(string, 
-                                        string, 
-                                        date,  
-                                        None or sequence of string)
-    @return: transfer_id -> ( -client_path: client file or directory path
-                              -expiration_date: after this date the file copied
-                              on the computing resource and all the transfer 
-                              information will be deleted, unless an existing 
-                              job has declared this file as output or input.
-                              -client_paths: sequence of file or directory path 
-                              or None
-                            )
-    '''
-    return self._engine_proxy.transfers(transfer_ids)
-
-  def workflows(self, workflow_ids=None):
-    '''
-    Workflows submitted. 
-    If a sequence of workflow id is given, the function returns general 
-    information about these workflows.
-    Returns a dictionary of workflow identifiers associated to general 
-    information.
-    
-    @rtype: dictionary: workflow identifier -> tupe(date, string)
-    @return: workflow_id -> (workflow_name, expiration_date)
-    '''
-    return self._engine_proxy.workflows(workflow_ids)
-  
-  
-  def workflow(self, wf_id):
-    '''
-    Returns the submitted workflow.
-    
-    @rtype: L{Workflow}
-    @return: submitted workflow
-    '''
-    return self._engine_proxy.workflow(wf_id)
-   
-   
-  def job_status( self, job_id ):
-    '''
-    Returns the status of a submitted job.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
-    @rtype:  C{JobStatus} or None
-    @return: the status of the job, if its valid and own by the current user, None 
-    otherwise. See the list of status: constants.JOB_STATUS.
-    '''
-    return self._engine_proxy.job_status(job_id)
-  
-  
-  def workflow_status(self, wf_id):
-    '''
-    Returns the status of the submitted workflow.
-    
-    @type  wf_id: Workflow identifier
-    @param wf_id: The workflow identifier.
-    @rtype: string
-    @return: the workflow status, if its valid and own by the current use, None
-    otherwise. See the list of status: constants.WORKFLOW_STATUS
-    '''
-    return self._engine_proxy.workflow_status(wf_id)
-  
-  
-  def workflow_elements_status(self, wf_id, group = None):
-    '''
-    Gets back the status of all the workflow elements at once, minimizing the
-    communication with the server and requests to the database.
-    
-    @type  wf_id: C{WorflowIdentifier}
-    @param wf_id: The workflow identifier
-    @rtype: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
-    '''
-    wf_status = self._engine_proxy.workflow_elements_status(wf_id)
-    if not wf_status:
-      # TBI raise ...
-      return
-     # special processing for transfer status:
-    new_transfer_status = []
-    for engine_path, client_path, status, transfer_action_info in wf_status[1]:
-      progression = self._transfer_progress(engine_path, 
-                                            client_path, 
-                                            transfer_action_info)
-      new_transfer_status.append((engine_path, (status, progression)))
-      
-    new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
-    return new_wf_status
-    
-  
-  def transfer_status(self, transfer_id):
-    '''
-    Returns the status of a transfer and the information related to the transfer in progress in such case. 
-    
-    @type  transfer_id: string
-    @rtype: tuple  (C{transfer_status} or None, tuple or None)
-    @return: [0] the transfer status among constants.FILE_TRANSFER_STATUS
-             [1] None if the transfer status in not constants.TRANSFERING_FROM_CLIENT_TO_CR or 
-                 constants.TRANSFERING_FROM_CR_TO_CLIENT
-                 if it is a file transfer: tuple (file size, size already transfered)
-                 if it is a directory transfer: tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered)
-    '''
-    
-    status = self._engine_proxy.transfer_status(transfer_id)
-    transfer_action_info =  self._engine_proxy.transfer_action_info(transfer_id)
-    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
-    progression = self._transfer_progress(transfer_id, client_path, transfer_action_info)
-    return (status, progression)
-      
-            
             
   def _transfer_progress(self, engine_path, client_path, transfer_action_info):
     progression_info = None
@@ -1478,91 +1508,6 @@ class WorkflowController(object):
        
     return None
     
-
-  def job_termination_status(self, job_id ):
-    '''
-    Gives the information related to the end of the job.
-   
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
-    @rtype:  tuple (exit_status, exit_value, term_signal, resource_usage) or None
-    @return: It may be C{None} if the job is not valid. 
-        - exit_status: The status of the terminated job. See the list of status
-                       constants.JOB_EXIT_STATUS
-        - exit_value: operating system exit code if the job terminated normally.
-        - term_signal: representation of the signal that caused the termination of 
-          the  job if the job terminated due to the receipt of a signal.
-        - resource_usage: resource usage information as given by the cluser 
-          distributed resource management system (DRMS).
-    '''
-    return self._engine_proxy.job_termination_status(job_id)
-    
-    
-  def retrieve_job_stdouterr(self, job_id, stdout_file_path, stderr_file_path = None, buffer_size = 512**2):
-    '''
-    Copy the job standard error to a file.
-    '''
-    
-    engine_stdout_file, stdout_transfer_action_info, engine_stderr_file, stderr_transfer_action_info = self._engine_proxy.stdouterr_transfer_action_info(job_id)
-    
-    open(stdout_file_path, 'wb') 
-    if engine_stdout_file and stdout_transfer_action_info:
-      self._transfer_file_from_cr(stdout_file_path, 
-                                  engine_stdout_file, 
-                                  stdout_transfer_action_info[0], 
-                                  stdout_transfer_action_info[1], 
-                                  buffer_size)
-  
-    if stderr_file_path:
-      open(stderr_file_path, 'wb') 
-      if engine_stderr_file and stderr_transfer_action_info:
-          self._transfer_file_from_cr(stderr_file_path, 
-                                      engine_stderr_file, 
-                                      stderr_transfer_action_info[0], 
-                                      stderr_transfer_action_info[1], 
-                                      buffer_size)
-    
-    
-  ########## JOB CONTROL VIA DRMS ########################################
-  
-  
-  def wait_job( self, job_ids, timeout = -1):
-    '''
-    Waits for all the specified jobs to finish execution or fail. 
-    The job_id must be valid.
-    
-    @type  job_ids: set of C{JobIdentifier}
-    @param job_ids: Set of jobs to wait for
-    @type  timeout: int
-    @param timeout: the call exits before timout seconds. a negative value 
-    means to wait indefinetely for the result. 0 means to return immediately
-    '''
-    self._engine_proxy.wait_job(job_ids, timeout)
-
-  def kill_job( self, job_id ):
-    '''
-    Kill the job execution, the job will not be deleted of the database server. 
-    Use the L{restart_job} method to restart the job.
-    The job_id must be valid.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
-    '''
-    self._engine_proxy.kill_job(job_id)
-   
-  
-  def restart_job( self, job_id ):
-    '''   
-    Restarts a job which status is constants.FAILED or constants.WARNING.
-    The job_id must be valid.
-    Return True if the job was restarted.
-    
-    @type  job_id: C{JobIdentifier}
-    @param job_id: The job identifier (returned by L{submit_job} or L{jobs})
-    '''
-    self._engine_proxy.restart_job(job_id)
-
-
   @staticmethod
   def dir_content(path_seq, md5_hash=False):
     result = []
@@ -1592,3 +1537,81 @@ class WorkflowController(object):
         if not os.path.isdir(full_path):
           os.mkdir(full_path)
         WorkflowController.create_dir_structure(path, description, relative_path)
+
+
+    
+  '''
+  The file transfer methods must be used when the data is located on the
+  client machine and not reachable from the computing resource
+  
+  Example of a Job submission with file transfer outside of a workflow:
+  
+  #job client input files path on client: cfin_1, cfin_2, ..., rfin_n 
+  #job client output files path on: cfout_1, rfout_2, ..., rfout_m  
+  
+  #Call register_transfer for each transfer file and get back the transfer id:
+  in_1_trid= wf_controller.register_transfer(True, rfin_1)
+  in_2_trid= wf_controller.register_transfer(True, rfin_2)
+  ...
+  in_n_trid= wf_controller.register_transfer(True, rfin_n)
+
+  out_1_trid = wf_controller.register_transfer(False, cfout_1)
+  out_2_trid = wf_controller.register_transfer(False, cfout_2)
+  ...
+  out_n_trid = wf_controller.register_transfer(False, cfout_m)
+  
+  # Transfer input files:
+  wf_controller.transfer_files(in_1_trid)
+  wf_controller.transfer_files(in_2_trid)
+  ...
+  wf_controller.transfer_files(in_n_trid)
+    
+  #Job submittion: 
+  # use the transfer id in the command or stdin argument when needed
+  # do not forget to reference input and output file transfers
+  job_id = wf_controller.submit_job(['python', trid_in_1], 
+                                    [in_1_trid, in_2_trid, ..., in_n_trid],
+                                    [out_1_trid, out_2_trid, ..., out_n_trid])
+  wf_controller.wait_job(job_id)
+  
+  #After Job execution, transfer back the output file
+  wf_controller.transfer_files(out_1_trid)
+  wf_controller.transfer_files(out_2_trid)
+  ...
+  wf_controller.transfer_files(out_n_trid)
+  
+  Use the FileTransfer client_paths attribute if the transfer involves several 
+  associated files and/or directories:
+          - when transfering a file serie 
+          - in the case of file format associating several file and/or directories
+            (ex: a SPM image is stored in 2 files: .img and .hdr)
+  In this case, set client_path to one the files (eq: .img).
+  In other cases (1 file or 1 directory) the client_paths must be set to None.
+  
+  Example:
+    
+  #transfer of a SPM image file
+  fout_1 = wf_controller.register_transfer(client_path = 'mypath/myimage.img', 
+                                 client_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
+  ...
+  wf_controller.transfer_files(fout_1)
+ 
+  '''
+
+  '''
+  L{submit_job} method submits a job for execution to the cluster. 
+  A job identifier is returned and can be used to inspect and 
+  control the job.
+  
+  Example:
+    import soma.workflow.client
+      
+    wf_controller = soma.workflow.client.WorkflowController("Titan")
+    job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
+    wf_controller.kill_job(job_id)
+    wf_controller.restart_job(job_id)
+    wf_controller.wait_job([job_id])
+    exitinfo = wf_controller.job_termination_status(job_id)
+    wf_controller.delete_job(job_id)
+  '''
+

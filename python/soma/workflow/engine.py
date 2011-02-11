@@ -175,6 +175,8 @@ class Drmaa(object):
 
     if job.queue:
       self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
+
+    #self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-l h_rt=0:0:30" )
     
     if job.parallel_job_info :
       parallel_config_name, max_node_number = job.parallel_job_info
