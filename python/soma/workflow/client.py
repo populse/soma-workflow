@@ -429,9 +429,9 @@ class WorkflowController(object):
                password=None,
                config_path=None):
     '''
-    Searchs for a soma-workflow configuration file (if not specified in the 
-    *config_file_path* argument) and sets up the connection to the computing 
-    resource. 
+    Sets up the connection to the computing resource. 
+    Looks for a soma-workflow configuration file (if not specified in the 
+    *config_path* argument).
 
     * resource_id *string*
         Identifier of the computing resource to connect to.
@@ -444,8 +444,7 @@ class WorkflowController(object):
         Optional path to the configuration file.
 
     .. note::
-      The login and password are only required for a remote computing 
-      resource.
+      The login and password are only required for a remote computing resource.
     '''
     
     
@@ -629,14 +628,13 @@ class WorkflowController(object):
                       name=None, 
                       queue=None):
     '''
-
-    Submits a workflow to the system and returns a workflow identifier.
+    Submits a workflow and returns a workflow identifier.
     
     * workflow *client.Workflow*
-        Workflow descrition.
+        Workflow description.
     
     * expiration_date *datetime.datetime*
-        After this date the workflow will be deleted from the system.
+        After this date the workflow will be deleted.
 
     * name *string*
         Optional workflow name.
@@ -673,7 +671,7 @@ class WorkflowController(object):
     '''
     .. note :: TO DO simplification => Job object as argument.
     
-    Submits a job **which is not part of a workflow** to the system.
+    Submits a job which is not part of a workflow.
     Returns a job identifier.
 
     If the job used transfered files the list of involved file transfer **must 
@@ -690,7 +688,7 @@ class WorkflowController(object):
 
     * referenced_input_files *sequence of FileTransfer idenfier*
         List of the FileTransfer identifiers which are input of the Job. 
-        In other words, FileTransfer which are requiered by the Job to run
+        In other words, FileTransfer which are required by the Job to run
         It includes the stdin if you use one.
 
     * referenced_output_files *sequence of FileTransfer idenfier*
@@ -771,7 +769,7 @@ class WorkflowController(object):
                         name = None,
                         client_paths=None): 
     '''
-    Registers a file transfer **which is not part of a workflow** and returns a 
+    Registers a file transfer which is not part of a workflow and returns a 
     file transfer identifier.
 
     .. note :: TO DO simplification => FileTransfer object as argument.
@@ -884,8 +882,8 @@ class WorkflowController(object):
     * wf_id *workflow identifier*
       
     * returns: *string or None*
-        Status of the workflow: see :ref:`workflow-status` or the list 
-        constants.WORKFLOW_STATUS.
+        Status of the workflow: see :ref:`workflow-status` or the 
+        constants.WORKFLOW_STATUS list.
         None if the identifier is not valid.
     '''
     return self._engine_proxy.workflow_status(wf_id)
@@ -894,7 +892,8 @@ class WorkflowController(object):
   def workflow_elements_status(self, wf_id, group = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
-    communication with the server and requests to the database.
+    communication with the server and request to the database.
+    TO DO => make it more user friendly.
     
     * wf_id *workflow identifier*
 
@@ -937,14 +936,16 @@ class WorkflowController(object):
     * job_id *job identifier*
 
     * returns: *tuple(string, int or None, string or None, string) or None*
-        * exit status: The status of the terminated job: see 
-          :ref:`job-exit-status` or the list constants.JOB_EXIT_STATUS.
+        * exit status: status of the terminated job: see 
+          :ref:`job-exit-status` or the constants.JOB_EXIT_STATUS list.
         * exit value: operating system exit code of the job if the job 
           terminated normally.
         * terminating signal: representation of the signal that caused the 
-          termination of the  job if the job terminated due to the receipt of 
+          termination of the job if the job terminated due to the receipt of 
           a signal.
-        * resource usage: resource usage information as given by the DRMS. 
+        * resource usage: resource usage information provided as an array of 
+          strings where each string complies with the format <name>=<value>.
+          The information provided depends on the DRMS and DRMAA implementation.
     '''
     return self._engine_proxy.job_termination_status(job_id)
 
@@ -955,7 +956,7 @@ class WorkflowController(object):
                              stderr_file_path = None, 
                              buffer_size = 512**2):
     '''
-    Write the job standard output and error to files.
+    Copies the job standard output and error to specified file.
 
     * job_id *job identifier*
 
@@ -999,12 +1000,12 @@ class WorkflowController(object):
 
     * returns: *tuple(transfer_status or None, tuple or None)*
         * Status of the file transfer : see :ref:`file-transfer-status` or the    
-          list constants.FILE_TRANSFER_STATUS
+          constants.FILE_TRANSFER_STATUS list.
         * None if the transfer status in not 
           constants.TRANSFERING_FROM_CLIENT_TO_CR or 
           constants.TRANSFERING_FROM_CR_TO_CLIENT.
           tuple (file size, size already transfered) if it is a file transfer.
-          tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer: 
+          tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer.
     '''
     
     status = self._engine_proxy.transfer_status(transfer_id)
@@ -1032,14 +1033,14 @@ class WorkflowController(object):
 
   def delete_workflow(self, workflow_id):
     '''
-    Delete the workflow and all its associated element (FileTransfers and Jobs). The worklfow_id will become invalid and can not be used anymore. The workflow jobs which are running will be killed.
+    Deletes the workflow and all its associated elements (FileTransfers and Jobs). The worklfow_id will become invalid and can not be used anymore. The workflow jobs which are running will be killed.
     '''
     self._engine_proxy.delete_workflow(workflow_id)
 
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
-    Set a new expiration date for the workflow.
+    Sets a new expiration date for the workflow.
       
     * workflow_id *workflow identifier*
 
@@ -1055,9 +1056,10 @@ class WorkflowController(object):
 
   def wait_job( self, job_ids, timeout = -1):
     '''
-    Waits for all the specified jobs to finish execution or fail. 
+    Waits for all the specified jobs to finish. 
     
-    * job_ids *sequence of job identifier* Jobs to wait for.
+    * job_ids *sequence of job identifier* 
+        Jobs to wait for.
 
     * timeout *int* 
         The call to wait_job exits before timeout seconds.
@@ -1067,7 +1069,8 @@ class WorkflowController(object):
 
   def kill_job( self, job_id ):
     '''
-    Kill a running job. The job will not be deleted form the system. 
+    Kills a running job. The job will not be deleted from the system (the job
+    identifier remains valid). 
     Use the restart_job method to restart the job.
     '''
     self._engine_proxy.kill_job(job_id)
@@ -1086,7 +1089,7 @@ class WorkflowController(object):
 
   def delete_job( self, job_id ):
     '''
-    Delete a job which is not part of a workflow.
+    Deletes a job which is not part of a workflow.
     The job_id will become invalid and can not be used anymore.
     The job is killed if it is running.
     '''
@@ -1098,19 +1101,21 @@ class WorkflowController(object):
 
   def transfer_files(self, transfer_id, buffer_size = 512**2):
     '''
-    Transfer file(s) associted to the transfer_id.
+    Transfer file(s) associated to the transfer_id.
     If the files are only located on the client side (that is the transfer 
     status is constants.FILES_ON_CLIENT) the file(s) will be transfered from the 
     client to the computing resource.
-    If the files are localted on the computing reource side (that is the 
-    transfer status is constants.FILES_ON_CR or constants.FILES_ON_CLIENT_AND_CR) 
+    If the files are located on the computing resource side (that is the 
+    transfer status is constants.FILES_ON_CR or 
+    constants.FILES_ON_CLIENT_AND_CR) 
     the files will be transfered from the computing resource to the client.
-    
 
     * transfer_id *FileTransfer identifier*
+
     * buffer_size *int*
         The files are transfered piece by piece. The size of each piece can be
         tuned using the buffer_size argument.
+
     * returns: *boolean*
         The transfer was done. (TBI right error management)
     '''
@@ -1291,7 +1296,7 @@ class WorkflowController(object):
                                        data, 
                                        relative_path=None):
     '''
-    Writes a piece of data to a file located on the computing resouce.
+    Writes a piece of data to a file located on the computing resource.
 
     * transfer_id *FileTransfer identifier*
 
@@ -1371,7 +1376,7 @@ class WorkflowController(object):
 
   def delete_transfer(self, transfer_id):
     '''
-    Delete the FileTransfer and the associated files and directories on the 
+    Deletes the FileTransfer and the associated files and directories on the 
     computing resource side. The transfer_id will become invalid and can not be 
     used anymore. If some jobs reference the FileTransfer as an input or an 
     output the FileTransfer will not be deleted immediately but as soon as these 
