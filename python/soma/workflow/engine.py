@@ -280,6 +280,8 @@ class EngineTransfer(FileTransfer):
 
   status = None
 
+  disposal_timeout = None
+
   def __init__(self, client_file_transfer):
     client_ft_copy = copy.deepcopy(client_file_transfer)
     exist_on_client = client_ft_copy.initial_status == constants.FILES_ON_CLIENT
@@ -295,23 +297,14 @@ class EngineTransfer(FileTransfer):
                user_id, 
                exp_date=None,
                wf_id=-1):
-    
-    if exp_date == None:
-      exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
+     
+    self.engine_path = database_server.add_transfer(self,
+                                                    user_id,
+                                                    exp_date, 
+                                                    wf_id)
 
     if self.client_paths:
-      self.engine_path = database_server.generate_file_path(user_id)
       os.mkdir(self.engine_path)
-    else:
-      self.engine_path = database_server.generate_file_path(user_id, 
-                                                               self.client_path)
-    database_server.add_transfer( self.engine_path, 
-                                  self.client_path, 
-                                  exp_date, 
-                                  user_id,
-                                  self.status, 
-                                  wf_id, 
-                                  self.client_paths)
 
     return self.engine_path
 
@@ -349,6 +342,9 @@ class EngineJob(soma.workflow.client.Job):
   # contain a representation of the signal if the status is FINISHED_TERM_SIG.
   # string or None
   terminating_signal = None
+
+  expiration_date = None
+  
 
   logger = None
 
@@ -491,34 +487,11 @@ class EngineJob(soma.workflow.client.Job):
     self._user_id = user_id
     logger = logging.getLogger('engine.EngineJob')
 
-    if exp_date == None:
-      exp_date = datetime.now() + timedelta(hours=self.disposal_timeout) 
-    parallel_config_name = None
-    max_node_number = 1
-
-    if not self.stdout_file:
-      self.stdout_file = database_server.generate_file_path(self._user_id)
-      self.stderr_file = database_server.generate_file_path(self._user_id)
-      custom_submission = False #the std out and err file has to be removed with the job
-    else:
-      custom_submission = True #the std out and err file won't to be removed with the job
-      self.stdout_file = self.stdout_file
-      self.stderr_file = self.stderr_file
-      
-    if self.parallel_job_info:
-      parallel_config_name, max_node_number = self.parallel_job_info   
-       
-    command_info = ""
-    for command_element in self.command:
-      command_info = command_info + " " + repr(command_element)
-
-    job_id = database_server.add_job(user_id=self._user_id, 
-                                     engine_job=self,
-                                     custom_submission=custom_submission,
-                                     expiration_date=exp_date, 
-                                     command=command_info,
-                                     parallel_config_name=parallel_config_name,
-                                     max_node_number=max_node_number)
+    (self.job_id, 
+     self.stdout_file, 
+     self.stderr_file) = database_server.add_job(user_id=self._user_id, 
+                                                 engine_job=self,
+                                                 exp_date=exp_date)
                                         
     # create standard output files 
     try:  
@@ -534,30 +507,8 @@ class EngineJob(soma.workflow.client.Job):
       except IOError, e:
         raise WorkflowEngineError("Could not create the standard error file "
                                   "%s: %s \n"  %(type(e), e), logger)
-      
     
-    if self.referenced_input_files:
-      str_referenced_input_files = []
-      for ft in self.referenced_input_files:
-        if isinstance(ft, FileTransfer):
-          engine_path = ft.engine_path
-        else:
-          engine_path = ft
-        str_referenced_input_files.append(engine_path)
-      database_server.register_inputs(job_id, str_referenced_input_files)
-    if self.referenced_output_files:
-      str_referenced_ouput_files = []
-      for ft in self.referenced_output_files:
-        if isinstance(ft, FileTransfer):
-          engine_path = ft.engine_path
-        else:
-          engine_path = ft
-        str_referenced_ouput_files.append(engine_path)
-      database_server.register_outputs(job_id, str_referenced_ouput_files)
-
-    
-    self.job_id = job_id
-    return job_id
+    return self.job_id
 
   def is_running(self):
     running = self.status != constants.NOT_SUBMITTED and \
@@ -1262,7 +1213,6 @@ class WorkflowEngineLoop(object):
     self._running = False
 
   def add_job(self, client_job, queue):
-
     # register
     engine_job = EngineJob(client_job, queue)
     job_id = engine_job.register(self._database_server, self._user_id)
@@ -1273,6 +1223,7 @@ class WorkflowEngineLoop(object):
       self._jobs[job_id] = engine_job
 
     return job_id
+
 
   def _pend_for_submission(self, engine_job):
     '''
@@ -1342,7 +1293,7 @@ class WorkflowEngineLoop(object):
                                             force = True)
     else:
       if job.drmaa_id:
-        self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id))
+        self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
         self._engine_drmaa.kill_job(job.drmaa_id)
       elif job.queue and job in self._pending_queues[job.queue]:
         self._pending_queues[job.queue].remove(job)
@@ -1450,20 +1401,13 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if file_transfer.client_paths:
-      engine_path = self._database_server.generate_file_path(self._user_id)
-      os.mkdir(engine_path)
-    else:
-      engine_path = self._database_server.generate_file_path(self._user_id, file_transfer.client_path)
-    expirationDate = datetime.now() + timedelta(hours=file_transfer.disposal_timeout) 
-    self._database_server.add_transfer( engine_path, 
-                                        file_transfer.client_path,
-                                        expirationDate, 
-                                        self._user_id, 
-                                        file_transfer.initial_status,
-                                        -1, #workflow_id
-                                        file_transfer.client_paths)
-    return engine_path
+    engine_transfer = EngineTransfer(file_transfer)
+    engine_transfer.engine_path =  self._database_server.add_transfer(engine_transfer, self._user_id)
+
+    if engine_transfer.client_paths:
+      os.mkdir(engine_transfer.engine_path)
+
+    return engine_transfer.engine_path
 
   def transfer_information(self, engine_path):
     '''

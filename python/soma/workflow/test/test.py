@@ -415,6 +415,7 @@ class JobsTest(unittest.TestCase):
    
   def test_kill(self):
     jobid = self.myJobs[0]
+    time.sleep(2)
     JobsTest.jobs.kill_job(jobid)
     job_termination_status = JobsTest.jobs.job_termination_status(jobid)
     exitStatus = job_termination_status[0]

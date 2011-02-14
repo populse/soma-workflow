@@ -138,6 +138,7 @@ class RemoteConnection( object ):
       print "reading RSA key in " + repr(rsa_file_path)
       key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
       self.__transport.auth_publickey(login, key)
+      #TBI DSA Key => see paramamiko/demos/demo.py for an example
     print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
     print "   port: " + repr(client_pyro_daemon_port) + " host: " + repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
     tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 

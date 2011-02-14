@@ -31,6 +31,7 @@ from datetime import timedelta
 from datetime import datetime
 
 import soma.workflow.constants as constants
+from soma.workflow.client import FileTransfer
 
 __docformat__ = "epytext en"
 
@@ -532,33 +533,30 @@ class WorkflowDatabaseServer( object ):
   # TRANSFERS 
   
   def add_transfer(self, 
-                   engine_file_path, 
-                   client_file_path, 
-                   expiration_date, 
-                   user_id, 
-                   status, 
-                   workflow_id = -1, 
-                   client_paths = None):
+                   engine_transfer,
+                   user_id,
+                   exp_date=None,
+                   workflow_id=-1):
     '''
     Adds a transfer to the database.
     
-    @type engine_file_path: string
-    @type  client_file_path: string or None
-    @param client_file_path: C{None} for job standard output or error only.
-    @type expiration_date: date
+    @engine_transfer: EngineTransfer
+    @type exp_date: date
     @type user_id:  C{UserIdentifier}
-    @type  status: string as defined in constants.FILE_TRANSFER_STATUS
-    @param status: job transfer status (used when the transfer belong to a workflow)
     @type  workflow_id: C{WorkflowIdentifier}
-    @param workflow_id: None or identifier of the workflow the transfer belongs to
-    @type  client_paths: sequence of string or None
-    @param client_paths: sequence of client file or directory if transfering a 
-    file serie or if the file format involve serveral files of directories.
     '''
-    if client_paths:
-      client_path_std = file_separator.join(client_paths)
+    expiration_date = exp_date
+    if expiration_date == None:
+      expiration_date = datetime.now() + timedelta(hours=engine_transfer.disposal_timeout) 
+
+    if engine_transfer.client_paths:
+      engine_transfer.engine_path = self.generate_file_path(user_id)
     else:
-      client_path_std = None
+      engine_transfer.engine_path = self.generate_file_path(user_id, 
+                                                            engine_transfer.client_path)
+    client_path_std = None
+    if engine_transfer.client_paths:
+      client_path_std = file_separator.join(engine_transfer.client_paths)
      
     with self._lock:
       connection = self._connect()
@@ -566,7 +564,7 @@ class WorkflowDatabaseServer( object ):
       try:
         cursor.execute('''INSERT INTO transfers 
                         (engine_file_path, client_file_path, transfer_date, expiration_date, user_id, workflow_id, status, client_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (engine_file_path, client_file_path, date.today(), expiration_date, user_id, workflow_id, status, client_path_std))
+                        (engine_transfer.engine_path, engine_transfer.client_path, date.today(), expiration_date, user_id, workflow_id, engine_transfer.status, client_path_std))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -575,6 +573,8 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.commit()
       connection.close()
+
+    return engine_transfer.engine_path
 
 
   def remove_transfer(self, engine_file_path):
@@ -1119,33 +1119,52 @@ class WorkflowDatabaseServer( object ):
   def add_job( self, 
                user_id,
                engine_job,
-               custom_submission,
-               expiration_date, 
-               command,
-               parallel_config_name,
-               max_node_number
+               exp_date
                ):
     '''
     Adds a job to the database and returns its identifier.
     
     @type user_id: C{UserIdentifier}
     @type engine_job: EngineJob
-    @type custom_submission: Boolean
-    @type custom_submission: C{True} if it was a custom submission. 
-                             If C{True} the standard output files won't 
-                             be deleted with the job.
-    @type expiration_date: date
-    @type  command: string
-    @type  parallel_config_name: None or string 
-    @param parallel_config_name: if the job is made to run on several nodes: 
-                                 name of the paralle configuration as defined 
-                                 in WorkflowDatabaseServer.
-    @type  max_node_number: int 
-    @param max_node_number: maximum of node requested by the job to run
-    
-    @rtype: C{JobIdentifier}
+
+    @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
     @return: the identifier of the job
     '''
+  
+    expiration_date = exp_date
+    if expiration_date == None:
+      expiration_date = datetime.now() + timedelta(hours=engine_job.disposal_timeout) 
+
+    parallel_config_name = None
+    max_node_number = 1
+    if engine_job.parallel_job_info:
+      parallel_config_name, max_node_number = engine_job.parallel_job_info  
+    command_info = ""
+    for command_element in engine_job.command:
+      command_info = command_info + " " + repr(command_element)
+
+    if not engine_job.stdout_file:
+      engine_job.stdout_file = self.generate_file_path(user_id)
+      engine_job.stderr_file = self.generate_file_path(user_id)
+      custom_submission = False #the std out and err file has to be removed with the job
+    else:
+      custom_submission = True #the std out and err file won't to be removed with the job
+
+    referenced_input_files = []
+    for ft in engine_job.referenced_input_files:
+      if isinstance(ft, FileTransfer):
+        engine_path = ft.engine_path
+      else:
+        engine_path = ft
+      referenced_input_files.append(engine_path)
+  
+    referenced_output_files = []
+    for ft in engine_job.referenced_output_files:
+      if isinstance(ft, FileTransfer):
+        engine_path = ft.engine_path
+      else:
+        engine_path = ft
+      referenced_output_files.append(engine_path)
    
     with self._lock:
       connection = self._connect()
@@ -1195,7 +1214,7 @@ class WorkflowDatabaseServer( object ):
                           datetime.now(), #last_status_update
                           engine_job.workflow_id,
                         
-                          command,
+                          command_info,
                           engine_job.stdin,
                           engine_job.join_stderrout,
                           engine_job.stdout_file,
@@ -1224,6 +1243,21 @@ class WorkflowDatabaseServer( object ):
         cursor.execute('UPDATE jobs SET pickled_engine_job=? WHERE id=?',
                        (pickled_engine_job, job_id))
 
+        for engine_path in referenced_input_files:
+          cursor.execute('''INSERT INTO ios (job_id, 
+                                             engine_file_path, 
+                                             is_input) 
+                             VALUES (?, ?, ?)''',
+                          (job_id, engine_path, True))
+
+        for engine_path in referenced_output_files:
+          cursor.execute('''INSERT INTO ios (job_id, 
+                                             engine_file_path, 
+                                             is_input) 
+                            VALUES (?, ?, ?)''',
+                         (job_id, engine_path, False))
+        
+
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1233,7 +1267,7 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
 
-    return job_id
+    return (job_id, engine_job.stdout_file, engine_job.stderr_file)
    
   
   def get_engine_job(self, job_id):
@@ -1568,57 +1602,57 @@ class WorkflowDatabaseServer( object ):
       date = None
     return date
 
-  ###############################################
-  # INPUTS/OUTPUTS
+  ################################################
+  ## INPUTS/OUTPUTS
 
-  def register_inputs(self, job_id, engine_input_files):
-    '''
-    Register associations between a job and input file path.
+  #def register_inputs(self, job_id, engine_input_files):
+    #'''
+    #Register associations between a job and input file path.
     
-    @type job_id: C{JobIdentifier}
-    @type  engine_input_files: sequence of string
-    @param engine_input_files: engine input file paths 
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      for engine_path in engine_input_files:
-        try:
-          cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, engine_path, True))
-        except Exception, e:
-          connection.rollback()
-          cursor.close()
-          connection.close()
-          raise WorkflowDatabaseServerError('Error register_inputs %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.commit()
-      connection.close()
+    #@type job_id: C{JobIdentifier}
+    #@type  engine_input_files: sequence of string
+    #@param engine_input_files: engine input file paths 
+    #'''
+    #with self._lock:
+      #connection = self._connect()
+      #cursor = connection.cursor()
+      #for engine_path in engine_input_files:
+        #try:
+          #cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
+                        #(job_id, engine_path, True))
+        #except Exception, e:
+          #connection.rollback()
+          #cursor.close()
+          #connection.close()
+          #raise WorkflowDatabaseServerError('Error register_inputs %s: %s \n' %(type(e), e), self.logger) 
+      #cursor.close()
+      #connection.commit()
+      #connection.close()
     
     
-  def register_outputs(self, job_id, engine_output_files):
-    '''
-    Register associations between a job and output file path.
+  #def register_outputs(self, job_id, engine_output_files):
+    #'''
+    #Register associations between a job and output file path.
     
-    @type job_id: C{JobIdentifier}
-    @type  engine_input_files: sequence of string
-    @param engine_input_files: engine output file paths 
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      for engine_path in engine_output_files:
-        try:
-          cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
-                        (job_id, engine_path, False))
-        except Exception, e:
-          connection.rollback()
-          cursor.close()
-          connection.close()
-          raise WorkflowDatabaseServerError('Error register_outputs %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.commit()
-      connection.close()
+    #@type job_id: C{JobIdentifier}
+    #@type  engine_input_files: sequence of string
+    #@param engine_input_files: engine output file paths 
+    #'''
+    #with self._lock:
+      #connection = self._connect()
+      #cursor = connection.cursor()
+      #for engine_path in engine_output_files:
+        #try:
+          #cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
+                        #(job_id, engine_path, False))
+        #except Exception, e:
+          #connection.rollback()
+          #cursor.close()
+          #connection.close()
+          #raise WorkflowDatabaseServerError('Error register_outputs %s: %s \n' %(type(e), e), self.logger) 
+      #cursor.close()
+      #connection.commit()
+      #connection.close()
 
 
      
