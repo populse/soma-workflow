@@ -108,12 +108,14 @@ class RemoteConnection( object ):
     line = stdout.readline()
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
-    if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
+    if not line: 
+      raise ConnectionError("Can't read workflow engine Pyro uri.")
     workflow_engine_uri = line.split()[1] 
     line = stdout.readline()
     while line and line.split()[0] != "connection_checker":
       line = stdout.readline()
-    if not line: raise ConnectionError("Can't read workflow engine Pyro uri.")
+    if not line: 
+      raise ConnectionError("Can't read workflow engine Pyro uri.")
     connection_checker_uri = line.split()[1] 
     client.close()
     
@@ -131,6 +133,11 @@ class RemoteConnection( object ):
     self.__transport = paramiko.Transport((cluster_address, 22))
     self.__transport.setDaemon(True)
     self.__transport.connect(username = login, password = password)
+    if not password:
+      rsa_file_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+      print "reading RSA key in " + repr(rsa_file_path)
+      key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
+      self.__transport.auth_publickey(login, key)
     print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
     print "   port: " + repr(client_pyro_daemon_port) + " host: " + repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
     tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
