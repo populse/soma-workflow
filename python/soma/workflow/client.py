@@ -492,134 +492,40 @@ class WorkflowController(object):
     mode = 'remote'
     for machine in submitting_machines:
       if hostname == machine: mode = 'local'
-    print "hostname: " + hostname + " => mode = " + mode
+    
 
     log = ""
     #########################
-    # Connection
-    self._mode = mode#'local_no_disconnection' # (local debug)#        
+    # Connection 
+    self._mode = mode
+    #self._mode = 'embedded_engine'
+    #self._mode = 'embedded_engine_and_server'        
+    print "hostname: " + hostname + " => mode = " + self._mode
 
-    #########
-    # LOCAL #
-    #########
     if self._mode == 'local':
-      self._connection = connection.LocalConnection(resource_id,  
-                                                                  log)
+      self._connection = connection.LocalConnection(resource_id, log)
       self._engine_proxy = self._connection.get_workflow_engine()
     
-    ##########
-    # REMOTE #
-    ##########
-    if self._mode == 'remote':
-      sub_machine = submitting_machines[random.randint(0, len(submitting_machines)-1)]
+    elif self._mode == 'remote':
+      sub_machine = submitting_machines[random.randint(0,   
+                                                    len(submitting_machines)-1)]
       print 'cluster address: ' + cluster_address
       print 'submission machine: ' + sub_machine
-      self._connection = connection.RemoteConnection(login, password, cluster_address, sub_machine, resource_id, log)
+      self._connection = connection.RemoteConnection(login, 
+                                                     password, 
+                                                     cluster_address, 
+                                                     sub_machine, 
+                                                     resource_id, 
+                                                     log)
       self._engine_proxy = self._connection.get_workflow_engine()
     
-    ###############
-    # LOCAL DEBUG #
-    ###############
-    if self._mode == 'local_no_disconnection': # DEBUG
-      import soma.workflow.engine
-      import logging
-      import Pyro.naming
-      import Pyro.core
-      from Pyro.errors import PyroError, NamingError
-      
-      # log file 
-      if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
-        logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
-
-        print "logfilepath: " + repr(logfilepath)
-        logging.basicConfig(
-          filename=logfilepath,
-          format=config.get(resource_id, OCFG_ENGINE_LOG_FORMAT, 1),
-          level=eval("logging." + config.get(resource_id, OCFG_ENGINE_LOG_LEVEL)))
-      
-      logger = logging.getLogger('engine')
-      logger.info(" ")
-      logger.info("****************************************************")
-      logger.info("****************************************************")
-    
-      # looking for the database server
-      Pyro.core.initClient()
-      locator = Pyro.naming.NameServerLocator()
-      name_server_host = config.get(resource_id, CFG_NAME_SERVER_HOST)
-      if name_server_host == 'None':
-        ns = locator.getNS()
-      else: 
-        ns = locator.getNS(host= name_server_host )
-    
-      server_name = config.get(resource_id, CFG_SERVER_NAME)
-      try:
-        uri = ns.resolve(server_name)
-        logger.info('Server URI:'+ repr(uri))
-      except NamingError,x:
-        logger.critical('Could not find' + server_name + ' nameserver says:',x)
-        raise SystemExit
-      database_server= Pyro.core.getProxyForURI(uri)
-  
-      #parallel_job_submission_info
-      parallel_job_submission_info= {}
-      for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
-                                  PARALLEL_JOB_ENV + \
-                                  PARALLEL_CONFIGURATIONS:
-        if config.has_option(resource_id, parallel_config_info):
-          parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
-
-      # Drmaa implementation
-      drmaa_implem = None
-      if config.has_option(resource_id, OCFG_DRMAA_IMPLEMENTATION):
-        drmaa_implem = config.get(resource_id, OCFG_DRMAA_IMPLEMENTATION)
-  
-      # translation files specific information 
-      path_translation = None
-      if config.has_option(resource_id, OCFG_PATH_TRANSLATION_FILES):
-        path_translation = {}
-        translation_files_str = config.get(resource_id, 
-                                           OCFG_PATH_TRANSLATION_FILES)
-        logger.info("Path translation files configured:")
-        for ns_file_str in translation_files_str.split():
-          ns_file = ns_file_str.split("{")
-          namespace = ns_file[0]
-          filename = ns_file[1].rstrip("}")
-          logger.info(" -namespace: " + namespace + ", translation file: " + filename)
-          try: 
-            f = open(filename, "r")
-          except IOError, e:
-            logger.info("Could not read the translation file: " + filename)
-          else:
-            if not namespace in path_translation.keys():
-              path_translation[namespace] = {}
-            line = f.readline()
-            while line:
-              splitted_line = line.split(None,1)
-              if len(splitted_line) > 1:
-                uuid = splitted_line[0]
-                content = splitted_line[1].rstrip()
-                logger.info("    uuid: " + uuid + "   translation:" + content)
-                path_translation[namespace][uuid] = content
-              line = f.readline()
-            f.close()
-          
-      drmaa = soma.workflow.engine.Drmaa(drmaa_implem, 
-                                         parallel_job_submission_info)
-
-      engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
-                                                            drmaa,
-                                                            path_translation)
-    
-      self._engine_proxy = soma.workflow.engine.WorkflowEngine(database_server, 
-                                                               engine_loop)
-
-      engine_loop_thread = soma.workflow.engine.EngineLoopThread(engine_loop)
-      engine_loop_thread.setDaemon(True)
-      engine_loop_thread.start()
-
+    elif self._mode == 'embedded_engine': 
+      self._engine_proxy = _embedded_engine(resource_id, config_path)
       self._connection = None
 
-    
+    elif self._mode == 'embedded_engine_and_server':
+      self._engine_proxy = _embedded_engine_and_server(resource_id, config_path)
+      self._connection = None
 
 
   def disconnect(self):
@@ -627,7 +533,8 @@ class WorkflowController(object):
     Simulates a disconnection for TEST PURPOSE ONLY.
     !!! The current instance will not be usable anymore after this call !!!!
     '''
-    self._connection.stop()
+    if self._connection:
+      self._connection.stop()
 
    
 
@@ -1555,79 +1462,212 @@ class WorkflowController(object):
         WorkflowController.create_dir_structure(path, description, relative_path)
 
 
-    
+def _embedded_engine(resource_id,
+                     config_path):
   '''
-  The file transfer methods must be used when the data is located on the
-  client machine and not reachable from the computing resource
-  
-  Example of a Job submission with file transfer outside of a workflow:
-  
-  #job client input files path on client: cfin_1, cfin_2, ..., rfin_n 
-  #job client output files path on: cfout_1, rfout_2, ..., rfout_m  
-  
-  #Call register_transfer for each transfer file and get back the transfer id:
-  in_1_trid= wf_controller.register_transfer(True, rfin_1)
-  in_2_trid= wf_controller.register_transfer(True, rfin_2)
-  ...
-  in_n_trid= wf_controller.register_transfer(True, rfin_n)
+  Creates the workflow engine in the client process. 
+  The client process can finished before the workflows and jobs are done.
 
-  out_1_trid = wf_controller.register_transfer(False, cfout_1)
-  out_2_trid = wf_controller.register_transfer(False, cfout_2)
-  ...
-  out_n_trid = wf_controller.register_transfer(False, cfout_m)
-  
-  # Transfer input files:
-  wf_controller.transfer_files(in_1_trid)
-  wf_controller.transfer_files(in_2_trid)
-  ...
-  wf_controller.transfer_files(in_n_trid)
-    
-  #Job submittion: 
-  # use the transfer id in the command or stdin argument when needed
-  # do not forget to reference input and output file transfers
-  job_id = wf_controller.submit_job(['python', trid_in_1], 
-                                    [in_1_trid, in_2_trid, ..., in_n_trid],
-                                    [out_1_trid, out_2_trid, ..., out_n_trid])
-  wf_controller.wait_job(job_id)
-  
-  #After Job execution, transfer back the output file
-  wf_controller.transfer_files(out_1_trid)
-  wf_controller.transfer_files(out_2_trid)
-  ...
-  wf_controller.transfer_files(out_n_trid)
-  
-  Use the FileTransfer client_paths attribute if the transfer involves several 
-  associated files and/or directories:
-          - when transfering a file serie 
-          - in the case of file format associating several file and/or directories
-            (ex: a SPM image is stored in 2 files: .img and .hdr)
-  In this case, set client_path to one the files (eq: .img).
-  In other cases (1 file or 1 directory) the client_paths must be set to None.
-  
-  Example:
-    
-  #transfer of a SPM image file
-  fout_1 = wf_controller.register_transfer(client_path = 'mypath/myimage.img', 
-                                 client_paths = ['mypath/myimage.img', 'mypath/myimage.hdr'])
-  ...
-  wf_controller.transfer_files(fout_1)
- 
+  * returns: *WorkflowEngine*
   '''
-
-  '''
-  L{submit_job} method submits a job for execution to the cluster. 
-  A job identifier is returned and can be used to inspect and 
-  control the job.
-  
-  Example:
-    import soma.workflow.client
+  import soma.workflow.engine
+  import logging
+  import Pyro.naming
+  import Pyro.core
+  from Pyro.errors import PyroError, NamingError
       
-    wf_controller = soma.workflow.client.WorkflowController("Titan")
-    job_id = wf_controller.submit_job( ['python', '/somewhere/something.py'] )
-    wf_controller.kill_job(job_id)
-    wf_controller.restart_job(job_id)
-    wf_controller.wait_job([job_id])
-    exitinfo = wf_controller.job_termination_status(job_id)
-    wf_controller.delete_job(job_id)
+  config = ConfigParser.ConfigParser()
+  config.read(config_path)
+
+  # log file 
+  if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
+    logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
+
+    print "logfilepath: " + repr(logfilepath)
+    logging.basicConfig(
+      filename=logfilepath,
+      format=config.get(resource_id, OCFG_ENGINE_LOG_FORMAT, 1),
+      level=eval("logging." + config.get(resource_id, OCFG_ENGINE_LOG_LEVEL)))
+  
+  logger = logging.getLogger('engine')
+  logger.info(" ")
+  logger.info("****************************************************")
+  logger.info("****************************************************")
+
+  # looking for the database server
+  Pyro.core.initClient()
+  locator = Pyro.naming.NameServerLocator()
+  name_server_host = config.get(resource_id, CFG_NAME_SERVER_HOST)
+  if name_server_host == 'None':
+    ns = locator.getNS()
+  else: 
+    ns = locator.getNS(host= name_server_host )
+
+  server_name = config.get(resource_id, CFG_SERVER_NAME)
+  try:
+    uri = ns.resolve(server_name)
+    logger.info('Server URI:'+ repr(uri))
+  except NamingError,x:
+    logger.critical('Could not find' + server_name + ' nameserver says:',x)
+    raise SystemExit
+  database_server= Pyro.core.getProxyForURI(uri)
+
+  #parallel_job_submission_info
+  parallel_job_submission_info= {}
+  for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
+                              PARALLEL_JOB_ENV + \
+                              PARALLEL_CONFIGURATIONS:
+    if config.has_option(resource_id, parallel_config_info):
+      parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
+
+  # Drmaa implementation
+  drmaa_implem = None
+  if config.has_option(resource_id, OCFG_DRMAA_IMPLEMENTATION):
+    drmaa_implem = config.get(resource_id, OCFG_DRMAA_IMPLEMENTATION)
+
+  # translation files specific information 
+  path_translation = None
+  if config.has_option(resource_id, OCFG_PATH_TRANSLATION_FILES):
+    path_translation = {}
+    translation_files_str = config.get(resource_id, 
+                                        OCFG_PATH_TRANSLATION_FILES)
+    logger.info("Path translation files configured:")
+    for ns_file_str in translation_files_str.split():
+      ns_file = ns_file_str.split("{")
+      namespace = ns_file[0]
+      filename = ns_file[1].rstrip("}")
+      logger.info(" -namespace: " + namespace + ", translation file: " + filename)
+      try: 
+        f = open(filename, "r")
+      except IOError, e:
+        logger.info("Could not read the translation file: " + filename)
+      else:
+        if not namespace in path_translation.keys():
+          path_translation[namespace] = {}
+        line = f.readline()
+        while line:
+          splitted_line = line.split(None,1)
+          if len(splitted_line) > 1:
+            uuid = splitted_line[0]
+            content = splitted_line[1].rstrip()
+            logger.info("    uuid: " + uuid + "   translation:" + content)
+            path_translation[namespace][uuid] = content
+          line = f.readline()
+        f.close()
+      
+  drmaa = soma.workflow.engine.Drmaa(drmaa_implem, 
+                                      parallel_job_submission_info)
+
+  engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
+                                                        drmaa,
+                                                        path_translation)
+
+  workflow_engine = soma.workflow.engine.WorkflowEngine(database_server, 
+                                                        engine_loop)
+
+  engine_loop_thread = soma.workflow.engine.EngineLoopThread(engine_loop)
+  engine_loop_thread.setDaemon(True)
+  engine_loop_thread.start()
+
+  return workflow_engine
+
+ 
+def _embedded_engine_and_server(resource_id,
+                                config_path):
+  '''
+  Creates the workflow engine and workflow database server in the client 
+  process.
+  The client process can finished before the workflows and jobs are done.
+  Using serveral client process simultaneously (thus several database server 
+  with the same database file) can cause error (notably database locked problems) 
+
+  * returns: *WorkflowEngine*
   '''
 
+  import soma.workflow.engine
+  from soma.workflow.database_server import WorkflowDatabaseServer
+  import logging
+
+  config = ConfigParser.ConfigParser()
+  config.read(config_path)
+  
+  # log file 
+  if not config.get(resource_id, OCFG_ENGINE_LOG_DIR) == 'None':
+    logfilepath = config.get(resource_id, OCFG_ENGINE_LOG_DIR) + "log_debug_local"
+
+    print "logfilepath: " + repr(logfilepath)
+    logging.basicConfig(
+      filename=logfilepath,
+      format=config.get(resource_id, OCFG_ENGINE_LOG_FORMAT, 1),
+      level=eval("logging." + config.get(resource_id, OCFG_ENGINE_LOG_LEVEL)))
+  
+  # database server
+  database_server = WorkflowDatabaseServer(config.get(resource_id,     
+                                                      CFG_DATABASE_FILE), 
+                                            config.get(resource_id, 
+                                                      CFG_TRANSFERED_FILES_DIR))
+
+
+  logger = logging.getLogger('engine')
+  logger.info(" ")
+  logger.info("****************************************************")
+  logger.info("****************************************************")
+
+  #parallel_job_submission_info
+  parallel_job_submission_info= {}
+  for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
+                              PARALLEL_JOB_ENV + \
+                              PARALLEL_CONFIGURATIONS:
+    if config.has_option(resource_id, parallel_config_info):
+      parallel_job_submission_info[parallel_config_info] = config.get(resource_id, parallel_config_info)
+
+  # Drmaa implementation
+  drmaa_implem = None
+  if config.has_option(resource_id, OCFG_DRMAA_IMPLEMENTATION):
+    drmaa_implem = config.get(resource_id, OCFG_DRMAA_IMPLEMENTATION)
+
+  # translation files specific information 
+  path_translation = None
+  if config.has_option(resource_id, OCFG_PATH_TRANSLATION_FILES):
+    path_translation = {}
+    translation_files_str = config.get(resource_id, 
+                                        OCFG_PATH_TRANSLATION_FILES)
+    logger.info("Path translation files configured:")
+    for ns_file_str in translation_files_str.split():
+      ns_file = ns_file_str.split("{")
+      namespace = ns_file[0]
+      filename = ns_file[1].rstrip("}")
+      logger.info(" -namespace: " + namespace + ", translation file: " + filename)
+      try: 
+        f = open(filename, "r")
+      except IOError, e:
+        logger.info("Could not read the translation file: " + filename)
+      else:
+        if not namespace in path_translation.keys():
+          path_translation[namespace] = {}
+        line = f.readline()
+        while line:
+          splitted_line = line.split(None,1)
+          if len(splitted_line) > 1:
+            uuid = splitted_line[0]
+            content = splitted_line[1].rstrip()
+            logger.info("    uuid: " + uuid + "   translation:" + content)
+            path_translation[namespace][uuid] = content
+          line = f.readline()
+        f.close()
+      
+  drmaa = soma.workflow.engine.Drmaa(drmaa_implem, 
+                                      parallel_job_submission_info)
+
+  engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
+                                                        drmaa,
+                                                        path_translation)
+
+  workflow_engine = soma.workflow.engine.WorkflowEngine(database_server, 
+                                                     engine_loop)
+
+  engine_loop_thread = soma.workflow.engine.EngineLoopThread(engine_loop)
+  engine_loop_thread.setDaemon(True)
+  engine_loop_thread.start()
+ 
+  return workflow_engine
