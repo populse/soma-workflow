@@ -535,17 +535,16 @@ class WorkflowDatabaseServer( object ):
   def add_transfer(self, 
                    engine_transfer,
                    user_id,
-                   exp_date=None,
-                   workflow_id=-1):
+                   expiration_date=None):
     '''
     Adds a transfer to the database.
     
     @engine_transfer: EngineTransfer
-    @type exp_date: date
+    @type expiration_date: date
     @type user_id:  C{UserIdentifier}
     @type  workflow_id: C{WorkflowIdentifier}
     '''
-    expiration_date = exp_date
+    expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_transfer.disposal_timeout) 
 
@@ -563,8 +562,24 @@ class WorkflowDatabaseServer( object ):
       cursor = connection.cursor()
       try:
         cursor.execute('''INSERT INTO transfers 
-                        (engine_file_path, client_file_path, transfer_date, expiration_date, user_id, workflow_id, status, client_paths) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (engine_transfer.engine_path, engine_transfer.client_path, date.today(), expiration_date, user_id, workflow_id, engine_transfer.status, client_path_std))
+                        (engine_file_path, 
+                         client_file_path, 
+                         transfer_date, 
+                         expiration_date, 
+                         user_id, 
+                         workflow_id, 
+                         status, 
+                         client_paths) 
+                        VALUES (?, ?, ?, ?, 
+                                ?, ?, ?, ?)''',
+                        (engine_transfer.engine_path,     
+                         engine_transfer.client_path, 
+                         date.today(), 
+                         expiration_date, 
+                         user_id, 
+                         engine_transfer.workflow_id, 
+                         engine_transfer.status, 
+                         client_path_std))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -574,7 +589,8 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       connection.close()
 
-    return engine_transfer.engine_path
+    return engine_transfer
+    #return engine_transfer.engine_path
 
 
   def remove_transfer(self, engine_file_path):
@@ -808,16 +824,24 @@ class WorkflowDatabaseServer( object ):
   ###############################################
   # WORKFLOWS
   
-  def add_workflow(self, user_id, expiration_date, name = None):
+  def add_workflow(self, 
+                   user_id,
+                   engine_workflow):
     '''
-    Adds a job to the database and returns its identifier.
+    Register a workflow to the database and returns identifiers for every 
+    workflow element.
     
-    @type user_id: C{UserIdentifier}
-    @type expiration_date: date
-    
-    @rtype: C{WorkflowIdentifier}
-    @return: the identifier of the workflow
+    * user_id *string*
+      User identifier
+
+    * engine_workflow *EngineWorkflow*
+  
+    * returns: * tuple(string, dictionary, dictionary)*
+          * workflow identifier
+          * dictionary tr_id -> EngineTransfer
+          * dictionary job_id -> EngineJob
     '''
+    # get back the workflow id first
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -832,21 +856,60 @@ class WorkflowDatabaseServer( object ):
                           VALUES (?, ?, ?, ?, ?, ?)''',
                          (user_id,
                           None, 
-                          expiration_date,
-                          name,
+                          engine_workflow.expiration_date,
+                          engine_workflow.name,
                           constants.WORKFLOW_NOT_STARTED,
                           datetime.now()))
       except Exception, e:
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error add_workflow %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error register_workflow %s: %s \n' %(type(e), e), self.logger) 
       connection.commit()
-      wf_id = cursor.lastrowid
+      engine_workflow.wf_id = cursor.lastrowid
       cursor.close()
       connection.close()
 
-    return wf_id
+    # the transfers must be registered before the jobs
+    for transfer in engine_workflow.transfer_mapping.itervalues():
+      transfer.workflow_id = engine_workflow.wf_id 
+      self.add_transfer(transfer,
+                        user_id,
+                        engine_workflow.expiration_date)
+      engine_workflow.registered_tr[transfer.engine_path] = transfer
+  
+
+    job_info = []
+    for job in engine_workflow.job_mapping.itervalues():
+      job.workflow_id = engine_workflow.wf_id 
+      job = self.add_job(user_id, 
+                         job, 
+                         engine_workflow.expiration_date)
+      job_info.append((job.job_id, job.stdout_file, job.stderr_file))
+      engine_workflow.registered_jobs[job.job_id] = job
+
+    
+    pickled_workflow = pickle.dumps(engine_workflow)
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        cursor.execute('''UPDATE workflows 
+                          SET pickled_engine_workflow=? 
+                          WHERE id=?''', 
+                        (pickled_workflow, 
+                         engine_workflow.wf_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise WorkflowDatabaseServerError('Error register_workflow %s: %s \n' %(type(e), e), self.logger) 
+      connection.commit()
+      cursor.close()
+      connection.close()
+
+    return engine_workflow
+  
   
   def delete_workflow(self, wf_id):
     '''
@@ -875,28 +938,6 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       connection.close()
       self.clean()
-
-  def set_workflow(self, wf_id, workflow, user_id):
-    '''
-    Saves the workflow in a file and register the file path in the database.
-    
-    @type user_id: C{WorkflowIdentifier}
-    @type  workflow: L{Workflow}
-    '''
-    pickled_workflow = pickle.dumps(workflow)
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
-        cursor.execute('UPDATE workflows SET pickled_engine_workflow=? WHERE id=?', (pickled_workflow, wf_id))
-      except Exception, e:
-        connection.rollback()
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error set_workflow %s: %s \n' %(type(e), e), self.logger) 
-      connection.commit()
-      cursor.close()
-      connection.close()
       
   def change_workflow_expiration_date(self, wf_id, new_date):
     '''
@@ -1119,8 +1160,7 @@ class WorkflowDatabaseServer( object ):
   def add_job( self, 
                user_id,
                engine_job,
-               exp_date
-               ):
+               expiration_date=None):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -1130,8 +1170,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
     @return: the identifier of the job
     '''
-  
-    expiration_date = exp_date
+    expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_job.disposal_timeout) 
 
@@ -1140,10 +1179,10 @@ class WorkflowDatabaseServer( object ):
     if engine_job.parallel_job_info:
       parallel_config_name, max_node_number = engine_job.parallel_job_info  
     command_info = ""
-    for command_element in engine_job.command:
+    for command_element in engine_job.plain_command():
       command_info = command_info + " " + repr(command_element)
 
-    if not engine_job.stdout_file:
+    if not engine_job.plain_stdout():
       engine_job.stdout_file = self.generate_file_path(user_id)
       engine_job.stderr_file = self.generate_file_path(user_id)
       custom_submission = False #the std out and err file has to be removed with the job
@@ -1152,19 +1191,11 @@ class WorkflowDatabaseServer( object ):
 
     referenced_input_files = []
     for ft in engine_job.referenced_input_files:
-      if isinstance(ft, FileTransfer):
-        engine_path = ft.engine_path
-      else:
-        engine_path = ft
-      referenced_input_files.append(engine_path)
+      referenced_input_files.append(engine_job.transfer_mapping[ft].engine_path)
   
     referenced_output_files = []
     for ft in engine_job.referenced_output_files:
-      if isinstance(ft, FileTransfer):
-        engine_path = ft.engine_path
-      else:
-        engine_path = ft
-      referenced_output_files.append(engine_path)
+      referenced_output_files.append(engine_job.transfer_mapping[ft].engine_path)
    
     with self._lock:
       connection = self._connect()
@@ -1215,11 +1246,11 @@ class WorkflowDatabaseServer( object ):
                           engine_job.workflow_id,
                         
                           command_info,
-                          engine_job.stdin,
+                          engine_job.plain_stdin(),
                           engine_job.join_stderrout,
-                          engine_job.stdout_file,
-                          engine_job.stderr_file,
-                          engine_job.working_directory,
+                          engine_job.plain_stdout(),
+                          engine_job.plain_stderr(),
+                          engine_job.plain_working_directory(),
                           custom_submission,
                           parallel_config_name,
                           max_node_number,
@@ -1250,6 +1281,7 @@ class WorkflowDatabaseServer( object ):
                              VALUES (?, ?, ?)''',
                           (job_id, engine_path, True))
 
+
         for engine_path in referenced_output_files:
           cursor.execute('''INSERT INTO ios (job_id, 
                                              engine_file_path, 
@@ -1257,7 +1289,6 @@ class WorkflowDatabaseServer( object ):
                             VALUES (?, ?, ?)''',
                          (job_id, engine_path, False))
         
-
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1266,8 +1297,9 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       cursor.close()
       connection.close()
-
-    return (job_id, engine_job.stdout_file, engine_job.stderr_file)
+      
+    
+    return engine_job
    
   
   def get_engine_job(self, job_id):
@@ -1747,7 +1779,6 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        #print "queue_name " + repr(queue_name)
         if queue_name != None:
           count = cursor.execute("SELECT count(*) FROM jobs WHERE " 
                                  "user_id=? and ( status=? or status=?) " 
@@ -1763,7 +1794,6 @@ class WorkflowDatabaseServer( object ):
                                  [user_id, 
                                   constants.QUEUED_ACTIVE,
                                   constants.UNDETERMINED]).next()[0]
-        #print "count " + repr(count)
       except Exception, e:
         cursor.close()
         connection.close()

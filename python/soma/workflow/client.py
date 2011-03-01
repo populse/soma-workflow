@@ -371,8 +371,13 @@ class FileTransfer(object):
     else:
       self.initial_status = FILES_DO_NOT_EXIST
 
-
-
+  def __eq__(self, other):
+    if not isinstance(other, FileTransfer):
+      return NotImplemented
+    equal = other.client_path == self.client_path
+    equal = equal and (other.client_paths == other.client_paths)
+    equal = equal and (other.initial_status == other.initial_status)
+    return equal
 
 class SharedResourcePath(object):
   '''
@@ -415,6 +420,13 @@ class SharedResourcePath(object):
     self.disposal_timout = disposal_timeout
 
 
+  def __eq__(self, other):
+    if not isinstance(other, SharedResourcePath):
+      return NotImplemented
+    equal = other.relative_path == self.relative_path
+    equal = equal and (other.namespace == other.namespace)
+    equal = equal and (other.uuid == other.uuid)
+    return equal
 
 
 
@@ -466,7 +478,6 @@ class WorkflowController(object):
     if not config_path or not os.path.isfile(config_path):
       raise Exception("Can not find the soma-workflow configuration file \n")
     
-    print "Configuration file toto: " + repr(config_path)
     config = ConfigParser.ConfigParser()
     config.read(config_path)
     self.resource_id = resource_id
@@ -486,7 +497,7 @@ class WorkflowController(object):
     log = ""
     #########################
     # Connection
-    self._mode = mode #'local_no_disconnection' # (local debug)#        
+    self._mode = mode#'local_no_disconnection' # (local debug)#        
 
     #########
     # LOCAL #

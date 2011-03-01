@@ -791,7 +791,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     
   def dataChanged(self):
  
-    setLabelFromString(self.ui.job_name, self.job_item.data.name)
+    setLabelFromString(self.ui.job_name, self.job_item.name)
     setLabelFromString(self.ui.job_status,self.job_item.status)
     exit_status, exit_value, term_signal, resource_usage = self.job_item.exit_info
     setLabelFromString(self.ui.exit_status, exit_status)
@@ -850,7 +850,7 @@ class TransferInfoWidget(QtGui.QTabWidget):
     
   def dataChanged(self):
     
-    setLabelFromString(self.ui.transfer_name, self.transfer_item.data.name)
+    setLabelFromString(self.ui.transfer_name, self.transfer_item.name)
     setLabelFromString(self.ui.transfer_status, self.transfer_item.transfer_status)
     setLabelFromString(self.ui.client_path, self.transfer_item.data.client_path)
     setLabelFromString(self.ui.cr_path, self.transfer_item.engine_path)
@@ -1244,7 +1244,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         font.setBold(True)
         return font
       if role == QtCore.Qt.DisplayRole:
-        return item.data.name
+        return item.name
       else:
         if item.status == GuiGroup.GP_NO_STATUS:
           if role == QtCore.Qt.DecorationRole:
@@ -1269,7 +1269,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     if isinstance(item, GuiJob): 
       if item.job_id == -1:
         if role == QtCore.Qt.DisplayRole:
-          return item.data.name
+          return item.name
         if role == QtCore.Qt.DecorationRole:
             return self.no_status_icon
       else:
@@ -1278,7 +1278,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         if status == DONE or status == FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if role == QtCore.Qt.DisplayRole:
-            return item.data.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
+            return item.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
             if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
               return self.done_icon
@@ -1289,7 +1289,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
               
 
         if role == QtCore.Qt.DisplayRole:
-          return item.data.name #+ " " + status 
+          return item.name #+ " " + status 
 
         if role == QtCore.Qt.DecorationRole:
           if status == NOT_SUBMITTED:
@@ -1316,16 +1316,16 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         #if role == QtCore.Qt.ForegroundRole:
           #return QtGui.QBrush(RED)
         if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
-          display = "in: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+          display = "in: " + item.name + " " + repr(item.percentage_achievement) + "%"
         else:
-          display = "in: " + item.data.name
+          display = "in: " + item.name
       if isinstance(item, GuiOutputTransfer):
         #if role == QtCore.Qt.ForegroundRole:
           #return QtGui.QBrush(BLUE)
         if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
-          display = "out: " + item.data.name + " " + repr(item.percentage_achievement) + "%"
+          display = "out: " + item.name + " " + repr(item.percentage_achievement) + "%"
         else:
-          display = "out: " + item.data.name
+          display = "out: " + item.name
         
       if not item.engine_path:
         if role == QtCore.Qt.DisplayRole:
@@ -1595,11 +1595,20 @@ class GuiWorkflow(object):
     for job in w_js:
       item_id = id_cnt
       id_cnt = id_cnt + 1
+      if isinstance(workflow, EngineWorkflow):
+        job_id = workflow.job_mapping[job].job_id
+        command = workflow.job_mapping[job].plain_command()
+      else:
+        job_id = -1
+        command = job.command
       gui_job = GuiJob(it_id = item_id, 
-                          parent = -1, 
-                          row = -1, 
-                          data = job, 
-                          children_nb = len(job.referenced_input_files)+len(job.referenced_output_files))
+                       command=command,
+                       parent=-1, 
+                       row=-1, 
+                       data=job, 
+                       children_nb=len(job.referenced_input_files)+len(job.referenced_output_files),
+                       name=job.name,
+                       job_id=job_id)
       ids[job] = item_id
       self.items[item_id] = gui_job
       self.server_jobs[gui_job.job_id] = item_id
@@ -1609,24 +1618,25 @@ class GuiWorkflow(object):
         w_fts.add(ft)
       
     # Create the GuiGroup instances
-    self.root_item = GuiGroup( self, 
-                              it_id = -1, 
-                              parent = -1, 
-                              row = -1, 
-                              data = workflow.root_group, 
-                              children_nb = len(workflow.root_group))
+    self.root_item = GuiGroup(self, 
+                              it_id=-1, 
+                              parent=-1, 
+                              row=-1, 
+                              data=workflow.root_group, 
+                              children_nb=len(workflow.root_group))
                   
 
     for group in workflow.groups:
       item_id = id_cnt
       id_cnt = id_cnt + 1
       ids[group] = item_id
-      self.items[item_id] = GuiGroup( self,
-                                      it_id = item_id, 
-                                      parent = -1, 
-                                      row = -1, 
-                                      data = group, 
-                                      children_nb = len(group.elements))
+      self.items[item_id] = GuiGroup(self,
+                                     it_id=item_id, 
+                                     parent=-1, 
+                                     row=-1, 
+                                     data=group, 
+                                     children_nb=len(group.elements),
+                                     name=group.name)
 
     # parent and children research for jobs and groups
     for item in self.items.values():
@@ -1664,15 +1674,21 @@ class GuiWorkflow(object):
           id_cnt = id_cnt + 1
           ids[ft].append(item_id)
           row = ref_in.index(ft)
-          gui_transfer = GuiInputTransfer(it_id = item_id, 
-                                                parent=ids[job], 
-                                                row = row, 
-                                                data = ft)
+          if isinstance(workflow, EngineWorkflow):
+            engine_path = workflow.transfer_mapping[ft].engine_path
+          else:
+            engine_path = None
+          gui_transfer = GuiInputTransfer(it_id=item_id, 
+                                          parent=ids[job], 
+                                          row=row, 
+                                          data=ft,
+                                          name=ft.name,
+                                          engine_path=engine_path)
           self.items[item_id] = gui_transfer
           if gui_transfer.engine_path in self.server_file_transfers.keys():
             self.server_file_transfers[gui_transfer.engine_path].append(item_id)
           else:
-            self.server_file_transfers[gui_transfer.engine_path] = [ item_id ]
+            self.server_file_transfers[gui_transfer.engine_path] = [item_id]
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
         if ft in ref_out: #
@@ -1680,15 +1696,22 @@ class GuiWorkflow(object):
           id_cnt = id_cnt + 1
           ids[ft].append(item_id)
           row = len(ref_in)+ref_out.index(ft)
-          gui_ft = GuiOutputTransfer( it_id = item_id, 
-                                                      parent=ids[job], 
-                                                      row = row, 
-                                                      data = ft)
+          if isinstance(workflow, EngineWorkflow):
+            engine_path = workflow.transfer_mapping[ft].engine_path
+          else:
+            engine_path = None
+          gui_ft = GuiOutputTransfer(it_id=item_id, 
+                                     parent=ids[job], 
+                                     row=row, 
+                                     data=ft,
+                                     name=ft.name,
+                                     engine_path=engine_path)
           self.items[item_id] = gui_ft
+          print "gui_ft.engine_path " + repr(gui_ft.engine_path) 
           if gui_ft.engine_path in self.server_file_transfers.keys():
             self.server_file_transfers[gui_ft.engine_path].append(item_id)
           else:
-            self.server_file_transfers[gui_ft.engine_path] = [ item_id ]
+            self.server_file_transfers[gui_ft.engine_path] = [item_id]
           
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
@@ -1706,7 +1729,7 @@ class GuiWorkflow(object):
     #for dep in workflow.dependencies:
       #print dep[0].name + " -> " + dep[1].name
     #for item in self.items.values():
-      #print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.data.name) + " " + repr(item.children)   
+      #print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.name) + " " + repr(item.children)   
     #raw_input()
     ###########################################
     
@@ -1787,15 +1810,18 @@ class GuiGroup(GuiWorkflowItem):
   def __init__(self,
                gui_workflow,
                it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0):
+               parent=-1, 
+               row=-1,
+               data=None,
+               children_nb=0,
+               name="no name"):
     super(GuiGroup, self).__init__(it_id, parent, row, data, children_nb)  
     
     self.gui_workflow = gui_workflow
     
     self.status = GuiGroup.GP_NO_STATUS
+
+    self.name = name
     
     self.not_sub = []
     self.done = []
@@ -1900,12 +1926,15 @@ class GuiGroup(GuiWorkflowItem):
 class GuiJob(GuiWorkflowItem):
   
   def __init__(self,
-               it_id, 
-               parent = -1, 
-               row = -1,
-               it_type = None,
-               data = None,
-               children_nb = 0 ):
+               it_id,
+               command,
+               parent=-1, 
+               row=-1,
+               it_type=None,
+               data=None,
+               children_nb=0,
+               name="no name",
+               job_id=-1,):
     super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
     
     self.status = "not submitted"
@@ -1915,14 +1944,16 @@ class GuiJob(GuiWorkflowItem):
     self.submission_date = None
     self.execution_date = None
     self.ending_date = None
-
-    if isinstance(data, EngineJob):
-      self.job_id = data.job_id
-    else:
-      self.job_id = -1
+    
+    self.name = name
+    self.job_id = job_id
+    #if isinstance(data, EngineJob):
+      #self.job_id = data.job_id
+    #else:
+      #self.job_id = -1
     
     cmd_seq = []
-    for command_el in data.command:
+    for command_el in command:
       if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
         cmd_seq.append("<FileTransfer " + command_el[0].client_path + " >")
       elif isinstance(command_el, FileTransfer):
@@ -1997,10 +2028,12 @@ class GuiTransfer(GuiWorkflowItem):
   
   def __init__(self,
                it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
+               parent=-1, 
+               row=-1,
+               data=None,
+               children_nb=0,
+               name="no name",
+               engine_path=None):
     super(GuiTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
     self.transfer_status = " "
@@ -2010,6 +2043,8 @@ class GuiTransfer(GuiWorkflowItem):
     
     self.percentage_achievement = 0
     self.transfer_type = None
+    self.name = name
+    self.engine_path = engine_path
 
   
   def updateState(self, transfer_status_info):
@@ -2048,29 +2083,37 @@ class GuiInputTransfer(GuiTransfer):
   
   def __init__(self,
                it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(GuiInputTransfer, self).__init__(it_id, parent, row, data, children_nb)
+               parent=-1, 
+               row=-1,
+               data=None,
+               children_nb=0,
+               name="no name",
+               engine_path=None):
+    super(GuiInputTransfer, self).__init__(it_id, 
+                                           parent, 
+                                           row, 
+                                           data, 
+                                           children_nb, 
+                                           name, 
+                                           engine_path)
     
-    if isinstance(data, EngineTransfer):
-      self.engine_path = data.engine_path
-    else:
-      self.engine_path = None
     
 class GuiOutputTransfer(GuiTransfer):
   
   def __init__(self,
                it_id, 
-               parent = -1, 
-               row = -1,
-               data = None,
-               children_nb = 0 ):
-    super(GuiOutputTransfer, self).__init__(it_id, parent, row, data, children_nb)
+               parent=-1, 
+               row=-1,
+               data=None,
+               children_nb=0,
+               name="no name",
+               engine_path=None):
+    super(GuiOutputTransfer, self).__init__(it_id, 
+                                            parent, 
+                                            row, 
+                                            data, 
+                                            children_nb, 
+                                            name,
+                                            engine_path)
   
-    if isinstance(data, EngineTransfer):
-      self.engine_path = data.engine_path
-    else:
-      self.engine_path = None
 

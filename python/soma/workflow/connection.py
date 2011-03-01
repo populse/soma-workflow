@@ -209,6 +209,10 @@ class LocalConnection( object ):
 
     # run the workflow engine process and get back the  
     # workflow_engine and ConnectionChecker URIs  
+    #command = "python -m cProfile -o /home/soizic/profile/profile /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma/workflow/start_workflow_engine.py %s %s %s" %( 
+                                     #resource_id, 
+                                     #pyro_objet_name, 
+                                     #log) 
     command = "python -m soma.workflow.start_workflow_engine %s %s %s" %( 
                                      resource_id, 
                                      pyro_objet_name, 

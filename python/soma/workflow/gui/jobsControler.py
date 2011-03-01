@@ -171,7 +171,7 @@ class JobsControler(object):
   def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
    
     to_transfer = []
-    for ft in workflow.transfer_dict.itervalues():
+    for ft in workflow.registered_tr.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
       if status == FILES_ON_CLIENT:
         to_transfer.append((0, ft.engine_path))
@@ -185,7 +185,7 @@ class JobsControler(object):
     
   def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
     to_transfer = []
-    for ft in workflow.transfer_dict.itervalues():
+    for ft in workflow.registered_tr.itervalues():
       status, info = connection.transfer_status(ft.engine_path)
       if status == FILES_ON_CR:
         to_transfer.append((0, ft.engine_path))
@@ -782,7 +782,7 @@ class WorkflowExamples(object):
   def hundred_of_jobs(self):
     
     jobs = []
-    for i in range(0,100):
+    for i in range(0,900):
       job = self.job_sleep(60)
       jobs.append(job)
      
