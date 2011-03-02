@@ -428,20 +428,28 @@ class EngineJob(soma.workflow.client.Job):
     # transfer_mapping from referenced_input_files and referenced_output_files
     # + type checking
     for ft in self.referenced_input_files:
-      if not isinstance(ft, FileTransfer): # TO DO Use only FileTransfer
+      if not isinstance(ft, FileTransfer):
         raise EngineJobCreationError("%s: Wrong type in referenced_input_files. "
                                      " FileTransfer object required." %
                                      (repr(ft)))
-      if ft not in self.transfer_mapping:
+      elif isinstance(ft, EngineTransfer) and \
+          ft not in self.transfer_mapping:
+        # TBI check that the transfer exist in the database 
+        self.transfer_mapping[ft] = ft
+      elif ft not in self.transfer_mapping:
         eft = EngineTransfer(ft)
         self.transfer_mapping[ft] = eft
    
     for ft in self.referenced_output_files:
-      if not isinstance(ft, FileTransfer): # TO DO Use only FileTransfer
+      if not isinstance(ft, FileTransfer):
         raise EngineJobCreationError("%s: Wrong type in referenced_output_files. "
                                      " FileTransfer object required." %
                                      (repr(ft)))
-      if ft not in self.transfer_mapping:
+      elif isinstance(ft, EngineTransfer) and \
+          ft not in self.transfer_mapping:
+        # TBI check that the transfer exist in the database 
+        self.transfer_mapping[ft] = ft
+      elif ft not in self.transfer_mapping:
         eft = EngineTransfer(ft)
         self.transfer_mapping[ft] = eft
 
@@ -496,8 +504,12 @@ class EngineJob(soma.workflow.client.Job):
       if isinstance(self.stdin, FileTransfer):
         if not self.stdin in self.transfer_mapping:
           self.referenced_input_files.append(self.stdin)
-          eft = EngineTransfer(self.stdin)
-          self.transfer_mapping[self.stdin] = eft
+          if isinstance(self.stdin, EngineTransfer):
+            # TBI check that the transfer exist in the database 
+            self.transfer_mapping[self.stdin] = self.stdin
+          else:
+            eft = EngineTransfer(self.stdin)
+            self.transfer_mapping[self.stdin] = eft
       elif isinstance(self.stdin, SharedResourcePath):
         self.srp_mapping[self.stdin] = self._translate(self.stdin) 
       else:
@@ -510,8 +522,12 @@ class EngineJob(soma.workflow.client.Job):
         if not self.working_directory in self.transfer_mapping:
           self.referenced_input_files.append(self.working_directory)
           self.referenced_output_files.append(self.working_directory)
-          eft = EngineTransfer(self.working_directory)
-          self.transfer_mapping[self.working_directory] = eft
+          if isinstance(self.working_directory, EngineTransfer):
+            # TBI check that the transfer exist in the database 
+            self.transfer_mapping[self.working_directory] = self.working_directory
+          else:
+            eft = EngineTransfer(self.working_directory)
+            self.transfer_mapping[self.working_directory] = eft
       elif isinstance(self.working_directory, SharedResourcePath):
         self.srp_mapping[self.working_directory] = self._translate(self.working_directory)
       else:
@@ -523,8 +539,12 @@ class EngineJob(soma.workflow.client.Job):
       if isinstance(self.stdout_file, FileTransfer):
         if not self.stdout_file in self.transfer_mapping:
           self.referenced_output_files.append(self.stdout_file)
-          eft = EngineTransfer(self.stdout_file)
-          self.transfer_mapping[self.stdout_file] = eft
+          if isinstance(self.stdout_file, EngineTransfer):
+            # TBI check that the transfer exist in the database 
+            self.transfer_mapping[self.stdout_file] = self.stdout_file
+          else:
+            eft = EngineTransfer(self.stdout_file)
+            self.transfer_mapping[self.stdout_file] = eft
       elif isinstance(self.stdout_file, SharedResourcePath):
         self.srp_mapping[self.stdout_file] = self._translate(self.stdout_file) 
       else:
@@ -536,8 +556,12 @@ class EngineJob(soma.workflow.client.Job):
       if isinstance(self.stderr_file, FileTransfer):
         if not self.stderr_file in self.transfer_mapping:
           self.referenced_output_files.append(self.stderr_file)
-          eft = EngineTransfer(self.stderr_file)
-          self.transfer_mapping[self.stderr_file] = eft
+          if isinstance(self.stderr_file, EngineTransfer):
+            # TBI check that the transfer exist in the database 
+            self.transfer_mapping[self.stderr_file] = self.stderr_file
+          else:
+            eft = EngineTransfer(self.stderr_file)
+            self.transfer_mapping[self.stderr_file] = eft
       elif isinstance(self.stderr_file, SharedResourcePath):
         self.srp_mapping[self.stderr_file] = self._translate(self.stderr_file) 
       else:
@@ -1263,7 +1287,7 @@ class WorkflowEngineLoop(object):
     with self._lock:
       self._jobs[engine_job.job_id] = engine_job
 
-    return engine_job.job_id
+    return engine_job
 
 
   def _pend_for_submission(self, engine_job):
@@ -1465,7 +1489,7 @@ class WorkflowEngine(object):
     if engine_transfer.client_paths:
       os.mkdir(engine_transfer.engine_path)
 
-    return engine_transfer.engine_path
+    return engine_transfer
 
   def transfer_information(self, engine_path):
     '''
@@ -1701,9 +1725,9 @@ class WorkflowEngine(object):
       raise WorkflowEngineError("Submission error: the command must" 
                                 "contain at least one element \n", self.logger)
     
-    job_id = self._engine_loop.add_job(job, queue)
+    engine_job = self._engine_loop.add_job(job, queue)
 
-    return job_id
+    return engine_job
 
 
   def delete_job( self, job_id ):

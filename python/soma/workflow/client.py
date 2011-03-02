@@ -35,6 +35,8 @@ import random
 import socket
 import time
 
+import cProfile
+
 import soma.workflow.connection as connection
 from soma.workflow.constants import *
 
@@ -565,30 +567,17 @@ class WorkflowController(object):
         Workflow identifier.
     '''
 
-    wf_id =  self._engine_proxy.submit_workflow(workflow, 
-                                                expiration_date, 
-                                                name,
-                                                queue)
+    #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
+
+    wf_id = self._engine_proxy.submit_workflow(workflow, 
+                                               expiration_date, 
+                                               name,
+                                               queue)
     return wf_id
-  
 
-  def submit_job( self,
-                  command,
-                  referenced_input_files=None,
-                  referenced_output_files=None,
-                  stdin=None,
-                  join_stderrout=True,
-                  disposal_timeout=168,
-                  name=None,
-                  stdout_file=None,
-                  stderr_file=None,
-                  working_directory=None,
-                  parallel_job_info=None,
-                  queue=None):
 
+  def submit_job(self, job, queue=None):
     '''
-    .. note :: TO DO simplification => Job object as argument.
-    
     Submits a job which is not part of a workflow.
     Returns a job identifier.
 
@@ -596,145 +585,34 @@ class WorkflowController(object):
     be** specified setting the arguments: *referenced_input_files* and 
     *referenced_output_files*.
     
-    Each path must be reachable from the computing resource 
-
-    .. note::
-      The command is the only argument required to create a Job.
-
-    * command *sequence of string*
-        The command to execute. It must contain at least one element.
-
-    * referenced_input_files *sequence of FileTransfer idenfier*
-        List of the FileTransfer identifiers which are input of the Job. 
-        In other words, FileTransfer which are required by the Job to run
-        It includes the stdin if you use one.
-
-    * referenced_output_files *sequence of FileTransfer idenfier*
-        List of the FileTransfer identifiers which are output of the Job. 
-        In other words, FileTransfer  which will be created or modified by the 
-        Job.
-    
-    * stdin *path or FileTransfer identifier* 
-        Path to the file which will be read as input stream by the Job.
-
-    * join_stderrout *boolean*
-        Specifies whether the error stream should be mixed with the output 
-        stream.
-
-    * stdout_file *path or FileTransfer identifier* 
-        Path of the file where the standard output stream of the job will be 
-        redirected.
-
-    * stderr_file *path or FileTransfer identifier* 
-        Path of the file where the standard error stream of the job will be 
-        redirected.
-
-        .. note::
-          Set stdout_file and stderr_file only if you need to redirect the standard 
-          output to a specific file. Indeed, even if they are not set the standard
-          outputs will always be available through the WorklfowController API.
-    
-    * disposal_timeout *int*
-        Number of hours before the Job will be deleted. Passed that delay, the job
-        will deleted and its resources released (including standard output and 
-        error files).The default timeout is 168 hours (7 days).
-
-    * name *string*
-        Name of the job.
-    
-    * working_directory *path*
-        Path of the directory where the job will be executed. The working 
-        directory is useful if your Job uses relative file path for example.
-
-    * parallel_job_info *tuple(string, int)*
-        The parallel job information must be set if the Job is parallel (ie. 
-        made to run on several CPU). The parallel job information is a tuple: 
-        (name of the configuration, maximum number of CPU used by the Job).
-        The configuration name is the type of parallel Job. Example: MPI or 
-        OpenMP.
-
-        .. warning::
-          The computing resources must be configured explicitly to use this 
-          feature.
+    Each path must be reachable from the computing resource.
+  
+    * job *client.Job*
 
     * queue *string*
         Name of the queue where to submit the jobs. If it is not 
         specified the job will be submitted to the default queue.
 
     * returns: int
-        Job identifier.
+      Job identifier.
     '''
-
-    job_id = self._engine_proxy.submit_job(Job(command,
-                                    referenced_input_files,
-                                    referenced_output_files,
-                                    stdin,
-                                    join_stderrout,
-                                    disposal_timeout,
-                                    name,
-                                    stdout_file,
-                                    stderr_file,
-                                    working_directory,
-                                    parallel_job_info),
-                                    queue)
-    return job_id
    
+    engine_job = self._engine_proxy.submit_job(job, queue)
+    return engine_job
 
-  def register_transfer(self, 
-                        is_input,
-                        client_path, 
-                        disposal_timeout=168, 
-                        name = None,
-                        client_paths=None): 
+
+  def register_transfer(self, file_transfer):
     '''
     Registers a file transfer which is not part of a workflow and returns a 
     file transfer identifier.
+    
+    * file_transfer *client.FileTransfer*
 
-    .. note :: TO DO simplification => FileTransfer object as argument.
-
-    * is_input  *boolean*
-        True if the files are input files existing on the client side.
-        False if the files are output files which will be created by a job on 
-        the computing resource side.
-
-    * client_path *string*
-        Path of the file or directory on the user's file system.
-
-    * disposal_timeout *int*
-        Number of hours before the file transfer will be deleted. Passed that 
-        delay, files copied on the computing resource side and
-        all the transfer information will be deleted, except if a job still 
-        references it as output or input.
-        The default timeout is 168 hours (7 days).
-
-    * client_paths *sequence of string*
-        Sequence of path. Files to transfer if the FileTransfers concerns a file
-        series or if the file format involves several associated files or
-        directories (see the note below).
-
-    * name *string*
-        Name of the file transfer. Default: client_path + "transfer"
-
-    * returns: *string*
-      File transfer identifier.
-
-    .. note::
-      Use client_paths if the transfer involves several associated files and/or 
-      directories. Examples:
-
-        * file series
-        * file format associating several file and/or directories 
-          (ex: a SPM images are stored in 2 associated files: .img and .hdr)
-          In this case, set client_path to one the files (ex: .img) and 
-          client_paths contains all the files (ex: .img and .hdr files)
-
-      In other cases (1 file or 1 directory) the client_paths must be set to None.
+    * returns *EngineTransfer*
     '''
-    return self._engine_proxy.register_transfer(FileTransfer(is_input,
-                                                      client_path,
-                                                      disposal_timeout, 
-                                                      name,
-                                                      client_paths))
+
+    engine_transfer = self._engine_proxy.register_transfer(file_transfer)
+    return engine_transfer
 
   ########## WORKFLOWS, JOBS and FILE TRANSFERS RETRIEVAL ###################
 

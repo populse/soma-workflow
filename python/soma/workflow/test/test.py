@@ -10,7 +10,7 @@ from datetime import timedelta
 
 
 import soma.workflow.constants as constants
-from soma.workflow.client import WorkflowController
+from soma.workflow.client import WorkflowController, Job, FileTransfer
 from soma.workflow.gui.jobsControler import JobsControler
 
 
@@ -64,8 +64,8 @@ class JobExamples(object):
   
   
   
-  def __init__(self, jobs, inpath, outpath, python, transfer_timeout = -24, jobs_timeout = 1):
-    self.jobs = jobs
+  def __init__(self, wf_ctrl, inpath, outpath, python, transfer_timeout = -24, jobs_timeout = 1):
+    self.wf_ctrl = wf_ctrl
     self.inpath = inpath
     self.outpath = outpath
     self.tr_timeout = transfer_timeout
@@ -90,137 +90,188 @@ class JobExamples(object):
     self.exceptionjobstdouterr = [self.inpath + "simple/outputModels/stdout_exception_job",
                                   self.inpath + "simple/outputModels/stderr_exception_job"]
     
-  def setNewConnection(self, jobs):
+  def setNewConnection(self, wf_ctrl):
     '''
     For the disconnection test
     '''
-    self.jobs = jobs
+    self.wf_ctrl = wf_ctrl
   
   def submitJob1(self, time=2):
-    self.file11_trid = self.jobs.register_transfer(False, 
-                                                self.outpath + "file11", 
-                                                self.tr_timeout) 
-    self.file12_trid = self.jobs.register_transfer(False,
-                                                   self.outpath + "file12",
-                                                   self.tr_timeout) 
-    
-    self.file0_trid = self.jobs.register_transfer(True,
-                                               self.inpath + "complete/" + "file0", 
-                                               self.tr_timeout) 
-    script1_trid = self.jobs.register_transfer(True,
-                                               self.inpath + "complete/" + "job1.py", 
-                                               self.tr_timeout) 
-    stdin1_trid = self.jobs.register_transfer(True, 
-                                              self.inpath + "complete/" + "stdin1", 
-                                              self.tr_timeout) 
+    self.file11_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(is_input=False,         
+                                           client_path=self.outpath + "file11", 
+                                           disposal_timeout=self.tr_timeout)) 
 
-    self.jobs.transfer_files(self.file0_trid) 
-    self.jobs.transfer_files(script1_trid) 
-    self.jobs.transfer_files(stdin1_trid) 
+    self.file12_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(is_input=False,
+                                           client_path=self.outpath + "file12",        disposal_timeout=self.tr_timeout))
     
-    job1id = self.jobs.submit_job( [self.python, script1_trid, self.file0_trid, self.file11_trid, self.file12_trid, repr(time)], 
-                               [self.file0_trid, script1_trid, stdin1_trid], 
-                               [self.file11_trid, self.file12_trid], 
-                               stdin1_trid, 
-                               False, 
-                               self.jobs_timeout, 
-                               "job1 with transfers") 
+    self.file0_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(True,
+                                           self.inpath + "complete/" + "file0", 
+                                           self.tr_timeout)) 
+
+    script1_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(True,
+                                           self.inpath + "complete/" + "job1.py", 
+                                           self.tr_timeout))
+
+    stdin1_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(True, 
+                                           self.inpath + "complete/" + "stdin1", 
+                                           self.tr_timeout))
+
+    self.wf_ctrl.transfer_files(self.file0_tr.engine_path) 
+    self.wf_ctrl.transfer_files(script1_tr.engine_path) 
+    self.wf_ctrl.transfer_files(stdin1_tr.engine_path) 
+    
+    print "files transfered "
+
+    job1 = self.wf_ctrl.submit_job(Job(
+                                      command=[self.python, 
+                                              script1_tr, 
+                                              self.file0_tr, 
+                                              self.file11_tr, 
+                                              self.file12_tr, 
+                                              repr(time)], 
+                                      referenced_input_files=[self.file0_tr, 
+                                                              script1_tr, 
+                                                              stdin1_tr], 
+                                      referenced_output_files=[self.file11_tr, 
+                                                              self.file12_tr], 
+                                      stdin=stdin1_tr, 
+                                      join_stderrout=False, 
+                                      disposal_timeout=self.jobs_timeout, 
+                                      name="job1 with transfers")) 
                                     
-    return (job1id, [self.file11_trid, self.file12_trid], None)
+    return (job1.job_id, [self.file11_tr.engine_path, self.file12_tr.engine_path], None)
   
 
   def submitJob2(self, time=2):
-    self.file2_trid = self.jobs.register_transfer(False,
+    self.file2_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(False,
                                                self.outpath + "file2", 
-                                               self.tr_timeout) 
+                                               self.tr_timeout))
 
-    script2_trid = self.jobs.register_transfer(True,
-                                               self.inpath + "complete/" + "job2.py", 
-                                                self.tr_timeout) 
-    stdin2_trid = self.jobs.register_transfer(True, 
-                                              self.inpath + "complete/" + "stdin1", 
-                                              self.tr_timeout) 
+    script2_tr = self.wf_ctrl.register_transfer(
+                                FileTransfer(True,
+                                             self.inpath + "complete/" + "job2.py", 
+                                             self.tr_timeout)) 
+
+    stdin2_tr = self.wf_ctrl.register_transfer(
+                                FileTransfer(True, 
+                                             self.inpath + "complete/" + "stdin1", 
+                                             self.tr_timeout))
   
-    self.jobs.transfer_files(script2_trid) 
-    self.jobs.transfer_files(stdin2_trid) 
+    self.wf_ctrl.transfer_files(script2_tr.engine_path) 
+    self.wf_ctrl.transfer_files(stdin2_tr.engine_path) 
   
-    job2id = self.jobs.submit_job( [self.python, script2_trid, self.file11_trid, self.file0_trid, self.file2_trid, repr(time)], 
-                                   [self.file0_trid, self.file11_trid, script2_trid, stdin2_trid], 
-                                   [self.file2_trid], 
-                                   stdin2_trid, 
-                                   False, 
-                                   self.jobs_timeout, 
-                                  "job2 with transfers") 
-    return (job2id, [self.file2_trid], None)
+    job2 = self.wf_ctrl.submit_job(Job(command=[self.python, 
+                                                script2_tr, 
+                                                self.file11_tr, 
+                                                self.file0_tr, 
+                                                self.file2_tr, 
+                                                repr(time)], 
+                                        referenced_input_files=[self.file0_tr, 
+                                                                self.file11_tr, 
+                                                                script2_tr, 
+                                                                stdin2_tr], 
+                                        referenced_output_files=[self.file2_tr], 
+                                        stdin=stdin2_tr, 
+                                        join_stderrout=False, 
+                                        disposal_timeout=self.jobs_timeout, 
+                                        name="job2 with transfers"))
+    return (job2.job_id, [self.file2_tr.engine_path], None)
 
 
   def submitJob3(self, time=2):
-    self.file3_trid = self.jobs.register_transfer(False,
+    self.file3_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(False,
                                                self.outpath + "file3",
-                                               self.tr_timeout) 
+                                               self.tr_timeout)) 
     
-    script3_trid = self.jobs.register_transfer(True, 
-                                                self.inpath + "complete/" + "job3.py", 
-                                                self.tr_timeout) 
-    stdin3_trid = self.jobs.register_transfer(True,
-                                              self.inpath + "complete/" + "stdin3", 
-                                               self.tr_timeout) 
+    script3_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(True, 
+                                               self.inpath + "complete/" + "job3.py", 
+                                               self.tr_timeout))
+    stdin3_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(True,
+                                               self.inpath + "complete/" + "stdin3", 
+                                               self.tr_timeout))
     
-    self.jobs.transfer_files(script3_trid) 
-    self.jobs.transfer_files(stdin3_trid) 
+    self.wf_ctrl.transfer_files(script3_tr.engine_path) 
+    self.wf_ctrl.transfer_files(stdin3_tr.engine_path) 
 
-    job3id = self.jobs.submit_job( [self.python, script3_trid, self.file12_trid, self.file3_trid, repr(time)], 
-                               [self.file12_trid, script3_trid, stdin3_trid], 
-                               [self.file3_trid], 
-                               stdin3_trid, 
-                               False,  
-                               self.jobs_timeout, 
-                               "job3 with transfers") 
+    job3 = self.wf_ctrl.submit_job(Job(command=[self.python, 
+                                                script3_tr,  
+                                                self.file12_tr,  
+                                                self.file3_tr,  
+                                                repr(time)], 
+                                        referenced_input_files=[self.file12_tr, 
+                                                                script3_tr,  
+                                                                stdin3_tr], 
+                                        referenced_output_files=[self.file3_tr], 
+                                        stdin=stdin3_tr, 
+                                        join_stderrout=False,  
+                                        disposal_timeout=self.jobs_timeout, 
+                                        name="job3 with transfers")) 
   
-    return (job3id, [self.file3_trid], None)
+    return (job3.job_id, [self.file3_tr.engine_path], None)
   
   
   def submitJob4(self):
-    self.file4_trid = self.jobs.register_transfer(False,
-                                                  self.outpath + "file4",
-                                                  self.tr_timeout) 
+    self.file4_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(False,
+                                               self.outpath + "file4",
+                                               self.tr_timeout))
   
-    script4_trid = self.jobs.register_transfer(True,
+    script4_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(True,
                                                self.inpath + "complete/" + "job4.py", 
-                                               self.tr_timeout) 
-    stdin4_trid = self.jobs.register_transfer(True,
-                                              self.inpath + "complete/" + "stdin4", 
-                                              self.tr_timeout) 
+                                               self.tr_timeout)) 
+    stdin4_tr = self.wf_ctrl.register_transfer(
+                                  FileTransfer(True,
+                                               self.inpath + "complete/" + "stdin4", 
+                                               self.tr_timeout))
   
-    self.jobs.transfer_files(script4_trid) 
-    self.jobs.transfer_files(stdin4_trid) 
+    self.wf_ctrl.transfer_files(script4_tr.engine_path) 
+    self.wf_ctrl.transfer_files(stdin4_tr.engine_path) 
  
-    job4id = self.jobs.submit_job( [self.python, script4_trid, self.file2_trid, self.file3_trid, self.file4_trid], 
-                               [self.file2_trid, self.file3_trid, script4_trid, stdin4_trid], 
-                               [self.file4_trid], 
-                               stdin4_trid, 
-                               False, 
-                               self.jobs_timeout, 
-                               "job4 with transfers") 
-    return (job4id, [self.file4_trid], None)
+    job4 = self.wf_ctrl.submit_job(Job( 
+                                          command=[self.python, 
+                                                   script4_tr, 
+                                                   self.file2_tr, 
+                                                   self.file3_tr, 
+                                                   self.file4_tr], 
+                                          referenced_input_files=[self.file2_tr, 
+                                                                  self.file3_tr, 
+                                                                  script4_tr, 
+                                                                  stdin4_tr], 
+                                          referenced_output_files=[self.file4_tr], 
+                                          stdin=stdin4_tr, 
+                                          join_stderrout=False, 
+                                          disposal_timeout=self.jobs_timeout, 
+                                          name="job4 with transfers"))
+    return (job4.job_id, [self.file4_tr.engine_path], None)
   
   
   def submitExceptionJob(self):
-    script_trid = self.jobs.register_transfer(True,
-                                              self.inpath + "simple/exceptionJob.py",
-                                              self.tr_timeout)
+    script_tr = self.wf_ctrl.register_transfer(
+                                FileTransfer(True,
+                                             self.inpath + "simple/exceptionJob.py",
+                                             self.tr_timeout))
   
-    self.jobs.transfer_files(script_trid)
+    self.wf_ctrl.transfer_files(script_tr.engine_path)
   
-    jobid = self.jobs.submit_job( [self.python, script_trid], 
-                              [script_trid], 
-                              [], 
-                              None, 
-                              False, 
-                              self.jobs_timeout, 
-                              "job with exception") 
+    job = self.wf_ctrl.submit_job(Job(command=[self.python, script_tr], 
+                                      referenced_input_files=[script_tr], 
+                                      referenced_output_files=[], 
+                                      stdin=None, 
+                                      join_stderrout=False, 
+                                      disposal_timeout=self.jobs_timeout, 
+                                      name="job with exception"))
     
-    return (jobid, None, None)
+    return (job.job_id, None, None)
 
 
   def localCustomSubmission(self):
@@ -228,36 +279,36 @@ class JobExamples(object):
     stderr = self.outpath + "stderr_local_custom_submission"
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    jobId = self.jobs.submit_job( command = [self.python, 
-                                        self.inpath + "complete/" + "job1.py", 
-                                        self.inpath + "complete/" + "file0",
-                                        file11, 
-                                        file12, "2"], 
-                              stdin = self.inpath + "complete/" + "stdin1",
-                              join_stderrout=False,
-                              disposal_timeout = self.jobs_timeout,
-                              name = "job1 local custom submission",
-                              stdout_file=stdout,
-                              stderr_file=stderr,
-                              working_directory=self.outpath )
+    job = self.wf_ctrl.submit_job(Job(command = [self.python, 
+                                                       self.inpath + "complete/" + "job1.py", 
+                                                       self.inpath + "complete/" + "file0",
+                                                       file11, 
+                                                       file12, "2"], 
+                                            stdin = self.inpath + "complete/" + "stdin1",
+                                            join_stderrout=False,
+                                            disposal_timeout = self.jobs_timeout,
+                                            name = "job1 local custom submission",
+                                            stdout_file=stdout,
+                                            stderr_file=stderr,
+                                            working_directory=self.outpath ))
       
-    return (jobId, 
+    return (job.job_id, 
             [file11, file12],  
             [stdout, stderr])
               
   def localSubmission(self):
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    jobId = self.jobs.submit_job(command = [ self.python, 
-                                          self.inpath + "complete/" + "job1.py", 
-                                          self.inpath + "complete/" + "file0",
-                                          file11, 
-                                          file12, "2"], 
-                              stdin = self.inpath + "complete/" + "stdin1",
-                              join_stderrout=False, 
-                              disposal_timeout = self.jobs_timeout,
-                              name = "job1 local submission")
-    return (jobId,
+    job = self.wf_ctrl.submit_job(Job(command = [self.python, 
+                                                      self.inpath + "complete/" + "job1.py", 
+                                                      self.inpath + "complete/" + "file0",
+                                                      file11, 
+                                                      file12, "2"], 
+                                            stdin = self.inpath + "complete/" + "stdin1",
+                                            join_stderrout=False, 
+                                            disposal_timeout = self.jobs_timeout,
+                                            name = "job1 local submission"))
+    return (job.job_id,
             [file11, file12],
             None)
      
@@ -265,76 +316,81 @@ class JobExamples(object):
     
     #compilation 
     
-    source_trid = self.jobs.register_transfer(True, 
+    source_tr = self.wf_ctrl.register_transfer(
+                                 FileTransfer(True, 
                                               self.inpath + "mpi/simple_mpi.c",
-                                              self.tr_timeout)
+                                              self.tr_timeout))
     
-    self.jobs.transfer_files(source_trid)
+    self.wf_ctrl.transfer_files(source_tr.engine_path)
 
-    object_trid = self.jobs.register_transfer(False,
+    object_tr = self.wf_ctrl.register_transfer(
+                                 FileTransfer(False,
                                               self.outpath + "simple_mpi.o",
-                                              self.tr_timeout) 
+                                              self.tr_timeout))
     #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
     #/opt/mpich/gnu/bin/
     
-    mpibin = self.jobs.config.get(self.jobs.resource_id, constants.OCFG_PARALLEL_ENV_MPI_BIN)
+    mpibin = self.wf_ctrl.config.get(self.wf_ctrl.resource_id, 
+                                     constants.OCFG_PARALLEL_ENV_MPI_BIN)
     print "mpibin = " + mpibin
     
-    print "source_trid = " + source_trid
-    print "object_trid = " + object_trid
-    compil1jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
-                                                  "-c", source_trid, 
-                                                  "-o", object_trid ], 
-                                      referenced_input_files = [source_trid],
-                                      referenced_output_files = [object_trid],
-                                      join_stderrout=False, 
-                                      disposal_timeout = self.jobs_timeout,
-                                      name = "job compil1 mpi")
+    print "source_tr.engine_path = " + source_tr.engine_path
+    print "object_tr.engine_path = " + object_tr.engine_path
+    compil1job = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
+                                                             "-c", source_tr, 
+                                                             "-o", object_tr ], 
+                                             referenced_input_files=[source_tr],
+                                             referenced_output_files=[object_tr],
+                                             join_stderrout=False, 
+                                             disposal_timeout=self.jobs_timeout,
+                                             name="job compil1 mpi"))
     
-    self.jobs.wait_job([compil1jobId])
+    self.wf_ctrl.wait_job([compil1job.job_id])
     
-    bin_trid = self.jobs.register_transfer(True,
-                                        self.outpath + "simple_mpi",
-                                        self.tr_timeout) 
-    print "bin_trid= " + bin_trid
+    bin_tr = self.wf_ctrl.register_transfer(
+                              FileTransfer(True,
+                                           self.outpath + "simple_mpi",
+                                           self.tr_timeout))
+    print "bin_tr.engine_path= " + bin_tr.engine_path
     
-    compil2jobId = self.jobs.submit_job( command = [ mpibin+"/mpicc", 
-                                                "-o", bin_trid, 
-                                                object_trid ], 
-                                    referenced_input_files = [object_trid],
-                                    referenced_output_files = [bin_trid],
-                                    join_stderrout=False, 
-                                    disposal_timeout = self.jobs_timeout,
-                                    name = "job compil2 mpi")
+    compil2job = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
+                                                              "-o", bin_tr, 
+                                                              object_tr ], 
+                                             referenced_input_files=[object_tr],
+                                             referenced_output_files=[bin_tr],
+                                             join_stderrout=False, 
+                                             disposal_timeout=self.jobs_timeout,
+                                             name="job compil2 mpi"))
     
-    self.jobs.wait_job([compil2jobId])
-    self.jobs.delete_transfer(object_trid)
+    self.wf_ctrl.wait_job([compil2job.job_id])
+    self.wf_ctrl.delete_transfer(object_tr.engine_path)
 
     
     # mpi job submission
-    script = self.jobs.register_transfer(True,
-                                         self.inpath + "mpi/simple_mpi.sh",
-                                         self.tr_timeout)
+    script = self.wf_ctrl.register_transfer(
+                              FileTransfer(True,
+                                           self.inpath + "mpi/simple_mpi.sh",
+                                           self.tr_timeout))
     
-    self.jobs.transfer_files(script)
+    self.wf_ctrl.transfer_files(script.engine_path)
 
-    jobId = self.jobs.submit_job( command = [ script, repr(node_num), bin_trid], 
-                              referenced_input_files = [script, bin_trid],
-                              join_stderrout=False, 
-                              disposal_timeout = self.jobs_timeout,
-                              name = "parallel job mpi",
-                              parallel_job_info = (constants.OCFG_PARALLEL_PC_MPI,node_num))
+    job = self.wf_ctrl.submit_job(Job(command=[ script, repr(node_num), bin_tr], 
+                                      referenced_input_files=[script, bin_tr],
+                                      join_stderrout=False, 
+                                      disposal_timeout=self.jobs_timeout,
+                                      name="parallel job mpi",
+                                      parallel_job_info= (constants.OCFG_PARALLEL_PC_MPI,node_num)))
 
-    self.jobs.delete_job(compil1jobId)
-    self.jobs.delete_job(compil2jobId)
+    self.wf_ctrl.delete_job(compil1job.job_id)
+    self.wf_ctrl.delete_job(compil2job.job_id)
     
 
-    return (jobId, [source_trid], None)
+    return (job.job_id, [source_tr.engine_path], None)
           
      
 class JobsTest(unittest.TestCase):
   '''
-  Abstract class for jobs common tests.
+  Abstract class for soma_workflow job and transfer common tests.
   '''
   @staticmethod
   def setupConnection(resource_id, 
@@ -349,14 +405,14 @@ class JobsTest(unittest.TestCase):
 
     JobsTest.hostname = socket.gethostname()
     
-    JobsTest.jobs = WorkflowController(resource_id, 
-                                       login, 
-                                       password)
+    JobsTest.wf_ctrl = WorkflowController(resource_id, 
+                                                login, 
+                                                password)
     
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
   
-    JobsTest.jobExamples = JobExamples(JobsTest.jobs, 
+    JobsTest.jobExamples = JobExamples(JobsTest.wf_ctrl, 
                               job_examples_dir, 
                               output_dir, 
                               'python',
@@ -371,19 +427,19 @@ class JobsTest(unittest.TestCase):
    
   def tearDown(self):
     for jid in self.myJobs:
-      JobsTest.jobs.delete_job(jid)
-    remainingJobs = frozenset(JobsTest.jobs.jobs().keys())
+      JobsTest.wf_ctrl.delete_job(jid)
+    remainingJobs = frozenset(JobsTest.wf_ctrl.jobs().keys())
     self.failUnless(len(remainingJobs.intersection(self.myJobs)) == 0)
      
                                    
   def test_jobs(self):
-    res = set(JobsTest.jobs.jobs().keys())
+    res = set(JobsTest.wf_ctrl.jobs().keys())
     self.failUnless(res.issuperset(self.myJobs))
      
   def test_wait(self):
-    JobsTest.jobs.wait_job(self.myJobs)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
     for jid in self.myJobs:
-      status = JobsTest.jobs.job_status(jid)
+      status = JobsTest.wf_ctrl.job_status(jid)
       self.failUnless(status == constants.DONE or 
                       status == constants.FAILED,
                       'Job %s status after wait: %s' %(jid, status))
@@ -391,11 +447,11 @@ class JobsTest(unittest.TestCase):
   def test_wait2(self):
     startTime = datetime.now()
     interval = 5
-    JobsTest.jobs.wait_job(self.myJobs, interval)
+    JobsTest.wf_ctrl.wait_job(self.myJobs, interval)
     delta = datetime.now() - startTime
     if delta < timedelta(seconds=interval):
       for jid in self.myJobs:
-        status = JobsTest.jobs.job_status(jid)
+        status = JobsTest.wf_ctrl.job_status(jid)
         self.failUnless(status == constants.DONE or 
                         status == constants.FAILED,
                         'Job %s status after wait: %s' %(self.myJobs[0], status))
@@ -404,9 +460,9 @@ class JobsTest(unittest.TestCase):
     
   def test_restart(self):
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.kill_job(jobid)
-    JobsTest.jobs.restart_job(jobid)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.kill_job(jobid)
+    JobsTest.wf_ctrl.restart_job(jobid)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(not status == constants.USER_ON_HOLD and  
                     not status == constants.USER_SYSTEM_ON_HOLD and
                     not status == constants.USER_SUSPENDED and
@@ -416,10 +472,10 @@ class JobsTest(unittest.TestCase):
   def test_kill(self):
     jobid = self.myJobs[0]
     time.sleep(2)
-    JobsTest.jobs.kill_job(jobid)
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    JobsTest.wf_ctrl.kill_job(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
-    status = JobsTest.jobs.job_status(jobid)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.FAILED or status == constants.DONE, 
                     'Job status after kill: %s' %status)
     self.failUnless(exitStatus == constants.USER_KILLED or exitStatus == constants.FINISHED_REGULARLY, 
@@ -452,11 +508,11 @@ class LocalCustomSubmission(JobsTest):
   
   def test_result(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -496,11 +552,11 @@ class LocalSubmission(JobsTest):
       
   def test_result(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -519,7 +575,7 @@ class LocalSubmission(JobsTest):
     # checking stdout and stderr
     stdout = JobsTest.outpath + "/stdout_local_submission"
     stderr = JobsTest.outpath + "/stderr_local_submission"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], stdout, stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[0], stdout, stderr)
     self.outputFiles.append(stdout)
     self.outputFiles.append(stderr)
     
@@ -545,11 +601,11 @@ class SubmissionWithTransfer(JobsTest):
       
   def test_result(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -559,9 +615,9 @@ class SubmissionWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      client_file = JobsTest.jobs.transfers([file])[file][0]
+      client_file = JobsTest.wf_ctrl.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.transfer_files(file)
+      JobsTest.wf_ctrl.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
    
@@ -571,7 +627,7 @@ class SubmissionWithTransfer(JobsTest):
     # checking stdout and stderr
     client_stdout = JobsTest.outpath + "/stdout_submit_with_transfer"
     client_stderr = JobsTest.outpath + "/stderr_submit_with_transfer"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
   
@@ -593,7 +649,7 @@ class EndedJobWithTransfer(JobsTest):
     self.outputFiles = info[1]
     self.clientFiles = []
 
-    JobsTest.jobs.wait_job(self.myJobs)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
    
   def tearDown(self):
     JobsTest.tearDown(self)
@@ -618,11 +674,11 @@ class JobPipelineWithTransfer(JobsTest):
     self.myJobs.append(info1[0]) 
     self.outputFiles.extend(info1[1])
 
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(self.myJobs[0])
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[0])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[0])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[0])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[0], exitStatus))
@@ -640,11 +696,11 @@ class JobPipelineWithTransfer(JobsTest):
     self.myJobs.append(info3[0]) 
     self.outputFiles.extend(info3[1])
 
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(self.myJobs[1])
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[1])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[1])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[1])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[1], exitStatus))
@@ -652,10 +708,10 @@ class JobPipelineWithTransfer(JobsTest):
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
                     
-    status = JobsTest.jobs.job_status(self.myJobs[2])
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[2])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[2], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[2])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[2])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[2], exitStatus))
@@ -679,11 +735,11 @@ class JobPipelineWithTransfer(JobsTest):
       
   def test_result(self):
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -694,9 +750,9 @@ class JobPipelineWithTransfer(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      client_file = JobsTest.jobs.transfers([file])[file][0]
+      client_file = JobsTest.wf_ctrl.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.transfer_files(file)
+      JobsTest.wf_ctrl.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
     
@@ -708,25 +764,25 @@ class JobPipelineWithTransfer(JobsTest):
     # checking stdout and stderr
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
     
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
   
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
     
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
    
@@ -753,11 +809,11 @@ class ExceptionJobTest(JobsTest):
    
   def test_result(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE or constants.FAILED,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -767,7 +823,7 @@ class ExceptionJobTest(JobsTest):
     # checking stdout and stderr
     client_stdout = JobsTest.outpath + "/stdout_exception_job"
     client_stderr = JobsTest.outpath + "/stderr_exception_job"
-    JobsTest.jobs.retrieve_job_stdouterr(jobid, client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(jobid, client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
     
@@ -791,11 +847,11 @@ class DisconnectionTest(JobsTest):
     self.myJobs.append(info1[0]) 
     self.outputFiles.extend(info1[1])
 
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(self.myJobs[0])
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[0])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[0], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[0])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[0])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[0], exitStatus))
@@ -815,17 +871,17 @@ class DisconnectionTest(JobsTest):
 
     time.sleep(10)
     print "Disconnection...."
-    JobsTest.jobs.disconnect()
-    del JobsTest.jobs
+    JobsTest.wf_ctrl.disconnect()
+    del JobsTest.wf_ctrl
     time.sleep(20)
     print ".... Reconnection"
 
-    JobsTest.jobs = WorkflowController(JobsTest.resource_id, 
+    JobsTest.wf_ctrl = WorkflowController(JobsTest.resource_id, 
                                        JobsTest.login, 
                                        JobsTest.password)
 
 
-    JobsTest.jobExamples.setNewConnection(JobsTest.jobs)
+    JobsTest.jobExamples.setNewConnection(JobsTest.wf_ctrl)
     #time.sleep(1)
    
   def tearDown(self):
@@ -838,11 +894,11 @@ class DisconnectionTest(JobsTest):
       
   def test_result(self):
 
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(self.myJobs[1])
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[1])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[1], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[1])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[1])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[1], exitStatus))
@@ -850,10 +906,10 @@ class DisconnectionTest(JobsTest):
     self.failUnless(exitValue == 0,
                     'Job exit value: %d' %exitValue)
                     
-    status = JobsTest.jobs.job_status(self.myJobs[2])
+    status = JobsTest.wf_ctrl.job_status(self.myJobs[2])
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(self.myJobs[2], status))
-    job_termination_status = JobsTest.jobs.job_termination_status(self.myJobs[2])
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(self.myJobs[2])
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(self.myJobs[2], exitStatus))
@@ -869,11 +925,11 @@ class DisconnectionTest(JobsTest):
     self.outputFiles.extend(info4[1])
 
     jobid = self.myJobs[len(self.myJobs)-1]
-    JobsTest.jobs.wait_job(self.myJobs)
-    status = JobsTest.jobs.job_status(jobid)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -884,9 +940,9 @@ class DisconnectionTest(JobsTest):
     
     # checking output files
     for file in self.outputFiles:
-      client_file = JobsTest.jobs.transfers([file])[file][0]
+      client_file = JobsTest.wf_ctrl.transfers([file])[file][0]
       self.failUnless(client_file)
-      JobsTest.jobs.transfer_files(file)
+      JobsTest.wf_ctrl.transfer_files(file)
       self.failUnless(os.path.isfile(client_file), 'File %s doesn t exit' %file)
       self.clientFiles.append(client_file)
     
@@ -898,25 +954,25 @@ class DisconnectionTest(JobsTest):
     # checking stdout and stderr
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job1"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job1"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[0], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
     
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job2"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job2"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[1], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
   
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job3"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job3"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[2], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
     
     client_stdout = JobsTest.outpath + "/stdout_pipeline_job4"
     client_stderr = JobsTest.outpath + "/stderr_pipeline_job4"
-    JobsTest.jobs.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
+    JobsTest.wf_ctrl.retrieve_job_stdouterr(self.myJobs[3], client_stdout, client_stderr)
     self.clientFiles.append(client_stdout)
     self.clientFiles.append(client_stderr)
    
@@ -946,12 +1002,12 @@ class MPIParallelJobTest(JobsTest):
       
   def test_result(self):
     jobid = self.myJobs[0]
-    JobsTest.jobs.wait_job(self.myJobs)
+    JobsTest.wf_ctrl.wait_job(self.myJobs)
     
-    status = JobsTest.jobs.job_status(jobid)
+    status = JobsTest.wf_ctrl.job_status(jobid)
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
-    job_termination_status = JobsTest.jobs.job_termination_status(jobid)
+    job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
     exitStatus = job_termination_status[0]
     self.failUnless(exitStatus == constants.FINISHED_REGULARLY, 
                     'Job %s exit status: %s' %(jobid, exitStatus))
@@ -961,7 +1017,7 @@ class MPIParallelJobTest(JobsTest):
                     
 
     print "stdout: "
-    line = JobsTest.jobs.stdoutReadLine(jobid)
+    line = JobsTest.wf_ctrl.stdoutReadLine(jobid)
     process_num = 1
     while line:
       splitted_line = line.split()
@@ -969,7 +1025,7 @@ class MPIParallelJobTest(JobsTest):
         self.failUnless(line.rstrip() == "Grettings from process %d!" %(process_num), 
                         "stdout line:  %sinstead of  : 'Grettings from process %d!'" %(line, process_num))
         process_num = process_num +1
-      line = JobsTest.jobs.stdoutReadLine(jobid)
+      line = JobsTest.wf_ctrl.stdoutReadLine(jobid)
 
     self.failUnless(process_num==self.node_num, 
                     "%d process(es) run instead of %d." %(process_num-1, self.node_num))
