@@ -469,7 +469,7 @@ class WorkflowDatabaseServer( object ):
   
      
      
-  def generate_file_path(self, user_id, client_file_path=None):
+  def generate_file_path(self, user_id, client_file_path=None, external_cursor=None):
     '''
     Generates file path for transfers. 
     The user_id must be valid.
@@ -483,17 +483,21 @@ class WorkflowDatabaseServer( object ):
     @return: file path
     '''
     with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
+      if not external_cursor:
+        connection = self._connect()
+        cursor = connection.cursor()
+      else:
+        cursor = external_cursor
       try:
         login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[0]#supposes that the user_id is valid
         login = self._string_conversion(login)
         cursor.execute('INSERT INTO fileCounter (foo) VALUES (?)', [0])
         file_num = cursor.lastrowid
       except Exception, e:
-        connection.rollback()
-        cursor.close()
-        connection.close()
+        if not external_cursor:
+          connection.rollback()
+          cursor.close()
+          connection.close()
         raise WorkflowDatabaseServerError('Error generate_file_path %s: %s \n' %(type(e), e), self.logger) 
       
       userDirPath = self._user_transfer_dir_path(login, user_id) 
@@ -508,10 +512,11 @@ class WorkflowDatabaseServer( object ):
           #newFilePath += client_file_path[client_file_path.rfind("/")+1:] + '_' + repr(file_num) 
         else: 
           newFilePath = os.path.join(userDirPath, client_base_name[0:iextention] + '_' + repr(file_num) + client_base_name[iextention:])
-          #newFilePath += client_file_path[client_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + client_file_path[iextention:]
-      cursor.close()
-      connection.commit()
-      connection.close()
+          ##newFilePath += client_file_path[client_file_path.rfind("/")+1:iextention] + '_' + repr(file_num) + client_file_path[iextention:]
+      if not external_cursor:
+        cursor.close()
+        connection.commit()
+        connection.close()
       return newFilePath
   
   
@@ -879,21 +884,24 @@ class WorkflowDatabaseServer( object ):
       engine_workflow.registered_tr[transfer.engine_path] = transfer
   
 
-    job_info = []
-    for job in engine_workflow.job_mapping.itervalues():
-      job.workflow_id = engine_workflow.wf_id 
-      job = self.add_job(user_id, 
-                         job, 
-                         engine_workflow.expiration_date)
-      job_info.append((job.job_id, job.stdout_file, job.stderr_file))
-      engine_workflow.registered_jobs[job.job_id] = job
-
-    
-    pickled_workflow = pickle.dumps(engine_workflow)
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
+        job_info = []
+        for job in engine_workflow.job_mapping.itervalues():
+          job.workflow_id = engine_workflow.wf_id 
+          job = self.add_job(user_id, 
+                            job, 
+                            engine_workflow.expiration_date,
+                            cursor)
+          job_info.append((job.job_id, job.stdout_file, job.stderr_file))
+          engine_workflow.registered_jobs[job.job_id] = job
+
+        
+        pickled_workflow = pickle.dumps(engine_workflow)
+   
+      
         cursor.execute('''UPDATE workflows 
                           SET pickled_engine_workflow=? 
                           WHERE id=?''', 
@@ -1160,7 +1168,8 @@ class WorkflowDatabaseServer( object ):
   def add_job( self, 
                user_id,
                engine_job,
-               expiration_date=None):
+               expiration_date=None,
+               external_cursor=None):
     '''
     Adds a job to the database and returns its identifier.
     
@@ -1182,25 +1191,32 @@ class WorkflowDatabaseServer( object ):
     for command_element in engine_job.plain_command():
       command_info = command_info + " " + repr(command_element)
 
-    if not engine_job.plain_stdout():
-      engine_job.stdout_file = self.generate_file_path(user_id)
-      engine_job.stderr_file = self.generate_file_path(user_id)
-      custom_submission = False #the std out and err file has to be removed with the job
-    else:
-      custom_submission = True #the std out and err file won't to be removed with the job
-
-    referenced_input_files = []
-    for ft in engine_job.referenced_input_files:
-      referenced_input_files.append(engine_job.transfer_mapping[ft].engine_path)
-  
-    referenced_output_files = []
-    for ft in engine_job.referenced_output_files:
-      referenced_output_files.append(engine_job.transfer_mapping[ft].engine_path)
-   
     with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
+      if not external_cursor:
+        connection = self._connect()
+        cursor = connection.cursor()
+      else:
+        cursor = external_cursor
+      
       try:
+
+        if not engine_job.plain_stdout():
+          engine_job.stdout_file = self.generate_file_path(user_id, 
+                                                           external_cursor=cursor)
+          engine_job.stderr_file = self.generate_file_path(user_id, 
+                                                           external_cursor=cursor)
+          custom_submission = False #the std out and err file has to be removed with the job
+        else:
+          custom_submission = True #the std out and err file won't to be removed with the job
+
+        referenced_input_files = []
+        for ft in engine_job.referenced_input_files:
+          referenced_input_files.append(engine_job.transfer_mapping[ft].engine_path)
+      
+        referenced_output_files = []
+        for ft in engine_job.referenced_output_files:
+          referenced_output_files.append(engine_job.transfer_mapping[ft].engine_path)
+  
         cursor.execute('''INSERT INTO jobs 
                          (user_id,
                 
@@ -1270,9 +1286,10 @@ class WorkflowDatabaseServer( object ):
         
         job_id = cursor.lastrowid
         engine_job.job_id = job_id
-        pickled_engine_job = pickle.dumps(engine_job)
-        cursor.execute('UPDATE jobs SET pickled_engine_job=? WHERE id=?',
-                       (pickled_engine_job, job_id))
+        if not engine_job.workflow_id and engine_job.workflow_id == -1:
+          pickled_engine_job = pickle.dumps(engine_job)
+          cursor.execute('UPDATE jobs SET pickled_engine_job=? WHERE id=?',
+                        (pickled_engine_job, job_id))
 
         for engine_path in referenced_input_files:
           cursor.execute('''INSERT INTO ios (job_id, 
@@ -1290,15 +1307,16 @@ class WorkflowDatabaseServer( object ):
                          (job_id, engine_path, False))
         
       except Exception, e:
-        connection.rollback()
+        if not external_cursor:
+          connection.rollback()
+          cursor.close()
+          connection.close()
+        raise WorkflowDatabaseServerError('Error add_job %s: %s \n' %(type(e), e), self.logger) 
+      if not external_cursor:
+        connection.commit()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error add_job %s: %s \n' %(type(e), e), self.logger) 
-      connection.commit()
-      cursor.close()
-      connection.close()
       
-    
     return engine_job
    
   
