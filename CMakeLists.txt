@@ -19,15 +19,8 @@ else()
 endif()
 
 find_package( Sphinx )
-if( SPHINX_FOUND )
-  set( outputDirectory "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}" )
-  add_custom_command( COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/${outputDirectory}"
-                      COMMAND "${SPHINXBUILD_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/doc/source" "${CMAKE_BINARY_DIR}/${outputDirectory}"
-                      OUTPUT "${CMAKE_BINARY_DIR}/${outputDirectory}/index.html"
-                    )
-  BRAINVISA_GENERATE_TARGET_NAME( target )
-  add_custom_target( ${target} DEPENDS "${CMAKE_BINARY_DIR}/${outputDirectory}/index.html" )
-  add_dependencies( soma-workflow-devdoc ${target} )
-endif()
+
+BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
+  "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}" )
 
 BRAINVISA_CREATE_CMAKE_CONFIG_FILES()
