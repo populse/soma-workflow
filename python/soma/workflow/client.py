@@ -373,13 +373,6 @@ class FileTransfer(object):
     else:
       self.initial_status = FILES_DO_NOT_EXIST
 
-  def __eq__(self, other):
-    if not isinstance(other, FileTransfer):
-      return NotImplemented
-    equal = other.client_path == self.client_path
-    equal = equal and (other.client_paths == other.client_paths)
-    equal = equal and (other.initial_status == other.initial_status)
-    return equal
 
 class SharedResourcePath(object):
   '''
@@ -420,15 +413,6 @@ class SharedResourcePath(object):
     self.namespace = namespace
     self.uuid = uuid
     self.disposal_timout = disposal_timeout
-
-
-  def __eq__(self, other):
-    if not isinstance(other, SharedResourcePath):
-      return NotImplemented
-    equal = other.relative_path == self.relative_path
-    equal = equal and (other.namespace == other.namespace)
-    equal = equal and (other.uuid == other.uuid)
-    return equal
 
 
 

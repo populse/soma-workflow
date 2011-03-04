@@ -326,12 +326,6 @@ class EngineTransfer(FileTransfer):
             self.status == constants.TRANSFERING_FROM_CR_TO_CLIENT
     return exist
 
-  def __eq__(self, other):
-    if not isinstance(other, EngineTransfer):
-      return NotImplemented
-    equal = FileTransfer.__eq__(self, other)
-    equal = equal and (self.engine_path == other.engine_path)
-    return equal
 
 class EngineJob(soma.workflow.client.Job):
   

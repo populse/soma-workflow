@@ -540,7 +540,8 @@ class WorkflowDatabaseServer( object ):
   def add_transfer(self, 
                    engine_transfer,
                    user_id,
-                   expiration_date=None):
+                   expiration_date=None,
+                   external_cursor=None):
     '''
     Adds a transfer to the database.
     
@@ -553,18 +554,24 @@ class WorkflowDatabaseServer( object ):
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_transfer.disposal_timeout) 
 
-    if engine_transfer.client_paths:
-      engine_transfer.engine_path = self.generate_file_path(user_id)
-    else:
-      engine_transfer.engine_path = self.generate_file_path(user_id, 
-                                                            engine_transfer.client_path)
-    client_path_std = None
-    if engine_transfer.client_paths:
-      client_path_std = file_separator.join(engine_transfer.client_paths)
-     
     with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
+      if not external_cursor:
+        connection = self._connect()
+        cursor = connection.cursor()
+      else:
+        cursor = external_cursor
+
+      if engine_transfer.client_paths:
+        engine_transfer.engine_path = self.generate_file_path(user_id,
+                                                              external_cursor=cursor)
+      else:
+        engine_transfer.engine_path = self.generate_file_path(user_id, 
+                                                              engine_transfer.client_path,
+                                                              external_cursor=cursor)
+      client_path_std = None
+      if engine_transfer.client_paths:
+        client_path_std = file_separator.join(engine_transfer.client_paths)
+   
       try:
         cursor.execute('''INSERT INTO transfers 
                         (engine_file_path, 
@@ -586,13 +593,15 @@ class WorkflowDatabaseServer( object ):
                          engine_transfer.status, 
                          client_path_std))
       except Exception, e:
-        connection.rollback()
-        cursor.close()
-        connection.close()
+        if not external_cursor:
+          connection.rollback()
+          cursor.close()
+          connection.close()
         raise WorkflowDatabaseServerError('Error add_transfer %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.commit()
-      connection.close()
+      if not external_cursor:
+        cursor.close()
+        connection.commit()
+        connection.close()
 
     return engine_transfer
     #return engine_transfer.engine_path
@@ -865,36 +874,27 @@ class WorkflowDatabaseServer( object ):
                           engine_workflow.name,
                           constants.WORKFLOW_NOT_STARTED,
                           datetime.now()))
-      except Exception, e:
-        connection.rollback()
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error register_workflow %s: %s \n' %(type(e), e), self.logger) 
-      connection.commit()
-      engine_workflow.wf_id = cursor.lastrowid
-      cursor.close()
-      connection.close()
+     
+        engine_workflow.wf_id = cursor.lastrowid
 
-    # the transfers must be registered before the jobs
-    for transfer in engine_workflow.transfer_mapping.itervalues():
-      transfer.workflow_id = engine_workflow.wf_id 
-      self.add_transfer(transfer,
-                        user_id,
-                        engine_workflow.expiration_date)
-      engine_workflow.registered_tr[transfer.engine_path] = transfer
+
+        # the transfers must be registered before the jobs
+        for transfer in engine_workflow.transfer_mapping.itervalues():
+          transfer.workflow_id = engine_workflow.wf_id 
+          self.add_transfer(transfer,
+                            user_id,
+                            engine_workflow.expiration_date,
+                            external_cursor=cursor)
+          engine_workflow.registered_tr[transfer.engine_path] = transfer
   
 
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
         job_info = []
         for job in engine_workflow.job_mapping.itervalues():
           job.workflow_id = engine_workflow.wf_id 
           job = self.add_job(user_id, 
                             job, 
                             engine_workflow.expiration_date,
-                            cursor)
+                            external_cursor=cursor)
           job_info.append((job.job_id, job.stdout_file, job.stderr_file))
           engine_workflow.registered_jobs[job.job_id] = job
 

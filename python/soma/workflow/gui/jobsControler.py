@@ -586,8 +586,10 @@ class WorkflowExamples(object):
     
   def job_sleep(self, period):
     if self.with_transfers:
+      complete_path = os.path.join(self.examples_dir, "complete")
+      transfer   = FileTransfer(True,os.path.join(complete_path, "file0"), 168, "file0")
       job = Job( ["python", self.tr_sleep_script, repr(period)],
-                 [self.tr_sleep_script],
+                 [self.tr_sleep_script, transfer],
                  [],
                  None, False, 168, "sleep " + repr(period) + " s")
     elif self.with_shared_resource_path:
