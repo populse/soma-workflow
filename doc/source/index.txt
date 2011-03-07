@@ -66,6 +66,11 @@ Main Features
     computing resource. *This feature is available but needs to be optimized to
     speed up the transfers.*
 
+  **Simple one process mode:**
+    If you are not interested by the remote access, file transfer and disconnection 
+    features, Soma-workflow can be used as a simple and regular one process 
+    application (see :ref:`light_mode_config`). 
+
 
 Contents
 ========
@@ -74,6 +79,7 @@ Contents
    :maxdepth: 2
 
    concepts.txt
+   light_mode_config.txt
    client_install_config.txt
    server_install_config.txt
    workflow_creation.txt

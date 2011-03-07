@@ -1,8 +1,7 @@
 
 if __name__ == '__main__':
-  import ConfigParser
+ 
   import sys
-  import os
   import logging
 
   import Pyro.naming
@@ -10,7 +9,7 @@ if __name__ == '__main__':
   from Pyro.errors import PyroError, NamingError
   
   import soma.workflow.database_server
-  import soma.workflow.constants as constants
+  from soma.workflow.configuration import Configuration
   
   class WorkflowDatabaseServer(Pyro.core.ObjBase, 
                                soma.workflow.database_server.WorkflowDatabaseServer):
@@ -27,38 +26,21 @@ if __name__ == '__main__':
     sys.stdout.write("start_database_server takes 1 argument: resource id. \n")
     sys.exit(1)
   
-  print "Ressource: " + sys.argv[1]
+  ressource_id = sys.argv[1]
+  print "Ressource: " + ressource_id
 
-  #########################
-  # reading configuration 
-  config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
-  if not config_path or not os.path.isfile(config_path):
-    config_path = os.path.expanduser("~/.soma-workflow.cfg")
-  if not config_path or not os.path.isfile(config_path):
-    config_path = os.path.dirname(__file__)
-    config_path = os.path.dirname(__file__)
-    config_path = os.path.dirname(__file__)
-    config_path = os.path.dirname(__file__)
-    config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
-  if not config_path or not os.path.isfile(config_path):
-    config_path = "/etc/soma-workflow.cfg"
-  if not config_path or not os.path.isfile(config_path):
-    raise Exception("Can't find the soma-workflow configuration file \n")
+  config = Configuration(ressource_id)
 
-  config = ConfigParser.ConfigParser()
-  print "configuration file " + config_path
-  config.read(config_path)
-  section = sys.argv[1]
- 
-  ###########
-  # log file 
-  log_file_path = config.get(section, constants.OCFG_SERVER_LOG_FILE)
-  if log_file_path != 'None':  
+  (server_log_file,
+   server_log_format,
+   server_log_level) = config.get_server_log_info()
+
+  if server_log_file:
     logging.basicConfig(
-      filename = log_file_path,
-      format = config.get(section, constants.OCFG_SERVER_LOG_FORMAT, 1),
-      level = eval("logging."+ config.get(section, 
-                                          constants.OCFG_SERVER_LOG_LEVEL)))
+      filename = server_log_file,
+      format = server_log_format,
+      level = eval("logging."+ server_log_level))
+
   
   ########################
   # Pyro server creation 
@@ -67,25 +49,23 @@ if __name__ == '__main__':
   # locate the NS 
   locator = Pyro.naming.NameServerLocator()
   print 'searching for Name Server...'
-  name_server_host = config.get(section, constants.CFG_NAME_SERVER_HOST)
+  name_server_host = config.get_name_server_host()
   if name_server_host == 'None':
     ns = locator.getNS()
   else: 
-    ns = locator.getNS(host= name_server_host )
+    ns = locator.getNS(host=name_server_host )
   daemon.useNameServer(ns)
 
   # connect a new object implementation (first unregister previous one)
-  server_name = config.get(section, constants.CFG_SERVER_NAME)
+  server_name = config.get_server_name()
   try:
     ns.unregister(server_name)
   except NamingError:
     pass
 
   # connect new object implementation
-  server = WorkflowDatabaseServer(config.get(section, 
-                                             constants.CFG_DATABASE_FILE), 
-                                  config.get(section, 
-                                             constants.CFG_TRANSFERED_FILES_DIR))
+  server = WorkflowDatabaseServer(config.get_database_file(), 
+                                  config.get_transfered_file_dir())
   daemon.connect(server, server_name)
   print "port = " + repr(daemon.port)
   

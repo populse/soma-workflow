@@ -971,7 +971,7 @@ class EngineWorkflow(soma.workflow.client.Workflow):
       self.registered_tr[engine_path].status = status
 
     done = True
-    for job in self.jobs:
+    for job in self.registered_jobs.itervalues():
       if job.failed():
         #clear all the information related to the previous job submission
         job.status = constants.NOT_SUBMITTED
@@ -987,22 +987,26 @@ class EngineWorkflow(soma.workflow.client.Workflow):
         database_server.set_job_status(job.job_id, constants.NOT_SUBMITTED)
       if not job.ended_with_success():
         undone_jobs.append(job)
-       
+
     to_run = []
     if undone_jobs:
       # look for jobs to run
       for job in undone_jobs:
         job_to_run = True # a node is run when all its dependencies succeed
         for ft in job.referenced_input_files:
-          if not ft.files_exist_on_server():
-            if ft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+          eft = self.transfer_mapping[ft]
+          if not eft.files_exist_on_server():
+            if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
               #TBI stop the transfer
               pass 
             job_to_run = False
             break 
         if job_to_run:
           for dep in self.dependencies:
-            if dep[1] == job and not dep[0].ended_with_success():
+            job_a = self.job_mapping[dep[0]]
+            job_b = self.job_mapping[dep[1]]
+
+            if job_b == job and not job_a.ended_with_success():
               job_to_run = False
               break
 

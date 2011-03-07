@@ -146,6 +146,13 @@ OCFG_ENGINE_LOG_FORMAT = 'ENGINE_LOG_FORMAT'
 #eg. translation_files = brainvisa{/home/toto/.brainvisa/translation.sjtr} namespace2{path/translation1.sjtr} namespace2{path/translation2.sjtr}
 OCFG_PATH_TRANSLATION_FILES = 'PATH_TRANSLATION_FILES' 
 
+# Soma-workflow light mode.
+# Define this item to use soma-workflow in the light mode.
+# This mode doesn't require a database server to run. It can not be used on
+# remote computing resource. The client application can not be closed before the
+# workflows and jobs are done. 
+OCFG_LIGHT_MODE = 'LIGHT_MODE'
+
 # Parallel job configuration :
 # DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
 OCFG_PARALLEL_COMMAND = "drmaa_native_specification"

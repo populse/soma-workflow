@@ -17,6 +17,7 @@ location the database server.
 
 The database is a `SQLite <http://docs.python.org/library/sqlite3.html>`_ database.
 
+.. _server_requirements:
 
 Requirements
 ============
@@ -46,6 +47,7 @@ The implementations of DRMAA tested successfully with soma-workflow:
 \* set soma-workflow DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
 using this implementation
  
+.. _server_installation:
 
 Server installation
 ===================
@@ -110,7 +112,12 @@ Configuration items required on the server side:
     the database server will be started. 
 
   **TRANSFERED_FILES_DIR**
-    Path of the directory where the transfered files will be copied.
+    Path of the directory where the transfered files will be copied. The
+    directory must be empty and will be managed entirely by soma-workflow. 
+
+    .. warning::
+      Do not copy any file in this directory. Soma_workflow manages the 
+      entire directory and might delete any external file.
 
   **NAME_SERVER_HOST**
     Host where the Pyro name server runs.

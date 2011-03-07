@@ -11,8 +11,6 @@ if __name__=="__main__":
   import threading
   import time 
   import logging
-  import os
-  import ConfigParser
 
   import Pyro.naming
   import Pyro.core
@@ -20,7 +18,7 @@ if __name__=="__main__":
   
   import soma.workflow.engine
   import soma.workflow.connection 
-  import soma.workflow.constants as constants
+  from soma.workflow.configuration import Configuration
 
 
   ###### WorkflowEngine pyro object
@@ -45,54 +43,34 @@ if __name__=="__main__":
   ###### main server program
   def main(resource_id, engine_name, log = ""):
     
-    #########################
-    # reading configuration 
-    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
-    if not config_path or not os.path.isfile(config_path):
-      config_path = os.path.expanduser("~/.soma-workflow.cfg")
-    if not config_path or not os.path.isfile(config_path):
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
-    if not config_path or not os.path.isfile(config_path):
-      config_path = "/etc/soma-workflow.cfg"
-    if not config_path or not os.path.isfile(config_path):
-      raise Exception("Can't find the soma-workflow configuration file \n")
+   config = Configuration(resource_id)
 
-    config = ConfigParser.ConfigParser()
-    config.read(config_path)
-    section = resource_id
-    
-    ###########
-    # log file 
-    if not config.get(section, constants.OCFG_ENGINE_LOG_DIR) == 'None':
-      logfilepath = config.get(section, 
-                               constants.OCFG_ENGINE_LOG_DIR)+ "log_" + \
-                               engine_name + log
-      logging.basicConfig(
-        filename=logfilepath,
-        format=config.get(section, constants.OCFG_ENGINE_LOG_FORMAT, 1),
-        level=eval("logging." + \
-                   config.get(section, constants.OCFG_ENGINE_LOG_LEVEL)))
-    
+   (engine_log_dir,
+   engine_log_format,
+   engine_log_level) = config.get_engine_log_info()
+   if engine_log_dir:
+    logfilepath = engine_log_dir + "log_" + engine_name + log
+    logging.basicConfig(
+          filename=logfilepath,
+          format=engine_log_format,
+          level=eval("logging." + engine_log_level))
     logger = logging.getLogger('engine')
     logger.info(" ")
     logger.info("****************************************************")
     logger.info("****************************************************")
+
    
     ###########################
     # Looking for the database_server
     Pyro.core.initClient()
     locator = Pyro.naming.NameServerLocator()
-    name_server_host = config.get(section, constants.CFG_NAME_SERVER_HOST)
+    name_server_host = config.get_name_server_host() 
     if name_server_host == 'None':
       ns = locator.getNS()
     else: 
       ns = locator.getNS(host=name_server_host)
 
-    server_name = config.get(section, constants.CFG_SERVER_NAME)
+    server_name = config.get_server_name()
 
     try:
       uri = ns.resolve(server_name)
@@ -101,85 +79,17 @@ if __name__=="__main__":
       raise Exception('Couldn\'t find' + server_name + ' nameserver says:',x)
     database_server = Pyro.core.getProxyForURI(uri)
     
-
-    ###########################
-    # Parallel job specific information
-    parallel_config= {}
-    for parallel_info in constants.PARALLEL_JOB_ENV + constants.PARALLEL_DRMAA_ATTRIBUTES + constants.PARALLEL_CONFIGURATIONS:
-      if config.has_option(section, parallel_info):
-        parallel_config[parallel_info] = config.get(section, 
-                                                    parallel_info)
-    #############################
-    # Drmaa implementation
-    drmaa_implem = None
-    if config.has_option(section, constants.OCFG_DRMAA_IMPLEMENTATION):
-      drmaa_implem = config.get(section, constants.OCFG_DRMAA_IMPLEMENTATION)
-
-    #############################
-    # Job limits per queue
-    queue_limits = {}
-    if config.has_option(section, constants.OCFG_MAX_JOB_IN_QUEUE):
-      logger.info("Job limits per queue:")
-      queue_limits_str = config.get(section, constants.OCFG_MAX_JOB_IN_QUEUE)
-      for info_str in queue_limits_str.split():
-        info = info_str.split("{")
-        if len(info[0]) == 0:
-          queue_name = None
-        else:
-          queue_name = info[0]
-        max_job = int(info[1].rstrip("}"))
-        queue_limits[queue_name] = max_job
-        logger.info(" " + repr(queue_name) + " " 
-                    " => " + repr(max_job))
-      logger.info("End of queue limit list")
-    else:
-      logger.info("No job limit on queues")
-
-    #############################
-    # Translation files specific information 
-    path_translation = None
-    if config.has_option(section, constants.OCFG_PATH_TRANSLATION_FILES):
-      path_translation={}
-      translation_files_str = config.get(section, 
-                                         constants.OCFG_PATH_TRANSLATION_FILES)
-      logger.info("Path translation files configured:")
-      for ns_file_str in translation_files_str.split():
-        ns_file = ns_file_str.split("{")
-        namespace = ns_file[0]
-        filename = ns_file[1].rstrip("}")
-        logger.info(" * " + namespace + \
-                    " : " + filename)
-        try: 
-          f = open(filename, "r")
-        except IOError, e:
-          logger.info("Couldn't read the translation file: " + filename)
-        else:
-          if not namespace in path_translation.keys():
-            path_translation[namespace] = {}
-          line = f.readline()
-          while line:
-            splitted_line = line.split(None,1)
-            if len(splitted_line) > 1:
-              uuid = splitted_line[0]
-              contents = splitted_line[1].rstrip()
-              logger.info("  uuid: " + uuid + " => " + contents)
-              path_translation[namespace][uuid] = contents
-            line = f.readline()
-          f.close()
-      logger.info("End of path translation list")
-    #############################
-
     #Pyro.config.PYRO_MULTITHREADED = 0
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()
 
-    drmaa = soma.workflow.engine.Drmaa(drmaa_implem, 
-                                       parallel_config)
+    drmaa = soma.workflow.engine.Drmaa(config.get_drmaa_implementation(), 
+                                       config.get_parallel_job_config())
 
     engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
-                                                          drmaa,
-                                                          path_translation,
-                                                          queue_limits)
+                                             drmaa,
+                                             config.get_path_translation(),
+                                             config.get_queue_limits())
     
     workflow_engine = WorkflowEngine(database_server, 
                                      engine_loop)

@@ -1,0 +1,108 @@
+
+.. _light_mode_config:
+
+=========================================
+Light mode installation and configuration
+=========================================
+
+Soma-workflow can be launch as a simple one process application (without server). 
+However, the light mode introduces some limitations compared to the 
+client-server mode: 
+
+* No access to remote resource: The application must be run on a computing 
+  resource machine (machine with a DRMS installed).
+
+* No disconnection: The application can not be closed before all 
+  running workflows and jobs ended.
+
+If you are not interested in these two features the light mode is the mode 
+you need.
+
+Requirements
+============
+
+The requirements are identical to the server installation requirements (see :ref:`server_requirements`). 
+
+.. note:: 
+  If you don't intend to access an other computing resource with the 
+  remote access feature, the installation of Pyro can be skipped.
+
+Installation
+============
+
+**TO DO**
+
+Configuration
+=============
+
+This section defines the required and optional configuration items. 
+
+The configuration file syntax is the `ConfigParser 
+<http://docs.python.org/library/configparser.html>`_  syntax. All the 
+configuration items needed are defined in one section. You can choose the 
+section name, for example "My laptop light mode".
+
+Configuration file example: ::
+
+  [My laptop light mode]
+
+  LIGHT_MODE    = True
+
+  TRANSFERED_FILE_DIR = path/soma_workflow.db
+  DATABASE_FILE       = path/transfered_files
+  
+
+If you want to use the same application as a client to other computing resources, 
+make sure that Pyro was installed and add the configuration items required in the 
+configuration file as described here: :ref:`client_configuration`.
+
+Configuration file example: ::
+ 
+  [My laptop light mode]
+
+  LIGHT_MODE    = True
+
+  TRANSFERED_FILE_DIR = path/soma_workflow.db
+  DATABASE_FILE       = path/transfered_files
+  
+ 
+  [Titan]
+
+  CLUSTER_ADDRESS     = titan.mylab.fr
+  SUBMITTING_MACHINES = titan0
+  
+  QUEUES = test long 
+
+  
+  [LabDesktops]
+
+  CLUSTER_ADDRESS     = mydesktop.mylab.fr
+  SUBMITTING_MACHINES = mydesktop
+
+
+
+Required configuration items
+----------------------------
+
+  **LIGHT_MODE**
+    This item can be set up with any value, however it must be defined to use 
+    soma_workflow in the light mode.
+  
+  **DATABASE_FILE**
+    Path of the SQLite database file. The file will be created the first time 
+    the application is launch.  
+
+  **TRANSFERED_FILE_DIR**
+    Path of the directory where the transfered files will be copied. The
+    directory must be empty and will be managed entirely by soma-workflow.
+    This item is required to allow you to run workflow with file transfer for 
+    test purposes in the light mode. 
+
+    .. warning::
+      Do not copy any file in this directory. Soma_workflow manages the 
+      entire directory and might delete any external file.
+
+Optional configuration items
+----------------------------
+
+**TO DO**
