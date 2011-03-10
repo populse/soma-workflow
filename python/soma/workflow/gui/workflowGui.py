@@ -318,7 +318,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     try:
       wf_ctrl = Controller.get_connection(resource_id, login, password)
     except ConfigurationError, e:
-      QtGui.QMessageBox.critical(self, "Configuration problem", e)
+      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      self.ui_firstConnection_dlg.lineEdit_password.clear()
+      self.firstConnection_dlg.show()
+    except Exception, e:
+      QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
       self.ui_firstConnection_dlg.lineEdit_password.clear()
       self.firstConnection_dlg.show()
     else:

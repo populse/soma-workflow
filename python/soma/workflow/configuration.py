@@ -297,7 +297,7 @@ class Configuration(object):
     if self.config.has_option(self.resource_id,
                               constants.OCFG_QUEUES):
       self.queues.extend(self.config.get(self.resource_id,
-                                         constants.OCFG_QUEUES)).split()
+                                         constants.OCFG_QUEUES).split())
     return self.queues
 
 

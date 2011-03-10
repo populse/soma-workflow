@@ -39,8 +39,8 @@ class WorkflowExamples(object):
       raise ConfigurationError("The environment variables SOMA_WORKFLOW_EXAMPLES "  
                                "and SOMA_WORKFLOW_EXAMPLES_OUT must be set.")
     
-    if not os.path.isdir(output_dir):
-      os.mkdir(output_dir)
+    if not os.path.isdir(self.output_dir):
+      os.mkdir(self.output_dir)
        
     self.with_transfers = with_tranfers
     self.with_shared_resource_path = with_shared_resource_path
@@ -161,26 +161,26 @@ class WorkflowExamples(object):
                                          os.path.join(self.output_dir, "example.hdr")])
   
       
-  def get_workflow_example(example_index):
+  def get_workflow_example(self, example_index):
     workflow = None
     if example_index == 0:
-      workflow = wfExamples.simpleExample()
+      workflow = self.simpleExample()
     elif example_index == 1:
-      workflow = wfExamples.multipleSimpleExample()
+      workflow = self.multipleSimpleExample()
     elif example_index == 2:
-      workflow = wfExamples.simpleExampleWithException1()
+      workflow = self.simpleExampleWithException1()
     elif example_index == 3:
-      workflow = wfExamples.simpleExampleWithException2()
+      workflow = self.simpleExampleWithException2()
     elif example_index == 4:
-      workflow = wfExamples.command_test()
+      workflow = self.command_test()
     elif example_index == 5:
-      workflow = wfExamples.special_transfer_test()
+      workflow = self.special_transfer_test()
     elif example_index == 6:
-      workflow = wfExamples.hundred_of_jobs()
+      workflow = self.hundred_of_jobs()
     elif example_index == 7:
-      workflow = wfExamples.ten_jobs()
+      workflow = self.ten_jobs()
     elif example_index == 8:
-      workflow = wfExamples.fake_pipelineT1()
+      workflow = self.fake_pipelineT1()
     return workflow
 
   def job1(self):
