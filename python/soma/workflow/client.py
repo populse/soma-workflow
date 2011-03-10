@@ -32,6 +32,7 @@ import stat
 import operator
 import random
 import time
+import pickle
 
 import cProfile
 
@@ -425,6 +426,8 @@ class WorkflowController(object):
   _connection = None
 
   _engine_proxy = None
+
+  config = None
   
   def __init__(self, 
                resource_id, 
@@ -450,8 +453,8 @@ class WorkflowController(object):
       The login and password are only required for a remote computing resource.
     '''
     
-    config = Configuration(resource_id)
-    self._mode = config.get_mode()
+    self.config = Configuration(resource_id)
+    self._mode = self.config.get_mode()
     print  self._mode + " mode"
 
     # LOCAL MODE
@@ -461,9 +464,10 @@ class WorkflowController(object):
     
     # REMOTE MODE
     elif self._mode == 'remote':
+      submitting_machines = self.config.get_submitting_machines()
       sub_machine = submitting_machines[random.randint(0,   
                                                     len(submitting_machines)-1)]
-      cluster_address = config.get_cluster_address()
+      cluster_address = self.config.get_cluster_address()
       print 'cluster address: ' + cluster_address
       print 'submission machine: ' + sub_machine
       self._connection = connection.RemoteConnection(login, 
@@ -476,7 +480,7 @@ class WorkflowController(object):
    
     # LIGHT MODE
     elif self._mode == 'light':
-      self._engine_proxy = _embedded_engine_and_server(config)
+      self._engine_proxy = _embedded_engine_and_server(self.config)
       self._connection = None
 
 
@@ -1343,3 +1347,75 @@ def _embedded_engine_and_server(config):
   engine_loop_thread.start()
 
   return workflow_engine
+
+
+
+class SerializationError(Exception):
+  pass
+
+
+
+
+class Helper(object):
+
+  def __init__(self):
+    pass
+
+
+  @staticmethod
+  def transfer_input_files(workflow, 
+                           wf_ctrl, 
+                           buffer_size = 512**2):
+    to_transfer = []
+    for ft in workflow.registered_tr.itervalues():
+      status, info = wf_ctrl.transfer_status(ft.engine_path)
+      if status == FILES_ON_CLIENT:
+        to_transfer.append((0, ft.engine_path))
+      if status == TRANSFERING_FROM_CLIENT_TO_CR:
+        to_transfer.append((info[1], ft.engine_path))
+          
+    to_transfer = sorted(to_transfer, key = lambda element: element[1])
+    for transmitted, engine_path in to_transfer:
+      wf_ctrl.transfer_files(engine_path, buffer_size)
+
+
+  @staticmethod
+  def transfer_output_files(workflow,
+                            wf_ctrl,
+                            buffer_size = 512**2):
+    to_transfer = []
+    for ft in workflow.registered_tr.itervalues():
+      status, info = wf_ctrl.transfer_status(ft.engine_path)
+      if status == FILES_ON_CR:
+        to_transfer.append((0, ft.engine_path))
+      if status == TRANSFERING_FROM_CR_TO_CLIENT:
+        to_transfer.append((info[1], ft.engine_path))
+
+    to_transfer = sorted(to_transfer, key = lambda element: element[1])
+    for transmitted, engine_path in to_transfer:
+      print "retrieve " + engine_path + " already transmitted size" + repr(transmitted)
+      wf_ctrl.transfer_files(engine_path, buffer_size)
+
+
+  @staticmethod
+  def serialize(file_path, workflow):
+    try:
+      file = open(file_path, "w")
+      pickle.dump(workflow, file)
+      file.close()
+    except Exception, e:
+      raise SerializationError("%s: %s" %(type(e), e))
+
+  @staticmethod
+  def unserialize(file_path):
+    try:
+      file = open(file_path, "r")
+      workflow = pickle.load(file)
+      file.close()
+    except Exception, e:
+      raise SerializationError("%s: %s" %(type(e), e))
+    return workflow
+
+
+
+

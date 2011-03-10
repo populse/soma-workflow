@@ -1,282 +1,44 @@
-# -*- coding: utf-8 -*-
+'''
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
 
-from soma.workflow.constants import *
-from soma.workflow.client import Job, SharedResourcePath, FileTransfer,  Group, Workflow, WorkflowController
-import soma.workflow.engine
-import socket
+
+#-----------------------------------------------------------------------------
+# Imports
+#-----------------------------------------------------------------------------
+    
 import os
-import ConfigParser
-import pickle
-import subprocess
-import commands
 
-class JobsControler(object):
-  
-  def __init__(self):
-    pass
-   
-  @staticmethod
-  def getConfigFile():
-    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
-    if not config_path or not os.path.isfile(config_path):
-      config_path = os.path.expanduser("~/.soma-workflow.cfg")
-    if not config_path or not os.path.isfile(config_path):
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
-    if not config_path or not os.path.isfile(config_path):
-      config_path = "/etc/soma-workflow.cfg"
-    if not config_path or not os.path.isfile(config_path):
-      raise Exception("Can't find the soma-workflow configuration file \n")
-    return config_path
-  
-  
-  def get_configured_queues(self, resource_id):
-    queues = [" "] # default queue
-    somajobs_config = ConfigParser.ConfigParser()
-    somajobs_config.read( self.getConfigFile() )
-    if somajobs_config.has_option(resource_id, OCFG_QUEUES):      
-      queues.extend(somajobs_config.get(resource_id, OCFG_QUEUES).split())
-    return queues
+from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow
+from soma.workflow.configuration import ConfigurationError
 
-  def getRessourceIds(self):
-    resource_ids = []
-    somajobs_config = ConfigParser.ConfigParser()
-    somajobs_config.read( self.getConfigFile() )
-    for cid in somajobs_config.sections():
-      resource_ids.append(cid)
-        
-    return resource_ids
-        
-  def getConnection(self, resource_id, login, password, test_no):
-    try: 
-      connection = WorkflowController(resource_id, 
-                                      login, 
-                                      password)
-    except Exception, e:
-      return (None, "%s: %s" %(type(e),e) )
-      
-    return (connection, "") 
-    
-  def isRemoteConnection(self, resource_id):
-    somajobs_config = ConfigParser.ConfigParser()
-    somajobs_config.read( self.getConfigFile() )
-    submitting_machines = somajobs_config.get(resource_id, CFG_SUBMITTING_MACHINES).split()
-    hostname = socket.gethostname()
-    is_remote = True
-    for machine in submitting_machines: 
-      if hostname == machine: 
-        is_remote = False
-        break
-    return is_remote
-    
-    
-  def readWorkflowFromFile(self, file_path):
-    file = open(file_path, "r")
-    workflow = pickle.load(file)
-    file.close()
 
-    return workflow
-  
-  def saveWorkflowToFile(self, file_path, workflow):
-    file = open(file_path, "w")
-    pickle.dump(workflow, file)
-    file.close()
-  
-  def getSubmittedWorkflows(self, connection):
-    return connection.workflows()
-    
-  def getWorkflow(self, wf_id, connection):
-    
-    workflow = connection.workflow(wf_id)
-    if workflow:
-      expiration_date = connection.workflows([wf_id])[wf_id][1]
-    else:
-      expiration_date = None
-    return (workflow, expiration_date)
-  
-  
-  def getWorkflowExampleList(self):
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1"]
-    
-  def generateWorkflowExample(self, 
-                              with_file_transfer, 
-                              with_shared_resource_path, 
-                              example_type, 
-                              workflow_file_path):
-    
-    job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
-    output_example_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
-    if not job_examples_dir or not output_example_dir:
-       raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
+#-----------------------------------------------------------------------------
+# Classes and functions
+#-----------------------------------------------------------------------------
 
-    wfExamples = WorkflowExamples(with_tranfers=with_file_transfer, 
-                                  examples_dir=job_examples_dir, 
-                                  output_dir=output_example_dir, 
-                                  with_shared_resource_path=with_shared_resource_path)
-    workflow = None
-    if example_type == 0:
-      workflow = wfExamples.simpleExample()
-    elif example_type == 1:
-      workflow = wfExamples.multipleSimpleExample()
-    elif example_type == 2:
-      workflow = wfExamples.simpleExampleWithException1()
-    elif example_type == 3:
-      workflow = wfExamples.simpleExampleWithException2()
-    elif example_type == 4:
-      workflow = wfExamples.command_test()
-    elif example_type == 5:
-      workflow = wfExamples.special_transfer_test()
-    elif example_type == 6:
-      workflow = wfExamples.hundred_of_jobs()
-    elif example_type == 7:
-      workflow = wfExamples.ten_jobs()
-    elif example_type == 8:
-      workflow = wfExamples.fake_pipelineT1()
-      
-      
-    if workflow:
-      file = open(workflow_file_path, 'w')
-      pickle.dump(workflow, file)
-      file.close()
-    
-    
-  def submit_workflow(self, 
-                      workflow, 
-                      name, 
-                      expiration_date,
-                      queue,
-                      connection):
-    
-    wf_id = connection.submit_workflow( workflow=workflow,
-                                        expiration_date=expiration_date,
-                                        name=name,
-                                        queue=queue) 
-    wf = connection.workflow(wf_id)
 
-    return wf
-  
-                                    
-  def restart_workflow(self, workflow_id, connection):
-    return connection.restart_workflow(workflow_id)
-                                    
-  def delete_workflow(self, wf_id, connection):
-    return connection.delete_workflow(wf_id)
-  
-  def change_workflow_expiration_date(self, wf_id, date, connection):
-    return connection.change_workflow_expiration_date(wf_id, date)
-    
-  def transferInputFiles(self, workflow, connection, buffer_size = 512**2):
-   
-    to_transfer = []
-    for ft in workflow.registered_tr.itervalues():
-      status, info = connection.transfer_status(ft.engine_path)
-      if status == FILES_ON_CLIENT:
-        to_transfer.append((0, ft.engine_path))
-      if status == TRANSFERING_FROM_CLIENT_TO_CR:
-        to_transfer.append((info[1], ft.engine_path))
-          
-    to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, engine_path in to_transfer:
-      print "send to " + engine_path + " already transmitted size =" + repr(transmitted)
-      connection.transfer_files(engine_path, buffer_size)
-    
-  def transferOutputFiles(self, workflow, connection, buffer_size = 512**2):
-    to_transfer = []
-    for ft in workflow.registered_tr.itervalues():
-      status, info = connection.transfer_status(ft.engine_path)
-      if status == FILES_ON_CR:
-        to_transfer.append((0, ft.engine_path))
-      if status == TRANSFERING_FROM_CR_TO_CLIENT:
-        to_transfer .append((info[1], ft.engine_path))
 
-    to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, engine_path in to_transfer:
-      print "retrieve " + engine_path + " already transmitted size" + repr(transmitted)
-      connection.transfer_files(engine_path, buffer_size)
 
-          
-  def printWorkflow(self, workflow, connection):
-    
-    output_dir = "/tmp/"
-    
-    GRAY="\"#C8C8B4\""
-    BLUE="\"#00C8FF\""
-    RED="\"#FF6432\""
-    GREEN="\"#9BFF32\""
-    LIGHT_BLUE="\"#C8FFFF\""
-    
-    names = dict()
-    current_id = 0
-    
-    dot_file_path = output_dir + "tmp.dot"
-    graph_file_path = output_dir + "tmp.png"
-    if dot_file_path and os.path.isfile(dot_file_path):
-      os.remove(dot_file_path)
-    file = open(dot_file_path, "w")
-    print >> file, "digraph G {"
-    for node in workflow.jobs:
-      current_id = current_id + 1
-      names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
-    for ar in workflow.dependencies:
-      print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
-    for node in workflow.jobs:
-      if isinstance(node, Job):
-        if node.job_id == -1:
-          print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
-        else:
-          status = connection.job_status(node.job_id)
-          if status == NOT_SUBMITTED:
-            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-          elif status == DONE:
-            exit_status, exit_value, term_signal, resource_usage = connection.job_termination_status(node.job_id)
-            if exit_status == FINISHED_REGULARLY and exit_value == 0:
-              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
-            else: 
-              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
-          elif status == FAILED:
-            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
-          else:
-            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-      if isinstance(node, FileTransfer):
-        if not node.engine_path:
-          print >> file, names[node][0] + "[label="+ names[node][1] +"];"
-        else:
-          status = connection.transfer_status(node.engine_path)[0]
-          if status == FILES_DONT_EXIST:
-            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-          elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR or status == FILES_ON_CLIENT:
-            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
-          elif status == TRANSFERING_FROM_CLIENT_TO_CR or status == TRANSFERING_FROM_CR_TO_CLIENT:
-            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-          elif status == FILES_UNDER_EDITION:
-            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
-          
-    print >> file, "}"
-    file.close()
-    
-    command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
-    #print command
-    #dot_process = subprocess.Popen(command, shell = True)
-    commands.getstatusoutput(command)
-    return graph_file_path
-    
-  
-  
-    
 class WorkflowExamples(object):
   
+  @staticmethod
+  def get_workflow_example_list():
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1"]
   
-  
-  def __init__(self, with_tranfers, examples_dir, output_dir, with_shared_resource_path = False):
+  def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
     @type with_tranfers: boolean
     '''
-    self.examples_dir = examples_dir
+    self.examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
+    self.output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
+
+    if not self.examples_dir or not self.output_dir:
+      raise ConfigurationError("The environment variables SOMA_WORKFLOW_EXAMPLES "  
+                               "and SOMA_WORKFLOW_EXAMPLES_OUT must be set.")
     
-    self.output_dir = output_dir
     if not os.path.isdir(output_dir):
       os.mkdir(output_dir)
        
@@ -399,6 +161,28 @@ class WorkflowExamples(object):
                                          os.path.join(self.output_dir, "example.hdr")])
   
       
+  def get_workflow_example(example_index):
+    workflow = None
+    if example_index == 0:
+      workflow = wfExamples.simpleExample()
+    elif example_index == 1:
+      workflow = wfExamples.multipleSimpleExample()
+    elif example_index == 2:
+      workflow = wfExamples.simpleExampleWithException1()
+    elif example_index == 3:
+      workflow = wfExamples.simpleExampleWithException2()
+    elif example_index == 4:
+      workflow = wfExamples.command_test()
+    elif example_index == 5:
+      workflow = wfExamples.special_transfer_test()
+    elif example_index == 6:
+      workflow = wfExamples.hundred_of_jobs()
+    elif example_index == 7:
+      workflow = wfExamples.ten_jobs()
+    elif example_index == 8:
+      workflow = wfExamples.fake_pipelineT1()
+    return workflow
+
   def job1(self):
     if self.with_transfers and not self.with_shared_resource_path: 
       job1 = Job(["python", self.tr_script1, self.tr_file0,  self.tr_file11, self.tr_file12, "20"], 
@@ -827,4 +611,3 @@ class WorkflowExamples(object):
     workflow = Workflow(jobs, dependencies, root_group)
 
     return workflow
-    

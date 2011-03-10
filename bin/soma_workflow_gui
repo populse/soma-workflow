@@ -3,17 +3,14 @@
 from PyQt4 import QtCore, QtGui
 import sys
 from soma.workflow.gui.workflowGui import WorkflowWidget, GuiModel
-from soma.workflow.gui.jobsControler import JobsControler
 
-    
 if __name__=="__main__":
   
   app = QtGui.QApplication(sys.argv)
   
-  workflowControler = JobsControler() 
   model = GuiModel()
   
-  workflowWidget = WorkflowWidget(workflowControler, model)
+  workflowWidget = WorkflowWidget(model)
   workflowWidget.show()
   
   app.exec_()

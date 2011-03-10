@@ -3,15 +3,12 @@ import time
 import os
 import getpass
 import sys
-import ConfigParser
-import socket
 from datetime import datetime
 from datetime import timedelta
 
-
 import soma.workflow.constants as constants
 from soma.workflow.client import WorkflowController, Job, FileTransfer
-from soma.workflow.gui.jobsControler import JobsControler
+from soma.workflow.configuration import Configuration
 
 
 def checkFiles(files, filesModels, tolerance = 0):
@@ -402,12 +399,10 @@ class JobsTest(unittest.TestCase):
     JobsTest.login = login
     JobsTest.password = password
     JobsTest.resource_id = resource_id
-
-    JobsTest.hostname = socket.gethostname()
-    
+  
     JobsTest.wf_ctrl = WorkflowController(resource_id, 
-                                                login, 
-                                                password)
+                                          login, 
+                                          password)
     
     JobsTest.transfer_timeout = -24 
     JobsTest.jobs_timeout = 1
@@ -1040,11 +1035,12 @@ if __name__ == '__main__':
   output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
   if not job_examples_dir or not output_dir:
     raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
-    
-  controller = JobsControler() # use Workflow example generation ?
-  
+     
   sys.stdout.write("----- SomaJobsTest -------------\n")
-  resource_ids = controller.getRessourceIds()
+
+  config_file_path = Configuration.search_config_path()
+  sys.stdout.write("Configuration file: " + config_file_path)
+  resource_ids = Configuration.get_configured_resources(config_file_path)
   
   # Resource
   sys.stdout.write("Configured resources:\n")
@@ -1057,8 +1053,11 @@ if __name__ == '__main__':
   sys.stdout.write("---------------------------------\n")
   login = None
   password = None
-  if controller.isRemoteConnection(resource_id):
-    sys.stdout.write("This is a client connection\n")
+  
+  config = Configuration(resource_id, config_file_path)
+
+  if config.get_mode() == 'remote':
+    sys.stdout.write("This is a remote connection\n")
     sys.stdout.write("login:")
     login = sys.stdin.readline()
     login = login.rstrip()

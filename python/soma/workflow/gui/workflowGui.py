@@ -1,21 +1,39 @@
 from __future__ import with_statement
-from PyQt4 import QtGui, QtCore
-from PyQt4 import uic
-from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job
-from soma.workflow.constants import *
-from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
+'''
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
+
+
+#-----------------------------------------------------------------------------
+# Imports
+#-----------------------------------------------------------------------------
+
 import time
 import threading
 import os
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-import matplotlib, numpy
+
+from PyQt4 import QtGui, QtCore
+from PyQt4 import uic
+import matplotlib
 matplotlib.use('Qt4Agg')
-import pylab
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from Pyro.errors import ConnectionClosedError 
+
+from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper, SerializationError
+from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
+from soma.workflow.constants import *
+from soma.workflow.configuration import Configuration, ConfigurationError
+from soma.workflow.test.test_workflow import WorkflowExamples
+
+
+#-----------------------------------------------------------------------------
+# Globals and constants
+#-----------------------------------------------------------------------------
 
 
 
@@ -25,17 +43,40 @@ RED=QtGui.QColor(255,100,50)
 GREEN=QtGui.QColor(155,255,50)
 LIGHT_BLUE=QtGui.QColor(200,255,255)
 
-Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'WorkflowMainWindow.ui' ))[0]
-Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'JobInfo.ui' ))[0]
-Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'graphWidget.ui' ))[0]
-Ui_PlotWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'PlotWidget.ui' ))[0]
-Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferInfo.ui' ))[0]
-Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'GroupInfo.ui' ))[0]
-#Ui_TransferProgressionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'TransferProgressionDlg.ui' ))[0]
-Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'connectionDlg.ui' ))[0]
-Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 'firstConnectionDlg.ui' ))[0]
-Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  'workflowExampleDlg.ui' ))[0]
-Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  'submissionDlg.ui' ))[0]
+Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                 'WorkflowMainWindow.ui' ))[0]
+
+Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                            'JobInfo.ui' ))[0]
+
+Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                        'graphWidget.ui' ))[0]
+
+Ui_PlotWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                         'PlotWidget.ui' ))[0]
+
+Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                       'TransferInfo.ui' ))[0]
+
+Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                          'GroupInfo.ui' ))[0]
+
+Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                      'connectionDlg.ui' ))[0]
+
+Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                 'firstConnectionDlg.ui' ))[0]
+
+Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
+                                                 'workflowExampleDlg.ui' ))[0]
+
+Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
+                                                      'submissionDlg.ui' ))[0]
+
+
+#-----------------------------------------------------------------------------
+# Local utilities
+#-----------------------------------------------------------------------------
 
 
 def setLabelFromString(label, value):
@@ -81,9 +122,88 @@ def setLabelFromDateTime(label, value):
     label.setText("")
   
 
+#-----------------------------------------------------------------------------
+# Classes and functions
+#-----------------------------------------------------------------------------
+
+
+class Controller(object):
+  @staticmethod
+  def delete_workflow(wf_id, 
+                      wf_ctrl):
+    return wf_ctrl.delete_workflow(wf_id)
+  
+  @staticmethod
+  def change_workflow_expiration_date(wf_id, 
+                                      date, 
+                                      wf_ctrl):
+    return wf_ctrl.change_workflow_expiration_date(wf_id, date)
+
+  @staticmethod
+  def get_submitted_workflows(wf_ctrl):
+    return wf_ctrl.workflows()
+
+  @staticmethod
+  def submit_workflow(workflow, 
+                      name, 
+                      expiration_date,
+                      queue,
+                      wf_ctrl):
+    wf_id = wf_ctrl.submit_workflow(workflow=workflow,
+                                    expiration_date=expiration_date,
+                                    name=name,
+                                    queue=queue) 
+    wf = wf_ctrl.workflow(wf_id)
+    return wf
+
+  @staticmethod
+  def restart_workflow(workflow_id, wf_ctrl):
+    return wf_ctrl.restart_workflow(workflow_id)
+
+  @staticmethod
+  def get_connection(resource_id, 
+                    login, 
+                    password):
+    wf_ctrl = WorkflowController(resource_id, 
+                                 login, 
+                                 password)
+    return wf_ctrl
+
+  @staticmethod
+  def serialize_workflow(file_path, workflow):
+    Helper.serialize(file_path, workflow)
+
+  @staticmethod
+  def unserialize_workflow(file_path):
+    workflow = Helper.unserialize(file_path)
+    return workflow
+
+  @staticmethod
+  def get_queues(wf_ctrl):
+    return wf_ctrl.config.get_queues()
+
+  @staticmethod
+  def submit_workflow(worklfow, expiration_date, name, queue, wf_ctrl):
+    wf_id = wf_ctrl.submit_workflow( 
+                          workflow=worklfow,
+                          expiration_date=expiration_date,
+                          name=name,
+                          queue=queue) 
+    workflow = wf_ctrl.workflow(wf_id)
+    return workflow
+
+  @staticmethod
+  def transfer_input_files(workflow, wf_ctrl, buffer_size=256**2):
+    Helper.transfer_input_files(workflow, wf_ctrl, buffer_size)
+
+  @staticmethod
+  def transfer_output_files(workflow, wf_ctrl, buffer_size= 256**2):
+    Helper.transfer_output_files(workflow, wf_ctrl, buffer_size)
+
+
 class WorkflowWidget(QtGui.QMainWindow):
   
-  def __init__(self, controler, model, parent = None, flags = 0):
+  def __init__(self, model, parent=None, flags=0):
     super(WorkflowWidget, self).__init__(parent)
     
     self.ui = Ui_WorkflowMainWindow()
@@ -94,7 +214,6 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
     
-    self.controler = controler
     self.model = model
     
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
@@ -103,7 +222,13 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
     self.updateCurrentWorkflowStatus)
 
-    self.resource_list = self.controler.getRessourceIds()
+    try:
+      self.config_file_path = Configuration.search_config_path()
+      self.resource_list = Configuration.get_configured_resources(self.config_file_path)
+    except ConfigurationError, e:
+      QtGui.QMessageBox.critical(self, "Configuration problem", e)
+      self.close()
+
     self.ui.combo_resources.addItems(self.resource_list)
     
     self.setWindowTitle("soma-workflow")
@@ -130,7 +255,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     wfInfoLayout.addWidget(self.workflowInfoWidget)
     self.ui.widget_wf_info.setLayout(wfInfoLayout)
     
-    self.graphWidget = WorkflowGraphView(self.controler, self)
+    self.graphWidget = WorkflowGraphView(self)
     graphWidgetLayout = QtGui.QVBoxLayout()
     graphWidgetLayout.setContentsMargins(2,2,2,2)
     graphWidgetLayout.addWidget(self.graphWidget)
@@ -189,31 +314,36 @@ class WorkflowWidget(QtGui.QMainWindow):
       password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
     else:
       password = None
-    test_no = 1
-    (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
-    if connection:
-      self.model.addConnection(resource_id, connection)
-      self.firstConnection_dlg.hide()
-    else:
-      QtGui.QMessageBox.information(self, "Connection failed", msg)
+    wf_ctrl = None
+    try:
+      wf_ctrl = Controller.get_connection(resource_id, login, password)
+    except ConfigurationError, e:
+      QtGui.QMessageBox.critical(self, "Configuration problem", e)
       self.ui_firstConnection_dlg.lineEdit_password.clear()
       self.firstConnection_dlg.show()
+    else:
+      self.model.addConnection(resource_id, wf_ctrl)
+      self.firstConnection_dlg.hide()
     
   @QtCore.pyqtSlot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
     if file_path:
-      workflow = self.controler.readWorkflowFromFile(file_path)
-      self.updateWorkflowList()
-      self.model.addWorkflow(workflow, datetime.now() + timedelta(days=5))
+      try:
+        workflow = Controller.unserialize_workflow(file_path)
+      except SerializationError, e: 
+        QtGui.QMessageBox.warning(self, "Error opening the workflow", "%s" %(e))
+      else:
+        self.updateWorkflowList()
+        self.model.addWorkflow(workflow, datetime.now() + timedelta(days=5))
       
   @QtCore.pyqtSlot()
   def saveWorkflow(self):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
     if file_path:
       try:
-        self.controler.saveWorkflowToFile(self, file_path, self.model.current_workflow)
-      except IOError, e:
+        Controller.serialize_workflow(file_path, self.model.current_workflow)
+      except SerializationError, e:
         QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
         
     
@@ -222,7 +352,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     worflowExample_dlg = QtGui.QDialog(self)
     ui = Ui_WorkflowExampleDlg()
     ui.setupUi(worflowExample_dlg)
-    ui.comboBox_example_type.addItems(self.controler.getWorkflowExampleList())
+    ui.comboBox_example_type.addItems(WorkflowExamples.get_workflow_example_list())
     if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
       with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
       with_shared_resource_path = ui.checkBox_shared_resource_path.checkState() == QtCore.Qt.Checked
@@ -231,12 +361,16 @@ class WorkflowWidget(QtGui.QMainWindow):
                                                     "Create a workflow example")
       if file_path:
         try:
-          self.controler.generateWorkflowExample(with_file_transfer, 
-                                                with_shared_resource_path,
-                                                example_type, 
-                                                file_path)
-        except RuntimeError, e:
+          wf_examples = WorkflowExamples(with_file_transfer,
+                                  with_shared_resource_path)
+        except ConfigurationError, e:
           QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
+        else:
+          workflow = wf_examples.get_workflow_example(example_type)
+          try:
+            Controller.serialize_workflow(file_path, workflow)
+          except SerializationError, e:
+            QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
         
   @QtCore.pyqtSlot()
   def submit_workflow(self):
@@ -249,7 +383,9 @@ class WorkflowWidget(QtGui.QMainWindow):
     ui.resource_label.setText(self.model.current_resource_id)
     ui.lineedit_wf_name.setText("")
     ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
-    queues = self.controler.get_configured_queues(self.model.current_resource_id)
+    
+    queues = ["default queue"]
+    queues.extend(Controller.get_queues(self.model.current_connection))
     ui.combo_queue.addItems(queues)
 
     if submission_dlg.exec_() == QtGui.QDialog.Accepted:
@@ -259,14 +395,15 @@ class WorkflowWidget(QtGui.QMainWindow):
       date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                       qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
       queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
-      if queue == " ": queue = None
+      if queue == "default queue": queue = None
       while True:
         try:
-          workflow = self.controler.submit_workflow(self.model.current_workflow.server_workflow, 
-                                         name, 
-                                         date,
-                                         queue,
-                                         self.model.current_connection)
+          workflow = Controller.submit_workflow(
+                            self.model.current_workflow.server_workflow, 
+                            date, 
+                            name, 
+                            queue, 
+                            self.model.current_connection)
         except ConnectionClosedError, e:
           if not self.reconnectAfterConnectionClosed():
             return
@@ -278,8 +415,8 @@ class WorkflowWidget(QtGui.QMainWindow):
   @QtCore.pyqtSlot()
   def restart_workflow(self):
     try:
-      done = self.controler.restart_workflow(self.model.current_workflow.wf_id,
-                                            self.model.current_connection)
+      done = Controller.restart_workflow(self.model.current_workflow.wf_id,
+                                         self.model.current_connection)
     except ConnectionClosedError, e:
       pass
     except SystemExit, e:
@@ -296,7 +433,10 @@ class WorkflowWidget(QtGui.QMainWindow):
     def transfer(self):
       try:
         self.ui.action_transfer_infiles.setEnabled(False)
-        self.controler.transferInputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
+        Controller.transfer_input_files(
+                self.model.current_workflow.server_workflow, 
+                self.model.current_connection, 
+                buffer_size=256**2)
       except ConnectionClosedError, e:
         self.ui.action_transfer_infiles.setEnabled(True)
         pass
@@ -314,7 +454,10 @@ class WorkflowWidget(QtGui.QMainWindow):
     def transfer(self):
       try:
         self.ui.action_transfer_outfiles.setEnabled(False)
-        self.controler.transferOutputFiles(self.model.current_workflow.server_workflow, self.model.current_connection, buffer_size = 256**2)
+        Controller.transfer_output_files(
+                self.model.current_workflow.server_workflow, 
+                self.model.current_connection, 
+                buffer_size=256**2)
       except ConnectionClosedError, e:
         self.ui.action_transfer_outfiles.setEnabled(True)
       except SystemExit, e:
@@ -336,7 +479,11 @@ class WorkflowWidget(QtGui.QMainWindow):
       if self.model.isLoadedWorkflow(wf_id):
         self.model.setCurrentWorkflow(wf_id)
       else:
-        (workflow, expiration_date) = self.controler.getWorkflow(wf_id, self.model.current_connection)
+        workflow = self.model.current_connection.workflow(wf_id)
+        if workflow:
+          expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
+        else:
+          expiration_date = None
         if workflow != None:
           self.model.addWorkflow(workflow, expiration_date)
         else:
@@ -386,12 +533,17 @@ class WorkflowWidget(QtGui.QMainWindow):
       if ui.lineEdit_password.text():
         password = unicode(ui.lineEdit_password.text()).encode('utf-8')
       else: password = None
-      test_no = 1
-      (connection, msg) = self.controler.getConnection(resource_id, login, password, test_no)
-      if connection:
-        return connection
+      try:
+        wf_ctrl = Controller.get_connection(resource_id, login, password)
+      except ConfigurationError, e:
+        QtGui.QMessageBox.information(self, "Configuration error", "%s" %(e))
+        return None
+      except Exception, e:
+        QtGui.QMessageBox.information(self, 
+                                      "Connection failed", 
+                                      "%s: %s" %(type(e),e))
       else:
-        QtGui.QMessageBox.information(self, "Connection failed", msg)
+        return wf_ctrl
     return None
 
   @QtCore.pyqtSlot()
@@ -407,7 +559,8 @@ class WorkflowWidget(QtGui.QMainWindow):
     if answer != QtGui.QMessageBox.Yes: return
     while True:
       try:
-        self.controler.delete_workflow(self.model.current_workflow.wf_id, self.model.current_connection)
+        Controller.delete_workflow(self.model.current_workflow.wf_id,
+                                   self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
@@ -424,7 +577,10 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     while True:
       try:
-        change_occured = self.controler.change_workflow_expiration_date(self.model.current_wf_id, date,  self.model.current_connection)
+        change_occured = Controller.change_workflow_expiration_date(
+                          self.model.current_wf_id, 
+                          date,  
+                          self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
@@ -548,7 +704,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     while True:
       try:
-        submittedWorflows = self.controler.getSubmittedWorkflows(self.model.current_connection)
+        submittedWorflows = Controller.get_submitted_workflows(self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
@@ -997,9 +1153,6 @@ class PlotView(QtGui.QWidget):
   
     if nb_jobs:
       self.axes.set_ylim(0, nb_jobs+1)
-
-    #self.axes.set_xticklabels(self.axes.get_xticks(), rotation=80)
-    #pylab.xticks(rotation=80)
     
     self.axes.set_xlabel("Time")
     self.axes.set_ylabel("Jobs")
@@ -1080,12 +1233,10 @@ class PlotView(QtGui.QWidget):
 
 class WorkflowGraphView(QtGui.QWidget):
   
-  def __init__(self, controler, connection, parent = None):
+  def __init__(self, connection, parent = None):
     super(WorkflowGraphView, self).__init__(parent)
     self.ui = Ui_GraphWidget()
     self.ui.setupUi(self)
-    
-    self.controler = controler
     
     self.workflow = None
     self.connection = None
@@ -1136,7 +1287,7 @@ class WorkflowGraphView(QtGui.QWidget):
   def dataChanged(self, force = False):
     if self.workflow and (force or self.ui.checkbox_auto_update.isChecked()):
       print "graph update"
-      image_file_path = self.controler.printWorkflow(self.workflow, self.connection)
+      image_file_path = self.printWorkflow()
       image = QtGui.QImage(image_file_path)
       pixmap = QtGui.QPixmap.fromImage(image)
       self.image_label.setPixmap(pixmap)
@@ -1144,6 +1295,73 @@ class WorkflowGraphView(QtGui.QWidget):
       self.image_label.resize(self.image_label.pixmap().size()*self.scale_factor)
     else:
       self.ui.scrollArea.takeWidget()
+
+  
+  def printWorkflow(self):
+      
+    output_dir = "/tmp/"
+    
+    GRAY="\"#C8C8B4\""
+    BLUE="\"#00C8FF\""
+    RED="\"#FF6432\""
+    GREEN="\"#9BFF32\""
+    LIGHT_BLUE="\"#C8FFFF\""
+    
+    names = dict()
+    current_id = 0
+    
+    dot_file_path = output_dir + "tmp.dot"
+    graph_file_path = output_dir + "tmp.png"
+    if dot_file_path and os.path.isfile(dot_file_path):
+      os.remove(dot_file_path)
+    file = open(dot_file_path, "w")
+    print >> file, "digraph G {"
+    for node in self.workflow.jobs:
+      current_id = current_id + 1
+      names[node] = ("node" + repr(current_id), "\""+node.name+"\"")
+    for ar in self.workflow.dependencies:
+      print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
+    for node in self.workflow.jobs:
+      if isinstance(node, Job):
+        if node.job_id == -1:
+          print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
+        else:
+          status = self.connection.job_status(node.job_id)
+          if status == NOT_SUBMITTED:
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
+          elif status == DONE:
+            exit_status, exit_value, term_signal, resource_usage = self.connection.job_termination_status(node.job_id)
+            if exit_status == FINISHED_REGULARLY and exit_value == 0:
+              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+            else: 
+              print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
+          elif status == FAILED:
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
+          else:
+            print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
+      if isinstance(node, FileTransfer):
+        if not node.engine_path:
+          print >> file, names[node][0] + "[label="+ names[node][1] +"];"
+        else:
+          status = self.connection.transfer_status(node.engine_path)[0]
+          if status == FILES_DONT_EXIST:
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
+          elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR or status == FILES_ON_CLIENT:
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
+          elif status == TRANSFERING_FROM_CLIENT_TO_CR or status == TRANSFERING_FROM_CR_TO_CLIENT:
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
+          elif status == FILES_UNDER_EDITION:
+            print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
+          
+    print >> file, "}"
+    file.close()
+    
+    command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
+    #print command
+    #dot_process = subprocess.Popen(command, shell = True)
+    commands.getstatusoutput(command)
+    return graph_file_path
+
       
 ########################################################
 ############   MODEL FOR THE TREE VIEW   ###############

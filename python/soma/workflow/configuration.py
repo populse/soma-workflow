@@ -48,10 +48,17 @@ class Configuration(object):
 
   queue_limits = None
 
-  def __init__(self, resource_id):
+  queues = None
+
+  def __init__(self, 
+               resource_id, 
+               config_file_path=None):
 
     self.resource_id = resource_id
-    self.config_path = Configuration.search_config_path()
+    if config_file_path:
+      self.config_path = config_file_path
+    else:
+      self.config_path = Configuration.search_config_path()
 
     self.config = ConfigParser.ConfigParser()
     self.config.read(self.config_path)
@@ -98,6 +105,16 @@ class Configuration(object):
       raise ConfigurationError("Can not find the soma-workflow "
                                "configuration file. \n")
     return config_path
+
+
+  @staticmethod
+  def get_configured_resources(config_file_path):
+    resource_ids = []
+    config = ConfigParser.ConfigParser()
+    config.read(config_file_path)
+    for r_id in config.sections():
+      resource_ids.append(r_id)
+    return resource_ids
 
 
   def get_mode(self):
@@ -270,6 +287,18 @@ class Configuration(object):
         self.queue_limits[queue_name] = max_job
 
     return self.queue_limits
+
+  
+  def get_queues(self):
+    if self.queues !=  None:
+      return self.queues
+
+    self.queues = []
+    if self.config.has_option(self.resource_id,
+                              constants.OCFG_QUEUES):
+      self.queues.extend(self.config.get(self.resource_id,
+                                         constants.OCFG_QUEUES)).split()
+    return self.queues
 
 
   def get_engine_log_info(self):
