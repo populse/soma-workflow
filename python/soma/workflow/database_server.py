@@ -1286,7 +1286,7 @@ class WorkflowDatabaseServer( object ):
         
         job_id = cursor.lastrowid
         engine_job.job_id = job_id
-        if not engine_job.workflow_id and engine_job.workflow_id == -1:
+        if not engine_job.workflow_id or engine_job.workflow_id == -1:
           pickled_engine_job = pickle.dumps(engine_job)
           cursor.execute('UPDATE jobs SET pickled_engine_job=? WHERE id=?',
                         (pickled_engine_job, job_id))
@@ -1333,9 +1333,10 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        pickled_job = cursor.execute('''SELECT  
-                                      pickled_engine_job
-                                      FROM jobs WHERE id=?''', [job_id]).next()[0]#supposes that the job_id is valid
+        (pickled_job, workflow_id) = cursor.execute('''SELECT  
+                                      pickled_engine_job, 
+                                      workflow_id
+                                      FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1349,7 +1350,7 @@ class WorkflowDatabaseServer( object ):
     else:
       job = None
  
-    return job
+    return (job, workflow_id)
 
    
   def delete_job(self, job_id):

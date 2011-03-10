@@ -1424,9 +1424,9 @@ class WorkflowEngineLoop(object):
       self._workflows[wf_id] = workflow
 
   def restart_job(self, job_id, status):
-    job = self._database_server.get_engine_job(job_id)
-    job.status = status
-    if job.workflow_id == -1:
+    (job, workflow_id) = self._database_server.get_engine_job(job_id)
+    if workflow_id == -1: 
+      job.status = status
       # submit
       self._pend_for_submission(job)
       # add to the engine managed job list
