@@ -940,7 +940,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error delete_job %s: %s \n' %(type(e), e), self.logger) 
+        raise WorkflowDatabaseServerError('Error delete_workflow %s: %s \n' %(type(e), e), self.logger) 
         
       cursor.close()
       connection.commit()

@@ -45,6 +45,8 @@ from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath
 #, dir_content, create_dir_structure
 import soma.workflow.database_server 
 from soma.workflow.somadrmaajobssip import DrmaaJobs
+from soma.workflow.errors import JobError, WorkflowError, UnknownObjectError, EngineError, DRMError
+
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -59,27 +61,6 @@ refreshment_timeout = 60 #seconds
 #-----------------------------------------------------------------------------
 # Classes and functions
 #-----------------------------------------------------------------------------
-
-class WorkflowEngineError(Exception): 
-  def __init__(self, msg, logger = None):
-    self.args = (msg,)
-    if logger:
-      logger.critical('EXCEPTION ' + msg)
-
-class EngineJobCreationError(Exception):
-  '''
-  Exception raised when an EngineJob could not be created from a Job.
-  '''
-  pass
-
-
-class EngineWorkflowCreationError(Exception):
-  '''
-  Exception raised when an EngineWorkflow could not be created from a 
-  Workflow.
-  '''
-  pass
-
 
 class EngineLoopThread(threading.Thread):
   def __init__(self, engine_loop):
@@ -97,9 +78,9 @@ class EngineLoopThread(threading.Thread):
   
   
 class Drmaa(object):
-  '''time_interval
+  '''
   Manipulation of the Drmaa session. 
-  Contains possible patch depending on DRMAA impementation. 
+  Contains possible patch depending on the DRMAA impementation. 
   '''
 
   # DRMAA session. DrmaaJobs
@@ -112,7 +93,7 @@ class Drmaa(object):
   #  -Drmaa job template attributes 
   #  -parallel configuration name as defined in soma.workflow.constants
   # dict
-  _parallel_job_submission_info = None
+  parallel_job_submission_info = None
   
   logger = None
 
@@ -120,10 +101,14 @@ class Drmaa(object):
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
-    self._drmaa = DrmaaJobs()
+    try:
+      self._drmaa = DrmaaJobs()
+    except Exception, e:
+      raise DRMError("Could not create the DRMAA session: %s" %e )
+
     self._drmaa_implementation = drmaa_implementation
 
-    self._parallel_job_submission_info = parallel_job_submission_info
+    self.parallel_job_submission_info = parallel_job_submission_info
 
     self.logger.debug("Parallel job submission info: %s", 
                       repr(parallel_job_submission_info))
@@ -255,20 +240,11 @@ class Drmaa(object):
     ''' 
 
     self.logger.debug(">> _setDrmaaParallelJob")
-    if not self._parallel_job_submission_info:
-      raise WorkflowEngineError("Configuration file : Couldn't find" 
-                                "parallel job submission information.", 
-                                 self.logger)
-    
-    if configuration_name not in self._parallel_job_submission_info:
-      raise WorkflowEngineError("Configuration file : couldn't find" 
-                                "the parallel configuration %s." %
-                                (configuration_name), self.logger)
-
-    cluster_specific_cfg_name = self._parallel_job_submission_info[configuration_name]
+  
+    cluster_specific_cfg_name = self.parallel_job_submission_info[configuration_name]
     
     for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
-      value = self._parallel_job_submission_info.get(drmaa_attribute)
+      value = self.parallel_job_submission_info.get(drmaa_attribute)
       if value: 
         #value = value.format(config_name=cluster_specific_cfg_name, max_node=max_num_node)
         value = value.replace("{config_name}", cluster_specific_cfg_name)
@@ -282,7 +258,7 @@ class Drmaa(object):
 
     job_env = []
     for parallel_env_v in constants.PARALLEL_JOB_ENV:
-      value = self._parallel_job_submission_info.get(parallel_env_v)
+      value = self.parallel_job_submission_info.get(parallel_env_v)
       if value: job_env.append(parallel_env_v+'='+value.rstrip())
     
     self._drmaa.setVectorAttribute(drmaa_job_template_id, 'drmaa_v_env', job_env)
@@ -375,7 +351,8 @@ class EngineJob(soma.workflow.client.Job):
                queue, 
                workflow_id=-1, 
                path_translation=None,
-               transfer_mapping=None):
+               transfer_mapping=None,
+               parallel_job_submission_info=None):
 
     super(EngineJob, self).__init__(client_job.command,
                                     client_job.referenced_input_files,
@@ -408,24 +385,32 @@ class EngineJob(soma.workflow.client.Job):
       self.transfer_mapping = transfer_mapping
     self.srp_mapping = {}
 
-    self._map()
+    self._map(parallel_job_submission_info)
 
-  def _map(self):
+  def _map(self, parallel_job_submission_info):
     '''
     Fill the transfer_mapping and srp_mapping attributes.
     + check the types of the Job arguments.
     '''
     if not self.command:
-      raise EngineJobCreationError("The command attribute is the only required "
-                                   "attribute of Job.")
+      raise JobError("The command attribute is the only required "
+                     "attribute of Job.")
+
+    if self.parallel_job_info:
+      parallel_config_name, max_node_number = self.parallel_job_info
+      if not parallel_job_submission_info:
+        raise JobError("No parallel information was registered for the "
+                       " current resource. A parallel job can not be submitted")
+      if parallel_config_name not in parallel_job_submission_info:
+        raise JobError("The parallel job can not be submitted because the "
+                        "parallel configuration %s is missing." %(configuration_name))
 
     # transfer_mapping from referenced_input_files and referenced_output_files
     # + type checking
     for ft in self.referenced_input_files:
       if not isinstance(ft, FileTransfer):
-        raise EngineJobCreationError("%s: Wrong type in referenced_input_files. "
-                                     " FileTransfer object required." %
-                                     (repr(ft)))
+        raise JobError("%s: Wrong type in referenced_input_files. "
+                       " FileTransfer object required." %(repr(ft)))
       elif isinstance(ft, EngineTransfer) and \
           ft not in self.transfer_mapping:
         # TBI check that the transfer exist in the database 
@@ -436,9 +421,8 @@ class EngineJob(soma.workflow.client.Job):
    
     for ft in self.referenced_output_files:
       if not isinstance(ft, FileTransfer):
-        raise EngineJobCreationError("%s: Wrong type in referenced_output_files. "
-                                     " FileTransfer object required." %
-                                     (repr(ft)))
+        raise JobError("%s: Wrong type in referenced_output_files. "
+                       " FileTransfer object required." %(repr(ft)))
       elif isinstance(ft, EngineTransfer) and \
           ft not in self.transfer_mapping:
         # TBI check that the transfer exist in the database 
@@ -455,18 +439,18 @@ class EngineJob(soma.workflow.client.Job):
         self.srp_mapping[command_el] = self._translate(command_el)
       elif isinstance(command_el, FileTransfer):
         if not command_el in self.transfer_mapping:
-          raise EngineJobCreationError("The FileTransfer objets used in the "
-                                       "command must be declared in the Job "
-                                       "attributes: referenced_input_files "
-                                       "and referenced_output_files.")
+          raise JobError("The FileTransfer objets used in the "
+                         "command must be declared in the Job "
+                         "attributes: referenced_input_files "
+                         "and referenced_output_files.")
 
       elif isinstance(command_el, tuple) and \
            isinstance(command_el[0], FileTransfer):
         if not command_el[0] in self.transfer_mapping:
-          raise EngineJobCreationError("The FileTransfer objets used in the "
-                                       "command must be declared in the Job "
-                                       "attributes: referenced_input_files "
-                                       "and referenced_output_files.")
+          raise JobError("The FileTransfer objets used in the "
+                         "command must be declared in the Job "
+                         "attributes: referenced_input_files "
+                         "and referenced_output_files.")
       elif isinstance(command_el, list):
         new_list = []
         for list_el in command_el:
@@ -474,25 +458,23 @@ class EngineJob(soma.workflow.client.Job):
             self.srp_mapping[list_el] = self._translate(list_el) 
           elif isinstance(list_el, FileTransfer):
             if not list_el in self.transfer_mapping:
-              raise EngineJobCreationError("The FileTransfer objets used in the "
-                                           "command must be declared in the Job "
-                                           "attributes: referenced_input_files "
-                                           "and referenced_output_files.")
+              raise JobError("The FileTransfer objets used in the "
+                             "command must be declared in the Job "
+                             "attributes: referenced_input_files "
+                             "and referenced_output_files.")
           elif isinstance(list_el, tuple) and \
               isinstance(list_el[0], FileTransfer):
             if not list_el[0] in self.transfer_mapping:
-              raise EngineJobCreationError("The FileTransfer objets used in the "
-                                           "command must be declared in the Job "
-                                           "attributes: referenced_input_files "
-                                           "and referenced_output_files.")
+              raise JobError("The FileTransfer objets used in the "
+                             "command must be declared in the Job "
+                             "attributes: referenced_input_files "
+                             "and referenced_output_files.")
           else:
             if not type(list_el) in types.StringTypes:
-              raise EngineJobCreationError("Wrong command element type: %s" %
-                                           (repr(list_el)))
+              raise JobError("Wrong command element type: %s" %(repr(list_el)))
       else:
         if not type(command_el) in types.StringTypes:
-          raise EngineJobCreationError("Wrong command element type: %s" %
-                                       (repr(command_el)))
+          raise JobError("Wrong command element type: %s" %(repr(command_el)))
       
     if self.stdin:
       if isinstance(self.stdin, FileTransfer):
@@ -508,8 +490,7 @@ class EngineJob(soma.workflow.client.Job):
         self.srp_mapping[self.stdin] = self._translate(self.stdin) 
       else:
         if not type(self.stdin) in types.StringTypes:
-          raise EngineJobCreationError("Wrong stdin type: %s" %
-                                       (repr(self.stdin))) 
+          raise JobError("Wrong stdin type: %s" %(repr(self.stdin))) 
 
     if self.working_directory:
       if isinstance(self.working_directory, FileTransfer):
@@ -526,8 +507,8 @@ class EngineJob(soma.workflow.client.Job):
         self.srp_mapping[self.working_directory] = self._translate(self.working_directory)
       else:
         if not type(self.working_directory) in types.StringTypes:
-          raise EngineJobCreationError("Wrong working directory type: %s " %
-                                       (repr(self.working_directory)))
+          raise JobError("Wrong working directory type: %s " %
+                         (repr(self.working_directory)))
 
     if self.stdout_file:
       if isinstance(self.stdout_file, FileTransfer):
@@ -543,8 +524,7 @@ class EngineJob(soma.workflow.client.Job):
         self.srp_mapping[self.stdout_file] = self._translate(self.stdout_file) 
       else:
         if not type(self.stdout_file) in types.StringTypes:
-          raise EngineJobCreationError("Wrong stdout_file type: %s" %
-                                       (repr(self.stdout_file))) 
+          raise JobError("Wrong stdout_file type: %s" %(repr(self.stdout_file))) 
 
     if self.stderr_file:
       if isinstance(self.stderr_file, FileTransfer):
@@ -560,8 +540,7 @@ class EngineJob(soma.workflow.client.Job):
         self.srp_mapping[self.stderr_file] = self._translate(self.stderr_file) 
       else:
         if not type(self.stderr_file) in types.StringTypes:
-          raise EngineJobCreationError("Wrong stderr_file type: %s" %
-                                       (repr(self.stderr_file))) 
+          raise JobError("Wrong stderr_file type: %s" %(repr(self.stderr_file))) 
 
   def _translate(self, srp):
     '''
@@ -570,14 +549,13 @@ class EngineJob(soma.workflow.client.Job):
     '''
     
     if not self.path_translation:
-      raise EngineJobCreationError("The job uses SharedResourcePath while no "
-                                   "translation were found.")
+      raise JobError("The job uses SharedResourcePath while no "
+                     "translation were found.")
     if not srp.namespace in self.path_translation.keys():
-      raise EngineJobCreationError("SharedResourcePath translation: the "               
-                                   "namespace %s does not exist" %
-                                    (srp.namespace))
+      raise JobError("SharedResourcePath translation: the "               
+                     "namespace %s does not exist" %(srp.namespace))
     if not srp.uuid in self.path_translation[srp.namespace]:
-      raise EngineJobCreationError("SharedResourcePath translation: "
+      raise JobError("SharedResourcePath translation: "
                                    "the uuid %s does not exist for the " 
                                    "namespace %s." %
                                     (srp.uuid, srp.namespace))
@@ -756,15 +734,13 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     # jobs
     for job in self.jobs:
       if not isinstance(job, Job):
-        raise EngineWorkflowCreationError("%s: Wrong type in the jobs "
-                                          "attribute. "
-                                          " Job object required." %
-                                          (repr(job)))
+        raise WorkflowError("%s: Wrong type in the jobs attribute. "
+                            " An object of type Job is required." %(repr(job)))
       if job not in self.job_mapping:
         ejob = EngineJob(client_job=job,
-                       queue=self.queue,
-                       path_translation=self._path_translation,
-                       transfer_mapping=self.transfer_mapping)
+                         queue=self.queue,
+                         path_translation=self._path_translation,
+                         transfer_mapping=self.transfer_mapping)
         self.transfer_mapping.update(ejob.transfer_mapping)
         self.job_mapping[job]=ejob
 
@@ -772,11 +748,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
     for dependency in self.dependencies:
       if not isinstance(dependency[0], Job) or \
          not isinstance(dependency[1], Job):
-          raise EngineWorkflowCreationError("%s, %s: Wrong type in the workflow "
-                                            "dependencies. "
-                                            "A object of type Job is required." %
-                                            (repr(dependency[0]), 
-                                             repr(dependency[1])))
+          raise WorkflowError("%s, %s: Wrong type in the workflow dependencies."
+                              " An object of type Job is required." %
+                              (repr(dependency[0]), repr(dependency[1])))
 
 
       if dependency[0] not in self.job_mapping:
@@ -811,10 +785,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
             self.transfer_mapping.update(ejob.transfer_mapping)
             self.job_mapping[elem]=ejob
         elif not isinstance(elem, Group):
-          raise EngineWorkflowCreationError("%s: Wrong type in the workflow "
-                                            "groups. Objects of type Job or " 
-                                            "Group are required." %
-                                            (repr(elem)))
+          raise WorkflowError("%s: Wrong type in the workflow "
+                              "groups. Objects of type Job or " 
+                              "Group are required." %(repr(elem)))
 
     # root group
     for elem in self.root_group:
@@ -828,10 +801,9 @@ class EngineWorkflow(soma.workflow.client.Workflow):
           self.transfer_mapping.update(ejob.transfer_mapping)
           self.job_mapping[elem]=ejob
       elif not isinstance(elem, Group):
-        raise EngineWorkflowCreationError("%s: Wrong type in the workflow "
-                                          "root_group. Objects of type Job or " 
-                                          "Group are required." %
-                                          (repr(elem)))
+        raise WorkflowError("%s: Wrong type in the workflow root_group."
+                            " Objects of type Job or Group are required." %
+                            (repr(elem)))
     
 
   def find_out_independant_jobs(self):
@@ -1080,6 +1052,8 @@ class WorkflowEngineLoop(object):
 
     self._queue_limits = queue_limits
 
+    self.logger.debug('queue_limits ' + repr(self._queue_limits))
+
     self._pending_queues = {} 
 
     self._running = False
@@ -1250,6 +1224,7 @@ class WorkflowEngineLoop(object):
     engine_job = EngineJob(client_job=client_job, 
                            queue=queue, 
                            path_translation=self._path_translation)
+                          
 
     engine_job = self._database_server.add_job(self._user_id, engine_job)
 
@@ -1257,27 +1232,28 @@ class WorkflowEngineLoop(object):
     try:  
       tmp = open(engine_job.stdout_file, 'w')
       tmp.close()
-    except IOError, e:
-      raise WorkflowEngineError("Could not create the standard output file " 
-                                "%s: %s \n"  %(type(e), e), logger)
+    except Exception, e:
+      self._database_server.delete_job(engine_job.job_id)
+      raise JobError("Could not create the standard output file " 
+                     "%s %s: %s \n"  %
+                     (repr(engine_job.stdout_file), type(e), e))
     if engine_job.stderr_file:
       try:
         tmp = open(engine_job.stderr_file, 'w')
         tmp.close()
-      except IOError, e:
-        raise WorkflowEngineError("Could not create the standard error file "
-                                  "%s: %s \n"  %(type(e), e), logger)
+      except Exception, e:
+        self._database_server.delete_job(engine_job.job_id)
+        raise JobError("Could not create the standard error file "
+                       "%s: %s \n"  %(type(e), e))
 
     for transfer in engine_job.transfer_mapping.itervalues():
       if transfer.client_paths and not os.path.isdir(transfer.engine_path):
         try:
           os.mkdir(transfer.engine_path) 
-        except OSError, e:
-          raise WorkflowEngineError("Could not create the directory "
-                                    " %s %s: %s \n"  %
-                                    (repr(transfer.engine_path), 
-                                     type(e), e), 
-                                     logger)
+        except Exception, e:
+          self._database_server.delete_job(engine_job.job_id)
+          raise JobError("Could not create the directory %s %s: %s \n"  %
+                         (repr(transfer.engine_path), type(e), e))
 
     # submit
     self._pend_for_submission(engine_job)
@@ -1343,31 +1319,29 @@ class WorkflowEngineLoop(object):
       try:  
         tmp = open(job.stdout_file, 'w')
         tmp.close()
-      except IOError, e:
-        # TBI
-        raise WorkflowEngineError("Could not create the standard output "
-                                  "file %s %s: %s \n"  %
-                                   (repr(job.stdout_file), type(e), e), logger)
+      except Exception, e:
+        self._database_server.delete_workflow(engine_workflow.wf_id)
+        raise JobError("Could not create the standard output file " 
+                       "%s %s: %s \n"  %
+                       (repr(job.stdout_file), type(e), e))
       if job.stderr_file:
         try:
           tmp = open(job.stderr_file, 'w')
           tmp.close()
-        except IOError, e:
-          # TBI
-          raise WorkflowEngineError("Could not create the standard error "
-                                    "file %s %s: %s \n"  %
-                                    (repr(job.stderr_file), type(e), e), logger)
+        except Exception, e:
+          self._database_server.delete_workflow(engine_workflow.wf_id)
+          raise JobError("Could not create the standard error file "
+                         "%s %s: %s \n"  %
+                         (repr(job.stderr_file), type(e), e))
 
     for transfer in engine_workflow.transfer_mapping.itervalues():
       if transfer.client_paths and not os.path.isdir(transfer.engine_path):
         try:
           os.mkdir(transfer.engine_path) 
-        except IOError, e:
-          raise WorkflowEngineError("Could not create the directory "
-                                    " %s %s: %s \n"  %
-                                    (repr(transfer.engine_path), 
-                                     type(e), e), 
-                                     logger)
+        except Exception, e:
+          self._database_server.delete_workflow(engine_workflow.wf_id)
+          raise JobError("Could not create the directory %s %s: %s \n"  %
+                         (repr(transfer.engine_path), type(e), e))
 
     # submit independant jobs
     (jobs_to_run, 
@@ -1465,7 +1439,7 @@ class WorkflowEngine(object):
     try:
       user_login = pwd.getpwuid(os.getuid())[0]
     except Exception, e:
-      raise WorkflowEngineError("Couldn't identify user %s: %s \n" %(type(e), e), self.logger)
+      raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
     
     self._user_id = self._database_server.register_user(user_login)
     self.logger.debug("user_id : " + repr(self._user_id))
@@ -1619,7 +1593,9 @@ class WorkflowEngine(object):
       # Directory case
       (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
       if not relative_path in dir_element_action_info:
-        raise WorkflowEngineError('write_to_computing_resource_file: the file %s doesn t belong to the transfer %s' %(relative_path, engine_path))
+        raise TransferError("write_to_computing_resource_file error: "
+                            " the file %s do not belong to the transfer %s" %
+                            (relative_path, engine_path))
       (file_size, md5_hash) = dir_element_action_info[relative_path]
       transfer_ended = self._write_to_file(os.path.join(engine_path, relative_path), data, file_size, md5_hash)
       
@@ -1643,13 +1619,15 @@ class WorkflowEngine(object):
     if fs > file_size:
       # Reset file_size   
       open(engine_path, 'wb')
-      raise WorkflowEngineError('transfer_piece_from_client: Transmitted data exceed expected file size.')
+      raise TransferError("write_to_computing_resource_file error: " 
+                          "Transmitted data exceed expected file size.")
     elif fs == file_size:
       if md5_hash is not None:
         if hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() != md5_hash:
           # Reset file
           open( engine_path, 'wb' )
-          raise WorkflowEngineError('transfer_piece_from_client: Transmission error detected.')
+          raise TransferError("write_to_computing_resource_file error: "  
+                              "A transmission error was detected.")
         else:
           return True
       else:
@@ -1719,10 +1697,6 @@ class WorkflowEngine(object):
     @type  job: L{soma.workflow.client.Job}
     @param job: job informations 
     '''
-    if len(job.command) == 0:
-      raise WorkflowEngineError("Submission error: the command must" 
-                                "contain at least one element \n", self.logger)
-    
     engine_job = self._engine_loop.add_job(job, queue)
 
     return engine_job
@@ -1983,7 +1957,7 @@ class WorkflowEngine(object):
     '''
     for jid in job_ids:
       if not self._database_server.is_user_job(jid, self._user_id):
-        raise WorkflowEngineError( "Could not wait for job %d. It doesn't exist or is owned by a different user \n" %jid, self.logger)
+        raise UnknownObjectError("Could not wait for job %d." %jid)
       
     self.logger.debug("        waiting...")
     
@@ -2006,10 +1980,8 @@ class WorkflowEngine(object):
                             repr(datetime.now()))
           delta = datetime.now() - startTime
           if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-            raise WorkflowEngineError("wait_job: Could not wait for job %s. " 
-                                      "The process updating its " 
-                                      "status failed." %(jid), 
-                                       self.logger)
+            raise EngineError("wait_job: Could not wait for job %s. " 
+                              "The process updating its status failed." %(jid))
        
  
   def restart_job( self, job_id ):
@@ -2017,10 +1989,7 @@ class WorkflowEngine(object):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     if not self._database_server.is_user_job(job_id, self._user_id):
-      raise WorkflowEngineError("Could not restart job %d. It doesn't exist" 
-                                "or is owned by a different user \n" %job_id,
-                                self.logger)
-    
+      raise UnknownObjectError("Could not restart job %d." %job_id)
 
     (status, last_status_update) = self._database_server.get_job_status(job_id)
     
@@ -2037,9 +2006,7 @@ class WorkflowEngine(object):
     '''
 
     if not self._database_server.is_user_job(job_id, self._user_id):
-      raise WorkflowEngineError("Could not kill job %d. It doesn't exist" 
-                                "or is owned by a different user \n" %job_id,
-                                self.logger)
+      raise UnknownObjectError("Could not kill job %d" %job_id)
     
     status = self._database_server.get_job_status(job_id)[0]
     if status != constants.DONE and status != constants.FAILED:
