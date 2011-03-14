@@ -44,7 +44,7 @@ import soma.workflow.constants as constants
 from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, Group, WorkflowController
 #, dir_content, create_dir_structure
 import soma.workflow.database_server 
-from soma.workflow.somadrmaajobssip import DrmaaJobs
+from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
 from soma.workflow.errors import JobError, WorkflowError, UnknownObjectError, EngineError, DRMError
 
 
@@ -101,9 +101,10 @@ class Drmaa(object):
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
+    self._drmaa = DrmaaJobs()
     try:
-      self._drmaa = DrmaaJobs()
-    except Exception, e:
+      self._drmaa.initSession()
+    except DrmaaError, e:
       raise DRMError("Could not create the DRMAA session: %s" %e )
 
     self._drmaa_implementation = drmaa_implementation
@@ -113,18 +114,20 @@ class Drmaa(object):
     self.logger.debug("Parallel job submission info: %s", 
                       repr(parallel_job_submission_info))
 
-    
     # patch for the PBS-torque DRMAA implementation
     if self._drmaa_implementation == "PBS":
-      jobTemplateId = self._drmaa.allocateJobTemplate()
-      self._drmaa.setCommand(jobTemplateId, "echo", [])
-      self._drmaa.setAttribute(jobTemplateId, 
-                               "drmaa_output_path", 
-                               "[void]:/tmp/soma-workflow-empty-job.o")
-      self._drmaa.setAttribute(jobTemplateId, 
-                               "drmaa_error_path", 
-                               "[void]:/tmp/soma-workflow-empty-job.e")
-      self._drmaa.runJob(jobTemplateId)
+      try:
+        jobTemplateId = self._drmaa.allocateJobTemplate()
+        self._drmaa.setCommand(jobTemplateId, "echo", [])
+        self._drmaa.setAttribute(jobTemplateId, 
+                                "drmaa_output_path", 
+                                "[void]:/tmp/soma-workflow-empty-job.o")
+        self._drmaa.setAttribute(jobTemplateId, 
+                                "drmaa_error_path", 
+                                "[void]:/tmp/soma-workflow-empty-job.e")
+        self._drmaa.runJob(jobTemplateId)
+      except DrmaaError, e:
+        raise DRMError("%s" %e)
       ################################
     
 
@@ -136,8 +139,6 @@ class Drmaa(object):
     @return: drmaa job id 
     '''
 
-    drmaaJobId = self._drmaa.allocateJobTemplate()
-
     # patch for the PBS-torque DRMAA implementation
     command = []
     job_command = job.plain_command()
@@ -148,66 +149,71 @@ class Drmaa(object):
       self.logger.debug("PBS case, new command:" + repr(command))
     else:
       command = job_command
+
     self.logger.debug("command: " + repr(command))
-          
-    self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
-  
+    
     stdout_file = job.plain_stdout()
-    self._drmaa.setAttribute(drmaaJobId, 
-                             "drmaa_output_path", 
-                             "[void]:" + stdout_file)
-    
-    if job.join_stderrout:
-      self._drmaa.setAttribute(drmaaJobId,
-                               "drmaa_join_files", 
-                               "y")
-    else:
-      stderr_file = job.plain_stderr()
-      if stderr_file:
-        self._drmaa.setAttribute(drmaaJobId, 
-                                 "drmaa_error_path", 
-                                 "[void]:" + stderr_file)
-    
+    stderr_file = job.plain_stderr()
     stdin = job.plain_stdin()
-    if job.stdin:
-      self.logger.debug("stdin: " + repr(stdin))
-      self._drmaa.setAttribute(drmaaJobId, 
-                               "drmaa_input_path", 
-                               "[void]:" + stdin)
-      
-    working_directory = job.plain_working_directory()
-    if working_directory:
-      self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
-
-    if job.queue:
-      self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
-
-    #self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-l h_rt=0:0:30" )
-    
-    if job.parallel_job_info :
-      parallel_config_name, max_node_number = job.parallel_job_info
-      self._setDrmaaParallelJob(drmaaJobId, 
-                                parallel_config_name, 
-                                max_node_number)
-      
     job_env = []
     for var_name in os.environ.keys():
       job_env.append(var_name+"="+os.environ[var_name])
-    
-    self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
 
-    drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
-    self._drmaa.deleteJobTemplate(drmaaJobId)
-    
-    if drmaaSubmittedJobId == "":
-      self.logger.error("Could not submit job: Drmaa problem.");
-      return -1
+    try:
+      drmaaJobId = self._drmaa.allocateJobTemplate()
+
+      self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
+
+      self._drmaa.setAttribute(drmaaJobId, 
+                              "drmaa_output_path", 
+                              "[void]:" + stdout_file)
+      
+      if job.join_stderrout:
+        self._drmaa.setAttribute(drmaaJobId,
+                                "drmaa_join_files", 
+                                "y")
+      else:
+        if stderr_file:
+          self._drmaa.setAttribute(drmaaJobId, 
+                                  "drmaa_error_path", 
+                                  "[void]:" + stderr_file)
+      
+      if job.stdin:
+        self.logger.debug("stdin: " + repr(stdin))
+        self._drmaa.setAttribute(drmaaJobId, 
+                                "drmaa_input_path", 
+                                "[void]:" + stdin)
+        
+      working_directory = job.plain_working_directory()
+      if working_directory:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
+
+      if job.queue:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
+
+      #self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-l h_rt=0:0:30" )
+      
+      if job.parallel_job_info :
+        parallel_config_name, max_node_number = job.parallel_job_info
+        self._setDrmaaParallelJob(drmaaJobId, 
+                                  parallel_config_name, 
+                                  max_node_number)
+        
+      self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
+
+      drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
+      self._drmaa.deleteJobTemplate(drmaaJobId)
+    except DrmaaError, e:
+      raise DRMError("Job submission error: %s" %(e))
 
     return drmaaSubmittedJobId
     
 
   def get_job_status(self, drmaa_job_id):
-    status = self._drmaa.jobStatus(drmaa_job_id)
+    try:
+      status = self._drmaa.jobStatus(drmaa_job_id)
+    except DrmaaError, e:
+      raise DRMError("%s" %(e))
     return status
 
 
@@ -268,8 +274,10 @@ class Drmaa(object):
 
 
   def kill_job(self, job_drmaa_id):
-    self._drmaa.terminate(job_drmaa_id)
-
+    try:
+      self._drmaa.terminate(job_drmaa_id)
+    except DrmaaError, e:
+      raise DRMError('%s' %e)
 
 class EngineTransfer(FileTransfer):
   
@@ -1123,7 +1131,10 @@ class WorkflowEngineLoop(object):
         ended_jobs = {}
         for job in itertools.chain(self._jobs.itervalues(), wf_jobs.itervalues()):
           if job.exit_status == None and job.drmaa_id != None:
-            job.status = self._engine_drmaa.get_job_status(job.drmaa_id)
+            try:
+              job.status = self._engine_drmaa.get_job_status(job.drmaa_id)
+            except DrmaaError, e:
+              job.status = constants.UNDETERMINED
             self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:
               self.logger.debug("End of job %s, drmaaJobId = %s", 

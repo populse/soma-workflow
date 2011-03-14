@@ -2,6 +2,23 @@
 
 %Module soma.workflow.somadrmaajobssip 0
 
+
+%Exception DrmaaError(SIP_Exception)
+/PyName=DrmaaError/
+{
+%TypeHeaderCode
+  #include <soma/workflow/drmaajobs.h>
+%End
+%RaiseCode
+        const char *detail = sipExceptionRef.what();
+
+        SIP_BLOCK_THREADS
+        PyErr_SetString(sipException_DrmaaError, detail);
+        SIP_UNBLOCK_THREADS
+%End
+}; 
+
+
 class DrmaaJobs {
 
 %TypeHeaderCode
@@ -9,12 +26,14 @@ class DrmaaJobs {
 %End
 
 public:
+  
+    void initSession() throw (DrmaaError); 
 
-    int allocateJobTemplate();
+    int allocateJobTemplate() throw (DrmaaError);
 
     void deleteJobTemplate(int jobTemplateId);
 
-    void setCommand(int, const char *, SIP_PYLIST);
+    void setCommand(int, const char *, SIP_PYLIST) throw (DrmaaError);
 %MethodCode
      int nbArguments = PyList_Size(a2);
      const char ** arguments = new const char * [nbArguments];
@@ -28,9 +47,9 @@ public:
 
 %End
 
-    void setAttribute(int jobTemplateId, const char *name, const char *value);
+    void setAttribute(int jobTemplateId, const char *name, const char *value) throw (DrmaaError);
 
-    void setVectorAttribute(int, const char* , SIP_PYLIST);
+    void setVectorAttribute(int, const char* , SIP_PYLIST) throw (DrmaaError);
 %MethodCode
      int nbArguments = PyList_Size(a2);
      const char ** arguments = new const char * [nbArguments];
@@ -43,7 +62,7 @@ public:
      delete[] arguments;
 %End
 
-    SIP_PYOBJECT runJob(int jobTemplateId);
+    SIP_PYOBJECT runJob(int jobTemplateId) throw (DrmaaError);
 %MethodCode
     std::string submittedJobId;
     Py_BEGIN_ALLOW_THREADS
@@ -53,7 +72,7 @@ public:
     return result;
 %End
 
-    SIP_PYLIST runBulkJobs(int, int);
+    SIP_PYLIST runBulkJobs(int, int) throw (DrmaaError);
 %MethodCode
     std::list<std::string> submittedJobIds;
     Py_BEGIN_ALLOW_THREADS
@@ -147,7 +166,7 @@ public:
 
 
 
-   SIP_PYOBJECT jobStatus(SIP_PYOBJECT);
+   SIP_PYOBJECT jobStatus(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
    std::string submittedJobId(PyString_AsString(a0));
    DrmaaJobs::JobStatus status;
@@ -181,7 +200,7 @@ public:
 %End
 
 
-    void suspend(SIP_PYOBJECT);
+    void suspend(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
      std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
@@ -189,7 +208,7 @@ public:
      Py_END_ALLOW_THREADS
 %End
 
-    void resume(SIP_PYOBJECT);
+    void resume(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
      std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
@@ -197,7 +216,7 @@ public:
      Py_END_ALLOW_THREADS
 %End
 
-    void hold(SIP_PYOBJECT);
+    void hold(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
      std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
@@ -205,7 +224,7 @@ public:
      Py_END_ALLOW_THREADS
 %End
 
-    void release(SIP_PYOBJECT);
+    void release(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
      std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS
@@ -213,7 +232,7 @@ public:
      Py_END_ALLOW_THREADS
 %End
 
-    void terminate(SIP_PYOBJECT);
+    void terminate(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
      std::string submittedJobId(PyString_AsString(a0));
      Py_BEGIN_ALLOW_THREADS

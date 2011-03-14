@@ -51,7 +51,12 @@ class UnknownObjectError(Exception):
   pass
 
 
-class EngineError(Exception):
+class EngineError(Exception): # => a Supprimer
+  pass
+
+
+#new
+class DatabaseError(Exception):
   pass
 
 

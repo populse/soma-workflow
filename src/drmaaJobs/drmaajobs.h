@@ -9,6 +9,7 @@
 #include <map>
 #include <list>
 #include <string>
+#include <exception>
 
 
 #define CONDOR_CONTACT "Condor"
@@ -17,6 +18,26 @@
 // basic file operations
 #include <iostream>
 #include <fstream>
+
+
+
+class DrmaaError : public std::exception {  
+public:
+   DrmaaError(const std::string& msg="") throw(): m_msg(msg) {}
+   
+   virtual const char* what() const throw() {
+      return m_msg.c_str();
+   }
+   
+   virtual ~DrmaaError() throw() {}
+   
+private:
+   std::string m_msg;   
+   
+};
+
+
+
 
 struct ltint
 {
@@ -89,7 +110,7 @@ public :
     static const int undefinedId = -1;
 
     // Init the Drmaa session:
-    DrmaaJobs(const char * contactString =  "NULL");
+    DrmaaJobs();
 
     // Delete every job template and exit the DRMAA session
     ~DrmaaJobs();
