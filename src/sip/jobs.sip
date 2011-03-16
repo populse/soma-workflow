@@ -41,7 +41,29 @@ public:
         arguments[i] = const_cast<const char *>(PyString_AsString(PyList_GET_ITEM(a2, i)));
     }
     Py_BEGIN_ALLOW_THREADS
+    try
+    {
     sipCpp->setCommand(a0, a1, nbArguments, arguments);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
     Py_END_ALLOW_THREADS
     delete[] arguments;
 
@@ -57,7 +79,29 @@ public:
          arguments[i] = const_cast<const char *>(PyString_AsString(PyList_GET_ITEM(a2, i)));
      }
      Py_BEGIN_ALLOW_THREADS
+     try
+     {
      sipCpp->setVectorAttribute(a0, a1, nbArguments, arguments);
+     }
+     catch (DrmaaError &sipExceptionRef)
+     {
+        Py_BLOCK_THREADS
+
+        const char *detail = sipExceptionRef.what();
+
+        SIP_BLOCK_THREADS
+        PyErr_SetString(sipException_DrmaaError, detail);
+        SIP_UNBLOCK_THREADS
+
+        return NULL;
+     }
+     catch (...)
+     {
+        Py_BLOCK_THREADS
+
+        sipRaiseUnknownException();
+        return NULL;
+     }
      Py_END_ALLOW_THREADS
      delete[] arguments;
 %End
@@ -66,7 +110,29 @@ public:
 %MethodCode
     std::string submittedJobId;
     Py_BEGIN_ALLOW_THREADS
+    try
+    {
     submittedJobId= sipCpp->runJob(a0);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
     Py_END_ALLOW_THREADS
     PyObject * result = PyString_FromStringAndSize(submittedJobId.c_str(), submittedJobId.size());
     return result;
@@ -76,7 +142,29 @@ public:
 %MethodCode
     std::list<std::string> submittedJobIds;
     Py_BEGIN_ALLOW_THREADS
+    try
+    {
     sipCpp->runBulkJobs(a0, a1, submittedJobIds);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
     Py_END_ALLOW_THREADS
     PyObject* result = PyList_New(0);
     for(std::list<std::string>::iterator i = submittedJobIds.begin(); i != submittedJobIds.end(); ++i) {
@@ -171,7 +259,29 @@ public:
    std::string submittedJobId(PyString_AsString(a0));
    DrmaaJobs::JobStatus status;
    Py_BEGIN_ALLOW_THREADS
+   try
+   {
    status = sipCpp->jobStatus(submittedJobId);
+   }
+   catch (DrmaaError &sipExceptionRef)
+   {
+     Py_BLOCK_THREADS
+
+     const char *detail = sipExceptionRef.what();
+
+     SIP_BLOCK_THREADS
+     PyErr_SetString(sipException_DrmaaError, detail);
+     SIP_UNBLOCK_THREADS
+
+     return NULL;
+   }
+   catch (...)
+   {
+     Py_BLOCK_THREADS
+
+     sipRaiseUnknownException();
+     return NULL;
+   }
    Py_END_ALLOW_THREADS
    switch (status) {
         case DrmaaJobs::UNDETERMINED:
@@ -202,42 +312,152 @@ public:
 
     void suspend(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
-     std::string submittedJobId(PyString_AsString(a0));
-     Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(submittedJobId, DrmaaJobs::SUSPEND);
-     Py_END_ALLOW_THREADS
+    std::string submittedJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    try 
+    {
+    sipCpp->control(submittedJobId, DrmaaJobs::SUSPEND);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
+    Py_END_ALLOW_THREADS
 %End
 
     void resume(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
-     std::string submittedJobId(PyString_AsString(a0));
-     Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(submittedJobId, DrmaaJobs::RESUME);
-     Py_END_ALLOW_THREADS
+    std::string submittedJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    try
+    {
+    sipCpp->control(submittedJobId, DrmaaJobs::RESUME);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
+    Py_END_ALLOW_THREADS
 %End
 
     void hold(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
-     std::string submittedJobId(PyString_AsString(a0));
-     Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(submittedJobId, DrmaaJobs::HOLD);
-     Py_END_ALLOW_THREADS
+    std::string submittedJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    try
+    {
+    sipCpp->control(submittedJobId, DrmaaJobs::HOLD);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
+    Py_END_ALLOW_THREADS
 %End
 
     void release(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
-     std::string submittedJobId(PyString_AsString(a0));
-     Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(submittedJobId, DrmaaJobs::RELEASE);
-     Py_END_ALLOW_THREADS
+    std::string submittedJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    try
+    {
+    sipCpp->control(submittedJobId, DrmaaJobs::RELEASE);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
+    Py_END_ALLOW_THREADS
 %End
 
     void terminate(SIP_PYOBJECT) throw (DrmaaError);
 %MethodCode
-     std::string submittedJobId(PyString_AsString(a0));
-     Py_BEGIN_ALLOW_THREADS
-     sipCpp->control(submittedJobId, DrmaaJobs::TERMINATE);
-     Py_END_ALLOW_THREADS
+    std::string submittedJobId(PyString_AsString(a0));
+    Py_BEGIN_ALLOW_THREADS
+    try 
+    {
+    sipCpp->control(submittedJobId, DrmaaJobs::TERMINATE);
+    }
+    catch (DrmaaError &sipExceptionRef)
+    {
+      Py_BLOCK_THREADS
+
+      const char *detail = sipExceptionRef.what();
+
+      SIP_BLOCK_THREADS
+      PyErr_SetString(sipException_DrmaaError, detail);
+      SIP_UNBLOCK_THREADS
+
+      return NULL;
+    }
+    catch (...)
+    {
+      Py_BLOCK_THREADS
+
+      sipRaiseUnknownException();
+      return NULL;
+    }
+    Py_END_ALLOW_THREADS
 %End
 
 };

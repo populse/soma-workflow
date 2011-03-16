@@ -163,11 +163,11 @@ class Drmaa(object):
       drmaaJobId = self._drmaa.allocateJobTemplate()
 
       self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
-
+ 
       self._drmaa.setAttribute(drmaaJobId, 
                               "drmaa_output_path", 
                               "[void]:" + stdout_file)
-      
+ 
       if job.join_stderrout:
         self._drmaa.setAttribute(drmaaJobId,
                                 "drmaa_join_files", 
@@ -204,6 +204,7 @@ class Drmaa(object):
       drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
       self._drmaa.deleteJobTemplate(drmaaJobId)
     except DrmaaError, e:
+      self.logger.debug("Error in job submission: %s" %(e))
       raise DRMError("Job submission error: %s" %(e))
 
     return drmaaSubmittedJobId
@@ -277,7 +278,7 @@ class Drmaa(object):
     try:
       self._drmaa.terminate(job_drmaa_id)
     except DrmaaError, e:
-      raise DRMError('%s' %e)
+      raise DRMError("%s" %e)
 
 class EngineTransfer(FileTransfer):
   
@@ -1103,7 +1104,11 @@ class WorkflowEngineLoop(object):
         for job_id in jobs_to_kill + jobs_to_delete:
           if job_id in self._jobs:
             self.logger.debug(" stop job " + repr(job_id))
-            self._stop_job(job_id,  self._jobs[job_id])
+            try:
+              self._stop_job(job_id,  self._jobs[job_id])
+            except DRMError, e:
+              #TBI how to communicate the error ?
+              self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
             if job_id in jobs_to_delete:
               self.logger.debug("Delete job : " + repr(job_id))
               self._database_server.delete_job(job_id)
@@ -1112,7 +1117,11 @@ class WorkflowEngineLoop(object):
         for wf_id in wf_to_kill + wf_to_delete:
           if wf_id in self._workflows:
             self.logger.debug("Kill workflow : " + repr(wf_id))
-            self._stop_wf(wf_id)
+            try:
+              self._stop_wf(wf_id)
+            except DRMError, e:
+               #TBI how to communicate the error ?
+              self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
             if wf_id in wf_to_delete:
               self.logger.debug("Delete workflow : " + repr(wf_id))
               self._database_server.delete_workflow(wf_id)
@@ -1134,6 +1143,7 @@ class WorkflowEngineLoop(object):
             try:
               job.status = self._engine_drmaa.get_job_status(job.drmaa_id)
             except DrmaaError, e:
+              self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
               job.status = constants.UNDETERMINED
             self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:
@@ -1185,11 +1195,21 @@ class WorkflowEngineLoop(object):
 
         # --- 6. Submit jobs -------------------------------------------------
         for job in jobs_to_run:
-          job.drmaa_id = self._engine_drmaa.job_submission(job)
-          self._database_server.set_submission_information(job.job_id,
-                                                          job.drmaa_id,
-                                                          datetime.now())
-          job.status = constants.UNDETERMINED
+          try:
+            job.drmaa_id = self._engine_drmaa.job_submission(job)
+          except DRMError, e:
+            #TBI how to communicate the error ?
+            if job.queue in self._pending_queues:
+              self._pending_queues[engine_job.queue].insert(0, job)
+            else:
+              self._pending_queues[engine_job.queue] = [job]
+            job.status = constants.SUBMISSION_PENDING
+            self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
+          else:
+            self._database_server.set_submission_information(job.job_id,
+                                                            job.drmaa_id,
+                                                            datetime.now())
+            job.status = constants.UNDETERMINED
         
 
         # --- 7. Update the workflow and jobs status to the database_server -

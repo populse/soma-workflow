@@ -156,9 +156,9 @@ class RemoteConnection( object ):
     
     # waiting for the tunnel to be set
     tunnelSet = False
-    maxattemps = 10
+    maxattemps = 3
     attempts = 0
-    while not tunnelSet and attempts <= maxattemps :
+    while not tunnelSet and attempts < maxattemps :
       try:
         attempts = attempts + 1
         print "Communication through the ssh tunnel. Attempt no " + repr(attempts) + "/" + repr(maxattemps)
