@@ -84,13 +84,14 @@ class RemoteConnection( object ):
     '''
 
     import paramiko #required only on client host
-    
+
     if not login:
       raise ConnectionError("Remote connection requires a login")
    
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
-      s.bind(('localhost',0)) #try to bind to the port 0 so that the system will find an available port
+      s.bind(('localhost',0)) #try to bind to the port 0 so that the system 
+                              #will find an available port
       available_port = s.getsockname()[1]
       s.close()
       return available_port 
@@ -101,21 +102,56 @@ class RemoteConnection( object ):
     # WorkflowEngine and ConnectionChecker URIs       #
     command = "python -m soma.workflow.start_workflow_engine %s %s %s" %(resource_id, pyro_objet_name, log) 
     print "start engine command: " + command
-    client = paramiko.SSHClient()
-    client.load_system_host_keys()
-    client.connect(hostname = cluster_address, port=22, username=login, password=password)
-    stdin, stdout, stderr = client.exec_command(command)
+    try:
+      client = paramiko.SSHClient()
+      client.load_system_host_keys()
+      client.connect(hostname = cluster_address, port=22, username=login, password=password)
+      stdin, stdout, stderr = client.exec_command(command)
+    except paramiko.AuthenticationException, e:
+      raise ConnectionError("The authentification failed. %s" %(e))
+    except Exception, e:
+      raise ConnectionError("The engine process could not be started remotely" 
+                            " with ssh. %s: %s" %(type(e),e))
+
     line = stdout.readline()
+    stdout_content = line
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
-    if not line: 
-      raise ConnectionError("Can't read workflow engine Pyro uri.")
+      stdout_content = stdout_content + "\n" + line
+
+    if not line: # A problem occured while starting the engine.
+      line = stderr.readline()
+      stderr_content = line
+      while line:
+        line = stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n" 
+                            "\n" + stdout_content + \
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content )
+
     workflow_engine_uri = line.split()[1] 
     line = stdout.readline()
+    stdout_content = stdout_content + "\n" + line
     while line and line.split()[0] != "connection_checker":
       line = stdout.readline()
-    if not line: 
-      raise ConnectionError("Can't read workflow engine Pyro uri.")
+      stdout_content = stdout_content + "\n" + line
+
+    if not line: # A problem occured while starting the engine.
+      line = stderr.readline()
+      stderr_content = line
+      while line:
+        line = stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n" 
+                            "\n" + stdout_content + \
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content )
+
     connection_checker_uri = line.split()[1] 
     client.close()
     
@@ -130,19 +166,29 @@ class RemoteConnection( object ):
 
     
     # tunnel creation                      #
-    self.__transport = paramiko.Transport((cluster_address, 22))
-    self.__transport.setDaemon(True)
-    self.__transport.connect(username = login, password = password)
-    if not password:
-      rsa_file_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
-      print "reading RSA key in " + repr(rsa_file_path)
-      key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
-      self.__transport.auth_publickey(login, key)
-      #TBI DSA Key => see paramamiko/demos/demo.py for an example
-    print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
-    print "   port: " + repr(client_pyro_daemon_port) + " host: " + repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
-    tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
-    tunnel.start()
+    try:
+      self.__transport = paramiko.Transport((cluster_address, 22))
+      self.__transport.setDaemon(True)
+      self.__transport.connect(username = login, password = password)
+      if not password:
+        rsa_file_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+        print "reading RSA key in " + repr(rsa_file_path)
+        key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
+        self.__transport.auth_publickey(login, key)
+        #TBI DSA Key => see paramamiko/demos/demo.py for an example
+      print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
+      print "   port: " + repr(client_pyro_daemon_port) + " host: " + \
+      repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
+
+      tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
+      tunnel.start()
+
+    except paramiko.AuthenticationException, e:
+      raise ConnectionError("The authentification failed while "
+                            "creating the ssh tunnel. %s" %(e))
+    except Exception, e:
+      raise ConnectionError("The ssh communication tunnel could not be created." 
+                            "%s: %s" %(type(e), e))
 
     # create the proxies                     #
     self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
@@ -172,7 +218,8 @@ class RemoteConnection( object ):
         tunnelSet = True
     
     if attempts > maxattemps: 
-      raise ConnectionError("The ssh tunnel could not be started within " + repr(maxattemps) + " seconds. The waiting time delay might need to be extended. See the configuration file")
+      raise ConnectionError("The ssh tunnel could not be started within" \
+                             + repr(maxattemps) + " seconds.")
 
     # create the connection holder objet for #
     # a clean disconnection in any case      #
@@ -220,20 +267,49 @@ class LocalConnection( object ):
     print command
    
     engine_process = subprocess.Popen(command, 
-                                         shell = True, 
-                                         stdout=subprocess.PIPE)
+                                      shell = True, 
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
     
     line = engine_process.stdout.readline()
+    stdout_content = line
     while line and line.split()[0] != pyro_objet_name:
       line = engine_process.stdout.readline()
-    if not line: 
-      raise ConnectionError("Can't read workflow engine Pyro uri.")
+      stdout_content = stdout_content + "\n" + line
+   
+    if not line: # A problem occured while starting the engine.
+      line = engine_process.stderr.readline()
+      stderr_content = line
+      while line:
+        line = engine_process.stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n"
+                            "\n" + stdout_content + \
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content)
+
     workflow_engine_uri = line.split()[1]
     line = engine_process.stdout.readline()
+    stdout_content = stdout_content + "\n" + line
     while line and line.split()[0] != "connection_checker":
       line = engine_process.stdout.readline()
-    if not line: 
-      raise ConnectionError("Can't read workflow engine Pyro uri.")
+      stdout_content = stdout_content + "\n" + line
+
+    if not line: # A problem occured while starting the engine.
+      line = engine_process.stderr.readline()
+      stderr_content = line
+      while line:
+        line = engine_process.stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n" 
+                            "\n" + stdout_content +\
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content)
+
     connection_checker_uri = line.split()[1] 
     
     # create the proxies                     #
