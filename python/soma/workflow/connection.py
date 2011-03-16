@@ -44,19 +44,13 @@ import SocketServer
 import Pyro.naming, Pyro.core
 from Pyro.errors import NamingError, ConnectionClosedError
 
+from soma.workflow.errors import ConnectionError
+
 __docformat__ = "epytext en"
 
 #-------------------------------------------------------------------------------
 # Classes and functions
 #-------------------------------------------------------------------------------
-
-class ConnectionError( Exception):
-  def __init__(self, msg, logger = None):
-    self.args = (msg,)
-    if logger:
-      logger.critical('EXCEPTION ' + msg)
-
-
 
 class RemoteConnection( object ):
   '''

@@ -19,6 +19,7 @@ if __name__=="__main__":
   import soma.workflow.engine
   import soma.workflow.connection 
   from soma.workflow.configuration import Configuration
+  from soma.workflow.errors import EngineError
 
 
   ###### WorkflowEngine pyro object
@@ -62,21 +63,26 @@ if __name__=="__main__":
    
     ###########################
     # Looking for the database_server
-    Pyro.core.initClient()
-    locator = Pyro.naming.NameServerLocator()
-    name_server_host = config.get_name_server_host() 
-    if name_server_host == 'None':
-      ns = locator.getNS()
-    else: 
-      ns = locator.getNS(host=name_server_host)
+    try:
+      Pyro.core.initClient()
+      locator = Pyro.naming.NameServerLocator()
+      name_server_host = config.get_name_server_host() 
+      if name_server_host == 'None':
+        ns = locator.getNS()
+      else: 
+        ns = locator.getNS(host=name_server_host)
+    except Exception, e:
+      raise EngineError("Could not find the Pyro name server.")
 
     server_name = config.get_server_name()
 
     try:
       uri = ns.resolve(server_name)
       logger.info('Server URI:'+ repr(uri))
-    except NamingError,x:
-      raise Exception('Couldn\'t find' + server_name + ' nameserver says:',x)
+    except NamingError,e:
+      raise EngineError("Could not find the database server supposed to be "
+                        "registered on the Pyro name server: %s %s" %(type(e), e))
+
     database_server = Pyro.core.getProxyForURI(uri)
     
     #Pyro.config.PYRO_MULTITHREADED = 0
