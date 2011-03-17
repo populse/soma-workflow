@@ -1200,9 +1200,9 @@ class WorkflowEngineLoop(object):
           except DRMError, e:
             #TBI how to communicate the error ?
             if job.queue in self._pending_queues:
-              self._pending_queues[engine_job.queue].insert(0, job)
+              self._pending_queues[job.queue].insert(0, job)
             else:
-              self._pending_queues[engine_job.queue] = [job]
+              self._pending_queues[job.queue] = [job]
             job.status = constants.SUBMISSION_PENDING
             self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
           else:
