@@ -205,8 +205,12 @@ class RemoteConnection( object ):
         self.workflow_engine.jobs()
         connection_checker.isConnected()
       except Pyro.errors.ProtocolError, e: 
-        print "-> Communication through ssh tunnel Failed"
+        print "-> Communication through ssh tunnel Failed. %s: %s" %(type(e), e)
         time.sleep(1)
+      except Exception, e: 
+        print "-> Communication through ssh tunnel Failed. %s: %s" %(type(e), e)
+        time.sleep(1)
+
       else:
         print "-> Communication through ssh tunnel OK"  
         tunnelSet = True
@@ -394,25 +398,23 @@ class Tunnel(threading.Thread):
   class Handler (SocketServer.BaseRequestHandler):
     
     def setup(self):
-      self.logger = logging.getLogger('ljp.connection')
-      self.logger.debug('Setup : %s %d' %(repr(self.chain_host), self.chain_port))
+      #print 'Setup : %s %d' %(repr(self.chain_host), self.chain_port)
       try:
         self.__chan = self.ssh_transport.open_channel('direct-tcpip',
                                               (self.chain_host, self.chain_port),
                                               self.request.getpeername())
       except Exception, e:
-        raise ConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,self.chain_port,repr(e)), self.logger)
+        raise ConnectionError('Incoming request to %s:%d failed: %s' %(self.chain_host,self.chain_port,repr(e)))
   
       if self.__chan is None:
         raise ConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
-                (self.chain_host, self.chain_port), self.logger)
+                (self.chain_host, self.chain_port))
   
-      self.logger.info('Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port)))
-      #print 'Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port))
+      print 'Connected!  Tunnel open %r -> %r -> %r' %(self.request.getpeername(), self.__chan.getpeername(), (self.chain_host, self.chain_port))
       
     
     def handle(self):
-      self.logger.debug('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
+      #print 'Handle : %s %d' %(repr(self.chain_host), self.chain_port)
       while True:
         r, w, x = select.select([self.request, self.__chan], [], [])
         if self.request in r:
@@ -425,8 +427,7 @@ class Tunnel(threading.Thread):
           self.request.send(data)
       
     def finish(self):
-      self.logger.info('Tunnel closed from %r' %(self.request.getpeername(),))
-      #print 'Tunnel closed from %r' %(self.request.getpeername(),)
+      print 'Tunnel closed from %r' %(self.request.getpeername(),)
       self.__chan.close()
       self.request.close()
     
@@ -453,5 +454,7 @@ class Tunnel(threading.Thread):
       Tunnel.ForwardServer(('', port), SubHander).serve_forever()
     except KeyboardInterrupt:
       print 'tunnel %d:%s:%d stopped !' %(port, host, hostport)
+    except Exception, e:
+      print 'Tunnel Error. %s: %s' %(type(e), e)
       
       
