@@ -1071,7 +1071,7 @@ class WorkflowEngineLoop(object):
       userLogin = pwd.getpwuid(os.getuid())[0] 
     except Exception, e:
       self.logger.critical("Couldn't identify user %s: %s \n" %(type(e), e))
-      raise SystemExit
+      raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
   
     self._user_id = self._database_server.register_user(userLogin) 
     self.logger.debug("user_id : " + repr(self._user_id))

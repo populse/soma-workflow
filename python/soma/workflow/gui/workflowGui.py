@@ -23,6 +23,7 @@ import matplotlib
 matplotlib.use('Qt4Agg')
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from Pyro.errors import ConnectionClosedError  
 
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper, SerializationError
 from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
