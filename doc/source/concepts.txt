@@ -152,7 +152,7 @@ of possible status for each class of objects.
 Job status
 ----------
 
-Here is the list of the job status.
+Here is the list of the job status and the associated icons displayed in the GUI.
 
   |no_status| **not_submitted**
     The job was not submitted yet to soma-workflow.
