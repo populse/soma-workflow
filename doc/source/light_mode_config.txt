@@ -5,14 +5,14 @@
 Light mode installation and configuration
 =========================================
 
-Soma-workflow can be launch as a simple one process application (without server). 
+Soma-workflow can be launched as a simple one process application (without server). 
 However, the light mode introduces some limitations compared to the 
 client-server mode: 
 
-* No access to remote resource: The application must be run on a computing 
-  resource machine (machine with a DRMS installed).
+* No remote access: The application must be run on a machine of the computing 
+  resource (machine with a DRMS installed).
 
-* No disconnection: The application can not be closed before all 
+* No disconnection: The application can not be closed before all the
   running workflows and jobs ended.
 
 If you are not interested in these two features the light mode is the mode 
@@ -30,12 +30,21 @@ The requirements are identical to the server installation requirements (see :ref
 Installation
 ============
 
-**TO DO**
+
+1. *svn export/ cmake . / make / make install* (under construction)
+
+2. Choose a resource identifier for the computing resource, ex: "My laptop light mode"
+
+3. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
+
+
+.. _light_mode_configuration:
 
 Configuration
 =============
 
-This section defines the required and optional configuration items. 
+This section defines the required and optional configuration items for the light 
+mode. 
 
 The configuration file syntax is the `ConfigParser 
 <http://docs.python.org/library/configparser.html>`_  syntax. All the 
@@ -95,7 +104,7 @@ Required configuration items
   **TRANSFERED_FILE_DIR**
     Path of the directory where the transfered files will be copied. The
     directory must be empty and will be managed entirely by soma-workflow.
-    This item is required to allow you to run workflow with file transfer for 
+    This item is required to let you run workflow with file transfer for 
     test purposes in the light mode. 
 
     .. warning::
@@ -105,4 +114,8 @@ Required configuration items
 Optional configuration items
 ----------------------------
 
-**TO DO**
+Many optional configuration item can be added to customize the installation, see
+:ref:`server_configuration` for a full list of the items and their description.
+  
+
+ 

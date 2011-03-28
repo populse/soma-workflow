@@ -2,10 +2,45 @@
 Soma-workflow concepts
 ======================
 
-**documentation under construction**
+Soma-workflow was built to make easier the use of parallel computing resources.
+Although soma-workflow can be used to run MPI or OpenMP jobs, for now soma-workflow 
+main purpose is "coarse grain" parallelization, that is:
 
-Job, Worklfows and File Transfers
-=================================
+  * no communication between job 
+  * "long" job (several minutes to several days)
+
+A typical use case is: single program/multiple data.
+
+Soma-workflow is not a resource manager. It interacts with the system managing 
+the computing resource (DRMS: Distributed Resource Management System) to: 
+  
+  * submit jobs: tell the system to execute a command on the computing resource.
+  * monitor jobs: get back the current status of the job (in the queue, running, done...)
+  * control jobs: mainly to cancel submitted jobs or kill running jobs.
+
+  .. figure:: images/interaction_with_DRMS.*
+    :scale: 70
+    
+    Soma-workflow interacts with the resource management system (DRMS).
+
+Soma-workflow includes a workflow engine. It let the user submit, at once, a set 
+of job with dependency between them. Soma-workflow handles to submission of each 
+job as soon as the other jobs it depends on finished with succes. 
+
+Soma-workflow can handle connection to remote computing resources, the connection
+is transparent for the user. In case the computing resource and the user's 
+machine do not have a shared file system, soma-workflow provides two tools: 
+
+  * File transfer: allows to transfer files or directories. The file transfers are taken into account while executing a workflow. 
+   
+  * Shared resource path: maps a path on the user machine with a path thanks to "translations" files configured.
+
+The file transfer and shared resource path object can be used instead of any path
+in the definition of jobs or workflows.
+
+
+Job, Worklfow, File Transfer and Shared Resource Path
+=====================================================
 
 **Job**
 
@@ -41,29 +76,57 @@ Job, Worklfows and File Transfers
 
 **File Transfer**
   
-  The file transfers are only required when the user's file system is not 
-  shared with the computing resource.
+  The file transfers are optional. However, they can be useful when the user's file 
+  system is not shared with the computing resource.
 
+  The file transfers objects allow to transfer files or directories to and from 
+  the computing resource file system.
+
+  The file transfers can be associated to jobs (as input or output). That way 
+  soma-workflow can wait for the input files to be transfered or created before 
+  submitting the job to the computing resource.
+  
   A file transfer object is a mapping between a file path valid on the user file 
-  system and a file path valid on the computing resource file system.
-
-  Soma-workflow handles transfers of the files or directories to and from the 
-  computing resource file system. The file transfer objects are associated to 
-  jobs (as input or output) in workflows. That way a job will never be executed 
-  before all its input files are transfered on the computing resource.
+  system and a file path valid on the computing resource file system. It can thus
+  be used instead of any regular path in the definitions of jobs and workflows.
 
 .. _shared-resource-path-concept:
 
 **Shared Resource Path**
 
-  As file transfers, shared resource paths are only required when the user's
-  file system is not shared by the computing resource.
-  A shared resource path is a path representation that is valid on either 
-  user's or computing resource file system. 
+  As file transfers, shared resource paths are optional but can be useful when 
+  the user's file system is not shared by the computing resource. Shared Resource
+  Path are useful when your data were already transfered on the computing resource 
+  side. 
+  
+  Shared resource path objects can be used instead of any regular path in the 
+  definition of jobs and workflows. Soma-workflow looks up into translation
+  files configured on the computing resource side to recover the corresponding 
+  valid path. 
 
+  Several translation files can be configured, and each of them is associated to 
+  a namespace (see :ref:`conf_server_option`). 
 
-DRMS, Client, Workflow Engine and Database Server
-=================================================
+  For example, if I want to configure file translation for an application "MyApp",
+  I will configure the translation file "my_app_translation" under the namespace
+  "MyApp". The content the translation file is a list of unique indentifier 
+  associated to directory paths. For examples: ::
+
+    5ee1e9a0-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data1/
+    922ba490-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data2/
+    a7623ef0-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data3/
+
+  One can use more simple identifiers since each translation file is inclosed 
+  into a namespace: ::
+
+    data1_dir  /home/myname/data_for_my_app/data1/
+    data2_dir  /home/myname/data_for_my_app/data2/
+    data3_dir  /home/myname/data_for_my_app/data3/
+
+  
+
+Client, Workflow Engine and Database Server
+===========================================
 
 .. image:: images/architecture_overview.* 
   :scale: 50 
@@ -71,7 +134,7 @@ DRMS, Client, Workflow Engine and Database Server
 **TO DO**
   
 ..
-  The soma-workflow architecture allows the client to access remote computing 
+  The soma-workflow architecture enables the client to access remote computing 
   resource and to disconnect at any time. The WorkflowEngine process, which runs 
   on the computing resource side, is in charge of submitting the workflow jobs
   to the DRMS at the right time. 
@@ -79,6 +142,10 @@ DRMS, Client, Workflow Engine and Database Server
 
 Status
 ======
+
+Once submitted to soma-workflow, the jobs, workflows and file transfers are 
+associated to status which reflects their state in the system. Here is the list 
+of possible status for each class of objects.
 
 .. _job-status:
 

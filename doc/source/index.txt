@@ -4,8 +4,8 @@
    contain the root `toctree` directive.
 
 
-Welcome to soma-workflow documentation!
-=======================================
+Soma-workflow: An unified and simple interface to parallel computing resource
+=============================================================================
 
 ..
   .. image:: images/gui_overview.*
@@ -55,7 +55,7 @@ Main Features
     computing resource is done within a ssh port forwarding tunnel. 
 
   **Disconnections:** 
-    The client/server architecture allows the user to close the client 
+    The client/server architecture enables the user to close the client 
     application at any time. The workflows and jobs execution are not stopped. 
     The user can open a client at any time to check the status of his 
     work.
