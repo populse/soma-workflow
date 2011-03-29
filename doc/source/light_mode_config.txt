@@ -21,11 +21,21 @@ you need.
 Requirements
 ============
 
-The requirements are identical to the server installation requirements (see :ref:`server_requirements`). 
+The requirements are identical to the server installation requirements. 
+If you do not intend to access an other computing resource with the remote 
+access feature, the installation of Pyro can be skipped.
 
-.. note:: 
-  If you don't intend to access an other computing resource with the 
-  remote access feature, the installation of Pyro can be skipped.
+The requirements are thus:
+
+* A distributed resource management system (DRMS) such as Grid Engine, Condor, 
+  Torque/PBS, LSF..
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
+* Python *version 2.5 or more*
+* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
+
+More details about the implementation of DRMAA can be found in the server 
+installation section (see :ref:`server_requirements`).
+
 
 Installation
 ============

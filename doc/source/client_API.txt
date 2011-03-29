@@ -1,8 +1,8 @@
 .. _client_api:
 
-==========
-Python API
-==========
+=====================
+Python API and Errors
+=====================
 
 The submission, monitoring and control of Worklflow, Job and FileTransfer can be 
 done through the client.WorkflowController interface.
@@ -128,6 +128,25 @@ File Transfers
 .. automethod:: WorkflowController.delete_transfer
 
 
+Errors
+======
 
+Here is the list of the various error that can occur when using 
+soma-workflow.
 
+.. currentmodule::errors
+
+.. autoclass:: errors.ConfigurationError(Exception)
+
+.. autoclass:: errors.ConnectionError(Exception)
+
+.. autoclass:: errors.DRMError(Exception)
+
+.. autoclass:: errors.JobError(Exception)
+
+.. autoclass:: errors.WorkflowError(Exception)
+
+.. autoclass:: errors.TransferError(Exception)
+
+.. autoclass:: errors.UnknownObjectError(Exception)
 

@@ -76,7 +76,7 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    concepts.txt
    light_mode_config.txt
