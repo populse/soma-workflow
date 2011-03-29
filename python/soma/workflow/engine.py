@@ -1419,7 +1419,7 @@ class WorkflowEngineLoop(object):
 
 
   def restart_workflow(self, wf_id, status):
-    workflow = self._database_server.get_engine_workflow(wf_id)
+    workflow = self._database_server.get_engine_workflow(wf_id, self._user_id)
     workflow.status = status
     (jobs_to_run, workflow.status) = workflow.restart(self._database_server)
     for job in jobs_to_run:
@@ -1429,7 +1429,7 @@ class WorkflowEngineLoop(object):
       self._workflows[wf_id] = workflow
 
   def restart_job(self, job_id, status):
-    (job, workflow_id) = self._database_server.get_engine_job(job_id)
+    (job, workflow_id) = self._database_server.get_engine_job(job_id, self._user_id)
     if workflow_id == -1: 
       job.status = status
       # submit
@@ -1737,16 +1737,13 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      #print "Couldn't delete job %d. It doesn't exist or is not owned by the current user \n" % job_id
-      return 
-    
-    status = self._database_server.get_job_status(job_id)[0]
+    status = self._database_server.get_job_status(job_id,
+                                                  self._user_id)[0]
     if status == constants.DONE or status == constants.FAILED:
       self._database_server.delete_job(job_id)
     else:
       self._database_server.set_job_status(job_id, constants.DELETE_PENDING)
-      if not self._wait_job_status_update(job_id):
+      if not self._wait_for_job_deletion(job_id):
         self._database_server.delete_job(job_id)
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -1842,21 +1839,15 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_workflow(wf_id, self._user_id):
-      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
-      return None
-    return self._database_server.get_engine_workflow(wf_id)
+    return self._database_server.get_engine_workflow(wf_id, self._user_id)
   
   def job_status(self, job_id):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      #print "Could get the job status of job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return
-    
-    # check the date of the last status update
-    status, last_status_update = self._database_server.get_job_status(job_id)
+    (status, 
+    last_status_update) = self._database_server.get_job_status(job_id,
+                                                               self._user_id)
     if status and not status == constants.DONE and \
        not status == constants.FAILED and \
        last_status_update and \
@@ -1947,21 +1938,17 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-  
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      #print "Could get the exit information of job %d. It doesn't exist or is owned by a different user \n" %job_id
-      return
     
-    job_exit_info= self._database_server.get_job_exit_info(job_id)
+    job_exit_info= self._database_server.get_job_exit_info(job_id, self._user_id)
     
     return job_exit_info
     
 
   def stdouterr_transfer_action_info(self, job_id):
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      return
-    
-    stdout_file, stderr_file = self._database_server.get_std_out_err_file_path(job_id)
+ 
+    (stdout_file, 
+    stderr_file) = self._database_server.get_std_out_err_file_path(job_id, 
+                                                                  self._user_id)
     self.logger.debug("stdout_file " + repr(stdout_file) + " stderr_file " + repr(stderr_file))
 
     stdout_transfer_action_info = None
@@ -1985,24 +1972,22 @@ class WorkflowEngine(object):
   def wait_job( self, job_ids, timeout = -1):
     '''
     Implementation of soma.workflow.client.WorkflowController API
-    '''
-    for jid in job_ids:
-      if not self._database_server.is_user_job(jid, self._user_id):
-        raise UnknownObjectError("Could not wait for job %d." %jid)
-      
+    '''    
     self.logger.debug("        waiting...")
     
     waitForever = timeout < 0
     startTime = datetime.now()
     for jid in job_ids:
-      (status, last_status_update) = self._database_server.get_job_status(jid)
+      (status, 
+       last_status_update) = self._database_server.get_job_status(jid, 
+                                                                  self._user_id)
       if status:
         self.logger.debug("wait        job %s status: %s", jid, status)
         delta = datetime.now()-startTime
         delta_status_update = datetime.now() - last_status_update
         while status and not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
           time.sleep(refreshment_interval)
-          (status, last_status_update) = self._database_server.get_job_status(jid) 
+          (status, last_status_update) = self._database_server.get_job_status(jid, self._user_id) 
           self.logger.debug("wait        job %s status: %s last update %s," 
                             " now %s", 
                             jid, 
@@ -2019,10 +2004,10 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      raise UnknownObjectError("Could not restart job %d." %job_id)
 
-    (status, last_status_update) = self._database_server.get_job_status(job_id)
+    (status, 
+     last_status_update) = self._database_server.get_job_status(job_id,
+                                                                self._user_id)
     
     if status != constants.FAILED and status != constants.WARNING:
       return False
@@ -2035,11 +2020,9 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-
-    if not self._database_server.is_user_job(job_id, self._user_id):
-      raise UnknownObjectError("Could not kill job %d" %job_id)
     
-    status = self._database_server.get_job_status(job_id)[0]
+    status = self._database_server.get_job_status(job_id,
+                                                  self._user_id)[0]
     if status != constants.DONE and status != constants.FAILED:
       self._database_server.set_job_status(job_id, 
                                           constants.KILL_PENDING)
@@ -2048,16 +2031,46 @@ class WorkflowEngine(object):
         self._database_server.set_job_status(job_id, 
                                              constants.WARNING)
 
+
+  def _wait_for_job_deletion(self, job_id):
+    self.logger.debug(">> _wait_for_job_deletion")
+    action_time = datetime.now()
+    time.sleep(refreshment_interval)
+    (is_valid_job, 
+     last_status_update) = self._database_server.is_valid_job(job_id, 
+                                                              self._user_id)
+    while is_valid_job and \
+          last_status_update < action_time:
+      time.sleep(refreshment_interval)
+      (is_valid_job, 
+       last_status_update) = self._database_server.is_valid_job(job_id, 
+                                                                self._user_id)
+      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
+        self.logger.debug("<< _wait_for_job_deletion: could not delete properly "
+                          "job %s."
+                          "The process updating its status failed." %(job_id))
+        return False
+
+    self.logger.debug("<< _wait_for_job_deletion")
+    return True
+
+
+
   def _wait_job_status_update(self, job_id):
     
     self.logger.debug(">> _wait_job_status_update")
     action_time = datetime.now()
     time.sleep(refreshment_interval)
     (status, 
-     last_status_update) = self._database_server.get_job_status(job_id)
-    while status and not status == constants.DONE and not status == constants.FAILED and last_status_update < action_time:
+     last_status_update) = self._database_server.get_job_status(job_id,
+                                                                self._user_id)
+    while status and not status == constants.DONE and \
+          not status == constants.FAILED and \
+          last_status_update < action_time:
       time.sleep(refreshment_interval)
-      (status, last_status_update) = self._database_server.get_job_status(job_id) 
+      (status, 
+      last_status_update) = self._database_server.get_job_status(job_id,
+                                                                 self._user_id) 
       if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
         self.logger.debug("<< _wait_job_status_update: could not wait for job status update of %s. "
                           "The process updating its status failed." %(job_id))

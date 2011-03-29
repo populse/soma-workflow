@@ -32,6 +32,7 @@ from datetime import datetime
 
 import soma.workflow.constants as constants
 from soma.workflow.client import FileTransfer
+from soma.workflow.errors import UnknownObjectError, DatabaseError
 
 __docformat__ = "epytext en"
 
@@ -968,7 +969,7 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
       
-  def get_engine_workflow(self, wf_id):
+  def get_engine_workflow(self, wf_id, user_id):
     '''
     Returns a EngineWorkflow object.
     The wf_id must be valid.
@@ -980,10 +981,12 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_workflow(connection, cursor, wf_id, user_id)
+
       try:
         pickled_workflow = cursor.execute('''SELECT  
                                               pickled_engine_workflow
-                                              FROM workflows WHERE id=?''', [wf_id]).next()[0]#supposes that the wf_id is valid
+                                              FROM workflows WHERE id=?''', [wf_id]).next()[0]
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1164,6 +1167,50 @@ class WorkflowDatabaseServer( object ):
       
   ###########################################
   # JOBS 
+
+  def _check_job(self, connection, cursor, job_id, user_id):
+    try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM jobs 
+                                  WHERE id=? and 
+                                        user_id=?''', 
+                               [job_id, user_id]).next()[0]
+    except Exception, e:
+      cursor.close()
+      connection.close()
+      raise DatabaseError('%s: %s \n' %(type(e), e))
+
+    if count == 0:
+      raise UnknownObjectError("The job id " + repr(job_id) + " is not "
+                                "valid or does not belong to "
+                                "user " + repr(user_id)) 
+
+  def is_valid_job(self, job_id, user_id):
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      last_status_update = None
+      try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM jobs 
+                                  WHERE id=? and 
+                                        user_id=?''', 
+                                  [job_id, user_id]).next()[0]
+
+        if count != 0:
+          last_status_update = cursor.execute('''SELECT last_status_update 
+                                                 FROM jobs 
+                                                 WHERE id=?''',
+                                                 [job_id]).next()[0]
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+      cursor.close()
+      connection.close()
+      last_status_update = self._str_to_date_conversion(last_status_update)
+    return (count != 0, last_status_update)
+
   
   def add_job( self, 
                user_id,
@@ -1318,9 +1365,9 @@ class WorkflowDatabaseServer( object ):
         connection.close()
       
     return engine_job
-   
+
   
-  def get_engine_job(self, job_id):
+  def get_engine_job(self, job_id, user_id):
     '''
     Returns a EngineJob object.
     The job_id must be valid.
@@ -1332,11 +1379,12 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_job(connection, cursor, job_id, user_id)
       try:
         (pickled_job, workflow_id) = cursor.execute('''SELECT  
                                       pickled_engine_job, 
                                       workflow_id
-                                      FROM jobs WHERE id=?''', [job_id]).next()#supposes that the job_id is valid
+                                      FROM jobs WHERE id=?''', [job_id]).next()
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1438,25 +1486,28 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
       
-  def get_job_status(self, job_id):
+  def get_job_status(self, job_id, user_id):
     '''
-    Returns the job status stored in the database (updated by L{DrmaaWorkflowEngine}) and 
+    Returns the job status stored in the database and 
     the date of its last update.
-    Returns (None, None) if the job_id is not valid.
+    Raise UnknownObjectError if the job_id is not valid or belongs to an 
+    other user.
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_job(connection, cursor, job_id, user_id)
       try:
-        count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
-        if not count == 0 :
-          (status, strdate) = cursor.execute('SELECT status, last_status_update FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
-        else:
-          (status, strdate) = (None, None)
+       (status, 
+        strdate) = cursor.execute('''SELECT status, last_status_update 
+                                     FROM jobs 
+                                     WHERE id=?''',
+                                  [job_id]).next()
+
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_job_status %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       status = self._string_conversion(status)
       date = self._str_to_date_conversion(strdate)
       cursor.close()
@@ -1537,7 +1588,7 @@ class WorkflowDatabaseServer( object ):
       connection.close()
       return drmaa_id
 
-  def get_std_out_err_file_path(self, job_id):
+  def get_std_out_err_file_path(self, job_id, user_id):
     '''
     Returns the path of the standard output and error files.
     The job_id must be valid.
@@ -1550,7 +1601,19 @@ class WorkflowDatabaseServer( object ):
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()#supposes that the job_id is valid
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM jobs 
+                                  WHERE id=? and 
+                                        user_id=?''', 
+                               [job_id, user_id]).next()[0]
+
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+
+      try:
+        result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1561,7 +1624,7 @@ class WorkflowDatabaseServer( object ):
     stderr_file_path = self._string_conversion(result[1])
     return (stdout_file_path, stderr_file_path)
 
-  def get_job_exit_info(self, job_id):
+  def get_job_exit_info(self, job_id, user_id):
     '''
     Returns the job exit informations.
 
@@ -1572,13 +1635,14 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_job(connection, cursor, job_id, user_id)
       try:
         result = cursor.execute('''SELECT exit_status, 
                                           exit_value,
                                           terminating_signal,
                                           resource_usage
                                 FROM jobs WHERE id=?''',
-                                [job_id]).next()#supposes that the job_id is valid
+                                [job_id]).next()
       except Exception, e:
         cursor.close()
         connection.close()
@@ -1710,31 +1774,6 @@ class WorkflowDatabaseServer( object ):
   ################### DATABASE QUERYING ##############################
   
   #JOBS
-  def is_user_job(self, job_id, user_id):
-    '''
-    Check that the job exists and is own by the user.
-    
-    @type job_id: C{JobIdentifier}
-    @type user_id: C{UserIdentifier}
-    @rtype: bool
-    @returns: the job exists and is owned by the user
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      result = False
-      try:
-        count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
-        if not count == 0 :
-          owner_id = cursor.execute('SELECT user_id FROM jobs WHERE id=?',  [job_id]).next()[0] 
-          result = (owner_id==user_id)
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error is_user_job jobid=%s, userid=%s. Error %s: %s \n' %(repr(job_id), repr(user_id), type(e), e), self.logger) 
-      cursor.close()
-      connection.close()
-    return result
   
   def get_jobs(self, user_id, job_ids=None):
     '''
@@ -1941,6 +1980,25 @@ class WorkflowDatabaseServer( object ):
    
 
   #WORKFLOWS
+
+  def _check_workflow(self, connection, cursor, wf_id, user_id):
+    try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM workflows 
+                                  WHERE id=? and 
+                                        user_id=?''', 
+                               [wf_id, user_id]).next()[0]
+    except Exception, e:
+      cursor.close()
+      connection.close()
+      raise DatabaseError('%s: %s \n' %(type(e), e))
+
+    if count == 0:
+      raise UnknownObjectError("The workflow id " + repr(wf_id) + " is not "
+                                "valid or does not belong to "
+                                "user " + repr(user_id)) 
+
+
   
   def is_user_workflow(self, wf_id, user_id):
     '''

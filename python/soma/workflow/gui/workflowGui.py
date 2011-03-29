@@ -1930,7 +1930,6 @@ class GuiWorkflow(object):
                                      name=ft.name,
                                      engine_path=engine_path)
           self.items[item_id] = gui_ft
-          print "gui_ft.engine_path " + repr(gui_ft.engine_path) 
           if gui_ft.engine_path in self.server_file_transfers.keys():
             self.server_file_transfers[gui_ft.engine_path].append(item_id)
           else:

@@ -61,7 +61,7 @@ class DatabaseServerError(Exception):
   '''
 
 
-#new
+
 class DatabaseError(Exception):
   pass
 
