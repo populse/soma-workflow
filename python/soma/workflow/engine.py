@@ -565,9 +565,9 @@ class EngineJob(soma.workflow.client.Job):
                      "namespace %s does not exist" %(srp.namespace))
     if not srp.uuid in self.path_translation[srp.namespace]:
       raise JobError("SharedResourcePath translation: "
-                                   "the uuid %s does not exist for the " 
-                                   "namespace %s." %
-                                    (srp.uuid, srp.namespace))
+                     "the uuid %s does not exist for the " 
+                     "namespace %s." %
+                     (srp.uuid, srp.namespace))
     translated_path = os.path.join(self.path_translation[srp.namespace][srp.uuid],
                                    srp.relative_path)
     return translated_path
@@ -1744,6 +1744,8 @@ class WorkflowEngine(object):
     else:
       self._database_server.set_job_status(job_id, constants.DELETE_PENDING)
       if not self._wait_for_job_deletion(job_id):
+        # TBI
+        self.logger.critical("!! The job may not be properly deleted !!")
         self._database_server.delete_job(job_id)
 
   ########## WORKFLOW SUBMISSION ############################################
@@ -1764,33 +1766,31 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_workflow(workflow_id, self._user_id):
-      #print "Couldn't delete workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
-      return
     
-    status = self._database_server.get_workflow_status(workflow_id)[0]
+    status = self._database_server.get_workflow_status(workflow_id, 
+                                                       self._user_id)[0]
     if status == constants.WORKFLOW_DONE:
       self._database_server.delete_workflow(workflow_id)
     else:
       self._database_server.set_workflow_status(workflow_id, 
                                                 constants.DELETE_PENDING)
-      if not self._wait_wf_status_update(workflow_id):
+      if not self._wait_for_wf_deletion(workflow_id):
+       # TBI
+       self.logger.critical("!! The workflow may not be properly deleted !!")
        self._database_server.delete_workflow(workflow_id)
+
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
     Implementation of soma.workflow.client.WorkflowController API
-    '''
-    if not self._database_server.is_user_workflow(workflow_id, self._user_id):
-      #print "Couldn't delete workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
-      return False
-    
+    ''' 
     if new_expiration_date < datetime.now(): 
       return False
     # TO DO: Add other rules?
     
     self._database_server.change_workflow_expiration_date(workflow_id, 
-                                                          new_expiration_date)
+                                                          new_expiration_date,
+                                                          self._user_id)
     return True
 
 
@@ -1798,11 +1798,7 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_workflow(workflow_id, self._user_id):
-      #print "Couldn't restart workflow %d. It doesn't exist or is not owned by the current user \n" % job_id
-      return False
-    
-    (status, last_status_update) = self._database_server.get_workflow_status(workflow_id)
+    (status, last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
     
     if status != constants.WORKFLOW_DONE and status != constants.WARNING:
       return False
@@ -1840,6 +1836,7 @@ class WorkflowEngine(object):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     return self._database_server.get_engine_workflow(wf_id, self._user_id)
+
   
   def job_status(self, job_id):
     '''
@@ -1862,11 +1859,9 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_workflow(wf_id, self._user_id):
-      #print "Could get the workflow status of workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
-      return
-    
-    status, last_status_update = self._database_server.get_workflow_status(wf_id)
+    (status, 
+     last_status_update) = self._database_server.get_workflow_status(wf_id,                                                              
+                                                                 self._user_id)
 
     if status and \
        not status == constants.WORKFLOW_DONE and \
@@ -1882,11 +1877,9 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_workflow(wf_id, self._user_id):
-      #print "Couldn't get workflow %d. It doesn't exist or is owned by a different user \n" %wf_id
-      return
-
-    status, last_status_update = self._database_server.get_workflow_status(wf_id)
+    (status, 
+     last_status_update) = self._database_server.get_workflow_status(wf_id,
+                                                                  self._user_id)
     if status and \
        not status == constants.WORKFLOW_DONE and \
        last_status_update and \
@@ -2046,14 +2039,11 @@ class WorkflowEngine(object):
        last_status_update) = self._database_server.is_valid_job(job_id, 
                                                                 self._user_id)
       if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-        self.logger.debug("<< _wait_for_job_deletion: could not delete properly "
-                          "job %s."
-                          "The process updating its status failed." %(job_id))
+        self.logger.debug("<< _wait_for_job_deletion")
         return False
 
     self.logger.debug("<< _wait_for_job_deletion")
     return True
-
 
 
   def _wait_job_status_update(self, job_id):
@@ -2061,20 +2051,22 @@ class WorkflowEngine(object):
     self.logger.debug(">> _wait_job_status_update")
     action_time = datetime.now()
     time.sleep(refreshment_interval)
-    (status, 
-     last_status_update) = self._database_server.get_job_status(job_id,
-                                                                self._user_id)
-    while status and not status == constants.DONE and \
-          not status == constants.FAILED and \
-          last_status_update < action_time:
-      time.sleep(refreshment_interval)
+    try:
       (status, 
       last_status_update) = self._database_server.get_job_status(job_id,
-                                                                 self._user_id) 
-      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-        self.logger.debug("<< _wait_job_status_update: could not wait for job status update of %s. "
-                          "The process updating its status failed." %(job_id))
-        return False
+                                                                  self._user_id)
+      while status and not status == constants.DONE and \
+            not status == constants.FAILED and \
+            last_status_update < action_time:
+        time.sleep(refreshment_interval)
+        (status, 
+        last_status_update) = self._database_server.get_job_status(job_id,
+                                                                  self._user_id) 
+        if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
+          self.logger.debug("<< _wait_job_status_update")
+          return False
+    except UnknownObjectError, e:
+      pass
     self.logger.debug("<< _wait_job_status_update")
     return True
 
@@ -2082,16 +2074,41 @@ class WorkflowEngine(object):
     self.logger.debug(">> _wait_wf_status_update")
     action_time = datetime.now()
     time.sleep(refreshment_interval)
-    (status, 
-     last_status_update) = self._database_server.get_workflow_status(wf_id)
-    while status and not status == constants.WORKFLOW_DONE and \
-          last_status_update < action_time:
-      time.sleep(refreshment_interval)
+    try:
       (status, 
-       last_status_update) = self._database_server.get_workflow_status(wf_id) 
-      if last_status_update and \
-         datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*refreshment_timeout):
-        self.logger.debug("<< _wait_wf_status_update")
-        return False
+      last_status_update) = self._database_server.get_workflow_status(wf_id)
+      while status and not status == constants.WORKFLOW_DONE and \
+            last_status_update < action_time:
+        time.sleep(refreshment_interval)
+        (status, 
+        last_status_update) = self._database_server.get_workflow_status(wf_id) 
+        if last_status_update and \
+          datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*refreshment_timeout):
+          self.logger.debug("<< _wait_wf_status_update")
+          return False
+    except UnknownObjectError, e:
+      pass
     self.logger.debug("<< _wait_wf_status_update")
     return True
+
+
+  def _wait_for_wf_deletion(self, wf_id):
+    self.logger.debug(">> _wait_for_wf_deletion")
+    action_time = datetime.now()
+    time.sleep(refreshment_interval)
+    (is_valid_wf, 
+    last_status_update) = self._database_server.is_valid_workflow(wf_id, 
+                                                                self._user_id)
+    while is_valid_wf and \
+          last_status_update < action_time:
+      time.sleep(refreshment_interval)
+      (is_valid_wf, 
+      last_status_update) = self._database_server.is_valid_workflow(wf_id, 
+                                                              self._user_id)
+      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
+        self.logger.debug("<< _wait_for_wf_deletion")
+        return False
+    self.logger.debug("<< _wait_for_wf_deletion")
+    return True
+    
+    

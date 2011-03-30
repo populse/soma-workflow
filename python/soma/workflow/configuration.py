@@ -19,9 +19,6 @@ import soma.workflow.constants as constants
 # Classes and functions
 #-------------------------------------------------------------------------------
 
-class ConfigurationError(Exception):
-  pass
-
 class Configuration(object):
   
   # path of the configuration file

@@ -948,7 +948,7 @@ class WorkflowDatabaseServer( object ):
       connection.close()
       self.clean()
       
-  def change_workflow_expiration_date(self, wf_id, new_date):
+  def change_workflow_expiration_date(self, wf_id, new_date, user_id):
     '''
     Change the workflow expiration date.
     
@@ -958,6 +958,7 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_workflow(connection, cursor, wf_id, user_id)
       try:
         cursor.execute('UPDATE workflows SET expiration_date=? WHERE id=?', (new_date, wf_id))
       except Exception, e:
@@ -1056,35 +1057,29 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
     
-  def get_workflow_status(self, wf_id):
+  def get_workflow_status(self, wf_id, user_id):
     '''
     Returns the workflow status stored in the database 
     (updated by L{DrmaaWorkflowEngine}) and the date of its last update.
-    Returns (None, None) if the wf_id is not valid.
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_workflow(connection, cursor, wf_id, user_id)
       try:
-        count = cursor.execute('''SELECT count(*) 
-                                  FROM workflows 
-                                  WHERE id=?''', [wf_id]).next()[0]
-        if not count == 0 :
-          (status, strdate) = cursor.execute('''SELECT status, 
-                                                      last_status_update 
-                                                FROM workflows WHERE id=?''', 
-                                                [wf_id]).next()
-        else:
-          (status, strdate) = (None, None)
+        (status, strdate) = cursor.execute('''SELECT status, 
+                                                    last_status_update 
+                                              FROM workflows WHERE id=?''', 
+                                              [wf_id]).next()
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_workflow_status %s: %s \n' %(type(e), e), 
-                              self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       status = self._string_conversion(status)
       date = self._str_to_date_conversion(strdate)
       cursor.close()
       connection.close()
+
     return (status, date)
     
   
@@ -1999,32 +1994,35 @@ class WorkflowDatabaseServer( object ):
                                 "user " + repr(user_id)) 
 
 
-  
-  def is_user_workflow(self, wf_id, user_id):
-    '''
-    Check that the workflows exists and is own by the user.
-    
-    @type wf_id: C{WorflowIdentifier}
-    @type user_id: C{UserIdentifier}
-    @rtype: bool
-    @returns: the workflow exists and is owned by the user
-    '''
+  def is_valid_workflow(self, wf_id, user_id):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
-      result = False
+      last_status_update = None
       try:
-        count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [wf_id]).next()[0]
-        if not count == 0 :
-          owner_id = cursor.execute('SELECT user_id FROM workflows WHERE id=?',  [wf_id]).next()[0] 
-          result = (owner_id==user_id)
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM workflows 
+                                  WHERE id=? and 
+                                        user_id=?''', 
+                                  [wf_id, user_id]).next()[0]
+
+        if count != 0:
+          last_status_update = cursor.execute('''SELECT     
+                                                 last_status_update 
+                                                 FROM workflows 
+                                                 WHERE id=?''',
+                                                 [wf_id]).next()[0]
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error is_user_workflow wfid=%d, userid=%s. Error %s: %s \n' %(repr(wf_id), repr(user_id), type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
-    return result
+      last_status_update = self._str_to_date_conversion(last_status_update)
+    return (count != 0, last_status_update)
+
+
+
   
   def get_workflows(self, user_id, workflow_ids=None):
     '''

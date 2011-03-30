@@ -520,7 +520,7 @@ class WorkflowController(object):
     * returns: *int*
         Workflow identifier.
 
-    Raises WorkflowError or JobError if the workflow is not correct.
+    Raises *WorkflowError* or *JobError* if the workflow is not correct.
     '''
 
     #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
@@ -552,7 +552,7 @@ class WorkflowController(object):
     * returns: int
       Job identifier.
   
-    Raises JobError if the workflow is not correct.
+    Raises *JobError* if the workflow is not correct.
     '''
    
     engine_job = self._engine_proxy.submit_job(job, queue)
@@ -580,7 +580,7 @@ class WorkflowController(object):
     
     * returns: *Workflow*
   
-    Raises UnknownObjectError if the workflow id is not valid
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.workflow(wf_id)
 
@@ -640,7 +640,8 @@ class WorkflowController(object):
     * returns: *string or None*
         Status of the workflow: see :ref:`workflow-status` or the 
         constants.WORKFLOW_STATUS list.
-        None if the identifier is not valid.
+
+    Raises *UnknownObjectError* if the wf_id is not valid
     '''
     return self._engine_proxy.workflow_status(wf_id)
   
@@ -654,6 +655,8 @@ class WorkflowController(object):
     * wf_id *workflow identifier*
 
     * returns: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
+
+    Raises *UnknownObjectError* if the wf_id is not valid
     '''
     wf_status = self._engine_proxy.workflow_elements_status(wf_id)
     if not wf_status:
@@ -681,7 +684,7 @@ class WorkflowController(object):
         Status of the job: see :ref:`job-status` or the list 
         constants.JOB_STATUS.
     
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     return self._engine_proxy.job_status(job_id)
 
@@ -704,7 +707,7 @@ class WorkflowController(object):
           strings where each string complies with the format <name>=<value>.
           The information provided depends on the DRMS and DRMAA implementation.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     return self._engine_proxy.job_termination_status(job_id)
 
@@ -728,7 +731,7 @@ class WorkflowController(object):
     * buffer_size *int*
         The file is transfered piece by piece of size buffer_size.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     
     engine_stdout_file, stdout_transfer_action_info, engine_stderr_file, stderr_transfer_action_info = self._engine_proxy.stdouterr_transfer_action_info(job_id)
@@ -788,6 +791,8 @@ class WorkflowController(object):
 
     * returns: *boolean* 
         True if some jobs were restarted. (TBI right error management)
+    
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.restart_workflow(workflow_id)
     
@@ -795,6 +800,8 @@ class WorkflowController(object):
   def delete_workflow(self, workflow_id):
     '''
     Deletes the workflow and all its associated elements (FileTransfers and Jobs). The worklfow_id will become invalid and can not be used anymore. The workflow jobs which are running will be killed.
+
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     #cProfile.runctx("self._engine_proxy.delete_workflow(workflow_id)", globals(), locals(), "/home/soizic/profile/profile_delete_workflow")
 
@@ -811,6 +818,8 @@ class WorkflowController(object):
     
     * returns: *boolean* 
         True if the expiration date was changed.  (TBI right error management)
+
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.change_workflow_expiration_date(workflow_id, new_expiration_date)
 
@@ -828,7 +837,7 @@ class WorkflowController(object):
         The call to wait_job exits before timeout seconds.
         A negative value means that the method will wait indefinetely.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     self._engine_proxy.wait_job(job_ids, timeout)
 
@@ -838,7 +847,7 @@ class WorkflowController(object):
     identifier remains valid). 
     Use the restart_job method to restart the job.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     self._engine_proxy.kill_job(job_id)
    
@@ -851,7 +860,7 @@ class WorkflowController(object):
     * returns: *boolean* 
         True if the job was restarted.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     self._engine_proxy.restart_job(job_id)
 
@@ -862,7 +871,7 @@ class WorkflowController(object):
     The job_id will become invalid and can not be used anymore.
     The job is killed if it is running.
 
-    Raises UnknownObjectError if the job_id is not valid
+    Raises *UnknownObjectError* if the job_id is not valid
     '''
     
     self._engine_proxy.delete_job(job_id)
@@ -1366,13 +1375,6 @@ def _embedded_engine_and_server(config):
   engine_loop_thread.start()
 
   return workflow_engine
-
-
-
-class SerializationError(Exception):
-  pass
-
-
 
 
 class Helper(object):

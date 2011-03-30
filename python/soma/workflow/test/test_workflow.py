@@ -12,7 +12,7 @@
 import os
 
 from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow
-from soma.workflow.configuration import ConfigurationError
+from soma.workflow.errors import ConfigurationError
 
 
 #-----------------------------------------------------------------------------

@@ -66,3 +66,7 @@ class DatabaseError(Exception):
   pass
 
 
+class SerializationError(Exception):
+  pass
+
+

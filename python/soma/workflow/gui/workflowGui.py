@@ -25,11 +25,12 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from Pyro.errors import ConnectionClosedError  
 
-from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper, SerializationError
+from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
 from soma.workflow.constants import *
-from soma.workflow.configuration import Configuration, ConfigurationError
+from soma.workflow.configuration import Configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
+from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError
 
 
 #-----------------------------------------------------------------------------
@@ -1634,6 +1635,8 @@ class GuiModel(QtCore.QObject):
               except ConnectionClosedError, e:
                 self.emit(QtCore.SIGNAL('connection_closed_error()'))
                 self.hold = True
+              except UnknownObjectError, e:
+                self.delete_workflow()
               else: 
                 if self.current_workflow and self.current_workflow.updateState(wf_status): 
                   self.emit(QtCore.SIGNAL('workflow_state_changed()'))
@@ -1714,14 +1717,14 @@ class GuiModel(QtCore.QObject):
       if self.current_wf_id != -1:
         self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
         self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
-      try:
-        wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
-      except ConnectionClosedError, e:
-        self.emit(QtCore.SIGNAL('connection_closed_error()'))
-      else: 
-        self.current_workflow.updateState(wf_status)
-        self.emit(QtCore.SIGNAL('current_workflow_changed()'))
-        self.hold = False
+        try:
+          wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
+        except ConnectionClosedError, e:
+          self.emit(QtCore.SIGNAL('connection_closed_error()'))
+        else: 
+          self.current_workflow.updateState(wf_status)
+      self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+      self.hold = False
 
   def restartCurrentWorkflow(self):
     self.current_workflow.restart()
