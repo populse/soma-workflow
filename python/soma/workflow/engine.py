@@ -1169,7 +1169,8 @@ class WorkflowEngineLoop(object):
 
         # --- 3. Get back transfered status ----------------------------------
         for engine_path, transfer in wf_transfers.iteritems():
-          status = self._database_server.get_transfer_status(engine_path)
+          status = self._database_server.get_transfer_status(engine_path,
+                                                             self._user_id)
           transfer.status = status
 
         for wf_id in self._workflows.iterkeys():
@@ -1676,6 +1677,13 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
+    
+    #if not self._database_server.is_valid_transfer(engine_path, 
+                                                   #self._user_id):
+      #raise UnknownObjectError("The transfer " + repr(engine_path) + " "
+                                #"is not valid or does not belong to "
+                                #"user " + repr(self._user_id)) 
+    
     if relative_path:
       engine_full_path = os.path.join(engine_path, relative_path)
     else:
@@ -1701,11 +1709,8 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_transfer(engine_path, self._user_id) :
-      #print "Couldn't cancel transfer %s. It doesn't exist or is not owned by the current user \n" % engine_path
-      return
 
-    self._database_server.remove_transfer(engine_path)
+    self._database_server.remove_transfer(engine_path, self._user_id)
 
     
   def signalTransferEnded(self, engine_path):
@@ -1894,10 +1899,8 @@ class WorkflowEngine(object):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
-    if not self._database_server.is_user_transfer(engine_path, self._user_id):
-      #print "Could not get the job status the transfer associated with %s. It doesn't exist or is owned by a different user \n" %engine_path
-      return
-    transfer_status = self._database_server.get_transfer_status(engine_path)  
+    transfer_status = self._database_server.get_transfer_status(engine_path,
+                                                                self._user_id)  
     return transfer_status
         
 

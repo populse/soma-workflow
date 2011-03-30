@@ -552,7 +552,7 @@ class WorkflowController(object):
     * returns: int
       Job identifier.
   
-    Raises *JobError* if the workflow is not correct.
+    Raises *JobError* if the job is not correct.
     '''
    
     engine_job = self._engine_proxy.submit_job(job, queue)
@@ -574,15 +574,15 @@ class WorkflowController(object):
 
   ########## WORKFLOWS, JOBS and FILE TRANSFERS RETRIEVAL ###################
 
-  def workflow(self, wf_id):
+  def workflow(self, workflow_id):
     '''
-    * wf_id *workflow_identifier*
+    * workflow_id *workflow_identifier*
     
     * returns: *Workflow*
   
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
-    return self._engine_proxy.workflow(wf_id)
+    return self._engine_proxy.workflow(workflow_id)
 
   def workflows(self, workflow_ids=None):
     '''
@@ -633,35 +633,32 @@ class WorkflowController(object):
 
   ########## WORKFLOW MONITORING #########################################
 
-  def workflow_status(self, wf_id):
+  def workflow_status(self, workflow_id):
     '''
-    * wf_id *workflow identifier*
+    * workflow_id *workflow identifier*
       
     * returns: *string or None*
         Status of the workflow: see :ref:`workflow-status` or the 
         constants.WORKFLOW_STATUS list.
 
-    Raises *UnknownObjectError* if the wf_id is not valid
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
-    return self._engine_proxy.workflow_status(wf_id)
+    return self._engine_proxy.workflow_status(workflow_id)
   
   
-  def workflow_elements_status(self, wf_id, group = None):
+  def workflow_elements_status(self, workflow_id, group = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and request to the database.
     TO DO => make it more user friendly.
     
-    * wf_id *workflow identifier*
+    * workflow_id *workflow identifier*
 
     * returns: tuple (sequence of tuple (job_id, status, exit_info, (submission_date, execution_date, ending_date)), sequence of tuple (transfer_id, (status, progression_info)), workflow_status)
 
-    Raises *UnknownObjectError* if the wf_id is not valid
+    Raises *UnknownObjectError* if the workflow_id is not valid
     '''
-    wf_status = self._engine_proxy.workflow_elements_status(wf_id)
-    if not wf_status:
-      # TBI raise ...
-      return
+    wf_status = self._engine_proxy.workflow_elements_status(workflow_id)
      # special processing for transfer status:
     new_transfer_status = []
     for engine_path, client_path, status, transfer_action_info in wf_status[1]:
@@ -770,6 +767,8 @@ class WorkflowController(object):
           constants.TRANSFERING_FROM_CR_TO_CLIENT.
           tuple (file size, size already transfered) if it is a file transfer.
           tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer.
+
+    Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
     
     status = self._engine_proxy.transfer_status(transfer_id)
@@ -790,7 +789,7 @@ class WorkflowController(object):
     * workflow_id *workflow identifier*
 
     * returns: *boolean* 
-        True if some jobs were restarted. (TBI right error management)
+        True if some jobs were restarted.
     
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
@@ -817,7 +816,7 @@ class WorkflowController(object):
     * new_expiration_date *datetime.datetime*
     
     * returns: *boolean* 
-        True if the expiration date was changed.  (TBI right error management)
+        True if the expiration date was changed.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
@@ -898,6 +897,8 @@ class WorkflowController(object):
 
     * returns: *boolean*
         The transfer was done. (TBI right error management)
+
+    Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
 
     status, status_info = self.transfer_status(transfer_id)
@@ -1029,6 +1030,8 @@ class WorkflowController(object):
         * (file_size, md5_hash) in the case of a file transfer
         * (cumulated_size, dictionary relative path -> (file_size, md5_hash)) in
           case of a directory transfer.
+
+    Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
     status = self._engine_proxy.transfer_status(transfer_id)
     transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
@@ -1090,6 +1093,8 @@ class WorkflowController(object):
         True if the file transfer ended. (TBI right error management)
         Note that in case of a directory transfer, it does not mean that the 
         whole directory transfer ended. 
+
+    Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
 
     status = self._engine_proxy.transfer_status(transfer_id)
@@ -1123,6 +1128,7 @@ class WorkflowController(object):
         None in case of a file transfer.
 
     * returns: *string* read from the file at the position *transmitted*
+
     '''
     
     data = self._engine_proxy.read_from_computing_resource_file(transfer_id, 
@@ -1161,6 +1167,8 @@ class WorkflowController(object):
     used anymore. If some jobs reference the FileTransfer as an input or an 
     output the FileTransfer will not be deleted immediately but as soon as these 
     jobs will be deleted.
+
+    Raises *UnknownObjectError* if the transfer_id is not valid
     '''
     self._engine_proxy.delete_transfer(transfer_id)
 

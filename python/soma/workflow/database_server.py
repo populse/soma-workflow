@@ -277,13 +277,6 @@ def print_tables(database_file):
   connection.close()
 
 
-class WorkflowDatabaseServerError( Exception ):
-  def __init__(self, msg, logger=None):
-    self.args = (msg,)
-    if logger: 
-      logger.critical('EXCEPTION ' + msg)
-
-
 class WorkflowDatabaseServer( object ):
   
   def __init__(self, database_file, tmp_file_dir_path):
@@ -320,7 +313,7 @@ class WorkflowDatabaseServer( object ):
     try:
       connection = sqlite3.connect(self._database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
-        raise WorkflowDatabaseServerError('Database connection error %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
     return connection
   
   def _user_transfer_dir_path(self, login, user_id):
@@ -347,7 +340,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error register_user %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -424,7 +417,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error clean %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       
       cursor.close()
       connection.commit()
@@ -454,7 +447,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error remove_non_registered_files %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
       
@@ -499,7 +492,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-        raise WorkflowDatabaseServerError('Error generate_file_path %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       
       userDirPath = self._user_transfer_dir_path(login, user_id) 
       if client_file_path == None:
@@ -598,7 +591,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-        raise WorkflowDatabaseServerError('Error add_transfer %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       if not external_cursor:
         cursor.close()
         connection.commit()
@@ -608,7 +601,45 @@ class WorkflowDatabaseServer( object ):
     #return engine_transfer.engine_path
 
 
-  def remove_transfer(self, engine_file_path):
+  def is_valid_transfer(self, engine_file_path, user_id):
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM transfers 
+                                  WHERE engine_file_path=? and 
+                                        user_id=?''', 
+                                  [engine_file_path, user_id]).next()[0]
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+      cursor.close()
+      connection.close()
+    return count != 0
+
+
+  def _check_transfer(self, connection, cursor, engine_file_path, user_id):
+    try:
+        count = cursor.execute('''SELECT count(*) 
+                                  FROM transfers 
+                                  WHERE engine_file_path=? and 
+                                        user_id=?''', 
+                               [engine_file_path, user_id]).next()[0]
+    except Exception, e:
+      cursor.close()
+      connection.close()
+      raise DatabaseError('%s: %s \n' %(type(e), e))
+
+    if count == 0:
+      raise UnknownObjectError("The transfer " + repr(engine_file_path) + " "
+                                "is not valid or does not belong to "
+                                "user " + repr(user_id)) 
+
+
+
+  def remove_transfer(self, engine_file_path, user_id):
     '''
     Set the expiration date of the transfer associated to the engine file path 
     to today (yesterday?). That way it will be disposed as soon as no job will need it.
@@ -620,6 +651,7 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_transfer(connection, cursor, engine_file_path, user_id)
       yesterday = date.today() - timedelta(days=1)
       try:
         cursor.execute('UPDATE transfers SET expiration_date=? WHERE engine_file_path=?', (yesterday, engine_file_path))
@@ -627,7 +659,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error remove_transfer %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -663,7 +695,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_transfer_information %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       if info:
         if info[4]:
           client_paths = self._string_conversion(info[4]).split(file_separator)
@@ -676,29 +708,25 @@ class WorkflowDatabaseServer( object ):
       connection.close()
     return result
   
-  def get_transfer_status(self, engine_file_path):
+
+  def get_transfer_status(self, engine_file_path, user_id):
     '''
-    Returns the transferstatus sored in the database.
-    Returns None if the engine_file_path is not associated to a transfer.
+    Returns the transferstatus stored in the database.
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_transfer(connection, cursor, engine_file_path, user_id)
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-        if not count == 0 :
-          status = cursor.execute('SELECT status FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]#supposes that the engine_file_path is associated to a transfer
-        else:
-          status = None
+        status = cursor.execute('SELECT status FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_transfer_status %s: %s \n' %(type(e), e), self.logger) 
-      if status:
-        status = self._string_conversion(status)
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+      status = self._string_conversion(status)
       cursor.close()
       connection.close()
- 
+
     return status
       
   
@@ -723,7 +751,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_transfer_status %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -746,7 +774,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_transfer_action_info %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -768,7 +796,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_transfer_action_info %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       
       pickled_info = self._string_conversion(pickled_info)
       if pickled_info:
@@ -804,7 +832,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error add_workflow_ended_transfer %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -830,7 +858,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_transfer_status %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -912,7 +940,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error register_workflow %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -941,7 +969,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error delete_workflow %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
         
       cursor.close()
       connection.commit()
@@ -965,7 +993,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error change_workflow_expiration_date %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -991,7 +1019,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_engine_workflow %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
       
@@ -1051,8 +1079,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_workflow_status %s: %s \n' %(type(e), e), 
-                              self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -1153,7 +1180,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_workflow_status %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
       
@@ -1353,7 +1380,7 @@ class WorkflowDatabaseServer( object ):
           connection.rollback()
           cursor.close()
           connection.close()
-        raise WorkflowDatabaseServerError('Error add_job %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       if not external_cursor:
         connection.commit()
         cursor.close()
@@ -1383,7 +1410,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_engine_job %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       cursor.close()
       connection.close()
       
@@ -1417,7 +1444,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error delete_job %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
         
       cursor.close()
       connection.commit()
@@ -1474,9 +1501,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError("Error set_job_status " 
-                                           "%s: %s \n" %(type(e), e),
-                                           self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       connection.commit()
       cursor.close()
       connection.close()
@@ -1552,7 +1577,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_submission_information %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -1578,7 +1603,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_drmaa_job_id %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
       return drmaa_id
@@ -1612,7 +1637,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       cursor.close()
       connection.close()
     stdout_file_path = self._string_conversion(result[0])
@@ -1641,7 +1666,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       cursor.close()
       connection.close()
     exit_status = self._string_conversion(result[0])
@@ -1694,7 +1719,7 @@ class WorkflowDatabaseServer( object ):
         connection.rollback()
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error set_job_exit_info %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
       connection.commit()
       cursor.close()
       connection.close()
@@ -1711,59 +1736,6 @@ class WorkflowDatabaseServer( object ):
     else:
       date = None
     return date
-
-  ################################################
-  ## INPUTS/OUTPUTS
-
-  #def register_inputs(self, job_id, engine_input_files):
-    #'''
-    #Register associations between a job and input file path.
-    
-    #@type job_id: C{JobIdentifier}
-    #@type  engine_input_files: sequence of string
-    #@param engine_input_files: engine input file paths 
-    #'''
-    #with self._lock:
-      #connection = self._connect()
-      #cursor = connection.cursor()
-      #for engine_path in engine_input_files:
-        #try:
-          #cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
-                        #(job_id, engine_path, True))
-        #except Exception, e:
-          #connection.rollback()
-          #cursor.close()
-          #connection.close()
-          #raise WorkflowDatabaseServerError('Error register_inputs %s: %s \n' %(type(e), e), self.logger) 
-      #cursor.close()
-      #connection.commit()
-      #connection.close()
-    
-    
-  #def register_outputs(self, job_id, engine_output_files):
-    #'''
-    #Register associations between a job and output file path.
-    
-    #@type job_id: C{JobIdentifier}
-    #@type  engine_input_files: sequence of string
-    #@param engine_input_files: engine output file paths 
-    #'''
-    #with self._lock:
-      #connection = self._connect()
-      #cursor = connection.cursor()
-      #for engine_path in engine_output_files:
-        #try:
-          #cursor.execute('INSERT INTO ios (job_id, engine_file_path, is_input) VALUES (?, ?, ?)',
-                        #(job_id, engine_path, False))
-        #except Exception, e:
-          #connection.rollback()
-          #cursor.close()
-          #connection.close()
-          #raise WorkflowDatabaseServerError('Error register_outputs %s: %s \n' %(type(e), e), self.logger) 
-      #cursor.close()
-      #connection.commit()
-      #connection.close()
-
 
      
   ################### DATABASE QUERYING ##############################
@@ -1811,7 +1783,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_jobs %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
           
       cursor.close()
       connection.close()
@@ -1850,7 +1822,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error nb_queued_jobs %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
           
       cursor.close()
       connection.close()
@@ -1884,7 +1856,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error jobs_to_delete_and_kill %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
           
       cursor.close()
       connection.close()
@@ -1893,33 +1865,6 @@ class WorkflowDatabaseServer( object ):
 
 
   #TRANSFERS
-  
-  def is_user_transfer(self, engine_file_path, user_id):
-    '''
-    Check that a engine file path match with a transfer and that the transfer 
-    is owned by the user.
-    
-    @type engine_file_path: string
-    @type user_id: C{UserIdentifier}
-    @rtype: bool
-    @returns: the engine file path match with a transfer owned by the user
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      result = False
-      try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-        if not count == 0 :
-          owner_id = cursor.execute('SELECT user_id FROM transfers WHERE engine_file_path=?',  [engine_file_path]).next()[0] 
-          result = (owner_id==user_id)
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise WorkflowDatabaseServerError('Error is_user_transfer %s: %s \n' %(type(e), e), self.logger) 
-      cursor.close()
-      connection.close()
-    return result
     
     
   def get_transfers(self, user_id, transfer_ids=None):
@@ -1968,7 +1913,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_transfers %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
     return result
@@ -2056,7 +2001,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error get_workflows %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
     return result
@@ -2089,7 +2034,7 @@ class WorkflowDatabaseServer( object ):
       except Exception, e:
         cursor.close()
         connection.close()
-        raise WorkflowDatabaseServerError('Error workflows_to_delete_and_kill %s: %s \n' %(type(e), e), self.logger) 
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
           
       cursor.close()
       connection.close()
