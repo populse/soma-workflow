@@ -9,7 +9,7 @@ main purpose is "coarse grain" parallelization, that is:
   * no communication between job 
   * "long" job (several minutes to several days)
 
-A typical use case is: single program/multiple data.
+A typical use case is for example: single program/multiple data.
 
 Soma-workflow is not a resource manager. It interacts with the system managing 
 the computing resource (DRMS: Distributed Resource Management System) to: 
@@ -24,19 +24,19 @@ the computing resource (DRMS: Distributed Resource Management System) to:
     Soma-workflow interacts with the resource management system (DRMS).
 
 Soma-workflow includes a workflow engine. It let the user submit, at once, a set 
-of job with dependency between them. Soma-workflow handles to submission of each 
-job as soon as the other jobs it depends on finished with succes. 
+of job with dependency between them. Soma-workflow handles the submission of each 
+job as soon as possible considering the dependencies. 
 
 Soma-workflow can handle connection to remote computing resources, the connection
 is transparent for the user. In case the computing resource and the user's 
 machine do not have a shared file system, soma-workflow provides two tools: 
 
-  * File transfer: allows to transfer files or directories. The file transfers are taken into account while executing a workflow. 
+  * File transfer: allows to transfer files or directories. The file transfers are taken into account when a workflow is executed. 
    
-  * Shared resource path: maps a path on the user machine with a path thanks to "translations" files configured.
+  * Shared resource path: maps a path which is valid on the user machine with a path which is valid on the computing resource thanks to "translations" files.
 
-The file transfer and shared resource path object can be used instead of any path
-in the definition of jobs or workflows.
+The file transfer and shared resource path objects can be used instead of any path
+in the definition of jobs or workflows (see :ref:`examples`).
 
 
 Job, Worklfow, File Transfer and Shared Resource Path
@@ -68,7 +68,7 @@ Job, Worklfow, File Transfer and Shared Resource Path
     dependencies by black arrows.
 
   Once the workflow is created, and submitted to a computing resource using the 
-  API or the GUI (see :ref::ref:`examples` and :ref:`workflow-creation-api`), 
+  API or the GUI (see :ref:`examples` and :ref:`workflow-creation-api`), 
   soma-workflow handles the execution of the jobs on the computing resource. 
   Each job starts as soon as possible considering its dependencies.
 
@@ -90,13 +90,15 @@ Job, Worklfow, File Transfer and Shared Resource Path
   system and a file path valid on the computing resource file system. It can thus
   be used instead of any regular path in the definitions of jobs and workflows.
 
+  .. seealso:: :ref:`file_transfer_examples` in the example section.
+
 .. _shared-resource-path-concept:
 
 **Shared Resource Path**
 
   As file transfers, shared resource paths are optional but can be useful when 
   the user's file system is not shared by the computing resource. Shared Resource
-  Path are useful when your data were already transfered on the computing resource 
+  Path are useful when a your data was already transfered on the computing resource 
   side. 
   
   Shared resource path objects can be used instead of any regular path in the 
@@ -107,8 +109,8 @@ Job, Worklfow, File Transfer and Shared Resource Path
   Several translation files can be configured, and each of them is associated to 
   a namespace (see :ref:`conf_server_option`). 
 
-  For example, if I want to configure file translation for an application "MyApp",
-  I will configure the translation file "my_app_translation" under the namespace
+  For example, if you want to configure file translation for an application "MyApp",
+  you will configure the translation file "my_app_translation" under the namespace
   "MyApp". The content the translation file is a list of unique indentifier 
   associated to directory paths. For examples: ::
 

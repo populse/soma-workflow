@@ -5,8 +5,8 @@ Examples
 ========
 
 You will find here a set of examples. The objective is to illustrate how to 
-build simple to more complex workflows and submit them to soma-workflow. **The 
-content of the jobs is not relevant here.** 
+build simple to more complex workflows and submit them to soma-workflow. The 
+content of the jobs is not relevant here.
 
 .. contents:: Examples
    :local:
@@ -125,12 +125,15 @@ the GUI (soma_workflow_gui command):
 The 30 jobs within the group can now be extanded (visible) or collapsed (hided).
 
 
+.. _file_transfer_examples:
+
 Workflows with FileTransfer
 ===========================
 
 These examples show example of workflows with file transfers. 
 An easy way to deal with file transfer is to transfer a working directory and
-work with relative path (see :ref:`working_directory_transfer_examples`). 
+work with relative path (see :ref:`working_directory_transfer_example`). 
+
 
 Basic file transfer
 -------------------
@@ -199,7 +202,7 @@ The progression and the end of the transfer are displayed in the GUI.
 .. seealso:: :ref:`file-transfer-status`
 
 
-.. _working_directory_transfer_examples:
+.. _working_directory_transfer_example:
 
 Working directory transfer
 --------------------------
@@ -266,5 +269,6 @@ copy_of_myfile1 and copy_of_myfile2 now.
 
 Workflows with SharedResourcePath
 =================================
+
 
 **TO DO**
