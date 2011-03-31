@@ -263,11 +263,11 @@ class WorkflowWidget(QtGui.QMainWindow):
     wfInfoLayout.addWidget(self.workflowInfoWidget)
     self.ui.widget_wf_info.setLayout(wfInfoLayout)
     
-    self.graphWidget = WorkflowGraphView(self)
-    graphWidgetLayout = QtGui.QVBoxLayout()
-    graphWidgetLayout.setContentsMargins(2,2,2,2)
-    graphWidgetLayout.addWidget(self.graphWidget)
-    self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
+    #self.graphWidget = WorkflowGraphView(self)
+    #graphWidgetLayout = QtGui.QVBoxLayout()
+    #graphWidgetLayout.setContentsMargins(2,2,2,2)
+    #graphWidgetLayout.addWidget(self.graphWidget)
+    #self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
     
     self.workflowPlotWidget = WorkflowPlot(self.model, self)
     plotLayout = QtGui.QVBoxLayout()
@@ -637,7 +637,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     if not self.model.current_workflow:
       # No workflow
       
-      self.graphWidget.clear()
+      #self.graphWidget.clear()
       self.itemInfoWidget.clear()
       
       self.ui.wf_name.clear()
@@ -659,10 +659,10 @@ class WorkflowWidget(QtGui.QMainWindow):
       
     else:
   
-      self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
+      #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
       
       #=> TEMPORARY : the graph view has to be built from the guiModel
-      self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
+      #self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
       
       if self.model.current_wf_id == -1:
@@ -1064,26 +1064,26 @@ class GroupInfoWidget(QtGui.QWidget):
     if self.group_item.first_sub_date and self.group_item.last_end_date:
       total_time = self.group_item.last_end_date - self.group_item.first_sub_date
     
-    input_file_nb = len(self.group_item.input_to_transfer) + len(self.group_item.input_transfer_ended)
-    ended_input_transfer_nb = len(self.group_item.input_transfer_ended)
+    #input_file_nb = len(self.group_item.input_to_transfer) + len(self.group_item.input_transfer_ended)
+    #ended_input_transfer_nb = len(self.group_item.input_transfer_ended)
     
     setLabelFromString(self.ui.status, self.group_item.status)
     setLabelFromInt(self.ui.job_nb, job_nb)
     setLabelFromInt(self.ui.ended_job_nb, ended_job_nb)
     setLabelFromTimeDelta(self.ui.total_time, total_time)
     setLabelFromTimeDelta(self.ui.theoretical_serial_time, self.group_item.theoretical_serial_time)
-    setLabelFromInt(self.ui.input_file_nb, input_file_nb)
-    setLabelFromInt(self.ui.ended_input_transfer_nb, ended_input_transfer_nb)
+    #setLabelFromInt(self.ui.input_file_nb, input_file_nb)
+    #setLabelFromInt(self.ui.ended_input_transfer_nb, ended_input_transfer_nb)
     
-    if self.group_item.input_to_transfer:
-      self.ui.comboBox_input_to_transfer.insertItems(0,  self.group_item.input_to_transfer)
-    else:
-      self.ui.comboBox_input_to_transfer.clear()
+    #if self.group_item.input_to_transfer:
+      #self.ui.comboBox_input_to_transfer.insertItems(0,  self.group_item.input_to_transfer)
+    #else:
+      #self.ui.comboBox_input_to_transfer.clear()
     
-    if self.group_item.output_ready:
-      self.ui.comboBox_output_to_transfer.insertItems(0,  self.group_item.output_ready)
-    else:
-      self.ui.comboBox_output_to_transfer.clear()
+    #if self.group_item.output_ready:
+      #self.ui.comboBox_output_to_transfer.insertItems(0,  self.group_item.output_ready)
+    #else:
+      #self.ui.comboBox_output_to_transfer.clear()
     
 
 class PlotView(QtGui.QWidget):
