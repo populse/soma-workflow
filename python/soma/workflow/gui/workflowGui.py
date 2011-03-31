@@ -22,15 +22,19 @@ from PyQt4 import uic
 import matplotlib
 matplotlib.use('Qt4Agg')
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from Pyro.errors import ConnectionClosedError  
+from matplotlib.figure import Figure 
 
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
-from soma.workflow.engine import EngineWorkflow, EngineJob, EngineTransfer
+from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError
+
+
+class PyroError(Exception):     pass
+class ProtocolError(PyroError): pass
+class ConnectionClosedError(ProtocolError): pass
 
 
 #-----------------------------------------------------------------------------

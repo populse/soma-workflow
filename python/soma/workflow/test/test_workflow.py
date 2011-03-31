@@ -555,8 +555,8 @@ class WorkflowExamples(object):
   def ten_jobs(self):
       
     jobs = []
-    for i in range(0,10):
-      job = self.job_sleep(60)
+    for i in range(0,30):
+      job = self.job_sleep(120)
       jobs.append(job)
      
     dependencies = []
@@ -568,7 +568,7 @@ class WorkflowExamples(object):
   def hundred_of_jobs(self):
     
     jobs = []
-    for i in range(0,900):
+    for i in range(0,200):
       job = self.job_sleep(60)
       jobs.append(job)
      

@@ -31,16 +31,13 @@ import hashlib
 import stat
 import operator
 import random
-import time
 import pickle
 
-import cProfile
+#import cProfile
 
 import soma.workflow.connection as connection
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
-
-
 
 #-------------------------------------------------------------------------------
 # Classes and functions

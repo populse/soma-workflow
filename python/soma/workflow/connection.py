@@ -34,15 +34,8 @@ import time
 import socket
 import pwd 
 import os
-import sys
-import shutil
-import subprocess
-import logging
 import select
 import SocketServer
-
-import Pyro.naming, Pyro.core
-from Pyro.errors import NamingError, ConnectionClosedError
 
 from soma.workflow.errors import ConnectionError
 
@@ -77,8 +70,12 @@ class RemoteConnection( object ):
     @param submitting_machine: address of a submitting machine of the computing
                                resource.
     '''
-
-    import paramiko #required only on client host
+   
+    # required in the remote connection mode
+    import paramiko 
+    import Pyro.core
+    from Pyro.errors import ConnectionClosedError
+    
 
     if not login:
       raise ConnectionError("Remote connection requires a login")
@@ -254,6 +251,11 @@ class LocalConnection( object ):
   def __init__(self,
                resource_id, 
                log = ""):
+
+    # required in the local connection mode
+    import Pyro.core
+    from Pyro.errors import ConnectionClosedError 
+    import subprocess
 
     login = pwd.getpwuid(os.getuid())[0] 
     pyro_objet_name = "workflow_engine_" + login
