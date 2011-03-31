@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>270</width>
-    <height>128</height>
+    <width>330</width>
+    <height>172</height>
    </rect>
   </property>
   <property name="maximumSize">
    <size>
     <width>16777215</width>
-    <height>128</height>
+    <height>172</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -58,6 +58,20 @@
      </item>
      <item row="0" column="1">
       <widget class="QComboBox" name="combo_resources"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>RSA  key password:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineEdit_rsa_password">
+       <property name="echoMode">
+        <enum>QLineEdit::Password</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

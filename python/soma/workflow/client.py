@@ -433,7 +433,8 @@ class WorkflowController(object):
                resource_id, 
                login=None, 
                password=None,
-               config_path=None):
+               config_path=None,
+               rsa_key_pass=None):
     '''
     Sets up the connection to the computing resource. 
     Looks for a soma-workflow configuration file (if not specified in the 
@@ -443,11 +444,17 @@ class WorkflowController(object):
         Identifier of the computing resource to connect to.
 
     * login *string*
+        Required if the computing resource is remote.
 
     * password *string*
+        Required if the computing resource is remote and not RSA key where
+        configured to log on the remote machine with ssh.
 
     * config_path *string*
         Optional path to the configuration file.
+
+    * rsa_key_pass *string*
+        Required if the RSA key is protected with a password.
 
     .. note::
       The login and password are only required for a remote computing resource.
@@ -475,7 +482,8 @@ class WorkflowController(object):
                                                      cluster_address, 
                                                      sub_machine, 
                                                      resource_id, 
-                                                     "")
+                                                     "",
+                                                     rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
    
     # LIGHT MODE

@@ -66,7 +66,8 @@ class RemoteConnection( object ):
                cluster_address,
                submitting_machine,
                resource_id,
-               log = ""):
+               log="",
+               rsa_key_pass=None):
     '''
     @type  login: string
     @param login: user's login on the computing resource 
@@ -98,6 +99,7 @@ class RemoteConnection( object ):
     print "start engine command: " + command
     try:
       client = paramiko.SSHClient()
+      client.set_missing_host_key_policy(paramiko.AutoAddPolicy()) 
       client.load_system_host_keys()
       client.connect(hostname = cluster_address, port=22, username=login, password=password)
       stdin, stdout, stderr = client.exec_command(command)
@@ -167,7 +169,11 @@ class RemoteConnection( object ):
       if not password:
         rsa_file_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
         print "reading RSA key in " + repr(rsa_file_path)
-        key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
+        if rsa_key_pass:
+          key = paramiko.RSAKey.from_private_key_file(rsa_file_path, 
+                                                      password=rsa_key_pass)
+        else:
+          key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
         self.__transport.auth_publickey(login, key)
         #TBI DSA Key => see paramamiko/demos/demo.py for an example
       print "tunnel creation " + repr(login) + "@" + repr(cluster_address)

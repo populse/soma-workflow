@@ -165,10 +165,12 @@ class Controller(object):
   @staticmethod
   def get_connection(resource_id, 
                     login, 
-                    password):
-    wf_ctrl = WorkflowController(resource_id, 
-                                 login, 
-                                 password)
+                    password,
+                    rsa_key_pass):
+    wf_ctrl = WorkflowController(resource_id=resource_id, 
+                                 login=login, 
+                                 password=password,
+                                 rsa_key_pass=rsa_key_pass)
     return wf_ctrl
 
   @staticmethod
@@ -316,9 +318,17 @@ class WorkflowWidget(QtGui.QMainWindow):
       password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
     else:
       password = None
+    if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
+      rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
+    else:
+      rsa_key_pass = None
+
     wf_ctrl = None
     try:
-      wf_ctrl = Controller.get_connection(resource_id, login, password)
+      wf_ctrl = Controller.get_connection(resource_id, 
+                                          login, 
+                                          password,
+                                          rsa_key_pass)
     except ConfigurationError, e:
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.ui_firstConnection_dlg.lineEdit_password.clear()
@@ -539,8 +549,15 @@ class WorkflowWidget(QtGui.QMainWindow):
       if ui.lineEdit_password.text():
         password = unicode(ui.lineEdit_password.text()).encode('utf-8')
       else: password = None
+      if ui.lineEdit_rsa_password.text():
+        rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
+      else:
+        rsa_key_pass = None
       try:
-        wf_ctrl = Controller.get_connection(resource_id, login, password)
+        wf_ctrl = Controller.get_connection(resource_id, 
+                                            login, 
+                                            password,
+                                            rsa_key_pass)
       except ConfigurationError, e:
         QtGui.QMessageBox.information(self, "Configuration error", "%s" %(e))
         return None
