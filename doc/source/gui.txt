@@ -7,4 +7,14 @@ Graphical User Interface
 .. image:: images/gui_overview.*
    :scale: 60
 
+
 **TO DO**
+
+Requirements
+============
+
+* Qt4
+* PyQt4
+* matplotlib 
+
+

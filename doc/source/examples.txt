@@ -4,16 +4,32 @@
 Examples
 ========
 
+You will find here a set of examples. The objective is to illustrate how to 
+build simple to more complex workflows and submit them to soma-workflow. **The 
+content of the jobs is not relevant here.** 
+
+.. contents:: Examples
+   :local:
+
 Simple workflows
 ================
 
 
-Example 1:
----------- 
+Basic example
+-------------
 
-Create the workflow: ::
+.. figure:: images/simple_example.png
+  :scale: 60
+
+  Simple example: 4 jobs with dependencies
+
+
+::
 
   from soma.workflow.client import Job, Workflow, WorkflowController
+
+
+  # create the workflow:
 
   job_1 = Job(command=["sleep", "60"], name="job 1")
   job_2 = Job(command=["sleep", "60"], name="job 2")
@@ -29,7 +45,8 @@ Create the workflow: ::
   workflow = Workflow(jobs=jobs, 
                       dependencies=dependencies)
 
-Submit the workflow: ::
+
+  # submit the workflow:
 
   controller = WorkflowController("Titan", login, password)
 
@@ -46,13 +63,23 @@ You can close and open the GUI at any time. It will not interrupt the workflow
 execution.
 
 
-Example 2: with Group
-----------------------
+Worklfow with Group
+-------------------
 
-Create the workflow: ::
+Creating groups can be useful to organise jobs within a workflow for displaying 
+purpose. Groups do not have any impact on the execution of the workflow.  
+
+.. figure:: images/simple_example_group.png
+  :scale: 60
+
+  Simple example with a group: The 30 jobs are in the group "my 30 jobs".
+
+::
 
   from soma.workflow.client import Job, Workflow, Group, WorkflowController
 
+
+  # create the workflow:
   jobs = []
   dependencies = []
   group_elements = []
@@ -81,8 +108,8 @@ Create the workflow: ::
                       dependencies= dependencies,
                       root_group=[first_job, thirty_jobs_group, last_job])
 
-Submit the workflow: ::
 
+  # submit the workflow: 
   controller = WorkflowController("Titan", login, password)
 
   controller.submit_workflow(workflow=workflow,
@@ -95,10 +122,15 @@ the GUI (soma_workflow_gui command):
 .. image:: images/simple_example_group_gui.png
   :scale: 60
   
-  
+The 30 jobs within the group can now be extanded (visible) or collapsed (hided).
+
 
 Workflows with FileTransfer
 ===========================
+
+These examples show example of workflows with file transfers. 
+An easy way to deal with file transfer is to transfer a working directory and
+work with relative path (see :ref:`working_directory_transfer_examples`). 
 
 Basic file transfer
 -------------------
@@ -106,7 +138,7 @@ Basic file transfer
 To run this example, create first the file "/tmp/soma_workflow_examples/myfile" 
 with any content. It will stand as an input file to transfer.
 
-Create the workflow : ::
+::
 
   from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
 
@@ -130,12 +162,13 @@ Create the workflow : ::
                       dependencies=[])
 
 
-Submit the workflow: ::
 
+  # submit the workflow
   controller = WorkflowController("Titan", login, password)
 
   controller.submit_workflow(workflow=workflow,
                             name="simple transfer")
+
 
 Run the Python script and open the GUI:
 
@@ -166,11 +199,70 @@ The progression and the end of the transfer are displayed in the GUI.
 .. seealso:: :ref:`file-transfer-status`
 
 
+.. _working_directory_transfer_examples:
+
 Working directory transfer
 --------------------------
 
-**TO DO**
+An easy way to work with file transfers is to transfer a working directory 
+containing all the files you need and then use only relative file paths in your 
+jobs.
 
+In this example, the working directory contains 2 files: myfile1 and myfile2.
+The workflow contains 2 jobs which will modify the working directory.
+
+::
+
+  from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
+
+  # Creation of the FileTransfer object to transfer the working directory
+  my_working_directory = FileTransfer(is_input=True,
+                                      client_path="/tmp/my_working_directory",
+                                      name="working directory")
+
+  # Jobs and Workflow
+  # Do not forget to set the working_directory argument when creating the jobs
+  job1 = Job(command=["cp", "myfile1" , "copy_of_myfile1"], 
+             name="job1",
+             referenced_input_files=[my_working_directory],
+             referenced_output_files=[my_working_directory],
+             working_directory=my_working_directory)
+
+  job2 = Job(command=["cp", "myfile2" , "copy_of_myfile2"], 
+             name="job2",
+             referenced_input_files=[my_working_directory],
+             referenced_output_files=[my_working_directory],
+             working_directory=my_working_directory)
+
+  workflow = Workflow(jobs=[job1, job2], 
+                      dependencies=[])
+
+
+  # submit the workflow
+  controller = WorkflowController("Titan", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                             name="working directory transfer example")
+
+Run the Python script and monitor the execution of the workflow using 
+the GUI (soma_workflow_gui command):
+
+.. image:: images/wd_transfer_example_gui.png
+  :scale: 80
+
+Transfer the working directory to the computing resource clicking the "Transfer 
+Input Files" button and wait for the jobs to execute: 
+
+.. image:: images/wd_transfer_example_gui_1.png
+  :scale: 80
+
+Transfer the working directory back the "Transfer Output Files" button: 
+
+.. image:: images/wd_transfer_example_gui_2.png
+  :scale: 80
+
+The working directory on your machine should contain the files myfile1, myfile2,
+copy_of_myfile1 and copy_of_myfile2 now.
 
 Workflows with SharedResourcePath
 =================================
