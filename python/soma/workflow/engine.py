@@ -1395,7 +1395,8 @@ class WorkflowEngineLoop(object):
       if job.drmaa_id:
         self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
         self._engine_drmaa.kill_job(job.drmaa_id)
-      elif job.queue and job in self._pending_queues[job.queue]:
+      elif job.queue in self._pending_queues and \
+           job in self._pending_queues[job.queue]:
         self._pending_queues[job.queue].remove(job)
       job.status = constants.FAILED
       job.exit_status = constants.USER_KILLED
