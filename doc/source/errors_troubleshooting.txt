@@ -1,0 +1,55 @@
+
+.. _good_pratices_troubleshooting:
+
+=========================================
+Good Practices, Erros and Troubleshooting
+=========================================
+
+Good Practices
+==============
+
+.. warning:: 
+  Under construction.
+
+
+* Choose an appropriate queue to run your workflows depending on the job size 
+  and number.
+    See :ref:`conf_client_option` to configure a queue so that it will appear 
+    in the GUI.
+    
+
+* Use the queue limitation feature.
+    **TO DO** adds how to check if a limitation is configured.
+    See :ref:`conf_server_option` to set the limitation.
+
+
+
+Errors
+======
+
+Here is the list of the various error that can occur when using 
+soma-workflow.
+
+.. currentmodule::errors
+
+.. autoclass:: errors.ConfigurationError(Exception)
+
+.. autoclass:: errors.ConnectionError(Exception)
+
+.. autoclass:: errors.DRMError(Exception)
+
+.. autoclass:: errors.JobError(Exception)
+
+.. autoclass:: errors.WorkflowError(Exception)
+
+.. autoclass:: errors.TransferError(Exception)
+
+.. autoclass:: errors.UnknownObjectError(Exception)
+
+
+
+Throubleshooting
+================
+
+.. warning:: 
+  Under construction.

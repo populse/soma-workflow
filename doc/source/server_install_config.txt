@@ -1,21 +1,17 @@
 
 .. _server:
 
-=====================================
-Server installation and configuration
-=====================================
+======================================
+Installation and configuration: Server 
+======================================
 
-Soma-workflow requires a database server to be run on the computing resource 
-side. This page explains how to configure, install and run the soma-workflow
+This page explains how to configure, install and run the soma-workflow
 database server. 
 
-The Workflow Engine processes created transparently and remotely by the users
-communicate with the database server. The communication layer is done using 
+In the client-server mode the communication between the processes is done using 
 `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_. The server is registered on a Pyro
 name server. The Workflow Engines querie the Pyro name server for the
 location the database server. 
-
-The database is a `SQLite <http://docs.python.org/library/sqlite3.html>`_ database.
 
 .. _server_requirements:
 
@@ -25,13 +21,15 @@ Requirements
 .. image:: images/third_parties.*
   :scale: 50
 
+Here is the list of the server dependencies:
+
 * A distributed resource management system (DRMS) such as Grid Engine, Condor, 
   Torque/PBS, LSF..
 * A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
 * Python *version 2.5 or more*
 * `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
-
+* `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
 The implementations of DRMAA tested successfully with soma-workflow:
   
@@ -52,7 +50,7 @@ using this implementation
 Server installation
 ===================
 
-1. *svn export/ cmake . / make / make install* (under construction)
+1. *install the soma-workflow python module and compile the sip module => under construction*
 
 2. Choose a resource identifier for the computing resource, ex: "Titan"
 
@@ -137,13 +135,11 @@ Configuration items optional on the server side:
 
   **PATH_TRANSLATION_FILES**
     Specify here the shared resource path translation files, mandatory to use 
-    the SharedResourcePath objects (see :ref:`shared-resource-path-api`). 
+    the SharedResourcePath objects (see :ref:`shared-resource-path-concept`). 
     Each translation file is associated with a namespace. That way several 
     applications can use the same  identifiers without risk.
     The syntax is "namespace_1{translation_file_path_11} 
     namespace1{translation_file_path_12} namespace2{translation_file_path_2}"
-
-    **TO DO**: description of translation files.
 
   **DRMAA_IMPLEMENTATION**
     Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
@@ -183,7 +179,9 @@ Parallel job configuration:
 The items described here concern the parallel job configuration. A parallel job
 uses several CPUs and involves parallel code: MPI, OpenMP for example. 
 
-**documentation under construction**
+.. warning:: 
+  The documentation is under construction.
+
 
 ..
   OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
@@ -218,6 +216,8 @@ Configuration items required on the client side:
     submitting host. The addresses are local on the cluster.
     Syntax: "host1 host2 host3"
 
+
+.. _conf_client_option:
 
 Configuration items optional on the client side:
 ------------------------------------------------

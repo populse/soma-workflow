@@ -1,10 +1,13 @@
-=====================================
-Client installation and configuration
-=====================================
+
+.. _client_intall_config:
+
+======================================
+Installation and configuration: Client
+======================================
 
 This page describes the installation and configuration of the soma-workflow
 client. The installation of a soma-workflow client supposes that at least one 
-oma-workflow database servers is installed on a remote or a local computing 
+soma-workflow database servers is installed on a remote or a local computing 
 resources (see :ref:`server`).
 
 
@@ -20,14 +23,13 @@ Requirements
 Installation
 ============
 
+1. *Install the soma-workflow python modules and command. => under construction*
+
+2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the /etc/ directory.
+
 ..
   The client only need the soma-workflow modules to be installed and the
   soma_workflow_gui file to be located in the PATH
-
-1. *Install the soma-workflow python modules and command.* (under construction)
-
-2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the 
-/etc/ directory.
 
 
 .. _client_configuration:
@@ -72,7 +74,7 @@ Start the GUI
 
 The command *soma_workflow_gui* starts the GUI.
 
-See :ref:`gui` for the GUI documentation.
+.. seealso:: :ref:`gui` for the GUI documentation.
 
 
 Use the Python API
@@ -80,4 +82,4 @@ Use the Python API
 
 Import the soma.workflow.client module to use the Python API.
 
-See :ref:`client_api` for soma-workflow Python API documentation.
+.. seealso:: :ref:`client_api` for soma-workflow Python API documentation or :ref:`examples` for a fast start.

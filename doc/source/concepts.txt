@@ -1,6 +1,14 @@
+.. _concepts:
+
 ======================
 Soma-workflow concepts
 ======================
+
+.. contents:: Soma-workflow concepts
+   :local:
+
+Overview
+========
 
 Soma-workflow was built to make easier the use of parallel computing resources.
 Although soma-workflow can be used to run MPI or OpenMP jobs, for now soma-workflow 
@@ -12,22 +20,22 @@ main purpose is "coarse grain" parallelization, that is:
 A typical use case is for example: single program/multiple data.
 
 Soma-workflow is not a resource manager. It interacts with the system managing 
-the computing resource (DRMS: Distributed Resource Management System) to: 
+the computing resource (**DRMS**: Distributed Resource Management System) to: 
   
-  * submit jobs: tell the system to execute a command on the computing resource.
-  * monitor jobs: get back the current status of the job (in the queue, running, done...)
-  * control jobs: mainly to cancel submitted jobs or kill running jobs.
+  * **submit jobs**: tell the system to execute a command on the computing resource.
+  * **monitor jobs**: get back the current status of the job (in the queue, running, done...)
+  * **control jobs**: mainly to cancel submitted jobs or kill running jobs.
 
   .. figure:: images/interaction_with_DRMS.*
     :scale: 70
     
-    Soma-workflow interacts with the resource management system (DRMS).
+    *Soma-workflow interacts with the resource management system (DRMS).*
 
-Soma-workflow includes a workflow engine. It let the user submit, at once, a set 
+Soma-workflow includes a **workflow engine**. It let the user submit, at once, a set 
 of job with dependency between them. Soma-workflow handles the submission of each 
 job as soon as possible considering the dependencies. 
 
-Soma-workflow can handle connection to remote computing resources, the connection
+Soma-workflow can handle **connection to remote computing resources**, the connection
 is transparent for the user. In case the computing resource and the user's 
 machine do not have a shared file system, soma-workflow provides two tools: 
 
@@ -39,21 +47,20 @@ The file transfer and shared resource path objects can be used instead of any pa
 in the definition of jobs or workflows (see :ref:`examples`).
 
 
-Job, Worklfow, File Transfer and Shared Resource Path
-=====================================================
-
-**Job**
+Job
+===
 
   A job is mainly defined by a program command line. It does not necessarily 
   need several CPU to be executed. A jobs has also a standard input, output and 
   error, a working directory and can be associated to file transfers if needed 
-  (see further in this section).
+  (see :ref:`file-transfers-concept`).
 
   A parallel job is a job made to run on several CPUs. The job program uses 
   parallel code such as MPI, OpenMP... 
 
  
-**Workflow**
+Workflow
+========
 
   A workflow organizes the execution of a set of jobs defining execution 
   dependencies between jobs.
@@ -62,19 +69,22 @@ Job, Worklfow, File Transfer and Shared Resource Path
   the job B is done. 
 
   .. figure:: images/workflow_example.*
-    :scale: 50 
+    :scale: 40 
 
-    Workflow example. The jobs are represented by blue boxes and the 
-    dependencies by black arrows.
+    *Workflow example. The jobs are represented by blue boxes and the 
+    dependencies by black arrows.*
 
   Once the workflow is created, and submitted to a computing resource using the 
-  API or the GUI (see :ref:`examples` and :ref:`workflow-creation-api`), 
-  soma-workflow handles the execution of the jobs on the computing resource. 
+  API or the GUI, soma-workflow handles the execution of the jobs on the 
+  computing resource. 
   Each job starts as soon as possible considering its dependencies.
+
+  .. seealso:: :ref:`examples` and :ref:`workflow-creation-api`
 
 .. _file-transfers-concept:
 
-**File Transfer**
+File Transfer
+=============
   
   The file transfers are optional. However, they can be useful when the user's file 
   system is not shared with the computing resource.
@@ -94,7 +104,8 @@ Job, Worklfow, File Transfer and Shared Resource Path
 
 .. _shared-resource-path-concept:
 
-**Shared Resource Path**
+Shared Resource Path
+====================
 
   As file transfers, shared resource paths are optional but can be useful when 
   the user's file system is not shared by the computing resource. Shared Resource
@@ -111,14 +122,14 @@ Job, Worklfow, File Transfer and Shared Resource Path
 
   For example, if you want to configure file translation for an application "MyApp",
   you will configure the translation file "my_app_translation" under the namespace
-  "MyApp". The content the translation file is a list of unique indentifier 
+  "MyApp". The content the translation file is a list of unique identifier 
   associated to directory paths. For examples: ::
 
     5ee1e9a0-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data1/
     922ba490-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data2/
     a7623ef0-5959-11e0-80e3-0800200c9a66  /home/myname/data_for_my_app/data3/
 
-  One can use more simple identifiers since each translation file is inclosed 
+  One can use more simple identifiers since each translation file is included 
   into a namespace: ::
 
     data1_dir  /home/myname/data_for_my_app/data1/
@@ -126,323 +137,75 @@ Job, Worklfow, File Transfer and Shared Resource Path
     data3_dir  /home/myname/data_for_my_app/data3/
 
   
+Soma-workflow modes
+===================
 
-Client, Workflow Engine and Database Server
-===========================================
-
-.. image:: images/architecture_overview.* 
-  :scale: 50 
-
-**TO DO**
-  
-..
-  The soma-workflow architecture enables the client to access remote computing 
-  resource and to disconnect at any time. The WorkflowEngine process, which runs 
-  on the computing resource side, is in charge of submitting the workflow jobs
-  to the DRMS at the right time. 
-
-
-Status
-======
-
-Once submitted to soma-workflow, the jobs, workflows and file transfers are 
-associated to status which reflects their state in the system. Here is the list 
-of possible status for each class of objects.
-
-.. _job-status:
-
-Job status
+Light mode 
 ----------
 
-Here is the list of the job status and the associated icons displayed in the GUI.
+In the light mode, soma-workflow is a one process application which communicates
+with the DRMS.
 
-  |no_status| **not_submitted**
-    The job was not submitted yet to soma-workflow.
+The application must run on a machine where a DRMS is installed and which is 
+configured for submission.
+ 
+In the light mode, the application should not be stopped while workflows or jobs 
+are running. If the application is closed, the workflow execution is stopped and 
+the current running jobs might be lost (on some systems you will need to kill 
+the jobs using the DRMS command). However, you will be able to restart the workflow 
+in an other session.
 
-  |undeter| **undetermined**
-    Transitive status. The job status is changing and be updated soon
+.. figure:: images/architecture_overview_light.* 
+  :scale: 50
 
-  |pending| **submission_pending**
-    Due to a limitation of the number of job in the queue (see :ref:`conf_server_option`), the job is 
-    waiting to be submitted to the DRMS.
-  
-  |queued| **queued_active**
-    The job was submitted to the DRMS and is currently waiting in the queue.
-  
-  |running| **running**
-    The job is running on the computing resource.
+  *Overview of soma-workflow architecture in the light mode.*
 
-  |success| or |failed| **done**
-    The job finished normally. However it does not mean that it ended with 
-    success (see :ref:`job-exit-status`)
 
-  |failed| **failed**
-    The job exited abnormally before finishing.
+.. seealso:: :ref:`light_mode_config`
 
-  |warning| **warning**
-    The worklfow engine process in charge of the monitoring of the job status
-    was killed or failed. The job or the workflow containing the job has to be 
-    restarted.
 
-  |kd_pending| **delete_pending**    
-    Transitive status. The job will be deleted soon.
 
-  |kd_pending| **kill_pending**       
-    Transitive status. The job will be killed soon.
-    
-..
-  system_on_hold
-  user_on_hold
-  user_system_on_hold
-  system_suspended
-  user_suspended
-  user_system_suspended
+Client-server mode
+------------------
 
+Compared to the light mode, the client-server mode introduces two interesting
+features:
 
-.. _job-exit-status:
+* **Remote access** to computing resource through a client application.
 
-Job exit status
---------------- 
+* **Disconnections**: the client application can be closed at any time, it won't stop the execution of workflows.
 
-  **finished_regularly**
-    The job finished regularly. The exit value is displayed on the GUI and is available from the Python API. If the value is different from 0 soma-workflow considers that the job failed.
+.. figure:: images/architecture_overview.* 
+  :scale: 50
 
-  **finished_signal**
-    The job finished due to a signal. The signal is displayed on the GUI and is available from the python API (depending on DRMAA implementation).
+  *Overview of soma-workflow architecture in the client-server mode*
+ 
 
-  **killed_by_user**
-     The job was killed by the user.
+There are three main processes in the client-server mode:
 
-  **aborted**
-    The job never ran.
+* The **workflow controller** process runs on the client side (on the user 
+  machine). When it is started, it connects to the remote machine and creates 
+  the workflow engine process. The two processes communicate together through a 
+  secured channel (ssh tunnel).
 
-  **exit_status_undetermined**
-    The exit status can not be determined.
+* The **workflow engine** runs on the computing resource side with the user's 
+  rights. It processes the submitted workflows, submit, control and monitor jobs. 
+  It also updates the soma-workflow database at regular time interval with the
+  status of the jobs, worklfows and file transfers.
 
-..
-  **finished_unclear_condition**
-    The job finished with unclear conditions.
+* The **workflow database server** runs on the computing resource side as a
+  soma-workflow administrator user (no need to be the root user). It stores and 
+  queries all the informations about file transfers, jobs and workflows, to and 
+  from the soma-workflow database file.
 
+When the client application is closed (the workflow controller process stops), 
+the workflow engine process keeps on running until the submitted workflows and 
+jobs are done.
 
-.. _workflow-status:
+Each time a client application starts, a workflow engine process is created on 
+the computing resource side. If no workflow or jobs are submitted with the
+client application or if they all ended, the workflow engine process stops as 
+soon as the client application is closed. 
 
-Workflow status
----------------
+.. seealso:: :ref:`server` and :ref:`client_intall_config`
 
-  **worklflow_not_started**
-    The workflow was not submitted to soma-workflow.
-  
-  **workflow_in_progress**
-    The workflow was submitted to soma-workflow.
-
-  **workflow_done**
-    The workflow is done.
-
-  **delete_pending**
-    Transitive status. The workflow will be deleted soon.
-
-  **warning**
-    The workflow engine process in charge of the workflow execution was killed 
-    or failed on the computing resource side. The workflow has to be restarted
-    (the jobs which ended with success will not be restarted).
-
-
-.. note::
-  |warning| In case of warning status a simple solution is to restart the 
-  workflow. 
-  The job which ended with success will not be restarted.
-
-  However, the warning status does not mean that the jobs failed. In case of very 
-  long jobs which you do not want to restart, you can check yourself
-  the status of the job(s) on the DRMS. If some jobs are still running: you 
-  have to wait for the job to finish. Afterward, update the status of each job 
-  in soma-workflow and restart the jobs.
-
-
-.. _file-transfer-status:
-
-File Transfer status
---------------------
-
-  |tr_dont_exist| **do not exist**
-    The file(s) do not exist. For example: output files at the beginning of a
-    workflow execution.
-
-  |tr_on_c| **on client side**
-    The file(s) exist on the client side only. For example: input files.
-
-  |tr_on_cr| **on computing resource side**
-    The file(s) exist on the computing resource side only. For example: output
-    files after a job ended.
-
-  |tr_on_both| **on both sides**
-    The file(s) both on the client and computing resource side. This status 
-    appears after a transfer ended. 
-
-  |tr_c_to_cr| **transfering client->cr**
-    The file(s) are being transfered form the client to the computing resource.
-
-  |tr_cr_to_c| **transfering cr->client**
-    The file(s) are being transfered from the computing resource to the client.
-
-  |under_edition| **under edition**
-    The file(s) are under edition, they are output and/or input of a running 
-    job.
-
-
-
-.. |no_status| image:: ../../python/soma/workflow/gui/icon/no_status.png
-               :height: 100 px
-               :width: 100 px
-               :scale: 30 
-
-.. |undeter|   image:: ../../python/soma/workflow/gui/icon/undetermined.png
-               :height: 100 px
-               :width: 100 px
-               :scale: 30 
-
-.. |queued|    image:: ../../python/soma/workflow/gui/icon/queued.png
-               :height: 100 px
-               :width: 100 px
-               :scale: 30 
-
-.. |running|   image:: ../../python/soma/workflow/gui/icon/running.png
-               :height: 100 px
-               :width: 100 px
-               :scale: 30 
-
-.. |success|   image:: ../../python/soma/workflow/gui/icon/success.png
-               :height: 100 px
-               :width: 100 px
-               :scale: 30 
-
-.. |kd_pending| image:: ../../python/soma/workflow/gui/icon/kill_delete_pending.png
-                    :height: 100 px
-                    :width: 100 px
-                    :scale: 30 
-
-.. |warning| image:: ../../python/soma/workflow/gui/icon/warning.png
-            :height: 100 px
-            :width: 100 px
-            :scale: 30 
-
-.. |failed| image:: ../../python/soma/workflow/gui/icon/failed.png
-            :height: 100 px
-            :width: 100 px
-            :scale: 30 
-
-.. |pending| image:: ../../python/soma/workflow/gui/icon/pending.png
-            :height: 100 px
-            :width: 100 px
-            :scale: 30 
-
-
-.. |tr_dont_exist| image:: ../../python/soma/workflow/gui/icon/transfer_files_dont_exist.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30 
-
-.. |tr_on_c| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_client.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-.. |tr_on_both| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_both.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-
-.. |tr_on_cr| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_cr.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-.. |tr_cr_to_c| image:: ../../python/soma/workflow/gui/icon/transfering_from_cr_to_client.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-.. |tr_c_to_cr| image:: ../../python/soma/workflow/gui/icon/transfering_from_client_to_cr.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-.. |under_edition| image:: ../../python/soma/workflow/gui/icon/files_under_edition.png
-                  :height: 100 px
-                  :width: 100 px
-                  :scale: 30
-
-
-
-
-
-..
-  ===========================  =================================================
-  Exit status                  Meaning
-  ===========================  =================================================
-  finished_regularly           The job finished regularly. The exit value is 
-                               displayed on the GUI and is available from the 
-                               python API. If the value is different than 0 
-                               soma-workflow consider that the job failed.
-  finished_signal              The job finished due to a signal. The signal is 
-                               displayed on the GUI and is available from the 
-                               python API (depending on DRMAA implementation).
-  killed_by_user               The job was killed by the user.
-  aborted                      The job never ran.
-  exit_status_undetermined     The exit status can not be determined.
-  finished_unclear_condition   The job finished with unclear conditions.
-  ===========================  =================================================
-
-
-..
-                      ======================  ==================================
-                      Workflow status         Meaning
-                      ======================  ==================================
-                      worklflow_not_started   The workflow was not 
-                                              submitted to soma-workflow.
-                      workflow_in_progress    The workflow was submitted 
-                                              to soma-workflow.
-                      workflow_done           The workflow is done.
-                      delete_pending          Transitive status. The workflow 
-                                              will be deleted soon.
-                      warning                 The worklfow engine process 
-                                              in charge of the workflow
-                                              execution was killed on the 
-                                              computing resource side.
-                                              The workflow has to be restarted 
-                                              (the jobs which ended 
-                                              with success will not be restarted). 
-                      ======================  ==================================
-
-
-..
-  ===================== ================== =======================================
-  Icon                  Status             Meaning
-  ===================== ================== =======================================
-  |no_status|           not_submitted      The job was not submitted yet to 
-                                           soma-workflow.
-  |undeter|             undetermined       Transitive status. The job status 
-                                           is changing and be updated soon.
-  |pending|             submission_pending Due to a limitation of the number of job 
-                                           in the queue (see ??), the job is 
-                                           waiting to be submitted to the DRMS. 
-  |queued|              queued_active      The job was submitted to the DRMS and 
-                                           is currently waiting in the queue.
-  |running|             running            The job is running on the computing 
-                                           resource.
-  |success| or |failed| done               The job finished normally. However it 
-                                           does not mean that it ended with success
-                                           (see :ref:`job-exit-status`)
-  |failed|              failed             The job exited abnormally before
-                                           finishing.
-  |warning|             warning            The worklfow engine process in charge 
-                                           of the monitoring of the job status 
-                                           was killed or failed. The job or the 
-                                           workflow containing the job has to be 
-                                           restarted.
-  |kd_pending|          delete_pending     Transitive status. The job will be  
-                                           deleted soon.
-  |kd_pending|          kill_pending       Transitive status. The job will be 
-                                           killed soon.
-  ===================== ================== =======================================

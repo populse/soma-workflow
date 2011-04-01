@@ -7,10 +7,8 @@
 Soma-workflow: An unified and simple interface to parallel computing resource
 =============================================================================
 
-..
-  .. image:: images/gui_overview.*
-    :align: right
-    :scale: 40
+.. image:: images/soma_workflow_general.*
+  :scale: 60
 
 Soma-workflow provides a homogeneous and single way to submit and monitor 
 parallel computing to various computing resources (laptops, workstation farms, 
@@ -27,9 +25,8 @@ to execute the jobs.
 Soma-workflow is an open source Python application.
 The sources can be found `here <https://brainvisa:Soma2009@bioproj.extra.cea.fr/redmine/projects/brainvisa-soma/repository/show/soma-workflow/trunk>`_ and be downloaded `here. <https://brainvisa:Soma2009@bioproj.extra.cea.fr/neurosvn/brainvisa/soma/soma-workflow/trunk>`_
 
-
-.. warning:: 
-  The documentation is under construction.
+.. note:: To get started, begin here: :ref:`concepts` and have a look at 
+   the :ref:`examples`.
 
 
 Main Features
@@ -84,6 +81,8 @@ Contents
    server_install_config.txt
    workflow_creation.txt
    client_API.txt
+   status_list.txt
+   errors_troubleshooting.txt
    gui.txt
    examples.txt
 

@@ -11,6 +11,30 @@ content of the jobs is not relevant here.
 .. contents:: Examples
    :local:
 
+
+.. note:: Running the examples in light mode:
+  
+Running example in light mode
+=============================
+
+In the light mode the disconnection feature is not available.
+You must save your workflow to a file at the end of the script:
+
+::
+
+  from soma.workflow.client import Helper
+
+  # workflow creation as described in the examples
+
+  Helper.serialize("/tmp/workflow_example", workflow)
+  
+
+Then use the GUI to open the file */tmp/workflow_example* and use the submit 
+button to submit the workflow.
+In the light mode you must wait the end of the workflow to close the
+application.
+
+
 Simple workflows
 ================
 
@@ -270,5 +294,7 @@ copy_of_myfile1 and copy_of_myfile2 now.
 Workflows with SharedResourcePath
 =================================
 
+.. warning:: 
+  Under construction.
 
-**TO DO**
+

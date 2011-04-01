@@ -1,22 +1,13 @@
 
 .. _light_mode_config:
 
-=========================================
-Light mode installation and configuration
-=========================================
+==========================================
+Installation and configuration: Light mode 
+==========================================
 
-Soma-workflow can be launched as a simple one process application (without server). 
-However, the light mode introduces some limitations compared to the 
-client-server mode: 
-
-* No remote access: The application must be run on a machine of the computing 
-  resource (machine with a DRMS installed).
-
-* No disconnection: The application can not be closed before all the
-  running workflows and jobs ended.
-
-If you are not interested in these two features the light mode is the mode 
-you need.
+The light mode can be a good starting point to soma-workflow.
+It is also the mode you need if you are not interested in the remote access
+and disconnection features.
 
 Requirements
 ============
@@ -32,6 +23,7 @@ The requirements are thus:
 * A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
 * Python *version 2.5 or more*
 * `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
+* SQLite *version 3 or more*
 
 More details about the implementation of DRMAA can be found in the server 
 installation section (see :ref:`server_requirements`).
@@ -41,7 +33,7 @@ Installation
 ============
 
 
-1. *svn export/ cmake . / make / make install* (under construction)
+1. *install the soma-workflow python module and compile the sip module => under construction*
 
 2. Choose a resource identifier for the computing resource, ex: "My laptop light mode"
 
@@ -128,4 +120,18 @@ Many optional configuration item can be added to customize the installation, see
 :ref:`server_configuration` for a full list of the items and their description.
   
 
+Start the GUI
+=============
+
+The command *soma_workflow_gui* starts the GUI.
+
+.. seealso:: :ref:`gui` for the GUI documentation.
+
+
+Use the Python API
+==================
+
+Import the soma.workflow.client module to use the Python API.
+
+.. seealso:: :ref:`client_api` for soma-workflow Python API documentation or :ref:`examples` for a fast start.
  

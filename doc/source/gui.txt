@@ -7,14 +7,16 @@ Graphical User Interface
 .. image:: images/gui_overview.*
    :scale: 60
 
+.. warning:: 
+  Under construction.
 
-**TO DO**
 
-Requirements
-============
+..
+  Requirements
+  ============
 
-* Qt4
-* PyQt4
-* matplotlib 
+  * Qt4
+  * PyQt4
+  * matplotlib 
 
 
