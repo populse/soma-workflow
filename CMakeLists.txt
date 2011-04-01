@@ -18,9 +18,9 @@ else()
   message( "WARNING: python wrapping of drmaajobs not built because sip has not been found" )
 endif()
 
-find_package( Sphinx )
+#find_package( Sphinx )
 
-BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
-  "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}" )
+#BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
+#  "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}" )
 
 BRAINVISA_CREATE_CMAKE_CONFIG_FILES()
