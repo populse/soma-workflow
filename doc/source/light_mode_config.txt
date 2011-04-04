@@ -24,6 +24,7 @@ The requirements are thus:
 * Python *version 2.5 or more*
 * `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
 * SQLite *version 3 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 
 More details about the implementation of DRMAA can be found in the server 
 installation section (see :ref:`server_requirements`).

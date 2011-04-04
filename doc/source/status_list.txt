@@ -1,3 +1,5 @@
+.. _status_list:
+
 ===========
 Status list
 ===========
@@ -8,7 +10,7 @@ of possible status for each class of objects.
 
 .. _job-status:
 
-Job status
+Job status  
 ==========
 
 Here is the list of the job status and the associated icons displayed in the GUI.
