@@ -8,7 +8,7 @@ myfile = SharedResourcePath(relative_path="myfile",
                             uuid="my_example_dir")
 
 # FileTransfer creation for the output file.
-# That way the ouput file will not be written in the data directory 
+# That way the output file will not be written in the data directory 
 # located on the computing resource file system.
 copy_of_myfile = FileTransfer(is_input=False,
                               client_path="/tmp/soma_workflow_examples/copy_of_myfile",
