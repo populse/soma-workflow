@@ -5,14 +5,17 @@ Examples
 ========
 
 You will find here a set of examples. The objective is to illustrate how to 
-build simple to more complex workflows and submit them to soma-workflow. The 
-content of the jobs is not relevant here.
+build simple to more complex workflows and submit them to soma-workflow. 
+
+The content of the jobs is not relevant here: 
+  * The "sleep" command was use as an example to stand for any job.
+
+  * The "cp" command was use as an example of a job reading a file and writing another file.  
+
 
 .. contents:: Examples
    :local:
 
-
-.. note:: Running the examples in light mode:
   
 Running example in light mode
 =============================
@@ -154,7 +157,7 @@ The 30 jobs within the group can now be extanded (visible) or collapsed (hided).
 Workflows with FileTransfer
 ===========================
 
-These examples show example of workflows with file transfers. 
+These examples show example of workflows with file transfers (see :ref:`file-transfers-concept`). 
 An easy way to deal with file transfer is to transfer a working directory and
 work with relative path (see :ref:`working_directory_transfer_example`). 
 
@@ -163,7 +166,7 @@ Basic file transfer
 -------------------
 
 To run this example, create first the file "/tmp/soma_workflow_examples/myfile" 
-with any content. It will stand as an input file to transfer.
+with any content. It will stand for an input file to transfer. 
 
 ::
 
@@ -291,10 +294,75 @@ Transfer the working directory back the "Transfer Output Files" button:
 The working directory on your machine should contain the files myfile1, myfile2,
 copy_of_myfile1 and copy_of_myfile2 now.
 
+
 Workflows with SharedResourcePath
 =================================
 
-.. warning:: 
-  Under construction.
+A copy of the data you want to process can already exist on the computing resource
+file system. In this case, you can use SharedResourcePath objects to build your 
+workflows (see :ref:`shared-resource-path-concept`).
+
+To run this example:
+
+1. Create the directory "/tmp/soma_workflow_examples" and the file "/tmp/soma_workflow_examples/myfile" with any content you like. This directory will stand for the data you want to process.
+
+2. Create the same data at any location on the computing resource file system, for example "$HOME/soma_workflow_examples/myfile". It will stand for the copy of the data on the computing resource.
+
+3. On the computing resource file system, create a translation file at the location "$HOME/translation_example" for example. It will contain, the correspondences between identifiers and path: 
+
+  ::
+
+    my_example_dir /home/toto/soma_workflow_examples
+  
+4. Still on the computing resource side, register the translation path in the configuration file under the namespace "MyApp" (see :ref:`conf_server_option`):
+
+  ::
+
+    PATH_TRANSLATION_FILES = MyApp{/home/toto/translation_example}
+
+Run the script to create and submit the workflow:
+
+:: 
+
+  from soma.workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
+
+  # SharedResourcePath creation for the input file.
+  # The input file is read direclty in the data directory located on the
+  # the computing resource side. 
+  myfile = SharedResourcePath(relative_path="myfile",
+                              namespace="MyApp",
+                              uuid="my_example_dir")
+
+  # FileTransfer creation for the output file.
+  # That way the output file will not be written in the data directory 
+  # located on the computing resource file system.
+  copy_of_myfile =  FileTransfer(is_input=False,
+                                 client_path="/tmp/soma_workflow_examples/copy_of_myfile",
+                                 name="copy of my file")
+  
+  # Job and Workflow creation 
+  copy_job = Job(command=["cp", myfile, copy_of_myfile], 
+                name="copy",
+                referenced_input_files=[],
+                referenced_output_files=[copy_of_myfile])
+
+  workflow = Workflow(jobs=[copy_job], 
+                      dependencies=[])
+
+  # workflow submission
+  controller = WorkflowController("DSV_cluster", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                             name="shared resource path example")
+
+
+
+Open the GUI to monitor the workflow. Once the execution is done, transfer back 
+the output files.
+
+The data directory directory on your machine "/tmp/soma_workflow_examples/" should contain the 
+file copy_of_myfile now.
+
+
 
 
