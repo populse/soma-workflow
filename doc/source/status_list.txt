@@ -144,6 +144,7 @@ File Transfer status
   |tr_cr_to_c| **transfering cr->client**
     The file(s) are being transfered from the computing resource to the client.
 
+..
   |under_edition| **under edition**
     The file(s) are under edition, they are output and/or input of a running 
     job.

@@ -1,33 +1,66 @@
 
 .. _good_pratices_troubleshooting:
 
-=========================================
-Good Practices, Erros and Troubleshooting
-=========================================
+=========================
+Good Practices and Errors
+=========================
 
 Good Practices
 ==============
 
-.. warning:: 
-  Under construction.
+**Do not forget that computing resources have usually their own rules and are shared with other users**
+  Everything you do through soma-workflow is done with your user id on the 
+  computing resource.
 
-
-* Choose an appropriate queue to run your workflows depending on the job size 
-  and number.
-    See :ref:`conf_client_option` to configure a queue so that it will appear 
-    in the GUI.
+**Choose an appropriate queue to run your workflows depending on the job size.**
+  See :ref:`conf_client_option` to configure the queues so that they will appear 
+  in the GUI.
     
+**Use the queue limitation feature.**
+  Because workflows can contain a lot of jobs, it is very useful to limit the 
+  number of jobs which can be waiting in the queue at the same time. The are 
+  two main reasons to do so:
 
-* Use the queue limitation feature.
-    **TO DO** adds how to check if a limitation is configured.
-    See :ref:`conf_server_option` to set the limitation.
+    * It is a good practice not to saturate the queue with too many jobs. If 
+      you set up a limit and submit a workflow, the other users will be able to
+      intercalate their own jobs. Since they will not have to wait for you 500 
+      jobs (or more) in the queue to see their own jobs running you will not 
+      receive angry phone call.
+    * On some computing resources, the limit is configured in the DRMS. If you 
+      try to submit a job while you already reached the limit it will produce an 
+      error.  
 
+  When the limit is set up, the jobs which are ready to be submitted but are 
+  waiting because the limit is reached have the status "pending" (see 
+  :ref:`status_list`).
+  See :ref:`conf_server_option` to set up the limitation.
 
+.. note:: To limit the number of job in the queue does not limit the number of 
+    job which can run in parallel. However, because the other users can 
+    intercalate their own jobs and because of the system delay, it can take 
+    more time to get all the jobs running. In this case, the next tip is 
+    especially relevant (do not build workflows with too many short jobs).
+
+**Do not build workflows with too many short jobs.**  
+  Depending on the system the time for the jobs to be submitted is variable 
+  and is usually not instantaneous. To take advantage of running your 
+  workflow in parallel, the jobs should not be to short: more than 1 minute 
+  usually.
+
+**Use RSA key**
+  So that you will not have to type you password every time you open the GUI or
+  create a WorklfowController object.
+
+**Open only one application at a time in the light mode.**
+  This will be fixed in a future version. 
+
+..
+  Use working directory transfer when possible.
 
 Errors
 ======
 
-Here is the list of the various error that can occur when using 
+Here is the list of the various error which can occur when using 
 soma-workflow.
 
 .. currentmodule::errors
@@ -46,10 +79,19 @@ soma-workflow.
 
 .. autoclass:: errors.UnknownObjectError(Exception)
 
+.. autoclass:: errors.EngineError(Exception)
 
+.. autoclass:: errors.DatabaseError(Exception)
 
-Throubleshooting
-================
+..
+  Troubleshooting
+  ================
+  ..
+    * WARNING status
 
-.. warning:: 
-  Under construction.
+    * engine process killed by the administrator
+
+    * error type => action
+
+  .. warning:: 
+    Under construction.
