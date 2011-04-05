@@ -103,8 +103,8 @@ class RemoteConnection( object ):
     except paramiko.AuthenticationException, e:
       raise ConnectionError("The authentification failed. %s" %(e))
     except Exception, e:
-      raise ConnectionError("The engine process could not be started remotely" 
-                            " with ssh. %s: %s" %(type(e),e))
+      raise ConnectionError("Can not use ssh to log on the remote machine." 
+                            " %s" %(e))
 
     line = stdout.readline()
     stdout_content = line

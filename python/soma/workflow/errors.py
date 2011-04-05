@@ -53,16 +53,15 @@ class UnknownObjectError(Exception):
 
 class EngineError(Exception):
   '''
+  Raised if an error occurs while starting the workflow engine. 
   '''
   pass
 
-class DatabaseServerError(Exception):
-  '''
-  '''
-
-
 
 class DatabaseError(Exception):
+  '''
+  Raised if an error occurs while reading or writing to the database.
+  '''
   pass
 
 
