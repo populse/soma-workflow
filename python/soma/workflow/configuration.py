@@ -13,6 +13,7 @@ import socket
 import ConfigParser
 
 import soma.workflow.constants as constants
+from soma.workflow.errors import ConfigurationError
 
 
 #-------------------------------------------------------------------------------
