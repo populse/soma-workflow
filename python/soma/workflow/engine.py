@@ -368,6 +368,7 @@ class WorkflowEngineLoop(object):
     Start the workflow engine loop. The loop will run until stop() is called.
     '''
     self._running = True
+    drms_error_jobs = {}
     while True:
       if not self._running:
         break
@@ -415,7 +416,7 @@ class WorkflowEngineLoop(object):
           wf_jobs.update(wf.registered_jobs)
           wf_transfers.update(wf.registered_tr)
         
-        ended_jobs = {}
+        ended_jobs = drms_error_jobs #{}
         for job in itertools.chain(self._jobs.itervalues(), wf_jobs.itervalues()):
           if job.exit_status == None and job.drmaa_id != None:
             try:
@@ -473,17 +474,20 @@ class WorkflowEngineLoop(object):
         jobs_to_run = self._get_pending_job_to_submit()
 
         # --- 6. Submit jobs -------------------------------------------------
+        drms_error_jobs = {}
         for job in jobs_to_run:
           try:
             job.drmaa_id = self._engine_drmaa.job_submission(job)
           except DRMError, e:
             #TBI how to communicate the error ?
-            if job.queue in self._pending_queues:
-              self._pending_queues[job.queue].insert(0, job)
-            else:
-              self._pending_queues[job.queue] = [job]
-            job.status = constants.SUBMISSION_PENDING
-            self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
+            #if job.queue in self._pending_queues:
+            #  self._pending_queues[job.queue].insert(0, job)
+            #else:
+            #  self._pending_queues[job.queue] = [job]
+            #job.status = constants.SUBMISSION_PENDING
+            self.logger.error("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
+            job.status = constants.FAILED
+            drms_error_jobs[job.job_id] = job
           else:
             self._database_server.set_submission_information(job.job_id,
                                                             job.drmaa_id,
