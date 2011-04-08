@@ -383,6 +383,7 @@ class ConnectionHolder(threading.Thread):
     self.interval = self.connectionChecker.interval.seconds
    
   def run(self):
+    from Pyro.errors import ConnectionClosedError
     self.stopped = False
     while not self.stopped :
       #print "ConnectionHolder => signal"
