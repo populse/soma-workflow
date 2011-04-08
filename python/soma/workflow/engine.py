@@ -1050,7 +1050,7 @@ class WorkflowEngine(object):
     return wf_id
 
   
-  def delete_workflow(self, workflow_id):
+  def delete_workflow(self, workflow_id, force=True):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
@@ -1059,13 +1059,15 @@ class WorkflowEngine(object):
                                                        self._user_id)[0]
     if status == constants.WORKFLOW_DONE:
       self._database_server.delete_workflow(workflow_id)
+      return True
     else:
       self._database_server.set_workflow_status(workflow_id, 
                                                 constants.DELETE_PENDING)
-      if not self._wait_for_wf_deletion(workflow_id):
-       # TBI
+      if force and not self._wait_for_wf_deletion(workflow_id):
        self.logger.critical("!! The workflow may not be properly deleted !!")
        self._database_server.delete_workflow(workflow_id)
+       return False
+      return True
 
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):

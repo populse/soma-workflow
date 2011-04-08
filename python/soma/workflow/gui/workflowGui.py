@@ -136,8 +136,9 @@ def setLabelFromDateTime(label, value):
 class Controller(object):
   @staticmethod
   def delete_workflow(wf_id, 
+                      force, 
                       wf_ctrl):
-    return wf_ctrl.delete_workflow(wf_id)
+    return wf_ctrl.delete_workflow(wf_id, force)
   
   @staticmethod
   def change_workflow_expiration_date(wf_id, 
@@ -582,19 +583,32 @@ class WorkflowWidget(QtGui.QMainWindow):
     else: 
       name = repr(self.model.current_wf_id)
     
+    
     answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
     if answer != QtGui.QMessageBox.Yes: return
+    force = self.ui.check_box_force_delete.isChecked()
     while True:
       try:
-        Controller.delete_workflow(self.model.current_workflow.wf_id,
+        deleled_properly = Controller.delete_workflow(self.model.current_workflow.wf_id,
+                                   force,
                                    self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
       else:
         break
-    self.updateWorkflowList()
-    self.model.delete_workflow()
+    if force:
+      self.updateWorkflowList()
+      self.model.delete_workflow()
+      if not deleled_properly:
+         QtGui.QMessageBox.warning(self, 
+                                   "Delete workflow", 
+                                   "The workflow was deleted. However, "
+                                   "it possible that some workflow jobs are "
+                                   "still active and burden the computing "
+                                   "resource. Please inspect the active jobs "
+                                   "(running or in the queue) using the DRMS " "interface.")
+        
     
   @QtCore.pyqtSlot()
   def changeExpirationDate(self):

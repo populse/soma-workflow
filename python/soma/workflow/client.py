@@ -801,15 +801,35 @@ class WorkflowController(object):
     return self._engine_proxy.restart_workflow(workflow_id)
     
 
-  def delete_workflow(self, workflow_id):
+  def delete_workflow(self, workflow_id, force=True):
     '''
-    Deletes the workflow and all its associated elements (FileTransfers and Jobs). The worklfow_id will become invalid and can not be used anymore. The workflow jobs which are running will be killed.
+    Deletes the workflow and all its associated elements (FileTransfers and 
+    Jobs). The worklfow_id will become invalid and can not be used anymore. 
+    The workflow jobs which are running will be killed.
+    If force is set to True: the client will wait for the workflow to be deleted. 
+    If it can't be deleted properly workflow will be deleted from
+    the database server. However, if some jobs are running they won't be kill
+    and will burden the computing resource.
+    
+    * workflow_id *workflow_identifier*
+
+    * force *boolean*
+      If force is set to True, the call won't return before the workflow is 
+      deleted. It will wait for the workflow to be deleted. 
+      If it can't be deleted properly workflow will be deleted from
+      the database server. However, if some jobs are running they won't be kill
+      and will burden the computing resource (see return value). 
+
+    * returns: *boolean*
+      If force is True: return True if the running jobs were killed and False
+      if some jobs are possibly still running on the computing resource despite 
+      the workflow doesn't exist.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     #cProfile.runctx("self._engine_proxy.delete_workflow(workflow_id)", globals(), locals(), "/home/soizic/profile/profile_delete_workflow")
 
-    self._engine_proxy.delete_workflow(workflow_id)
+    return self._engine_proxy.delete_workflow(workflow_id, force)
 
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
@@ -869,7 +889,7 @@ class WorkflowController(object):
     self._engine_proxy.restart_job(job_id)
 
 
-  def delete_job( self, job_id ):
+  def delete_job( self, job_id):
     '''
     Deletes a job which is not part of a workflow.
     The job_id will become invalid and can not be used anymore.
@@ -1395,6 +1415,19 @@ class Helper(object):
   def __init__(self):
     pass
 
+
+  @staticmethod
+  def wait_workflow(workflow_id,
+                    wf_ctrl):
+    element_status = wf_ctrl.workflow_elements_status(workflow_id)
+    job_ids = []
+    for job_info in element_status[0]:
+      job_ids.append(job_info[0])
+      
+
+    wf_ctrl.wait_job(job_ids)
+    
+      
 
   @staticmethod
   def transfer_input_files(workflow, 
