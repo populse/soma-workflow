@@ -1,3 +1,5 @@
+from __future__ import with_statement 
+
 '''
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
@@ -8,11 +10,16 @@
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
-    
-import os
 
-from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow
-from soma.workflow.errors import ConfigurationError
+import unittest
+import os
+import getpass
+import sys
+
+from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow, WorkflowController, Helper
+from soma.workflow.configuration import Configuration
+from soma.workflow.errors import ConfigurationError, UnknownObjectError
+import soma.workflow.constants as constants
 
 
 #-----------------------------------------------------------------------------
@@ -611,3 +618,195 @@ class WorkflowExamples(object):
     workflow = Workflow(jobs, dependencies, root_group)
 
     return workflow
+
+
+
+class WfTest(unittest.TestCase):
+  '''
+  Abstract class for soma-workflow workflow test. 
+  '''
+  wf = None
+
+  wf_id = None
+
+  wf_ctrl = None
+  
+  wf_ex = None
+
+  @staticmethod
+  def setup_wf_controller(workflow_controller):
+    WfTest.wf_ctrl = workflow_controller
+
+  def setUp(self):
+    raise Exception('WfTest is an abstract class. SetUp must be implemented in subclass')
+
+  def tearDown(self): 
+    if self.wf_id:
+      WfTest.wf_ctrl.delete_workflow(self.wf_id)
+    self.assertRaises(UnknownObjectError, WfTest.wf_ctrl.workflow, self.wf_id)
+
+    
+  #def test_workflows(self):
+    #res = WfTest.wf_ctr.workflows.keys()
+    #self.failUnless(self.wf_id in res)
+    
+  #def test_stop(self):
+    ##TBI
+    #pass
+
+  #def test_restart(self):
+    ##TBI
+    #pass
+
+  def test_result(self):
+    raise Exception('WfTest is an abstract class. test_result must be implemented in subclass')
+
+#class Simple(WfTest):
+
+
+
+class Multiple(WfTest):
+  
+  def setUp(self):
+    workflow_examples = WorkflowExamples(False)
+    self.wf_ex = workflow_examples
+    self.wf = self.wf_ex.simpleExample() #multipleSimpleExample()
+    self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
+                                                name="unit test multiple")
+
+  def test_result(self):
+    Helper.wait_workflow(self.wf_id, WfTest.wf_ctrl)
+    status = WfTest.wf_ctrl.workflow_status(self.wf_id)
+    
+    self.failUnless(status == constants.WORKFLOW_DONE)
+    
+
+
+
+if __name__ == '__main__':
+  
+  job_examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
+  output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
+  if not job_examples_dir or not output_dir:
+    raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
+     
+  sys.stdout.write("----- soma-workflow tests: WORKFLOW -------------\n")
+
+  config_file_path = Configuration.search_config_path()
+  sys.stdout.write("Configuration file: " + config_file_path)
+  resource_ids = Configuration.get_configured_resources(config_file_path)
+  
+  # Resource
+  sys.stdout.write("Configured resources:\n")
+  for i in range(0, len(resource_ids)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(resource_ids[i]) + "\n")
+  sys.stdout.write("Select a resource number: ")
+  resource_index = int(sys.stdin.readline())
+  resource_id = resource_ids[resource_index]
+  sys.stdout.write("Selected resource => " + repr(resource_id) + "\n")
+  sys.stdout.write("---------------------------------\n")
+  login = None
+  password = None
+  
+  config = Configuration(resource_id, config_file_path)
+
+  if config.get_mode() == 'remote':
+    sys.stdout.write("This is a remote connection\n")
+    sys.stdout.write("login:")
+    login = sys.stdin.readline()
+    login = login.rstrip()
+    password = getpass.getpass()
+  sys.stdout.write("Login => " + repr(login) + "\n")
+  sys.stdout.write("---------------------------------\n")
+  
+  # Workflow types
+  wf_types = ["multiple", "command check test", "special transfers", "ten jobs"]
+  sys.stdout.write("Workflow example to test: \n")
+  sys.stdout.write("all -> all \n")
+  for i in range(0, len(wf_types)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(wf_types[i]) + "\n")
+  sys.stdout.write("Select one or several workflow(s) : \n")
+  selected_wf_type_indexes = []
+  line = sys.stdin.readline()
+  line = line.rstrip()
+  if line == "all":
+    selected_wf_type = wf_types
+    sys.stdout.write("Selected workflow(s): all \n")
+  else:
+    for strindex in line.split(" "):
+      selected_wf_type_indexes.append(int(strindex))
+    selected_wf_type = []
+    sys.stdout.write("Selected workflow(s): \n" )
+    for wf_type_index in selected_wf_type_indexes:
+      selected_wf_type.append(wf_types[int(wf_type_index)])
+      sys.stdout.write("  => " + repr(wf_types[int(wf_type_index)])  + "\n")
+
+  # File path type 
+  sys.stdout.write("---------------------------------\n")
+  path_types = ["local path", "shared resource path", "file transfer"]
+  sys.stdout.write("File path type: \n")
+  sys.stdout.write("all -> all \n")
+  for i in range(0, len(path_types)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(path_types[i]) + "\n")
+  sys.stdout.write("Select one or several path type : \n")
+  selected_path_type_indexes = []
+  line = sys.stdin.readline()
+  line = line.rstrip()
+  if line == "all":
+    selected_path_type = path_types
+    sys.stdout.write("Selected path type: all \n")
+  else:
+    for strindex in line.split(" "):
+      selected_path_type_indexes.append(int(strindex))
+    selected_path_type = []
+    sys.stdout.write("Selected path types: \n")
+    for path_type_index in selected_path_type_indexes:
+      selected_path_type.append(path_types[int(path_type_index)])
+      sys.stdout.write("  => " + repr(path_types[int(path_type_index)])  + "\n")
+
+  # Test type
+  sys.stdout.write("---------------------------------\n")
+  test_types = ["test_result"]#, "test_workflows", "test_stop", "test_restart"]
+  sys.stdout.write("Tests to perform: \n")
+  sys.stdout.write("all -> all \n")
+  for i in range(0, len(test_types)):
+    sys.stdout.write("  " + repr(i) + " -> " + repr(test_types[i]) + "\n")
+  sys.stdout.write("Select one or several test : \n")
+  selected_test_type_indexes = []
+  line = sys.stdin.readline()
+  line = line.rstrip()
+  if line == "all":
+    selected_test_type = test_types
+    sys.stdout.write("Selected test types: all \n")
+  else:
+    for strindex in line.split(" "):
+      selected_test_type_indexes.append(int(strindex))
+    selected_test_type = []
+    sys.stdout.write("Selected test types: \n")
+    for test_type_index in selected_test_type_indexes:
+      selected_test_type.append(test_types[int(test_type_index)])
+      sys.stdout.write("  => " + repr(test_types[int(test_type_index)])  + "\n")
+  sys.stdout.write("---------------------------------\n")
+
+  wf_controller = WorkflowController(resource_id, login, password)
+  WfTest.setup_wf_controller(wf_controller)
+
+  suite_list =  []
+  tests = selected_test_type
+  wf_types = ["multiple", "command check test", "special transfers", "ten jobs"]
+
+  if "multiple" in selected_wf_type:
+    suite_list.append(unittest.TestSuite(map(Multiple, tests)))
+  if "command check test" in selected_wf_type:
+    suite_list.append(unittest.TestSuite(map(CommandCheck, tests)))
+  if "special transfers" in selected_wf_type:
+    suite_list.append(unittest.TestSuite(map(SpecialTransfers, tests)))
+  if "ten jobs" in selected_wf_type:
+    suite_list.append(unittest.TestSuite(map(TenJobs, tests)))
+
+  alltests = unittest.TestSuite(suite_list)
+  unittest.TextTestRunner(verbosity=2).run(alltests)
+  
+  sys.exit(0)
+
+

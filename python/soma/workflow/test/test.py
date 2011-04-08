@@ -505,6 +505,7 @@ class LocalCustomSubmission(JobsTest):
     jobid = self.myJobs[0]
     JobsTest.wf_ctrl.wait_job(self.myJobs)
     status = JobsTest.wf_ctrl.job_status(jobid)
+
     self.failUnless(status == constants.DONE,
                     'Job %s status after wait: %s' %(jobid, status))
     job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
@@ -1036,7 +1037,7 @@ if __name__ == '__main__':
   if not job_examples_dir or not output_dir:
     raise RuntimeError( 'The environment variables SOMA_WORKFLOW_EXAMPLES and SOMA_WORKFLOW_EXAMPLES_OUT must be set.')
      
-  sys.stdout.write("----- SomaJobsTest -------------\n")
+  sys.stdout.write("----- soma-workflow tests: JOBS -------------\n")
 
   config_file_path = Configuration.search_config_path()
   sys.stdout.write("Configuration file: " + config_file_path)
