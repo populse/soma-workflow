@@ -139,6 +139,11 @@ class Controller(object):
                       force, 
                       wf_ctrl):
     return wf_ctrl.delete_workflow(wf_id, force)
+
+  @staticmethod
+  def stop_workflow(wf_id, 
+                    wf_ctrl):
+    return wf_ctrl.stop_workflow(wf_id)
   
   @staticmethod
   def change_workflow_expiration_date(wf_id, 
@@ -291,6 +296,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
     self.ui.action_save.triggered.connect(self.saveWorkflow)
     self.ui.action_restart.triggered.connect(self.restart_workflow)
+    self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
@@ -575,6 +581,27 @@ class WorkflowWidget(QtGui.QMainWindow):
     return None
 
   @QtCore.pyqtSlot()
+  def stop_workflow(self):
+    assert(self.model.current_workflow and self.model.current_wf_id != -1)
+    
+    if self.model.current_workflow.name:
+      name = self.model.current_workflow.name
+    else: 
+      name = repr(self.model.current_wf_id)
+    
+    answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    if answer != QtGui.QMessageBox.Yes: return
+    while True:
+      try: 
+        Controller.stop_workflow(self.model.current_workflow.wf_id,
+                                 self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
+
+  @QtCore.pyqtSlot()
   def delete_workflow(self):
     assert(self.model.current_workflow and self.model.current_wf_id != -1)
     
@@ -662,6 +689,7 @@ class WorkflowWidget(QtGui.QMainWindow):
       
       self.ui.action_submit.setEnabled(False)
       self.ui.action_change_expiration_date.setEnabled(False)
+      self.ui.action_stop_wf.setEnabled(False)
       self.ui.action_delete_workflow.setEnabled(False)
       self.ui.action_transfer_infiles.setEnabled(False)
       self.ui.action_transfer_outfiles.setEnabled(False)
@@ -694,6 +722,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_submit.setEnabled(True)
         self.ui.action_change_expiration_date.setEnabled(False)
         self.ui.action_delete_workflow.setEnabled(False)
+        self.ui.action_stop_wf.setEnabled(False)
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
@@ -717,6 +746,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_submit.setEnabled(False)
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
+        self.ui.action_stop_wf.setEnabled(True)
         self.ui.action_transfer_infiles.setEnabled(True)
         self.ui.action_transfer_outfiles.setEnabled(True)    
         self.ui.action_save.setEnabled(True)    

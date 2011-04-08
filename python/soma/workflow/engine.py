@@ -373,6 +373,13 @@ class WorkflowEngineLoop(object):
       if not self._running:
         break
       with self._lock:
+        ended_jobs = drms_error_jobs #{}
+        wf_to_inspect = set() # set of workflow id
+        for job in drms_error_jobs.itervalues():
+          if job.workflow_id != -1: 
+            wf_to_inspect.add(job.workflow_id)
+        
+
         # --- 1. Jobs and workflow deletion and kill ------------------------
         # Get the jobs and workflow with the status DELETE_PENDING 
         # and KILL_PENDING
@@ -384,7 +391,7 @@ class WorkflowEngineLoop(object):
           if job_id in self._jobs:
             self.logger.debug(" stop job " + repr(job_id))
             try:
-              self._stop_job(job_id,  self._jobs[job_id])
+              stopped = self._stop_job(job_id,  self._jobs[job_id])
             except DRMError, e:
               #TBI how to communicate the error ?
               self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
@@ -392,12 +399,16 @@ class WorkflowEngineLoop(object):
               self.logger.debug("Delete job : " + repr(job_id))
               self._database_server.delete_job(job_id)
               del self._jobs[job_id]
+            elif stopped:
+              ended_jobs[job_id] = self._jobs[job_id]
+              if job.workflow_id != -1: 
+                wf_to_inspect.add(job.workflow_id)
 
         for wf_id in wf_to_kill + wf_to_delete:
           if wf_id in self._workflows:
             self.logger.debug("Kill workflow : " + repr(wf_id))
             try:
-              self._stop_wf(wf_id)
+              ended_jobs_in_wf = self._stop_wf(wf_id)
             except DRMError, e:
                #TBI how to communicate the error ?
               self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
@@ -405,18 +416,20 @@ class WorkflowEngineLoop(object):
               self.logger.debug("Delete workflow : " + repr(wf_id))
               self._database_server.delete_workflow(wf_id)
               del self._workflows[wf_id]
+            else:
+              ended_jobs.update(ended_jobs_in_wf)
+              wf_to_inspect.add(wf_id)
         
         # --- 2. Update job status from DRMAA -------------------------------
         # get back the termination status and terminate the jobs which ended 
-        wf_to_inspect = set() # set of workflow id
+        
         wf_jobs = {}
         wf_transfers = {}
         for wf in self._workflows.itervalues():
           # TBI add a condition on the workflow status
           wf_jobs.update(wf.registered_jobs)
           wf_transfers.update(wf.registered_tr)
-        
-        ended_jobs = drms_error_jobs #{}
+
         for job in itertools.chain(self._jobs.itervalues(), wf_jobs.itervalues()):
           if job.exit_status == None and job.drmaa_id != None:
             try:
@@ -673,6 +686,7 @@ class WorkflowEngineLoop(object):
       self._database_server.set_job_status( job_id, 
                                             job.status, 
                                             force = True)
+      return False
     else:
       if job.drmaa_id:
         self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
@@ -690,27 +704,38 @@ class WorkflowEngineLoop(object):
       self._database_server.set_job_status(job_id, 
                                             constants.FAILED, 
                                             force = True)
+      return True
     
 
   def _stop_wf(self, wf_id):
     wf = self._workflows[wf_id]
     self.logger.debug("wf.registered_jobs " + repr(wf.registered_jobs))
+    ended_jobs = {}
     for job_id, job in wf.registered_jobs.iteritems():
-      self._stop_job(job_id, job)
+      if self._stop_job(job_id, job):
+        ended_jobs[job_id] = job
     self._database_server.set_workflow_status(wf_id, 
                                               constants.WORKFLOW_DONE, 
                                               force = True)
+    return ended_jobs
 
 
   def restart_workflow(self, wf_id, status):
-    workflow = self._database_server.get_engine_workflow(wf_id, self._user_id)
-    workflow.status = status
-    (jobs_to_run, workflow.status) = workflow.restart(self._database_server)
-    for job in jobs_to_run:
-      self._pend_for_submission(job)
-    # add to the engine managed workflow list
-    with self._lock:
-      self._workflows[wf_id] = workflow
+    if wf_id in self._workflows:
+      workflow = self._workflow[wf_id]
+      (jobs_to_run, 
+       workflow.status) = workflow.restart(self._database_server)
+      for job in jobs_to_run:
+        self._pend_for_submission(job)
+    else:
+      workflow = self._database_server.get_engine_workflow(wf_id, self._user_id)
+      workflow.status = status
+      (jobs_to_run, workflow.status) = workflow.restart(self._database_server)
+      for job in jobs_to_run:
+        self._pend_for_submission(job)
+      # add to the engine managed workflow list
+      with self._lock:
+        self._workflows[wf_id] = workflow
 
   def restart_job(self, job_id, status):
     (job, workflow_id) = self._database_server.get_engine_job(job_id, self._user_id)
@@ -1068,6 +1093,14 @@ class WorkflowEngine(object):
        self._database_server.delete_workflow(workflow_id)
        return False
       return True
+
+  def stop_workflow(self, workflow_id):
+
+    status = self._database_server.get_workflow_status(workflow_id, 
+                                                       self._user_id)[0]
+    if status != constants.WORKFLOW_DONE:
+      self._database_server.set_workflow_status(workflow_id, 
+                                                constants.KILL_PENDING)
 
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):

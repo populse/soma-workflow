@@ -572,10 +572,10 @@ class WorkflowExamples(object):
     
     return workflow
   
-  def hundred_of_jobs(self):
+  def hundred_of_jobs(self, nb=200):
     
     jobs = []
-    for i in range(0,200):
+    for i in range(0,nb):
       job = self.job_sleep(60)
       jobs.append(job)
      

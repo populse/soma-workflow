@@ -91,6 +91,8 @@ Workflows
 
 .. currentmodule:: client
 
+.. automethod:: WorkflowController.stop_workflow
+
 .. automethod:: WorkflowController.restart_workflow
 
 .. automethod:: WorkflowController.delete_workflow

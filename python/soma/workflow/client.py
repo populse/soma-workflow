@@ -832,6 +832,16 @@ class WorkflowController(object):
     return self._engine_proxy.delete_workflow(workflow_id, force)
 
 
+  def stop_workflow(self, workflow_id):
+    '''
+    Stops a workflow.
+    The running jobs will be killed. 
+    The jobs in queues will be removed from queues.
+    It will be possible to restart the workflow afterwards.
+    '''
+
+    return self._engine_proxy.stop_workflow(workflow_id)
+
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
     Sets a new expiration date for the workflow.
