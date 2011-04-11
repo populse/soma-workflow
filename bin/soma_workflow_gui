@@ -2,7 +2,18 @@
 
 from PyQt4 import QtCore, QtGui
 import sys
+import optparse
+
 from soma.workflow.gui.workflowGui import WorkflowWidget, GuiModel
+
+parser = optparse.OptionParser()
+
+parser.add_option('-u', '--user', help="User for logging in to server")
+parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
+                  action='store_true', help="Try to connect directly, " \
+                    "withou displaying connection dialog.")
+
+options, args = parser.parse_args(sys.argv)
 
 if __name__=="__main__":
   
@@ -10,7 +21,7 @@ if __name__=="__main__":
   
   model = GuiModel()
   
-  workflowWidget = WorkflowWidget(model)
+  workflowWidget = WorkflowWidget(model, options.user, options.auto_connect)
   workflowWidget.show()
   
   app.exec_()

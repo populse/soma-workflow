@@ -217,7 +217,7 @@ class Controller(object):
 
 class WorkflowWidget(QtGui.QMainWindow):
   
-  def __init__(self, model, parent=None, flags=0):
+  def __init__(self, model, user=None, auto_connect=False, parent=None, flags=0):
     super(WorkflowWidget, self).__init__(parent)
     
     self.ui = Ui_WorkflowMainWindow()
@@ -304,35 +304,29 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
     
     self.showMaximized()
-    
-    # first connection:
+
     self.firstConnection_dlg = QtGui.QDialog(self)
     self.ui_firstConnection_dlg = Ui_FirstConnectionDlg()
     self.ui_firstConnection_dlg.setupUi(self.firstConnection_dlg)
     self.ui_firstConnection_dlg.combo_resources.addItems(self.resource_list)
     self.firstConnection_dlg.accepted.connect(self.firstConnection)
     self.firstConnection_dlg.rejected.connect(self.close)
-    self.firstConnection_dlg.show()
+    
+    ## First connection:
+
+    # Try to connect directly (a user login and a resource id are mandatory):  
+    if auto_connect and user is not None and len(self.resource_list) > 0:
+      self.connect_to_controller(self.resource_list[0], user)
+    else: # Show connection dialog:
+      if user is not None:
+        self.ui_firstConnection_dlg.lineEdit_login.setText(user)
+      self.firstConnection_dlg.show()
     
     if not self.model.current_connection:
       self.close()
-      
-      
-  @QtCore.pyqtSlot()
-  def firstConnection(self):
-    resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
-    if self.ui_firstConnection_dlg.lineEdit_login.text(): 
-      login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
-    else: 
-      login = None
-    if self.ui_firstConnection_dlg.lineEdit_password.text():
-      password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
-    else:
-      password = None
-    if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
-      rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
-    else:
-      rsa_key_pass = None
+
+  def connect_to_controller(self, resource_id, login, password=None, 
+                            rsa_key_pass=None):      
 
     wf_ctrl = None
     try:
@@ -351,6 +345,26 @@ class WorkflowWidget(QtGui.QMainWindow):
     else:
       self.model.addConnection(resource_id, wf_ctrl)
       self.firstConnection_dlg.hide()
+
+      
+  @QtCore.pyqtSlot()
+  def firstConnection(self):
+    resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
+    if self.ui_firstConnection_dlg.lineEdit_login.text(): 
+      login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
+    else: 
+      login = None
+    if self.ui_firstConnection_dlg.lineEdit_password.text():
+      password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
+    else:
+      password = None
+    if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
+      rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
+    else:
+      rsa_key_pass = None
+
+    self.connect_to_controller(resource_id, login, password, rsa_key_pass)
+    
     
   @QtCore.pyqtSlot()
   def openWorkflow(self):
