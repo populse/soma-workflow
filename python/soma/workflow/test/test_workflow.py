@@ -33,7 +33,7 @@ class WorkflowExamples(object):
   
   @staticmethod
   def get_workflow_example_list():
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial"]
   
   def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
@@ -188,6 +188,8 @@ class WorkflowExamples(object):
       workflow = self.ten_jobs()
     elif example_index == 8:
       workflow = self.fake_pipelineT1()
+    elif example_index == 9:
+      workflow = self.serial_jobs()
     return workflow
 
   def job1(self):
@@ -572,14 +574,31 @@ class WorkflowExamples(object):
     
     return workflow
   
-  def hundred_of_jobs(self, nb=200):
+  def hundred_of_jobs(self, nb=200, time=60):
     
     jobs = []
     for i in range(0,nb):
-      job = self.job_sleep(60)
+      job = self.job_sleep(time)
       jobs.append(job)
      
     dependencies = []
+ 
+    workflow = Workflow(jobs, dependencies)
+  
+    return workflow
+
+
+  def serial_jobs(self, nb=5):
+    
+    jobs = []
+    dependencies = []
+    previous_job = self.job_sleep(60)
+    jobs.append(previous_job)
+    for i in range(0,nb):
+      job = self.job_sleep(60)
+      jobs.append(job)
+      dependencies.append((previous_job, job))
+      previous_job = job
  
     workflow = Workflow(jobs, dependencies)
   
