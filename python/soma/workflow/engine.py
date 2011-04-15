@@ -43,7 +43,7 @@ from soma.workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer
 import soma.workflow.constants as constants
 from soma.workflow.client import WorkflowController
 from soma.workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
-
+from soma.workflow.transfer import RemoteFileController
 from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
 
 #-----------------------------------------------------------------------------
@@ -752,7 +752,7 @@ class WorkflowEngineLoop(object):
       #TBI
 
 
-class WorkflowEngine(object):
+class WorkflowEngine(RemoteFileController):
   '''
   '''
   # database server
@@ -1256,6 +1256,12 @@ class WorkflowEngine(object):
     job_exit_info= self._database_server.get_job_exit_info(job_id, self._user_id)
     
     return job_exit_info
+
+  def stdouterr_file_path(self, job_id):
+    (stdout_file, 
+    stderr_file) = self._database_server.get_std_out_err_file_path(job_id, 
+                                                             self._user_id)
+    return (stdout_file, stderr_file)
     
 
   def stdouterr_transfer_action_info(self, job_id):
@@ -1263,6 +1269,8 @@ class WorkflowEngine(object):
     (stdout_file, 
     stderr_file) = self._database_server.get_std_out_err_file_path(job_id, 
                                                                   self._user_id)
+    
+
     self.logger.debug("stdout_file " + repr(stdout_file) + " stderr_file " + repr(stderr_file))
 
     stdout_transfer_action_info = None

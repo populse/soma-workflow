@@ -38,6 +38,20 @@ class WorkflowExamples(object):
   def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
     @type with_tranfers: boolean
+    @type with_shared_resource_path: boolean
+
+    if with_transfer and not with_shared_resource_path:
+      The input and ouput files are temporary files on the computing resource
+      and these files can be transfered from and to the computing resource
+      using soma workflow API
+
+    if with_shared_resource_path and not with_transfers:
+      The files are read and written on the computing resource.
+
+    if with_shared_resource_path and with_transfer:
+      The files are read from data located on the computing resource but the output
+      will be written in temporary files and transfered to the computing resource.
+      
     '''
     self.examples_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES")
     self.output_dir = os.environ.get("SOMA_WORKFLOW_EXAMPLES_OUT")
@@ -680,8 +694,21 @@ class WfTest(unittest.TestCase):
   def test_result(self):
     raise Exception('WfTest is an abstract class. test_result must be implemented in subclass')
 
-#class Simple(WfTest):
+class Simple_Shared(WfTest):
 
+  def setUp(self):
+    workflow_examples = WorkflowExamples(with_tranfers=False,
+                                         with_shared_resource_path=False)
+    self.wf_ex = workflow_examples
+    self.wf = self.wf_ex.simpleExample() 
+    self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
+                                              name="unit test multiple")
+
+  def test_result(self):
+    Helper.wait_workflow(self.wf_id, WfTest.wf_ctrl)
+    status = WfTest.wf_ctrl.workflow_status(self.wf_id)
+    
+    self.failUnless(status == constants.WORKFLOW_DONE)
 
 
 class Multiple(WfTest):

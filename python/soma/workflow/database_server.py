@@ -1632,6 +1632,12 @@ class WorkflowDatabaseServer( object ):
         connection.close()
         raise DatabaseError('%s: %s \n' %(type(e), e))
 
+
+      if count == 0:
+        raise UnknownObjectError("The job id " + repr(job_id) + " is not "
+                                 "valid or does not belong to "
+                                 "user " + repr(user_id)) 
+
       try:
         result = cursor.execute('SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
       except Exception, e:
