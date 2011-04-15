@@ -1065,7 +1065,6 @@ class WorkflowDatabaseServer( object ):
                             datetime.now(), 
                             wf_id))
             if status == constants.WARNING:
-              print "WARNING"
               cursor.execute('''UPDATE jobs
                                 SET status=?
                                 WHERE workflow_id=? and 
