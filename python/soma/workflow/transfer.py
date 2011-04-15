@@ -213,16 +213,16 @@ class TransferSCP(Transfer):
   def transfer_to_remote(self, path, remote_path, overwrite=False):
     if os.path.isfile(path):
       scp_cmd = 'scp -C %s "%s@%s:%s"' %(path, 
-                                         username, 
-                                         hostname, 
+                                         self.username, 
+                                         self.hostname, 
                                          remote_path)
       print scp_cmd
       os.system(scp_cmd)
 
     if os.path.isdir(path):
       scp_cmd = 'scp -C -r %s "%s@%s:%s"' %(path, 
-                                            username, 
-                                            hostname, 
+                                            self.username, 
+                                            self.hostname, 
                                             remote_path)
       print scp_cmd
       os.system(scp_cmd)
@@ -230,16 +230,16 @@ class TransferSCP(Transfer):
 
   def transfer_from_remote(self, remote_path, path, overwrite=False):
     if self.remote_file_controller.is_file(remote_path):
-      scp_cmd = 'scp -C "%s@%s:%s" %s ' %(username, 
-                                          hostname, 
+      scp_cmd = 'scp -C "%s@%s:%s" %s ' %(self.username, 
+                                          self.hostname, 
                                           remote_path, 
                                           path)
       print scp_cmd
       os.system(scp_cmd)
       
     if self.remote_file_controller.is_dir(remote_path):
-      scp_cmd = 'scp -C -r "%s@%s:%s" %s ' %(username, 
-                                             hostname, 
+      scp_cmd = 'scp -C -r "%s@%s:%s" %s ' %(self.username, 
+                                             self.hostname, 
                                              remote_path, 
                                              path)
       print scp_cmd
