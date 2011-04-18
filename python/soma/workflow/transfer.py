@@ -199,7 +199,9 @@ class Transfer(object):
 
 
 class TransferSCP(Transfer):
-
+  '''
+  WARNING => problem when run in a thread ?
+  '''
   username = None
 
   hostname = None
@@ -212,7 +214,7 @@ class TransferSCP(Transfer):
 
   def transfer_to_remote(self, path, remote_path, overwrite=False):
     if os.path.isfile(path):
-      scp_cmd = 'scp -C %s "%s@%s:%s"' %(path, 
+      scp_cmd = 'scp -q %s "%s@%s:%s"' %(path, 
                                          self.username, 
                                          self.hostname, 
                                          remote_path)
@@ -220,7 +222,7 @@ class TransferSCP(Transfer):
       os.system(scp_cmd)
 
     if os.path.isdir(path):
-      scp_cmd = 'scp -C -r %s "%s@%s:%s"' %(path, 
+      scp_cmd = 'scp -qr %s "%s@%s:%s"' %(path, 
                                             self.username, 
                                             self.hostname, 
                                             remote_path)
@@ -230,7 +232,7 @@ class TransferSCP(Transfer):
 
   def transfer_from_remote(self, remote_path, path, overwrite=False):
     if self.remote_file_controller.is_file(remote_path):
-      scp_cmd = 'scp -C "%s@%s:%s" %s ' %(self.username, 
+      scp_cmd = 'scp -q "%s@%s:%s" %s ' %(self.username, 
                                           self.hostname, 
                                           remote_path, 
                                           path)
@@ -238,7 +240,7 @@ class TransferSCP(Transfer):
       os.system(scp_cmd)
       
     if self.remote_file_controller.is_dir(remote_path):
-      scp_cmd = 'scp -C -r "%s@%s:%s" %s ' %(self.username, 
+      scp_cmd = 'scp -qr "%s@%s:%s" %s ' %(self.username, 
                                              self.hostname, 
                                              remote_path, 
                                              path)
@@ -334,6 +336,7 @@ class TransferPyro(Transfer):
 
   def __init__(self, remote_file_controller):
     super(TransferPyro, self).__init__(remote_file_controller)
+    print "Pyro"
 
   def transfer_to_remote(self, 
                          path, 
@@ -343,7 +346,7 @@ class TransferPyro(Transfer):
     '''
     return Transfered_with_success
     '''
-    #print "Pyro copy " + repr(path) + " to " + repr(remote_path)
+    print "Pyro copy " + repr(path) + " to " + repr(remote_path)
     if os.path.isfile(path):
       # TBI in case the file were already transfered
       transmitted = 0
@@ -392,7 +395,7 @@ class TransferPyro(Transfer):
                            overwrite=False, 
                            buffer_size = 512**2):
 
-   #print "Pyro copy " + repr(remote_path) + " to " + repr(path)
+   print "Pyro copy " + repr(remote_path) + " to " + repr(path)
    if self.remote_file_controller.is_file(remote_path):
       # TBI in case the file were already transfered
       transmitted = 0

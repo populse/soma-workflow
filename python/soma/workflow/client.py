@@ -491,12 +491,12 @@ class WorkflowController(object):
                                                      rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
 
-      if not password and not rsa_key_pass:
-        self._transfer = TransferSCP(self._engine_proxy, 
-                                     username=login, 
-                                     hostname=sub_machine)
-      else:
-        self._transfer = TransferPyro(self._engine_proxy)
+      #if not password and not rsa_key_pass:
+        #self._transfer = TransferSCP(self._engine_proxy, 
+                                     #username=login, 
+                                     #hostname=sub_machine)
+      #else:
+      self._transfer = TransferPyro(self._engine_proxy)
       self._transfer_stdouterr = TransferPyro(self._engine_proxy)
    
     # LIGHT MODE
