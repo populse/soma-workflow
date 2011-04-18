@@ -427,6 +427,8 @@ class WorkflowController(object):
 
   _transfer = None
 
+  _transfer_stdouterr = None
+
   config = None
   
   def __init__(self, 
@@ -469,6 +471,7 @@ class WorkflowController(object):
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
       self._transfer = TransferLocal(self._engine_proxy)
+      self._transfer_stdouterr = TransferLocal(self._engine_proxy)
       #self._transfer = TransferPyro(self._engine_proxy)
     
     # REMOTE MODE
@@ -494,7 +497,7 @@ class WorkflowController(object):
                                      hostname=sub_machine)
       else:
         self._transfer = TransferPyro(self._engine_proxy)
-      
+      self._transfer_stdouterr = TransferPyro(self._engine_proxy)
    
     # LIGHT MODE
     elif self._mode == 'light':
@@ -502,6 +505,8 @@ class WorkflowController(object):
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
       #self._transfer = TransferPyro(self._engine_proxy)
+      self._transfer_stdouterr = TransferLocal(self._engine_proxy)
+
 
     self._transfer_monitoring = TransferMonitoring(self._engine_proxy)
 
@@ -762,8 +767,10 @@ class WorkflowController(object):
     '''
     (engine_stdout_file, engine_stderr_file) = self._engine_proxy.stdouterr_file_path(job_id)
 
-    self._transfer.transfer_from_remote(engine_stdout_file, stdout_file_path)
-    self._transfer.transfer_from_remote(engine_stderr_file, stderr_file_path)
+    self._transfer_stdouterr.transfer_from_remote(engine_stdout_file, 
+                                                  stdout_file_path)
+    self._transfer_stdouterr.transfer_from_remote(engine_stderr_file, 
+                                                  stderr_file_path)
     
     #engine_stdout_file, stdout_transfer_action_info, engine_stderr_file, stderr_transfer_action_info = self._engine_proxy.stdouterr_transfer_action_info(job_id)
     
