@@ -880,7 +880,7 @@ class WorkflowEngine(RemoteFileController):
     transfer_action_info = (cumulated_file_size, 
                             dir_element_action_info, 
                             transfer_type)
-    WorkflowController.create_dir_structure(engine_path, content)
+    #WorkflowController.create_dir_structure(engine_path, content)
     self._database_server.set_transfer_status(engine_path, 
                                         constants.TRANSFERING_FROM_CLIENT_TO_CR)
     self._database_server.set_transfer_action_info(engine_path, 

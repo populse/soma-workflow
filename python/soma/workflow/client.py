@@ -491,12 +491,12 @@ class WorkflowController(object):
                                                      rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
 
-      #if not password and not rsa_key_pass:
-        #self._transfer = TransferSCP(self._engine_proxy, 
-                                     #username=login, 
-                                     #hostname=sub_machine)
-      #else:
-      self._transfer = TransferPyro(self._engine_proxy)
+      if not password and not rsa_key_pass:
+        self._transfer = TransferSCP(self._engine_proxy, 
+                                     username=login, 
+                                     hostname=sub_machine)
+      else:
+        self._transfer = TransferPyro(self._engine_proxy)
       self._transfer_stdouterr = TransferPyro(self._engine_proxy)
    
     # LIGHT MODE
@@ -1107,12 +1107,12 @@ class WorkflowController(object):
       return transfer_action_info
     elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
       (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
-      if transfer_action_info[2] == TR_MFF_CR_TO_C:
-        WorkflowController.create_dir_structure(os.path.dirname(client_path), 
-                                                dir_content)
-      if transfer_action_info[2] == TR_DIR_CR_TO_C:
-        WorkflowController.create_dir_structure(client_path, 
-                                                dir_content)
+      #if transfer_action_info[2] == TR_MFF_CR_TO_C:
+        #WorkflowController.create_dir_structure(os.path.dirname(client_path), 
+                                                #dir_content)
+      #if transfer_action_info[2] == TR_DIR_CR_TO_C:
+        #WorkflowController.create_dir_structure(client_path, 
+                                                #dir_content)
       return transfer_action_info
     
     return None
@@ -1414,17 +1414,17 @@ class WorkflowController(object):
           result.append( ( os.path.basename(path), s.st_size, None ) )
     return result
 
-  @staticmethod     
-  def create_dir_structure(path, content, subdirectory = ""):
-    if not os.path.isdir(path):
-      os.makedirs(path)
-    for item, description, md5_hash in content:
-      relative_path = os.path.join(subdirectory,item)
-      full_path = os.path.join(path, relative_path)
-      if isinstance(description, list):
-        if not os.path.isdir(full_path):
-          os.mkdir(full_path)
-        WorkflowController.create_dir_structure(path, description, relative_path)
+  #@staticmethod     
+  #def create_dir_structure(path, content, subdirectory = ""):
+    #if not os.path.isdir(path):
+      #os.makedirs(path)
+    #for item, description, md5_hash in content:
+      #relative_path = os.path.join(subdirectory,item)
+      #full_path = os.path.join(path, relative_path)
+      #if isinstance(description, list):
+        #if not os.path.isdir(full_path):
+          #os.mkdir(full_path)
+        #WorkflowController.create_dir_structure(path, description, relative_path)
 
  
 def _embedded_engine_and_server(config):
