@@ -588,16 +588,42 @@ class WorkflowExamples(object):
     
     return workflow
   
-  def hundred_of_jobs(self, nb=200, time=60):
+  def hundred_of_jobs(self, nb=500, time=60):
     
+    dependencies = []
     jobs = []
-    for i in range(0,nb):
+    intermed_job1 = self.job_sleep(2)
+    jobs.append(intermed_job1)
+    intermed_job2 = self.job_sleep(2)
+    jobs.append(intermed_job2)
+
+    elem_group1 = []
+    for i in range(0, nb):
       job = self.job_sleep(time)
       jobs.append(job)
-     
-    dependencies = []
- 
-    workflow = Workflow(jobs, dependencies)
+      elem_group1.append(job)
+      dependencies.append((job,intermed_job1))
+    group1 = Group(name="Group 1", elements=elem_group1)
+
+    elem_group2 = []
+    for i in range(0, nb):
+      job = self.job_sleep(time)
+      jobs.append(job)
+      elem_group2.append(job)
+      dependencies.append((intermed_job1, job))
+      dependencies.append((job, intermed_job2))
+    group2 = Group(name="Group 2", elements=elem_group2)
+
+    elem_group3 = []
+    for i in range(0, nb):
+      job = self.job_sleep(time)
+      jobs.append(job)
+      elem_group3.append(job)
+      dependencies.append((intermed_job2, job))
+    group3 = Group(name="Group 3", elements=elem_group3)
+
+    root_group = [group1, intermed_job1, group2, intermed_job2, group3]
+    workflow = Workflow(jobs, dependencies, root_group)
   
     return workflow
 

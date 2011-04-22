@@ -38,8 +38,7 @@ class WorkflowError(Exception):
 
 class TransferError(Exception):
   '''
-  Raised when an incorrect Transfer is submitted to soma_workflow, when an 
-  incorrect file is transfered or when an error occurs during a file transfer.
+  Raised when an incorrect Transfer is submitted to soma_workflow, or when an error occurs during a file transfer.
   '''
   pass
 

@@ -789,12 +789,12 @@ class WorkflowEngine(RemoteFileController):
 
   ########## FILE TRANSFER ###############################################
 
-  def register_transfer(self, file_transfer): 
+  def register_transfer(self, 
+                        file_transfer): 
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
     engine_transfer = EngineTransfer(file_transfer)
-    #engine_transfer.engine_path =  
     engine_transfer = self._database_server.add_transfer(engine_transfer, 
                                                          self._user_id)
 
@@ -810,200 +810,49 @@ class WorkflowEngine(RemoteFileController):
               client_file_path, 
               expiration_date, 
               workflow_id,
-              client_paths)
+              client_paths,
+              transfer_type, 
+              status)
     '''
-    return self._database_server.get_transfer_information(engine_path)
+    return self._database_server.get_transfer_information(engine_path, self._user_id)
 
 
-  def init_transfer_from_cr(self, engine_path):
-    '''
-    Initialize the transfer of a file or a directory from the computing resource 
-    to the client.
-    '''
-    engine_path, client_path, expiration_date, workflow_id, client_paths = self.transfer_information(engine_path)
-    status = self.transfer_status(engine_path)
-    if status != constants.FILES_ON_CR and \
-       status != constants.FILES_ON_CLIENT_AND_CR and \
-       status != constants.TRANSFERING_FROM_CR_TO_CLIENT:
-      self.logger.debug("!!!! transfer " + engine_path + " doesn't exist on engine side")
-      # TBI raise
-      return (None, None)
-    content = None
-    transfer_action_info = None
-    if not client_paths:
-      if os.path.isfile(engine_path):
-        stat = os.stat(engine_path)
-        file_size = stat.st_size
-        md5_hash = hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() 
-        transfer_action_info = (file_size, md5_hash, constants.TR_FILE_CR_TO_C)
-      elif os.path.isdir(engine_path):
-        full_path_list = []
-        for element in os.listdir(engine_path):
-          full_path_list.append(os.path.join(engine_path, element))
-        content = WorkflowController.dir_content(full_path_list)
-        (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
-        transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.TR_DIR_CR_TO_C)
-    else: #client_paths
-      full_path_list = []
-      for element in os.listdir(engine_path):
-        full_path_list.append(os.path.join(engine_path, element))
-      content = WorkflowController.dir_content(full_path_list)
-      (cumulated_file_size, dir_element_action_info) = self._initializeDirectory(engine_path, content)
-      transfer_action_info = (cumulated_file_size, dir_element_action_info, constants.TR_MFF_CR_TO_C)
+  #def init_transfer_from_cr(self, 
+                            #engine_path,
+                            #client_path, 
+                            #expiration_date, 
+                            #workflow_id, 
+                            #client_paths,
+                            #status):
+    #'''
+    #Initialize the transfer of a file or a directory from the computing resource 
+    #to the client.
+    #'''
+    #if not client_paths:
+      #if os.path.isfile(engine_path):
+        #transfer_type = constants.TR_FILE_CR_TO_C
+      #elif os.path.isdir(engine_path):
+        #transfer_type = constants.TR_DIR_CR_TO_C
+      #else:
+        #pass 
+        ## TBI raise execption
+    #else: #client_paths
+      ## TBI check that the files exit
+      #transfer_type = constants.TR_MFF_CR_TO_C
 
-    self._database_server.set_transfer_status(engine_path,    
-    constants.TRANSFERING_FROM_CR_TO_CLIENT)
-    self._database_server.set_transfer_action_info(engine_path, transfer_action_info)     
-    return (transfer_action_info, content)
+    #self._database_server.set_transfer_status(engine_path,    
+                                              #constants.TRANSFERING_FROM_CR_TO_CLIENT)
+    #self._database_server.set_transfer_type(engine_path, 
+                                            #transfer_type, 
+                                            #self._user_id)     
+    #return transfer_type
 
 
-  def init_file_transfer_to_cr(self, engine_path, file_size, md5_hash = None):
-    '''
-    Initialize the transfer of a file from the client to the computing resource
-    '''
-    transfer_action_info = (file_size, md5_hash, constants.TR_FILE_C_TO_CR)
-    f = open(engine_path, 'w')
-    f.close()
-    self._database_server.set_transfer_status(engine_path,    
-    constants.TRANSFERING_FROM_CLIENT_TO_CR)
-    self._database_server.set_transfer_action_info(engine_path,     
-                                                   transfer_action_info)
-    return transfer_action_info
+  def set_transfer_type(self, engine_path, transfer_type):
 
-  def init_dir_transfer_to_cr(self, engine_path, content, transfer_type):
-    '''
-    Initialize the transfer of a directory from the client to the computing 
-    resource. 
-    Transfer_type => TR_DIR_C_TO_CR or TR_MFF_C_TO_CR
-    '''
-    cumulated_file_size, dir_element_action_info = self._initializeDirectory(engine_path, content)
-    transfer_action_info = (cumulated_file_size, 
-                            dir_element_action_info, 
-                            transfer_type)
-    #WorkflowController.create_dir_structure(engine_path, content)
-    self._database_server.set_transfer_status(engine_path, 
-                                        constants.TRANSFERING_FROM_CLIENT_TO_CR)
-    self._database_server.set_transfer_action_info(engine_path, 
-                                                   transfer_action_info)
-    return transfer_action_info
-
-
-
-  def _initializeDirectory(self, engine_path, content, subdirectory = ""):
-    '''
-    Initialize engine directory from the content of client directory.
-
-    @rtype : tuple (int, dictionary)
-    @return : (cumulated file size, dictionary : relative file path => (file_size, md5_hash))
-    '''
-    dir_element_action_info = {}
-    cumulated_file_size = 0
-    for item, description, md5_hash in content:
-      relative_path = os.path.join(subdirectory,item)
-      full_path = os.path.join(engine_path, relative_path)
-      if isinstance(description, list):
-        #os.mkdir(full_path)
-        sub_size, sub_dir_element_action_info = self._initializeDirectory( engine_path, description, relative_path)
-        cumulated_file_size += sub_size
-        dir_element_action_info.update(sub_dir_element_action_info)
-      else:
-        file_size = description
-        dir_element_action_info[relative_path] = (file_size, md5_hash)
-        cumulated_file_size += file_size
-
-    return (cumulated_file_size, dir_element_action_info)
-
-  def write_to_computing_resource_file(self, 
-                                       engine_path, 
-                                       data, 
-                                       relative_path=None):
-    '''
-    @rtype : boolean
-    @return : transfer ended
-    '''
-    if not relative_path:
-      # File case
-      (file_size, md5_hash, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
-      transfer_ended = self._write_to_file(engine_path, data, file_size, md5_hash)
-      if transfer_ended:
-        self._database_server.set_transfer_status(engine_path, constants.FILES_ON_CLIENT_AND_CR)
-        self.signalTransferEnded(engine_path)
-      
-    else:
-      # Directory case
-      (cumulated_size, dir_element_action_info, transfer_type) = self._database_server.get_transfer_action_info(engine_path)
-      if not relative_path in dir_element_action_info:
-        raise TransferError("write_to_computing_resource_file error: "
-                            " the file %s do not belong to the transfer %s" %
-                            (relative_path, engine_path))
-      (file_size, md5_hash) = dir_element_action_info[relative_path]
-      transfer_ended = self._write_to_file(os.path.join(engine_path, relative_path), data, file_size, md5_hash)
-      
-      if transfer_ended:
-        cumulated_file_size, cumulated_transmissions, files_transfer_status = self.transfer_progression_status(engine_path, (cumulated_size, dir_element_action_info, transfer_type))
-        if cumulated_transmissions == cumulated_file_size:
-          self._database_server.set_transfer_status(engine_path, constants.FILES_ON_CLIENT_AND_CR)
-          self.signalTransferEnded(engine_path)
-      
-    return transfer_ended
-
-  def _write_to_file(self, engine_path, data, file_size, md5_hash = None):
-    '''
-    @rtype: boolean
-    @return: transfer ended
-    '''
-    file = open(engine_path, 'ab')
-    file.write(data)
-    fs = file.tell()
-    file.close()
-    if fs > file_size:
-      # Reset file_size   
-      open(engine_path, 'wb')
-      raise TransferError("write_to_computing_resource_file error: " 
-                          "Transmitted data exceed expected file size.")
-    elif fs == file_size:
-      if md5_hash is not None:
-        if hashlib.md5( open( engine_path, 'rb' ).read() ).hexdigest() != md5_hash:
-          # Reset file
-          open( engine_path, 'wb' )
-          raise TransferError("write_to_computing_resource_file error: "  
-                              "A transmission error was detected.")
-        else:
-          return True
-      else:
-        return True
-    else:
-      return False
-
-
-
-  def read_from_computing_resource_file(self, 
-                                        engine_path, 
-                                        buffer_size, 
-                                        transmitted, 
-                                        relative_path = None):
-    '''
-    Implementation of soma.workflow.client.WorkflowController API
-    '''
-    
-    #if not self._database_server.is_valid_transfer(engine_path, 
-                                                   #self._user_id):
-      #raise UnknownObjectError("The transfer " + repr(engine_path) + " "
-                                #"is not valid or does not belong to "
-                                #"user " + repr(self._user_id)) 
-    
-    if relative_path:
-      engine_full_path = os.path.join(engine_path, relative_path)
-    else:
-      engine_full_path = engine_path
-      
-    f = open(engine_full_path, 'rb')
-    if transmitted:
-      f.seek(transmitted)
-    data = f.read(buffer_size)
-    f.close()
-    
-    return data
+    self._database_server.set_transfer_type(engine_path, 
+                                            transfer_type,
+                                            self._user_id)
 
     
   def set_transfer_status(self, engine_path, status):
@@ -1021,12 +870,13 @@ class WorkflowEngine(RemoteFileController):
     self._database_server.remove_transfer(engine_path, self._user_id)
 
     
-  def signalTransferEnded(self, engine_path):
+  def signalTransferEnded(self, 
+                          engine_path, 
+                          workflow_id):
     '''
     Has to be called each time a file transfer ends for the 
     workflows to be proceeded.
     '''
-    workflow_id = self._database_server.get_transfer_information(engine_path)[3]
     if workflow_id != -1:
       self._database_server.add_workflow_ended_transfer(workflow_id, engine_path)
     
@@ -1220,33 +1070,7 @@ class WorkflowEngine(RemoteFileController):
     transfer_status = self._database_server.get_transfer_status(engine_path,
                                                                 self._user_id)  
     return transfer_status
-        
 
-  def transfer_action_info(self,engine_path):
-    return self._database_server.get_transfer_action_info(engine_path)
-
- 
-  def transfer_progression_status(self, engine_path, transfer_action_info):
-    if transfer_action_info[2] == constants.TR_FILE_C_TO_CR:
-      (file_size, md5_hash, transfer_type) = transfer_action_info
-      transmitted = os.stat(engine_path).st_size
-      return (file_size, transmitted)
-    elif transfer_action_info[2] == constants.TR_DIR_C_TO_CR or \
-         transfer_action_info[2] == constants.TR_MFF_C_TO_CR:
-      (cumulated_file_size, dir_element_action_info, transfer_type) = transfer_action_info
-      files_transfer_status = []
-      for relative_path, (file_size, md5_hash) in dir_element_action_info.iteritems():
-        full_path = os.path.join(engine_path, relative_path)
-        if os.path.isfile(full_path):
-          transmitted = os.stat(full_path).st_size
-        else:
-          transmitted = 0
-        files_transfer_status.append((relative_path, file_size, transmitted))
-      cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
-      return (cumulated_file_size, cumulated_transmissions, files_transfer_status)
-    else:
-      return None
-    
 
   def job_termination_status(self, job_id ):
     '''
@@ -1263,31 +1087,6 @@ class WorkflowEngine(RemoteFileController):
                                                              self._user_id)
     return (stdout_file, stderr_file)
     
-
-  def stdouterr_transfer_action_info(self, job_id):
- 
-    (stdout_file, 
-    stderr_file) = self._database_server.get_std_out_err_file_path(job_id, 
-                                                                  self._user_id)
-    
-
-    self.logger.debug("stdout_file " + repr(stdout_file) + " stderr_file " + repr(stderr_file))
-
-    stdout_transfer_action_info = None
-    stderr_transfer_action_info = None
-    if stdout_file and os.path.isfile(stdout_file):
-      stat = os.stat(stdout_file)
-      stdout_file_size = stat.st_size
-      stdout_md5_hash = hashlib.md5(open(stdout_file, 'rb' ).read()).hexdigest()
-      stdout_transfer_action_info = (stdout_file_size, stdout_md5_hash)
-    if stderr_file and os.path.isfile(stderr_file):
-      stat = os.stat(stderr_file)
-      stderr_file_size = stat.st_size
-      stderr_md5_hash = hashlib.md5(open(stderr_file, 'rb').read()).hexdigest()
-      stderr_transfer_action_info = (stderr_file_size, stderr_md5_hash)
-    
-    return (stdout_file, stdout_transfer_action_info, stderr_file, stderr_transfer_action_info)
-
     
   ########## JOB CONTROL VIA DRMS ########################################
   

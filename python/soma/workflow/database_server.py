@@ -139,7 +139,7 @@ Job server database tables:
     workflow_id (optional)
     status
     client_paths
-    transfer_action_info
+    transfer_type
 
   Input/Ouput junction table
     job_id 
@@ -202,7 +202,7 @@ def create_database(database_file):
                                             workflow_id      INTEGER CONSTRAINT known_workflow REFERENCES workflows (id),
                                             status           VARCHAR(255) NOT NULL,
                                             client_paths     TEXT,
-                                            transfer_action_info  TEXT)''')
+                                            transfer_type TEXT)''')
 
   cursor.execute('''CREATE TABLE ios (job_id           INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs(id),
                                       engine_file_path  TEXT NOT NULL CONSTRAINT known_engine_file REFERENCES transfers (engine_file_path),
@@ -598,26 +598,6 @@ class WorkflowDatabaseServer( object ):
         connection.close()
 
     return engine_transfer
-    #return engine_transfer.engine_path
-
-
-  def is_valid_transfer(self, engine_file_path, user_id):
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
-        count = cursor.execute('''SELECT count(*) 
-                                  FROM transfers 
-                                  WHERE engine_file_path=? and 
-                                        user_id=?''', 
-                                  [engine_file_path, user_id]).next()[0]
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise DatabaseError('%s: %s \n' %(type(e), e))
-      cursor.close()
-      connection.close()
-    return count != 0
 
 
   def _check_transfer(self, connection, cursor, engine_file_path, user_id):
@@ -665,7 +645,9 @@ class WorkflowDatabaseServer( object ):
       connection.close()
       self.clean()
         
-  def get_transfer_information(self, engine_file_path):
+  def get_transfer_information(self, 
+                               engine_file_path, 
+                               user_id):
     '''
     Returns the information related to the transfer associated to the engine file path.
     The engine_file_path must be associated to a transfer.
@@ -673,40 +655,54 @@ class WorkflowDatabaseServer( object ):
     
     @type engine_file_path: string
     @rtype: tuple
-    @returns: (engine_file_path, client_file_path, expiration_date, workflow_id, client_paths)
+    @returns: (engine_file_path, client_file_path, expiration_date, workflow_id, client_paths, transfer_type, status)
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      self._check_transfer(connection, cursor, engine_file_path, user_id)
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-        if not count == 0 :
-          info = cursor.execute('''SELECT 
-                                   engine_file_path, 
-                                   client_file_path, 
-                                   expiration_date, 
-                                   workflow_id,
-                                   client_paths 
-                                   FROM transfers 
-                                   WHERE engine_file_path=?''', 
-                                   [engine_file_path]).next() #supposes that the engine_file_path is associated to a transfer
-        else: 
-          info = None
+        (engine_file_path,
+         client_file_path, 
+         expiration_date, 
+         workflow_id,
+         client_paths,
+         transfer_type,
+         status) = cursor.execute('''SELECT 
+                                  engine_file_path, 
+                                  client_file_path, 
+                                  expiration_date, 
+                                  workflow_id,
+                                  client_paths,
+                                  transfer_type,
+                                  status
+                                  FROM transfers 
+                                  WHERE engine_file_path=?''', 
+                                  [engine_file_path]).next() 
       except Exception, e:
         cursor.close()
         connection.close()
         raise DatabaseError('%s: %s \n' %(type(e), e)) 
-      if info:
-        if info[4]:
-          client_paths = self._string_conversion(info[4]).split(file_separator)
-        else: 
-          client_paths = None
-        result = (self._string_conversion(info[0]), self._string_conversion(info[1]), self._str_to_date_conversion(info[2]), info[3], client_paths)
+     
+      engine_file_path = self._string_conversion(engine_file_path)
+      client_file_path = self._string_conversion(client_file_path)
+      expiration_date = self._str_to_date_conversion(expiration_date)
+      if client_paths:
+        client_paths = self._string_conversion(client_paths).split(file_separator)
       else:
-        result = (None, None, None, -1, None)
+        client_path = None
+      transfer_type = self._string_conversion(transfer_type)
+      status = self._string_conversion(status)
+
       cursor.close()
       connection.close()
-    return result
+    return (engine_file_path, 
+            client_file_path, 
+            expiration_date, 
+            workflow_id, 
+            client_paths, 
+            transfer_type, 
+            status)
   
 
   def get_transfer_status(self, engine_file_path, user_id):
@@ -756,20 +752,13 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
 
-  def set_transfer_action_info(self, engine_file_path, info):
-    '''
-    Save data necessary for the transfer itself.
-    In the case of a file transfer, info is a tuple (file size, md5 hash)
-    In the case of a directory transfer, info is a tuple (cumulated file size, file transfer info)
-    '''
+
+  def set_transfer_type(self, engine_file_path, transfer_type, user_id):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-        if not count == 0 :
-          pickled_info = pickle.dumps(info)
-          cursor.execute('UPDATE transfers SET transfer_action_info=? WHERE engine_file_path=?', (pickled_info, engine_file_path))
+        cursor.execute('UPDATE transfers SET transfer_type=? WHERE engine_file_path=?', (transfer_type, engine_file_path))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -778,35 +767,7 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       cursor.close()
       connection.close()
-      
-      
-  def get_transfer_action_info(self, engine_file_path):
-    '''
-    Returns data necessary to the transfer itself.
-    '''
-    with self._lock:
-      connection = self._connect()
-      cursor = connection.cursor()
-      try:
-        count = cursor.execute('SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-        if not count == 0 :
-          pickled_info = cursor.execute('SELECT transfer_action_info FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]#supposes that the engine_file_path is associated to a transfer
-        else:
-          pickled_info = None
-      except Exception, e:
-        cursor.close()
-        connection.close()
-        raise DatabaseError('%s: %s \n' %(type(e), e))
-      
-      pickled_info = self._string_conversion(pickled_info)
-      if pickled_info:
-        info = pickle.loads(pickled_info)
-      else:
-        info = None
-      cursor.close()
-      connection.close()
- 
-    return info
+
 
   
   def add_workflow_ended_transfer(self, workflow_id, engine_file_path):
@@ -1159,22 +1120,30 @@ class WorkflowDatabaseServer( object ):
         # transfers 
         for row in cursor.execute('''SELECT engine_file_path, 
                                             client_file_path,
+                                            client_paths,
                                             status,
-                                            transfer_action_info
+                                            transfer_type
                                      FROM transfers WHERE workflow_id=?''', [wf_id]):
-          engine_file_path, client_file_path, status, pickled_info = row
+          (engine_file_path, 
+           client_file_path, 
+           client_paths, 
+           status, 
+           transfer_type) = row
             
           engine_file_path = self._string_conversion(engine_file_path)
           client_file_path = self._string_conversion(client_file_path)
           status = self._string_conversion(status)
-          
-          pickled_info = self._string_conversion(pickled_info)
-          if pickled_info:
-            transfer_action_info = pickle.loads(pickled_info)
+          transfer_type = self._string_conversion(transfer_type)
+          if client_paths:
+            client_paths = self._string_conversion(client_paths).split(file_separator)
           else:
-            transfer_action_info = None
+            client_paths = None
             
-          workflow_status[1].append((engine_file_path, client_file_path, status, transfer_action_info))
+          workflow_status[1].append((engine_file_path, 
+                                     client_file_path, 
+                                     client_paths, 
+                                     status,
+                                     transfer_type))
           
       except Exception, e:
         cursor.close()

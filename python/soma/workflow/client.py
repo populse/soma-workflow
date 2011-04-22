@@ -598,6 +598,8 @@ class WorkflowController(object):
     '''
 
     engine_transfer = self._engine_proxy.register_transfer(file_transfer)
+
+
     return engine_transfer
 
   ########## WORKFLOWS, JOBS and FILE TRANSFERS RETRIEVAL ###################
@@ -691,18 +693,16 @@ class WorkflowController(object):
     wf_status = self._engine_proxy.workflow_elements_status(workflow_id)
      # special processing for transfer status:
     new_transfer_status = []
-    for engine_path, client_path, status, transfer_action_info in wf_status[1]:
-      progression = self._transfer_progression(status, 
-                                               transfer_action_info,
+    for engine_path, client_path, client_paths, status, transfer_type in wf_status[1]:
+      progression = self._transfer_progression(status,
+                                               transfer_type,
                                                client_path,
+                                               client_paths,
                                                engine_path)
 
-      #progression = self._transfer_progress(engine_path, 
-                                            #client_path, 
-                                            #transfer_action_info)
       new_transfer_status.append((engine_path, (status, progression)))
       
-    new_wf_status = (wf_status[0],new_transfer_status, wf_status[2])
+    new_wf_status = (wf_status[0], new_transfer_status, wf_status[2])
     return new_wf_status
 
 
@@ -772,25 +772,6 @@ class WorkflowController(object):
     self._transfer_stdouterr.transfer_from_remote(engine_stderr_file, 
                                                   stderr_file_path)
     
-    #engine_stdout_file, stdout_transfer_action_info, engine_stderr_file, stderr_transfer_action_info = self._engine_proxy.stdouterr_transfer_action_info(job_id)
-    
-    #open(stdout_file_path, 'wb') 
-    #if engine_stdout_file and stdout_transfer_action_info:
-      #self._transfer_file_from_cr(stdout_file_path, 
-                                  #engine_stdout_file, 
-                                  #stdout_transfer_action_info[0], 
-                                  #stdout_transfer_action_info[1], 
-                                  #buffer_size)
-  
-    #if stderr_file_path:
-      #open(stderr_file_path, 'wb') 
-      #if engine_stderr_file and stderr_transfer_action_info:
-          #self._transfer_file_from_cr(stderr_file_path, 
-                                      #engine_stderr_file, 
-                                      #stderr_transfer_action_info[0], 
-                                      #stderr_transfer_action_info[1], 
-                                      #buffer_size)
-    
 
   ########## FILE TRANSFER MONITORING ###################################
 
@@ -812,18 +793,19 @@ class WorkflowController(object):
     Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
     
-    status = self._engine_proxy.transfer_status(transfer_id)
-    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
-    transfer_action_info =  self._engine_proxy.transfer_action_info(transfer_id)
-
+    (transfer_id, 
+    client_path, 
+    expiration_date, 
+    workflow_id, 
+    client_paths, 
+    transfer_type,
+    status) = self._engine_proxy.transfer_information(transfer_id)
     progression = self._transfer_progression(status,
-                                            transfer_action_info,
-                                            client_path,
-                                            transfer_id)
+                                             transfer_type,
+                                             client_path,
+                                             client_paths,
+                                             transfer_id)
 
-    #transfer_action_info =  self._engine_proxy.transfer_action_info(transfer_id)
-    #transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
-    #progression = self._transfer_progress(transfer_id, client_path, transfer_action_info)
     return (status, progression)
 
 
@@ -981,45 +963,49 @@ class WorkflowController(object):
     Raises *TransferError*
     '''
 
-    status, status_info = self.transfer_status(transfer_id)
-    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
-
-    transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
+    (transfer_id, 
+     client_path, 
+     expiration_date, 
+     workflow_id, 
+     client_paths, 
+     transfer_type,
+     status) = self._engine_proxy.transfer_information(transfer_id)
 
     if status == FILES_ON_CLIENT or \
        status == TRANSFERING_FROM_CLIENT_TO_CR:
       # transfer from client to computing resource
       overwrite = False
-      if not transfer_action_info or \
-         transfer_action_info[2] == TR_FILE_CR_TO_C or \
-         transfer_action_info[2] == TR_DIR_CR_TO_C or \
-         transfer_action_info[2] == TR_MFF_CR_TO_C:
+      if not transfer_type or \
+         transfer_type == TR_FILE_CR_TO_C or \
+         transfer_type == TR_DIR_CR_TO_C or \
+         transfer_type == TR_MFF_CR_TO_C:
         # transfer reset
         overwrite = True
-        transfer_action_info = self._initialize_transfer(transfer_id)
+        transfer_type = self._initialize_transfer(transfer_id)
       
       remote_path = transfer_id
 
-      if transfer_action_info[2] == TR_FILE_C_TO_CR or \
-         transfer_action_info[2] == TR_DIR_C_TO_CR:
+      if transfer_type == TR_FILE_C_TO_CR or \
+         transfer_type == TR_DIR_C_TO_CR:
         self._transfer.transfer_to_remote(client_path, 
                                          remote_path,
                                          overwrite)
         self._engine_proxy.set_transfer_status(transfer_id, 
                                                FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
-      if transfer_action_info[2] == TR_MFF_C_TO_CR:
-        for relative_path in transfer_action_info[1]:
-          path = os.path.join(os.path.dirname(client_path),relative_path)
+      if transfer_type == TR_MFF_C_TO_CR:
+        for path in client_paths:
+          relative_path = os.path.basename(path)
           r_path = os.path.join(remote_path, relative_path)
           self._transfer.transfer_to_remote(path,
                                             r_path,
                                             overwrite)
+
         self._engine_proxy.set_transfer_status(transfer_id, 
                                                FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
     if status == FILES_ON_CR or \
@@ -1027,38 +1013,37 @@ class WorkflowController(object):
        status == FILES_ON_CLIENT_AND_CR:
       # transfer from computing resource to client
       overwrite = False
-      if not transfer_action_info or \
-         transfer_action_info[2] == TR_FILE_C_TO_CR or \
-         transfer_action_info[2] == TR_DIR_C_TO_CR or \
-         transfer_action_info[2] == TR_MFF_C_TO_CR :
-        transfer_action_info = self._initialize_transfer(transfer_id)
+      if not transfer_type or \
+         transfer_type == TR_FILE_C_TO_CR or \
+         transfer_type == TR_DIR_C_TO_CR or \
+         transfer_type == TR_MFF_C_TO_CR :
+        transfer_type = self._initialize_transfer(transfer_id)
         overwrite = True
         # TBI remove existing files 
 
       remote_path = transfer_id
-      if transfer_action_info[2] == TR_FILE_CR_TO_C or \
-         transfer_action_info[2] == TR_DIR_CR_TO_C:
+      if transfer_type == TR_FILE_CR_TO_C or \
+         transfer_type == TR_DIR_CR_TO_C:
         # file case
         self._transfer.transfer_from_remote(remote_path, 
                                             client_path, 
                                             overwrite)
         self._engine_proxy.set_transfer_status(transfer_id, 
                                                FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
     
-      if transfer_action_info[2] == TR_MFF_CR_TO_C:
-        (cumulated_file_size, file_transfer_info, transfer_type) = transfer_action_info
-        for relative_path, file_info in file_transfer_info.iteritems(): 
+      if transfer_type == TR_MFF_CR_TO_C:
+        for path in client_paths:
+          relative_path = os.path.basename(path)
           r_path = os.path.join(remote_path, relative_path)
-          path = os.path.join(os.path.dirname(client_path), relative_path) 
           self._transfer.transfer_from_remote(r_path, 
                                               path, 
-                                              overwrite)
+                                              overwrite) 
 
         self._engine_proxy.set_transfer_status(transfer_id, 
                                                FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
     return False
@@ -1072,137 +1057,86 @@ class WorkflowController(object):
     * transfer_id *FileTransfer identifier*
 
     * returns: *tuple*
+        transfer_type
+    
+
         * (file_size, md5_hash) in the case of a file transfer
         * (cumulated_size, dictionary relative path -> (file_size, md5_hash)) in
           case of a directory transfer.
 
     Raises *UnknownObjectError* if the transfer_id is not valid 
     '''
-    status = self._engine_proxy.transfer_status(transfer_id)
-    transfer_id, client_path, expiration_date, workflow_id, client_paths = self._engine_proxy.transfer_information(transfer_id)
+    (transfer_id, 
+     client_path, 
+     expiration_date, 
+     workflow_id, 
+     client_paths,
+     transfer_type,
+     status) = self._engine_proxy.transfer_information(transfer_id)
 
     if status == FILES_ON_CLIENT:
       if not client_paths:
         if os.path.isfile(client_path):
-          stat = os.stat(client_path)
-          file_size = stat.st_size
-          md5_hash = hashlib.md5( open( client_path, 'rb' ).read() ).hexdigest() 
-          transfer_action_info = self._engine_proxy.init_file_transfer_to_cr(transfer_id, 
-                                                      file_size, 
-                                                      md5_hash)
+          transfer_type = TR_FILE_C_TO_CR
+          self._engine_proxy.set_transfer_status(transfer_id,
+                                                 TRANSFERING_FROM_CLIENT_TO_CR)
+          self._engine_proxy.set_transfer_type(transfer_id, 
+                                               transfer_type)
+
+
         elif os.path.isdir(client_path):
-          full_path_list = []
-          for element in os.listdir(client_path):
-            full_path_list.append(os.path.join(client_path, element))
-          content = WorkflowController.dir_content(full_path_list)
-          transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id, 
-                                                     content,
-                                                     TR_DIR_C_TO_CR)
-
+          transfer_type = TR_DIR_C_TO_CR
+          self._engine_proxy.set_transfer_status(transfer_id,
+                                                 TRANSFERING_FROM_CLIENT_TO_CR)
+          self._engine_proxy.set_transfer_type(transfer_id,
+                                               TR_DIR_C_TO_CR)
+        else:
+          raise TransferError("The file or directory %s doesn't exist "
+                              "on the client machine." %(client_path))
       else: #client_paths
-        content = WorkflowController.dir_content(client_paths)
-        transfer_action_info = self._engine_proxy.init_dir_transfer_to_cr(transfer_id,
-                                                   content,
-                                                   TR_MFF_C_TO_CR)
-      return transfer_action_info
-    elif status == FILES_ON_CR or FILES_ON_CLIENT_AND_CR:
-      (transfer_action_info, dir_content) = self._engine_proxy.init_transfer_from_cr(transfer_id)
-      #if transfer_action_info[2] == TR_MFF_CR_TO_C:
-        #WorkflowController.create_dir_structure(os.path.dirname(client_path), 
-                                                #dir_content)
-      #if transfer_action_info[2] == TR_DIR_CR_TO_C:
-        #WorkflowController.create_dir_structure(client_path, 
-                                                #dir_content)
-      return transfer_action_info
-    
-    return None
+        for path in client_paths:
+          if not os.path.isfile(path) and not os.path.isdir(path): 
+            raise TransferError("The file or directory %s doesn't exist " 
+                                "on the client machine." %(path))
+        transfer_type = TR_MFF_C_TO_CR
+
+      self._engine_proxy.set_transfer_status(transfer_id,
+                                                TRANSFERING_FROM_CLIENT_TO_CR)
+      self._engine_proxy.set_transfer_type(transfer_id,
+                                           transfer_type)
+      return transfer_type
+
+    elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR:
+      #transfer_type = self._engine_proxy.init_transfer_from_cr(transfer_id,
+                                               #client_path, 
+                                               #expiration_date, 
+                                               #workflow_id, 
+                                               #client_paths,
+                                               #status)
+      if not client_paths:
+        if self._engine_proxy.is_file(transfer_id):
+          transfer_type = TR_FILE_CR_TO_C
+        elif self._engine_proxy.is_dir(transfer_id):
+          transfer_type = TR_DIR_CR_TO_C
+        else:
+          raise TransferError("The file or directory %s doesn't exist "
+                              "on the computing resource side." %(transfer_id))
+      else: #client_paths
+        for path in client_paths:
+          relative_path = os.path.base_name(path)
+          r_path = os.path.join(transfer_id, relative_path)
+          if not self._engine_proxy.is_file(r_path) and \
+             not self._engine_proxy.is_dir(r_path):
+            raise TransferError("The file or directory %s doesn't exist "
+                                "on the computing resource side." %(r_path))
+        transfer_type = TR_MFF_CR_TO_C
+
+      self._engine_proxy.set_transfer_status(transfer_id,
+                                        TRANSFERING_FROM_CR_TO_CLIENT)
+      self._engine_proxy.set_transfer_type(transfer_id,
+                                           transfer_type)   
   
-
-
-  #def write_to_computing_resource_file(self, 
-                                       #transfer_id, 
-                                       #data, 
-                                       #relative_path=None):
-    #'''
-    #Writes a piece of data to a file located on the computing resource.
-
-    #* transfer_id *FileTransfer identifier*
-
-    #* data *string* to write to the file.
-
-    #* relative_path *string*
-         #Mandatory in case of a directory transfer to identify the file.
-         #None in case of a file transfer.
-
-    #* returns: *boolean*
-        #True if the file transfer ended. (TBI right error management)
-        #Note that in case of a directory transfer, it does not mean that the 
-        #whole directory transfer ended. 
-
-    #Raises *UnknownObjectError* if the transfer_id is not valid 
-    #'''
-
-    #status = self._engine_proxy.transfer_status(transfer_id)
-    #if not status == TRANSFERING_FROM_CLIENT_TO_CR:
-      #self.initialize_transfer(transfer_id)
-    #transfer_ended = self._engine_proxy.write_to_computing_resource_file(
-                                                                  #transfer_id, 
-                                                                  #data, 
-                                                                 #relative_path)
-    #return transfer_ended
-
-
-  #def read_from_computing_resource_file(self, 
-                                        #transfer_id, 
-                                        #buffer_size, 
-                                        #transmitted,
-                                        #relative_path=None):
-    #'''
-    #Reads a piece of data from a file located on the computing resource.
-
-    #* transfer_id *FileTransfer identifier*
-
-    #* buffer_size *int*
-        #Size of the data to read.
-
-    #* transmitted *int* 
-        #Size of the data already read.
-
-    #* relative_path *string*
-        #Mandatory in case of a directory transfer to identify the file.
-        #None in case of a file transfer.
-
-    #* returns: *string* read from the file at the position *transmitted*
-
-    #'''
-    
-    #data = self._engine_proxy.read_from_computing_resource_file(transfer_id, 
-                                                                #buffer_size, 
-                                                                #transmitted,
-                                                                #relative_path)
-    #if not data:
-      ## check if the whole transfer ended
-      #transfer_action_info = self._engine_proxy.transfer_action_info(transfer_id)
-      #if not transfer_action_info == None: # None if stdout and stderr
-        #assert(transfer_action_info[2] == TR_FILE_CR_TO_C or        
-              #transfer_action_info[2] == TR_DIR_CR_TO_C or 
-              #transfer_action_info[2] == TR_MFF_CR_TO_C)
-        #(status, progression) = self.transfer_status(transfer_id)
-        #if transfer_action_info[2] == TR_FILE_CR_TO_C:
-          #(file_size, transfered) = progression
-          #if file_size == transfered:
-            #self._engine_proxy.set_transfer_status(transfer_id,   
-                                                  #FILES_ON_CLIENT_AND_CR)
-        #if transfer_action_info[2] == TR_DIR_CR_TO_C or \
-          #transfer_action_info[2] == TR_MFF_CR_TO_C:
-          #(cumulated_file_size, 
-          #cumulated_transmissions, 
-          #files_transfer_status) = progression
-          #if cumulated_transmissions == cumulated_file_size:
-            #self._engine_proxy.set_transfer_status(transfer_id,   
-                                                  #FILES_ON_CLIENT_AND_CR)
-
-    #return data
+      return transfer_type
 
 
   def delete_transfer(self, transfer_id):
@@ -1220,105 +1154,22 @@ class WorkflowController(object):
 
   ########## PRIVATE #############################################          
 
-  #def _transfer_file_to_cr(self, 
-                           #client_path, 
-                           #engine_path, 
-                           #buffer_size = 512**2, 
-                           #transmitted = 0, 
-                           #relative_path = None):
-    #'''
-    #Transfer a file from the client to the computing resource.
-
-    #@param client_path: file path on the client side
-    #@param engine_path: file path on the computing resource side
-    #@param buffer_size: the file is transfered piece by piece of size buffer_size
-    #@param transmitted: size already transfered
-    #'''
-      
-    #if relative_path:
-      #r_path = os.path.join(client_path, relative_path)
-    #else:
-      #r_path = client_path
-    #f = open(r_path, 'rb')
-    #if transmitted:
-      #f.seek(transmitted)
-    #transfer_ended = False
-    #while not transfer_ended:
-      #transfer_ended = self.write_to_computing_resource_file(engine_path,   
-                                                       #f.read(buffer_size),
-                                                       #relative_path)
-    #f.close()
-
-
-  #def _transfer_file_from_cr(self, 
-                             #client_path, 
-                             #engine_path, 
-                             #file_size, 
-                             #md5_hash, 
-                             #buffer_size = 512**2, 
-                             #relative_path = None):
-    #'''
-    #Transfer a file from the computing resource to client side.
-
-    #@param client_path: file path on the client side
-    #@param engine_path: file path on the computing resource side
-    #@param buffer_size: the file is transfered piece by piece of size buffer_size
-    #@param transmitted: size already transfered
-    #'''
-    #if relative_path:
-      #r_path = os.path.join(client_path, relative_path)
-    #else:
-      #r_path = client_path
-    #print "copy file to " + repr(r_path)
-    #f = open(r_path, 'ab')
-    #fs = f.tell()
-    ##if fs > file_size:
-      ##open(r_path, 'wb')
-    #data = self.read_from_computing_resource_file(engine_path, 
-                                                  #buffer_size, 
-                                                  #fs, 
-                                                  #relative_path)
-    #f.write(data)
-    #fs = f.tell()
-    #while data:
-      #data = self.read_from_computing_resource_file(engine_path, 
-                                                    #buffer_size, 
-                                                    #fs, 
-                                                    #relative_path)
-      #f.write(data)
-      #fs = f.tell()
-
-    #if fs > file_size:
-        #f.close()
-        #open(r_path, 'wb')
-        #raise Exception('read_from_computing_resource_file: Transmitted data exceed expected file size.')
-    #else:
-      #if md5_hash is not None and \
-         #hashlib.md5( open( r_path, 'rb' ).read() ).hexdigest() != md5_hash:
-          ## Reset file
-          #f.close()
-          #open( r_path, 'wb' )
-          #raise Exception('read_from_computing_resource_file: Transmission error detected.')
-    #f.close()
-
   def _transfer_progression(self, 
                             status, 
-                            transfer_action_info, 
+                            transfer_type,
                             client_path,
+                            client_paths,
                             engine_path):
     if status == TRANSFERING_FROM_CLIENT_TO_CR:
-      if transfer_action_info[2] == TR_MFF_C_TO_CR:
+      if transfer_type == TR_MFF_C_TO_CR:
         data_size = 0
         data_transfered = 0
-        (cumulated_file_size, 
-         file_transfer_info, 
-         transfer_type) = transfer_action_info
-        for relative_path, file_info in file_transfer_info.iteritems(): 
+        for path in client_paths:
+          relative_path = os.path.basename(path)
           r_path = os.path.join(engine_path, relative_path)
-          path = os.path.join(os.path.dirname(client_path), relative_path) 
           (ds, 
           dt) = self._transfer_monitoring.transfer_to_remote_progression(path, 
-                                                                        r_path)
+                                                                r_path)
           data_size = data_size + ds
           data_transfered = data_transfered + dt
         progression = (data_size, data_transfered)
@@ -1326,20 +1177,17 @@ class WorkflowController(object):
         progression = self._transfer_monitoring.transfer_to_remote_progression(
                                                                 client_path,   
                                                                 engine_path)
-        
+       
     elif status == TRANSFERING_FROM_CR_TO_CLIENT:
-      if transfer_action_info[2] == TR_MFF_CR_TO_C:
+      if transfer_type == TR_MFF_CR_TO_C:
         data_size = 0
         data_transfered = 0
-        (cumulated_file_size, 
-         file_transfer_info, 
-         transfer_type) = transfer_action_info
-        for relative_path, file_info in file_transfer_info.iteritems(): 
+        for path in client_paths:
+          relative_path = os.path.basename(path)
           r_path = os.path.join(engine_path, relative_path)
-          path = os.path.join(os.path.dirname(client_path), relative_path)
           (ds, 
           dt) = self._transfer_monitoring.transfer_from_remote_progression(r_path,
-                                                                     path)
+                                                                         path)
           data_size = data_size + ds
           data_transfered = data_transfered + dt
         progression = (data_size, data_transfered)
@@ -1351,80 +1199,6 @@ class WorkflowController(object):
 
     return progression
 
-
-            
-  def _transfer_progress(self, engine_path, client_path, transfer_action_info):
-    progression_info = None
-    if transfer_action_info == None :
-      return None
-    if transfer_action_info[2] == TR_FILE_C_TO_CR or \
-       transfer_action_info[2] == TR_DIR_C_TO_CR or \
-       transfer_action_info[2] == TR_MFF_C_TO_CR:
-      return self._engine_proxy.transfer_progression_status(engine_path, 
-                                                            transfer_action_info)
-
-    if transfer_action_info[2] == TR_FILE_CR_TO_C:
-      (file_size, md5_hash, transfer_type) = transfer_action_info
-      if os.path.isfile(client_path):
-        transmitted = os.stat(client_path).st_size
-      else:
-        transmitted = 0
-      return (file_size, transmitted)
-
-    elif transfer_action_info[2] == TR_MFF_CR_TO_C or \
-         transfer_action_info[2] == TR_DIR_CR_TO_C:
-      (cumulated_file_size, 
-       dir_element_action_info, 
-       transfer_type) = transfer_action_info
-      files_transfer_status = []
-      for relative_path, (file_size, md5_hash) in dir_element_action_info.iteritems():
-        if transfer_type == TR_MFF_CR_TO_C:
-          full_path = os.path.join(os.path.dirname(client_path), 
-                                   relative_path)
-        else: #TR_DIR_CR_TO_C
-          full_path = os.path.join(client_path, 
-                                   relative_path)
-        if os.path.isfile(full_path):
-          transmitted = os.stat(full_path).st_size
-        else:
-          transmitted = 0
-        files_transfer_status.append((relative_path, file_size, transmitted))
-      cumulated_transmissions = reduce( operator.add, (i[2] for i in files_transfer_status) )
-      return (cumulated_file_size, 
-              cumulated_transmissions, 
-              files_transfer_status)
-       
-    return None
-    
-  @staticmethod
-  def dir_content(path_seq, md5_hash=False):
-    result = []
-    for path in path_seq:
-      s = os.stat(path)
-      if stat.S_ISDIR(s.st_mode):
-        full_path_list = []
-        for element in os.listdir(path):
-          full_path_list.append(os.path.join(path, element))
-        content = WorkflowController.dir_content(full_path_list, md5_hash)
-        result.append((os.path.basename(path), content, None))
-      else:
-        if md5_hash:
-          result.append( ( os.path.basename(path), s.st_size, hashlib.md5( open( path, 'rb' ).read() ).hexdigest() ) )
-        else:
-          result.append( ( os.path.basename(path), s.st_size, None ) )
-    return result
-
-  #@staticmethod     
-  #def create_dir_structure(path, content, subdirectory = ""):
-    #if not os.path.isdir(path):
-      #os.makedirs(path)
-    #for item, description, md5_hash in content:
-      #relative_path = os.path.join(subdirectory,item)
-      #full_path = os.path.join(path, relative_path)
-      #if isinstance(description, list):
-        #if not os.path.isdir(full_path):
-          #os.mkdir(full_path)
-        #WorkflowController.create_dir_structure(path, description, relative_path)
 
  
 def _embedded_engine_and_server(config):

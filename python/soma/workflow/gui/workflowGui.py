@@ -1114,7 +1114,7 @@ class GroupInfoWidget(QtGui.QWidget):
     
   def dataChanged(self):
     
-    job_nb = len(self.group_item.not_sub) + len(self.group_item.done) + len(self.group_item.failed) + len(self.group_item.running)
+    job_nb = len(self.group_item.not_sub) + len(self.group_item.done) + len(self.group_item.failed) + len(self.group_item.running) + len(self.group_item.warning)
     
     ended_job_nb = len(self.group_item.done) + len(self.group_item.failed)
     
@@ -2131,6 +2131,7 @@ class GuiGroup(GuiWorkflowItem):
     self.done = []
     self.failed = []
     self.running = []
+    self.warning = []
     
     self.first_sub_date = None
     self.last_end_date = None
@@ -2158,9 +2159,9 @@ class GuiGroup(GuiWorkflowItem):
     self.done = []
     self.failed = []
     self.running = []
+    self.warning = []
 
     no_status = False
-    warning = False
     
     for child in self.children:
       item = self.gui_workflow.items[child]
@@ -2170,9 +2171,8 @@ class GuiGroup(GuiWorkflowItem):
           no_status = True
           break
         if item.status == WARNING:
-          warning = True
-          break
-        if item.status == NOT_SUBMITTED:
+          self.warning.append(item)
+        elif item.status == NOT_SUBMITTED:
           self.not_sub.append(item)
         elif item.status == DONE or item.status == FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
@@ -2197,6 +2197,7 @@ class GuiGroup(GuiWorkflowItem):
         self.done.extend(item.done)
         self.failed.extend(item.failed)
         self.running.extend(item.running)
+        self.warning.extend(item.warning)
         self.input_to_transfer.extend(item.input_to_transfer)
         self.input_transfer_ended.extend(item.input_transfer_ended)
         self.output_ready.extend(item.output_ready)
@@ -2209,7 +2210,7 @@ class GuiGroup(GuiWorkflowItem):
            
     if no_status:
       new_status = GuiGroup.GP_NO_STATUS
-    elif warning:
+    elif len(self.warning) > 0:
       new_status = GuiGroup.GP_WARNING
     elif len(self.failed) > 0:
       new_status = GuiGroup.GP_FAILED

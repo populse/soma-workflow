@@ -31,7 +31,6 @@ class RemoteFileController(object):
     f.close()
     return data
     
-
   def get_file_size(self, path):
     if os.path.isfile(path):
       size = os.path.getsize(path)
@@ -52,14 +51,11 @@ class RemoteFileController(object):
     md5_hash = hashlib.md5(open(path, 'rb').read()).hexdigest()
     return md5_hash
 
-
   def top_down_dir_list(self, path):
     return Transfer.top_down_dir_list(path)
 
   def create_dir_structure(self, path, top_down_relalive_path):
     return Transfer.create_dir_structure(path, top_down_relalive_path)
-
-
 
 
 class TransferMonitoring(object):
@@ -271,7 +267,7 @@ class TransferLocal(Transfer):
       shutil.copy(remote_path, path)
       
     if os.path.isdir(remote_path):
-      if os.path.isdir(remote_path):
+      if os.path.isdir(path):
         shutil.rmtree(path)
       shutil.copytree(remote_path, path)
     #time.sleep(4)
