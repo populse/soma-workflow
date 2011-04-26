@@ -1123,7 +1123,7 @@ class WorkflowController(object):
                               "on the computing resource side." %(transfer_id))
       else: #client_paths
         for path in client_paths:
-          relative_path = os.path.base_name(path)
+          relative_path = os.path.basename(path)
           r_path = os.path.join(transfer_id, relative_path)
           if not self._engine_proxy.is_file(r_path) and \
              not self._engine_proxy.is_dir(r_path):
@@ -1298,13 +1298,11 @@ class Helper(object):
     for ft in workflow.registered_tr.itervalues():
       status, info = wf_ctrl.transfer_status(ft.engine_path)
       if status == FILES_ON_CR:
-        to_transfer.append((0, ft.engine_path))
+        to_transfer.append(ft.engine_path)
       if status == TRANSFERING_FROM_CR_TO_CLIENT:
-        to_transfer.append((info[1], ft.engine_path))
+        to_transfer.append(ft.engine_path)
 
-    to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, engine_path in to_transfer:
-      print "retrieve " + engine_path + " already transmitted size" + repr(transmitted)
+    for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
 
 
