@@ -1279,14 +1279,13 @@ class Helper(object):
                            buffer_size = 512**2):
     to_transfer = []
     for ft in workflow.registered_tr.itervalues():
-      status, info = wf_ctrl.transfer_status(ft.engine_path)
+      (status, progress) = wf_ctrl.transfer_status(ft.engine_path)
       if status == FILES_ON_CLIENT:
-        to_transfer.append((0, ft.engine_path))
+        to_transfer.append(ft.engine_path)
       if status == TRANSFERING_FROM_CLIENT_TO_CR:
-        to_transfer.append((info[1], ft.engine_path))
-          
-    to_transfer = sorted(to_transfer, key = lambda element: element[1])
-    for transmitted, engine_path in to_transfer:
+        to_transfer.append(ft.engine_path)
+        
+    for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
 
 
@@ -1296,7 +1295,7 @@ class Helper(object):
                             buffer_size = 512**2):
     to_transfer = []
     for ft in workflow.registered_tr.itervalues():
-      status, info = wf_ctrl.transfer_status(ft.engine_path)
+      (status, progress) = wf_ctrl.transfer_status(ft.engine_path)
       if status == FILES_ON_CR:
         to_transfer.append(ft.engine_path)
       if status == TRANSFERING_FROM_CR_TO_CLIENT:
