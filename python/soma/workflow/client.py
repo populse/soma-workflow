@@ -1289,6 +1289,9 @@ class Helper(object):
     for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
 
+    #for ft in workflow.registered_tr.itervalues():
+      #wf_ctrl.transfer_files(ft.engine_path, buffer_size)
+
 
   @staticmethod
   def transfer_output_files(workflow,
@@ -1304,6 +1307,9 @@ class Helper(object):
 
     for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
+
+    #for ft in workflow.registered_tr.itervalues():
+      #wf_ctrl.transfer_files(ft.engine_path, buffer_size)
 
 
   @staticmethod

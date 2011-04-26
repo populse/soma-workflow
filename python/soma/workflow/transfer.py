@@ -57,6 +57,11 @@ class RemoteFileController(object):
   def create_dir_structure(self, path, top_down_relalive_path):
     return Transfer.create_dir_structure(path, top_down_relalive_path)
 
+  def create_dirs(self, path):
+    if not os.path.isdir(os.path.dirname(path)):
+      os.makedirs(os.path.dirname(path))
+
+
 
 class TransferMonitoring(object):
   
@@ -208,6 +213,7 @@ class TransferSCP(Transfer):
 
   def transfer_to_remote(self, path, remote_path, overwrite=False):
     if os.path.isfile(path):
+      self.remote_file_controller.create_dirs(remote_path)
       scp_cmd = 'scp -Cq %s "%s@%s:%s"' %(path, 
                                          self.username, 
                                          self.hostname, 
@@ -216,6 +222,7 @@ class TransferSCP(Transfer):
       os.system(scp_cmd)
 
     if os.path.isdir(path):
+      self.remote_file_controller.create_dirs(remote_path)
       scp_cmd = 'scp -Cqr %s "%s@%s:%s"' %(path, 
                                           self.username, 
                                           self.hostname, 
@@ -226,6 +233,8 @@ class TransferSCP(Transfer):
 
   def transfer_from_remote(self, remote_path, path, overwrite=False):
     if self.remote_file_controller.is_file(remote_path):
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       scp_cmd = 'scp -Cq "%s@%s:%s" %s ' %(self.username, 
                                           self.hostname, 
                                           remote_path, 
@@ -234,6 +243,8 @@ class TransferSCP(Transfer):
       os.system(scp_cmd)
       
     if self.remote_file_controller.is_dir(remote_path):
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       scp_cmd = 'scp -Cqr "%s@%s:%s" %s ' %(self.username, 
                                            self.hostname, 
                                            remote_path, 
@@ -251,11 +262,15 @@ class TransferLocal(Transfer):
     #print "copy " + repr(path) + " to " + repr(remote_path)
     #time.sleep(4)
     if os.path.isfile(path):
+      if not os.path.isdir(os.path.dirname(remote_path)):
+        os.makedirs(os.path.dirname(remote_path))
       shutil.copy(path, remote_path)
 
     if os.path.isdir(path):
       if os.path.isdir(remote_path):
         shutil.rmtree(remote_path)
+      if not os.path.isdir(os.path.dirname(remote_path)):
+        os.makedirs(os.path.dirname(remote_path))
       shutil.copytree(path, remote_path)
     #time.sleep(4)
       
@@ -264,11 +279,15 @@ class TransferLocal(Transfer):
     #print "copy " + repr(remote_path) + " to " + repr(path)
     #time.sleep(4)
     if os.path.isfile(remote_path):
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       shutil.copy(remote_path, path)
       
     if os.path.isdir(remote_path):
       if os.path.isdir(path):
         shutil.rmtree(path)
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       shutil.copytree(remote_path, path)
     #time.sleep(4)
 
@@ -342,6 +361,8 @@ class TransferPyro(Transfer):
     '''
     print "Pyro copy " + repr(path) + " to " + repr(remote_path)
     if os.path.isfile(path):
+      self.remote_file_controller.create_dirs(remote_path)
+
       # TBI in case the file were already transfered
       transmitted = 0
 
@@ -367,6 +388,8 @@ class TransferPyro(Transfer):
 
 
     elif os.path.isdir(path):
+      self.remote_file_controller.create_dirs(remote_path)
+
       (dir_list, file_path_dict) = self.top_down_dir_list(path)
       self.remote_file_controller.create_dir_structure(remote_path,
                                                        dir_list)
@@ -391,6 +414,8 @@ class TransferPyro(Transfer):
 
    print "Pyro copy " + repr(remote_path) + " to " + repr(path)
    if self.remote_file_controller.is_file(remote_path):
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       # TBI in case the file were already transfered
       transmitted = 0
 
@@ -428,6 +453,8 @@ class TransferPyro(Transfer):
 
 
    elif self.remote_file_controller.is_dir(remote_path):
+      if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
       (dir_list, file_path_dict) = self.remote_file_controller.top_down_dir_list(remote_path)
       self.create_dir_structure(path,
                                 dir_list)
