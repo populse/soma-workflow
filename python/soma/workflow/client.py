@@ -39,6 +39,7 @@ import soma.workflow.connection as connection
 from soma.workflow.transfer import TransferPyro, TransferSCP, TransferMonitoring, TransferLocal
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
+from soma.workflow.errors import TransferError
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -960,7 +961,7 @@ class WorkflowController(object):
         The transfer was done. (TBI right error management)
 
     Raises *UnknownObjectError* if the transfer_id is not valid 
-    Raises *TransferError*
+    #Raises *TransferError*
     '''
 
     (transfer_id, 
@@ -1091,13 +1092,13 @@ class WorkflowController(object):
           self._engine_proxy.set_transfer_type(transfer_id,
                                                TR_DIR_C_TO_CR)
         else:
-          raise TransferError("The file or directory %s doesn't exist "
-                              "on the client machine." %(client_path))
+          print("WARNING: The file or directory %s doesn't exist "
+                "on the client machine." %(client_path))
       else: #client_paths
         for path in client_paths:
           if not os.path.isfile(path) and not os.path.isdir(path): 
-            raise TransferError("The file or directory %s doesn't exist " 
-                                "on the client machine." %(path))
+            print("WARNING: The file or directory %s doesn't exist " 
+                  "on the client machine." %(path))
         transfer_type = TR_MFF_C_TO_CR
 
       self._engine_proxy.set_transfer_status(transfer_id,
@@ -1119,16 +1120,16 @@ class WorkflowController(object):
         elif self._engine_proxy.is_dir(transfer_id):
           transfer_type = TR_DIR_CR_TO_C
         else:
-          raise TransferError("The file or directory %s doesn't exist "
-                              "on the computing resource side." %(transfer_id))
+          print("WARNING: The file or directory %s doesn't exist "
+                "on the computing resource side." %(transfer_id))
       else: #client_paths
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(transfer_id, relative_path)
           if not self._engine_proxy.is_file(r_path) and \
              not self._engine_proxy.is_dir(r_path):
-            raise TransferError("The file or directory %s doesn't exist "
-                                "on the computing resource side." %(r_path))
+            print("WARNING: The file or directory %s doesn't exist "
+                  "on the computing resource side." %(r_path))
         transfer_type = TR_MFF_CR_TO_C
 
       self._engine_proxy.set_transfer_status(transfer_id,
