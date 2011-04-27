@@ -29,7 +29,7 @@ from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
-from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError
+from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError
 
 
 class PyroError(Exception):     pass
@@ -154,19 +154,6 @@ class Controller(object):
   @staticmethod
   def get_submitted_workflows(wf_ctrl):
     return wf_ctrl.workflows()
-
-  @staticmethod
-  def submit_workflow(workflow, 
-                      name, 
-                      expiration_date,
-                      queue,
-                      wf_ctrl):
-    wf_id = wf_ctrl.submit_workflow(workflow=workflow,
-                                    expiration_date=expiration_date,
-                                    name=name,
-                                    queue=queue) 
-    wf = wf_ctrl.workflow(wf_id)
-    return wf
 
   @staticmethod
   def restart_workflow(workflow_id, wf_ctrl):
@@ -445,6 +432,16 @@ class WorkflowWidget(QtGui.QMainWindow):
                             name, 
                             queue, 
                             self.model.current_connection)
+        except WorkflowError, e:
+          QtGui.QMessageBox.warning(self, 
+                                "Workflow submission error", 
+                                "%s" %(e))
+          return
+        except JobError, e:
+          QtGui.QMessageBox.warning(self, 
+                                "Workflow submission error", 
+                                "%s" %(e))
+          return
         except ConnectionClosedError, e:
           if not self.reconnectAfterConnectionClosed():
             return

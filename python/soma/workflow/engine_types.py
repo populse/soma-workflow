@@ -268,15 +268,14 @@ class EngineJob(Job):
     '''
     
     if not self.path_translation:
-      raise JobError("The job uses SharedResourcePath while no "
-                     "translation were found.")
+      raise JobError("Could not submit workflows or jobs with shared resource "
+                     "path: no translation found in the configuration file.")
     if not srp.namespace in self.path_translation.keys():
-      raise JobError("SharedResourcePath translation: the "               
-                     "namespace %s does not exist" %(srp.namespace))
+      raise JobError("Could not translate shared resource path. The "               
+                     "namespace %s is not configured." %(srp.namespace))
     if not srp.uuid in self.path_translation[srp.namespace]:
-      raise JobError("SharedResourcePath translation: "
-                     "the uuid %s does not exist for the " 
-                     "namespace %s." %
+      raise JobError("Could not translate shared resource path. The uuid %s "
+                     "does not exist for the namespace %s." %
                      (srp.uuid, srp.namespace))
     translated_path = os.path.join(self.path_translation[srp.namespace][srp.uuid],
                                    srp.relative_path)
