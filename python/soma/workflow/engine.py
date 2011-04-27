@@ -722,7 +722,7 @@ class WorkflowEngineLoop(object):
 
   def restart_workflow(self, wf_id, status):
     if wf_id in self._workflows:
-      workflow = self._workflow[wf_id]
+      workflow = self._workflows[wf_id]
       (jobs_to_run, 
        workflow.status) = workflow.restart(self._database_server)
       for job in jobs_to_run:
