@@ -1082,7 +1082,11 @@ class WorkflowDatabaseServer( object ):
                                       (submission_date, 
                                        execution_date, 
                                        ending_date)), 
-                   sequence of tuple (transfer_id, status), 
+                   sequence of tuple (transfer_id, 
+                                      client_file_path,
+                                      client_paths,
+                                      status,
+                                      transfer_type), 
                    workflow_status)
     '''
     with self._lock:

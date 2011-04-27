@@ -658,7 +658,11 @@ class EngineWorkflow(Workflow):
       self.registered_jobs[job_id].terminating_signal = term_signal
    
     for ft_info in wf_status[1]:
-      engine_path, client_path, status, transfer_action_info = ft_info 
+      (engine_path, 
+       client_path, 
+       client_paths,
+       status, 
+       transfer_type) = ft_info 
       self.registered_tr[engine_path].status = status
 
     done = True
