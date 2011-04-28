@@ -597,11 +597,11 @@ class EngineWorkflow(Workflow):
           wf_running = True
           to_run.append(job)
 
-    logger.debug(" ")
-    logger.debug("to run " + repr(to_run))
-    logger.debug("to abort " + repr(to_abort))
-    logger.debug("done " + repr(done))
-    logger.debug("running " + repr(running))
+    #logger.debug(" ")
+    #logger.debug("to run " + repr(to_run))
+    #logger.debug("to abort " + repr(to_abort))
+    #logger.debug("done " + repr(done))
+    #logger.debug("running " + repr(running))
 
     # if a job fails the whole workflow branch has to be stopped
     # look for the node in the branch to abort

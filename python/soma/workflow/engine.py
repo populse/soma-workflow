@@ -144,11 +144,11 @@ class Drmaa(object):
       for command_el in job_command:
         command_el = command_el.replace('"', '\\\"')
         command.append("\"" + command_el + "\"")
-      self.logger.debug("PBS case, new command:" + repr(command))
+      #self.logger.debug("PBS case, new command:" + repr(command))
     else:
       command = job_command
 
-    self.logger.debug("command: " + repr(command))
+    #self.logger.debug("command: " + repr(command))
     
     stdout_file = job.plain_stdout()
     stderr_file = job.plain_stderr()
@@ -177,7 +177,7 @@ class Drmaa(object):
                                   "[void]:" + stderr_file)
       
       if job.stdin:
-        self.logger.debug("stdin: " + repr(stdin))
+        #self.logger.debug("stdin: " + repr(stdin))
         self._drmaa.setAttribute(drmaaJobId, 
                                 "drmaa_input_path", 
                                 "[void]:" + stdin)
@@ -407,11 +407,7 @@ class WorkflowEngineLoop(object):
         for wf_id in wf_to_kill + wf_to_delete:
           if wf_id in self._workflows:
             self.logger.debug("Kill workflow : " + repr(wf_id))
-            try:
-              ended_jobs_in_wf = self._stop_wf(wf_id)
-            except DRMError, e:
-               #TBI how to communicate the error ?
-              self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
+            ended_jobs_in_wf = self._stop_wf(wf_id)            
             if wf_id in wf_to_delete:
               self.logger.debug("Delete workflow : " + repr(wf_id))
               self._database_server.delete_workflow(wf_id)
@@ -437,10 +433,10 @@ class WorkflowEngineLoop(object):
             except DrmaaError, e:
               self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
               job.status = constants.UNDETERMINED
-            self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
+            #self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:
-              self.logger.debug("End of job %s, drmaaJobId = %s", 
-                                job.job_id, job.drmaa_id)
+              #self.logger.debug("End of job %s, drmaaJobId = %s", 
+              #                  job.job_id, job.drmaa_id)
               (job.exit_status, 
               job.exit_value, 
               job.terminating_signal, 
@@ -454,9 +450,9 @@ class WorkflowEngineLoop(object):
                                                   constants.FILES_ON_CR)
                      
               ended_jobs[job.job_id] = job
-              self.logger.debug("  => exit_status " + repr(job.exit_status))
-              self.logger.debug("  => exit_value " + repr(job.exit_value))
-              self.logger.debug("  => signal " + repr(job.terminating_signal))
+              #self.logger.debug("  => exit_status " + repr(job.exit_status))
+              #self.logger.debug("  => exit_value " + repr(job.exit_value))
+              #self.logger.debug("  => signal " + repr(job.terminating_signal))
 
 
         # --- 3. Get back transfered status ----------------------------------
@@ -522,7 +518,7 @@ class WorkflowEngineLoop(object):
              (job.status == constants.DONE or \
               job.status == constants.FAILED):
               ended_job_ids.append(job_id)
-          self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
+          #self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
 
         for job_id, job in ended_jobs.iteritems():
           self._database_server.set_job_exit_info(job_id, 
@@ -615,6 +611,7 @@ class WorkflowEngineLoop(object):
         nb_queued_jobs = self._database_server.nb_queued_jobs(self._user_id, 
                                                               queue_name)
         nb_jobs_to_run = self._queue_limits[queue_name] - nb_queued_jobs
+        self.logger.debug("queue " + repr(queue_name) + " nb_queued_jobs " + repr(nb_queued_jobs) + " nb_jobs_to_run " + repr(nb_jobs_to_run))
         while nb_jobs_to_run > 0 and \
               len(self._pending_queues[queue_name]) > 0:
           to_run.append(self._pending_queues[queue_name].pop(0))
@@ -622,6 +619,7 @@ class WorkflowEngineLoop(object):
       else:
         to_run.extend(jobs)
         self._pending_queues[queue_name] = []
+    self.logger.debug("to_run " + repr(to_run))
     return to_run
     
 
@@ -690,7 +688,11 @@ class WorkflowEngineLoop(object):
     else:
       if job.drmaa_id:
         self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
-        self._engine_drmaa.kill_job(job.drmaa_id)
+        try:
+	  self._engine_drmaa.kill_job(job.drmaa_id)
+	except DRMError, e:
+	  #TBI how to communicate the error
+          self.logger.error("!!!ERROR!!! %s:%s" %(type(e), e))
       elif job.queue in self._pending_queues and \
            job in self._pending_queues[job.queue]:
         self._pending_queues[job.queue].remove(job)
@@ -709,7 +711,7 @@ class WorkflowEngineLoop(object):
 
   def _stop_wf(self, wf_id):
     wf = self._workflows[wf_id]
-    self.logger.debug("wf.registered_jobs " + repr(wf.registered_jobs))
+    #self.logger.debug("wf.registered_jobs " + repr(wf.registered_jobs))
     ended_jobs = {}
     for job_id, job in wf.registered_jobs.iteritems():
       if self._stop_job(job_id, job):
