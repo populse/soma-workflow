@@ -79,11 +79,12 @@ class TransferMonitoring(object):
     if os.path.isfile(path):
       r_size = self.remote_file_controller.get_file_size(remote_path)
       size = os.path.getsize(path)
-      
-    if os.path.isdir(path):
+    elif os.path.isdir(path):
       r_size = self.remote_file_controller.get_dir_size(remote_path)
       size = self.get_dir_size(path)
-
+    else:
+      r_size = 0
+      size = 0
     #print "<<progress " + repr(r_size) + " " + repr(size)
     return (size, r_size)
 
@@ -99,14 +100,15 @@ class TransferMonitoring(object):
         size = os.path.getsize(path)
       else:
         size = 0
-
-    if self.remote_file_controller.is_dir(remote_path):
+    elif self.remote_file_controller.is_dir(remote_path):
       r_size = self.remote_file_controller.get_dir_size(remote_path)
       if os.path.isdir(path):
         size = self.get_dir_size(path)
       else:
         size = 0
-    
+    else:
+      r_size = 0
+      size = 0
     #print "<<progress " + repr(r_size) + " " + repr(size)
     return (r_size, size)
 
@@ -214,7 +216,7 @@ class TransferSCP(Transfer):
   def transfer_to_remote(self, path, remote_path, overwrite=False):
     if os.path.isfile(path):
       self.remote_file_controller.create_dirs(remote_path)
-      scp_cmd = 'scp -Cq %s "%s@%s:%s"' %(path, 
+      scp_cmd = 'scp -q %s "%s@%s:%s"' %(path, 
                                          self.username, 
                                          self.hostname, 
                                          remote_path)
@@ -235,7 +237,7 @@ class TransferSCP(Transfer):
     if self.remote_file_controller.is_file(remote_path):
       if not os.path.isdir(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
-      scp_cmd = 'scp -Cq "%s@%s:%s" %s ' %(self.username, 
+      scp_cmd = 'scp -q "%s@%s:%s" %s ' %(self.username, 
                                           self.hostname, 
                                           remote_path, 
                                           path)

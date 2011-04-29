@@ -2362,7 +2362,10 @@ class GuiTransfer(GuiWorkflowItem):
       elif len(transfer_status_info[1]) == 3:
         self.transfer_type = GuiTransfer.DIRECTORY
         (size, transmitted, elements_status) = transfer_status_info[1]
-      self.percentage_achievement = int(float(transmitted)/size * 100.0)
+      if size != 0:
+        self.percentage_achievement = int(float(transmitted)/size * 100.0)
+      else:
+        self.percentage_achievement = 100
     else:
       (size, transmitted, elements_status) = (None, None, None)
       self.percentage_achievement = 0
