@@ -67,7 +67,7 @@ class EngineLoopThread(threading.Thread):
     self.time_interval = refreshment_interval
   
   def run(self):
-    #cProfile.runctx("self.engine_loop.start_loop(self.time_interval)", globals(), locals(), "/home/soizic/profile/profile_loop_thread")
+    #cProfile.runctx("self.engine_loop.start_loop(self.time_interval)", globals(), locals(), "/home/sl225510/profiling/profile_loop_thread")
     self.engine_loop.start_loop(self.time_interval)
 
   def stop(self):
@@ -367,6 +367,7 @@ class WorkflowEngineLoop(object):
     '''
     Start the workflow engine loop. The loop will run until stop() is called.
     '''
+    #one_wf_processed = False
     self._running = True
     drms_error_jobs = {}
     while True:
@@ -422,6 +423,7 @@ class WorkflowEngineLoop(object):
         wf_jobs = {}
         wf_transfers = {}
         for wf in self._workflows.itervalues():
+          #one_wf_processed = True
           # TBI add a condition on the workflow status
           wf_jobs.update(wf.registered_jobs)
           wf_transfers.update(wf.registered_tr)
@@ -536,6 +538,8 @@ class WorkflowEngineLoop(object):
         for job_id in ended_job_ids: del self._jobs[job_id]
         for wf_id in ended_wf_ids: del self._workflows[wf_id]
 
+      #if len(self._workflows) == 0 and one_wf_processed: 
+      #  break
       time.sleep(time_interval)
 
     
