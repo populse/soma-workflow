@@ -1278,38 +1278,59 @@ class Helper(object):
   def transfer_input_files(workflow, 
                            wf_ctrl, 
                            buffer_size = 512**2):
+    #to_transfer = []
+    #for ft in workflow.registered_tr.itervalues():
+      #(status, progress) = wf_ctrl.transfer_status(ft.engine_path)
+      #if status == FILES_ON_CLIENT:
+        #to_transfer.append(ft.engine_path)
+      #if status == TRANSFERING_FROM_CLIENT_TO_CR:
+        #to_transfer.append(ft.engine_path)
+
+    transfer_info = None
+    wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
+
     to_transfer = []
-    for ft in workflow.registered_tr.itervalues():
-      (status, progress) = wf_ctrl.transfer_status(ft.engine_path)
+    for transfer_info in wf_elements_status[1]:
+      status = transfer_info[1][0]
       if status == FILES_ON_CLIENT:
-        to_transfer.append(ft.engine_path)
+        engine_path = transfer_info[0]
+        to_transfer.append(engine_path)
       if status == TRANSFERING_FROM_CLIENT_TO_CR:
-        to_transfer.append(ft.engine_path)
-        
+        engine_path = transfer_info[0]
+        to_transfer.append(engine_path)
+
     for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
 
-    #for ft in workflow.registered_tr.itervalues():
-      #wf_ctrl.transfer_files(ft.engine_path, buffer_size)
 
 
   @staticmethod
   def transfer_output_files(workflow,
                             wf_ctrl,
                             buffer_size = 512**2):
+    #to_transfer = []
+    #for ft in workflow.registered_tr.itervalues():
+      #(status, progress) = wf_ctrl.transfer_status(ft.engine_path)
+      #if status == FILES_ON_CR:
+        #to_transfer.append(ft.engine_path)
+      #if status == TRANSFERING_FROM_CR_TO_CLIENT:
+        #to_transfer.append(ft.engine_path)
+
+    transfer_info = None
+    wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
+
     to_transfer = []
-    for ft in workflow.registered_tr.itervalues():
-      (status, progress) = wf_ctrl.transfer_status(ft.engine_path)
+    for transfer_info in wf_elements_status[1]:
+      status = transfer_info[1][0]
       if status == FILES_ON_CR:
-        to_transfer.append(ft.engine_path)
+        engine_path = transfer_info[0]
+        to_transfer.append(engine_path)
       if status == TRANSFERING_FROM_CR_TO_CLIENT:
-        to_transfer.append(ft.engine_path)
+        engine_path = transfer_info[0]
+        to_transfer.append(engine_path)
 
     for engine_path in to_transfer:
       wf_ctrl.transfer_files(engine_path, buffer_size)
-
-    #for ft in workflow.registered_tr.itervalues():
-      #wf_ctrl.transfer_files(ft.engine_path, buffer_size)
 
 
   @staticmethod
