@@ -1424,6 +1424,55 @@ class WorkflowDatabaseServer( object ):
       self.clean()
 
 
+  def set_jobs_status(self, job_status, force=False):
+    '''
+    job_status: list of tuple (job_id, status)
+    '''
+    with self._lock:
+      # TBI if the status is not valid raise an exception ??
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        for job_id, status in job_status:
+          count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+          if not count == 0 :
+            (previous_status, 
+            execution_date, 
+            ending_date) = cursor.execute(''' SELECT status, 
+                                                      execution_date, 
+                                                      ending_date 
+                                              FROM jobs WHERE id=?''',
+                                              [job_id]).next()#supposes that the job_id is valid
+            previous_status = self._string_conversion(previous_status)
+            execution_date = self._str_to_date_conversion(execution_date)
+            ending_date = self._str_to_date_conversion(ending_date)
+            if previous_status != status:
+              if not execution_date and status == constants.RUNNING:
+                execution_date = datetime.now()
+              if not ending_date and status == constants.DONE or \
+                status == constants.FAILED:
+                ending_date = datetime.now()
+                if not execution_date :
+                  execution_date = datetime.now()
+            if force or \
+              (previous_status != constants.DELETE_PENDING and \
+                previous_status != constants.KILL_PENDING):
+              cursor.execute('''UPDATE jobs SET status=?, 
+                                                last_status_update=?,
+                                                execution_date=?, 
+                                                ending_date=? WHERE id=?''',
+                                                (status, datetime.now(),
+                                                execution_date, ending_date,
+                                                job_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+      connection.commit()
+      cursor.close()
+      connection.close()
+
 
   def set_job_status(self, job_id, status, force = False):
     '''

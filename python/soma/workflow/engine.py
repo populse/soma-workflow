@@ -510,9 +510,11 @@ class WorkflowEngineLoop(object):
         ended_job_ids = []
         ended_wf_ids = []
         #self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
+        job_status_for_database_up = []
         for job_id, job in itertools.chain(self._jobs.iteritems(),
                                           wf_jobs.iteritems()):
-          self._database_server.set_job_status(job.job_id, job.status)
+          job_status_for_database_up.append((job_id, job.status))
+          #self._database_server.set_job_status(job.job_id, job.status)
           self._j_wf_ended = self._j_wf_ended and \
                                     (job.status == constants.DONE or \
                                     job.status == constants.FAILED)
@@ -521,6 +523,8 @@ class WorkflowEngineLoop(object):
               job.status == constants.FAILED):
               ended_job_ids.append(job_id)
           #self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
+       
+        self._database_server.set_jobs_status(job_status_for_database_up)
 
         for job_id, job in ended_jobs.iteritems():
           self._database_server.set_job_exit_info(job_id, 
