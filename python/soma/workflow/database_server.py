@@ -1025,16 +1025,16 @@ class WorkflowDatabaseServer( object ):
                             (status, 
                             datetime.now(), 
                             wf_id))
-            if status == constants.WARNING:
-              cursor.execute('''UPDATE jobs
-                                SET status=?
-                                WHERE workflow_id=? and 
-                                      not status ISNULL and
-                                      not status=? and not status=? ''',
-                                (constants.WARNING,
-                                 wf_id, 
-                                 constants.DONE, 
-                                 constants.FAILED))
+            #if status == constants.WARNING:
+              #cursor.execute('''UPDATE jobs
+                                #SET status=?
+                                #WHERE workflow_id=? and 
+                                      #not status ISNULL and
+                                      #not status=? and not status=? ''',
+                                #(constants.WARNING,
+                                 #wf_id, 
+                                 #constants.DONE, 
+                                 #constants.FAILED))
       except Exception, e:
         connection.rollback()
         cursor.close()
@@ -1426,14 +1426,14 @@ class WorkflowDatabaseServer( object ):
 
   def set_jobs_status(self, job_status, force=False):
     '''
-    job_status: list of tuple (job_id, status)
+    job_status: dictionary: job_id -> status
     '''
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        for job_id, status in job_status:
+        for job_id, status in job_status.iteritems():
           count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
           if not count == 0 :
             (previous_status, 
@@ -1556,44 +1556,43 @@ class WorkflowDatabaseServer( object ):
  
     return (status, date)
 
-  def set_submission_information(self, job_id, drmaa_id, submission_date):
+  def set_submission_information(self, drmaa_ids, submission_date):
     '''
     Set the submission information of the job and reset information 
     related to the job submission (execution_date, ending_date, 
     exit_status, exit_value, terminating_signal, resource_usage) .
     
-    @type  drmaa_id: string
-    @param drmaa_id: job identifier on DRMS if submitted via DRMAA
-    @type  submission_date: date or None
-    @param submission_date: submission date if the job was submitted
+    *drmaa_ids: dictionary job_id -> drmaa_id
+    *submission_date: submission date if the job was submitted
     '''
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
       try:
-        cursor.execute('''UPDATE jobs 
-                          SET drmaa_id=?, 
-                              submission_date=?, 
-                              status=?, 
-                              last_status_update=?,
-                              exit_status=?,
-                              exit_value=?,
-                              terminating_signal=?,
-                              resource_usage=?, 
-                              execution_date=?,
-                              ending_date=?
-                              WHERE id=?''', 
-                              (drmaa_id, 
-                              submission_date, 
-                              constants.UNDETERMINED, 
-                              datetime.now(),
-                              None,
-                              None,
-                              None,
-                              None,
-                              None,
-                              None,
-                              job_id))
+        for job_id, drmaa_id in drmaa_ids.iteritems():
+          cursor.execute('''UPDATE jobs 
+                            SET drmaa_id=?, 
+                                submission_date=?, 
+                                status=?, 
+                                last_status_update=?,
+                                exit_status=?,
+                                exit_value=?,
+                                terminating_signal=?,
+                                resource_usage=?, 
+                                execution_date=?,
+                                ending_date=?
+                                WHERE id=?''', 
+                                (drmaa_id, 
+                                submission_date, 
+                                constants.UNDETERMINED, 
+                                datetime.now(),
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                job_id))
       except Exception, e:
         connection.rollback()
         cursor.close()
