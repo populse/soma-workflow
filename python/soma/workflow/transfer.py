@@ -126,7 +126,7 @@ class Transfer(object):
   def __init__(self, remote_file_controller):
     self.remote_file_controller = remote_file_controller
 
-  def transfer_to_remote(self, path, remote_path, overwrite=False):
+  def transfer_to_remote(self, path, remote_path):
     '''
     Transfer a file or a directory to a remote location.
 
@@ -136,14 +136,10 @@ class Transfer(object):
     * remote_path *string*
       Path on the remote file system.
 
-    * overwrite *boolean*
-      In case the remote file already exists, the file will be erased 
-      if overwrite is set to True. Otherwise, the existing file is 
-      considered to be the result of a previous interrupted transfer. 
     '''
     pass
 
-  def transfer_from_remote(self, remote_path, path, overwrite=False):
+  def transfer_from_remote(self, remote_path, path):
     '''
     Transfer a file or a directory from a remote location.
 
@@ -152,11 +148,6 @@ class Transfer(object):
 
     * remote_path *string*
       Path on the remote file system.
-
-    * overwrite *boolean*
-      In case the remote file already exists, the file will be erased 
-      if overwrite is set to True. Otherwise, the existing file is 
-      considered to be the result of a previous interrupted transfer. 
     '''
 
     pass
@@ -213,7 +204,7 @@ class TransferSCP(Transfer):
     self.hostname = hostname
 
 
-  def transfer_to_remote(self, path, remote_path, overwrite=False):
+  def transfer_to_remote(self, path, remote_path):
     if os.path.isfile(path):
       self.remote_file_controller.create_dirs(remote_path)
       scp_cmd = 'scp -q %s "%s@%s:%s"' %(path, 
@@ -233,7 +224,7 @@ class TransferSCP(Transfer):
       os.system(scp_cmd)
       
 
-  def transfer_from_remote(self, remote_path, path, overwrite=False):
+  def transfer_from_remote(self, remote_path, path):
     if self.remote_file_controller.is_file(remote_path):
       if not os.path.isdir(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
@@ -260,7 +251,7 @@ class TransferLocal(Transfer):
   def __init__(self, remote_file_controller):
     super(TransferLocal, self).__init__(remote_file_controller)
 
-  def transfer_to_remote(self, path, remote_path, overwrite=False):
+  def transfer_to_remote(self, path, remote_path):
     #print "copy " + repr(path) + " to " + repr(remote_path)
     #time.sleep(4)
     if os.path.isfile(path):
@@ -277,7 +268,7 @@ class TransferLocal(Transfer):
     #time.sleep(4)
       
 
-  def transfer_from_remote(self, remote_path, path, overwrite=False):
+  def transfer_from_remote(self, remote_path, path):
     #print "copy " + repr(remote_path) + " to " + repr(path)
     #time.sleep(4)
     if os.path.isfile(remote_path):
@@ -310,12 +301,12 @@ class TransferLocal(Transfer):
     #self.hostname = hostname
     #self.password = password
 
-  #def transfer_to_remote(self, path, remote_path, overwrite=False):
+  #def transfer_to_remote(self, path, remote_path):
     ##TBI
     #pass
 
   
-  #def transfer_from_remote(self, remote_path, path, overwrite=False):
+  #def transfer_from_remote(self, remote_path, path):
     ##TBI
     #pass
 
@@ -337,12 +328,12 @@ class TransferLocal(Transfer):
     #self.password = password
 
 
-  #def transfer_to_remote(self, path, remote_path, overwrite=False):
+  #def transfer_to_remote(self, path, remote_path):
     ##TBI
     #pass
 
 
-  #def transfer_from_remote(self, remote_path, path, overwrite=False):
+  #def transfer_from_remote(self, remote_path, path):
     ##TBI
     #pass
 
@@ -356,7 +347,6 @@ class TransferPyro(Transfer):
   def transfer_to_remote(self, 
                          path, 
                          remote_path, 
-                         overwrite=False, 
                          buffer_size = 512**2):
     '''
     return Transfered_with_success
@@ -403,7 +393,6 @@ class TransferPyro(Transfer):
           file_path = os.path.join(dir_path, file_name)
           self.transfer_to_remote(file_path, 
                                   remote_file_path,
-                                  overwrite,
                                   buffer_size)
  
     
@@ -411,7 +400,6 @@ class TransferPyro(Transfer):
   def transfer_from_remote(self, 
                            remote_path, 
                            path,
-                           overwrite=False, 
                            buffer_size = 512**2):
 
    print "Pyro copy " + repr(remote_path) + " to " + repr(path)
@@ -467,8 +455,7 @@ class TransferPyro(Transfer):
           file_path = os.path.join(dir_path, file_name)
           r_file_path = os.path.join(r_dir_path, file_name)
           self.transfer_from_remote(r_file_path,
-                                    file_path, 
-                                    overwrite,
+                                    file_path,
                                     buffer_size)
     
 
