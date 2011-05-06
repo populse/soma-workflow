@@ -9,18 +9,6 @@ from __future__ import with_statement
 
 '''
 soma-workflow engine classes
-
-The soma-workflow engine is a process that run on the computing resource side.
-The engine classes are used in soma.workflow.start_workflow_engine script which 
-creates a workflow engine process.
-
-The DrmaaWorkflowEngine object submits jobs to the resource DRMS using a DRMAA 
-session, it also schedules the workflow's job submission and updates the 
-database (soma.workflow.server.WorkflowDatabaseServer) at regular time 
-interval with the status of the jobs and workflows it manages.
-The WorkflowEngine uses a DrmaaWorkflowEngine instance, it does all the file 
-transfer work that should be done on the computing resource side, and queries 
-the database for all that doesn't concern submitted jobs and workflows.
 '''
 
 #-----------------------------------------------------------------------------
@@ -628,7 +616,7 @@ class WorkflowEngineLoop(object):
       else:
         to_run.extend(jobs)
         self._pending_queues[queue_name] = []
-    self.logger.debug("to_run " + repr(to_run))
+    #self.logger.debug("to_run " + repr(to_run))
     return to_run
     
 

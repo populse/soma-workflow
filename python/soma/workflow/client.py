@@ -1215,7 +1215,8 @@ def _embedded_engine_and_server(config):
 
   from soma.workflow.engine import Drmaa, WorkflowEngine, WorkflowEngineLoop, EngineLoopThread
   from soma.workflow.database_server import WorkflowDatabaseServer
-  
+  from soma.workflow.scheduler import LocalScheduler
+
   (engine_log_dir,
    engine_log_format,
    engine_log_level) = config.get_engine_log_info()
@@ -1234,11 +1235,13 @@ def _embedded_engine_and_server(config):
   database_server = WorkflowDatabaseServer(config.get_database_file(), 
                                            config.get_transfered_file_dir())
 
-  drmaa = Drmaa(config.get_drmaa_implementation(), 
-                config.get_parallel_job_config())
+  #drmaa = Drmaa(config.get_drmaa_implementation(), 
+                #config.get_parallel_job_config())
+
+  local_scheduler = LocalScheduler(nb_proc=2)
 
   engine_loop = WorkflowEngineLoop(database_server,
-                                   drmaa,
+                                   local_scheduler,
                                    config.get_path_translation(),
                                    config.get_queue_limits())
 
