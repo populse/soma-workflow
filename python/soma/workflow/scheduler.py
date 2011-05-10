@@ -2,8 +2,11 @@ from __future__ import with_statement
 
 import subprocess
 import threading
-import soma.workflow.constants as constants
 import time
+import logging
+import os
+
+import soma.workflow.constants as constants
 
 
 class Scheduler(object):
@@ -34,7 +37,7 @@ class Scheduler(object):
     '''
     raise Exception("Scheduler is an abstract class!")
 
-  def get_job_exit_info(self, drmaa_job_id):
+  def get_job_exit_info(self, scheduler_job_id):
     '''
     * scheduler_job_id *string*
         Job id for the scheduling system (DRMAA for example)
@@ -43,12 +46,219 @@ class Scheduler(object):
     '''
     raise Exception("Scheduler is an abstract class!")
 
-  def kill_job(self, job_drmaa_id):
+  def kill_job(self, scheduler_job_id):
     '''
     * scheduler_job_id *string*
         Job id for the scheduling system (DRMAA for example)
     '''
     raise Exception("Scheduler is an abstract class!")
+
+
+class Drmaa(Scheduler):
+  '''
+  Scheduling using a Drmaa session. 
+  Contains possible patch depending on the DRMAA impementation. 
+  '''
+
+  # DRMAA session. DrmaaJobs
+  _drmaa = None
+  # string
+  _drmaa_implementation = None
+  # DRMAA doesn't provide an unified way of submitting
+  # parallel jobs. The value of parallel_job_submission is cluster dependant. 
+  # The keys are:
+  #  -Drmaa job template attributes 
+  #  -parallel configuration name as defined in soma.workflow.constants
+  # dict
+  parallel_job_submission_info = None
+  
+  logger = None
+
+  def __init__(self, drmaa_implementation, parallel_job_submission_info):
+
+    from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
+
+    self.logger = self.logger = logging.getLogger('ljp.drmaajs')
+
+    self._drmaa = DrmaaJobs()
+    try:
+      self._drmaa.initSession()
+    except DrmaaError, e:
+      raise DRMError("Could not create the DRMAA session: %s" %e )
+
+    self._drmaa_implementation = drmaa_implementation
+
+    self.parallel_job_submission_info = parallel_job_submission_info
+
+    self.logger.debug("Parallel job submission info: %s", 
+                      repr(parallel_job_submission_info))
+
+    # patch for the PBS-torque DRMAA implementation
+    if self._drmaa_implementation == "PBS":
+      try:
+        jobTemplateId = self._drmaa.allocateJobTemplate()
+        self._drmaa.setCommand(jobTemplateId, "echo", [])
+        self._drmaa.setAttribute(jobTemplateId, 
+                                "drmaa_output_path", 
+                                "[void]:/tmp/soma-workflow-empty-job.o")
+        self._drmaa.setAttribute(jobTemplateId, 
+                                "drmaa_error_path", 
+                                "[void]:/tmp/soma-workflow-empty-job.e")
+        self._drmaa.runJob(jobTemplateId)
+      except DrmaaError, e:
+        raise DRMError("%s" %e)
+      ################################
+    
+
+  def job_submission(self, job):
+    '''
+    @type  job: soma.workflow.client.Job
+    @param job: job to be submitted
+    @rtype: string
+    @return: drmaa job id 
+    '''
+
+    # patch for the PBS-torque DRMAA implementation
+    command = []
+    job_command = job.plain_command()
+    if self._drmaa_implementation == "PBS":
+      for command_el in job_command:
+        command_el = command_el.replace('"', '\\\"')
+        command.append("\"" + command_el + "\"")
+      #self.logger.debug("PBS case, new command:" + repr(command))
+    else:
+      command = job_command
+
+    #self.logger.debug("command: " + repr(command))
+    
+    stdout_file = job.plain_stdout()
+    stderr_file = job.plain_stderr()
+    stdin = job.plain_stdin()
+    job_env = []
+    for var_name in os.environ.keys():
+      job_env.append(var_name+"="+os.environ[var_name])
+
+    try:
+      drmaaJobId = self._drmaa.allocateJobTemplate()
+
+      self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
+ 
+      self._drmaa.setAttribute(drmaaJobId, 
+                              "drmaa_output_path", 
+                              "[void]:" + stdout_file)
+ 
+      if job.join_stderrout:
+        self._drmaa.setAttribute(drmaaJobId,
+                                "drmaa_join_files", 
+                                "y")
+      else:
+        if stderr_file:
+          self._drmaa.setAttribute(drmaaJobId, 
+                                  "drmaa_error_path", 
+                                  "[void]:" + stderr_file)
+      
+      if job.stdin:
+        #self.logger.debug("stdin: " + repr(stdin))
+        self._drmaa.setAttribute(drmaaJobId, 
+                                "drmaa_input_path", 
+                                "[void]:" + stdin)
+        
+      working_directory = job.plain_working_directory()
+      if working_directory:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
+
+      if job.queue:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
+
+      #self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-l h_rt=0:0:30" )
+      
+      if job.parallel_job_info :
+        parallel_config_name, max_node_number = job.parallel_job_info
+        self._setDrmaaParallelJob(drmaaJobId, 
+                                  parallel_config_name, 
+                                  max_node_number)
+        
+      self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
+
+      drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
+      self._drmaa.deleteJobTemplate(drmaaJobId)
+    except DrmaaError, e:
+      self.logger.debug("Error in job submission: %s" %(e))
+      raise DRMError("Job submission error: %s" %(e))
+
+    return drmaaSubmittedJobId
+    
+
+  def get_job_status(self, scheduler_job_id):
+    try:
+      status = self._drmaa.jobStatus(scheduler_job_id)
+    except DrmaaError, e:
+      raise DRMError("%s" %(e))
+    return status
+
+
+  def get_job_exit_info(self, scheduler_job_id):
+    exit_status, exit_value, term_sig, resource_usage = self._drmaa.wait(scheduler_job_id, 0)
+
+    str_rusage = ''
+    for rusage in resource_usage:
+      str_rusage = str_rusage + rusage + ' '
+
+    return (exit_status, exit_value, term_sig, str_rusage)
+
+  def _setDrmaaParallelJob(self, 
+                           drmaa_job_template_id, 
+                           configuration_name, 
+                           max_num_node):
+    '''
+    Set the DRMAA job template information for a parallel job submission.
+    The configuration file must provide the parallel job submission 
+    information specific to the cluster in use. 
+
+    @type  drmaa_job_template_id: string 
+    @param drmaa_job_template_id: id of drmaa job template
+    @type  parallel_job_info: tuple (string, int)
+    @param parallel_job_info: (configuration_name, max_node_num)
+    configuration_name: type of parallel job as defined in soma.workflow.constants 
+    (eg MPI, OpenMP...)
+    max_node_num: maximum node number the job requests (on a unique machine or 
+    separated machine depending on the parallel configuration)
+    ''' 
+
+    self.logger.debug(">> _setDrmaaParallelJob")
+  
+    cluster_specific_cfg_name = self.parallel_job_submission_info[configuration_name]
+    
+    for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
+      value = self.parallel_job_submission_info.get(drmaa_attribute)
+      if value: 
+        #value = value.format(config_name=cluster_specific_cfg_name, max_node=max_num_node)
+        value = value.replace("{config_name}", cluster_specific_cfg_name)
+        value = value.replace("{max_node}", repr(max_num_node))
+        self._drmaa.setAttribute( drmaa_job_template_id, 
+                                    drmaa_attribute, 
+                                    value)
+        self.logger.debug("Parallel job, drmaa attribute = %s, value = %s ",
+                          drmaa_attribute, value) 
+
+
+    job_env = []
+    for parallel_env_v in constants.PARALLEL_JOB_ENV:
+      value = self.parallel_job_submission_info.get(parallel_env_v)
+      if value: job_env.append(parallel_env_v+'='+value.rstrip())
+    
+    self._drmaa.setVectorAttribute(drmaa_job_template_id, 'drmaa_v_env', job_env)
+    self.logger.debug("Parallel job environment : " + repr(job_env))
+        
+    self.logger.debug("<< _setDrmaaParallelJob")
+
+
+  def kill_job(self, scheduler_job_id):
+    try:
+      self._drmaa.terminate(scheduler_job_id)
+    except DrmaaError, e:
+      raise DRMError("%s" %e)
+
 
 
 
@@ -127,12 +337,12 @@ class LocalScheduler(object):
     if not self._queue and not self._processes:
       return
 
-    print "#############################"
+    #print "#############################"
     # Control the running jobs
     ended_jobs = []
     for job_id, process in self._processes.iteritems():
       ret_value = process.poll()
-      print "job_id " + repr(job_id) + " ret_value " + repr(ret_value)
+      #print "job_id " + repr(job_id) + " ret_value " + repr(ret_value)
       if ret_value != None:
         ended_jobs.append(job_id) 
         self._exit_info[job_id] = (constants.FINISHED_REGULARLY,
@@ -142,7 +352,7 @@ class LocalScheduler(object):
 
     # update for the ended job
     for job_id in ended_jobs:
-      print "updated job_id " + repr(job_id) + " status DONE"
+      #print "updated job_id " + repr(job_id) + " status DONE"
       self._status[job_id] = constants.DONE
       del self._processes[job_id]
 
@@ -150,14 +360,14 @@ class LocalScheduler(object):
     while self._queue and \
           len(self._processes) < self._nb_proc:
       job = self._queue.pop(0)
-      print "new job " + repr(job.job_id)
+      #print "new job " + repr(job.job_id)
       self._processes[job.job_id] = self._create_process(job)
       self._status[job.job_id] = constants.RUNNING
 
   def _create_process(self, engine_job):
     separator = " "
     command = separator.join(engine_job.plain_command())
-    print "command " +  repr(command)
+    #print "command " +  repr(command)
 
     stdin = engine_job.plain_stdin()
     stdin_file = None
@@ -231,7 +441,7 @@ class LocalScheduler(object):
     '''
     # TBI Errors
     with self._lock:
-      print "kill job " + repr(scheduler_job_id)
+      #print "kill job " + repr(scheduler_job_id)
       if scheduler_job_id in self._processes:
         self._processes[scheduler_job_id].kill()
         del self._processes[scheduler_job_id]

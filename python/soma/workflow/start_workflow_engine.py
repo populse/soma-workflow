@@ -17,6 +17,7 @@ if __name__=="__main__":
   from Pyro.errors import PyroError, NamingError
   
   import soma.workflow.engine
+  import soma.workflow.scheduler
   import soma.workflow.connection 
   from soma.workflow.configuration import Configuration
   from soma.workflow.errors import EngineError
@@ -89,7 +90,7 @@ if __name__=="__main__":
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()
 
-    drmaa = soma.workflow.engine.Drmaa(config.get_drmaa_implementation(), 
+    drmaa = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
                                        config.get_parallel_job_config())
 
     engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,

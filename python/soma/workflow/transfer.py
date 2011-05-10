@@ -207,7 +207,7 @@ class TransferSCP(Transfer):
   def transfer_to_remote(self, path, remote_path):
     if os.path.isfile(path):
       self.remote_file_controller.create_dirs(remote_path)
-      scp_cmd = 'scp -q %s "%s@%s:%s"' %(path, 
+      scp_cmd = 'scp -qp %s "%s@%s:%s"' %(path, 
                                          self.username, 
                                          self.hostname, 
                                          remote_path)
@@ -216,7 +216,7 @@ class TransferSCP(Transfer):
 
     if os.path.isdir(path):
       self.remote_file_controller.create_dirs(remote_path)
-      scp_cmd = 'scp -Cqr %s "%s@%s:%s"' %(path, 
+      scp_cmd = 'scp -Cqpr %s "%s@%s:%s"' %(path, 
                                           self.username, 
                                           self.hostname, 
                                           remote_path)
@@ -228,7 +228,7 @@ class TransferSCP(Transfer):
     if self.remote_file_controller.is_file(remote_path):
       if not os.path.isdir(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
-      scp_cmd = 'scp -q "%s@%s:%s" %s ' %(self.username, 
+      scp_cmd = 'scp -qp "%s@%s:%s" %s ' %(self.username, 
                                           self.hostname, 
                                           remote_path, 
                                           path)
@@ -238,7 +238,7 @@ class TransferSCP(Transfer):
     if self.remote_file_controller.is_dir(remote_path):
       if not os.path.isdir(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
-      scp_cmd = 'scp -Cqr "%s@%s:%s" %s ' %(self.username, 
+      scp_cmd = 'scp -Cqpr "%s@%s:%s" %s ' %(self.username, 
                                            self.hostname, 
                                            remote_path, 
                                            path)
