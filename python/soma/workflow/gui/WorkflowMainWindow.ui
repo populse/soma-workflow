@@ -45,6 +45,8 @@
     <property name="title">
      <string>Workflow</string>
     </property>
+    <addaction name="action_optimize_wf"/>
+    <addaction name="separator"/>
     <addaction name="action_submit"/>
     <addaction name="action_stop_wf"/>
     <addaction name="action_restart"/>
@@ -112,6 +114,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_open_wf"/>
+   <addaction name="action_optimize_wf"/>
    <addaction name="separator"/>
    <addaction name="action_submit"/>
    <addaction name="action_stop_wf"/>
@@ -421,6 +424,14 @@
    </property>
    <property name="toolTip">
     <string>stop a workflow </string>
+   </property>
+  </action>
+  <action name="action_optimize_wf">
+   <property name="text">
+    <string>Optimize</string>
+   </property>
+   <property name="toolTip">
+    <string>Merge the sequential jobs for a faster execution </string>
    </property>
   </action>
  </widget>

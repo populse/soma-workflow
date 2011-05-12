@@ -657,6 +657,17 @@ class WorkflowExamples(object):
       job1 = self.job_sleep(60) 
       job1.name = "Brain extraction"
       jobs.append(job1)
+
+      job11 = self.job_sleep(1) 
+      job11.name = "test 1"
+      jobs.append(job11)
+      job12 = self.job_sleep(1) 
+      job12.name = "test 2"
+      jobs.append(job12)
+      job13 = self.job_sleep(1) 
+      job13.name = "test 3"
+      jobs.append(job13)
+
       job2 = self.job_sleep(120) 
       job2.name ="Gray/white segmentation"
       jobs.append(job2)
@@ -667,14 +678,18 @@ class WorkflowExamples(object):
       job4.name = "Right hemisphere sulci recognition"
       jobs.append(job4)
 
-      dependencies.append((job1, job2))
+      #dependencies.append((job1, job2))
+      dependencies.append((job1, job11))
+      dependencies.append((job11, job12))
+      dependencies.append((job12, job13))
+      dependencies.append((job13, job2))
       dependencies.append((job2, job3))
       dependencies.append((job2, job4))
       
       group_sulci = Group(name="Sulci recognition", 
                           elements=[job3, job4])
       group_subject = Group(name="sulci recognition -- subject "+ repr(i), 
-                            elements=[job1, job2, group_sulci])
+                            elements=[job1, job11, job12, job13, job2, group_sulci])
 
       root_group.append(group_subject)
    

@@ -30,7 +30,7 @@ from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError
-
+import soma.workflow.utils
 
 class PyroError(Exception):     pass
 class ProtocolError(PyroError): pass
@@ -201,6 +201,10 @@ class Controller(object):
   def transfer_output_files(workflow, wf_ctrl, buffer_size= 256**2):
     Helper.transfer_output_files(workflow, wf_ctrl, buffer_size)
 
+  @staticmethod
+  def optimize_workflow(workflow):
+    return soma.workflow.utils.optimize_workflow(workflow)
+
 
 class WorkflowWidget(QtGui.QMainWindow):
   
@@ -278,6 +282,7 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
     self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
     self.ui.action_open_wf.triggered.connect(self.openWorkflow)
+    self.ui.action_optimize_wf.triggered.connect(self.optimize_workflow)
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
     self.ui.action_delete_workflow.triggered.connect(self.delete_workflow)
     self.ui.action_change_expiration_date.triggered.connect(self.changeExpirationDate)
@@ -311,6 +316,9 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     if not self.model.current_connection:
       self.close()
+
+
+    self.currentWorkflowChanged()
 
   def connect_to_controller(self, resource_id, login, password=None, 
                             rsa_key_pass=None):      
@@ -364,6 +372,17 @@ class WorkflowWidget(QtGui.QMainWindow):
       else:
         self.updateWorkflowList()
         self.model.addWorkflow(workflow, datetime.now() + timedelta(days=5))
+
+  @QtCore.pyqtSlot()
+  def optimize_workflow(self):
+    assert(self.model.current_workflow)
+    assert(self.model.current_workflow.wf_id == -1)
+  
+    new_workflow = Controller.optimize_workflow(self.model.current_workflow.server_workflow)
+
+    self.updateWorkflowList()
+    self.model.addWorkflow(new_workflow, datetime.now() + timedelta(days=5))
+    
       
   @QtCore.pyqtSlot()
   def saveWorkflow(self):
@@ -698,6 +717,8 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       self.ui.dateTimeEdit_expiration.setEnabled(False)
       
+      self.ui.action_optimize_wf.setEnabled(False)
+
       self.ui.action_submit.setEnabled(False)
       self.ui.action_change_expiration_date.setEnabled(False)
       self.ui.action_stop_wf.setEnabled(False)
@@ -730,6 +751,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
+        self.ui.action_optimize_wf.setEnabled(True)
         self.ui.action_submit.setEnabled(True)
         self.ui.action_change_expiration_date.setEnabled(False)
         self.ui.action_delete_workflow.setEnabled(False)
@@ -754,6 +776,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
+        self.ui.action_optimize_wf.setEnabled(False)
         self.ui.action_submit.setEnabled(False)
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
