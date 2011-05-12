@@ -475,7 +475,7 @@ class EngineWorkflow(Workflow):
         self.jobs.append(dependency[0])
         ejob = EngineJob( client_job=dependency[0],
                           queue=self.queue,
-                          path_translation=self.path_translation,
+                          path_translation=self._path_translation,
                           transfer_mapping=self.transfer_mapping)
         self.transfer_mapping.update(ejob.transfer_mapping)
         self.job_mapping[dependency[0]]=ejob
@@ -484,7 +484,7 @@ class EngineWorkflow(Workflow):
         self.jobs.append(dependency[1])
         ejob = EngineJob( client_job=dependency[1],
                           queue=self.queue,
-                          path_translation=self.path_translation,
+                          path_translation=self._path_translation,
                           transfer_mapping=self.transfer_mapping)
         self.transfer_mapping.update(ejob.transfer_mapping)
         self.job_mapping[dependency[1]]=ejob
@@ -498,7 +498,7 @@ class EngineWorkflow(Workflow):
             self.jobs.append(elem)
             ejob = EngineJob( client_job=elem,
                               queue=self.queue,
-                              path_translation=self.path_translation,
+                              path_translation=self._path_translation,
                               transfer_mapping=self.transfer_mapping)
             self.transfer_mapping.update(ejob.transfer_mapping)
             self.job_mapping[elem]=ejob
@@ -514,7 +514,7 @@ class EngineWorkflow(Workflow):
           self.jobs.append(elem)
           ejob = EngineJob( client_job=elem,
                             queue=self.queue,
-                            path_translation=self.path_translation,
+                            path_translation=self._path_translation,
                             transfer_mapping=self.transfer_mapping)
           self.transfer_mapping.update(ejob.transfer_mapping)
           self.job_mapping[elem]=ejob
@@ -665,6 +665,8 @@ class EngineWorkflow(Workflow):
       self.registered_tr[engine_path].status = status
 
     done = True
+    sub_info_to_resert = {}
+    new_status = {}
     for job in self.registered_jobs.itervalues():
       if job.failed():
         #clear all the information related to the previous job submission
@@ -677,10 +679,15 @@ class EngineWorkflow(Workflow):
         stdout.close()
         stderr = open(job.stderr_file, "w")
         stderr.close()
-        database_server.set_submission_information(job.job_id, None, None)
-        database_server.set_job_status(job.job_id, constants.NOT_SUBMITTED)
+
+        sub_info_to_resert[job.job_id] = None
+        new_status[job.job_id] = constants.NOT_SUBMITTED
+
       if not job.ended_with_success():
         undone_jobs.append(job)
+
+    database_server.set_submission_information(sub_info_to_resert, None)
+    database_server.set_jobs_status(new_status)
 
     to_run = []
     if undone_jobs:
