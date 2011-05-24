@@ -89,16 +89,22 @@ File Transfer
   The file transfers are optional. However, they can be useful when the user's file 
   system is not shared with the computing resource.
 
-  The file transfers objects allow to transfer files or directories to and from 
+  The file transfer objects allow to transfer files or directories to and from 
   the computing resource file system.
-
-  The file transfers can be associated to jobs (as input or output). That way 
-  soma-workflow can wait for the input files to be transfered or created before 
-  submitting the job to the computing resource.
   
-  A file transfer object is a mapping between a file path valid on the user file 
-  system and a file path valid on the computing resource file system. It can thus
-  be used instead of any regular path in the definitions of jobs and workflows.
+  A file transfer object is a mapping between a file path which is valid on 
+  the user file system and a file path which is valid on the computing resource 
+  file system. There is no need for the user to specify a valid path on the 
+  computing resource. Soma-workflow handles the choice of this path within a 
+  configured directory. 
+
+  The file transfer object can be used instead of any regular path in the 
+  definitions of jobs and workflows.
+  The jobs using file transfers in their program command line, has to state 
+  which file transfers are input, output or both. That way soma-workflow
+  waits for all the input files to exist on the computing resource before 
+  submitting the job to the resource.
+  
 
   .. seealso:: :ref:`file_transfer_examples` in the example section.
 
