@@ -32,6 +32,8 @@ class Configuration(object):
 
   mode = None
 
+  scheduler_type = None
+
   submitting_machines = None
 
   cluster_address = None
@@ -49,24 +51,41 @@ class Configuration(object):
   queues = None
 
   def __init__(self, 
-               resource_id, 
+               resource_id=None, 
                config_file_path=None):
 
-    self.resource_id = resource_id
-    if config_file_path:
-      self.config_path = config_file_path
+    if resource_id == None or resource_id == socket.gethostname():
+      self.resource_id = socket.gethostname()
+      self.mode = 'light'
+      self.scheduler_type = 'local_basic'
+      self.database_file = os.path.expanduser("~/.soma-workflow/soma_workflow.db")
+      self.transfered_file_dir = os.path.expanduser("~/.soma-workflow/transfered_files")
+      self.queue_limits = {}
+      self.queues = []
+      if not os.path.isdir(os.path.expanduser("~/.soma-workflow")):
+        os.mkdir(os.path.expanduser("~/.soma-workflow"))
+      if not os.path.isdir(self.transfered_file_dir):
+        os.mkdir(self.transfered_file_dir)
     else:
-      self.config_path = Configuration.search_config_path()
+      self.scheduler_type = 'drmaa'
+      self.resource_id = resource_id
+      if config_file_path:
+        self.config_path = config_file_path
+      else:
+        self.config_path = Configuration.search_config_path()
 
-    self.config = ConfigParser.ConfigParser()
-    self.config.read(self.config_path)
-    if not self.config.has_section(resource_id):
-      raise ConfigurationError("Can not find section " + self.resource_id + " "
-                               "in configuration file: " + self.config_path)
+      self.config = ConfigParser.ConfigParser()
+      self.config.read(self.config_path)
+      if not self.config.has_section(resource_id):
+        raise ConfigurationError("Can not find section " + self.resource_id + " "
+                                "in configuration file: " + self.config_path)
 
+
+  def get_scheduler_type(self):
+    return self.scheduler_type
 
   def get_submitting_machines(self):
-    if self.submitting_machines: 
+    if self.config == None or self.submitting_machines: 
       return self.submitting_machines
 
     if not self.config.has_option(self.resource_id,
@@ -99,19 +118,22 @@ class Configuration(object):
       config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
     if not config_path or not os.path.isfile(config_path):
       config_path = "/etc/soma-workflow.cfg"
-    if not config_path or not os.path.isfile(config_path):
-      raise ConfigurationError("Can not find the soma-workflow "
-                               "configuration file. \n")
+    #if not config_path or not os.path.isfile(config_path):
+      #raise ConfigurationError("Can not find the soma-workflow "
+                               #"configuration file. \n")
     return config_path
 
 
   @staticmethod
-  def get_configured_resources(config_file_path):
+  def get_configured_resources(config_file_path=None):
     resource_ids = []
+    if config_file_path == None:
+      return [socket.gethostname()]
     config = ConfigParser.ConfigParser()
     config.read(config_file_path)
     for r_id in config.sections():
       resource_ids.append(r_id)
+    resource_ids.append(socket.gethostname())
     return resource_ids
 
 
@@ -140,7 +162,7 @@ class Configuration(object):
     
 
   def get_cluster_address(self):
-    if self.cluster_address:
+    if self.config == None or self.cluster_address:
       return self.cluster_address
     
     if not self.config.has_option(self.resource_id,
@@ -188,7 +210,7 @@ class Configuration(object):
 
 
   def get_parallel_job_config(self):
-    if self.parallel_job_config != None:
+    if self.config == None or self.parallel_job_config != None:
       return self.parallel_job_config
     
     self.parallel_job_config = {}
@@ -203,7 +225,8 @@ class Configuration(object):
 
   def get_drmaa_implementation(self):
     drmaa_implementation = None
-    if self.config.has_option(self.resource_id, 
+    if self.config != None and \
+       self.config.has_option(self.resource_id, 
                               constants.OCFG_DRMAA_IMPLEMENTATION):
       drmaa_implementation = self.config.get(self.resource_id,                    
                                              constants.OCFG_DRMAA_IMPLEMENTATION)
@@ -211,7 +234,7 @@ class Configuration(object):
 
   
   def get_path_translation(self):
-    if self.path_translation != None:
+    if self.config == None or self.path_translation != None:
       return self.path_translation
 
     self.path_translation = {}
@@ -248,12 +271,16 @@ class Configuration(object):
       
 
   def get_name_server_host(self):
-    name_server_host = self.config.get(self.resource_id, 
-                                       constants.CFG_NAME_SERVER_HOST)
+    name_server_host = None
+    if self.config != None:
+      name_server_host = self.config.get(self.resource_id, 
+                                        constants.CFG_NAME_SERVER_HOST)
     return name_server_host
 
 
   def get_server_name(self):
+    if self.config == None:
+      return server_name
     if not self.config.has_option(self.resource_id,
                                   constants.CFG_SERVER_NAME):
       raise ConfigurationError("Can not find the configuration item %s " 
@@ -267,7 +294,7 @@ class Configuration(object):
 
   
   def get_queue_limits(self):
-    if self.queue_limits != None:
+    if self.config == None or self.queue_limits != None:
       return self.queue_limits
 
     self.queue_limits = {}
@@ -288,7 +315,7 @@ class Configuration(object):
 
   
   def get_queues(self):
-    if self.queues !=  None:
+    if self.config == None or self.queues !=  None:
       return self.queues
 
     self.queues = []
@@ -300,8 +327,8 @@ class Configuration(object):
 
 
   def get_engine_log_info(self):
-    if self.config.has_option(self.resource_id,
-                              constants.OCFG_ENGINE_LOG_DIR):
+    if self.config != None and self.config.has_option(self.resource_id,
+                                                  constants.OCFG_ENGINE_LOG_DIR):
       engine_log_dir = self.config.get(self.resource_id, 
                                        constants.OCFG_ENGINE_LOG_DIR)
       if self.config.has_option(self.resource_id,
@@ -324,8 +351,8 @@ class Configuration(object):
 
 
   def get_server_log_info(self):
-    if self.config.has_option(self.resource_id,
-                              constants.OCFG_SERVER_LOG_FILE):
+    if self.config != None and self.config.has_option(self.resource_id,
+                                                constants.OCFG_SERVER_LOG_FILE):
       server_log_file = self.config.get(self.resource_id, 
                                         constants.OCFG_SERVER_LOG_FILE)
       if self.config.has_option(self.resource_id,

@@ -315,8 +315,6 @@ class LocalScheduler(object):
     self._status = {}
     self._exit_info = {}
 
-    print "local_scheduler nb proc: " + repr(self._nb_proc) 
-
     self._lock = threading.RLock()
 
     def loop(self):

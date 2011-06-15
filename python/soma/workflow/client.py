@@ -173,10 +173,10 @@ class Job(object):
     self.command = command
     if referenced_input_files: 
       self.referenced_input_files = referenced_input_files
-    else: self.referenced_input_files = set([])
+    else: self.referenced_input_files = []
     if referenced_output_files:
       self.referenced_output_files = referenced_output_files
-    else: self.referenced_output_files = set([]) 
+    else: self.referenced_output_files = []
     self.stdin = stdin
     self.join_stderrout = join_stderrout
     self.disposal_timeout = disposal_timeout
@@ -420,8 +420,6 @@ class WorkflowController(object):
   objects.
   '''
 
-  _mode = None
-
   _connection = None
 
   _engine_proxy = None
@@ -433,7 +431,7 @@ class WorkflowController(object):
   config = None
   
   def __init__(self, 
-               resource_id, 
+               resource_id=None, 
                login=None, 
                password=None,
                config_path=None,
@@ -445,6 +443,8 @@ class WorkflowController(object):
 
     * resource_id *string*
         Identifier of the computing resource to connect to.
+        The number of cpu of the current machine is detected and the basic
+        scheduler is lauched.
 
     * login *string*
         Required if the computing resource is remote.
@@ -464,11 +464,11 @@ class WorkflowController(object):
     '''
     
     self.config = Configuration(resource_id)
-    self._mode = self.config.get_mode()
-    print  self._mode + " mode"
+    mode = self.config.get_mode()
+    print  mode + " mode"
 
     # LOCAL MODE
-    if self._mode == 'local':
+    if mode == 'local':
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
       self._transfer = TransferLocal(self._engine_proxy)
@@ -476,7 +476,7 @@ class WorkflowController(object):
       #self._transfer = TransferPyro(self._engine_proxy)
     
     # REMOTE MODE
-    elif self._mode == 'remote':
+    elif mode == 'remote':
       submitting_machines = self.config.get_submitting_machines()
       sub_machine = submitting_machines[random.randint(0,   
                                                     len(submitting_machines)-1)]
@@ -484,24 +484,24 @@ class WorkflowController(object):
       print 'cluster address: ' + cluster_address
       print 'submission machine: ' + sub_machine
       self._connection = connection.RemoteConnection(login, 
-                                                     password, 
-                                                     cluster_address, 
-                                                     sub_machine, 
-                                                     resource_id, 
-                                                     "",
-                                                     rsa_key_pass)
+                                                    password, 
+                                                    cluster_address, 
+                                                    sub_machine, 
+                                                    resource_id, 
+                                                    "",
+                                                    rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
 
       if not password and not rsa_key_pass:
         self._transfer = TransferSCP(self._engine_proxy, 
-                                     username=login, 
-                                     hostname=sub_machine)
+                                    username=login, 
+                                    hostname=sub_machine)
       else:
         self._transfer = TransferPyro(self._engine_proxy)
       self._transfer_stdouterr = TransferPyro(self._engine_proxy)
-   
+  
     # LIGHT MODE
-    elif self._mode == 'light':
+    elif mode == 'light':
       self._engine_proxy = _embedded_engine_and_server(self.config)
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
@@ -1198,6 +1198,27 @@ class WorkflowController(object):
     return progression
 
 
+def _detectCPUs():
+ """
+ Detects the number of CPUs on a system. 
+ ==> Python >= 2.6: multiprocessing.cpu_count
+ """
+ # Linux, Unix and MacOS:
+ if hasattr(os, "sysconf"):
+     if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+         # Linux & Unix:
+         ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
+         if isinstance(ncpus, int) and ncpus > 0:
+             return ncpus
+     else: # OSX:
+         return int(os.popen2("sysctl -n hw.ncpu")[1].read())
+ # Windows:
+ if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+         ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
+         if ncpus > 0:
+             return ncpus
+ return 1 # Default
+
  
 def _embedded_engine_and_server(config):
   '''
@@ -1215,12 +1236,10 @@ def _embedded_engine_and_server(config):
 
   from soma.workflow.engine import WorkflowEngine, WorkflowEngineLoop, EngineLoopThread
   from soma.workflow.database_server import WorkflowDatabaseServer
-  from soma.workflow.scheduler import LocalScheduler
-  #from soma.workflow.scheduler import Drmaa
-
+  
   (engine_log_dir,
-   engine_log_format,
-   engine_log_level) = config.get_engine_log_info()
+  engine_log_format,
+  engine_log_level) = config.get_engine_log_info()
   if engine_log_dir:
     logfilepath = engine_log_dir + "log_light_mode"
     logging.basicConfig(
@@ -1236,10 +1255,17 @@ def _embedded_engine_and_server(config):
   database_server = WorkflowDatabaseServer(config.get_database_file(), 
                                            config.get_transfered_file_dir())
 
-  #scheduler = Drmaa(config.get_drmaa_implementation(), 
-  #              config.get_parallel_job_config())
+  if config.get_scheduler_type() == 'drmaa':
+    from soma.workflow.scheduler import Drmaa
+    print "scheduler type: drmaa"
+    scheduler = Drmaa(config.get_drmaa_implementation(), 
+                      config.get_parallel_job_config())
 
-  scheduler = LocalScheduler(nb_proc=2)
+  elif config.get_scheduler_type() == 'local_basic':
+    from soma.workflow.scheduler import LocalScheduler
+    cpu_count = _detectCPUs()
+    print "scheduler type: basic, cpu count: " + repr(cpu_count)
+    scheduler = LocalScheduler(nb_proc=cpu_count)
 
   engine_loop = WorkflowEngineLoop(database_server,
                                    scheduler,

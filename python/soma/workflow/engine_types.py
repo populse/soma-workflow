@@ -124,6 +124,84 @@ class EngineJob(Job):
         raise JobError("The parallel job can not be submitted because the "
                         "parallel configuration %s is missing." %(configuration_name))
 
+
+    if self.stdin:
+      if isinstance(self.stdin, FileTransfer):
+        if not self.stdin in self.referenced_input_files:
+          self.referenced_input_files.append(self.stdin)
+        #if not self.stdin in self.transfer_mapping:
+          #if isinstance(self.stdin, EngineTransfer):
+            ## TBI check that the transfer exist in the database 
+            #self.transfer_mapping[self.stdin] = self.stdin
+          #else:
+            #eft = EngineTransfer(self.stdin)
+            #self.transfer_mapping[self.stdin] = eft
+      elif isinstance(self.stdin, SharedResourcePath):
+        self.srp_mapping[self.stdin] = self._translate(self.stdin) 
+      else:
+        if not type(self.stdin) in types.StringTypes:
+          raise JobError("Wrong stdin type: %s" %(repr(self.stdin))) 
+
+    if self.working_directory:
+      print "working_directory" 
+      if isinstance(self.working_directory, FileTransfer):
+        print "which is a FileTransfer"
+        if not self.working_directory in self.referenced_input_files:
+          print "not in self.referenced_input_files"
+          self.referenced_input_files.append(self.working_directory)
+        if not self.working_directory in self.referenced_output_files:
+          print "not in self.referenced_output_files"
+          self.referenced_output_files.append(self.working_directory)
+        #if not self.working_directory in self.transfer_mapping:
+          #if isinstance(self.working_directory, EngineTransfer):
+            ## TBI check that the transfer exist in the database 
+            #self.transfer_mapping[self.working_directory] = self.working_directory
+          #else:
+            #eft = EngineTransfer(self.working_directory)
+            #self.transfer_mapping[self.working_directory] = eft
+      elif isinstance(self.working_directory, SharedResourcePath):
+        self.srp_mapping[self.working_directory] = self._translate(self.working_directory)
+      else:
+        if not type(self.working_directory) in types.StringTypes:
+          raise JobError("Wrong working directory type: %s " %
+                         (repr(self.working_directory)))
+
+    if self.stdout_file:
+      if isinstance(self.stdout_file, FileTransfer):
+        if not self.stdout_file in self.referenced_output_files:
+          self.referenced_output_files.append(self.stdout_file)
+        #if not self.stdout_file in self.transfer_mapping:
+          #if isinstance(self.stdout_file, EngineTransfer):
+            ## TBI check that the transfer exist in the database 
+            #self.transfer_mapping[self.stdout_file] = self.stdout_file
+          #else:
+            #eft = EngineTransfer(self.stdout_file)
+            #self.transfer_mapping[self.stdout_file] = eft
+      elif isinstance(self.stdout_file, SharedResourcePath):
+        self.srp_mapping[self.stdout_file] = self._translate(self.stdout_file) 
+      else:
+        if not type(self.stdout_file) in types.StringTypes:
+          raise JobError("Wrong stdout_file type: %s" %(repr(self.stdout_file))) 
+
+    if self.stderr_file:
+      if isinstance(self.stderr_file, FileTransfer):
+        if not self.stderr_file in self.referenced_output_files:
+          self.referenced_output_files.append(self.stderr_file)
+        #if not self.stderr_file in self.transfer_mapping:
+          #if isinstance(self.stderr_file, EngineTransfer):
+            ## TBI check that the transfer exist in the database 
+            #self.transfer_mapping[self.stderr_file] = self.stderr_file
+          #else:
+            #eft = EngineTransfer(self.stderr_file)
+            #self.transfer_mapping[self.stderr_file] = eft
+      elif isinstance(self.stderr_file, SharedResourcePath):
+        self.srp_mapping[self.stderr_file] = self._translate(self.stderr_file) 
+      else:
+        if not type(self.stderr_file) in types.StringTypes:
+          raise JobError("Wrong stderr_file type: %s" %(repr(self.stderr_file))) 
+
+    
+
     # transfer_mapping from referenced_input_files and referenced_output_files
     # + type checking
     for ft in self.referenced_input_files:
@@ -195,71 +273,7 @@ class EngineJob(Job):
         if not type(command_el) in types.StringTypes:
           raise JobError("Wrong command element type: %s" %(repr(command_el)))
       
-    if self.stdin:
-      if isinstance(self.stdin, FileTransfer):
-        if not self.stdin in self.transfer_mapping:
-          self.referenced_input_files.append(self.stdin)
-          if isinstance(self.stdin, EngineTransfer):
-            # TBI check that the transfer exist in the database 
-            self.transfer_mapping[self.stdin] = self.stdin
-          else:
-            eft = EngineTransfer(self.stdin)
-            self.transfer_mapping[self.stdin] = eft
-      elif isinstance(self.stdin, SharedResourcePath):
-        self.srp_mapping[self.stdin] = self._translate(self.stdin) 
-      else:
-        if not type(self.stdin) in types.StringTypes:
-          raise JobError("Wrong stdin type: %s" %(repr(self.stdin))) 
-
-    if self.working_directory:
-      if isinstance(self.working_directory, FileTransfer):
-        if not self.working_directory in self.transfer_mapping:
-          self.referenced_input_files.append(self.working_directory)
-          self.referenced_output_files.append(self.working_directory)
-          if isinstance(self.working_directory, EngineTransfer):
-            # TBI check that the transfer exist in the database 
-            self.transfer_mapping[self.working_directory] = self.working_directory
-          else:
-            eft = EngineTransfer(self.working_directory)
-            self.transfer_mapping[self.working_directory] = eft
-      elif isinstance(self.working_directory, SharedResourcePath):
-        self.srp_mapping[self.working_directory] = self._translate(self.working_directory)
-      else:
-        if not type(self.working_directory) in types.StringTypes:
-          raise JobError("Wrong working directory type: %s " %
-                         (repr(self.working_directory)))
-
-    if self.stdout_file:
-      if isinstance(self.stdout_file, FileTransfer):
-        if not self.stdout_file in self.transfer_mapping:
-          self.referenced_output_files.append(self.stdout_file)
-          if isinstance(self.stdout_file, EngineTransfer):
-            # TBI check that the transfer exist in the database 
-            self.transfer_mapping[self.stdout_file] = self.stdout_file
-          else:
-            eft = EngineTransfer(self.stdout_file)
-            self.transfer_mapping[self.stdout_file] = eft
-      elif isinstance(self.stdout_file, SharedResourcePath):
-        self.srp_mapping[self.stdout_file] = self._translate(self.stdout_file) 
-      else:
-        if not type(self.stdout_file) in types.StringTypes:
-          raise JobError("Wrong stdout_file type: %s" %(repr(self.stdout_file))) 
-
-    if self.stderr_file:
-      if isinstance(self.stderr_file, FileTransfer):
-        if not self.stderr_file in self.transfer_mapping:
-          self.referenced_output_files.append(self.stderr_file)
-          if isinstance(self.stderr_file, EngineTransfer):
-            # TBI check that the transfer exist in the database 
-            self.transfer_mapping[self.stderr_file] = self.stderr_file
-          else:
-            eft = EngineTransfer(self.stderr_file)
-            self.transfer_mapping[self.stderr_file] = eft
-      elif isinstance(self.stderr_file, SharedResourcePath):
-        self.srp_mapping[self.stderr_file] = self._translate(self.stderr_file) 
-      else:
-        if not type(self.stderr_file) in types.StringTypes:
-          raise JobError("Wrong stderr_file type: %s" %(repr(self.stderr_file))) 
+ 
 
   def _translate(self, srp):
     '''

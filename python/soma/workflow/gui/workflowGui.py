@@ -23,6 +23,7 @@ import matplotlib
 matplotlib.use('Qt4Agg')
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure 
+import socket
 
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
@@ -227,12 +228,12 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
     self.updateCurrentWorkflowStatus)
 
-    try:
-      self.config_file_path = Configuration.search_config_path()
-      self.resource_list = Configuration.get_configured_resources(self.config_file_path)
-    except ConfigurationError, e:
-      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.close()
+    #try:
+    self.config_file_path = Configuration.search_config_path()
+    self.resource_list = Configuration.get_configured_resources(self.config_file_path)
+    #except ConfigurationError, e:
+      #QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      #self.close()
 
     self.ui.combo_resources.addItems(self.resource_list)
     
@@ -306,9 +307,12 @@ class WorkflowWidget(QtGui.QMainWindow):
     
     ## First connection:
 
-    # Try to connect directly (a user login and a resource id are mandatory):  
-    if auto_connect and user is not None and len(self.resource_list) > 0:
-      self.connect_to_controller(self.resource_list[0], user)
+    # Try to connect directly:  
+    if auto_connect or self.config_file_path == None:
+      if user is not None and len(self.resource_list) > 0:
+        self.connect_to_controller(self.resource_list[0], user)
+      else:
+        self.connect_to_controller(socket.gethostname())
     else: # Show connection dialog:
       if user is not None:
         self.ui_firstConnection_dlg.lineEdit_login.setText(user)
@@ -320,7 +324,10 @@ class WorkflowWidget(QtGui.QMainWindow):
 
     self.currentWorkflowChanged()
 
-  def connect_to_controller(self, resource_id, login, password=None, 
+  def connect_to_controller(self, 
+                            resource_id, 
+                            login=None, 
+                            password=None, 
                             rsa_key_pass=None):      
 
     wf_ctrl = None
