@@ -584,8 +584,8 @@ class WorkflowController(object):
     Raises *JobError* if the job is not correct.
     '''
    
-    engine_job = self._engine_proxy.submit_job(job, queue)
-    return engine_job
+    job_id = self._engine_proxy.submit_job(job, queue)
+    return job_id
 
 
   def register_transfer(self, file_transfer):
@@ -766,6 +766,8 @@ class WorkflowController(object):
 
     Raises *UnknownObjectError* if the job_id is not valid
     '''
+    stdout_file_path = os.path.abspath(stdout_file_path)
+    stderr_file_path = os.path.abspath(stderr_file_path)
     (engine_stdout_file, engine_stderr_file) = self._engine_proxy.stdouterr_file_path(job_id)
 
     self._transfer_stdouterr.transfer_from_remote(engine_stdout_file, 

@@ -141,6 +141,7 @@ class EngineJob(Job):
       else:
         if not type(self.stdin) in types.StringTypes:
           raise JobError("Wrong stdin type: %s" %(repr(self.stdin))) 
+        self.stdin = os.path.abspath(self.stdin)
 
     if self.working_directory:
       print "working_directory" 
@@ -165,6 +166,7 @@ class EngineJob(Job):
         if not type(self.working_directory) in types.StringTypes:
           raise JobError("Wrong working directory type: %s " %
                          (repr(self.working_directory)))
+        self.working_directory = os.path.abspath(self.working_directory)
 
     if self.stdout_file:
       if isinstance(self.stdout_file, FileTransfer):
@@ -182,6 +184,7 @@ class EngineJob(Job):
       else:
         if not type(self.stdout_file) in types.StringTypes:
           raise JobError("Wrong stdout_file type: %s" %(repr(self.stdout_file))) 
+        self.stdout_file = os.path.abspath(self.stdout_file)
 
     if self.stderr_file:
       if isinstance(self.stderr_file, FileTransfer):
@@ -199,7 +202,7 @@ class EngineJob(Job):
       else:
         if not type(self.stderr_file) in types.StringTypes:
           raise JobError("Wrong stderr_file type: %s" %(repr(self.stderr_file))) 
-
+        self.stderr_file = os.path.abspath(self.stderr_file)
     
 
     # transfer_mapping from referenced_input_files and referenced_output_files

@@ -124,7 +124,7 @@ class JobExamples(object):
     
     print "files transfered "
 
-    job1 = self.wf_ctrl.submit_job(Job(
+    job1_id = self.wf_ctrl.submit_job(Job(
                                       command=[self.python, 
                                               script1_tr, 
                                               self.file0_tr, 
@@ -141,7 +141,7 @@ class JobExamples(object):
                                       disposal_timeout=self.jobs_timeout, 
                                       name="job1 with transfers")) 
                                     
-    return (job1.job_id, [self.file11_tr.engine_path, self.file12_tr.engine_path], None)
+    return (job1_id, [self.file11_tr.engine_path, self.file12_tr.engine_path], None)
   
 
   def submitJob2(self, time=2):
@@ -163,7 +163,7 @@ class JobExamples(object):
     self.wf_ctrl.transfer_files(script2_tr.engine_path) 
     self.wf_ctrl.transfer_files(stdin2_tr.engine_path) 
   
-    job2 = self.wf_ctrl.submit_job(Job(command=[self.python, 
+    job2_id = self.wf_ctrl.submit_job(Job(command=[self.python, 
                                                 script2_tr, 
                                                 self.file11_tr, 
                                                 self.file0_tr, 
@@ -178,7 +178,7 @@ class JobExamples(object):
                                         join_stderrout=False, 
                                         disposal_timeout=self.jobs_timeout, 
                                         name="job2 with transfers"))
-    return (job2.job_id, [self.file2_tr.engine_path], None)
+    return (job2_id, [self.file2_tr.engine_path], None)
 
 
   def submitJob3(self, time=2):
@@ -199,7 +199,7 @@ class JobExamples(object):
     self.wf_ctrl.transfer_files(script3_tr.engine_path) 
     self.wf_ctrl.transfer_files(stdin3_tr.engine_path) 
 
-    job3 = self.wf_ctrl.submit_job(Job(command=[self.python, 
+    job3_id = self.wf_ctrl.submit_job(Job(command=[self.python, 
                                                 script3_tr,  
                                                 self.file12_tr,  
                                                 self.file3_tr,  
@@ -213,7 +213,7 @@ class JobExamples(object):
                                         disposal_timeout=self.jobs_timeout, 
                                         name="job3 with transfers")) 
   
-    return (job3.job_id, [self.file3_tr.engine_path], None)
+    return (job3_id, [self.file3_tr.engine_path], None)
   
   
   def submitJob4(self):
@@ -234,7 +234,7 @@ class JobExamples(object):
     self.wf_ctrl.transfer_files(script4_tr.engine_path) 
     self.wf_ctrl.transfer_files(stdin4_tr.engine_path) 
  
-    job4 = self.wf_ctrl.submit_job(Job( 
+    job4_id = self.wf_ctrl.submit_job(Job( 
                                           command=[self.python, 
                                                    script4_tr, 
                                                    self.file2_tr, 
@@ -249,7 +249,7 @@ class JobExamples(object):
                                           join_stderrout=False, 
                                           disposal_timeout=self.jobs_timeout, 
                                           name="job4 with transfers"))
-    return (job4.job_id, [self.file4_tr.engine_path], None)
+    return (job4_id, [self.file4_tr.engine_path], None)
   
   
   def submitExceptionJob(self):
@@ -260,7 +260,7 @@ class JobExamples(object):
   
     self.wf_ctrl.transfer_files(script_tr.engine_path)
   
-    job = self.wf_ctrl.submit_job(Job(command=[self.python, script_tr], 
+    job_id = self.wf_ctrl.submit_job(Job(command=[self.python, script_tr], 
                                       referenced_input_files=[script_tr], 
                                       referenced_output_files=[], 
                                       stdin=None, 
@@ -268,7 +268,7 @@ class JobExamples(object):
                                       disposal_timeout=self.jobs_timeout, 
                                       name="job with exception"))
     
-    return (job.job_id, None, None)
+    return (job_id, None, None)
 
 
   def localCustomSubmission(self):
@@ -276,7 +276,7 @@ class JobExamples(object):
     stderr = self.outpath + "stderr_local_custom_submission"
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    job = self.wf_ctrl.submit_job(Job(command = [self.python, 
+    job_id = self.wf_ctrl.submit_job(Job(command = [self.python, 
                                                        self.inpath + "complete/" + "job1.py", 
                                                        self.inpath + "complete/" + "file0",
                                                        file11, 
@@ -289,14 +289,14 @@ class JobExamples(object):
                                             stderr_file=stderr,
                                             working_directory=self.outpath ))
       
-    return (job.job_id, 
+    return (job_id, 
             [file11, file12],  
             [stdout, stderr])
               
   def localSubmission(self):
     file11 = self.outpath + "file11"
     file12 = self.outpath + "file12"
-    job = self.wf_ctrl.submit_job(Job(command = [self.python, 
+    job_id = self.wf_ctrl.submit_job(Job(command = [self.python, 
                                                       self.inpath + "complete/" + "job1.py", 
                                                       self.inpath + "complete/" + "file0",
                                                       file11, 
@@ -305,7 +305,7 @@ class JobExamples(object):
                                             join_stderrout=False, 
                                             disposal_timeout = self.jobs_timeout,
                                             name = "job1 local submission"))
-    return (job.job_id,
+    return (job_id,
             [file11, file12],
             None)
      
@@ -333,7 +333,7 @@ class JobExamples(object):
     
     print "source_tr.engine_path = " + source_tr.engine_path
     print "object_tr.engine_path = " + object_tr.engine_path
-    compil1job = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
+    compil1job_id = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
                                                              "-c", source_tr, 
                                                              "-o", object_tr ], 
                                              referenced_input_files=[source_tr],
@@ -342,7 +342,7 @@ class JobExamples(object):
                                              disposal_timeout=self.jobs_timeout,
                                              name="job compil1 mpi"))
     
-    self.wf_ctrl.wait_job([compil1job.job_id])
+    self.wf_ctrl.wait_job([compil1job_id])
     
     bin_tr = self.wf_ctrl.register_transfer(
                               FileTransfer(True,
@@ -350,7 +350,7 @@ class JobExamples(object):
                                            self.tr_timeout))
     print "bin_tr.engine_path= " + bin_tr.engine_path
     
-    compil2job = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
+    compil2job_id = self.wf_ctrl.submit_job(Job(command=[ mpibin+"/mpicc", 
                                                               "-o", bin_tr, 
                                                               object_tr ], 
                                              referenced_input_files=[object_tr],
@@ -359,7 +359,7 @@ class JobExamples(object):
                                              disposal_timeout=self.jobs_timeout,
                                              name="job compil2 mpi"))
     
-    self.wf_ctrl.wait_job([compil2job.job_id])
+    self.wf_ctrl.wait_job([compil2job_id])
     self.wf_ctrl.delete_transfer(object_tr.engine_path)
 
     
@@ -371,18 +371,18 @@ class JobExamples(object):
     
     self.wf_ctrl.transfer_files(script.engine_path)
 
-    job = self.wf_ctrl.submit_job(Job(command=[ script, repr(node_num), bin_tr], 
+    job_id = self.wf_ctrl.submit_job(Job(command=[ script, repr(node_num), bin_tr], 
                                       referenced_input_files=[script, bin_tr],
                                       join_stderrout=False, 
                                       disposal_timeout=self.jobs_timeout,
                                       name="parallel job mpi",
                                       parallel_job_info= (constants.OCFG_PARALLEL_PC_MPI,node_num)))
 
-    self.wf_ctrl.delete_job(compil1job.job_id)
-    self.wf_ctrl.delete_job(compil2job.job_id)
+    self.wf_ctrl.delete_job(compil1job_id)
+    self.wf_ctrl.delete_job(compil2job_id)
     
 
-    return (job.job_id, [source_tr.engine_path], None)
+    return (job_id, [source_tr.engine_path], None)
           
      
 class JobsTest(unittest.TestCase):

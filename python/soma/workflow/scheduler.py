@@ -306,6 +306,7 @@ class LocalScheduler(object):
   def __init__(self, nb_proc=1, period=1):
     super(LocalScheduler, self).__init__()
   
+
     self.parallel_job_submission_info = None
 
     self._nb_proc = nb_proc
@@ -359,34 +360,80 @@ class LocalScheduler(object):
           len(self._processes) < self._nb_proc:
       job = self._queue.pop(0)
       #print "new job " + repr(job.job_id)
-      self._processes[job.job_id] = self._create_process(job)
-      self._status[job.job_id] = constants.RUNNING
+      process = self._create_process(job)
+      if process == None:
+        self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
+                                   None,
+                                   None,
+                                   None)
+        self._status[job.job_id] = constants.FAILED
+      else:
+        self._processes[job.job_id] = self._create_process(job)
+        self._status[job.job_id] = constants.RUNNING
 
   def _create_process(self, engine_job):
     separator = " "
     command = separator.join(engine_job.plain_command())
     #print "command " +  repr(command)
 
-    stdin = engine_job.plain_stdin()
-    stdin_file = None
-    if stdin:
-      stdin_file = open(stdin, "rb")
-    
     stdout = engine_job.plain_stdout()
     stdout_file = None
     if stdout:
-      stdout_file = open(stdout, "wb")
+      try:
+        stdout_file = open(stdout, "wb")
+      except Exception, e:
+        return None
 
     stderr = engine_job.plain_stderr()
     stderr_file = None
     if stderr:
-      stderr_file = open(stderr, "wb")
+      try:
+        stderr_file = open(stderr, "wb")
+      except Exception, e:
+        return None
 
-    process = subprocess.Popen(command,
-                               shell=True,
-                               stdin=stdin_file,
-                               stdout=stdout_file,
-                               stderr=stderr_file)
+    stdin = engine_job.plain_stdin()
+    stdin_file = None
+    if stdin:
+      try:
+        stdin_file = open(stdin, "rb")
+      except Exception, e:
+        if stderr:
+          stderr_file = open(stderr, "wb")
+          s = '%s: %s \n' %(type(e), e)
+          stderr_file.write(s)
+          stderr_file.close()
+        else:
+          stdout_file = open(stdout, "wb")
+          s = '%s: %s \n' %(type(e), e)
+          stdout_file.write(s)
+          stdout_file.close()
+        return None
+
+    working_directory = engine_job.plain_working_directory()
+    
+    try:
+      process = subprocess.Popen(command,
+                                shell=True,
+                                stdin=stdin_file,
+                                stdout=stdout_file,
+                                stderr=stderr_file,
+                                cwd=working_directory)
+
+    
+    except Exception, e:
+      if stderr:
+        stderr_file = open(stderr, "wb")
+        s = '%s: %s \n' %(type(e), e)
+        stderr_file.write(s)
+        stderr_file.close()
+      else:
+        stdout_file = open(stdout, "wb")
+        s = '%s: %s \n' %(type(e), e)
+        stdout_file.write(s)
+        stdout_file.close()
+      return None
+
     return process
 
 

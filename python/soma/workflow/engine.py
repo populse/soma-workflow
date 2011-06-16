@@ -685,7 +685,7 @@ class WorkflowEngine(RemoteFileController):
     '''
     engine_job = self._engine_loop.add_job(job, queue)
 
-    return engine_job
+    return engine_job.job_id
 
 
   def delete_job( self, job_id ):
