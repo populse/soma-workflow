@@ -328,6 +328,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{UserIdentifier}
     @return: user identifier
     '''
+    self.logger.debug("=> register_user")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -358,6 +359,7 @@ class WorkflowDatabaseServer( object ):
     Delete all expired jobs, transfers and workflows, except transfers which are requested 
     by valid job.
     '''
+    self.logger.debug("=> clean")
     self.remove_non_registered_files()
     with self._lock:
       connection = self._connect()
@@ -424,6 +426,7 @@ class WorkflowDatabaseServer( object ):
       connection.close()
      
   def remove_non_registered_files(self):
+    self.logger.debug("=> remove_non_registered_files")
     registered_engine_paths = []
     registered_users = []
     with self._lock:
@@ -476,6 +479,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: string
     @return: file path
     '''
+    self.logger.debug("=> generate_file_path")
     with self._lock:
       if not external_cursor:
         connection = self._connect()
@@ -544,6 +548,7 @@ class WorkflowDatabaseServer( object ):
     @type user_id:  C{UserIdentifier}
     @type  workflow_id: C{WorkflowIdentifier}
     '''
+    self.logger.debug("=> add_transfer")
     expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_transfer.disposal_timeout) 
@@ -628,6 +633,7 @@ class WorkflowDatabaseServer( object ):
     @param engine_file_path: engine file path to identifying the transfer 
     record to delete.
     '''
+    self.logger.debug("=> remove_transfer")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -657,6 +663,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple
     @returns: (engine_file_path, client_file_path, expiration_date, workflow_id, client_paths, transfer_type, status)
     '''
+    self.logger.debug("=> get_transfer_information")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -709,6 +716,7 @@ class WorkflowDatabaseServer( object ):
     '''
     Returns the transferstatus stored in the database.
     '''
+    self.logger.debug("=> get_transfer_status")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -735,6 +743,7 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: transfer status as defined in constants.FILE_TRANSFER_STATUS
     '''
+    self.logger.debug("=> set_transfer_status")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
@@ -754,6 +763,7 @@ class WorkflowDatabaseServer( object ):
 
 
   def set_transfer_type(self, engine_file_path, transfer_type, user_id):
+    self.logger.debug("=> set_transfer_type")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -774,6 +784,7 @@ class WorkflowDatabaseServer( object ):
     '''
     To signal that a transfer belonging to a workflow finished.
     '''
+    self.logger.debug("=> add_workflow_ended_transfer")
     separator = ", "
     with self._lock:
       connection = self._connect()
@@ -803,6 +814,7 @@ class WorkflowDatabaseServer( object ):
     '''
     Returns the ended transfers for a workflow and clear the ended transfer list.
     '''
+    self.logger.debug("=> pop_workflow_ended_transfer")
     separator = ", "
     ended_transfers = []
     with self._lock:
@@ -846,6 +858,7 @@ class WorkflowDatabaseServer( object ):
           * dictionary job_id -> EngineJob
     '''
     # get back the workflow id first
+    self.logger.debug("=> add_workflow")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -915,6 +928,7 @@ class WorkflowDatabaseServer( object ):
     
     @type wf_id: C{WorkflowIdentifier}
     '''
+    self.logger.debug("=> delete_workflow")
     with self._lock:
       # set expiration date to yesterday + clean() ?
       connection = self._connect()
@@ -944,6 +958,7 @@ class WorkflowDatabaseServer( object ):
     @type wf_id: C{WorflowIdentifier}
     @type new_date: datetime.datetime
     '''
+    self.logger.debug("=> change_workflow_expiration_date")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -968,6 +983,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{EngineWorkflow}
     @return: workflow object
     '''
+    self.logger.debug("=> get_engine_workflow")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1002,6 +1018,7 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: workflow status as defined in constants.WORKFLOW_STATUS
     '''
+    self.logger.debug("=> set_workflow_status")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
@@ -1049,6 +1066,7 @@ class WorkflowDatabaseServer( object ):
     Returns the workflow status stored in the database 
     (updated by L{DrmaaWorkflowEngine}) and the date of its last update.
     '''
+    self.logger.debug("=> get_workflow_status")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1089,6 +1107,7 @@ class WorkflowDatabaseServer( object ):
                                       transfer_type), 
                    workflow_status)
     '''
+    self.logger.debug("=> get_detailed_workflow_status")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1180,6 +1199,7 @@ class WorkflowDatabaseServer( object ):
                                 "user " + repr(user_id)) 
 
   def is_valid_job(self, job_id, user_id):
+    self.logger.debug("=> is_valid_job")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1220,6 +1240,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
     @return: the identifier of the job
     '''
+    self.logger.debug("=> add_job")
     expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_job.disposal_timeout) 
@@ -1370,6 +1391,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: C{EngineJob}
     @return: workflow object
     '''
+    self.logger.debug("=> get_engine_job")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1402,6 +1424,7 @@ class WorkflowDatabaseServer( object ):
     
     @type job_id: 
     '''
+    self.logger.debug("=> delete_job")
     with self._lock:
       # set expiration date to yesterday + clean() ?
       connection = self._connect()
@@ -1428,6 +1451,7 @@ class WorkflowDatabaseServer( object ):
     '''
     job_status: dictionary: job_id -> status
     '''
+    self.logger.debug("=> set_jobs_status")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
@@ -1483,6 +1507,7 @@ class WorkflowDatabaseServer( object ):
     @type  status: string
     @param status: job status as defined in constants.JOB_STATUS
     '''
+    self.logger.debug("=> set_job_status")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
@@ -1534,6 +1559,7 @@ class WorkflowDatabaseServer( object ):
     Raise UnknownObjectError if the job_id is not valid or belongs to an 
     other user.
     '''
+    self.logger.debug("=> get_job_status")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1565,6 +1591,7 @@ class WorkflowDatabaseServer( object ):
     *drmaa_ids: dictionary job_id -> drmaa_id
     *submission_date: submission date if the job was submitted
     '''
+    self.logger.debug("=> set_submission_information")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1611,6 +1638,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: string
     @return: DRMAA job identifier (job identifier on DRMS if submitted via DRMAA)
     '''
+    self.logger.debug("=> get_drmaa_job_id")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1637,6 +1665,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple
     @return: (stdout_file_path, stderr_file_path)
     '''
+    self.logger.debug("=> get_std_out_err_file_path")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1678,6 +1707,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple
     @return: (exit_status, exit_value, terminating_signal, resource_usage)
     '''
+    self.logger.debug("=> get_job_exit_info")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1723,6 +1753,7 @@ class WorkflowDatabaseServer( object ):
     @param resource_usage: contain the resource usage information of
     the job.
     '''
+    self.logger.debug("=> set_job_exit_info")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
       connection = self._connect()
@@ -1777,6 +1808,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of C{JobIdentifier}
     @returns: jobs owned by the user
     '''
+    self.logger.debug("=> get_jobs")
     if not job_ids:
       request = '''SELECT id, 
                           name, 
@@ -1826,6 +1858,7 @@ class WorkflowDatabaseServer( object ):
     @type queue_name: str
     @rtype: int
     '''
+    self.logger.debug("=> nb_queued_jobs")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1863,6 +1896,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of C{JobIdentifier}
     @returns: job with status constants.DELETE_PENDING
     '''
+    self.logger.debug("=> jobs_to_delete_and_kill")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -1902,6 +1936,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of engine file path
     @returns: engine file path associated with a transfer owned by the user
     '''
+    self.logger.debug("=> get_transfers")
     if not transfer_ids:
       request = '''SELECT engine_file_path,
                           client_file_path, 
@@ -1966,6 +2001,7 @@ class WorkflowDatabaseServer( object ):
 
 
   def is_valid_workflow(self, wf_id, user_id):
+    self.logger.debug("=> is_valid_workflow")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -2003,6 +2039,7 @@ class WorkflowDatabaseServer( object ):
     @type user_id: C{UserIdentifier}
     @rtype: sequence of workflows id
     '''
+    self.logger.debug("=> get_workflows")
     if not workflow_ids:
       request = "SELECT id, name, expiration_date FROM workflows WHERE user_id=?"
       argument = [user_id]
@@ -2041,6 +2078,7 @@ class WorkflowDatabaseServer( object ):
     @rtype: sequence of C{WorkflowIdentifier}
     @returns: workflows with status constants.DELETE_PENDING
     '''
+    self.logger.debug("=> workflows_to_delete_and_kill")
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()

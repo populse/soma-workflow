@@ -165,8 +165,14 @@ class WorkflowEngineLoop(object):
         # --- 1. Jobs and workflow deletion and kill ------------------------
         # Get the jobs and workflow with the status DELETE_PENDING 
         # and KILL_PENDING
-        (jobs_to_delete, jobs_to_kill) = self._database_server.jobs_to_delete_and_kill(self._user_id)
-        (wf_to_delete, wf_to_kill) = self._database_server.workflows_to_delete_and_kill(self._user_id)
+        jobs_to_delete = [] 
+        jobs_to_kill = []
+        if self._jobs:
+          (jobs_to_delete, jobs_to_kill) = self._database_server.jobs_to_delete_and_kill(self._user_id)
+        wf_to_delete = []
+        wf_to_kill = []
+        if self._workflows:
+          (wf_to_delete, wf_to_kill) = self._database_server.workflows_to_delete_and_kill(self._user_id)
 
         # Delete and kill properly the jobs and workflows in _jobs and _workflows
         for job_id in jobs_to_kill + jobs_to_delete:
@@ -285,8 +291,9 @@ class WorkflowEngineLoop(object):
             drmaa_id_for_db_up[job.job_id] = job.drmaa_id
             job.status = constants.UNDETERMINED     
 
-        self._database_server.set_submission_information(drmaa_id_for_db_up,
-                                                         datetime.now())  
+        if drmaa_id_for_db_up:
+          self._database_server.set_submission_information(drmaa_id_for_db_up,
+                                                          datetime.now())  
    
         # --- 7. Update the workflow and jobs status to the database_server -
         ended_job_ids = []
@@ -306,7 +313,8 @@ class WorkflowEngineLoop(object):
               ended_job_ids.append(job_id)
           #self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
        
-        self._database_server.set_jobs_status(job_status_for_db_up)
+        if job_status_for_db_up:
+          self._database_server.set_jobs_status(job_status_for_db_up)
 
         for job_id, job in ended_jobs.iteritems():
           self._database_server.set_job_exit_info(job_id, 
