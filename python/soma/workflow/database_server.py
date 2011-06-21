@@ -466,7 +466,10 @@ class WorkflowDatabaseServer( object ):
   
      
      
-  def generate_file_path(self, user_id, client_file_path=None, external_cursor=None):
+  def generate_file_path(self, 
+                         user_id, 
+                         client_file_path=None, 
+                         external_cursor=None):
     '''
     Generates file path for transfers. 
     The user_id must be valid.
@@ -479,9 +482,10 @@ class WorkflowDatabaseServer( object ):
     @rtype: string
     @return: file path
     '''
-    self.logger.debug("=> generate_file_path")
+    
     with self._lock:
       if not external_cursor:
+        self.logger.debug("=> generate_file_path")
         connection = self._connect()
         cursor = connection.cursor()
       else:
@@ -548,13 +552,14 @@ class WorkflowDatabaseServer( object ):
     @type user_id:  C{UserIdentifier}
     @type  workflow_id: C{WorkflowIdentifier}
     '''
-    self.logger.debug("=> add_transfer")
+    
     expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_transfer.disposal_timeout) 
 
     with self._lock:
       if not external_cursor:
+        self.logger.debug("=> add_transfer")
         connection = self._connect()
         cursor = connection.cursor()
       else:
@@ -1240,7 +1245,6 @@ class WorkflowDatabaseServer( object ):
     @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
     @return: the identifier of the job
     '''
-    self.logger.debug("=> add_job")
     expiration_date = expiration_date
     if expiration_date == None:
       expiration_date = datetime.now() + timedelta(hours=engine_job.disposal_timeout) 
@@ -1255,6 +1259,7 @@ class WorkflowDatabaseServer( object ):
 
     with self._lock:
       if not external_cursor:
+        self.logger.debug("=> add_job")
         connection = self._connect()
         cursor = connection.cursor()
       else:
@@ -1733,7 +1738,34 @@ class WorkflowDatabaseServer( object ):
     return (exit_status, exit_value, terminating_signal, resource_usage)
 
 
-  def set_job_exit_info(self, job_id, exit_status, exit_value, terminating_signal, resource_usage):
+  def set_jobs_exit_info(self, job_dict):
+    self.logger.debug("=> set_jobs_exit_info")
+    with self._lock:
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        for job_id, job in job_dict.iteritems():
+          self.set_job_exit_info( job_id, 
+                                  job.exit_status, 
+                                  job.exit_value, 
+                                  job.terminating_signal, 
+                                  job.str_rusage,
+                                  cursor)
+      except Exception, e:
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
+      cursor.close()
+      connection.close()
+    
+
+  def set_job_exit_info(self, 
+                        job_id, 
+                        exit_status, 
+                        exit_value, 
+                        terminating_signal, 
+                        resource_usage, 
+                        external_cursor=None):
     '''
     Record the job exit status in the database.
     The status must be valid (ie a string among the exit job status 
@@ -1753,11 +1785,14 @@ class WorkflowDatabaseServer( object ):
     @param resource_usage: contain the resource usage information of
     the job.
     '''
-    self.logger.debug("=> set_job_exit_info")
     with self._lock:
       # TBI if the status is not valid raise an exception ??
-      connection = self._connect()
-      cursor = connection.cursor()
+      if not external_cursor:
+        self.logger.debug("=> set_job_exit_info")
+        connection = self._connect()
+        cursor = connection.cursor()
+      else:
+        cursor = external_cursor
       try:
         count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
         if not count == 0 :
@@ -1773,13 +1808,15 @@ class WorkflowDatabaseServer( object ):
                           job_id)
                         )
       except Exception, e:
-        connection.rollback()
+        if not external_cursor:
+          connection.rollback()
+          cursor.close()
+          connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e)) 
+      if not external_cursor:
+        connection.commit()
         cursor.close()
         connection.close()
-        raise DatabaseError('%s: %s \n' %(type(e), e)) 
-      connection.commit()
-      cursor.close()
-      connection.close()
 
   def _string_conversion(self, string):
     if string: 

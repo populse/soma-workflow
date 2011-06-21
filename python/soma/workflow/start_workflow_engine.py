@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}

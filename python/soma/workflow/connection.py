@@ -270,6 +270,11 @@ class LocalConnection( object ):
                                      resource_id, 
                                      pyro_objet_name, 
                                      log) 
+    #command = "rpdb2 -p Soizic -d /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma/workflow/start_workflow_engine.py %s %s %s" %( 
+                                     #resource_id, 
+                                     #pyro_objet_name, 
+                                     #log) 
+
     print command
    
     engine_process = subprocess.Popen(command, 

@@ -316,12 +316,9 @@ class WorkflowEngineLoop(object):
         if job_status_for_db_up:
           self._database_server.set_jobs_status(job_status_for_db_up)
 
-        for job_id, job in ended_jobs.iteritems():
-          self._database_server.set_job_exit_info(job_id, 
-                                                  job.exit_status, 
-                                                  job.exit_value, 
-                                                  job.terminating_signal, 
-                                                  job.str_rusage)
+        if len(ended_jobs):
+          self._database_server.set_jobs_exit_info(ended_jobs)
+
         for wf_id, workflow in self._workflows.iteritems():
           self._database_server.set_workflow_status(wf_id, workflow.status)
           if workflow.status == constants.WORKFLOW_DONE:
@@ -487,23 +484,19 @@ class WorkflowEngineLoop(object):
       if job.drmaa_id:
         self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
         try:
-	  self._scheduler.kill_job(job.drmaa_id)
-	except DRMError, e:
-	  #TBI how to communicate the error
+          self._scheduler.kill_job(job.drmaa_id)
+        except DRMError, e:
+          #TBI how to communicate the error
           self.logger.error("!!!ERROR!!! %s:%s" %(type(e), e))
       elif job.queue in self._pending_queues and \
            job in self._pending_queues[job.queue]:
         self._pending_queues[job.queue].remove(job)
       job.status = constants.FAILED
       job.exit_status = constants.USER_KILLED
-      self._database_server.set_job_exit_info(job_id,
-                                              constants.USER_KILLED,
-                                              None,
-                                              None,
-                                              None)
-      self._database_server.set_job_status(job_id, 
-                                            constants.FAILED, 
-                                            force = True)
+      job.exit_value = None
+      job.terminating_signal = None
+      job.str_rusage = None
+
       return True
     
 
