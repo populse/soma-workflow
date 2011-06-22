@@ -1734,7 +1734,7 @@ class WorkflowDatabaseServer( object ):
     exit_value = result[1]
     terminating_signal = self._string_conversion(result[2])
     resource_usage = self._string_conversion(result[3])
-
+ 
     return (exit_status, exit_value, terminating_signal, resource_usage)
 
 
@@ -1755,6 +1755,7 @@ class WorkflowDatabaseServer( object ):
         cursor.close()
         connection.close()
         raise DatabaseError('%s: %s \n' %(type(e), e)) 
+      connection.commit()
       cursor.close()
       connection.close()
     

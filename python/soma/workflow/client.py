@@ -32,6 +32,8 @@ import stat
 import operator
 import random
 import pickle
+import types
+import collections
 
 #import cProfile
 
@@ -942,7 +944,7 @@ class WorkflowController(object):
 
   ########## FILE TRANSFER CONTROL #######################################
 
-  def transfer_files(self, transfer_id, buffer_size = 512**2):
+  def transfer_files(self, transfer_ids, buffer_size = 512**2):
     '''
     Transfer file(s) associated to the transfer_id.
     If the files are only located on the client side (that is the transfer 
@@ -956,8 +958,9 @@ class WorkflowController(object):
     * transfer_id *FileTransfer identifier*
 
     * buffer_size *int*
-        The files are transfered piece by piece. The size of each piece can be
-        tuned using the buffer_size argument.
+        Depending on the transfer method, the files can be transfered piece by 
+        piece. The size of each piece can be tuned using the buffer_size 
+        argument.
 
     * returns: *boolean*
         The transfer was done. (TBI right error management)
@@ -965,90 +968,29 @@ class WorkflowController(object):
     Raises *UnknownObjectError* if the transfer_id is not valid 
     #Raises *TransferError*
     '''
-
-    (transfer_id, 
-     client_path, 
-     expiration_date, 
-     workflow_id, 
-     client_paths, 
-     transfer_type,
-     status) = self._engine_proxy.transfer_information(transfer_id)
-
-    if status == FILES_ON_CLIENT or \
-       status == TRANSFERING_FROM_CLIENT_TO_CR:
-      # transfer from client to computing resource
-      #overwrite = False
-      #if not transfer_type or \
-         #transfer_type == TR_FILE_CR_TO_C or \
-         #transfer_type == TR_DIR_CR_TO_C or \
-         #transfer_type == TR_MFF_CR_TO_C:
-        ## transfer reset
-        #overwrite = True
-      transfer_type = self._initialize_transfer(transfer_id)
-      
-      remote_path = transfer_id
-
-      if transfer_type == TR_FILE_C_TO_CR or \
-         transfer_type == TR_DIR_C_TO_CR:
-        self._transfer.transfer_to_remote(client_path, 
-                                         remote_path)
-        self._engine_proxy.set_transfer_status(transfer_id, 
-                                               FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
-        return True
-
-      if transfer_type == TR_MFF_C_TO_CR:
-        for path in client_paths:
-          relative_path = os.path.basename(path)
-          r_path = os.path.join(remote_path, relative_path)
-          self._transfer.transfer_to_remote(path,
-                                            r_path)
-
-        self._engine_proxy.set_transfer_status(transfer_id, 
-                                               FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
-        return True
-
-    if status == FILES_ON_CR or \
-       status == TRANSFERING_FROM_CR_TO_CLIENT or \
-       status == FILES_ON_CLIENT_AND_CR:
-      # transfer from computing resource to client
-      #overwrite = False
-      #if not transfer_type or \
-         #transfer_type == TR_FILE_C_TO_CR or \
-         #transfer_type == TR_DIR_C_TO_CR or \
-         #transfer_type == TR_MFF_C_TO_CR :
-        ## TBI remove existing files 
-        #overwrite = True
-      transfer_type = self._initialize_transfer(transfer_id)
-        
-
-      remote_path = transfer_id
-      if transfer_type == TR_FILE_CR_TO_C or \
-         transfer_type == TR_DIR_CR_TO_C:
-        # file case
-        self._transfer.transfer_from_remote(remote_path, 
-                                            client_path)
-        self._engine_proxy.set_transfer_status(transfer_id, 
-                                               FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
-        return True
+    if not type(transfer_ids) in types.StringTypes and \
+      isinstance(transfer_ids, collections.Iterable):
+        for transfer_id in transfer_ids:
+          self._transfer_file(transfer_id, buffer_size)
+    else:
+      self._transfer_file(transfer_ids, buffer_size)
     
-      if transfer_type == TR_MFF_CR_TO_C:
-        for path in client_paths:
-          relative_path = os.path.basename(path)
-          r_path = os.path.join(remote_path, relative_path)
-          self._transfer.transfer_from_remote(r_path, 
-                                              path) 
 
-        self._engine_proxy.set_transfer_status(transfer_id, 
-                                               FILES_ON_CLIENT_AND_CR)
-        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
-        return True
 
-    return False
-    
- 
+  def delete_transfer(self, transfer_id):
+    '''
+    Deletes the FileTransfer and the associated files and directories on the 
+    computing resource side. The transfer_id will become invalid and can not be 
+    used anymore. If some jobs reference the FileTransfer as an input or an 
+    output the FileTransfer will not be deleted immediately but as soon as these 
+    jobs will be deleted.
+
+    Raises *UnknownObjectError* if the transfer_id is not valid
+    '''
+    self._engine_proxy.delete_transfer(transfer_id)
+
+
+  ########## PRIVATE #############################################          
 
   def _initialize_transfer(self, transfer_id):
     '''
@@ -1139,20 +1081,90 @@ class WorkflowController(object):
       return transfer_type
 
 
-  def delete_transfer(self, transfer_id):
-    '''
-    Deletes the FileTransfer and the associated files and directories on the 
-    computing resource side. The transfer_id will become invalid and can not be 
-    used anymore. If some jobs reference the FileTransfer as an input or an 
-    output the FileTransfer will not be deleted immediately but as soon as these 
-    jobs will be deleted.
+  def _transfer_file(self, transfer_id, buffer_size):
 
-    Raises *UnknownObjectError* if the transfer_id is not valid
-    '''
-    self._engine_proxy.delete_transfer(transfer_id)
+    (transfer_id, 
+     client_path, 
+     expiration_date, 
+     workflow_id, 
+     client_paths, 
+     transfer_type,
+     status) = self._engine_proxy.transfer_information(transfer_id)
 
+    if status == FILES_ON_CLIENT or \
+       status == TRANSFERING_FROM_CLIENT_TO_CR:
+      # transfer from client to computing resource
+      #overwrite = False
+      #if not transfer_type or \
+         #transfer_type == TR_FILE_CR_TO_C or \
+         #transfer_type == TR_DIR_CR_TO_C or \
+         #transfer_type == TR_MFF_CR_TO_C:
+        ## transfer reset
+        #overwrite = True
+      transfer_type = self._initialize_transfer(transfer_id)
+      
+      remote_path = transfer_id
 
-  ########## PRIVATE #############################################          
+      if transfer_type == TR_FILE_C_TO_CR or \
+         transfer_type == TR_DIR_C_TO_CR:
+        self._transfer.transfer_to_remote(client_path, 
+                                         remote_path)
+        self._engine_proxy.set_transfer_status(transfer_id, 
+                                               FILES_ON_CLIENT_AND_CR)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
+        return True
+
+      if transfer_type == TR_MFF_C_TO_CR:
+        for path in client_paths:
+          relative_path = os.path.basename(path)
+          r_path = os.path.join(remote_path, relative_path)
+          self._transfer.transfer_to_remote(path,
+                                            r_path)
+
+        self._engine_proxy.set_transfer_status(transfer_id, 
+                                               FILES_ON_CLIENT_AND_CR)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
+        return True
+
+    if status == FILES_ON_CR or \
+       status == TRANSFERING_FROM_CR_TO_CLIENT or \
+       status == FILES_ON_CLIENT_AND_CR:
+      # transfer from computing resource to client
+      #overwrite = False
+      #if not transfer_type or \
+         #transfer_type == TR_FILE_C_TO_CR or \
+         #transfer_type == TR_DIR_C_TO_CR or \
+         #transfer_type == TR_MFF_C_TO_CR :
+        ## TBI remove existing files 
+        #overwrite = True
+      transfer_type = self._initialize_transfer(transfer_id)
+        
+
+      remote_path = transfer_id
+      if transfer_type == TR_FILE_CR_TO_C or \
+         transfer_type == TR_DIR_CR_TO_C:
+        # file case
+        self._transfer.transfer_from_remote(remote_path, 
+                                            client_path)
+        self._engine_proxy.set_transfer_status(transfer_id, 
+                                               FILES_ON_CLIENT_AND_CR)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
+        return True
+    
+      if transfer_type == TR_MFF_CR_TO_C:
+        for path in client_paths:
+          relative_path = os.path.basename(path)
+          r_path = os.path.join(remote_path, relative_path)
+          self._transfer.transfer_from_remote(r_path, 
+                                              path) 
+
+        self._engine_proxy.set_transfer_status(transfer_id, 
+                                               FILES_ON_CLIENT_AND_CR)
+        self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
+        return True
+
+    return False
+
 
   def _transfer_progression(self, 
                             status, 
@@ -1293,6 +1305,14 @@ class Helper(object):
   @staticmethod
   def wait_workflow(workflow_id,
                     wf_ctrl):
+    '''
+    Waits for workflow execution to end.
+
+    * workflow_id *workflow identifier*
+
+    * wf_ctrl *client.WorkflowController*
+    '''
+
     element_status = wf_ctrl.workflow_elements_status(workflow_id)
     job_ids = []
     for job_info in element_status[0]:
@@ -1307,6 +1327,18 @@ class Helper(object):
   def transfer_input_files(workflow, 
                            wf_ctrl, 
                            buffer_size = 512**2):
+    '''
+    Transfers all the input files of a workflow.
+
+    * workflow *client.Workflow*
+
+    * wf_ctrl *client.WorkflowController*
+
+    * buffer_size *int*
+        Depending on the transfer method, the files can be transfered piece by 
+        piece. The size of each piece can be tuned using the buffer_size 
+        argument.
+    '''
 
     transfer_info = None
     wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
@@ -1330,6 +1362,13 @@ class Helper(object):
   def transfer_output_files(workflow,
                             wf_ctrl,
                             buffer_size = 512**2):
+    '''
+    Transfers all the output files of a workflow which are ready to transfer.
+
+    * workflow *client.Workflow*
+
+    * wf_ctrl *client.WorkflowController*
+    '''
 
     transfer_info = None
     wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
@@ -1350,6 +1389,15 @@ class Helper(object):
 
   @staticmethod
   def serialize(file_path, workflow):
+    '''
+    Saves a workflow to a file
+
+    * file_path *String*
+
+    * workflow *client.Workflow*
+
+    Raises *SerializationError* 
+    '''
     try:
       file = open(file_path, "w")
       pickle.dump(workflow, file)
@@ -1359,6 +1407,15 @@ class Helper(object):
 
   @staticmethod
   def unserialize(file_path):
+    '''
+    Loads a workflow from a file
+
+    * file_path *String*
+
+    * returns: *client.Workflow*
+
+    Raises *SerializationError* 
+    '''
     try:
       file = open(file_path, "r")
       workflow = pickle.load(file)

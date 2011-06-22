@@ -187,10 +187,14 @@ class WorkflowEngineLoop(object):
               self.logger.debug("Delete job : " + repr(job_id))
               self._database_server.delete_job(job_id)
               del self._jobs[job_id]
-            elif stopped:
-              ended_jobs[job_id] = self._jobs[job_id]
-              if job.workflow_id != -1: 
-                wf_to_inspect.add(job.workflow_id)
+            else:
+              self._database_server.set_job_status(job_id, 
+                                    job.status, 
+                                    force = True)
+              if stopped:
+                ended_jobs[job_id] = self._jobs[job_id]
+                if job.workflow_id != -1: 
+                  wf_to_inspect.add(job.workflow_id)
 
         for wf_id in wf_to_kill + wf_to_delete:
           if wf_id in self._workflows:
@@ -303,7 +307,6 @@ class WorkflowEngineLoop(object):
         for job_id, job in itertools.chain(self._jobs.iteritems(),
                                           wf_jobs.iteritems()):
           job_status_for_db_up[job_id] = job.status
-          #self._database_server.set_job_status(job.job_id, job.status)
           self._j_wf_ended = self._j_wf_ended and \
                                     (job.status == constants.DONE or \
                                     job.status == constants.FAILED)
@@ -476,9 +479,6 @@ class WorkflowEngineLoop(object):
 
   def _stop_job(self, job_id, job):
     if job.status == constants.DONE or job.status == constants.FAILED:
-      self._database_server.set_job_status( job_id, 
-                                            job.status, 
-                                            force = True)
       return False
     else:
       if job.drmaa_id:

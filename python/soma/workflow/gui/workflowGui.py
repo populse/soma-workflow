@@ -228,12 +228,12 @@ class WorkflowWidget(QtGui.QMainWindow):
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
     self.updateCurrentWorkflowStatus)
 
-    #try:
-    self.config_file_path = Configuration.search_config_path()
-    self.resource_list = Configuration.get_configured_resources(self.config_file_path)
-    #except ConfigurationError, e:
-      #QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      #self.close()
+    try:
+      self.config_file_path = Configuration.search_config_path()
+      self.resource_list = Configuration.get_configured_resources(self.config_file_path)
+    except ConfigurationError, e:
+      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      self.close()
 
     self.ui.combo_resources.addItems(self.resource_list)
     
