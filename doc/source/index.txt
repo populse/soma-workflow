@@ -4,8 +4,8 @@
    contain the root `toctree` directive.
 
 
-Soma-workflow: An unified and simple interface to parallel computing resource
-=============================================================================
+Soma-workflow: A unified and simple interface to parallel computing resource
+============================================================================
 
 .. image:: images/soma_workflow_general.*
   :scale: 60
