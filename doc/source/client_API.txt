@@ -121,14 +121,20 @@ File Transfers
 
 .. automethod:: WorkflowController.transfer_files
 
-.. automethod:: WorkflowController.initialize_transfer
-
-.. automethod:: WorkflowController.write_to_computing_resource_file
-
-.. automethod:: WorkflowController.read_from_computing_resource_file
-
 .. automethod:: WorkflowController.delete_transfer
 
 
+Helper
+======
 
+.. currentmodule:: client
 
+.. automethod:: Helper.wait_workflow
+
+.. automethod:: Helper.transfer_input_files
+
+.. automethod:: Helper.transfer_output_files
+
+.. automethod:: Helper.serialize
+
+.. automethod:: Helper.unserialize
