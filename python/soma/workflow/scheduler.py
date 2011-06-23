@@ -372,19 +372,8 @@ class LocalScheduler(object):
         self._status[job.job_id] = constants.RUNNING
 
   def _create_process(self, engine_job):
-    #separator = " "
-    #command = separator.join(engine_job.plain_command())
-    #print "command " +  repr(command)
-    #command = engine_job.plain_command()
 
-    command = []
-    job_command = engine_job.plain_command()
-    for command_el in job_command:
-      command_el = command_el.replace('"', '\\\"')
-      command.append("\"" + command_el + "\"")
-
-    separator = " "
-    command = separator.join(command)
+    command = engine_job.plain_command()
 
     stdout = engine_job.plain_stdout()
     stdout_file = None
@@ -423,12 +412,11 @@ class LocalScheduler(object):
     working_directory = engine_job.plain_working_directory()
     
     try:
-      process = subprocess.Popen(command,
-                                shell=True,
-                                stdin=stdin_file,
-                                stdout=stdout_file,
-                                stderr=stderr_file,
-                                cwd=working_directory)
+      process = subprocess.Popen( command,
+                                  stdin=stdin_file,
+                                  stdout=stdout_file,
+                                  stderr=stderr_file,
+                                  cwd=working_directory)
 
     
     except Exception, e:
