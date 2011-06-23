@@ -372,9 +372,19 @@ class LocalScheduler(object):
         self._status[job.job_id] = constants.RUNNING
 
   def _create_process(self, engine_job):
-    separator = " "
-    command = separator.join(engine_job.plain_command())
+    #separator = " "
+    #command = separator.join(engine_job.plain_command())
     #print "command " +  repr(command)
+    #command = engine_job.plain_command()
+
+    command = []
+    job_command = engine_job.plain_command()
+    for command_el in job_command:
+      command_el = command_el.replace('"', '\\\"')
+      command.append("\"" + command_el + "\"")
+
+    separator = " "
+    command = separator.join(command)
 
     stdout = engine_job.plain_stdout()
     stdout_file = None
