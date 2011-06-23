@@ -46,7 +46,7 @@ Main Features
 
   **File transfer and file path mapping tools:** 
     If the user's machine and the remote computing resource do not have a shared 
-    filesystem, soma-workflow provides tools to handle file transfers and/or 
+    file system, soma-workflow provides tools to handle file transfers and/or 
     path name matchings.
 
 

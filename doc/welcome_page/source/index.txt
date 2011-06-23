@@ -1,0 +1,51 @@
+.. soma-workflow documentation master file, created by
+   sphinx-quickstart on Wed Jun 22 14:40:00 2011.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Soma-workflow: A unified and simple interface to parallel computing resource
+=============================================================================
+
+.. image:: images/soma_workflow_general.*
+  :scale: 60
+
+Parallel computing resources are now highly available (multiple core machines, 
+clusters or grids) and their advantages are numerous. 
+
+Soma-workflow is an open source Python application which aims at making easier 
+the use of parallel resources by non expert users and external software.
+
+
+Documentation
+=============
+
+* **Development version:** 
+* **Current version:** `soma-workflow 1.0 documentation <http://www.brainvisa.info/doc/soma-workflow-1.0/sphinx>`_
+
+Download
+========
+
+* **Development version:**
+* **Current version:**
+
+
+..
+  Communication
+  =============
+
+  * HBM 2011 Poster
+  * slides 
+
+..
+  Contents:
+
+  .. toctree::
+    :maxdepth: 2
+
+  Indices and tables
+  ==================
+
+  * :ref:`genindex`
+  * :ref:`modindex`
+  * :ref:`search`
+
