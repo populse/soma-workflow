@@ -9,6 +9,14 @@ Soma-workflow: A unified and simple interface to parallel computing resource
 .. image:: images/soma_workflow_general.*
   :scale: 60
 
+
+.. warning:: Documentation under construction.
+
+Quick start
+===========
+
+**Under construction**
+
 .. note:: To get started, begin here: :ref:`concepts` and have a look at 
    the :ref:`examples`.
 
@@ -57,9 +65,7 @@ Contents
    :maxdepth: 1
 
    concepts.txt
-   light_mode_config.txt
-   client_install_config.txt
-   server_install_config.txt
+   install_config.txt
    workflow_creation.txt
    client_API.txt
    status_list.txt
@@ -68,6 +74,9 @@ Contents
    examples.txt
 
 ..
+  light_mode_config.txt
+  client_install_config.txt
+  server_install_config.txt
   * :ref:`genindex`
   * :ref:`modindex`
 

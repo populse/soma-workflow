@@ -146,28 +146,34 @@ Shared Resource Path
 Soma-workflow modes
 ===================
 
-Light mode 
-----------
+Regular one process application
+-------------------------------
 
-In the light mode, soma-workflow is a one process application which communicates
-with the DRMS.
+**Under construction**
 
-The application must run on a machine where a DRMS is installed and which is 
-configured for submission.
- 
-In the light mode, the application should not be stopped while workflows or jobs 
-are running. If the application is closed, the workflow execution is stopped and 
-the current running jobs might be lost (on some systems you will need to kill 
-the jobs using the DRMS command). However, you will be able to restart the workflow 
-in an other session.
+..
+  Light mode 
+  ----------
 
-.. figure:: images/architecture_overview_light.* 
-  :scale: 50
+  In the light mode, soma-workflow is a one process application which communicates
+  with the DRMS.
 
-  *Overview of soma-workflow architecture in the light mode.*
+  The application must run on a machine where a DRMS is installed and which is 
+  configured for submission.
+  
+  In the light mode, the application should not be stopped while workflows or jobs 
+  are running. If the application is closed, the workflow execution is stopped and 
+  the current running jobs might be lost (on some systems you will need to kill 
+  the jobs using the DRMS command). However, you will be able to restart the workflow 
+  in an other session.
+
+  .. figure:: images/architecture_overview_light.* 
+    :scale: 50
+
+    *Overview of soma-workflow architecture in the light mode.*
 
 
-.. seealso:: :ref:`light_mode_config`
+  .. seealso:: :ref:`light_mode_config`
 
 
 

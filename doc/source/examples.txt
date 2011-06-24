@@ -16,26 +16,36 @@ The content of the jobs is not relevant here:
 .. contents:: Examples
    :local:
 
-  
-Running example in light mode
-=============================
+.. _examples_multiple_core_machine:
 
-In the light mode the disconnection feature is not available.
-You must save your workflow to a file at the end of the script:
+Running examples on a multiple core machine
+===========================================
+
+When soma-workflow runs as a regular single process application (vs 
+client-server application) all the workflows must be run in a single session and the workflow executions are stopped when this session is 
+closed.
+
+To run the following examples in this case, you must save your workflows to files at 
+the end of the scripts:
 
 ::
 
   from soma.workflow.client import Helper
 
-  # workflow creation as described in the examples
+  # workflow creation as described in the following examples
 
   Helper.serialize("/tmp/workflow_example", workflow)
   
 
 Then use the GUI to open the file */tmp/workflow_example* and use the submit 
-button to submit the workflow.
-In the light mode you must wait the end of the workflow to close the
-application.
+button to submit the workflow. 
+
+Use the same session of the GUI to run all your workflows, if you close the
+application before the end of the workflow execution, they will be stopped and 
+the status won't be updated. 
+
+If you want to quit the application before the end of a workflow execution it is better to use 
+the stop button then quit the application.
 
 
 Simple workflows

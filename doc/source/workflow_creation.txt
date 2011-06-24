@@ -8,11 +8,6 @@ The workflows are created using the soma.workflow.client API. This page presents
 the documentation of the Workflow, Job, FileTransfer and SharedResourcePath 
 classes. 
 
-.. note::
-  Eventually, the objective of this API is also to generate workflows from
-  pipeline softwares. The automatic workflow generation is already available for 
-  some `BrainVISA <http://brainvisa.info/>`_  pipelines. 
-
 .. seealso:: :ref:`examples` for a quick start.
 
 Workflow
