@@ -25,14 +25,14 @@ When soma-workflow runs as a regular single process application (vs
 client-server application) all the workflows must be run in a single session and the workflow executions are stopped when this session is 
 closed.
 
-To run the following examples in this case, you must save your workflows to files at 
-the end of the scripts:
+To run the following examples in this case, you must not submit the workflow at the end of the script but save it to a file:
 
 ::
 
   from soma.workflow.client import Helper
 
   # workflow creation as described in the following examples
+  # ! without the two submission lines !
 
   Helper.serialize("/tmp/workflow_example", workflow)
   
