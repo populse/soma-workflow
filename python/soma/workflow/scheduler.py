@@ -269,7 +269,9 @@ class LocalScheduler(object):
 
   * _nb_proc *int*
 
-  * _queue *list of soma.workflow.engine_types.EngineJob*
+  * _queue *list of scheduler jobs ids*
+  
+  * _jobs *dictionary job_id -> soma.workflow.engine_types.EngineJob*
   
   * _processes *dictionary job_id -> subprocess.Popen*
 
@@ -290,6 +292,8 @@ class LocalScheduler(object):
   _nb_proc = None
 
   _queue = None
+
+  _jobs = None 
   
   _processes = None
 
@@ -312,6 +316,7 @@ class LocalScheduler(object):
     self._nb_proc = nb_proc
     self._period = period
     self._queue = []
+    self._jobs = {}
     self._processes = {}
     self._status = {}
     self._exit_info = {}
@@ -358,7 +363,8 @@ class LocalScheduler(object):
     # run new jobs
     while self._queue and \
           len(self._processes) < self._nb_proc:
-      job = self._queue.pop(0)
+      job_id = self._queue.pop(0)
+      job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
       process = self._create_process(job)
       if process == None:
@@ -368,7 +374,7 @@ class LocalScheduler(object):
                                    None)
         self._status[job.job_id] = constants.FAILED
       else:
-        self._processes[job.job_id] = self._create_process(job)
+        self._processes[job.job_id] = process
         self._status[job.job_id] = constants.RUNNING
 
   def _create_process(self, engine_job):
@@ -444,7 +450,9 @@ class LocalScheduler(object):
     if not job.job_id or job.job_id == -1:
       raise LocalSchedulerError("Invalid job: no id")
     with self._lock:
-      self._queue.append(job)
+      #print "job submission " + repr(job.job_id)
+      self._queue.append(job.job_id)
+      self._jobs[job.job_id] = job
       self._status[job.job_id] = constants.QUEUED_ACTIVE
 
     return job.job_id
@@ -483,9 +491,11 @@ class LocalScheduler(object):
         Job id for the scheduling system (DRMAA for example)
     '''
     # TBI Errors
+    
     with self._lock:
       #print "kill job " + repr(scheduler_job_id)
       if scheduler_job_id in self._processes:
+        #print "    => kill the process "
         self._processes[scheduler_job_id].kill()
         del self._processes[scheduler_job_id]
         self._status[scheduler_job_id] = constants.FAILED
@@ -494,7 +504,9 @@ class LocalScheduler(object):
                                               None,
                                               None)
       elif scheduler_job_id in self._queue:
-        del self._queue[scheduler_job_id]
+        #print "    => removed from queue "
+        self._queue.remove(scheduler_job_id)
+        del self._jobs[scheduler_job_id]
         self._status[scheduler_job_id] = constants.FAILED
         self._exit_info[scheduler_job_id] = (constants.EXIT_ABORTED,
                                               None,
