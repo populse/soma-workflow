@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
@@ -5,16 +6,16 @@
 '''
 __docformat__ = "epytext en"
 
-''' 
+'''
 soma-workflow client classes
 
 The WorkflowController instances allow to submit, control and monitor jobs and
 workflows on local or remote resources where the WorkflowDatabaseServer runs.
-The contrustor takes a resource id, login and password as parameters and 
-connects to the resource. One WorkflowController instance is connected to 
+The contrustor takes a resource id, login and password as parameters and
+connects to the resource. One WorkflowController instance is connected to
 only one resource.
 
-The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, workflows, and file transfers 
+The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, workflows, and file transfers
 objects to be used in the WorkflowControler interface.
 
 Definitions:
@@ -41,7 +42,7 @@ import soma.workflow.connection as connection
 from soma.workflow.transfer import TransferPyro, TransferSCP, TransferMonitoring, TransferLocal
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
-from soma.workflow.errors import TransferError
+from soma.workflow.errors import TransferError, SerializationError
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -50,56 +51,56 @@ from soma.workflow.errors import TransferError
 class Job(object):
   '''
   Job representation.
-  
+
   .. note::
     The command is the only argument required to create a Job.
     It is also useful to fill the job name for the workflow display in the GUI.
 
   **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)*
-    
-    The command to execute. It can not be empty. In case of a shared file system 
-    the command is a sequence of string. 
 
-    In the other cases, the FileTransfer and SharedResourcePath objects will be 
-    replaced by the appropriate path before the job execution. 
+    The command to execute. It can not be empty. In case of a shared file system
+    the command is a sequence of string.
 
-    The tuples (relative_path, FileTransfer) can be used to refer to a file in a 
+    In the other cases, the FileTransfer and SharedResourcePath objects will be
+    replaced by the appropriate path before the job execution.
+
+    The tuples (relative_path, FileTransfer) can be used to refer to a file in a
     transfered directory.
 
-    The sequences of FileTransfer, SharedResourcePath or tuple (relative_path, 
-    FileTransfer) will be replaced by the string "['path1', 'path2', 'path3']" 
+    The sequences of FileTransfer, SharedResourcePath or tuple (relative_path,
+    FileTransfer) will be replaced by the string "['path1', 'path2', 'path3']"
     before the job execution. The FileTransfer, SharedResourcePath or tuple
-    (relative_path, FileTransfer) are replaced by the appropriate path inside 
+    (relative_path, FileTransfer) are replaced by the appropriate path inside
     the sequence.
 
   **name**: *string*
     Name of the Job which will be displayed in the GUI
-  
+
   **referenced_input_files**: *sequence of FileTransfer*
-    List of the FileTransfer which are input of the Job. In other words, 
+    List of the FileTransfer which are input of the Job. In other words,
     FileTransfer which are requiered by the Job to run. It includes the
     stdin if you use one.
 
   **referenced_output_files**: *sequence of FileTransfer*
-    List of the FileTransfer which are output of the Job. In other words, the 
+    List of the FileTransfer which are output of the Job. In other words, the
     FileTransfer which will be created or modified by the Job.
 
   **stdin**: *string or FileTransfer or SharedRessourcePath*
     Path to the file which will be read as input stream by the Job.
-  
+
   **join_stderrout**: *boolean*
     Specifies whether the error stream should be mixed with the output stream.
 
   **stdout_file**: *string or FileTransfer or SharedRessourcePath*
-    Path of the file where the standard output stream of the job will be 
+    Path of the file where the standard output stream of the job will be
     redirected.
 
   **stderr_file**: *string or FileTransfer or SharedRessourcePath*
-    Path of the file where the standard error stream of the job will be 
+    Path of the file where the standard error stream of the job will be
     redirected.
 
   .. note::
-    Set stdout_file and stderr_file only if you need to redirect the standard 
+    Set stdout_file and stderr_file only if you need to redirect the standard
     output to a specific file. Indeed, even if they are not set the standard
     outputs will always be available through the WorklfowController API.
 
@@ -108,9 +109,9 @@ class Job(object):
     is useful if your Job uses relative file path for example.
 
   **parallel_job_info**: *tuple(string, int)*
-    The parallel job information must be set if the Job is parallel (ie. made to 
+    The parallel job information must be set if the Job is parallel (ie. made to
     run on several CPU).
-    The parallel job information is a tuple: (name of the configuration, 
+    The parallel job information is a tuple: (name of the configuration,
     maximum number of CPU used by the Job).
     The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
@@ -131,32 +132,32 @@ class Job(object):
 
   # sequence of FileTransfer
   referenced_input_files = None
-  
+
   # sequence of FileTransfer
   referenced_output_files = None
- 
+
   # string (path)
   stdin = None
-  
+
   # boolean
   join_stderrout = None
 
   # string (path)
   stdout_file = None
- 
+
   # string (path)
   stderr_file = None
- 
+
   # string (path)
   working_directory = None
-  
+
   # tuple(string, int)
   parallel_job_info = None
 
   # int (in hours)
   disposal_timeout = None
- 
-  def __init__( self, 
+
+  def __init__( self,
                 command,
                 referenced_input_files=None,
                 referenced_output_files=None,
@@ -173,7 +174,7 @@ class Job(object):
     else:
       self.name = name
     self.command = command
-    if referenced_input_files: 
+    if referenced_input_files:
       self.referenced_input_files = referenced_input_files
     else: self.referenced_input_files = []
     if referenced_output_files:
@@ -197,12 +198,12 @@ class Workflow(object):
 
   **dependencies**: *sequence of tuple (Job, Job)*
     Dependencies between the jobs of the workflow.
-    If a job_a needs to be executed before a job_b can run: the tuple 
+    If a job_a needs to be executed before a job_b can run: the tuple
     (job_a, job_b) must be added to the workflow dependencies. job_a and job_b
     must belong to workflow.jobs.
 
   **name**: *string*
-    Name of the workflow which will be displayed in the GUI. 
+    Name of the workflow which will be displayed in the GUI.
     Default: workflow_id once submitted
 
   **root_group**: *sequence of Job and/or Group*
@@ -212,8 +213,8 @@ class Workflow(object):
   .. note::
     root_group is only used to display nicely the workflow in the GUI. It
     does not have any impact on the workflow execution.
-    
-    If root_group is not set, all the jobs of the workflow will be 
+
+    If root_group is not set, all the jobs of the workflow will be
     displayed at the root level in the GUI tree view.
   '''
   # string
@@ -225,15 +226,15 @@ class Workflow(object):
   # sequence of tuple (Job, Job)
   dependencies = None
 
-  # sequence of Job and/or Group 
+  # sequence of Job and/or Group
   root_group = None
 
   # sequence of Groups built from the root_group
   groups = None
 
-  def __init__(self, 
-               jobs, 
-               dependencies, 
+  def __init__(self,
+               jobs,
+               dependencies,
                root_group = None,
                disposal_timeout = 168,):
 
@@ -241,7 +242,7 @@ class Workflow(object):
     self.jobs = jobs
     self.dependencies = dependencies
     self.disposal_timeout = 168
-    
+
     # Groups
     if root_group:
       if isinstance(root_group, Group):
@@ -264,13 +265,13 @@ class Workflow(object):
       self.groups = []
 
 
-  
+
 class Group(object):
   '''
   Hierarchical structure of a workflow.
 
   .. note:
-    It only has a displaying role and does not have any impact on the workflow 
+    It only has a displaying role and does not have any impact on the workflow
     execution.
 
   **name**: *string*
@@ -284,7 +285,7 @@ class Group(object):
 
   #sequence of Job and/or Group
   elements = None
-  
+
   def __init__(self, elements, name):
     '''
     @type  elements: sequence of Job and/or Group
@@ -299,11 +300,11 @@ class Group(object):
 class FileTransfer(object):
   '''
   File/directory transfer representation
-  
+
   .. note::
     FileTransfers objects are only required if the user and computing resources
     have a separate file system.
-  
+
   **client_path**: *string*
     Path of the file or directory on the user's file system.
 
@@ -319,17 +320,17 @@ class FileTransfer(object):
     directories (see the note below).
 
   **name**: *string*
-    Name of the FileTransfer which will be displayed in the GUI. 
+    Name of the FileTransfer which will be displayed in the GUI.
     Default: client_path + "transfer"
- 
+
   .. note::
-    Use client_paths if the transfer involves several associated files and/or 
+    Use client_paths if the transfer involves several associated files and/or
     directories. Examples:
 
       * file series
-      * file format associating several file and/or directories 
+      * file format associating several file and/or directories
         (ex: a SPM images are stored in 2 associated files: .img and .hdr)
-        In this case, set client_path to one the files (ex: .img) and 
+        In this case, set client_path to one the files (ex: .img) and
         client_paths contains all the files (ex: .img and .hdr files)
 
      In other cases (1 file or 1 directory) the client_paths must be set to None.
@@ -352,7 +353,7 @@ class FileTransfer(object):
 
   def __init__( self,
                 is_input,
-                client_path, 
+                client_path,
                 disposal_timeout = 168,
                 name = None,
                 client_paths = None,
@@ -367,7 +368,7 @@ class FileTransfer(object):
     self.disposal_timeout = disposal_timeout
 
     self.client_paths = client_paths
-  
+
     if is_input:
       self.initial_status = FILES_ON_CLIENT
     else:
@@ -376,7 +377,7 @@ class FileTransfer(object):
 
 class SharedResourcePath(object):
   '''
-  Representation of path which is valid on either user's or computing resource 
+  Representation of path which is valid on either user's or computing resource
   file system.
 
   .. note::
@@ -384,22 +385,22 @@ class SharedResourcePath(object):
     resources have a separate file system.
 
   **namespace**: *string*
-    Namespace for the path. That way several applications can use the same 
+    Namespace for the path. That way several applications can use the same
     identifiers without risk.
 
   **uuid**: *string*
-    Identifier of the absolute path. 
+    Identifier of the absolute path.
 
   **relative_path**: *string*
-    Relative path of the file if the absolute path is a directory path. 
+    Relative path of the file if the absolute path is a directory path.
 
   .. warning::
-    The namespace and uuid must exist in the translations files configured on 
-    the computing resource side.  
+    The namespace and uuid must exist in the translations files configured on
+    the computing resource side.
   '''
-  
+
   relative_path = None
-  
+
   namespace = None
 
   uuid = None
@@ -418,7 +419,7 @@ class SharedResourcePath(object):
 
 class WorkflowController(object):
   '''
-  Submission, control and monitoring of Job, FileTransfer and Workflow 
+  Submission, control and monitoring of Job, FileTransfer and Workflow
   objects.
   '''
 
@@ -431,16 +432,16 @@ class WorkflowController(object):
   _transfer_stdouterr = None
 
   config = None
-  
-  def __init__(self, 
-               resource_id=None, 
-               login=None, 
+
+  def __init__(self,
+               resource_id=None,
+               login=None,
                password=None,
                config_path=None,
                rsa_key_pass=None):
     '''
-    Sets up the connection to the computing resource. 
-    Looks for a soma-workflow configuration file (if not specified in the 
+    Sets up the connection to the computing resource.
+    Looks for a soma-workflow configuration file (if not specified in the
     *config_path* argument).
 
     * resource_id *string*
@@ -464,7 +465,7 @@ class WorkflowController(object):
     .. note::
       The login and password are only required for a remote computing resource.
     '''
-    
+
     self.config = Configuration(resource_id)
     mode = self.config.get_mode()
     print  mode + " mode"
@@ -476,32 +477,32 @@ class WorkflowController(object):
       self._transfer = TransferLocal(self._engine_proxy)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
       #self._transfer = TransferPyro(self._engine_proxy)
-    
+
     # REMOTE MODE
     elif mode == 'remote':
       submitting_machines = self.config.get_submitting_machines()
-      sub_machine = submitting_machines[random.randint(0,   
+      sub_machine = submitting_machines[random.randint(0,
                                                     len(submitting_machines)-1)]
       cluster_address = self.config.get_cluster_address()
       print 'cluster address: ' + cluster_address
       print 'submission machine: ' + sub_machine
-      self._connection = connection.RemoteConnection(login, 
-                                                    password, 
-                                                    cluster_address, 
-                                                    sub_machine, 
-                                                    resource_id, 
+      self._connection = connection.RemoteConnection(login,
+                                                    password,
+                                                    cluster_address,
+                                                    sub_machine,
+                                                    resource_id,
                                                     "",
                                                     rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
 
       if not password and not rsa_key_pass:
-        self._transfer = TransferSCP(self._engine_proxy, 
-                                    username=login, 
+        self._transfer = TransferSCP(self._engine_proxy,
+                                    username=login,
                                     hostname=sub_machine)
       else:
         self._transfer = TransferPyro(self._engine_proxy)
       self._transfer_stdouterr = TransferPyro(self._engine_proxy)
-  
+
     # LIGHT MODE
     elif mode == 'light':
       self._engine_proxy = _embedded_engine_and_server(self.config)
@@ -523,21 +524,21 @@ class WorkflowController(object):
     if self._connection:
       self._connection.stop()
 
-   
+
 
   ########## SUBMISSION / REGISTRATION ####################################
-  
-  def submit_workflow(self, 
-                      workflow, 
-                      expiration_date=None, 
-                      name=None, 
+
+  def submit_workflow(self,
+                      workflow,
+                      expiration_date=None,
+                      name=None,
                       queue=None):
     '''
     Submits a workflow and returns a workflow identifier.
-    
+
     * workflow *client.Workflow*
         Workflow description.
-    
+
     * expiration_date *datetime.datetime*
         After this date the workflow will be deleted.
 
@@ -556,8 +557,8 @@ class WorkflowController(object):
 
     #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
 
-    wf_id = self._engine_proxy.submit_workflow(workflow, 
-                                               expiration_date, 
+    wf_id = self._engine_proxy.submit_workflow(workflow,
+                                               expiration_date,
                                                name,
                                                queue)
     return wf_id
@@ -568,33 +569,33 @@ class WorkflowController(object):
     Submits a job which is not part of a workflow.
     Returns a job identifier.
 
-    If the job used transfered files the list of involved file transfer **must 
-    be** specified setting the arguments: *referenced_input_files* and 
+    If the job used transfered files the list of involved file transfer **must
+    be** specified setting the arguments: *referenced_input_files* and
     *referenced_output_files*.
-    
+
     Each path must be reachable from the computing resource.
-  
+
     * job *client.Job*
 
     * queue *string*
-        Name of the queue where to submit the jobs. If it is not 
+        Name of the queue where to submit the jobs. If it is not
         specified the job will be submitted to the default queue.
 
     * returns: int
       Job identifier.
-  
+
     Raises *JobError* if the job is not correct.
     '''
-   
+
     job_id = self._engine_proxy.submit_job(job, queue)
     return job_id
 
 
   def register_transfer(self, file_transfer):
     '''
-    Registers a file transfer which is not part of a workflow and returns a 
+    Registers a file transfer which is not part of a workflow and returns a
     file transfer identifier.
-    
+
     * file_transfer *client.FileTransfer*
 
     * returns *EngineTransfer*
@@ -610,21 +611,21 @@ class WorkflowController(object):
   def workflow(self, workflow_id):
     '''
     * workflow_id *workflow_identifier*
-    
+
     * returns: *Workflow*
-  
+
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.workflow(workflow_id)
 
   def workflows(self, workflow_ids=None):
     '''
-    Lists the identifiers and general information about all the workflows 
-    submitted by the user, or about the workflows specified in the 
-    *workflow_ids* argument.  
+    Lists the identifiers and general information about all the workflows
+    submitted by the user, or about the workflows specified in the
+    *workflow_ids* argument.
 
     * workflow_ids *sequence of workflow identifiers*
-  
+
     * returns: *dictionary: workflow identifier -> tuple(date, string)*
         workflow_id -> (workflow_name, expiration_date)
     '''
@@ -633,8 +634,8 @@ class WorkflowController(object):
 
   def jobs(self, job_ids=None):
     '''
-    Lists the identifiers and general information about all the jobs submitted 
-    by the user and which are not part of a workflow, or about the jobs 
+    Lists the identifiers and general information about all the jobs submitted
+    by the user and which are not part of a workflow, or about the jobs
     specified in the *job_ids* argument.
 
     * job_ids *sequence of job identifiers*
@@ -647,18 +648,18 @@ class WorkflowController(object):
 
   def transfers(self, transfer_ids=None):
     '''
-    Lists the identifiers and information about all the user's file transfers 
+    Lists the identifiers and information about all the user's file transfers
     which are not part of a workflow or about the file transfers specified in
     the *transfer_ids* argument.
 
     * transfer_ids *sequence of FileTransfer identifiers*
-        
+
     * returns: *dictionary: string -> tuple(string, date, None or sequence of string)*
         transfer_id -> (
                         * client_path: client file or directory path
                         * expiration_date: after this date the file copied
-                          on the computing resource and all the transfer 
-                          information will be deleted, unless an existing 
+                          on the computing resource and all the transfer
+                          information will be deleted, unless an existing
                           job has declared this file as output or input.
                         * client_paths: sequence of file or directory path or None)
     '''
@@ -669,26 +670,26 @@ class WorkflowController(object):
   def workflow_status(self, workflow_id):
     '''
     * workflow_id *workflow identifier*
-      
+
     * returns: *string or None*
-        Status of the workflow: see :ref:`workflow-status` or the 
+        Status of the workflow: see :ref:`workflow-status` or the
         constants.WORKFLOW_STATUS list.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.workflow_status(workflow_id)
-  
-  
+
+
   def workflow_elements_status(self, workflow_id, group = None):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and request to the database.
     TO DO => make it more user friendly.
-    
+
     * workflow_id *workflow identifier*
 
-    * returns: tuple (sequence of tuple (job_id, status, exit_info, 
-      (submission_date, execution_date, ending_date)), sequence of tuple 
+    * returns: tuple (sequence of tuple (job_id, status, exit_info,
+      (submission_date, execution_date, ending_date)), sequence of tuple
       (transfer_id, (status, progression_info)), workflow_status)
 
     Raises *UnknownObjectError* if the workflow_id is not valid
@@ -704,7 +705,7 @@ class WorkflowController(object):
                                                engine_path)
 
       new_transfer_status.append((engine_path, (status, progression)))
-      
+
     new_wf_status = (wf_status[0], new_transfer_status, wf_status[2])
     return new_wf_status
 
@@ -714,11 +715,11 @@ class WorkflowController(object):
   def job_status( self, job_id ):
     '''
     * job_id *job identifier*
-      
+
     * returns: *string*
-        Status of the job: see :ref:`job-status` or the list 
+        Status of the job: see :ref:`job-status` or the list
         constants.JOB_STATUS.
-    
+
     Raises *UnknownObjectError* if the job_id is not valid
     '''
     return self._engine_proxy.job_status(job_id)
@@ -727,18 +728,18 @@ class WorkflowController(object):
   def job_termination_status(self, job_id ):
     '''
     Information related to the end of the job.
-   
+
     * job_id *job identifier*
 
     * returns: *tuple(string, int or None, string or None, string) or None*
-        * exit status: status of the terminated job: see 
+        * exit status: status of the terminated job: see
           :ref:`job-exit-status` or the constants.JOB_EXIT_STATUS list.
-        * exit value: operating system exit code of the job if the job 
+        * exit value: operating system exit code of the job if the job
           terminated normally.
-        * terminating signal: representation of the signal that caused the 
-          termination of the job if the job terminated due to the receipt of 
+        * terminating signal: representation of the signal that caused the
+          termination of the job if the job terminated due to the receipt of
           a signal.
-        * resource usage: resource usage information provided as an array of 
+        * resource usage: resource usage information provided as an array of
           strings where each string complies with the format <name>=<value>.
           The information provided depends on the DRMS and DRMAA implementation.
 
@@ -747,10 +748,10 @@ class WorkflowController(object):
     return self._engine_proxy.job_termination_status(job_id)
 
 
-  def retrieve_job_stdouterr(self, 
-                             job_id, 
-                             stdout_file_path, 
-                             stderr_file_path = None, 
+  def retrieve_job_stdouterr(self,
+                             job_id,
+                             stdout_file_path,
+                             stderr_file_path = None,
                              buffer_size = 512**2):
     '''
     Copies the job standard output and error to specified file.
@@ -772,11 +773,11 @@ class WorkflowController(object):
     stderr_file_path = os.path.abspath(stderr_file_path)
     (engine_stdout_file, engine_stderr_file) = self._engine_proxy.stdouterr_file_path(job_id)
 
-    self._transfer_stdouterr.transfer_from_remote(engine_stdout_file, 
+    self._transfer_stdouterr.transfer_from_remote(engine_stdout_file,
                                                   stdout_file_path)
-    self._transfer_stdouterr.transfer_from_remote(engine_stderr_file, 
+    self._transfer_stdouterr.transfer_from_remote(engine_stderr_file,
                                                   stderr_file_path)
-    
+
 
   ########## FILE TRANSFER MONITORING ###################################
 
@@ -787,22 +788,22 @@ class WorkflowController(object):
     * transfer_id *transfer identifier*
 
     * returns: *tuple(transfer_status or None, tuple or None)*
-        * Status of the file transfer : see :ref:`file-transfer-status` or the    
+        * Status of the file transfer : see :ref:`file-transfer-status` or the
           constants.FILE_TRANSFER_STATUS list.
-        * None if the transfer status in not 
-          constants.TRANSFERING_FROM_CLIENT_TO_CR or 
+        * None if the transfer status in not
+          constants.TRANSFERING_FROM_CLIENT_TO_CR or
           constants.TRANSFERING_FROM_CR_TO_CLIENT.
           tuple (file size, size already transfered) if it is a file transfer.
           tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer.
 
-    Raises *UnknownObjectError* if the transfer_id is not valid 
+    Raises *UnknownObjectError* if the transfer_id is not valid
     '''
-    
-    (transfer_id, 
-    client_path, 
-    expiration_date, 
-    workflow_id, 
-    client_paths, 
+
+    (transfer_id,
+    client_path,
+    expiration_date,
+    workflow_id,
+    client_paths,
     transfer_type,
     status) = self._engine_proxy.transfer_information(transfer_id)
     progression = self._transfer_progression(status,
@@ -819,41 +820,41 @@ class WorkflowController(object):
   def restart_workflow(self, workflow_id):
     '''
     Restarts the jobs of the workflow which failed. The jobs will be submitted
-    again. 
+    again.
     The workflow status has to be constants.WORKFLOW_DONE.
-    
+
     * workflow_id *workflow identifier*
 
-    * returns: *boolean* 
+    * returns: *boolean*
         True if some jobs were restarted.
-    
+
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     return self._engine_proxy.restart_workflow(workflow_id)
-    
+
 
   def delete_workflow(self, workflow_id, force=True):
     '''
-    Deletes the workflow and all its associated elements (FileTransfers and 
-    Jobs). The worklfow_id will become invalid and can not be used anymore. 
+    Deletes the workflow and all its associated elements (FileTransfers and
+    Jobs). The worklfow_id will become invalid and can not be used anymore.
     The workflow jobs which are running will be killed.
-    If force is set to True: the client will wait for the workflow to be deleted. 
+    If force is set to True: the client will wait for the workflow to be deleted.
     If it can't be deleted properly workflow will be deleted from
     the database server. However, if some jobs are running they won't be kill
     and will burden the computing resource.
-    
+
     * workflow_id *workflow_identifier*
 
     * force *boolean*
-      If force is set to True, the call won't return before the workflow is 
-      deleted. It will wait for the workflow to be deleted. 
+      If force is set to True, the call won't return before the workflow is
+      deleted. It will wait for the workflow to be deleted.
       If it can't be deleted properly workflow will be deleted from
       the database server. However, if some jobs are running they won't be kill
-      and will burden the computing resource (see return value). 
+      and will burden the computing resource (see return value).
 
     * returns: *boolean*
       If force is True: return True if the running jobs were killed and False
-      if some jobs are possibly still running on the computing resource despite 
+      if some jobs are possibly still running on the computing resource despite
       the workflow doesn't exist.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
@@ -866,7 +867,7 @@ class WorkflowController(object):
   def stop_workflow(self, workflow_id):
     '''
     Stops a workflow.
-    The running jobs will be killed. 
+    The running jobs will be killed.
     The jobs in queues will be removed from queues.
     It will be possible to restart the workflow afterwards.
     '''
@@ -876,12 +877,12 @@ class WorkflowController(object):
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
     Sets a new expiration date for the workflow.
-      
+
     * workflow_id *workflow identifier*
 
     * new_expiration_date *datetime.datetime*
-    
-    * returns: *boolean* 
+
+    * returns: *boolean*
         True if the expiration date was changed.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
@@ -893,12 +894,12 @@ class WorkflowController(object):
 
   def wait_job( self, job_ids, timeout = -1):
     '''
-    Waits for all the specified jobs to finish. 
-    
-    * job_ids *sequence of job identifier* 
+    Waits for all the specified jobs to finish.
+
+    * job_ids *sequence of job identifier*
         Jobs to wait for.
 
-    * timeout *int* 
+    * timeout *int*
         The call to wait_job exits before timeout seconds.
         A negative value means that the method will wait indefinetely.
 
@@ -909,20 +910,20 @@ class WorkflowController(object):
   def kill_job( self, job_id ):
     '''
     Kills a running job. The job will not be deleted from the system (the job
-    identifier remains valid). 
+    identifier remains valid).
     Use the restart_job method to restart the job.
 
     Raises *UnknownObjectError* if the job_id is not valid
     '''
     self._engine_proxy.kill_job(job_id)
-   
-  
+
+
   def restart_job( self, job_id ):
-    '''   
+    '''
     Restarts a job which status is constants.FAILED or constants.WARNING.
-   
+
     * job_id *job identifier*
-    * returns: *boolean* 
+    * returns: *boolean*
         True if the job was restarted.
 
     Raises *UnknownObjectError* if the job_id is not valid
@@ -938,7 +939,7 @@ class WorkflowController(object):
 
     Raises *UnknownObjectError* if the job_id is not valid
     '''
-    
+
     self._engine_proxy.delete_job(job_id)
 
 
@@ -947,25 +948,25 @@ class WorkflowController(object):
   def transfer_files(self, transfer_ids, buffer_size = 512**2):
     '''
     Transfer file(s) associated to the transfer_id.
-    If the files are only located on the client side (that is the transfer 
-    status is constants.FILES_ON_CLIENT) the file(s) will be transfered from the 
+    If the files are only located on the client side (that is the transfer
+    status is constants.FILES_ON_CLIENT) the file(s) will be transfered from the
     client to the computing resource.
-    If the files are located on the computing resource side (that is the 
-    transfer status is constants.FILES_ON_CR or 
-    constants.FILES_ON_CLIENT_AND_CR) 
+    If the files are located on the computing resource side (that is the
+    transfer status is constants.FILES_ON_CR or
+    constants.FILES_ON_CLIENT_AND_CR)
     the files will be transfered from the computing resource to the client.
 
     * transfer_id *FileTransfer identifier*
 
     * buffer_size *int*
-        Depending on the transfer method, the files can be transfered piece by 
-        piece. The size of each piece can be tuned using the buffer_size 
+        Depending on the transfer method, the files can be transfered piece by
+        piece. The size of each piece can be tuned using the buffer_size
         argument.
 
     * returns: *boolean*
         The transfer was done. (TBI right error management)
 
-    Raises *UnknownObjectError* if the transfer_id is not valid 
+    Raises *UnknownObjectError* if the transfer_id is not valid
     #Raises *TransferError*
     '''
     if not type(transfer_ids) in types.StringTypes and \
@@ -974,15 +975,15 @@ class WorkflowController(object):
           self._transfer_file(transfer_id, buffer_size)
     else:
       self._transfer_file(transfer_ids, buffer_size)
-    
+
 
 
   def delete_transfer(self, transfer_id):
     '''
-    Deletes the FileTransfer and the associated files and directories on the 
-    computing resource side. The transfer_id will become invalid and can not be 
-    used anymore. If some jobs reference the FileTransfer as an input or an 
-    output the FileTransfer will not be deleted immediately but as soon as these 
+    Deletes the FileTransfer and the associated files and directories on the
+    computing resource side. The transfer_id will become invalid and can not be
+    used anymore. If some jobs reference the FileTransfer as an input or an
+    output the FileTransfer will not be deleted immediately but as soon as these
     jobs will be deleted.
 
     Raises *UnknownObjectError* if the transfer_id is not valid
@@ -990,7 +991,7 @@ class WorkflowController(object):
     self._engine_proxy.delete_transfer(transfer_id)
 
 
-  ########## PRIVATE #############################################          
+  ########## PRIVATE #############################################
 
   def _initialize_transfer(self, transfer_id):
     '''
@@ -1000,18 +1001,18 @@ class WorkflowController(object):
 
     * returns: *tuple*
         transfer_type
-    
+
 
         * (file_size, md5_hash) in the case of a file transfer
         * (cumulated_size, dictionary relative path -> (file_size, md5_hash)) in
           case of a directory transfer.
 
-    Raises *UnknownObjectError* if the transfer_id is not valid 
+    Raises *UnknownObjectError* if the transfer_id is not valid
     '''
-    (transfer_id, 
-     client_path, 
-     expiration_date, 
-     workflow_id, 
+    (transfer_id,
+     client_path,
+     expiration_date,
+     workflow_id,
      client_paths,
      transfer_type,
      status) = self._engine_proxy.transfer_information(transfer_id)
@@ -1022,7 +1023,7 @@ class WorkflowController(object):
           transfer_type = TR_FILE_C_TO_CR
           self._engine_proxy.set_transfer_status(transfer_id,
                                                  TRANSFERING_FROM_CLIENT_TO_CR)
-          self._engine_proxy.set_transfer_type(transfer_id, 
+          self._engine_proxy.set_transfer_type(transfer_id,
                                                transfer_type)
 
 
@@ -1037,8 +1038,8 @@ class WorkflowController(object):
                 "on the client machine." %(client_path))
       else: #client_paths
         for path in client_paths:
-          if not os.path.isfile(path) and not os.path.isdir(path): 
-            print("WARNING: The file or directory %s doesn't exist " 
+          if not os.path.isfile(path) and not os.path.isdir(path):
+            print("WARNING: The file or directory %s doesn't exist "
                   "on the client machine." %(path))
         transfer_type = TR_MFF_C_TO_CR
 
@@ -1050,9 +1051,9 @@ class WorkflowController(object):
 
     elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR:
       #transfer_type = self._engine_proxy.init_transfer_from_cr(transfer_id,
-                                               #client_path, 
-                                               #expiration_date, 
-                                               #workflow_id, 
+                                               #client_path,
+                                               #expiration_date,
+                                               #workflow_id,
                                                #client_paths,
                                                #status)
       if not client_paths:
@@ -1076,18 +1077,18 @@ class WorkflowController(object):
       self._engine_proxy.set_transfer_status(transfer_id,
                                         TRANSFERING_FROM_CR_TO_CLIENT)
       self._engine_proxy.set_transfer_type(transfer_id,
-                                           transfer_type)   
-  
+                                           transfer_type)
+
       return transfer_type
 
 
   def _transfer_file(self, transfer_id, buffer_size):
 
-    (transfer_id, 
-     client_path, 
-     expiration_date, 
-     workflow_id, 
-     client_paths, 
+    (transfer_id,
+     client_path,
+     expiration_date,
+     workflow_id,
+     client_paths,
      transfer_type,
      status) = self._engine_proxy.transfer_information(transfer_id)
 
@@ -1102,14 +1103,14 @@ class WorkflowController(object):
         ## transfer reset
         #overwrite = True
       transfer_type = self._initialize_transfer(transfer_id)
-      
+
       remote_path = transfer_id
 
       if transfer_type == TR_FILE_C_TO_CR or \
          transfer_type == TR_DIR_C_TO_CR:
-        self._transfer.transfer_to_remote(client_path, 
+        self._transfer.transfer_to_remote(client_path,
                                          remote_path)
-        self._engine_proxy.set_transfer_status(transfer_id, 
+        self._engine_proxy.set_transfer_status(transfer_id,
                                                FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
@@ -1121,7 +1122,7 @@ class WorkflowController(object):
           self._transfer.transfer_to_remote(path,
                                             r_path)
 
-        self._engine_proxy.set_transfer_status(transfer_id, 
+        self._engine_proxy.set_transfer_status(transfer_id,
                                                FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
@@ -1135,30 +1136,30 @@ class WorkflowController(object):
          #transfer_type == TR_FILE_C_TO_CR or \
          #transfer_type == TR_DIR_C_TO_CR or \
          #transfer_type == TR_MFF_C_TO_CR :
-        ## TBI remove existing files 
+        ## TBI remove existing files
         #overwrite = True
       transfer_type = self._initialize_transfer(transfer_id)
-        
+
 
       remote_path = transfer_id
       if transfer_type == TR_FILE_CR_TO_C or \
          transfer_type == TR_DIR_CR_TO_C:
         # file case
-        self._transfer.transfer_from_remote(remote_path, 
+        self._transfer.transfer_from_remote(remote_path,
                                             client_path)
-        self._engine_proxy.set_transfer_status(transfer_id, 
+        self._engine_proxy.set_transfer_status(transfer_id,
                                                FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
-    
+
       if transfer_type == TR_MFF_CR_TO_C:
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(remote_path, relative_path)
-          self._transfer.transfer_from_remote(r_path, 
-                                              path) 
+          self._transfer.transfer_from_remote(r_path,
+                                              path)
 
-        self._engine_proxy.set_transfer_status(transfer_id, 
+        self._engine_proxy.set_transfer_status(transfer_id,
                                                FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
@@ -1166,8 +1167,8 @@ class WorkflowController(object):
     return False
 
 
-  def _transfer_progression(self, 
-                            status, 
+  def _transfer_progression(self,
+                            status,
                             transfer_type,
                             client_path,
                             client_paths,
@@ -1179,17 +1180,17 @@ class WorkflowController(object):
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(engine_path, relative_path)
-          (ds, 
-          dt) = self._transfer_monitoring.transfer_to_remote_progression(path, 
+          (ds,
+          dt) = self._transfer_monitoring.transfer_to_remote_progression(path,
                                                                 r_path)
           data_size = data_size + ds
           data_transfered = data_transfered + dt
         progression = (data_size, data_transfered)
       else:
         progression = self._transfer_monitoring.transfer_to_remote_progression(
-                                                                client_path,   
+                                                                client_path,
                                                                 engine_path)
-       
+
     elif status == TRANSFERING_FROM_CR_TO_CLIENT:
       if transfer_type == TR_MFF_CR_TO_C:
         data_size = 0
@@ -1197,7 +1198,7 @@ class WorkflowController(object):
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(engine_path, relative_path)
-          (ds, 
+          (ds,
           dt) = self._transfer_monitoring.transfer_from_remote_progression(r_path,
                                                                          path)
           data_size = data_size + ds
@@ -1205,7 +1206,7 @@ class WorkflowController(object):
         progression = (data_size, data_transfered)
       else:
         progression = self._transfer_monitoring.transfer_from_remote_progression(engine_path,
-                                                                  client_path) 
+                                                                  client_path)
     else:
       progression = (100, 100)
 
@@ -1214,7 +1215,7 @@ class WorkflowController(object):
 
 def _detectCPUs():
  """
- Detects the number of CPUs on a system. 
+ Detects the number of CPUs on a system.
  ==> Python >= 2.6: multiprocessing.cpu_count
  """
  # Linux, Unix and MacOS:
@@ -1233,14 +1234,14 @@ def _detectCPUs():
              return ncpus
  return 1 # Default
 
- 
+
 def _embedded_engine_and_server(config):
   '''
-  Creates the workflow engine and workflow database server in the client 
+  Creates the workflow engine and workflow database server in the client
   process.
   The client process can not finish before the workflows and jobs are done.
-  Using serveral client process simultaneously (thus several database server 
-  with the same database file) can cause error (notably database locked problems) 
+  Using serveral client process simultaneously (thus several database server
+  with the same database file) can cause error (notably database locked problems)
 
   * config: *soma.workflow.configuration.Configuration*
 
@@ -1250,7 +1251,7 @@ def _embedded_engine_and_server(config):
 
   from soma.workflow.engine import WorkflowEngine, WorkflowEngineLoop, EngineLoopThread
   from soma.workflow.database_server import WorkflowDatabaseServer
-  
+
   (engine_log_dir,
   engine_log_format,
   engine_log_level) = config.get_engine_log_info()
@@ -1266,13 +1267,13 @@ def _embedded_engine_and_server(config):
     logger.info("****************************************************")
 
   # database server
-  database_server = WorkflowDatabaseServer(config.get_database_file(), 
+  database_server = WorkflowDatabaseServer(config.get_database_file(),
                                            config.get_transfered_file_dir())
 
   if config.get_scheduler_type() == 'drmaa':
     from soma.workflow.scheduler import Drmaa
     print "scheduler type: drmaa"
-    scheduler = Drmaa(config.get_drmaa_implementation(), 
+    scheduler = Drmaa(config.get_drmaa_implementation(),
                       config.get_parallel_job_config())
 
   elif config.get_scheduler_type() == 'local_basic':
@@ -1286,7 +1287,7 @@ def _embedded_engine_and_server(config):
                                    config.get_path_translation(),
                                    config.get_queue_limits())
 
-  workflow_engine = WorkflowEngine(database_server, 
+  workflow_engine = WorkflowEngine(database_server,
                                    engine_loop)
 
   engine_loop_thread = EngineLoopThread(engine_loop)
@@ -1317,15 +1318,15 @@ class Helper(object):
     job_ids = []
     for job_info in element_status[0]:
       job_ids.append(job_info[0])
-      
+
 
     wf_ctrl.wait_job(job_ids)
-    
-      
+
+
 
   @staticmethod
-  def transfer_input_files(workflow, 
-                           wf_ctrl, 
+  def transfer_input_files(workflow,
+                           wf_ctrl,
                            buffer_size = 512**2):
     '''
     Transfers all the input files of a workflow.
@@ -1335,8 +1336,8 @@ class Helper(object):
     * wf_ctrl *client.WorkflowController*
 
     * buffer_size *int*
-        Depending on the transfer method, the files can be transfered piece by 
-        piece. The size of each piece can be tuned using the buffer_size 
+        Depending on the transfer method, the files can be transfered piece by
+        piece. The size of each piece can be tuned using the buffer_size
         argument.
     '''
 
@@ -1396,7 +1397,7 @@ class Helper(object):
 
     * workflow *client.Workflow*
 
-    Raises *SerializationError* 
+    Raises *SerializationError*
     '''
     try:
       file = open(file_path, "w")
@@ -1414,7 +1415,7 @@ class Helper(object):
 
     * returns: *client.Workflow*
 
-    Raises *SerializationError* 
+    Raises *SerializationError*
     '''
     try:
       file = open(file_path, "r")
