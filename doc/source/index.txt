@@ -12,14 +12,6 @@ Soma-workflow: A unified and simple interface to parallel computing resource
 
 .. warning:: Documentation under construction.
 
-Quick start
-===========
-
-**Under construction**
-
-.. note:: To get started, begin here: :ref:`concepts` and have a look at 
-   the :ref:`examples`.
-
 
 Main Features
 =============
@@ -44,10 +36,10 @@ Main Features
     Soma-workflow is directly operational on any multiple core machine. 
    
   **Transparent remote access to computing resources** 
-    When the computing resource is remote, soma-workflow is used in the  
-    client-server mode. The communication with a remote computing resource is 
-    done transparently for the user through a ssh port forwarding tunnel. The 
-    client/server architecture enables the user to close the client 
+    When the computing resource is remote, soma-workflow can be used as a   
+    client-server application. The communication with a remote computing 
+    resource is done transparently for the user through a ssh port forwarding 
+    tunnel. The client/server architecture enables the user to close the client 
     application at any time. The workflows and jobs execution are not stopped. 
     The user can open a client at any time to check the status of his 
     work.

@@ -1,9 +1,246 @@
+==============================
+Installation and configuration
+==============================
+
+
+.. contents:: Installation and Configuration
+   :local:
+   :depth: 1
+
+
+One process application on a multiple core machine
+==================================================
+
+See :ref:`quick start on multiple core machine <quick_start>`.
+
+.. _light_mode_config:
+
+One process application on clusters
+===================================
+
+This mode is called light mode, it is the installation you need if you are 
+not interested in the remote access and disconnection features (see :ref:`client_server_application_concept`)
+
+Requirements
+------------
+
+The requirements are identical to the server installation requirements. 
+If you do not intend to access an other computing resource with the remote 
+access feature, the installation of Pyro can be skipped.
+
+The requirements are thus:
+
+* A distributed resource management system (DRMS) such as Grid Engine, Condor, 
+  Torque/PBS, LSF..
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
+* Python *version 2.5 or more*
+* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
+* SQLite *version 3 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+
+More details about the implementation of DRMAA can be found in the server 
+installation section (see :ref:`server_requirements`).
+
+
+Installation
+------------
+
+
+1. *install the soma-workflow python module and compile the sip module => under construction*
+
+2. Choose a resource identifier for the computing resource, ex: "My laptop light mode"
+
+3. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
+
+
+.. _light_mode_configuration:
+
+Configuration
+-------------
+
+This section defines the required and optional configuration items for the light 
+mode. 
+
+The configuration file syntax is the `ConfigParser 
+<http://docs.python.org/library/configparser.html>`_  syntax. All the 
+configuration items needed are defined in one section. You can choose the 
+section name, for example "My laptop light mode".
+
+Configuration file example: ::
+
+  [My laptop light mode]
+
+  LIGHT_MODE    = True
+
+  TRANSFERED_FILE_DIR = path/soma_workflow.db
+  DATABASE_FILE       = path/transfered_files
+  
+
+If you want to use the same application as a client to other computing resources, 
+make sure that Pyro was installed and add the configuration items required in the 
+configuration file as described here: :ref:`client_configuration`.
+
+Configuration file example: ::
+ 
+  [My laptop light mode]
+
+  LIGHT_MODE    = True
+
+  TRANSFERED_FILE_DIR = path/soma_workflow.db
+  DATABASE_FILE       = path/transfered_files
+  
+ 
+  [Titan]
+
+  CLUSTER_ADDRESS     = titan.mylab.fr
+  SUBMITTING_MACHINES = titan0
+  
+  QUEUES = test long 
+
+  
+  [LabDesktops]
+
+  CLUSTER_ADDRESS     = mydesktop.mylab.fr
+  SUBMITTING_MACHINES = mydesktop
+
+
+
+Required configuration items
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  **LIGHT_MODE**
+    This item can be set up with any value, however it must be defined to use 
+    soma_workflow in the light mode.
+  
+  **DATABASE_FILE**
+    Path of the SQLite database file. The file will be created the first time 
+    the application is launch.  
+
+  **TRANSFERED_FILE_DIR**
+    Path of the directory where the transfered files will be copied. The
+    directory must be empty and will be managed entirely by soma-workflow.
+    This item is required to let you run workflow with file transfer for 
+    test purposes in the light mode. 
+
+    .. warning::
+      Do not copy any file in this directory. Soma_workflow manages the 
+      entire directory and might delete any external file.
+
+Optional configuration items
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Many optional configuration item can be added to customize the installation, see
+:ref:`server_configuration` for a full list of the items and their description.
+  
+
+Start the GUI
+-------------
+
+The command *soma_workflow_gui* starts the GUI.
+
+.. seealso:: :ref:`gui` for the GUI documentation.
+
+
+Use the Python API
+-------------------
+
+Import the soma.workflow.client module to use the Python API.
+
+.. seealso:: :ref:`client_api` for soma-workflow Python API documentation or :ref:`examples` for a fast start.
+
+.. _client_intall_config:
+
+
+Client-server application: Client
+=================================
+
+This page describes the installation and configuration of the soma-workflow
+client. The installation of a soma-workflow client supposes that at least one 
+soma-workflow database servers is installed on a remote or a local computing 
+resources (see :ref:`server`).
+
+
+Requirements
+------------
+
+* Python *version 2.5 or more*
+* `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
+* `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in   
+  only required if the computing resource is remote. 
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+
+Installation
+------------
+
+1. *Install the soma-workflow python modules and command. => under construction*
+
+2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the /etc/ directory.
+
+..
+  The client only need the soma-workflow modules to be installed and the
+  soma_workflow_gui file to be located in the PATH
+
+
+.. _client_configuration:
+
+Configuration
+-------------
+
+The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax.
+
+There is one section for each computing resource (that is for each soma-workflow
+database server). 
+
+Only three items are required:
+ 
+  * CLUSTER_ADDRESS
+  * SUBMITTING_MACHINES
+  * QUEUES 
+
+The two first items are mandatory and the last one is 
+optional. The values of these configuration items are set up at each 
+soma-workflow server installation (see :ref:`server_configuration`). Ask these item 
+values to the soma-workflow administrator if you did not install the server yourself.  
+
+Configuration file example: ::
+
+  [Titan]
+
+  CLUSTER_ADDRESS     = titan.mylab.fr
+  SUBMITTING_MACHINES = titan0
+  
+  QUEUES = test long 
+
+
+  [LabDesktops]
+
+  CLUSTER_ADDRESS     = mydesktop.mylab.fr
+  SUBMITTING_MACHINES = mydesktop
+
+
+Start the GUI
+-------------
+
+The command *soma_workflow_gui* starts the GUI.
+
+.. seealso:: :ref:`gui` for the GUI documentation.
+
+
+Use the Python API
+------------------
+
+Import the soma.workflow.client module to use the Python API.
+
+.. seealso:: :ref:`client_api` for soma-workflow Python API documentation or :ref:`examples` for a fast start.
+
+
+
 
 .. _server:
 
-======================================
-Installation and configuration: Server 
-======================================
+
+Client-server application: Server 
+=================================
 
 This page explains how to configure, install and run the soma-workflow
 database server. 
@@ -16,7 +253,7 @@ location the database server.
 .. _server_requirements:
 
 Requirements
-============
+------------
 
 .. image:: images/third_parties.*
   :scale: 50
@@ -48,7 +285,7 @@ using this implementation
 .. _server_installation:
 
 Server installation
-===================
+-------------------
 
 1. *install the soma-workflow python module and compile the sip module => under construction*
 
@@ -68,7 +305,7 @@ Server installation
 .. _server_configuration:
 
 Server configuration
-====================
+--------------------
 
 This section defines the required and optional configuration items. 
 
@@ -103,7 +340,7 @@ Configuration file example: ::
 
 
 Configuration items required on the server side:
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   **DATABASE_FILE**
     Path of the SQLite database file. The file will be created the first time 
@@ -126,7 +363,7 @@ Configuration items required on the server side:
 .. _conf_server_option:
 
 Configuration items optional on the server side:
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   **MAX_JOB_IN_QUEUE**
     Maximum number of job in each queue. If a queue does not appear here, 
@@ -174,7 +411,7 @@ Logging configuration:
     <http://docs.python.org/library/logging.html>`_ module.
 
 Parallel job configuration:
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The items described here concern the parallel job configuration. A parallel job
 uses several CPUs and involves parallel code: MPI, OpenMP for example. 
@@ -204,7 +441,7 @@ uses several CPUs and involves parallel code: MPI, OpenMP for example.
  
 
 Configuration items required on the client side:
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   **CLUSTER_ADDRESS** 
     Address of the host computing resource host to log on.
@@ -220,10 +457,11 @@ Configuration items required on the client side:
 .. _conf_client_option:
 
 Configuration items optional on the client side:
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   **QUEUES**
     List of the available queues. This item is only used in the GUI to make 
     easier the selection of the queue when submitting a workflow.
     Syntax: "queue1 queue2 queue3"
     
+
