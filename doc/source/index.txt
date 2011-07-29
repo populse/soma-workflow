@@ -3,14 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
+
+
 Soma-workflow: A unified and simple interface to parallel computing resource
 =============================================================================
 
-.. image:: images/soma_workflow_general.*
-  :scale: 60
+  .. warning:: Documentation under construction.
 
-
-.. warning:: Documentation under construction.
+  ..
+    .. image:: images/soma_workflow_general.*
+      :scale: 60
 
 
 Main Features
@@ -29,14 +32,14 @@ Main Features
     The Python API was designed to be easily used by non expert user, but also
     complete to meet external software needs: submission, control and monitoring 
     of jobs and workflows. The GUI provides an easy and quick way of monitoring 
-    workflows on various resources. The workflows can also be submitted and 
-    controlled using the GUI.
+    workflows on various computing resources. The workflows can also be 
+    submitted and controlled using the GUI.
 
   **Quick start on multiple core machines:**
     Soma-workflow is directly operational on any multiple core machine. 
-   
-  **Transparent remote access to computing resources** 
-    When the computing resource is remote, soma-workflow can be used as a   
+    
+  **Transparent remote access to computing resources:** 
+    When the computing resource is remote, Soma-workflow can be used as a   
     client-server application. The communication with a remote computing 
     resource is done transparently for the user through a ssh port forwarding 
     tunnel. The client/server architecture enables the user to close the client 
@@ -46,7 +49,7 @@ Main Features
 
   **File transfer and file path mapping tools:** 
     If the user's machine and the remote computing resource do not have a shared 
-    file system, soma-workflow provides tools to handle file transfers and/or 
+    file system, Soma-workflow provides tools to handle file transfers and/or 
     path name matchings.
 
 

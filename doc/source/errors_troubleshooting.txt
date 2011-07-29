@@ -51,7 +51,7 @@ Good Practices
   So that you will not have to type you password every time you open the GUI or
   create a WorklfowController object.
 
-**Open only one application at a time in the light mode.**
+**Open only one application at a time in the one process mode.**
   This will be fixed in a future version. 
 
 ..
