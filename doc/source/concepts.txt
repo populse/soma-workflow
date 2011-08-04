@@ -73,12 +73,12 @@ Note that Soma-workflow is not a resource manager it has to interact with the
 system managing the computing resource (**DRMS**: Distributed Resource 
 Management System) if it exists.
 
-Soma-workflow enable to use **remote computing resources**. The communication is 
+Soma-workflow enable the user to use **remote computing resources**. The communication is 
 done transparently for the user and securely within a ssh tunnel. In case the 
 computing resource and the user's machine do not have a shared file system, 
 Soma-workflow provides several tools: 
 
-  * File transfers: allow to transfer files or directories from or to the remote resource. The file transfers status are taken into account when a workflow is executed. 
+  * File transfers: allow the transfer of files or directories from or to the remote resource. The file transfers status are taken into account when a workflow is executed. 
    
   * Shared resource path: maps a path which is valid on the user machine with a path which is valid on the computing resource thanks to "translations" files.
 
@@ -181,7 +181,7 @@ File Transfer
   The file transfers are optional. However, they can be useful when the user's file 
   system is not shared with the computing resource.
 
-  The file transfer objects allow to transfer files or directories to and from 
+  The file transfer objects allow the transfer files or directories to and from 
   the computing resource file system.
   
   A file transfer object is a mapping between a file path which is valid on 
