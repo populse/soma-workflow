@@ -39,7 +39,7 @@ import collections
 #import cProfile
 
 import soma.workflow.connection as connection
-from soma.workflow.transfer import TransferPyro, TransferSCP, TransferMonitoring, TransferLocal
+from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
 from soma.workflow.constants import *
 from soma.workflow.configuration import Configuration
 from soma.workflow.errors import TransferError, SerializationError
@@ -475,8 +475,16 @@ class WorkflowController(object):
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
       self._transfer = TransferLocal(self._engine_proxy)
+      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
+      #self._transfer = TransferSCP(self._engine_proxy,
+                                    #username=None,
+                                    #hostname=None)
+
+      #self._transfer = TransferRsync(self._engine_proxy,
+                                    #username=None,
+                                    #hostname=None)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
-      #self._transfer = TransferPyro(self._engine_proxy)
+      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
 
     # REMOTE MODE
     elif mode == 'remote':
@@ -500,15 +508,15 @@ class WorkflowController(object):
                                     username=login,
                                     hostname=sub_machine)
       else:
-        self._transfer = TransferPyro(self._engine_proxy)
-      self._transfer_stdouterr = TransferPyro(self._engine_proxy)
+        self._transfer = PortableRemoteTransfer(self._engine_proxy)
+      self._transfer_stdouterr = PortableRemoteTransfer(self._engine_proxy)
 
     # LIGHT MODE
     elif mode == 'light':
       self._engine_proxy = _embedded_engine_and_server(self.config)
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
-      #self._transfer = TransferPyro(self._engine_proxy)
+      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
 
 
