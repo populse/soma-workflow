@@ -14,8 +14,8 @@ the use of parallel resources by non expert users and external software.
 Communication
 =============
 
-* MICCAI 2011 workshop: High Performance and Distributed Computing for Medical Imaging, September 22nd, Toronto
-* Python in Neuroscience workshop satellite to Euroscipy, August 29-30 2011, Paris
+* `MICCAI 2011 workshop <ftp://static.brainvisa.info/brainvisa/static/MICCAI_2011_soma_workflow.pdf>`_: High Performance and Distributed Computing for Medical Imaging, September 22nd, Toronto
+* `Python in Neuroscience workshop satellite to Euroscipy <ftp://static.brainvisa.info/brainvisa/static/python_neuroscience_soma_workflow.pdf>`_, August 29-30 2011, Paris
 * `Poster <ftp://static.brainvisa.info/brainvisa/static/poster_HBM_2011_somaworkflow.pdf>`_ at HBM Annual Meeting 2011, Quebec
 
 Documentation
