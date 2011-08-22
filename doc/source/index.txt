@@ -9,7 +9,8 @@
 Soma-workflow: A unified and simple interface to parallel computing resource
 =============================================================================
 
-  .. warning:: Documentation under construction.
+  ..
+    .. warning:: Documentation under construction.
 
   ..
     .. image:: images/soma_workflow_general.*

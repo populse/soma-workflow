@@ -14,11 +14,11 @@ Soma-workflow was built to make easier the use of parallel computing resources
 for researchers. 
 
 Although Soma-workflow can be used to run individual jobs, it focuses on the 
-execution of coarse-grained parallelized processings: they are made of a number 
+execution of coarse-grained parallelized computational processes: they are made of a number 
 of "long" sub-tasks (from about a minute to several days or weeks) which do not 
 need to communicate together. 
 
-The coarse-grained parallelized processings are described by executable/low 
+The coarse-grained parallelized computational processes are described by executable/low 
 level **workflows**. Each sub-task is described by a program command line 
 (any program) and is called **job**. A workflow description includes the 
 definition of a set of job and their execution dependencies.
