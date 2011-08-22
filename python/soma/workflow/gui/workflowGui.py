@@ -33,10 +33,15 @@ from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError
 import soma.workflow.utils
 
-class PyroError(Exception):     pass
-class ProtocolError(PyroError): pass
-class ConnectionClosedError(ProtocolError): pass
 
+
+try:
+  from Pyro.errors import ConnectionClosedError
+except ImportError:
+  # Pyro is not required when soma-workflow runs as a one process application
+  class PyroError(Exception):     pass
+  class ProtocolError(PyroError): pass
+  class ConnectionClosedError(ProtocolError): pass
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -1816,6 +1821,7 @@ class ApplicationModel(QtCore.QObject):
    
 
   def connection_closed_error(self):
+    print "====>  connection closed error"
     self.emit(QtCore.SIGNAL('connection_closed_error()'))
 
   def current_connection_changed(self):
