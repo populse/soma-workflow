@@ -144,14 +144,10 @@ class EngineJob(Job):
         self.stdin = os.path.abspath(self.stdin)
 
     if self.working_directory:
-      print "working_directory" 
       if isinstance(self.working_directory, FileTransfer):
-        print "which is a FileTransfer"
         if not self.working_directory in self.referenced_input_files:
-          print "not in self.referenced_input_files"
           self.referenced_input_files.append(self.working_directory)
         if not self.working_directory in self.referenced_output_files:
-          print "not in self.referenced_output_files"
           self.referenced_output_files.append(self.working_directory)
         #if not self.working_directory in self.transfer_mapping:
           #if isinstance(self.working_directory, EngineTransfer):
