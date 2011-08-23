@@ -18,19 +18,33 @@ Communication
 * `Python in Neuroscience workshop satellite to Euroscipy <ftp://static.brainvisa.info/brainvisa/static/python_neuroscience_soma_workflow.pdf>`_, August 29-30 2011, Paris
 * `Poster <ftp://static.brainvisa.info/brainvisa/static/poster_HBM_2011_somaworkflow.pdf>`_ at HBM Annual Meeting 2011, Quebec
 
-Documentation
-=============
+Version 2.0
+===========
 
-* **Development version:** `development version documentation  <http://www.brainvisa.info/doc/soma-workflow-trunk/>`_
-* **Current version:** `soma-workflow 1.0 documentation <http://www.brainvisa.info/doc/soma-workflow-1.0/sphinx>`_
+* **What is new in version 2.0:**
+    * Soma-workflow can be used directly on a multiple core machine.
+    * Soma-workflow is independent of DRMAA and interaction with other interfaces can be easily implemented.
+    * File transfers: New API with several implementations (scp, rsync or a portable implementation).
+    * New control feature: possibility to stop the workflows.
+    * \+ optimizations 
+
+* **Documentation:** `soma-workflow 2.0 documentation <http://www.brainvisa.info/doc/soma-workflow-2.0/sphinx>`_
+
+* **Download:** `soma-workflow 2.0 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0.tar>`_
+
+* **Download to use with DRMAA:**
+    * `version 2.0 Fedora 4 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0-Fedora-4.tar>`_
+    * `version 2.0 Mandriva 2008 64 bits <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0-Mandriva2008-x86_64.tar>`_
+    * `version 2.0 Mandriva 2008 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0-Mandriva2008.tar>`_
+
 
 
 Quick start
 ===========
 
-* For a quick start on a multiple core machine (development version):
+* For a quick start on a multiple core machine (version 2.0):
     * Requirements: Python 2.5. For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*.
-    * Download: `quick start <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-dev-version-24-06-2011-quick-start.tar>`_
+    * Download: `soma-workflow 2.0 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0.tar>`_
     * Installation:
 
         :: 
@@ -47,18 +61,15 @@ Quick start
 
           $ soma_workflow_gui
 
-    * Run the `documentation examples <http://www.brainvisa.info/doc/soma-workflow-trunk/examples.html>`_.
+    * Run the `documentation examples <http://www.brainvisa.info/doc/soma-workflow-2.0/sphinx/examples.html>`_.
 
 
-Download
-========
+Older versions
+==============
 
-* **Development version:** can be used on a multiple core machine or with distributed resource management system (e.g. Grid Engine, Condor, PBS/Torque, LSF) with an implementation of `DRMAA v1 <http://drmaa.org/>`_ :
-    * `development version Fedora 4 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-dev-version-Fedora-4-24-06-2011.tar>`_
-    * `development version Mandriva 2008 64 bits <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-dev-version-Mandriva2008-x86_64-24-06-2011.tar>`_
-    * `development version Mandriva 2008 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-dev-version-Mandriva2008-24-06-2011.tar>`_
+* **Documentation:** `soma-workflow 1.0 documentation <http://www.brainvisa.info/doc/soma-workflow-1.0/sphinx>`_
 
-* **Current version:** requires a distributed resource management system (e.g. Grid Engine, Condor, PBS/Torque, LSF) with an implementation of `DRMAA v1 <http://drmaa.org/>`_ :
+* **Download:** requires a distributed resource management system (e.g. Grid Engine, Condor, PBS/Torque, LSF) with an implementation of `DRMAA v1 <http://drmaa.org/>`_ :
     * `version 1.0 Fedora 4 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-1.0-Fedora-4.tar>`_
     * `version 1.0 Mandriva 2008 64 bits <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-1.0-Mandriva2008-x86_64.tar>`_
     * `version 1.0 Mandriva 2008 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-1.0-Mandriva2008.tar>`_
