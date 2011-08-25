@@ -736,6 +736,7 @@ class WorkflowWidget(QtGui.QMainWindow):
       self.ui.action_submit.setEnabled(False)
       self.ui.action_change_expiration_date.setEnabled(False)
       self.ui.action_stop_wf.setEnabled(False)
+      self.ui.action_restart.setEnabled(False)
       self.ui.action_delete_workflow.setEnabled(False)
       self.ui.action_transfer_infiles.setEnabled(False)
       self.ui.action_transfer_outfiles.setEnabled(False)
@@ -770,6 +771,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_change_expiration_date.setEnabled(False)
         self.ui.action_delete_workflow.setEnabled(False)
         self.ui.action_stop_wf.setEnabled(False)
+        self.ui.action_restart.setEnabled(False)
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
@@ -795,6 +797,7 @@ class WorkflowWidget(QtGui.QMainWindow):
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
         self.ui.action_stop_wf.setEnabled(True)
+        self.ui.action_restart.setEnabled(True)
         self.ui.action_transfer_infiles.setEnabled(True)
         self.ui.action_transfer_outfiles.setEnabled(True)    
         self.ui.action_save.setEnabled(True)    
