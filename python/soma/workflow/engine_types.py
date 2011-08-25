@@ -680,7 +680,8 @@ class EngineWorkflow(Workflow):
     done = True
     sub_info_to_resert = {}
     new_status = {}
-    for job in self.registered_jobs.itervalues():
+    for client_job in self.jobs:
+      job = self.job_mapping[client_job]
       if job.failed():
         #clear all the information related to the previous job submission
         job.status = constants.NOT_SUBMITTED
