@@ -4,7 +4,7 @@ from PyQt4 import QtCore, QtGui
 import sys
 import optparse
 
-from soma.workflow.gui.workflowGui import WorkflowWidget, ApplicationModel
+from soma.workflow.gui.workflowGui import WorkflowWidget, ApplicationModel, MainWindow, SomaWorkflowWidget
 
 parser = optparse.OptionParser()
 
@@ -20,9 +20,30 @@ if __name__=="__main__":
   app = QtGui.QApplication(sys.argv)
   
   model = ApplicationModel()
+
+  i = 2
+
+  if i == 1:
   
-  workflowWidget = WorkflowWidget(model, options.user, options.auto_connect)
-  workflowWidget.show()
+    workflowWidget = WorkflowWidget(model, 
+                                    options.user, 
+                                    options.auto_connect)
+    workflowWidget.show()
   
+  elif i == 2:
+  
+    sw_main_window = MainWindow(model, 
+                                options.user, 
+                                options.auto_connect)
+    
+    sw_main_window.show()
+
+  elif i == 3:
+    sw_widget = SomaWorkflowWidget(model, 
+                                  options.user, 
+                                  options.auto_connect)
+    sw_widget.show()
+  
+
   app.exec_()
     
