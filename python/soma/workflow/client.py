@@ -232,11 +232,15 @@ class Workflow(object):
   # sequence of Groups built from the root_group
   groups = None
 
+  # for special user storage
+  user_storage = None
+
   def __init__(self,
                jobs,
                dependencies,
                root_group = None,
-               disposal_timeout = 168,):
+               disposal_timeout = 168,
+               user_storage = None):
 
     self.name = None
     self.jobs = jobs
