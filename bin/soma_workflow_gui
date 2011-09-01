@@ -4,7 +4,8 @@ from PyQt4 import QtCore, QtGui
 import sys
 import optparse
 
-from soma.workflow.gui.workflowGui import WorkflowWidget, ApplicationModel, MainWindow, SomaWorkflowWidget
+#from soma.workflow.gui.workflowGui import WorkflowWidget
+from soma.workflow.gui.workflowGui import ApplicationModel, MainWindow, SomaWorkflowWidget
 
 parser = optparse.OptionParser()
 
@@ -12,6 +13,8 @@ parser.add_option('-u', '--user', help="User for logging in to server")
 parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
                   action='store_true', help="Try to connect directly, " \
                     "withou displaying connection dialog.")
+parser.add_option('-r', '--computing-resource', dest='computing_resource', 
+                  help='computing resource identifier')
 
 options, args = parser.parse_args(sys.argv)
 
@@ -34,14 +37,16 @@ if __name__=="__main__":
   
     sw_main_window = MainWindow(model, 
                                 options.user, 
-                                options.auto_connect)
+                                options.auto_connect,
+                                options.computing_resource)
     
     sw_main_window.show()
 
   elif i == 3:
     sw_widget = SomaWorkflowWidget(model, 
                                   options.user, 
-                                  options.auto_connect)
+                                  options.auto_connect,
+                                  options.computing_resource)
     sw_widget.show()
   
 

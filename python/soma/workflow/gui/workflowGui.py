@@ -234,7 +234,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   config_file_path = None
   
-  def __init__(self, model, user=None, auto_connect=False, parent=None, flags=0):
+  def __init__(self, 
+               model, 
+               user=None, 
+               auto_connect=False, 
+               computing_resource=None,
+               parent=None, 
+               flags=0):
     super(SomaWorkflowWidget, self).__init__(parent)
 
     self.ui = Ui_ResourceWfSelect()
@@ -291,7 +297,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
     ## First connection:
     #Try to connect directly:  
-    if auto_connect or self.config_file_path == None:
+    if computing_resource:
+      self.connect_to_controller(computing_resource, user)
+    elif auto_connect or self.config_file_path == None:
       if user is not None and len(self.resource_list) > 0:
         self.connect_to_controller(self.resource_list[0], user)
       else:
@@ -420,8 +428,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
     ui.setupUi(submission_dlg)
     setLabelFromString(ui.resource_label, self.model.current_resource_id)
     ui.resource_label.setText(self.model.current_resource_id)
-    ui.lineedit_wf_name.setText("")
+    
+    if self.model.current_workflow.name == None:
+      ui.lineedit_wf_name.setText("")
+    else:
+      ui.lineedit_wf_name.setText(self.model.current_workflow.server_workflow.name)
     ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+    
     
     queues = ["default queue"]
     queues.extend(Controller.get_queues(self.model.current_connection))
@@ -804,20 +817,29 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.updateWorkflowList()
     self.model.clear_current_workflow()
 
+  def workflow_list_filter(self, workflow_list):
+    '''
+    Reimplement this function to filter the displayed workflows.
+    ''' 
+    return workflow_list
 
   def updateWorkflowList(self):
     while True:
       try:
-        submittedWorflows = Controller.get_submitted_workflows(self.model.current_connection)
+        submitted_wf = Controller.get_submitted_workflows(self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
       else:
         break
+
+    submitted_wf = self.workflow_list_filter(submitted_wf)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
     self.ui.list_widget_submitted_wfs.clear()
-    for wf_id, wf_info in submittedWorflows.iteritems():
+    wf_id_info = sorted(submitted_wf.items(), key=lambda elem : elem[1], reverse=True)
+    
+    for wf_id, wf_info in wf_id_info:
       workflow_name, expiration_date = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
       item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
@@ -850,7 +872,13 @@ class MainWindow(QtGui.QMainWindow):
 
   sw_widget = None
   
-  def __init__(self, model, user=None, auto_connect=False, parent=None, flags=0):
+  def __init__(self, 
+               model, 
+               user=None, 
+               auto_connect=False, 
+               computing_resource=None,
+               parent=None, 
+               flags=0):
     super(MainWindow, self).__init__(parent)
     
     self.ui = Ui_MainWindow()
@@ -873,6 +901,7 @@ class MainWindow(QtGui.QMainWindow):
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
                                         auto_connect,
+                                        computing_resource,
                                         self,
                                         flags)
     resourcesWfLayout = QtGui.QVBoxLayout()
@@ -978,650 +1007,650 @@ class MainWindow(QtGui.QMainWindow):
 
 
 
-class WorkflowWidget(QtGui.QMainWindow):
+#class WorkflowWidget(QtGui.QMainWindow):
   
-  def __init__(self, model, user=None, auto_connect=False, parent=None, flags=0):
-    super(WorkflowWidget, self).__init__(parent)
+  #def __init__(self, model, user=None, auto_connect=False, parent=None, flags=0):
+    #super(WorkflowWidget, self).__init__(parent)
     
-    self.ui = Ui_WorkflowMainWindow()
-    self.ui.setupUi(self)
+    #self.ui = Ui_WorkflowMainWindow()
+    #self.ui.setupUi(self)
     
-    self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
+    #self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
 
-    self.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
-    self.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
+    #self.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
+    #self.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
     
-    self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
+    #self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
     
-    self.model = model
+    #self.model = model
     
-    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
-    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
-    self.connect(self.model, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
-    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
-    self.updateCurrentWorkflowStatus)
+    #self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
+    #self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.currentWorkflowChanged)
+    #self.connect(self.model, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
+    #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
+    #self.updateCurrentWorkflowStatus)
 
-    try:
-      self.config_file_path = Configuration.search_config_path()
-      self.resource_list = Configuration.get_configured_resources(self.config_file_path)
-    except ConfigurationError, e:
-      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.close()
+    #try:
+      #self.config_file_path = Configuration.search_config_path()
+      #self.resource_list = Configuration.get_configured_resources(self.config_file_path)
+    #except ConfigurationError, e:
+      #QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      #self.close()
 
-    self.ui.combo_resources.addItems(self.resource_list)
+    #self.ui.combo_resources.addItems(self.resource_list)
     
-    self.setWindowTitle("soma-workflow")
+    #self.setWindowTitle("soma-workflow")
    
-    self.treeWidget = WorkflowTree(self.model, self)
-    treeWidgetLayout = QtGui.QVBoxLayout()
-    treeWidgetLayout.setContentsMargins(2,2,2,2)
-    treeWidgetLayout.addWidget(self.treeWidget)
-    self.ui.centralwidget.setLayout(treeWidgetLayout)
+    #self.treeWidget = WorkflowTree(self.model, self)
+    #treeWidgetLayout = QtGui.QVBoxLayout()
+    #treeWidgetLayout.setContentsMargins(2,2,2,2)
+    #treeWidgetLayout.addWidget(self.treeWidget)
+    #self.ui.centralwidget.setLayout(treeWidgetLayout)
 
-    self.connect(self.treeWidget, QtCore.SIGNAL('selection_model_changed()'), self.selection_model_changed)
+    #self.connect(self.treeWidget, QtCore.SIGNAL('selection_model_changed()'), self.selection_model_changed)
    
-    self.itemInfoWidget = WorkflowElementInfo(self.model, self)
-    itemInfoLayout = QtGui.QVBoxLayout()
-    itemInfoLayout.setContentsMargins(2,2,2,2)
-    itemInfoLayout.addWidget(self.itemInfoWidget)
-    self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+    #self.itemInfoWidget = WorkflowElementInfo(self.model, self)
+    #itemInfoLayout = QtGui.QVBoxLayout()
+    #itemInfoLayout.setContentsMargins(2,2,2,2)
+    #itemInfoLayout.addWidget(self.itemInfoWidget)
+    #self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
-    self.connect(self.itemInfoWidget, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
+    #self.connect(self.itemInfoWidget, QtCore.SIGNAL('connection_closed_error()'), self.reconnectAfterConnectionClosed)
 
-    self.workflowInfoWidget = WorkflowInfo(self.model, self)
-    wfInfoLayout = QtGui.QVBoxLayout()
-    wfInfoLayout.setContentsMargins(2,2,2,2)
-    wfInfoLayout.addWidget(self.workflowInfoWidget)
-    self.ui.widget_wf_info.setLayout(wfInfoLayout)
+    #self.workflowInfoWidget = WorkflowInfo(self.model, self)
+    #wfInfoLayout = QtGui.QVBoxLayout()
+    #wfInfoLayout.setContentsMargins(2,2,2,2)
+    #wfInfoLayout.addWidget(self.workflowInfoWidget)
+    #self.ui.widget_wf_info.setLayout(wfInfoLayout)
     
-    #self.graphWidget = WorkflowGraphView(self)
-    #graphWidgetLayout = QtGui.QVBoxLayout()
-    #graphWidgetLayout.setContentsMargins(2,2,2,2)
-    #graphWidgetLayout.addWidget(self.graphWidget)
-    #self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
+    ##self.graphWidget = WorkflowGraphView(self)
+    ##graphWidgetLayout = QtGui.QVBoxLayout()
+    ##graphWidgetLayout.setContentsMargins(2,2,2,2)
+    ##graphWidgetLayout.addWidget(self.graphWidget)
+    ##self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
     
-    self.workflowPlotWidget = WorkflowPlot(self.model, self)
-    plotLayout = QtGui.QVBoxLayout()
-    plotLayout.setContentsMargins(2,2,2,2)
-    plotLayout.addWidget(self.workflowPlotWidget)
-    self.ui.dockWidgetContents_plot.setLayout(plotLayout)
+    #self.workflowPlotWidget = WorkflowPlot(self.model, self)
+    #plotLayout = QtGui.QVBoxLayout()
+    #plotLayout.setContentsMargins(2,2,2,2)
+    #plotLayout.addWidget(self.workflowPlotWidget)
+    #self.ui.dockWidgetContents_plot.setLayout(plotLayout)
     
-    self.ui.widget_wf_status_date.hide()
-    self.ui.widget_wf_info.hide()
+    #self.ui.widget_wf_status_date.hide()
+    #self.ui.widget_wf_info.hide()
     
-    self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
-    self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
+    #self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
+    #self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
     
-    self.ui.action_submit.triggered.connect(self.submit_workflow)
-    self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
-    self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
-    self.ui.action_open_wf.triggered.connect(self.openWorkflow)
-    self.ui.action_optimize_wf.triggered.connect(self.optimize_workflow)
-    self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
-    self.ui.action_delete_workflow.triggered.connect(self.delete_workflow)
-    self.ui.action_change_expiration_date.triggered.connect(self.change_expiration_date)
-    self.ui.action_save.triggered.connect(self.saveWorkflow)
-    self.ui.action_restart.triggered.connect(self.restart_workflow)
-    self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
+    #self.ui.action_submit.triggered.connect(self.submit_workflow)
+    #self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
+    #self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
+    #self.ui.action_open_wf.triggered.connect(self.openWorkflow)
+    #self.ui.action_optimize_wf.triggered.connect(self.optimize_workflow)
+    #self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
+    #self.ui.action_delete_workflow.triggered.connect(self.delete_workflow)
+    #self.ui.action_change_expiration_date.triggered.connect(self.change_expiration_date)
+    #self.ui.action_save.triggered.connect(self.saveWorkflow)
+    #self.ui.action_restart.triggered.connect(self.restart_workflow)
+    #self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
     
-    self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
-    self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
+    #self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
+    #self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
 
-    self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
+    #self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
     
-    self.showMaximized()
+    #self.showMaximized()
 
-    self.firstConnection_dlg = QtGui.QDialog(self)
-    self.ui_firstConnection_dlg = Ui_FirstConnectionDlg()
-    self.ui_firstConnection_dlg.setupUi(self.firstConnection_dlg)
-    self.ui_firstConnection_dlg.combo_resources.addItems(self.resource_list)
-    self.firstConnection_dlg.accepted.connect(self.firstConnection)
-    self.firstConnection_dlg.rejected.connect(self.close)
+    #self.firstConnection_dlg = QtGui.QDialog(self)
+    #self.ui_firstConnection_dlg = Ui_FirstConnectionDlg()
+    #self.ui_firstConnection_dlg.setupUi(self.firstConnection_dlg)
+    #self.ui_firstConnection_dlg.combo_resources.addItems(self.resource_list)
+    #self.firstConnection_dlg.accepted.connect(self.firstConnection)
+    #self.firstConnection_dlg.rejected.connect(self.close)
     
-    ## First connection:
+    ### First connection:
 
-    # Try to connect directly:  
-    if auto_connect or self.config_file_path == None:
-      if user is not None and len(self.resource_list) > 0:
-        self.connect_to_controller(self.resource_list[0], user)
-      else:
-        self.connect_to_controller(socket.gethostname())
-    else: # Show connection dialog:
-      if user is not None:
-        self.ui_firstConnection_dlg.lineEdit_login.setText(user)
-      self.firstConnection_dlg.show()
+    ## Try to connect directly:  
+    #if auto_connect or self.config_file_path == None:
+      #if user is not None and len(self.resource_list) > 0:
+        #self.connect_to_controller(self.resource_list[0], user)
+      #else:
+        #self.connect_to_controller(socket.gethostname())
+    #else: # Show connection dialog:
+      #if user is not None:
+        #self.ui_firstConnection_dlg.lineEdit_login.setText(user)
+      #self.firstConnection_dlg.show()
     
-    if not self.model.current_connection:
-      self.close()
+    #if not self.model.current_connection:
+      #self.close()
 
 
-  def connect_to_controller(self, 
-                            resource_id, 
-                            login=None, 
-                            password=None, 
-                            rsa_key_pass=None):      
+  #def connect_to_controller(self, 
+                            #resource_id, 
+                            #login=None, 
+                            #password=None, 
+                            #rsa_key_pass=None):      
 
-    wf_ctrl = None
-    try:
-      wf_ctrl = Controller.get_connection(resource_id, 
-                                          login, 
-                                          password,
-                                          rsa_key_pass)
-    except ConfigurationError, e:
-      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.ui_firstConnection_dlg.lineEdit_password.clear()
-      self.firstConnection_dlg.show()
-    except Exception, e:
-      QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
-      self.ui_firstConnection_dlg.lineEdit_password.clear()
-      self.firstConnection_dlg.show()
-    else:
-      self.model.add_connection(resource_id, wf_ctrl)
-      self.firstConnection_dlg.hide()
+    #wf_ctrl = None
+    #try:
+      #wf_ctrl = Controller.get_connection(resource_id, 
+                                          #login, 
+                                          #password,
+                                          #rsa_key_pass)
+    #except ConfigurationError, e:
+      #QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      #self.ui_firstConnection_dlg.lineEdit_password.clear()
+      #self.firstConnection_dlg.show()
+    #except Exception, e:
+      #QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
+      #self.ui_firstConnection_dlg.lineEdit_password.clear()
+      #self.firstConnection_dlg.show()
+    #else:
+      #self.model.add_connection(resource_id, wf_ctrl)
+      #self.firstConnection_dlg.hide()
 
       
-  @QtCore.pyqtSlot()
-  def firstConnection(self):
-    resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
-    if self.ui_firstConnection_dlg.lineEdit_login.text(): 
-      login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
-    else: 
-      login = None
-    if self.ui_firstConnection_dlg.lineEdit_password.text():
-      password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
-    else:
-      password = None
-    if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
-      rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
-    else:
-      rsa_key_pass = None
+  #@QtCore.pyqtSlot()
+  #def firstConnection(self):
+    #resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
+    #if self.ui_firstConnection_dlg.lineEdit_login.text(): 
+      #login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
+    #else: 
+      #login = None
+    #if self.ui_firstConnection_dlg.lineEdit_password.text():
+      #password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
+    #else:
+      #password = None
+    #if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
+      #rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
+    #else:
+      #rsa_key_pass = None
 
-    self.connect_to_controller(resource_id, login, password, rsa_key_pass)
+    #self.connect_to_controller(resource_id, login, password, rsa_key_pass)
     
     
-  @QtCore.pyqtSlot()
-  def openWorkflow(self):
-    file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
-    if file_path:
-      try:
-        workflow = Controller.unserialize_workflow(file_path)
-      except SerializationError, e: 
-        QtGui.QMessageBox.warning(self, "Error opening the workflow", "%s" %(e))
-      else:
-        self.updateWorkflowList()
-        self.model.add_workflow(workflow, datetime.now() + timedelta(days=5))
+  #@QtCore.pyqtSlot()
+  #def openWorkflow(self):
+    #file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
+    #if file_path:
+      #try:
+        #workflow = Controller.unserialize_workflow(file_path)
+      #except SerializationError, e: 
+        #QtGui.QMessageBox.warning(self, "Error opening the workflow", "%s" %(e))
+      #else:
+        #self.updateWorkflowList()
+        #self.model.add_workflow(workflow, datetime.now() + timedelta(days=5))
 
-  @QtCore.pyqtSlot()
-  def optimize_workflow(self):
-    assert(self.model.current_workflow)
-    assert(self.model.current_workflow.wf_id == -1)
+  #@QtCore.pyqtSlot()
+  #def optimize_workflow(self):
+    #assert(self.model.current_workflow)
+    #assert(self.model.current_workflow.wf_id == -1)
   
-    new_workflow = Controller.optimize_workflow(self.model.current_workflow.server_workflow)
+    #new_workflow = Controller.optimize_workflow(self.model.current_workflow.server_workflow)
 
-    self.updateWorkflowList()
-    self.model.add_workflow(new_workflow, datetime.now() + timedelta(days=5))
+    #self.updateWorkflowList()
+    #self.model.add_workflow(new_workflow, datetime.now() + timedelta(days=5))
     
       
-  @QtCore.pyqtSlot()
-  def saveWorkflow(self):
-    file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
-    if file_path:
-      try:
-        Controller.serialize_workflow(file_path, self.model.current_workflow)
-      except SerializationError, e:
-        QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
+  #@QtCore.pyqtSlot()
+  #def saveWorkflow(self):
+    #file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
+    #if file_path:
+      #try:
+        #Controller.serialize_workflow(file_path, self.model.current_workflow)
+      #except SerializationError, e:
+        #QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
         
     
-  @QtCore.pyqtSlot()
-  def createWorkflowExample(self):
-    worflowExample_dlg = QtGui.QDialog(self)
-    ui = Ui_WorkflowExampleDlg()
-    ui.setupUi(worflowExample_dlg)
-    ui.comboBox_example_type.addItems(WorkflowExamples.get_workflow_example_list())
-    if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
-      with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
-      with_shared_resource_path = ui.checkBox_shared_resource_path.checkState() == QtCore.Qt.Checked
-      example_type = ui.comboBox_example_type.currentIndex()
-      file_path = QtGui.QFileDialog.getSaveFileName(self, 
-                                                    "Create a workflow example")
-      if file_path:
-        try:
-          wf_examples = WorkflowExamples(with_file_transfer,
-                                  with_shared_resource_path)
-        except ConfigurationError, e:
-          QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
-        else:
-          workflow = wf_examples.get_workflow_example(example_type)
-          try:
-            Controller.serialize_workflow(file_path, workflow)
-          except SerializationError, e:
-            QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
+  #@QtCore.pyqtSlot()
+  #def createWorkflowExample(self):
+    #worflowExample_dlg = QtGui.QDialog(self)
+    #ui = Ui_WorkflowExampleDlg()
+    #ui.setupUi(worflowExample_dlg)
+    #ui.comboBox_example_type.addItems(WorkflowExamples.get_workflow_example_list())
+    #if worflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
+      #with_file_transfer = ui.checkBox_file_transfers.checkState() == QtCore.Qt.Checked
+      #with_shared_resource_path = ui.checkBox_shared_resource_path.checkState() == QtCore.Qt.Checked
+      #example_type = ui.comboBox_example_type.currentIndex()
+      #file_path = QtGui.QFileDialog.getSaveFileName(self, 
+                                                    #"Create a workflow example")
+      #if file_path:
+        #try:
+          #wf_examples = WorkflowExamples(with_file_transfer,
+                                  #with_shared_resource_path)
+        #except ConfigurationError, e:
+          #QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
+        #else:
+          #workflow = wf_examples.get_workflow_example(example_type)
+          #try:
+            #Controller.serialize_workflow(file_path, workflow)
+          #except SerializationError, e:
+            #QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
         
-  @QtCore.pyqtSlot()
-  def submit_workflow(self):
-    assert(self.model.current_workflow)
+  #@QtCore.pyqtSlot()
+  #def submit_workflow(self):
+    #assert(self.model.current_workflow)
     
-    submission_dlg = QtGui.QDialog(self)
-    ui = Ui_SubmissionDlg()
-    ui.setupUi(submission_dlg)
-    setLabelFromString(ui.resource_label, self.model.current_resource_id)
-    ui.resource_label.setText(self.model.current_resource_id)
-    ui.lineedit_wf_name.setText("")
-    ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+    #submission_dlg = QtGui.QDialog(self)
+    #ui = Ui_SubmissionDlg()
+    #ui.setupUi(submission_dlg)
+    #setLabelFromString(ui.resource_label, self.model.current_resource_id)
+    #ui.resource_label.setText(self.model.current_resource_id)
+    #ui.lineedit_wf_name.setText("")
+    #ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
     
-    queues = ["default queue"]
-    queues.extend(Controller.get_queues(self.model.current_connection))
-    ui.combo_queue.addItems(queues)
+    #queues = ["default queue"]
+    #queues.extend(Controller.get_queues(self.model.current_connection))
+    #ui.combo_queue.addItems(queues)
 
-    if submission_dlg.exec_() == QtGui.QDialog.Accepted:
-      name = unicode(ui.lineedit_wf_name.text())
-      if name == "": name = None
-      qtdt = ui.dateTimeEdit_expiration.dateTime()
-      date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
-                      qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-      queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
-      if queue == "default queue": queue = None
-      while True:
-        try:
-          workflow = Controller.submit_workflow(
-                            self.model.current_workflow.server_workflow, 
-                            date, 
-                            name, 
-                            queue, 
-                            self.model.current_connection)
-        except WorkflowError, e:
-          QtGui.QMessageBox.warning(self, 
-                                "Workflow submission error", 
-                                "%s" %(e))
-          return
-        except JobError, e:
-          QtGui.QMessageBox.warning(self, 
-                                "Workflow submission error", 
-                                "%s" %(e))
-          return
-        except ConnectionClosedError, e:
-          if not self.reconnectAfterConnectionClosed():
-            return
-        else:
-          break
-      self.updateWorkflowList()
-      self.model.add_workflow(workflow, date) 
+    #if submission_dlg.exec_() == QtGui.QDialog.Accepted:
+      #name = unicode(ui.lineedit_wf_name.text())
+      #if name == "": name = None
+      #qtdt = ui.dateTimeEdit_expiration.dateTime()
+      #date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                      #qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+      #queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
+      #if queue == "default queue": queue = None
+      #while True:
+        #try:
+          #workflow = Controller.submit_workflow(
+                            #self.model.current_workflow.server_workflow, 
+                            #date, 
+                            #name, 
+                            #queue, 
+                            #self.model.current_connection)
+        #except WorkflowError, e:
+          #QtGui.QMessageBox.warning(self, 
+                                #"Workflow submission error", 
+                                #"%s" %(e))
+          #return
+        #except JobError, e:
+          #QtGui.QMessageBox.warning(self, 
+                                #"Workflow submission error", 
+                                #"%s" %(e))
+          #return
+        #except ConnectionClosedError, e:
+          #if not self.reconnectAfterConnectionClosed():
+            #return
+        #else:
+          #break
+      #self.updateWorkflowList()
+      #self.model.add_workflow(workflow, date) 
 
-  @QtCore.pyqtSlot()
-  def restart_workflow(self):
-    try:
-      done = Controller.restart_workflow(self.model.current_workflow.wf_id,
-                                         self.model.current_connection)
-    except ConnectionClosedError, e:
-      pass
-    except SystemExit, e:
-      pass
-    if not done:
-      QtGui.QMessageBox.warning(self, 
-                                "Restart workflow", 
-                                "The workflow is already running.")
-    else:
-      self.model.restart_current_workflow()
+  #@QtCore.pyqtSlot()
+  #def restart_workflow(self):
+    #try:
+      #done = Controller.restart_workflow(self.model.current_workflow.wf_id,
+                                         #self.model.current_connection)
+    #except ConnectionClosedError, e:
+      #pass
+    #except SystemExit, e:
+      #pass
+    #if not done:
+      #QtGui.QMessageBox.warning(self, 
+                                #"Restart workflow", 
+                                #"The workflow is already running.")
+    #else:
+      #self.model.restart_current_workflow()
   
-  @QtCore.pyqtSlot()
-  def transferInputFiles(self):
-    def transfer(self):
-      try:
-        self.ui.action_transfer_infiles.setEnabled(False)
-        Controller.transfer_input_files(
-                self.model.current_workflow.server_workflow, 
-                self.model.current_connection, 
-                buffer_size=256**2)
-      except ConnectionClosedError, e:
-        self.ui.action_transfer_infiles.setEnabled(True)
-        pass
-      except SystemExit, e:
-        pass
-      self.ui.action_transfer_infiles.setEnabled(True)
-    thread = threading.Thread(name = "TransferInputFiles",
-                              target = transfer,
-                              args =([self]))
-    thread.setDaemon(True)
-    thread.start()
+  #@QtCore.pyqtSlot()
+  #def transferInputFiles(self):
+    #def transfer(self):
+      #try:
+        #self.ui.action_transfer_infiles.setEnabled(False)
+        #Controller.transfer_input_files(
+                #self.model.current_workflow.server_workflow, 
+                #self.model.current_connection, 
+                #buffer_size=256**2)
+      #except ConnectionClosedError, e:
+        #self.ui.action_transfer_infiles.setEnabled(True)
+        #pass
+      #except SystemExit, e:
+        #pass
+      #self.ui.action_transfer_infiles.setEnabled(True)
+    #thread = threading.Thread(name = "TransferInputFiles",
+                              #target = transfer,
+                              #args =([self]))
+    #thread.setDaemon(True)
+    #thread.start()
 
-  @QtCore.pyqtSlot()
-  def transferOutputFiles(self):
-    def transfer(self):
-      try:
-        self.ui.action_transfer_outfiles.setEnabled(False)
-        Controller.transfer_output_files(
-                self.model.current_workflow.server_workflow, 
-                self.model.current_connection, 
-                buffer_size=256**2)
-      except ConnectionClosedError, e:
-        self.ui.action_transfer_outfiles.setEnabled(True)
-      except SystemExit, e:
-        pass
-      self.ui.action_transfer_outfiles.setEnabled(True)
-    thread = threading.Thread(name = "TransferOuputFiles",
-                              target = transfer,
-                              args =([self]))
-    thread.setDaemon(True)
-    thread.start()
+  #@QtCore.pyqtSlot()
+  #def transferOutputFiles(self):
+    #def transfer(self):
+      #try:
+        #self.ui.action_transfer_outfiles.setEnabled(False)
+        #Controller.transfer_output_files(
+                #self.model.current_workflow.server_workflow, 
+                #self.model.current_connection, 
+                #buffer_size=256**2)
+      #except ConnectionClosedError, e:
+        #self.ui.action_transfer_outfiles.setEnabled(True)
+      #except SystemExit, e:
+        #pass
+      #self.ui.action_transfer_outfiles.setEnabled(True)
+    #thread = threading.Thread(name = "TransferOuputFiles",
+                              #target = transfer,
+                              #args =([self]))
+    #thread.setDaemon(True)
+    #thread.start()
     
-  @QtCore.pyqtSlot()
-  def workflowSelectionChanged(self):
-    selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
-    if not selected_items:
-      return
-    wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
-    if wf_id != -1:
-      if self.model.is_loaded_workflow(wf_id):
-        self.model.set_current_workflow(wf_id)
-      else:
-        workflow = self.model.current_connection.workflow(wf_id)
-        if workflow:
-          expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
-        else:
-          expiration_date = None
-        if workflow != None:
-          self.model.add_workflow(workflow, expiration_date)
-        else:
-          self.updateWorkflowList()
-          self.model.clear_current_workflow()
-    else:
-      self.model.clear_current_workflow()
+  #@QtCore.pyqtSlot()
+  #def workflowSelectionChanged(self):
+    #selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
+    #if not selected_items:
+      #return
+    #wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
+    #if wf_id != -1:
+      #if self.model.is_loaded_workflow(wf_id):
+        #self.model.set_current_workflow(wf_id)
+      #else:
+        #workflow = self.model.current_connection.workflow(wf_id)
+        #if workflow:
+          #expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
+        #else:
+          #expiration_date = None
+        #if workflow != None:
+          #self.model.add_workflow(workflow, expiration_date)
+        #else:
+          #self.updateWorkflowList()
+          #self.model.clear_current_workflow()
+    #else:
+      #self.model.clear_current_workflow()
     
-  @QtCore.pyqtSlot(int)
-  def resourceSelectionChanged(self, index):
-    if index <0 or index >= self.ui.combo_resources.count():
-      index = self.ui.combo_resources.findText(self.model.current_resource_id)
-      self.ui.combo_resources.setCurrentIndex(index)
-      return
+  #@QtCore.pyqtSlot(int)
+  #def resourceSelectionChanged(self, index):
+    #if index <0 or index >= self.ui.combo_resources.count():
+      #index = self.ui.combo_resources.findText(self.model.current_resource_id)
+      #self.ui.combo_resources.setCurrentIndex(index)
+      #return
     
-    resource_id = unicode(self.ui.combo_resources.itemText(index)).encode('utf-8')
-    if resource_id == " ":
-      index = self.ui.combo_resources.findText(self.model.current_resource_id)
-      self.ui.combo_resources.setCurrentIndex(index)
-      return
+    #resource_id = unicode(self.ui.combo_resources.itemText(index)).encode('utf-8')
+    #if resource_id == " ":
+      #index = self.ui.combo_resources.findText(self.model.current_resource_id)
+      #self.ui.combo_resources.setCurrentIndex(index)
+      #return
     
-    if self.model.resource_exist(resource_id):
-      self.model.set_current_connection(resource_id)
-      return
-    else:
-      new_connection = self.createConnection(resource_id)
-      if new_connection:
-        self.model.add_connection(resource_id, new_connection)
+    #if self.model.resource_exist(resource_id):
+      #self.model.set_current_connection(resource_id)
+      #return
+    #else:
+      #new_connection = self.createConnection(resource_id)
+      #if new_connection:
+        #self.model.add_connection(resource_id, new_connection)
 
-  def createConnection(self, resource_id):
-    connection_invalid = True
-    try_again = True
-    while connection_invalid or try_again: 
-      connection_dlg = QtGui.QDialog()
-      connection_dlg.setModal(True)
-      ui = Ui_ConnectionDlg()
-      ui.setupUi(connection_dlg)
-      ui.resource_label.setText(resource_id)
-      if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
-        try_again = False
-        index = self.ui.combo_resources.findText(self.model.current_resource_id)
-        self.ui.combo_resources.setCurrentIndex(index)
-        break
-      if ui.lineEdit_login.text(): 
-        login = unicode(ui.lineEdit_login.text()).encode('utf-8')
-      else: login = None
-      if ui.lineEdit_password.text():
-        password = unicode(ui.lineEdit_password.text()).encode('utf-8')
-      else: password = None
-      if ui.lineEdit_rsa_password.text():
-        rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
-      else:
-        rsa_key_pass = None
-      try:
-        wf_ctrl = Controller.get_connection(resource_id, 
-                                            login, 
-                                            password,
-                                            rsa_key_pass)
-      except ConfigurationError, e:
-        QtGui.QMessageBox.information(self, "Configuration error", "%s" %(e))
-        return None
-      except Exception, e:
-        QtGui.QMessageBox.information(self, 
-                                      "Connection failed", 
-                                      "%s: %s" %(type(e),e))
-      else:
-        return wf_ctrl
-    return None
+  #def createConnection(self, resource_id):
+    #connection_invalid = True
+    #try_again = True
+    #while connection_invalid or try_again: 
+      #connection_dlg = QtGui.QDialog()
+      #connection_dlg.setModal(True)
+      #ui = Ui_ConnectionDlg()
+      #ui.setupUi(connection_dlg)
+      #ui.resource_label.setText(resource_id)
+      #if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
+        #try_again = False
+        #index = self.ui.combo_resources.findText(self.model.current_resource_id)
+        #self.ui.combo_resources.setCurrentIndex(index)
+        #break
+      #if ui.lineEdit_login.text(): 
+        #login = unicode(ui.lineEdit_login.text()).encode('utf-8')
+      #else: login = None
+      #if ui.lineEdit_password.text():
+        #password = unicode(ui.lineEdit_password.text()).encode('utf-8')
+      #else: password = None
+      #if ui.lineEdit_rsa_password.text():
+        #rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
+      #else:
+        #rsa_key_pass = None
+      #try:
+        #wf_ctrl = Controller.get_connection(resource_id, 
+                                            #login, 
+                                            #password,
+                                            #rsa_key_pass)
+      #except ConfigurationError, e:
+        #QtGui.QMessageBox.information(self, "Configuration error", "%s" %(e))
+        #return None
+      #except Exception, e:
+        #QtGui.QMessageBox.information(self, 
+                                      #"Connection failed", 
+                                      #"%s: %s" %(type(e),e))
+      #else:
+        #return wf_ctrl
+    #return None
 
-  @QtCore.pyqtSlot()
-  def stop_workflow(self):
-    assert(self.model.current_workflow and self.model.current_wf_id != -1)
+  #@QtCore.pyqtSlot()
+  #def stop_workflow(self):
+    #assert(self.model.current_workflow and self.model.current_wf_id != -1)
     
-    if self.model.current_workflow.name:
-      name = self.model.current_workflow.name
-    else: 
-      name = repr(self.model.current_wf_id)
+    #if self.model.current_workflow.name:
+      #name = self.model.current_workflow.name
+    #else: 
+      #name = repr(self.model.current_wf_id)
     
-    answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-    if answer != QtGui.QMessageBox.Yes: return
-    while True:
-      try: 
-        Controller.stop_workflow(self.model.current_workflow.wf_id,
-                                 self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
+    #answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    #if answer != QtGui.QMessageBox.Yes: return
+    #while True:
+      #try: 
+        #Controller.stop_workflow(self.model.current_workflow.wf_id,
+                                 #self.model.current_connection)
+      #except ConnectionClosedError, e:
+        #if not self.reconnectAfterConnectionClosed():
+          #return
+      #else:
+        #break
 
-  @QtCore.pyqtSlot()
-  def delete_workflow(self):
-    assert(self.model.current_workflow and self.model.current_wf_id != -1)
+  #@QtCore.pyqtSlot()
+  #def delete_workflow(self):
+    #assert(self.model.current_workflow and self.model.current_wf_id != -1)
     
-    if self.model.current_workflow.name:
-      name = self.model.current_workflow.name
-    else: 
-      name = repr(self.model.current_wf_id)
+    #if self.model.current_workflow.name:
+      #name = self.model.current_workflow.name
+    #else: 
+      #name = repr(self.model.current_wf_id)
     
     
-    answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-    if answer != QtGui.QMessageBox.Yes: return
-    force = self.ui.check_box_force_delete.isChecked()
-    while True:
-      try:
-        deleled_properly = Controller.delete_workflow(self.model.current_workflow.wf_id,
-                                   force,
-                                   self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
-    if force:
-      self.updateWorkflowList()
-      self.model.delete_workflow()
-      if not deleled_properly:
-         QtGui.QMessageBox.warning(self, 
-                                   "Delete workflow", 
-                                   "The workflow was deleted. However, "
-                                   "it possible that some workflow jobs are "
-                                   "still active and burden the computing "
-                                   "resource. Please inspect the active jobs "
-                                   "(running or in the queue) using the DRMS " "interface.")
+    #answer = QtGui.QMessageBox.question(self, "confirmation", "Do you want to delete the workflow " + name +"?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    #if answer != QtGui.QMessageBox.Yes: return
+    #force = self.ui.check_box_force_delete.isChecked()
+    #while True:
+      #try:
+        #deleled_properly = Controller.delete_workflow(self.model.current_workflow.wf_id,
+                                   #force,
+                                   #self.model.current_connection)
+      #except ConnectionClosedError, e:
+        #if not self.reconnectAfterConnectionClosed():
+          #return
+      #else:
+        #break
+    #if force:
+      #self.updateWorkflowList()
+      #self.model.delete_workflow()
+      #if not deleled_properly:
+         #QtGui.QMessageBox.warning(self, 
+                                   #"Delete workflow", 
+                                   #"The workflow was deleted. However, "
+                                   #"it possible that some workflow jobs are "
+                                   #"still active and burden the computing "
+                                   #"resource. Please inspect the active jobs "
+                                   #"(running or in the queue) using the DRMS " "interface.")
         
     
-  @QtCore.pyqtSlot()
-  def change_expiration_date(self):
-    qtdt = self.ui.dateTimeEdit_expiration.dateTime()
-    date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
-                    qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+  #@QtCore.pyqtSlot()
+  #def change_expiration_date(self):
+    #qtdt = self.ui.dateTimeEdit_expiration.dateTime()
+    #date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                    #qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
     
-    while True:
-      try:
-        change_occured = Controller.change_workflow_expiration_date(
-                          self.model.current_wf_id, 
-                          date,  
-                          self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
-    if not change_occured:
-      QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
-      self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
-    else:
-      self.model.change_expiration_date(date)
+    #while True:
+      #try:
+        #change_occured = Controller.change_workflow_expiration_date(
+                          #self.model.current_wf_id, 
+                          #date,  
+                          #self.model.current_connection)
+      #except ConnectionClosedError, e:
+        #if not self.reconnectAfterConnectionClosed():
+          #return
+      #else:
+        #break
+    #if not change_occured:
+      #QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
+      #self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
+    #else:
+      #self.model.change_expiration_date(date)
       
   
-  @QtCore.pyqtSlot()
-  def currentConnectionChanged(self):
-    self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
-    self.updateWorkflowList()
-    self.model.clear_current_workflow()
-    index = self.ui.combo_resources.findText(self.model.current_resource_id)
-    self.ui.combo_resources.setCurrentIndex(index)
+  #@QtCore.pyqtSlot()
+  #def currentConnectionChanged(self):
+    #self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
+    #self.updateWorkflowList()
+    #self.model.clear_current_workflow()
+    #index = self.ui.combo_resources.findText(self.model.current_resource_id)
+    #self.ui.combo_resources.setCurrentIndex(index)
   
-  @QtCore.pyqtSlot()
-  def selection_model_changed(self):
-    self.itemInfoWidget.setSelectionModel(self.treeWidget.tree_view.selectionModel())
+  #@QtCore.pyqtSlot()
+  #def selection_model_changed(self):
+    #self.itemInfoWidget.setSelectionModel(self.treeWidget.tree_view.selectionModel())
       
-  @QtCore.pyqtSlot()
-  def currentWorkflowChanged(self):
-    if not self.model.current_workflow:
-      # No workflow
+  #@QtCore.pyqtSlot()
+  #def currentWorkflowChanged(self):
+    #if not self.model.current_workflow:
+      ## No workflow
       
-      #self.graphWidget.clear()
-      self.itemInfoWidget.clear()
+      ##self.graphWidget.clear()
+      #self.itemInfoWidget.clear()
       
-      self.ui.wf_name.clear()
-      self.ui.wf_status.clear()
+      #self.ui.wf_name.clear()
+      #self.ui.wf_status.clear()
      
-      self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
-      self.ui.dateTimeEdit_expiration.setEnabled(False)
+      #self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
+      #self.ui.dateTimeEdit_expiration.setEnabled(False)
       
-      self.ui.action_optimize_wf.setEnabled(False)
+      #self.ui.action_optimize_wf.setEnabled(False)
 
-      self.ui.action_submit.setEnabled(False)
-      self.ui.action_change_expiration_date.setEnabled(False)
-      self.ui.action_stop_wf.setEnabled(False)
-      self.ui.action_restart.setEnabled(False)
-      self.ui.action_delete_workflow.setEnabled(False)
-      self.ui.action_transfer_infiles.setEnabled(False)
-      self.ui.action_transfer_outfiles.setEnabled(False)
-      self.ui.action_save.setEnabled(False)
+      #self.ui.action_submit.setEnabled(False)
+      #self.ui.action_change_expiration_date.setEnabled(False)
+      #self.ui.action_stop_wf.setEnabled(False)
+      #self.ui.action_restart.setEnabled(False)
+      #self.ui.action_delete_workflow.setEnabled(False)
+      #self.ui.action_transfer_infiles.setEnabled(False)
+      #self.ui.action_transfer_outfiles.setEnabled(False)
+      #self.ui.action_save.setEnabled(False)
       
-      self.ui.widget_wf_status_date.hide()
-      self.ui.widget_wf_info.hide()
+      #self.ui.widget_wf_status_date.hide()
+      #self.ui.widget_wf_info.hide()
       
       
-    else:
+    #else:
   
-      #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
+      ##self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
       
-      #=> TEMPORARY : the graph view has to be built from the guiModel
-      #self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
+      ##=> TEMPORARY : the graph view has to be built from the guiModel
+      ##self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
       
-      if self.model.current_wf_id == -1:
-        # Workflow not submitted
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
-        else:
-          self.ui.wf_name.clear()
+      #if self.model.current_wf_id == -1:
+        ## Workflow not submitted
+        #if self.model.current_workflow.name:
+          #self.ui.wf_name.setText(self.model.current_workflow.name)
+        #else:
+          #self.ui.wf_name.clear()
 
-        self.ui.wf_status.setText("not submitted")
+        #self.ui.wf_status.setText("not submitted")
          
-        self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
-        self.ui.dateTimeEdit_expiration.setEnabled(True)
+        #self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+        #self.ui.dateTimeEdit_expiration.setEnabled(True)
         
-        self.ui.action_optimize_wf.setEnabled(True)
-        self.ui.action_submit.setEnabled(True)
-        self.ui.action_change_expiration_date.setEnabled(False)
-        self.ui.action_delete_workflow.setEnabled(False)
-        self.ui.action_stop_wf.setEnabled(False)
-        self.ui.action_restart.setEnabled(False)
-        self.ui.action_transfer_infiles.setEnabled(False)
-        self.ui.action_transfer_outfiles.setEnabled(False)
+        #self.ui.action_optimize_wf.setEnabled(True)
+        #self.ui.action_submit.setEnabled(True)
+        #self.ui.action_change_expiration_date.setEnabled(False)
+        #self.ui.action_delete_workflow.setEnabled(False)
+        #self.ui.action_stop_wf.setEnabled(False)
+        #self.ui.action_restart.setEnabled(False)
+        #self.ui.action_transfer_infiles.setEnabled(False)
+        #self.ui.action_transfer_outfiles.setEnabled(False)
         
-        self.ui.widget_wf_status_date.hide()
-        self.ui.widget_wf_info.hide()
+        #self.ui.widget_wf_status_date.hide()
+        #self.ui.widget_wf_info.hide()
         
-        self.ui.list_widget_submitted_wfs.clearSelection()
+        #self.ui.list_widget_submitted_wfs.clearSelection()
         
-      else:
-        # Submitted workflow
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
-        else: 
-          self.ui.wf_name.setText(repr(self.model.current_wf_id))
+      #else:
+        ## Submitted workflow
+        #if self.model.current_workflow.name:
+          #self.ui.wf_name.setText(self.model.current_workflow.name)
+        #else: 
+          #self.ui.wf_name.setText(repr(self.model.current_wf_id))
         
-        self.ui.wf_status.setText(self.model.current_workflow.wf_status)
+        #self.ui.wf_status.setText(self.model.current_workflow.wf_status)
 
-        self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
-        self.ui.dateTimeEdit_expiration.setEnabled(True)
+        #self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
+        #self.ui.dateTimeEdit_expiration.setEnabled(True)
         
-        self.ui.action_optimize_wf.setEnabled(False)
-        self.ui.action_submit.setEnabled(False)
-        self.ui.action_change_expiration_date.setEnabled(True)
-        self.ui.action_delete_workflow.setEnabled(True)
-        self.ui.action_stop_wf.setEnabled(True)
-        self.ui.action_restart.setEnabled(True)
-        self.ui.action_transfer_infiles.setEnabled(True)
-        self.ui.action_transfer_outfiles.setEnabled(True)    
-        self.ui.action_save.setEnabled(True)    
+        #self.ui.action_optimize_wf.setEnabled(False)
+        #self.ui.action_submit.setEnabled(False)
+        #self.ui.action_change_expiration_date.setEnabled(True)
+        #self.ui.action_delete_workflow.setEnabled(True)
+        #self.ui.action_stop_wf.setEnabled(True)
+        #self.ui.action_restart.setEnabled(True)
+        #self.ui.action_transfer_infiles.setEnabled(True)
+        #self.ui.action_transfer_outfiles.setEnabled(True)    
+        #self.ui.action_save.setEnabled(True)    
         
-        self.ui.widget_wf_status_date.show()
-        self.ui.widget_wf_info.show()
+        #self.ui.widget_wf_status_date.show()
+        #self.ui.widget_wf_info.show()
         
-        index = None
-        for i in range(0, self.ui.list_widget_submitted_wfs.count()):
-          if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
-            self.ui.list_widget_submitted_wfs.setCurrentRow(i)
-            break
+        #index = None
+        #for i in range(0, self.ui.list_widget_submitted_wfs.count()):
+          #if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
+            #self.ui.list_widget_submitted_wfs.setCurrentRow(i)
+            #break
 
-  @QtCore.pyqtSlot()  
-  def updateCurrentWorkflowStatus(self):
-    self.ui.wf_status.setText(self.model.current_workflow.wf_status)
+  #@QtCore.pyqtSlot()  
+  #def updateCurrentWorkflowStatus(self):
+    #self.ui.wf_status.setText(self.model.current_workflow.wf_status)
        
           
-  @QtCore.pyqtSlot()  
-  def refreshWorkflowList(self):
-    self.updateWorkflowList()
-    self.model.clear_current_workflow()
+  #@QtCore.pyqtSlot()  
+  #def refreshWorkflowList(self):
+    #self.updateWorkflowList()
+    #self.model.clear_current_workflow()
 
 
-  def updateWorkflowList(self):
+  #def updateWorkflowList(self):
     
-    while True:
-      try:
-        submittedWorflows = Controller.get_submitted_workflows(self.model.current_connection)
-      except ConnectionClosedError, e:
-        if not self.reconnectAfterConnectionClosed():
-          return
-      else:
-        break
+    #while True:
+      #try:
+        #submittedWorflows = Controller.get_submitted_workflows(self.model.current_connection)
+      #except ConnectionClosedError, e:
+        #if not self.reconnectAfterConnectionClosed():
+          #return
+      #else:
+        #break
     
-    self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
-    self.ui.list_widget_submitted_wfs.clear()
-    for wf_id, wf_info in submittedWorflows.iteritems():
-      workflow_name, expiration_date = wf_info
-      if not workflow_name: workflow_name = repr(wf_id)
-      item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
-      item.setData(QtCore.Qt.UserRole, wf_id)
-      self.ui.list_widget_submitted_wfs.addItem(item)
-    self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
+    #self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
+    #self.ui.list_widget_submitted_wfs.clear()
+    #for wf_id, wf_info in submittedWorflows.iteritems():
+      #workflow_name, expiration_date = wf_info
+      #if not workflow_name: workflow_name = repr(wf_id)
+      #item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
+      #item.setData(QtCore.Qt.UserRole, wf_id)
+      #self.ui.list_widget_submitted_wfs.addItem(item)
+    #self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     
     
-  @QtCore.pyqtSlot()
-  def reconnectAfterConnectionClosed(self):
-    answer = QtGui.QMessageBox.question(None, 
-                                        "Connection closed",
-                                        "The connection to  "+ self.model.current_resource_id +" closed.\n  Do you want to try a reconnection?", 
-                                        QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-    if answer == QtGui.QMessageBox.Yes:
-      new_connection = self.createConnection(self.model.current_resource_id)
-      if new_connection:
-        self.model.reinit_current_connection(new_connection)
-        return True
-      else:
-        self.model.delete_current_connection()
-        return False
+  #@QtCore.pyqtSlot()
+  #def reconnectAfterConnectionClosed(self):
+    #answer = QtGui.QMessageBox.question(None, 
+                                        #"Connection closed",
+                                        #"The connection to  "+ self.model.current_resource_id +" closed.\n  Do you want to try a reconnection?", 
+                                        #QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    #if answer == QtGui.QMessageBox.Yes:
+      #new_connection = self.createConnection(self.model.current_resource_id)
+      #if new_connection:
+        #self.model.reinit_current_connection(new_connection)
+        #return True
+      #else:
+        #self.model.delete_current_connection()
+        #return False
     
 
 class WorkflowTree(QtGui.QWidget):
