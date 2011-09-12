@@ -13,6 +13,7 @@ if __name__=="__main__":
   import threading
   import time 
   import logging
+  import os
 
   import Pyro.naming
   import Pyro.core
@@ -53,7 +54,7 @@ if __name__=="__main__":
    engine_log_format,
    engine_log_level) = config.get_engine_log_info()
    if engine_log_dir:
-    logfilepath = engine_log_dir + "log_" + engine_name + log
+    logfilepath = os.path.join(os.path.abspath(engine_log_dir),  "log_" + engine_name + log)
     logging.basicConfig(
           filename=logfilepath,
           format=engine_log_format,
