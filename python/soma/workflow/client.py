@@ -1264,7 +1264,7 @@ def _embedded_engine_and_server(config):
   engine_log_format,
   engine_log_level) = config.get_engine_log_info()
   if engine_log_dir:
-    logfilepath = engine_log_dir + "log_light_mode"
+    logfilepath = os.path.join(os.path.abspath(engine_log_dir), "log_light_mode")
     logging.basicConfig(
         filename=logfilepath,
         format=engine_log_format,
