@@ -450,6 +450,8 @@ class EngineWorkflow(Workflow):
     self.expiration_date = expiration_date
     self.name = name
 
+    self.user_storage = client_workflow.user_storage
+
     self.job_mapping = {}
     self.transfer_mapping = {}
     self._map()

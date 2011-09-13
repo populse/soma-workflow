@@ -473,6 +473,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
           break
       self.updateWorkflowList()
       self.model.add_workflow(workflow, date) 
+      return (workflow.wf_id, self.model.current_resource_id)
 
 
   @QtCore.pyqtSlot()
@@ -817,11 +818,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.updateWorkflowList()
     self.model.clear_current_workflow()
 
-  def workflow_list_filter(self, workflow_list):
+  def workflow_filter(self, workflows):
     '''
     Reimplement this function to filter the displayed workflows.
     ''' 
-    return workflow_list
+    return workflows
 
   def updateWorkflowList(self):
     while True:
@@ -833,7 +834,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       else:
         break
 
-    submitted_wf = self.workflow_list_filter(submitted_wf)
+    submitted_wf = self.workflow_filter(submitted_wf)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(self.workflowSelectionChanged)
     self.ui.list_widget_submitted_wfs.clear()
