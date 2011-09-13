@@ -8,6 +8,12 @@ import os
 
 import soma.workflow.constants as constants
 
+try:
+  from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
+except ImportError:
+  class DrmaaError(Exception): pass 
+  class DrmaaJobs(object): pass
+
 
 class Scheduler(object):
   '''
@@ -75,8 +81,6 @@ class Drmaa(Scheduler):
   logger = None
 
   def __init__(self, drmaa_implementation, parallel_job_submission_info):
-
-    from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
