@@ -723,6 +723,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       
       self.ui.wf_name.clear()
       self.ui.wf_status.clear()
+      self.update_workflow_status_icon()
      
       self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       self.ui.dateTimeEdit_expiration.setEnabled(False)
@@ -758,6 +759,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
           self.ui.wf_name.clear()
 
         self.ui.wf_status.setText("not submitted")
+        self.update_workflow_status_icon()
          
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
         self.ui.dateTimeEdit_expiration.setEnabled(True)
@@ -784,7 +786,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
         
         self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-
+        self.update_workflow_status_icon(self.model.current_workflow.wf_status)
+       
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
@@ -808,10 +811,36 @@ class SomaWorkflowWidget(QtGui.QWidget):
             break
 
 
+  def update_workflow_status_icon(self, status=None):
+    if status == None:
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
+    elif status == WORKFLOW_NOT_STARTED:
+      file_path = os.path.join(os.path.dirname(__file__),"icon/no_status.png")
+      image = QtGui.QImage(file_path).scaled(30, 30)
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap.fromImage(image))
+    elif status == WORKFLOW_IN_PROGRESS:
+      file_path = os.path.join(os.path.dirname(__file__),"icon/running.png")
+      image = QtGui.QImage(file_path).scaled(30, 30)
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap.fromImage(image))
+    elif status == WORKFLOW_DONE:
+      file_path = os.path.join(os.path.dirname(__file__),"icon/done.png")
+      image = QtGui.QImage(file_path).scaled(30, 30)
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap.fromImage(image))
+    elif status == DELETE_PENDING:
+      file_path = os.path.join(os.path.dirname(__file__),"icon/kill_delete_pending.png")
+      image = QtGui.QImage(file_path).scaled(30, 30)
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap.fromImage(image))
+    elif status == WARNING:
+      file_path = os.path.join(os.path.dirname(__file__),"icon/warning.png")
+      image = QtGui.QImage(file_path).scaled(30, 30)
+      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap.fromImage(image))
+
+
+
   @QtCore.pyqtSlot()  
   def updateCurrentWorkflowStatus(self):
     self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-    pass  
+    self.update_workflow_status_icon(self.model.current_workflow.wf_status)  
           
   @QtCore.pyqtSlot()  
   def refreshWorkflowList(self):
