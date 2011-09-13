@@ -429,7 +429,7 @@ class EngineWorkflow(Workflow):
   # dictonary: tr_id -> EngineTransfer
   registered_tr = None
 
-  #logger = None
+  logger = None
   
   def __init__(self, 
                client_workflow, 
@@ -573,7 +573,7 @@ class EngineWorkflow(Workflow):
               workflow status)
     '''
 
-    logger = logging.getLogger('engine.EngineWorkflow') 
+    self.logger = logging.getLogger('engine.EngineWorkflow') 
     to_run = []
     to_abort = set([])
     done = []
@@ -584,7 +584,7 @@ class EngineWorkflow(Workflow):
         done.append(job)
       elif job.is_running(): 
         running.append(job)
-      logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
+      self.logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
       if job.status == constants.NOT_SUBMITTED:
         # a job can start to run when all its dependencies succeed and 
         # all its input files are in the FILES_ON_CR or 
@@ -610,11 +610,11 @@ class EngineWorkflow(Workflow):
           wf_running = True
           to_run.append(job)
 
-    #logger.debug(" ")
-    #logger.debug("to run " + repr(to_run))
-    #logger.debug("to abort " + repr(to_abort))
-    #logger.debug("done " + repr(done))
-    #logger.debug("running " + repr(running))
+    #self.logger.debug(" ")
+    #self.logger.debug("to run " + repr(to_run))
+    #self.logger.debug("to abort " + repr(to_abort))
+    #self.logger.debug("done " + repr(done))
+    #self.logger.debug("running " + repr(running))
 
     # if a job fails the whole workflow branch has to be stopped
     # look for the node in the branch to abort
@@ -631,9 +631,9 @@ class EngineWorkflow(Workflow):
     # stop the whole branch
     ended_jobs = {}
     for job in to_abort:
-      if job.job_id:
-        #self.logger.debug("  ---- Failure: job to abort " + job.name)
-        assert(job.status == constants.NOT_SUBMITTED)
+      if job.job_id and job.status != constants.FAILED:
+        #self.self.logger.debug("  ---- Failure: job to abort " + job.name)
+        assert(job.status == constants.NOT_SUBMITTED or job.status == constants.WARNING)
         ended_jobs[job.job_id] = job
         job.status = constants.FAILED
         job.exit_status = constants.EXIT_ABORTED
@@ -647,7 +647,7 @@ class EngineWorkflow(Workflow):
       status = constants.WORKFLOW_IN_PROGRESS
       # !!!! the workflow may be stuck !!!!
       # TBI
-      logger.debug("!!!! The workflow may be stuck !!!!")
+      self.logger.debug("!!!! The workflow may be stuck !!!!")
     else:
       status = constants.WORKFLOW_NOT_STARTED
 
