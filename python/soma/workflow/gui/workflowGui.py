@@ -420,27 +420,34 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
         
   @QtCore.pyqtSlot()
-  def submit_workflow(self):
-    assert(self.model.current_workflow)
-    
-    submission_dlg = QtGui.QDialog(self)
-    ui = Ui_SubmissionDlg()
-    ui.setupUi(submission_dlg)
-    setLabelFromString(ui.resource_label, self.model.current_resource_id)
-    ui.resource_label.setText(self.model.current_resource_id)
-    
-    if self.model.current_workflow.name == None:
-      ui.lineedit_wf_name.setText("")
-    else:
-      ui.lineedit_wf_name.setText(self.model.current_workflow.server_workflow.name)
-    ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
-    
-    
-    queues = ["default queue"]
-    queues.extend(Controller.get_queues(self.model.current_connection))
-    ui.combo_queue.addItems(queues)
+  def submit_workflow(self,
+                      date=None, 
+                      name=None,
+                      queue=None):
 
-    if submission_dlg.exec_() == QtGui.QDialog.Accepted:
+    assert(self.model.current_workflow)
+
+
+    if date == None:
+      submission_dlg = QtGui.QDialog(self)
+      ui = Ui_SubmissionDlg()
+      ui.setupUi(submission_dlg)
+      ui.resource_label.setText(self.model.current_resource_id)
+      
+      if self.model.current_workflow.name == None:
+        ui.lineedit_wf_name.setText("")
+      else:
+        ui.lineedit_wf_name.setText(self.model.current_workflow.server_workflow.name)
+      ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+      
+      
+      queues = ["default queue"]
+      queues.extend(Controller.get_queues(self.model.current_connection))
+      ui.combo_queue.addItems(queues)
+
+      if submission_dlg.exec_() != QtGui.QDialog.Accepted:
+        return
+
       name = unicode(ui.lineedit_wf_name.text())
       if name == "": name = None
       qtdt = ui.dateTimeEdit_expiration.dateTime()
@@ -448,32 +455,35 @@ class SomaWorkflowWidget(QtGui.QWidget):
                       qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
       queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
       if queue == "default queue": queue = None
-      while True:
-        try:
-          workflow = Controller.submit_workflow(
-                            self.model.current_workflow.server_workflow, 
-                            date, 
-                            name, 
-                            queue, 
-                            self.model.current_connection)
-        except WorkflowError, e:
-          QtGui.QMessageBox.warning(self, 
-                                "Workflow submission error", 
-                                "%s" %(e))
+
+      
+      
+    while True:
+      try:
+        workflow = Controller.submit_workflow(
+                          self.model.current_workflow.server_workflow, 
+                          date, 
+                          name, 
+                          queue, 
+                          self.model.current_connection)
+      except WorkflowError, e:
+        QtGui.QMessageBox.warning(self, 
+                              "Workflow submission error", 
+                              "%s" %(e))
+        return
+      except JobError, e:
+        QtGui.QMessageBox.warning(self, 
+                              "Workflow submission error", 
+                              "%s" %(e))
+        return
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
           return
-        except JobError, e:
-          QtGui.QMessageBox.warning(self, 
-                                "Workflow submission error", 
-                                "%s" %(e))
-          return
-        except ConnectionClosedError, e:
-          if not self.reconnectAfterConnectionClosed():
-            return
-        else:
-          break
-      self.updateWorkflowList()
-      self.model.add_workflow(workflow, date) 
-      return (workflow.wf_id, self.model.current_resource_id)
+      else:
+        break
+    self.updateWorkflowList()
+    self.model.add_workflow(workflow, date) 
+    return (workflow.wf_id, self.model.current_resource_id)
 
 
   @QtCore.pyqtSlot()
