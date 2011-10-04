@@ -7,6 +7,7 @@ import logging
 import os
 
 import soma.workflow.constants as constants
+from soma.workflow.errors import DRMError
 
 try:
   from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
