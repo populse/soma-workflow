@@ -380,8 +380,7 @@ class EngineJob(Job):
     failed = (self.is_done() and \
               ((self.exit_value != 0 and self.exit_value != None) or \
               self.exit_status != constants.FINISHED_REGULARLY or \
-              self.terminating_signal != None)) or \
-             self.status == constants.WARNING
+              self.terminating_signal != None)) 
     return failed
 
   def ended_with_success(self):
@@ -635,7 +634,7 @@ class EngineWorkflow(Workflow):
     for job in to_abort:
       if job.job_id and job.status != constants.FAILED:
         #self.self.logger.debug("  ---- Failure: job to abort " + job.name)
-        assert(job.status == constants.NOT_SUBMITTED or job.status == constants.WARNING)
+        assert(job.status == constants.NOT_SUBMITTED)
         ended_jobs[job.job_id] = job
         job.status = constants.FAILED
         job.exit_status = constants.EXIT_ABORTED
@@ -655,11 +654,8 @@ class EngineWorkflow(Workflow):
 
     return (to_run, ended_jobs, status)
 
-  def restart(self, database_server):
-    assert(self.status == constants.WORKFLOW_DONE or self.status == constants.WARNING)
-    to_restart = False
-    undone_jobs = []
-   
+  
+  def _update_state_from_database_server(self, database_server):
     wf_status = database_server.get_detailed_workflow_status(self.wf_id)
 
     for job_info in wf_status[0]:
@@ -679,6 +675,42 @@ class EngineWorkflow(Workflow):
        transfer_type) = ft_info 
       self.registered_tr[engine_path].status = status
 
+
+  def force_stop(self, database_server):
+    self._update_state_from_database_server(database_server)
+
+    new_status = {}
+    new_exit_info = {}
+
+    self.status = constants.WORKFLOW_DONE
+  
+    for client_job in self.jobs:
+      job = self.job_mapping[client_job]
+      if not job.is_done():
+        job.status = constants.FAILED
+        job.exit_status = constants.EXIT_ABORTED
+        job.exit_value = None
+        job.terminating_signal = None
+        job.drmaa_id = None
+        job.str_rusage = None
+        stdout = open(job.stdout_file, "w")
+        stdout.close()
+        stderr = open(job.stderr_file, "w")
+        stderr.close()
+        new_status[job.job_id] = constants.FAILED
+        new_exit_info[job.job_id] = job
+
+    database_server.set_jobs_status(new_status)
+    database_server.set_jobs_exit_info(new_exit_info)
+    database_server.set_workflow_status(self.wf_id, self.status)
+
+
+  def restart(self, database_server):
+   
+    self._update_state_from_database_server(database_server)
+
+    to_restart = False
+    undone_jobs = []
     done = True
     sub_info_to_resert = {}
     new_status = {}

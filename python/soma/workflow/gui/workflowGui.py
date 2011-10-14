@@ -501,7 +501,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                 "The workflow is already running.")
     else:
       self.model.restart_current_workflow()
-
+      
   
   @QtCore.pyqtSlot()
   def transferInputFiles(self):
@@ -644,14 +644,23 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
     answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
     if answer != QtGui.QMessageBox.Yes: return
+    stopped_properly = False
     while True:
       try: 
-        Controller.stop_workflow(self.model.current_wf_id,
+        stopped_properly = Controller.stop_workflow(self.model.current_wf_id,
                                  self.model.current_connection)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
           return
       else:
+        if not stopped_properly:
+          QtGui.QMessageBox.warning(self, 
+                                   "Stop workflow", 
+                                   "The workflow was stopped. \n However, some jobs " 
+                                   "may still be active and burden the computing "
+                                   "resource. \n In case of long jobs, please "
+                                   "inspect the active jobs (running or in the "
+                                   "queue) using the DRMS interface.")
         break
 
 
@@ -684,11 +693,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if not deleled_properly:
          QtGui.QMessageBox.warning(self, 
                                    "Delete workflow", 
-                                   "The workflow was deleted. However, "
-                                   "it possible that some workflow jobs are "
-                                   "still active and burden the computing "
-                                   "resource. Please inspect the active jobs "
-                                   "(running or in the queue) using the DRMS " "interface.")
+                                   "The workflow was deleted. \n However, some jobs " 
+                                   "may still be active and burden the computing "
+                                   "resource. \n In case of long jobs, please "
+                                   "inspect the active jobs (running or in the "
+                                   "queue) using the DRMS interface.")
         
     
   @QtCore.pyqtSlot()
@@ -2458,7 +2467,9 @@ class GuiWorkflow(object):
     #updateing groups 
     self.root_item.updateState()
     
+    data_changed = data_changed or not self.wf_status == wf_status[2]
     self.wf_status = wf_status[2]
+    
     
     return data_changed
 

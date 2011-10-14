@@ -43,6 +43,20 @@ refreshment_interval = 1 #seconds
 # the status is changed into WARNING
 refreshment_timeout = 60 #seconds
 
+def _out_to_date(last_status_update):
+  '''
+  Tells if a workflow or a job is out to date considering its last  
+  status update. 
+
+  * last_status_update: *datetime*
+  '''
+  if last_status_update is None:
+    return False
+  delta = datetime.now() - last_status_update
+  out_to_date = delta > timedelta(seconds=refreshment_timeout)
+  return out_to_date
+
+
 #-----------------------------------------------------------------------------
 # Classes and functions
 #-----------------------------------------------------------------------------
@@ -530,6 +544,18 @@ class WorkflowEngineLoop(object):
       with self._lock:
         self._workflows[wf_id] = workflow
 
+  def force_stop(self, wf_id):
+    if wf_id in self._workflows:
+      pass
+    else:
+      workflow = self._database_server.get_engine_workflow(wf_id,
+                                                           self._user_id)
+      workflow.force_stop(self._database_server)
+      with self._lock:
+        self._workflows[wf_id] = workflow
+      
+
+
   def restart_job(self, job_id, status):
     (job, workflow_id) = self._database_server.get_engine_job(job_id, self._user_id)
     if workflow_id == -1: 
@@ -689,7 +715,7 @@ class WorkflowEngine(RemoteFileController):
     return engine_job.job_id
 
 
-  def delete_job( self, job_id ):
+  def delete_job( self, job_id, force=True ):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
@@ -697,12 +723,14 @@ class WorkflowEngine(RemoteFileController):
                                                   self._user_id)[0]
     if status == constants.DONE or status == constants.FAILED:
       self._database_server.delete_job(job_id)
+      return True
     else:
       self._database_server.set_job_status(job_id, constants.DELETE_PENDING)
-      if not self._wait_for_job_deletion(job_id):
-        # TBI
+      if force and not self._wait_for_job_deletion(job_id):
         self.logger.critical("!! The job may not be properly deleted !!")
         self._database_server.delete_job(job_id)
+        return False
+      return True
 
   ########## WORKFLOW SUBMISSION ############################################
   
@@ -737,13 +765,22 @@ class WorkflowEngine(RemoteFileController):
        return False
       return True
 
+
   def stop_workflow(self, workflow_id):
 
-    status = self._database_server.get_workflow_status(workflow_id, 
-                                                       self._user_id)[0]
+    (status,  
+     last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
+
     if status != constants.WORKFLOW_DONE:
-      self._database_server.set_workflow_status(workflow_id, 
-                                                constants.KILL_PENDING)
+      if _out_to_date(last_status_update):
+        self._engine_loop.force_stop(workflow_id)
+        return False
+      else:
+        self._database_server.set_workflow_status(workflow_id, 
+                                                  constants.KILL_PENDING)
+        self._wait_wf_status_update(workflow_id)
+    
+    return True
 
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
@@ -766,11 +803,11 @@ class WorkflowEngine(RemoteFileController):
     '''
     (status, last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
     
-    if status != constants.WORKFLOW_DONE and status != constants.WARNING:
+    if status == constants.WORKFLOW_DONE:
+      self._engine_loop.restart_workflow(workflow_id, status)
+      return True
+    else:
       return False
-
-    self._engine_loop.restart_workflow(workflow_id, status)
-    return True
     
    
   ########## SERVER STATE MONITORING ########################################
@@ -813,9 +850,7 @@ class WorkflowEngine(RemoteFileController):
                                                                self._user_id)
     if status and not status == constants.DONE and \
        not status == constants.FAILED and \
-       last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-      self._database_server.set_job_status(job_id, constants.WARNING)
+       _out_to_date(last_status_update):
       return constants.WARNING
 
     return status
@@ -827,13 +862,11 @@ class WorkflowEngine(RemoteFileController):
     '''
     (status, 
      last_status_update) = self._database_server.get_workflow_status(wf_id,                                                              
-                                                                 self._user_id)
+                                                               self._user_id)
 
     if status and \
        not status == constants.WORKFLOW_DONE and \
-       last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-      self._database_server.set_workflow_status(wf_id, constants.WARNING)
+       _out_to_date(last_status_update):
       return constants.WARNING
 
     return status
@@ -846,13 +879,13 @@ class WorkflowEngine(RemoteFileController):
     (status, 
      last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                   self._user_id)
+    
+    wf_status = self._database_server.get_detailed_workflow_status(wf_id)
     if status and \
        not status == constants.WORKFLOW_DONE and \
-       last_status_update and \
-       datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-      self._database_server.set_workflow_status(wf_id, constants.WARNING)
-
-    wf_status = self._database_server.get_detailed_workflow_status(wf_id)
+       _out_to_date(last_status_update):
+      wf_status = (wf_status[0], wf_status[1], constants.WARNING)
+    
     return wf_status
         
         
@@ -898,7 +931,6 @@ class WorkflowEngine(RemoteFileController):
       if status:
         self.logger.debug("wait        job %s status: %s", jid, status)
         delta = datetime.now()-startTime
-        delta_status_update = datetime.now() - last_status_update
         while status and not status == constants.DONE and not status == constants.FAILED and (waitForever or delta < timedelta(seconds=timeout)):
           time.sleep(refreshment_interval)
           (status, last_status_update) = self._database_server.get_job_status(jid, self._user_id) 
@@ -909,7 +941,7 @@ class WorkflowEngine(RemoteFileController):
                             repr(last_status_update), 
                             repr(datetime.now()))
           delta = datetime.now() - startTime
-          if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
+          if last_status_update and _out_to_date(last_status_update):
             raise EngineError("wait_job: Could not wait for job %s. " 
                               "The process updating its status failed." %(jid))
        
@@ -923,11 +955,11 @@ class WorkflowEngine(RemoteFileController):
      last_status_update) = self._database_server.get_job_status(job_id,
                                                                 self._user_id)
     
-    if status != constants.FAILED and status != constants.WARNING:
+    if status == constants.FAILED or _out_to_date(last_status_update):
+      self._engine_loop.restart_job(job_id, status)
+      return True
+    else:
       return False
-
-    self._engine_loop.restart_job(job_id, status)
-    return True
 
 
   def kill_job( self, job_id ):
@@ -935,101 +967,88 @@ class WorkflowEngine(RemoteFileController):
     Implementation of soma.workflow.client.WorkflowController API
     '''
     
-    status = self._database_server.get_job_status(job_id,
-                                                  self._user_id)[0]
+    (status,
+    last_status_update) = self._database_server.get_job_status(job_id,
+                                                  self._user_id)
+
     if status != constants.DONE and status != constants.FAILED:
-      self._database_server.set_job_status(job_id, 
-                                          constants.KILL_PENDING)
-      
-      if not self._wait_job_status_update(job_id):
+      if _out_to_date(last_status_update):
+        # TO DO
+        pass
+      else:
         self._database_server.set_job_status(job_id, 
-                                             constants.WARNING)
+                                             constants.KILL_PENDING)
+      
+      self._wait_job_status_update(job_id)
 
-
-  def _wait_for_job_deletion(self, job_id):
-    self.logger.debug(">> _wait_for_job_deletion")
-    action_time = datetime.now()
-    time.sleep(refreshment_interval)
-    (is_valid_job, 
-     last_status_update) = self._database_server.is_valid_job(job_id, 
-                                                              self._user_id)
-    while is_valid_job and \
-          last_status_update < action_time:
-      time.sleep(refreshment_interval)
-      (is_valid_job, 
-       last_status_update) = self._database_server.is_valid_job(job_id, 
-                                                                self._user_id)
-      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-        self.logger.debug("<< _wait_for_job_deletion")
-        return False
-
-    self.logger.debug("<< _wait_for_job_deletion")
-    return True
 
 
   def _wait_job_status_update(self, job_id):
-    
     self.logger.debug(">> _wait_job_status_update")
-    action_time = datetime.now()
-    time.sleep(refreshment_interval)
     try:
       (status, 
       last_status_update) = self._database_server.get_job_status(job_id,
-                                                                  self._user_id)
+                                                                 self._user_id)
       while status and not status == constants.DONE and \
             not status == constants.FAILED and \
-            last_status_update < action_time:
+            not _out_to_date(last_status_update):
         time.sleep(refreshment_interval)
         (status, 
         last_status_update) = self._database_server.get_job_status(job_id,
                                                                   self._user_id) 
-        if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-          self.logger.debug("<< _wait_job_status_update")
-          return False
     except UnknownObjectError, e:
       pass
     self.logger.debug("<< _wait_job_status_update")
+
+
+  def _wait_for_job_deletion(self, job_id):
+    self.logger.debug(">> _wait_for_job_deletion")
+    (is_valid_job, 
+     last_status_update) = self._database_server.is_valid_job(job_id, 
+                                                              self._user_id)
+    while is_valid_job and not _out_to_date(last_status_update):
+      time.sleep(refreshment_interval)
+      (is_valid_job, 
+       last_status_update) = self._database_server.is_valid_job(job_id, 
+                                                                self._user_id)
+    self.logger.debug("<< _wait_for_job_deletion")
+    if _out_to_date(last_status_update):
+      return False
     return True
+
 
   def _wait_wf_status_update(self, wf_id):  
     self.logger.debug(">> _wait_wf_status_update")
-    action_time = datetime.now()
-    time.sleep(refreshment_interval)
     try:
       (status, 
-      last_status_update) = self._database_server.get_workflow_status(wf_id)
+      last_status_update) = self._database_server.get_workflow_status(wf_id,
+                                                                 self._user_id)
       while status and not status == constants.WORKFLOW_DONE and \
-            last_status_update < action_time:
+            _out_to_date(last_status_update):
         time.sleep(refreshment_interval)
         (status, 
-        last_status_update) = self._database_server.get_workflow_status(wf_id) 
-        if last_status_update and \
-          datetime.now() - last_status_update > timedelta(seconds=refreshment_interval*refreshment_timeout):
-          self.logger.debug("<< _wait_wf_status_update")
-          return False
+        last_status_update) = self._database_server.get_workflow_status(wf_id,
+                                                                  self._user_id) 
     except UnknownObjectError, e:
       pass
     self.logger.debug("<< _wait_wf_status_update")
-    return True
 
 
   def _wait_for_wf_deletion(self, wf_id):
     self.logger.debug(">> _wait_for_wf_deletion")
-    action_time = datetime.now()
-    time.sleep(refreshment_interval)
     (is_valid_wf, 
     last_status_update) = self._database_server.is_valid_workflow(wf_id, 
                                                                 self._user_id)
     while is_valid_wf and \
-          last_status_update < action_time:
+          _out_to_date(last_status_update):
       time.sleep(refreshment_interval)
       (is_valid_wf, 
       last_status_update) = self._database_server.is_valid_workflow(wf_id, 
-                                                              self._user_id)
-      if last_status_update and datetime.now() - last_status_update > timedelta(seconds = refreshment_interval*refreshment_timeout):
-        self.logger.debug("<< _wait_for_wf_deletion")
-        return False
+                                                              self._user_id)     
     self.logger.debug("<< _wait_for_wf_deletion")
+    if _out_to_date(last_status_update):
+      return False
     return True
+
     
     

@@ -882,6 +882,11 @@ class WorkflowController(object):
     The running jobs will be killed.
     The jobs in queues will be removed from queues.
     It will be possible to restart the workflow afterwards.
+
+     * returns: *boolean*
+      return True if the running jobs were killed and False
+      if some jobs are possibly still running on the computing resource 
+      despite the workflow was stopped.
     '''
 
     return self._engine_proxy.stop_workflow(workflow_id)
@@ -919,7 +924,7 @@ class WorkflowController(object):
     '''
     self._engine_proxy.wait_job(job_ids, timeout)
 
-  def kill_job( self, job_id ):
+  def kill_job(self, job_id ):
     '''
     Kills a running job. The job will not be deleted from the system (the job
     identifier remains valid).
@@ -930,7 +935,7 @@ class WorkflowController(object):
     self._engine_proxy.kill_job(job_id)
 
 
-  def restart_job( self, job_id ):
+  def restart_job(self, job_id):
     '''
     Restarts a job which status is constants.FAILED or constants.WARNING.
 
@@ -943,16 +948,21 @@ class WorkflowController(object):
     self._engine_proxy.restart_job(job_id)
 
 
-  def delete_job( self, job_id):
+  def delete_job(self, job_id, force=True):
     '''
     Deletes a job which is not part of a workflow.
     The job_id will become invalid and can not be used anymore.
     The job is killed if it is running.
 
     Raises *UnknownObjectError* if the job_id is not valid
+
+    * returns: *boolean*
+      If force is True: return True if the running jobs were killed and False
+      if some jobs are possibly still running on the computing resource despite
+      the workflow doesn't exist.
     '''
 
-    self._engine_proxy.delete_job(job_id)
+    return self._engine_proxy.delete_job(job_id, force)
 
 
   ########## FILE TRANSFER CONTROL #######################################
