@@ -1325,7 +1325,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromString(self.ui.exit_status, exit_status)
     setLabelFromInt(self.ui.exit_value, exit_value)
     setLabelFromString(self.ui.term_signal, term_signal)
-    setLabelFromString(self.ui.command,self.job_item.command)
+    setLabelFromString(self.ui.command, self.job_item.command)
     
     if resource_usage: 
       self.ui.resource_usage.insertItems(0, resource_usage.split())
