@@ -1254,9 +1254,21 @@ class WorkflowElementInfo(QtGui.QWidget):
   @QtCore.pyqtSlot(QtGui.QItemSelectionModel)
   def setSelectionModel(self, selectionModel):
     if self.selectionModel:
-      self.selectionModel.currentChanged.disconnect(self.currentChanged)
+      #patch PyQt 4.7.4: use of old style disconnection 
+      QtCore.QObject.disconnect(self.selectionModel, 
+                                QtCore.SIGNAL("currentChanged(QModelIndex, " \
+                                                              "QModelIndex)"), 
+                                self.currentChanged)
+      #self.selectionModel.currentChanged.disconnect(self.currentChanged)
+      
     self.selectionModel = selectionModel
-    self.selectionModel.currentChanged.connect(self.currentChanged)
+
+    #patch PyQt 4.7.4: use of old style connection 
+    QtCore.QObject.connect(self.selectionModel, 
+                           QtCore.SIGNAL("currentChanged(QModelIndex, " \
+                                           "QModelIndex)"), 
+                           self.currentChanged)
+    #self.selectionModel.currentChanged.connect(self.currentChanged)
     
     if self.infoWidget:
       self.infoWidget.hide()
