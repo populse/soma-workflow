@@ -953,7 +953,6 @@ class MainWindow(QtGui.QMainWindow):
     self.model = model
 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
-    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.current_workflow_changed)
 
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
@@ -1040,22 +1039,6 @@ class MainWindow(QtGui.QMainWindow):
   @QtCore.pyqtSlot()
   def currentConnectionChanged(self):
     self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
-  
-      
-  @QtCore.pyqtSlot()
-  def current_workflow_changed(self):
-    if not self.model.current_workflow:
-      # No workflow
-      
-      #self.graphWidget.clear()
-      self.itemInfoWidget.clear()    
-      
-    else:
-      pass
-      #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
-      
-      #=> TEMPORARY : the graph view has to be built from the guiModel
-      #self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
       
       
 class WorkflowStatusNameDate(QtGui.QWidget):
@@ -1086,8 +1069,9 @@ class WorkflowStatusNameDate(QtGui.QWidget):
     
   @QtCore.pyqtSlot()
   def update_workflow_status(self):
-    self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-    self.update_workflow_status_icon(self.model.current_workflow.wf_status) 
+    if self.check_workflow():
+      self.ui.wf_status.setText(self.model.current_workflow.wf_status)
+      self.update_workflow_status_icon(self.model.current_workflow.wf_status) 
 
   def update_workflow_status_icon(self, status):
     icon_file_path = workflow_status_icon(status)
@@ -1098,10 +1082,13 @@ class WorkflowStatusNameDate(QtGui.QWidget):
       pixmap = QtGui.QPixmap.fromImage(image)
     self.ui.wf_status_icon.setPixmap(pixmap) 
 
+
   @QtCore.pyqtSlot()
   def current_workflow_changed(self):
     if self.check_workflow():
       self.setEnabled(True)
+      self.ui.wf_name.setEnabled(True)
+      self.ui.wf_status_icon.setEnabled(True)
       if  not self.model.current_workflow:
         self.ui.wf_name.clear()
         self.ui.wf_status.clear()
@@ -1125,6 +1112,8 @@ class WorkflowStatusNameDate(QtGui.QWidget):
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
+      self.ui.wf_name.setEnabled(False)
+      self.ui.wf_status_icon.setEnabled(False)
 
 
 
@@ -1327,6 +1316,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged) 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear) 
+    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'), self.clear)
     
     self.vLayout = QtGui.QVBoxLayout(self)
     
