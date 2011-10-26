@@ -221,9 +221,9 @@ class Controller(object):
     return wf_ctrl.config.get_queues()
 
   @staticmethod
-  def submit_workflow(worklfow, expiration_date, name, queue, wf_ctrl):
+  def submit_workflow(workflow, expiration_date, name, queue, wf_ctrl):
     wf_id = wf_ctrl.submit_workflow( 
-                          workflow=worklfow,
+                          workflow=workflow,
                           expiration_date=expiration_date,
                           name=name,
                           queue=queue) 
@@ -710,6 +710,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
           return
       else:
         break
+
+
     if force:
       self.updateWorkflowList()
       self.model.delete_workflow()
@@ -2235,7 +2237,7 @@ class ApplicationModel(QtCore.QObject):
     '''
     Build a GuiWorkflow from a soma.workflow.client.Worklfow and 
     use it as the current workflow. 
-    @type worklfow: soma.workflow.client.Workflow
+    @type workflow: soma.workflow.client.Workflow
     '''
     with self._lock:
       self.current_workflow_about_to_change()
@@ -2265,9 +2267,9 @@ class ApplicationModel(QtCore.QObject):
     with self._lock:
       self.current_workflow_about_to_change()
       #self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-      if self.current_workflow and self.current_workflow.wf_id in self.workflows.keys():
-        del self.workflows[wf_id]
-        del self.expiration_dates[wf_id]
+      if self.current_workflow and self.current_workflow.wf_id in self.workflows[self.current_resource_id].keys():
+        del self.workflows[self.current_resource_id][self.current_workflow.wf_id]
+        del self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id]
       self.current_workflow = None
       self.current_wf_id = -1
       self.expiration_date = datetime.now()
