@@ -2078,12 +2078,8 @@ class ComputingResourcePool(object):
   def resource_exist(self, resource_id):
     return resource_id in self._connections.keys()
 
-  def any_resource_id(self):
-    if len(self._connections) > 0:
-      return self._connections.keys()[0]
-    else:
-      return None
-
+  def resource_ids(self):
+    return self._connections.keys()
 
 
 class ApplicationModel(QtCore.QObject):
@@ -2174,6 +2170,9 @@ class ApplicationModel(QtCore.QObject):
   def resource_exist(self, resource_id):
     return self._resource_pool.resource_exist(resource_id)
 
+  def list_resource_id(self, resource_id):
+    return self._resource_pool
+
   def add_connection(self, resource_id, connection):
     '''
     Adds a connection and use it as the current connection
@@ -2209,7 +2208,11 @@ class ApplicationModel(QtCore.QObject):
       self.current_wf_id = -1
       self.expiration_date = None
     
-      self.current_resource_id = self._resource_pool.any_resource_id()
+      resource_ids = self._resource_pool.resource_ids()
+      if resource_ids != None:
+        self.current_resource_id = self._resource_pool.resource_ids()[0]
+      else:
+        self.current_resource_id = None
       if self.current_resource_id != None:
         self.current_connection = self._resource_pool.connection(self.current_resource_id)
 
