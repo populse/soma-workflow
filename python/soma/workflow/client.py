@@ -35,6 +35,8 @@ import random
 import pickle
 import types
 import collections
+import subprocess
+import sys
 
 #import cProfile
 
@@ -1236,25 +1238,34 @@ class WorkflowController(object):
 
 
 def _detectCPUs():
- """
- Detects the number of CPUs on a system.
- ==> Python >= 2.6: multiprocessing.cpu_count
- """
- # Linux, Unix and MacOS:
- if hasattr(os, "sysconf"):
-     if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
-         # Linux & Unix:
-         ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-         if isinstance(ncpus, int) and ncpus > 0:
-             return ncpus
-     else: # OSX:
-         return int(os.popen2("sysctl -n hw.ncpu")[1].read())
- # Windows:
- if os.environ.has_key("NUMBER_OF_PROCESSORS"):
-         ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
-         if ncpus > 0:
-             return ncpus
- return 1 # Default
+  """
+  Detects the number of CPUs on a system.
+  ==> Python >= 2.6: multiprocessing.cpu_count
+  """
+  if sys.version_info[:2] >= (2,6):
+    try:
+      import multiprocessing
+      return multiprocessing.cpu_count()
+    except: # sometimes happens on MacOS... ?
+      print >> sys.stderr, \
+          'Warning: CPU count detection failed. Using default (2)'
+      return 2
+  # Linux, Unix and MacOS:
+  if hasattr(os, "sysconf"):
+      if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+          # Linux & Unix:
+          ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
+          if isinstance(ncpus, int) and ncpus > 0:
+              return ncpus
+      else: # OSX:
+          return int(subprocess.Popen(["sysctl", "-n", "hw.ncpu"],
+              stdout=subprocess.PIPE).stdout.read())
+  # Windows:
+  if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+          ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
+          if ncpus > 0:
+              return ncpus
+  return 1 # Default
 
 
 def _embedded_engine_and_server(config):
