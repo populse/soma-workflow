@@ -343,22 +343,26 @@ class SomaWorkflowWidget(QtGui.QWidget):
                             rsa_key_pass=None):      
 
     wf_ctrl = None
+    QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
     try:
       wf_ctrl = Controller.get_connection(resource_id, 
                                           login, 
                                           password,
                                           rsa_key_pass)
     except ConfigurationError, e:
+      QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.ui_firstConnection_dlg.lineEdit_password.clear()
       self.firstConnection_dlg.show()
     except Exception, e:
+      QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
       self.ui_firstConnection_dlg.lineEdit_password.clear()
       self.firstConnection_dlg.show()
     else:
       self.model.add_connection(resource_id, wf_ctrl)
       self.firstConnection_dlg.hide()
+      QtGui.QApplication.restoreOverrideCursor()
     #pass
 
       
@@ -579,16 +583,23 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if self.model.is_loaded_workflow(wf_id):
         self.model.set_current_workflow(wf_id)
       else:
-        workflow = self.model.current_connection.workflow(wf_id)
-        if workflow:
-          expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
+        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+        try:
+          workflow = self.model.current_connection.workflow(wf_id)
+          if workflow:
+            expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
+          else:
+            expiration_date = None
+          if workflow != None:
+            self.model.add_workflow(workflow, expiration_date)
+          else:
+            self.updateWorkflowList()
+            self.model.clear_current_workflow()
+        except Exception, e:
+          QtGui.QApplication.restoreOverrideCursor()
+          raise e
         else:
-          expiration_date = None
-        if workflow != None:
-          self.model.add_workflow(workflow, expiration_date)
-        else:
-          self.updateWorkflowList()
-          self.model.clear_current_workflow()
+          QtGui.QApplication.restoreOverrideCursor()
     else:
       self.model.clear_current_workflow()
 
@@ -639,19 +650,24 @@ class SomaWorkflowWidget(QtGui.QWidget):
         rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
       else:
         rsa_key_pass = None
+
+      QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
       try:
         wf_ctrl = Controller.get_connection(resource_id, 
                                             login, 
                                             password,
                                             rsa_key_pass)
       except ConfigurationError, e:
+        QtGui.QApplication.restoreOverrideCursor()
         QtGui.QMessageBox.information(self, "Configuration error", "%s" %(e))
         return None
       except Exception, e:
+        QtGui.QApplication.restoreOverrideCursor()
         QtGui.QMessageBox.information(self, 
                                       "Connection failed", 
                                       "%s: %s" %(type(e),e))
       else:
+        QtGui.QApplication.restoreOverrideCursor()
         return wf_ctrl
     return None
 
