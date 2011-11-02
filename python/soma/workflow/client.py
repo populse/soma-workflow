@@ -16,7 +16,7 @@ connects to the resource. One WorkflowController instance is connected to
 only one resource.
 
 The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, workflows, and file transfers
-objects to be used in the WorkflowControler interface.
+objects to be used in the WorkflowController interface.
 
 Definitions:
 A Parallel job is a job requiring more than one node to run.
@@ -1358,13 +1358,13 @@ class Helper(object):
 
 
   @staticmethod
-  def transfer_input_files(workflow,
+  def transfer_input_files(workflow_id,
                            wf_ctrl,
                            buffer_size = 512**2):
     '''
     Transfers all the input files of a workflow.
 
-    * workflow *client.Workflow*
+    * workflow_id *workflow identifier*
 
     * wf_ctrl *client.WorkflowController*
 
@@ -1373,9 +1373,8 @@ class Helper(object):
         piece. The size of each piece can be tuned using the buffer_size
         argument.
     '''
-
     transfer_info = None
-    wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
+    wf_elements_status = wf_ctrl.workflow_elements_status(workflow_id)
 
     to_transfer = []
     for transfer_info in wf_elements_status[1]:
@@ -1387,25 +1386,28 @@ class Helper(object):
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
 
-    for engine_path in to_transfer:
-      wf_ctrl.transfer_files(engine_path, buffer_size)
+    wf_ctrl.transfer_files(to_transfer, buffer_size)
 
 
 
   @staticmethod
-  def transfer_output_files(workflow,
+  def transfer_output_files(workflow_id,
                             wf_ctrl,
-                            buffer_size = 512**2):
+                            buffer_size=512**2):
     '''
     Transfers all the output files of a workflow which are ready to transfer.
 
-    * workflow *client.Workflow*
+    * workflow_id *workflow identifier*
 
     * wf_ctrl *client.WorkflowController*
-    '''
 
+    * buffer_size *int*
+        Depending on the transfer method, the files can be transfered piece by
+        piece. The size of each piece can be tuned using the buffer_size
+        argument.
+    '''
     transfer_info = None
-    wf_elements_status = wf_ctrl.workflow_elements_status(workflow.wf_id)
+    wf_elements_status = wf_ctrl.workflow_elements_status(workflow_id)
 
     to_transfer = []
     for transfer_info in wf_elements_status[1]:
@@ -1417,8 +1419,8 @@ class Helper(object):
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
 
-    for engine_path in to_transfer:
-      wf_ctrl.transfer_files(engine_path, buffer_size)
+    wf_ctrl.transfer_files(to_transfer, buffer_size)
+
 
 
   @staticmethod

@@ -231,12 +231,12 @@ class Controller(object):
     return workflow
 
   @staticmethod
-  def transfer_input_files(workflow, wf_ctrl, buffer_size=256**2):
-    Helper.transfer_input_files(workflow, wf_ctrl, buffer_size)
+  def transfer_input_files(workflow_id, wf_ctrl, buffer_size=256**2):
+    Helper.transfer_input_files(workflow_id, wf_ctrl, buffer_size)
 
   @staticmethod
-  def transfer_output_files(workflow, wf_ctrl, buffer_size= 256**2):
-    Helper.transfer_output_files(workflow, wf_ctrl, buffer_size)
+  def transfer_output_files(workflow_id, wf_ctrl, buffer_size= 256**2):
+    Helper.transfer_output_files(workflow_id, wf_ctrl, buffer_size)
 
   @staticmethod
   def optimize_workflow(workflow):
@@ -536,7 +536,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       try:
         self.ui.action_transfer_infiles.setEnabled(False)
         Controller.transfer_input_files(
-                self.model.current_workflow.server_workflow, 
+                self.model.current_wf_id, 
                 self.model.current_connection, 
                 buffer_size=256**2)
       except ConnectionClosedError, e:
@@ -558,7 +558,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       try:
         self.ui.action_transfer_outfiles.setEnabled(False)
         Controller.transfer_output_files(
-                self.model.current_workflow.server_workflow, 
+                self.model.current_wf_id, 
                 self.model.current_connection, 
                 buffer_size=256**2)
       except ConnectionClosedError, e:
