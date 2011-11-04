@@ -47,7 +47,7 @@ except ImportError:
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-
+NOT_SUBMITTED_WF_ID = -1
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -276,7 +276,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
     self.updateCurrentWorkflowStatus)
 
-    
     try:
       self.config_file_path = Configuration.search_config_path()
       self.resource_list = Configuration.get_configured_resources(self.config_file_path)
@@ -396,18 +395,26 @@ class SomaWorkflowWidget(QtGui.QWidget):
         QtGui.QMessageBox.warning(self, "Error opening the workflow", "%s" %(e))
       else:
         self.updateWorkflowList()
-        self.model.add_workflow(workflow, datetime.now() + timedelta(days=5))
+        self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
+                                datetime.now() + timedelta(days=5), 
+                                workflow.name, 
+                                WORKFLOW_NOT_STARTED,
+                                workflow)
 
 
   @QtCore.pyqtSlot()
   def optimize_workflow(self):
-    assert(self.model.current_workflow)
-    assert(self.model.current_wf_id == -1)
+    assert(self.model.current_workflow())
+    assert(self.model.current_wf_id == NOT_SUBMITTED_WF_ID)
   
-    new_workflow = Controller.optimize_workflow(self.model.current_workflow.server_workflow)
+    new_workflow = Controller.optimize_workflow(self.model.current_workflow().server_workflow)
 
     self.updateWorkflowList()
-    self.model.add_workflow(new_workflow, datetime.now() + timedelta(days=5))
+    self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
+                            datetime.now() + timedelta(days=5), 
+                            new_workflow.name, 
+                            WORKFLOW_NOT_STARTED,
+                            new_workflow)
     
       
   @QtCore.pyqtSlot()
@@ -415,7 +422,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
     if file_path:
       try:
-        Controller.serialize_workflow(file_path, self.model.current_workflow)
+        Controller.serialize_workflow(file_path, self.model.current_workflow())
       except SerializationError, e:
         QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
         
@@ -452,7 +459,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                       name=None,
                       queue=None):
 
-    assert(self.model.current_workflow)
+    assert(self.model.current_workflow())
 
 
     if date == None:
@@ -461,10 +468,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
       ui.setupUi(submission_dlg)
       ui.resource_label.setText(self.model.current_resource_id)
       
-      if self.model.current_workflow.name == None:
+      if self.model.current_workflow().name == None:
         ui.lineedit_wf_name.setText("")
       else:
-        ui.lineedit_wf_name.setText(self.model.current_workflow.server_workflow.name)
+        ui.lineedit_wf_name.setText(self.model.current_workflow().server_workflow.name)
       ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
       
       
@@ -488,7 +495,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     while True:
       try:
         workflow = Controller.submit_workflow(
-                          self.model.current_workflow.server_workflow, 
+                          self.model.current_workflow().server_workflow, 
                           date, 
                           name, 
                           queue, 
@@ -509,7 +516,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
       else:
         break
     self.updateWorkflowList()
-    self.model.add_workflow(workflow, date) 
+    self.model.add_workflow(workflow.wf_id, 
+                            date, 
+                            workflow.name, 
+                            WORKFLOW_NOT_STARTED,
+                            workflow) 
     return (workflow.wf_id, self.model.current_resource_id)
 
 
@@ -575,33 +586,34 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
   @QtCore.pyqtSlot()
   def workflowSelectionChanged(self):
-    selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
-    if not selected_items:
-      return
-    wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
-    if wf_id != -1:
-      if self.model.is_loaded_workflow(wf_id):
-        self.model.set_current_workflow(wf_id)
-      else:
-        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
-        try:
-          workflow = self.model.current_connection.workflow(wf_id)
-          if workflow:
-            expiration_date = self.model.current_connection.workflows([wf_id])[wf_id][1]
-          else:
-            expiration_date = None
-          if workflow != None:
-            self.model.add_workflow(workflow, expiration_date)
+    QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+    try:
+      selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
+      if not selected_items:
+        return
+      wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
+      if wf_id != NOT_SUBMITTED_WF_ID:
+        if self.model.is_loaded_workflow(wf_id):
+          self.model.set_current_workflow(wf_id)
+        else:
+          workflow_info_dict = self.model.current_connection.workflows([wf_id])
+          if len(workflow_info_dict) > 0:
+            #The workflow exist
+            workflow_status = self.model.current_connection.workflow_status(wf_id)
+            workflow_info = workflow_info_dict[wf_id]
+            self.model.add_workflow(wf_id, 
+                                    workflow_exp_date=workflow_info[1], 
+                                    workflow_name=workflow_info[0], 
+                                    workflow_status=workflow_status)
           else:
             self.updateWorkflowList()
             self.model.clear_current_workflow()
-        except Exception, e:
-          QtGui.QApplication.restoreOverrideCursor()
-          raise e
-        else:
-          QtGui.QApplication.restoreOverrideCursor()
-    else:
-      self.model.clear_current_workflow()
+      else:
+        self.model.clear_current_workflow()
+    except Exception, e:
+      QtGui.QApplication.restoreOverrideCursor()
+      raise e
+    QtGui.QApplication.restoreOverrideCursor()
 
     
   @QtCore.pyqtSlot(int)
@@ -674,10 +686,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()
   def stop_workflow(self):
-    assert(self.model.current_workflow and self.model.current_wf_id != -1)
+    assert(self.model.current_workflow() and \
+           self.model.current_wf_id != NOT_SUBMITTED_WF_ID)
     
-    if self.model.current_workflow.name:
-      name = self.model.current_workflow.name
+    if self.model.current_workflow().name:
+      name = self.model.current_workflow().name
     else: 
       name = repr(self.model.current_wf_id)
     
@@ -705,10 +718,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()
   def delete_workflow(self):
-    assert(self.model.current_workflow and self.model.current_wf_id != -1)
+    assert(self.model.current_workflow() and \
+           self.model.current_wf_id != NOT_SUBMITTED_WF_ID)
     
-    if self.model.current_workflow.name:
-      name = self.model.current_workflow.name
+    if self.model.current_workflow().name:
+      name = self.model.current_workflow().name
     else: 
       name = repr(self.model.current_wf_id)
     
@@ -760,7 +774,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         break
     if not change_occured:
       QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
-      self.ui.dateTimeEdit_expiration.setDateTime(self.expiration_date)
+      self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
     else:
       self.model.change_expiration_date(date)
       
@@ -775,7 +789,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def current_workflow_changed(self):
 
-    if not self.model.current_workflow:
+    if self.model.current_wf_id == None: 
       # No workflow
       
       ##self.graphWidget.clear()
@@ -802,19 +816,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.widget_wf_status_date.hide()
       self.ui.widget_wf_info.hide()
       
-      
     else:
-  
       #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
       
       #=> TEMPORARY : the graph view has to be built from the guiModel
-      #self.graphWidget.setWorkflow(self.model.current_workflow.server_workflow, self.model.current_connection)
+      #self.graphWidget.setWorkflow(self.model.current_workflow().server_workflow, self.model.current_connection)
       
-      
-      if self.model.current_wf_id == -1:
+      if self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
         # Workflow not submitted
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
+        if self.model.workflow_name != None: 
+          self.ui.wf_name.setText(self.model.workflow_name)
         else:
           self.ui.wf_name.clear()
 
@@ -833,22 +844,21 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
-        self.ui.widget_wf_status_date.hide()
-        self.ui.widget_wf_info.hide()
+        self.ui.widget_wf_status_date.show()
+        self.ui.widget_wf_info.show()
         
         self.ui.list_widget_submitted_wfs.clearSelection()
         
       else:
         # Submitted workflow
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
+        if self.model.workflow_name:
+          self.ui.wf_name.setText(self.model.workflow_name)
         else: 
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
         
-        self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-        self.update_workflow_status_icon(self.model.current_workflow.wf_status)
+        self.update_workflow_status_widgets(self.model.workflow_status)
        
-        self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
+        self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
         self.ui.dateTimeEdit_expiration.setEnabled(True)
         
         self.ui.action_optimize_wf.setEnabled(False)
@@ -873,10 +883,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()  
   def updateCurrentWorkflowStatus(self):
-    self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-    self.update_workflow_status_icon(self.model.current_workflow.wf_status) 
+    self.update_workflow_status_widgets(self.model.workflow_status) 
 
-  def update_workflow_status_icon(self, status):
+  def update_workflow_status_widgets(self, status):
+    if status == None:
+      self.ui.wf_status.clear()
+    else:
+      self.ui.wf_status.setText(status)
     icon_file_path = workflow_status_icon(status)
     if icon_file_path == None:
       pixmap = QtGui.QPixmap()
@@ -1088,10 +1101,13 @@ class WorkflowStatusNameDate(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def update_workflow_status(self):
     if self.check_workflow():
-      self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-      self.update_workflow_status_icon(self.model.current_workflow.wf_status) 
+      self.update_workflow_status_widgets(self.model.workflow_status) 
 
-  def update_workflow_status_icon(self, status):
+  def update_workflow_status_widgets(self, status):
+    if status == None:
+      self.ui.wf_status.clear()
+    else:
+      self.ui.wf_status.setText(status)
     icon_file_path = workflow_status_icon(status)
     if icon_file_path == None:
       pixmap = QtGui.QPixmap()
@@ -1107,27 +1123,25 @@ class WorkflowStatusNameDate(QtGui.QWidget):
       self.setEnabled(True)
       self.ui.wf_name.setEnabled(True)
       self.ui.wf_status_icon.setEnabled(True)
-      if  not self.model.current_workflow:
+      if self.model.current_wf_id == None:
         self.ui.wf_name.clear()
-        self.ui.wf_status.clear()
-        self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
+        self.update_workflow_status_widgets(None)
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
-      elif self.model.current_wf_id == -1:
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
+      elif self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
+        if self.model.workflow_name :
+          self.ui.wf_name.setText(self.model.workflow_name)
         else:
           self.ui.wf_name.clear()
         self.ui.wf_status.setText("not submitted")
         self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
       else:
-        if self.model.current_workflow.name:
-          self.ui.wf_name.setText(self.model.current_workflow.name)
+        if self.model.workflow_name:
+          self.ui.wf_name.setText(self.model.workflow_name)
         else: 
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
-        self.update_workflow_status_icon(self.model.current_workflow.wf_status)
-        self.ui.wf_status.setText(self.model.current_workflow.wf_status)
-        self.ui.dateTimeEdit_expiration.setDateTime(self.model.expiration_date)
+        self.update_workflow_status_widgets(self.model.workflow_status)
+        self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
       self.ui.wf_name.setEnabled(False)
@@ -1201,10 +1215,10 @@ class WorkflowTree(QtGui.QWidget):
     
   @QtCore.pyqtSlot()
   def current_workflow_changed(self):
-    if self.model.current_workflow:
+    if self.model.current_wf_id != None:
       if self.check_workflow():
         self.setEnabled(True)
-        self.item_model = WorkflowItemModel(self.model.current_workflow, self)
+        self.item_model = WorkflowItemModel(self.model.current_workflow(), self)
         self.tree_view.setModel(self.item_model)
         self.item_model.emit(QtCore.SIGNAL("modelReset()"))
         self.selection_model_changed.emit(self.tree_view.selectionModel())
@@ -1222,6 +1236,7 @@ class WorkflowTree(QtGui.QWidget):
                                         self.item_model.index(row,0,QtCore.QModelIndex()))
       elif self.assigned_wf_id != None:
         self.setEnabled(False)
+
     
       
 
@@ -1253,8 +1268,8 @@ class WorkflowInfo(QtGui.QWidget):
     if self.infoWidget:
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
-    if self.model.current_workflow:
-      self.infoWidget = GroupInfoWidget(self.model.current_workflow.root_item, self)
+    if self.model.current_workflow():
+      self.infoWidget = GroupInfoWidget(self.model.current_workflow().root_item, self)
     if self.infoWidget:
       self.vLayout.addWidget(self.infoWidget)
     self.update()
@@ -1307,8 +1322,8 @@ class WorkflowPlot(QtGui.QWidget):
       if self.plotWidget:
         self.plotWidget.hide()
         self.vLayout.removeWidget(self.plotWidget)
-      if self.model.current_workflow:
-        self.plotWidget = PlotView(self.model.current_workflow.root_item, self)
+      if self.model.current_workflow():
+        self.plotWidget = PlotView(self.model.current_workflow().root_item, self)
       if self.plotWidget:
         self.vLayout.addWidget(self.plotWidget)
       self.update()
@@ -2107,6 +2122,33 @@ class ApplicationModel(QtCore.QObject):
   The current workflow is periodically updated and the signal workflow_state_changed is
   emitted if necessary.
   '''
+
+  # Computing resource pool
+  _resource_pool = None
+
+  # gui_workflows 
+  # dictionary: resource_id => workflow_id => GuiWorkflow
+  _workflows = None
+
+  # dictionary: resource_id => workflow_ids => expiration_dates
+  _expiration_dates = None
+  
+  # dictionary: resource_id => workflow_ids => workflow_names
+  _workflow_names = None
+  
+  current_connection = None
+
+  current_resource_id = None
+
+  _current_workflow = None
+
+  current_wf_id = None
+
+  workflow_exp_date = None
+
+  workflow_name = None
+
+  workflow_status = None
   
   def __init__(self, resource_pool=None, parent=None):
     '''
@@ -2119,14 +2161,18 @@ class ApplicationModel(QtCore.QObject):
     else:
       self._resource_pool = ComputingResourcePool()
     
-    self.workflows = {} # gui_workflows # resource_id => workflow_id => GuiWorkflow
-    self.expiration_dates = {} # resource_id => workflow_ids => expiration_dates
-        
+    self._workflows = {} 
+    self._expiration_dates = {} 
+    self._workflow_names = {} # 
+
     self.current_connection = None
     self.current_resource_id = None
-    self.current_workflow = None
-    self.current_wf_id = -1
-    self.expiration_date = None
+
+    self._current_workflow = None
+    self.current_wf_id = None
+    self.workflow_exp_date = None
+    self.workflow_name = None
+    self.workflow_status = None
     
     self.update_interval = 3 # update period in seconds
     self.auto_update = True
@@ -2138,25 +2184,34 @@ class ApplicationModel(QtCore.QObject):
       # update only the current workflows
       while True:
         with self._lock:
-          if not self.hold and self.auto_update and self.current_workflow :
+          if not self.hold and self.auto_update:
+            if self.current_wf_id != None :
               try:
-                if self.current_workflow.wf_id == -1:
+                if self.current_wf_id == NOT_SUBMITTED_WF_ID:
                   wf_status = None
-                else:
+                elif self._current_workflow:
                   #print " ==> communication with the server " + repr(self.wf_id)
                   #begining = datetime.now()
-                  wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
+                  wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
+                  wf_status = wf_complete_status[2]
                   #end = datetime.now() - begining
                   #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
+                else:
+                  wf_status = self.current_connection.workflow_status(self.current_wf_id)
               except ConnectionClosedError, e:
-                self.connection_closed_error()
+                self._connection_closed_error()
                 #self.emit(QtCore.SIGNAL('connection_closed_error()'))
                 self.hold = True
               except UnknownObjectError, e:
                 self.delete_workflow()
               else: 
-                if self.current_workflow and self.current_workflow.updateState(wf_status): 
-                  self.workflow_state_changed()
+                if self._current_workflow:    
+                  if self._current_workflow.updateState(wf_complete_status): 
+                    self._workflow_state_changed()
+                    #self.emit(QtCore.SIGNAL('workflow_state_changed()'))
+                if self.workflow_status != wf_status:
+                  self.workflow_status = wf_status
+                  self._workflow_state_changed()
                   #self.emit(QtCore.SIGNAL('workflow_state_changed()'))
         time.sleep(self.update_interval)
     
@@ -2167,20 +2222,20 @@ class ApplicationModel(QtCore.QObject):
     self.__update_thread.start()
    
 
-  def connection_closed_error(self):
+  def _connection_closed_error(self):
     print "====>  connection closed error"
     self.emit(QtCore.SIGNAL('connection_closed_error()'))
 
-  def current_connection_changed(self):
+  def _current_connection_changed(self):
     self.emit(QtCore.SIGNAL('current_connection_changed()'))
 
-  def workflow_state_changed(self):
+  def _workflow_state_changed(self):
     self.emit(QtCore.SIGNAL('workflow_state_changed()'))
 
-  def current_workflow_about_to_change(self):
+  def _current_workflow_about_to_change(self):
     self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
 
-  def current_workflow_changed(self):
+  def _current_workflow_changed(self):
     self.emit(QtCore.SIGNAL('current_workflow_changed()'))
    
   def resource_exist(self, resource_id):
@@ -2195,16 +2250,19 @@ class ApplicationModel(QtCore.QObject):
     '''
     with self._lock:
       self._resource_pool.add_connection(resource_id, connection)
-      self.workflows[resource_id] = {}
-      self.expiration_dates[resource_id] = {}
+      self._workflows[resource_id] = {}
+      self._expiration_dates[resource_id] = {}
+      self._workflow_names[resource_id] = {}
       self.current_resource_id = resource_id
       self.current_connection = connection
-      self.current_workflow = None
-      self.current_wf_id = -1
-      self.expiration_date = None
-      self.current_connection_changed()
-      self.current_workflow_about_to_change()
-      self.current_workflow_changed()
+      self._current_workflow = None
+      self.current_wf_id = None
+      self.workflow_exp_date = None
+      self.workflow_status = None
+      self.workflow_name = None
+      self._current_connection_changed()
+      self._current_workflow_about_to_change()
+      self._current_workflow_changed()
       #self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self.hold = False
 
@@ -2216,13 +2274,15 @@ class ApplicationModel(QtCore.QObject):
     '''
     with self._lock:
       self._resource_pool.delete_connection(self.current_resource_id)
-      del self.workflows[self.current_resource_id]
-      del self.expiration_dates[self.current_resource_id]
+      del self._workflows[self.current_resource_id]
+      del self._expiration_dates[self.current_resource_id]
+      del self._workflow_names[self.current_resource_id]
       self.current_resource_id = None
       self.current_connection = None
-      self.current_workflow = None
-      self.current_wf_id = -1
-      self.expiration_date = None
+      self._current_workflow = None
+      self.current_wf_id = None
+      self.workflow_exp_date = None
+      self.workflow_name = None
     
       resource_ids = self._resource_pool.resource_ids()
       if resource_ids != None:
@@ -2232,7 +2292,7 @@ class ApplicationModel(QtCore.QObject):
       if self.current_resource_id != None:
         self.current_connection = self._resource_pool.connection(self.current_resource_id)
 
-      self.current_connection_changed()
+      self._current_connection_changed()
       #self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self.hold = False
     
@@ -2242,7 +2302,7 @@ class ApplicationModel(QtCore.QObject):
         assert(self._resource_pool.resource_exist(resource_id))
         self.current_resource_id = resource_id
         self.current_connection = self._resource_pool.connection(resource_id)
-        self.current_connection_changed()
+        self._current_connection_changed()
         #self.emit(QtCore.SIGNAL('current_connection_changed()'))
         self.hold = False
 
@@ -2252,78 +2312,129 @@ class ApplicationModel(QtCore.QObject):
       self._resource_pool.reinit_connection(self.current_resource_id, connection)
       self.hold = False
     
-  def add_workflow(self, workflow, expiration_date):
+  def add_workflow(self, 
+                   workflow_id, 
+                   workflow_exp_date, 
+                   workflow_name, 
+                   workflow_status,
+                   workflow=None):
     '''
     Build a GuiWorkflow from a soma.workflow.client.Worklfow and 
     use it as the current workflow. 
     @type workflow: soma.workflow.client.Workflow
     '''
     with self._lock:
-      self.current_workflow_about_to_change()
+      self._current_workflow_about_to_change()
       #self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
       self.hold = True 
-      self.current_workflow = GuiWorkflow(workflow)
-      self.current_wf_id = self.current_workflow.wf_id
-      self.expiration_date = expiration_date
-      if self.current_wf_id != -1:
-        self.workflows[self.current_resource_id][self.current_workflow.wf_id] = self.current_workflow
-        self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
-        try:
-          wf_status = self.current_connection.workflow_elements_status(self.current_workflow.wf_id)
-        except ConnectionClosedError, e:
-          self.connection_closed_error()
-          #self.emit(QtCore.SIGNAL('connection_closed_error()'))
-        else: 
-          self.current_workflow.updateState(wf_status)
-      self.current_workflow_changed()
+      if workflow:
+        self._current_workflow = GuiWorkflow(workflow)
+      else:
+        self._current_workflow = None
+      self.current_wf_id = workflow_id
+      self.workflow_exp_date = workflow_exp_date
+      self.workflow_name = workflow_name
+      self.workflow_status = workflow_status
+      if self.current_wf_id != NOT_SUBMITTED_WF_ID:
+        self._workflows[self.current_resource_id][workflow_id] = self._current_workflow
+        self._expiration_dates[self.current_resource_id][workflow_id] = self.workflow_exp_date
+        self._workflow_names[self.current_resource_id][workflow_id] = workflow_name
+        if self._current_workflow != None:
+          try:
+            wf_status = self.current_connection.workflow_elements_status(workflow_id)
+          except ConnectionClosedError, e:
+            self._connection_closed_error()
+            #self.emit(QtCore.SIGNAL('connection_closed_error()'))
+          else: 
+            self._current_workflow.updateState(wf_status)
+      self._current_workflow_changed()
       #self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       self.hold = False
 
+  def current_workflow(self):
+    if self.current_wf_id == NOT_SUBMITTED_WF_ID or \
+       self.current_wf_id == None or \
+       self._current_workflow != None:
+      return self._current_workflow
+    
+    with self._lock:
+      self.hold = True 
+      try:
+        workflow = self.current_connection.workflow(self.current_wf_id)
+      except ConnectionClosedError, e:
+        self.hold = False
+        QtGui.QApplication.restoreOverrideCursor()
+        self._connection_closed_error()
+        #self.emit(QtCore.SIGNAL('connection_closed_error()'))
+      else:
+        try:
+          self._current_workflow = GuiWorkflow(workflow)
+          self._workflows[self.current_resource_id][self._current_workflow.wf_id] = self._current_workflow
+          wf_status = self.current_connection.workflow_elements_status(self.current_wf_id)
+        except ConnectionClosedError, e:
+          self.hold = False
+          QtGui.QApplication.restoreOverrideCursor()
+          self._connection_closed_error()
+          #self.emit(QtCore.SIGNAL('connection_closed_error()'))
+        else: 
+          self._current_workflow.updateState(wf_status)
+
+    self.hold = False
+    return self._current_workflow
+
   def restart_current_workflow(self):
-    self.current_workflow.restart()
+    self._current_workflow.restart()
     
   def delete_workflow(self):
     with self._lock:
-      self.current_workflow_about_to_change()
+      self._current_workflow_about_to_change()
       #self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-      if self.current_workflow and self.current_workflow.wf_id in self.workflows[self.current_resource_id].keys():
-        del self.workflows[self.current_resource_id][self.current_workflow.wf_id]
-        del self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id]
-      self.current_workflow = None
-      self.current_wf_id = -1
-      self.expiration_date = datetime.now()
-      self.current_workflow_changed()
+      if self._current_workflow and self._current_workflow.wf_id in self._workflows[self.current_resource_id].keys():
+        del self._workflows[self.current_resource_id][self._current_workflow.wf_id]
+        del self._expiration_dates[self.current_resource_id][self._current_workflow.wf_id]
+        del self._workflow_names[self.current_resource_id][self._current_workflow.wf_id]
+      self._current_workflow = None
+      self.current_wf_id = None
+      self.workflow_exp_date = None #datetime.now()
+      self.workflow_status = None
+      self.workflow_name = None
+      self._current_workflow_changed()
       #self.emit(QtCore.SIGNAL('current_workflow_changed()'))
     
   def clear_current_workflow(self):
     with self._lock:
-      if self.current_workflow != None or  self.current_wf_id != -1:
-        self.current_workflow_about_to_change()
+      if self._current_workflow != None or \
+         self.current_wf_id != NOT_SUBMITTED_WF_ID:
+        self._current_workflow_about_to_change()
         #self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-        self.current_workflow = None
-        self.current_wf_id = -1
-        self.expiration_date = datetime.now()
-        self.current_workflow_changed()
+        self._current_workflow = None
+        self.current_wf_id = None
+        self.workflow_exp_date = None #datetime.now()
+        self.workflow_status = None
+        self.workflow_name = None
+        self._current_workflow_changed()
         #self.emit(QtCore.SIGNAL('current_workflow_changed()'))
     
   def set_current_workflow(self, wf_id):
     with self._lock:
       if wf_id != self.current_wf_id:
-        assert(wf_id in self.workflows[self.current_resource_id].keys())
-        self.current_workflow_about_to_change()
+        assert(wf_id in self._workflows[self.current_resource_id].keys())
+        self._current_workflow_about_to_change()
         #self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
         self.current_wf_id = wf_id
-        self.current_workflow = self.workflows[self.current_resource_id][self.current_wf_id]
-        self.expiration_date = self.expiration_dates[self.current_resource_id][self.current_wf_id]
-        self.current_workflow_changed()
+        self._current_workflow = self._workflows[self.current_resource_id][self.current_wf_id]
+        self.workflow_exp_date = self._expiration_dates[self.current_resource_id][self.current_wf_id]
+        self.workflow_name = self._workflow_names[self.current_resource_id][self.current_wf_id]
+        self.workflow_status = None
+        self._current_workflow_changed()
         #self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       
   def change_expiration_date(self, date):
-     self.expiration_date = date 
-     self.expiration_dates[self.current_resource_id][self.current_workflow.wf_id] = self.expiration_date
+     self.workflow_exp_date = date 
+     self._expiration_dates[self.current_resource_id][self._current_workflow.wf_id] = self.workflow_exp_date
 
   def is_loaded_workflow(self, wf_id):
-    return wf_id in self.workflows[self.current_resource_id].keys()
+    return wf_id in self._workflows[self.current_resource_id].keys()
   
 
 
@@ -2372,7 +2483,7 @@ class GuiWorkflow(object):
     if isinstance(workflow, EngineWorkflow):
       self.wf_id = workflow.wf_id
     else:
-      self.wf_id = -1
+      self.wf_id = NOT_SUBMITTED_WF_ID
 
     self.wf_status = None
     
@@ -2537,7 +2648,7 @@ class GuiWorkflow(object):
     ###########################################
     
   def updateState(self, wf_status):
-    if self.wf_id == -1: 
+    if self.wf_id == NOT_SUBMITTED_WF_ID: 
       return False
     data_changed = False
     
