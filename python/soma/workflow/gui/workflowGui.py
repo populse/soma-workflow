@@ -2389,7 +2389,7 @@ class ApplicationModel(QtCore.QObject):
                 self.delete_workflow()
                 continue
               else: 
-                if self._current_workflow:    
+                if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:    
                   if self._current_workflow.updateState(wf_complete_status): 
                     self.emit(QtCore.SIGNAL('workflow_state_changed()'))
                 if self.workflow_status != wf_status:
