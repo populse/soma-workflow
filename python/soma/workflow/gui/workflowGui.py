@@ -279,8 +279,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.connection_changed)
     self.ui.table.itemSelectionChanged.connect(self.resource_selection_changed)
 
-    self.connection_changed()
     self.refresh()
+    self.connection_changed()
 
 
   #@QtCore.pyqtSlot(bool)
@@ -329,6 +329,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                                   workflow_exp_date=workflow_info[1], 
                                   workflow_name=workflow_info[0], 
                                   workflow_status=workflow_status)
+
     self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.model.set_no_current_workflow()
 
@@ -2445,7 +2446,7 @@ class ApplicationModel(QtCore.QObject):
         try:
           self.result = func(*args, **kwargs)
         except Exception, e:
-          print "Exception in Thread !!"
+          #print "Exception in Thread !!" + repr(e)
           self.exception = e
     it = InterruptableThread()
     it.start()
