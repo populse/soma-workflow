@@ -439,6 +439,8 @@ class WorkflowController(object):
 
   config = None
 
+  _resource_id = None
+
   def __init__(self,
                resource_id=None,
                login=None,
@@ -475,6 +477,8 @@ class WorkflowController(object):
     self.config = Configuration(resource_id)
     mode = self.config.get_mode()
     print  mode + " mode"
+
+    self._resource_id = resource_id
 
     # LOCAL MODE
     if mode == 'local':
