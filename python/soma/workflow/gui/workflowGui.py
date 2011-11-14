@@ -3159,6 +3159,9 @@ class GuiJob(GuiWorkflowItem):
         line = f.readline()
       self.stderr = stderr
       f.close()
+
+      os.chmod(stdout_path, 0666)
+      os.chmod(stderr_path, 0666)
       
       
 class GuiTransfer(GuiWorkflowItem):
