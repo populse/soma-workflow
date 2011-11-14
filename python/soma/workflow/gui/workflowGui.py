@@ -366,7 +366,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
       self.ui.table.setItem(row, 0, item)
       self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(icon, repr(len(status_list)) + " workflows" + to_display))
       row = row + 1
-    if self.model.current_resource_id != None:
+    if self.model.current_resource_id != None and \
+       self.model.current_resource_id in self.resource_ids:
       self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.ui.table.resizeColumnsToContents()
 
