@@ -95,7 +95,7 @@ Use Soma-workflow as a one process application on any multiple core machine for
 a quick start:
 
     * Requirements: Python 2.5 or more (less than 3). For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*.
-    * Download: `quick start <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-dev-version-24-06-2011-quick-start.tar>`_
+    * Download: `soma-workflow 2.0 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.0.tar>`_
     * Installation:
 
         :: 

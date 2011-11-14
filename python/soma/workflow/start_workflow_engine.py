@@ -48,22 +48,22 @@ if __name__=="__main__":
   ###### main server program
   def main(resource_id, engine_name, log = ""):
     
-   config = Configuration(resource_id)
+    config = Configuration(resource_id)
 
-   (engine_log_dir,
-   engine_log_format,
-   engine_log_level) = config.get_engine_log_info()
-   if engine_log_dir:
-    logfilepath = os.path.join(os.path.abspath(engine_log_dir),  "log_" + engine_name + log)
-    logging.basicConfig(
-          filename=logfilepath,
-          format=engine_log_format,
-          level=eval("logging." + engine_log_level))
-    logger = logging.getLogger('engine')
-    logger.info(" ")
-    logger.info("****************************************************")
-    logger.info("****************************************************")
-
+    (engine_log_dir,
+    engine_log_format,
+    engine_log_level) = config.get_engine_log_info()
+    if engine_log_dir:
+      logfilepath = os.path.join(os.path.abspath(engine_log_dir),  
+                                 "log_" + engine_name + log)
+      logging.basicConfig(
+           filename=logfilepath,
+           format=engine_log_format,
+           level=eval("logging." + engine_log_level))
+      logger = logging.getLogger('engine')
+      logger.info(" ")
+      logger.info("****************************************************")
+      logger.info("****************************************************")
    
     ###########################
     # Looking for the database_server
