@@ -76,8 +76,8 @@ Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
 Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
                                                           'GroupInfo.ui' ))[0]
 
-Ui_FirstConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                 'firstConnectionDlg.ui' ))[0]
+Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
+                                                 'connection_dlg.ui' ))[0]
 
 Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
                                                  'workflowExampleDlg.ui' ))[0]
@@ -440,12 +440,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
     
-    self.firstConnection_dlg = QtGui.QDialog(self)
-    self.ui_firstConnection_dlg = Ui_FirstConnectionDlg()
-    self.ui_firstConnection_dlg.setupUi(self.firstConnection_dlg)
-    self.ui_firstConnection_dlg.combo_resources.addItems(self.resource_list)
-    self.firstConnection_dlg.accepted.connect(self.firstConnection)
-    self.firstConnection_dlg.rejected.connect(self.close)
+    self.connection_dlg = QtGui.QDialog(self)
+    self.ui_connection_dlg = Ui_ConnectionDlg()
+    self.ui_connection_dlg.setupUi(self.connection_dlg)
+    self.ui_connection_dlg.combo_resources.addItems(self.resource_list)
+    self.connection_dlg.accepted.connect(self.firstConnection)
+    self.connection_dlg.rejected.connect(self.close)
     
     ## First connection:
     #Try to connect directly:  
@@ -458,8 +458,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connect_to_controller(socket.gethostname())
     else: # Show connection dialog:
       if user is not None:
-        self.ui_firstConnection_dlg.lineEdit_login.setText(user)
-      self.firstConnection_dlg.show()
+        self.ui_connection_dlg.lineEdit_login.setText(user)
+      self.connection_dlg.show()
 
   def closeEvent(self, event):
     self.emit(QtCore.SIGNAL("closing()"))
@@ -482,33 +482,33 @@ class SomaWorkflowWidget(QtGui.QWidget):
     except ConfigurationError, e:
       QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.ui_firstConnection_dlg.lineEdit_password.clear()
-      self.firstConnection_dlg.show()
+      self.ui_connection_dlg.lineEdit_password.clear()
+      self.connection_dlg.show()
     except Exception, e:
       QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
-      self.ui_firstConnection_dlg.lineEdit_password.clear()
-      self.firstConnection_dlg.show()
+      self.ui_connection_dlg.lineEdit_password.clear()
+      self.connection_dlg.show()
     else:
       self.model.add_connection(resource_id, wf_ctrl)
-      self.firstConnection_dlg.hide()
+      self.connection_dlg.hide()
       
     #pass
 
       
   @QtCore.pyqtSlot()
   def firstConnection(self):
-    resource_id = unicode(self.ui_firstConnection_dlg.combo_resources.currentText())
-    if self.ui_firstConnection_dlg.lineEdit_login.text(): 
-      login = unicode(self.ui_firstConnection_dlg.lineEdit_login.text()).encode('utf-8')
+    resource_id = unicode(self.ui_connection_dlg.combo_resources.currentText())
+    if self.ui_connection_dlg.lineEdit_login.text(): 
+      login = unicode(self.ui_connection_dlg.lineEdit_login.text()).encode('utf-8')
     else: 
       login = None
-    if self.ui_firstConnection_dlg.lineEdit_password.text():
-      password = unicode(self.ui_firstConnection_dlg.lineEdit_password.text()).encode('utf-8')
+    if self.ui_connection_dlg.lineEdit_password.text():
+      password = unicode(self.ui_connection_dlg.lineEdit_password.text()).encode('utf-8')
     else:
       password = None
-    if self.ui_firstConnection_dlg.lineEdit_rsa_password.text():
-      rsa_key_pass = unicode(self.ui_firstConnection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
+    if self.ui_connection_dlg.lineEdit_rsa_password.text():
+      rsa_key_pass = unicode(self.ui_connection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
     else:
       rsa_key_pass = None
 
@@ -774,7 +774,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.model.add_connection(resource_id, new_connection)
 
 
-  def createConnection(self, resource_id=None, editable_resource=True):
+  def createConnection(self, 
+                       resource_id=None, 
+                       editable_resource=True, 
+                       replace=False):
     '''
     returns a tuple (resource_id, connection)
     '''
@@ -783,7 +786,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     while connection_invalid or try_again: 
       connection_dlg = QtGui.QDialog()
       connection_dlg.setModal(True)
-      ui = Ui_FirstConnectionDlg()
+      ui = Ui_ConnectionDlg()
       ui.setupUi(connection_dlg)
       ui.combo_resources.addItems(self.resource_list)
       ui.combo_resources.setEnabled(editable_resource)
@@ -807,8 +810,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
       else:
         rsa_key_pass = None
-
-      if resource_id in self.model.list_resource_ids():
+      
+      if not replace and resource_id in self.model.list_resource_ids():
         QtGui.QMessageBox.information(self, "Connection already exists", "The connection to the resource %s already exists." %(resource_id))
         return (resource_id, None)
 
@@ -1098,7 +1101,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                         "The connection to  "+ resource_id +" closed.\n  Do you want to try a reconnection?", 
                                         QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
     if answer == QtGui.QMessageBox.Yes:
-      (new_resource_id, new_connection) = self.createConnection(resource_id, editable_resource=False)
+      (new_resource_id, new_connection) = self.createConnection(resource_id, editable_resource=False, replace=True)
       if new_connection:
         self.model.reinit_connection(new_resource_id, new_connection)
         return True
