@@ -9,6 +9,7 @@ BRAINVISA_ADD_SIP_PYTHON_MODULE( somadrmaajobssip
   "${CMAKE_CURRENT_SOURCE_DIR}/jobs.sip"
   SIP_INSTALL "share/soma-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}/sip" )
 target_link_libraries( somadrmaajobssip "${PYTHON_LIBRARY}" somadrmaajobs )
+set_property( TARGET somadrmaajobssip PROPERTY SKIP_BUILD_RPATH TRUE )
 
 BRAINVISA_INSTALL( TARGETS somadrmaajobssip 
                    DESTINATION python/soma/workflow
