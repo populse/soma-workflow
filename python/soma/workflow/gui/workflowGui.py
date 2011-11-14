@@ -268,29 +268,17 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.model = model
 
     self.resource_ids = []
-    self.workflow_ids = []
 
     self.ui.tool_button_more.setDefaultAction(self.ui.action_show_more)
     self.ui.action_show_more.toggled.connect(self.sw_widget.setVisible)
-    #self.ui.action_show_more.toggled.connect(self.show_more)
     
     self.ui.add_resource_button.clicked.connect(self.add_resource)
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.refresh)
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.connection_changed)
     self.ui.table.itemSelectionChanged.connect(self.resource_selection_changed)
 
-    self.refresh()
     self.connection_changed()
 
-
-  #@QtCore.pyqtSlot(bool)
-  #def show_more(self, show):
-    #print " parent " + repr(self.parent())
-    #self.sw_widget.setVisible(show)
-    ##self.ui.table.adjustSize()
-    #if self.parent != None:
-      #self.parent().adjustSize()
-      #self.parent().repaint()
     
   @QtCore.pyqtSlot()
   def resource_selection_changed(self):
@@ -304,6 +292,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()
   def connection_changed(self):
+    if self.model.current_resource_id == None:
+      return 
     submitted_wf = []
     if self.model.current_resource_id not in self.resource_ids:
       while True:
@@ -314,21 +304,23 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             return
         else:
           break
-      self.workflow_ids = self.sw_widget.workflow_filter(submitted_wf)
+      workflow_ids = self.sw_widget.workflow_filter(submitted_wf)
 
-    for wf_id in self.workflow_ids:
-      if self.model.is_loaded_workflow(wf_id):
-        self.model.set_current_workflow(wf_id)
-      else:
-        workflow_info_dict = self.model.current_connection.workflows([wf_id])
-        if len(workflow_info_dict) > 0:
-          #The workflow exist
-          workflow_status = self.model.current_connection.workflow_status(wf_id)
-          workflow_info = workflow_info_dict[wf_id]
-          self.model.add_workflow(wf_id, 
-                                  workflow_exp_date=workflow_info[1], 
-                                  workflow_name=workflow_info[0], 
-                                  workflow_status=workflow_status)
+      for wf_id in workflow_ids:
+        if self.model.is_loaded_workflow(wf_id):
+          self.model.set_current_workflow(wf_id)
+        else:
+          workflow_info_dict = self.model.current_connection.workflows([wf_id])
+          if len(workflow_info_dict) > 0:
+            #The workflow exist
+            workflow_status = self.model.current_connection.workflow_status(wf_id)
+            workflow_info = workflow_info_dict[wf_id]
+            self.model.add_workflow(wf_id, 
+                                    workflow_exp_date=workflow_info[1], 
+                                    workflow_name=workflow_info[0], 
+                                    workflow_status=workflow_status)
+      self.resource_ids.append(self.model.current_resource_id)
+      self.refresh()
 
     self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.model.set_no_current_workflow()
@@ -341,7 +333,6 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()
   def refresh(self):
-    self.resource_ids = self.model.list_resource_ids()
     self.ui.table.clear()
     self.ui.table.setColumnCount(2)
     self.ui.table.setRowCount(len(self.resource_ids))
@@ -375,6 +366,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
       self.ui.table.setItem(row, 0, item)
       self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(icon, repr(len(status_list)) + " workflows" + to_display))
       row = row + 1
+    if self.model.current_resource_id != None:
+      self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.ui.table.resizeColumnsToContents()
 
 
@@ -531,12 +524,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
       except SerializationError, e: 
         QtGui.QMessageBox.warning(self, "Error opening the workflow", "%s" %(e))
       else:
-        self.updateWorkflowList()
         self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
                                 datetime.now() + timedelta(days=5), 
                                 workflow.name, 
                                 WORKFLOW_NOT_STARTED,
                                 workflow)
+        self.updateWorkflowList()
 
 
   @QtCore.pyqtSlot()
@@ -546,12 +539,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
   
     new_workflow = Controller.optimize_workflow(self.model.current_workflow().server_workflow)
 
-    self.updateWorkflowList()
     self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
                             datetime.now() + timedelta(days=5), 
                             new_workflow.name, 
                             WORKFLOW_NOT_STARTED,
                             new_workflow)
+    self.updateWorkflowList()
     
       
   @QtCore.pyqtSlot()
@@ -617,7 +610,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       ui.combo_queue.addItems(queues)
 
       if submission_dlg.exec_() != QtGui.QDialog.Accepted:
-        return
+        return (None, None)
 
       name = unicode(ui.lineedit_wf_name.text())
       if name == "": name = None
@@ -641,23 +634,24 @@ class SomaWorkflowWidget(QtGui.QWidget):
         QtGui.QMessageBox.warning(self, 
                               "Workflow submission error", 
                               "%s" %(e))
-        return
+        return (None, None)
       except JobError, e:
         QtGui.QMessageBox.warning(self, 
                               "Workflow submission error", 
                               "%s" %(e))
-        return
+        return (None, None)
       except ConnectionClosedError, e:
         if not self.reconnectAfterConnectionClosed():
-          return
+          return (None, None)
       else:
         break
-    self.updateWorkflowList()
+    
     self.model.add_workflow(workflow.wf_id, 
                             date, 
                             workflow.name, 
                             WORKFLOW_NOT_STARTED,
                             workflow) 
+    self.updateWorkflowList()
     return (workflow.wf_id, self.model.current_resource_id)
 
 
@@ -743,8 +737,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                     workflow_name=workflow_info[0], 
                                     workflow_status=workflow_status)
           else:
-            self.updateWorkflowList()
             self.model.clear_current_workflow()
+            self.updateWorkflowList()
       else:
         self.model.clear_current_workflow()
       QtGui.QApplication.restoreOverrideCursor()
@@ -812,6 +806,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
         rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
       else:
         rsa_key_pass = None
+
+      if resource_id in self.model.list_resource_ids():
+        QtGui.QMessageBox.information(self, "Connection already exists", "The connection to the resource %s already exists." %(resource_id))
+        return (resource_id, None)
 
       QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
       try:
@@ -893,8 +891,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
 
     if force:
-      self.updateWorkflowList()
       self.model.delete_workflow()
+      self.updateWorkflowList()
       if not deleled_properly:
          QtGui.QMessageBox.warning(self, 
                                    "Delete workflow", 
@@ -931,8 +929,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
   
   @QtCore.pyqtSlot()
   def currentConnectionChanged(self):
-    self.updateWorkflowList()
     self.model.clear_current_workflow()
+    self.updateWorkflowList()
     index = self.ui.combo_resources.findText(self.model.current_resource_id)
     self.ui.combo_resources.setCurrentIndex(index)
       
@@ -1051,8 +1049,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
           
   @QtCore.pyqtSlot()  
   def refreshWorkflowList(self):
-    self.updateWorkflowList()
     self.model.clear_current_workflow()
+    self.updateWorkflowList(force_not_from_model=True)
 
   def workflow_filter(self, workflows):
     '''
@@ -1060,8 +1058,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
     ''' 
     return workflows
 
-  def updateWorkflowList(self):
-    if not self.update_workflow_list_from_model or \
+  def updateWorkflowList(self, force_not_from_model=False):
+    if force_not_from_model or \
+      not self.update_workflow_list_from_model or \
       len(self.model.list_workflow_names(self.model.current_resource_id))==0:
       while True:
         try:
@@ -1376,11 +1375,15 @@ class WorkflowTree(QtGui.QWidget):
     if self.model.current_wf_id != None:
       if self.check_workflow():
         self.setEnabled(True)
-        self.item_model = WorkflowItemModel(self.model.current_workflow(), self)
-        self.tree_view.setModel(self.item_model)
-        self.item_model.emit(QtCore.SIGNAL("modelReset()"))
-        self.selection_model_changed.emit(self.tree_view.selectionModel())
-        self.emit(QtCore.SIGNAL("selection_model_changed()"))
+        workflow = self.model.current_workflow()
+        if workflow != None:
+          self.item_model = WorkflowItemModel(workflow, self)
+          self.tree_view.setModel(self.item_model)
+          self.item_model.emit(QtCore.SIGNAL("modelReset()"))
+          self.selection_model_changed.emit(self.tree_view.selectionModel())
+          self.emit(QtCore.SIGNAL("selection_model_changed()"))
+        else:
+          self.setEnabled(False)
       elif self.assigned_wf_id != None:
         self.setEnabled(False)
     
@@ -2392,7 +2395,7 @@ class ApplicationModel(QtCore.QObject):
                 if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:    
                   if self._current_workflow.updateState(wf_complete_status): 
                     self.emit(QtCore.SIGNAL('workflow_state_changed()'))
-                if self.workflow_status != wf_status:
+                if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
                   self.workflow_status = wf_status
                   self._workflow_statuses[self.current_resource_id][self.current_wf_id] = wf_status 
                   self.emit(QtCore.SIGNAL('workflow_state_changed()'))
@@ -2570,6 +2573,7 @@ class ApplicationModel(QtCore.QObject):
       self.workflow_name = workflow_name
       self.workflow_status = workflow_status
       if self.current_wf_id != NOT_SUBMITTED_WF_ID:
+        
         self._workflows[self.current_resource_id][workflow_id] = self._current_workflow
         self._expiration_dates[self.current_resource_id][workflow_id] = self.workflow_exp_date
         self._workflow_names[self.current_resource_id][workflow_id] = workflow_name
@@ -2596,6 +2600,9 @@ class ApplicationModel(QtCore.QObject):
       except ConnectionClosedError, e:
         QtGui.QApplication.restoreOverrideCursor()
         self.emit(QtCore.SIGNAL('connection_closed_error'))
+      except UnknownObjectError, e:
+        self.delete_workflow()
+        return self._current_workflow
       else:
         try:
           self._current_workflow = GuiWorkflow(workflow)
