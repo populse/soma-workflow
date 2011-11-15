@@ -22,12 +22,6 @@ import socket
 
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
-import matplotlib
-matplotlib.use('Qt4Agg')
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure 
-
-
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 from soma.workflow.constants import *
@@ -36,6 +30,16 @@ from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma.workflow.utils
 
+try:
+  import matplotlib
+  matplotlib.use('Qt4Agg')
+  from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+  from matplotlib.figure import Figure 
+except ImportError, e:
+  print "Could not use Matplotlib: %s %s" %(type(e), e)
+  MATPLOTLIB = False
+else:
+  MATPLOTLIB = True
 
 
 try:
@@ -1186,12 +1190,20 @@ class MainWindow(QtGui.QMainWindow):
     #graphWidgetLayout.setContentsMargins(2,2,2,2)
     #graphWidgetLayout.addWidget(self.graphWidget)
     #self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
+
+    # no graph for now
+    self.ui.dock_graph.hide()
+    self.ui.dock_graph.toggleViewAction().setVisible(False)
     
     self.workflowPlotWidget = WorkflowPlot(self.model, parent=self)
     plotLayout = QtGui.QVBoxLayout()
     plotLayout.setContentsMargins(2,2,2,2)
     plotLayout.addWidget(self.workflowPlotWidget)
     self.ui.dockWidgetContents_plot.setLayout(plotLayout)
+
+    if not MATPLOTLIB:
+      self.ui.dock_plot.hide()
+      self.ui.dock_plot.toggleViewAction().setVisible(False)
     
     self.ui.menu_file.addAction(self.sw_widget.ui.action_open_wf)
     self.ui.menu_file.addAction(self.sw_widget.ui.action_save)
@@ -1459,10 +1471,11 @@ class WorkflowPlot(QtGui.QWidget):
     self.assigned_wf_id = assigned_wf_id 
     self.assigned_resource_id = assigned_resource_id
     
-    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
-    self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.clear)
-    self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.current_workflow_changed)
-    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
+    if MATPLOTLIB:
+      self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
+      self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.clear)
+      self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.current_workflow_changed)
+      self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
 
   def check_workflow(self):
     return self.assigned_wf_id == None or \
