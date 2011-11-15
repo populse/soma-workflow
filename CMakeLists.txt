@@ -15,7 +15,12 @@ BRAINVISA_DEPENDENCY( RUN DEPENDS python RUN ">= 2.5;<< 3.0" )
 BRAINVISA_DEPENDENCY( RUN DEPENDS libqtcore4 RUN ">= 4.6" )
 BRAINVISA_DEPENDENCY( RUN DEPENDS libqtgui4 RUN ">= 4.6" )
 BRAINVISA_DEPENDENCY( RUN RECOMMENDS libqt4-designer RUN ">= 4.6" )
-  
+
+find_package( LibDRMAA QUIET )
+if( NOT LIBDRMAA_FOUND )
+  set( LIBDRMAA_LIBRARIES drmaa )
+endif()
+
 add_subdirectory( src/drmaaJobs )
 if( SIP_FOUND )
   add_subdirectory( src/sip )
