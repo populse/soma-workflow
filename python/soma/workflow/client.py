@@ -43,7 +43,7 @@ import sys
 import soma.workflow.connection as connection
 from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
 from soma.workflow.constants import *
-from soma.workflow.configuration import Configuration
+import soma.workflow.configuration as configuration
 from soma.workflow.errors import TransferError, SerializationError
 
 #-------------------------------------------------------------------------------
@@ -445,17 +445,16 @@ class WorkflowController(object):
                resource_id=None,
                login=None,
                password=None,
-               config_path=None,
+               config=None,
                rsa_key_pass=None):
     '''
     Sets up the connection to the computing resource.
     Looks for a soma-workflow configuration file (if not specified in the
-    *config_path* argument).
+    *config* argument).
 
     * resource_id *string*
         Identifier of the computing resource to connect to.
-        The number of cpu of the current machine is detected and the basic
-        scheduler is lauched.
+        If None, the number of cpu of the current machine is detected and the basic scheduler is lauched.
 
     * login *string*
         Required if the computing resource is remote.
@@ -464,8 +463,8 @@ class WorkflowController(object):
         Required if the computing resource is remote and not RSA key where
         configured to log on the remote machine with ssh.
 
-    * config_path *string*
-        Optional path to the configuration file.
+    * config *configuration.Configuration*
+        Optional configuration.
 
     * rsa_key_pass *string*
         Required if the RSA key is protected with a password.
@@ -474,14 +473,17 @@ class WorkflowController(object):
       The login and password are only required for a remote computing resource.
     '''
 
-    self.config = Configuration(resource_id)
+    if config == None:
+      self.config = configuration.Configuration.load_from_file(resource_id)
+    else:
+      self.config = config
     mode = self.config.get_mode()
     print  mode + " mode"
 
     self._resource_id = resource_id
 
     # LOCAL MODE
-    if mode == 'local':
+    if mode == configuration.LOCAL_MODE:
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
       self._transfer = TransferLocal(self._engine_proxy)
@@ -497,7 +499,7 @@ class WorkflowController(object):
       #self._transfer = PortableRemoteTransfer(self._engine_proxy)
 
     # REMOTE MODE
-    elif mode == 'remote':
+    elif mode == configuration.REMOTE_MODE:
       submitting_machines = self.config.get_submitting_machines()
       sub_machine = submitting_machines[random.randint(0,
                                                     len(submitting_machines)-1)]
@@ -522,7 +524,7 @@ class WorkflowController(object):
       self._transfer_stdouterr = PortableRemoteTransfer(self._engine_proxy)
 
     # LIGHT MODE
-    elif mode == 'light':
+    elif mode == configuration.LIGHT_MODE:
       self._engine_proxy = _embedded_engine_and_server(self.config)
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)

@@ -48,7 +48,7 @@ if __name__=="__main__":
   ###### main server program
   def main(resource_id, engine_name, log = ""):
     
-    config = Configuration(resource_id)
+    config = Configuration.load_from_file(resource_id)
 
     (engine_log_dir,
     engine_log_format,

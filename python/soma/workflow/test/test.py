@@ -1055,7 +1055,7 @@ if __name__ == '__main__':
   login = None
   password = None
   
-  config = Configuration(resource_id, config_file_path)
+  config = Configuration.load_from_file(resource_id, config_file_path)
 
   if config.get_mode() == 'remote':
     sys.stdout.write("This is a remote connection\n")

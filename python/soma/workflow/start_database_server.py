@@ -30,7 +30,7 @@ if __name__ == '__main__':
   ressource_id = sys.argv[1]
   print "Ressource: " + ressource_id
 
-  config = Configuration(ressource_id)
+  config = Configuration.load_from_file(ressource_id)
 
   (server_log_file,
    server_log_format,
