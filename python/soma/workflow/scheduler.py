@@ -5,6 +5,9 @@ import threading
 import time
 import logging
 import os
+import sys
+import signal
+import ctypes
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
@@ -501,7 +504,21 @@ class LocalScheduler(object):
       #print "kill job " + repr(scheduler_job_id)
       if scheduler_job_id in self._processes:
         #print "    => kill the process "
-        self._processes[scheduler_job_id].kill()
+        process = self._processes[scheduler_job_id]
+        if sys.version_info < (2, 6):
+          if sys.platform == 'win32':
+            PROCESS_TERMINATE = 1
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, 
+                                               False, 
+                                               process.pid)
+            ctypes.windll.kernel32.TerminateProcess(handle, -1)
+            ctypes.windll.kernel32.CloseHandle(handle)
+          else:
+            os.kill(process.pid, signal.SIGKILL)
+            os.wait()
+        else:
+          process.kill()
+
         del self._processes[scheduler_job_id]
         self._status[scheduler_job_id] = constants.FAILED
         self._exit_info[scheduler_job_id] = (constants.USER_KILLED,
