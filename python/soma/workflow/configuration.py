@@ -427,7 +427,7 @@ class Configuration(object):
 
   
   def get_queue_limits(self):
-    if self._config_parser == None or self._queue_limits != None:
+    if self._config_parser == None or len(self._queue_limits) != 0:
       return self._queue_limits
 
     self._queue_limits = {}
@@ -448,7 +448,7 @@ class Configuration(object):
 
   
   def get_queues(self):
-    if self._config_parser == None or self._queues !=  None:
+    if self._config_parser == None or len(self._queues) !=  0:
       return self._queues
 
     self._queues = []
