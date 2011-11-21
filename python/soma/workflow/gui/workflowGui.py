@@ -416,6 +416,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('connection_closed_error'), self.reconnectAfterConnectionClosed)
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
     self.updateCurrentWorkflowStatus)
+    self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.update_workflow_status_icons)
 
     try:
       self.config_file_path = Configuration.search_config_path()
@@ -1069,6 +1070,18 @@ class SomaWorkflowWidget(QtGui.QWidget):
     ''' 
     return workflows
 
+  @QtCore.pyqtSlot()  
+  def update_workflow_status_icons(self):
+    for i in range(0, self.ui.list_widget_submitted_wfs.count()):
+      item = self.ui.list_widget_submitted_wfs.item(i)
+      wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
+      status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
+      icon_path = workflow_status_icon(status)
+      if icon_path != None:
+        item.setIcon(QtGui.QIcon(icon_path))
+      else:
+        item.setIcon(QtGui.QIcon())
+
   def updateWorkflowList(self, force_not_from_model=False):
     if force_not_from_model or \
       not self.update_workflow_list_from_model or \
@@ -1092,7 +1105,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
     for wf_id, wf_info in wf_id_info:
       workflow_name, expiration_date = wf_info
       if not workflow_name: workflow_name = repr(wf_id)
-      item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
+      status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
+      icon_path = workflow_status_icon(status)
+      if icon_path != None:
+        item = QtGui.QListWidgetItem(QtGui.QIcon(icon_path), 
+                                     workflow_name, 
+                                     self.ui.list_widget_submitted_wfs)
+      else:
+        item = QtGui.QListWidgetItem(workflow_name, self.ui.list_widget_submitted_wfs)
       item.setData(QtCore.Qt.UserRole, wf_id)
       self.ui.list_widget_submitted_wfs.addItem(item)
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
@@ -2492,6 +2512,12 @@ class ApplicationModel(QtCore.QObject):
 
   def list_workflow_status(self, resource_id):
     return self._workflow_statuses[resource_id].values()
+
+  def get_workflow_status(self, resource_id, workflow_id):
+    if workflow_id in self._workflow_statuses[resource_id]:
+      return self._workflow_statuses[resource_id][workflow_id]
+    else:
+      return None
 
   def list_workflow_expiration_dates(self, resource_id):
     return self._expiration_dates[resource_id].values()
