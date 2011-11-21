@@ -424,7 +424,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.ui.combo_resources.addItems(self.resource_list)
      
     self.ui.widget_wf_status_date.hide()
-    self.ui.widget_wf_info.hide()
     
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
     
@@ -972,7 +971,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.action_save.setEnabled(False)
       
       self.ui.widget_wf_status_date.hide()
-      self.ui.widget_wf_info.hide()
 
       self.ui.list_widget_submitted_wfs.clearSelection()
       
@@ -1005,7 +1003,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_transfer_outfiles.setEnabled(False)
         
         self.ui.widget_wf_status_date.show()
-        self.ui.widget_wf_info.show()
         
         self.ui.list_widget_submitted_wfs.clearSelection()
         
@@ -1032,7 +1029,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_save.setEnabled(True)    
         
         self.ui.widget_wf_status_date.show()
-        self.ui.widget_wf_info.show()
         
         index = None
         for i in range(0, self.ui.list_widget_submitted_wfs.count()):
