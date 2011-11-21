@@ -281,6 +281,9 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.ui.table.doubleClicked.connect(self.raise_sw_widget)
     self.action_add_resource.triggered.connect(self.add_resource)
 
+    self.ui.add_resource_tool_button.setDefaultAction(self.action_add_resource)
+    self.ui.add_resource_tool_button.setText("Add")
+
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.refresh)
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.connection_changed)
     self.ui.table.itemSelectionChanged.connect(self.resource_selection_changed)
