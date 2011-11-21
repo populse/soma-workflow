@@ -277,7 +277,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.addAction(self.action_add_resource)
     self.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
 
-    self.ui.table.doubleClicked.connect(self.sw_widget.show)    
+    self.ui.table.doubleClicked.connect(self.sw_widget.show)
+    self.ui.table.doubleClicked.connect(self.raise_sw_widget)
     self.action_add_resource.triggered.connect(self.add_resource)
 
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.refresh)
@@ -286,6 +287,9 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
     self.connection_changed()
 
+  @QtCore.pyqtSlot()
+  def raise_sw_widget(self):
+    self.sw_widget.raise_()
     
   @QtCore.pyqtSlot()
   def resource_selection_changed(self):
