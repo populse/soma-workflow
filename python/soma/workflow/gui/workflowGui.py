@@ -300,7 +300,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     if len(selected_items) == 0:
       return
     item = selected_items[0]
-    rid = item.data(QtCore.Qt.UserRole).toString().encode('utf-8')
+    rid = unicode(item.data(QtCore.Qt.UserRole).toString()).encode('utf-8')
     self.model.set_current_connection(rid)
     
 
@@ -1080,7 +1080,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
       status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
       icon_path = workflow_status_icon(status)
-      if icon_path != None:
+      if status != WORKFLOW_DONE and icon_path != None:
         item.setIcon(QtGui.QIcon(icon_path))
       else:
         item.setIcon(QtGui.QIcon())
@@ -1110,7 +1110,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if not workflow_name: workflow_name = repr(wf_id)
       status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
       icon_path = workflow_status_icon(status)
-      if icon_path != None:
+      if status != WORKFLOW_DONE and icon_path != None:
         item = QtGui.QListWidgetItem(QtGui.QIcon(icon_path), 
                                      workflow_name, 
                                      self.ui.list_widget_submitted_wfs)
@@ -1182,6 +1182,15 @@ class MainWindow(QtGui.QMainWindow):
                                         computing_resource,
                                         self,
                                         flags)
+
+    if True:
+      self.mini_widget = SomaWorkflowMiniWidget(self.model,
+                                              self.sw_widget,
+                                              self)
+      self.mini_widget.layout().setMargin(0)
+      self.sw_widget.ui.combo_resources.hide()
+      self.sw_widget.ui.resource_selection_frame.layout().addWidget(self.mini_widget)
+
     resourcesWfLayout = QtGui.QVBoxLayout()
     resourcesWfLayout.setContentsMargins(2,2,2,2)
     resourcesWfLayout.addWidget(self.sw_widget)

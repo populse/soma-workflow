@@ -20,17 +20,35 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="topMargin">
+    <number>9</number>
+   </property>
    <property name="bottomMargin">
     <number>0</number>
    </property>
    <item>
-    <widget class="QComboBox" name="combo_resources">
-     <property name="minimumSize">
-      <size>
-       <width>242</width>
-       <height>0</height>
-      </size>
+    <widget class="QFrame" name="resource_selection_frame">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
      </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="margin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QComboBox" name="combo_resources">
+        <property name="minimumSize">
+         <size>
+          <width>242</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
