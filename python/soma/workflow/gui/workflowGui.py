@@ -329,7 +329,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             #The workflow exist
             workflow_status = self.model.current_connection.workflow_status(wf_id)
             workflow_info = workflow_info_dict[wf_id]
-            self.model.add_workflow(wf_id, 
+            self.model.add_to_submitted_workflows(wf_id, 
                                     workflow_exp_date=workflow_info[1], 
                                     workflow_name=workflow_info[0], 
                                     workflow_status=workflow_status)
@@ -2643,7 +2643,31 @@ class ApplicationModel(QtCore.QObject):
       self._resource_pool.reinit_connection(resource_id, connection)
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self._hold[resource_id] = False
+
+
+  def add_to_submitted_workflows(self,
+                                 workflow_id, 
+                                  workflow_exp_date, 
+                                  workflow_name, 
+                                  workflow_status,
+                                  workflow=None):
+
+    '''
+    Add a workflow without modifying the current workflow
+    '''
+    with self._lock:      
+      if workflow_id != NOT_SUBMITTED_WF_ID:
+        if workflow:
+          self._workflows[self.current_resource_id][workflow_id] = GuiWorkflow(workflow)
+        else:
+          self._workflows[self.current_resource_id][workflow_id] = None
+        self._expiration_dates[self.current_resource_id][workflow_id] = workflow_exp_date
+        self._workflow_names[self.current_resource_id][workflow_id] = workflow_name
+        self._workflow_statuses[self.current_resource_id][workflow_id] = workflow_status
+      self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
     
+
+
   def add_workflow(self, 
                    workflow_id, 
                    workflow_exp_date, 
