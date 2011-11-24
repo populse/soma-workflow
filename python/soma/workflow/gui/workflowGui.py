@@ -2371,6 +2371,8 @@ class ApplicationModel(QtCore.QObject):
   #dictionary: resource_id => boolean
   _hold = None
 
+  _timer = None
+
   # signals
   # connection_closed_error
   # current_connection_changed
@@ -2378,7 +2380,17 @@ class ApplicationModel(QtCore.QObject):
   # current_workflow_about_to_change
   # current_workflow_changed
   # global_workflow_state_changed
+
+  class UpdateThread(QtCore.QThread):
+    
+    def __init__(self, application_model, parent):
+      super(ApplicationModel.UpdateThread, self).__init__(parent)
+      self.application_model = application_model
+
+    def run(self):
+      self.application_model.update()
   
+
   def __init__(self, resource_pool=None, parent=None):
     '''
     **resource_pool**: *ComputingResourcePool*
@@ -2413,79 +2425,93 @@ class ApplicationModel(QtCore.QObject):
 
     for rid, connection in self._resource_pool._connections.iteritems():
       self.add_connection(rid, connection)
-    
-    def update_loop(self):
-      # update only the current workflows
-      while True:
-        with self._lock:
-          if self.auto_update:
-            if self.current_wf_id != None and not self._hold[self.current_resource_id]:
-              try:
-                if self.current_wf_id == NOT_SUBMITTED_WF_ID:
-                  wf_status = None
-                elif self._current_workflow:
-                  #print " ==> communication with the server " + repr(self.wf_id)
-                  #begining = datetime.now()
 
-                  #wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
-                  wf_complete_status = self.connection_timeout(WorkflowController.workflow_elements_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
-
-                  wf_status = wf_complete_status[2]
-                  #end = datetime.now() - begining
-                  #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
-                else:
-                  wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
-                  #wf_status = self.current_connection.workflow_status(self.current_wf_id)
-              except ConnectionClosedError, e:
-                self.emit(QtCore.SIGNAL('connection_closed_error'), self.current_resource_id)
-                self._hold[self.current_resource_id] = True
-                continue
-              except UnknownObjectError, e:
-                self.delete_workflow()
-                continue
-              else: 
-                if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:    
-                  if self._current_workflow.updateState(wf_complete_status): 
-                    self.emit(QtCore.SIGNAL('workflow_state_changed()'))
-                if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
-                  self.workflow_status = wf_status
-                  self._workflow_statuses[self.current_resource_id][self.current_wf_id] = wf_status 
-                  self.emit(QtCore.SIGNAL('workflow_state_changed()'))
-                  self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
-            if True:
-              #update the status of every workflow
-              global_wf_state_changed = False
-              for rid in self._resource_pool.resource_ids():
-                if not self._hold[rid]:
-                  for wfid in self._workflows[rid].keys():
-                    if wfid != self.current_wf_id:
-                      try:
-                        connection = self._resource_pool.connection(rid)
-                        wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(connection, wfid), timeout_duration=20)
-
-                        #wf_status = self._resource_pool.connection(rid).workflow_status(wfid)
-                      except ConnectionClosedError, e:
-                        self.emit(QtCore.SIGNAL('connection_closed_error'), rid)
-                        self._hold[rid] = True
-                        break
-                      except UnknownObjectError, e:
-                        self.delete_workflow()
-                        continue
-                      else:
-                        if wf_status != self._workflow_statuses[rid][wfid]:
-                          global_wf_state_changed = True
-                          self._workflow_statuses[rid][wfid] = wf_status
-              if global_wf_state_changed:
-                self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
-        time.sleep(self.update_interval)
-    
-    self.__update_thread = threading.Thread(name = "wf_execution_context_update_loop",
-                                           target = update_loop,
-                                           args = ([self]))
-    self.__update_thread.setDaemon(True)
-    self.__update_thread.start()
+    self.update_thread = None
 
     self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+    self._timer = QtCore.QTimer(self)
+    self._timer.setInterval(self.update_interval * 3000) 
+    self._timer.timeout.connect(self.threaded_update)
+    self._timer.start()
+
+    QtGui.QApplication.instance().lastWindowClosed.connect(self.wait_for_thread)
+
+  @QtCore.pyqtSlot()
+  def threaded_update(self):
+    self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=self)
+    self.update_thread.start(QtCore.QThread.LowPriority)
+  
+  @QtCore.pyqtSlot()
+  def wait_for_thread(self):
+    print "wait for soma gui thread"
+    if self.update_thread != None:
+      if self.update_thread.isRunning():
+        self.update_thread.wait(10000)
+    print "Soma gui thread ended nicely."
+  
+
+  def update(self):
+    with self._lock:
+      if self.auto_update:
+        if self.current_wf_id != None and not self._hold[self.current_resource_id]:
+          try:
+            if self.current_wf_id == NOT_SUBMITTED_WF_ID:
+              wf_status = None
+            elif self._current_workflow:
+              #print " ==> communication with the server " + repr(self.wf_id)
+              #begining = datetime.now()
+
+              #wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
+              wf_complete_status = self.connection_timeout(WorkflowController.workflow_elements_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
+
+              wf_status = wf_complete_status[2]
+              #end = datetime.now() - begining
+              #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
+            else:
+              wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
+              #wf_status = self.current_connection.workflow_status(self.current_wf_id)
+          except ConnectionClosedError, e:
+            self.emit(QtCore.SIGNAL('connection_closed_error'), self.current_resource_id)
+            self._hold[self.current_resource_id] = True
+            return
+          except UnknownObjectError, e:
+            self.delete_workflow()
+            return
+          else: 
+            if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:    
+              if self._current_workflow.updateState(wf_complete_status): 
+                self.emit(QtCore.SIGNAL('workflow_state_changed()'))
+            if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
+              self.workflow_status = wf_status
+              self._workflow_statuses[self.current_resource_id][self.current_wf_id] = wf_status 
+              self.emit(QtCore.SIGNAL('workflow_state_changed()'))
+              self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+        if True:
+          #update the status of every workflow
+          global_wf_state_changed = False
+          for rid in self._resource_pool.resource_ids():
+            if not self._hold[rid]:
+              for wfid in self._workflows[rid].keys():
+                if wfid != self.current_wf_id:
+                  try:
+                    connection = self._resource_pool.connection(rid)
+                    wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(connection, wfid), timeout_duration=20)
+
+                    #wf_status = self._resource_pool.connection(rid).workflow_status(wfid)
+                  except ConnectionClosedError, e:
+                    self.emit(QtCore.SIGNAL('connection_closed_error'), rid)
+                    self._hold[rid] = True
+                    break
+                  except UnknownObjectError, e:
+                    self.delete_workflow()
+                    continue
+                  else:
+                    if wf_status != self._workflow_statuses[rid][wfid]:
+                      global_wf_state_changed = True
+                      self._workflow_statuses[rid][wfid] = wf_status
+          if global_wf_state_changed:
+            self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+
 
   def connection_timeout(self, func, args=(), kwargs={}, timeout_duration=30, default=None):
     """This function will spawn a thread and run the given function

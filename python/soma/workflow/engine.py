@@ -23,7 +23,7 @@ import time
 import logging
 import stat, hashlib, operator
 import itertools
-
+import atexit
 
 #import cProfile
 
@@ -66,6 +66,7 @@ class EngineLoopThread(threading.Thread):
     super(EngineLoopThread, self).__init__()
     self.engine_loop = engine_loop
     self.time_interval = refreshment_interval
+    atexit.register(EngineLoopThread.stop, self)
   
   def run(self):
     #cProfile.runctx("self.engine_loop.start_loop(self.time_interval)", globals(), locals(), "/home/sl225510/profiling/profile_loop_thread")
@@ -74,8 +75,8 @@ class EngineLoopThread(threading.Thread):
   def stop(self):
     self.engine_loop.stop_loop()
     self.join()
+    print "Soma workflow engin thread ended nicely."
   
-
 
 class WorkflowEngineLoop(object):
 

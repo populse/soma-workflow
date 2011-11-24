@@ -8,6 +8,7 @@ import os
 import sys
 import signal
 import ctypes
+import atexit
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
@@ -331,8 +332,10 @@ class LocalScheduler(object):
 
     self._lock = threading.RLock()
 
+    self.stop_thread_loop = False
+
     def loop(self):
-      while True:
+      while not self.stop_thread_loop:
         with self._lock:
           self._iterate()
         time.sleep(self._period)
@@ -343,12 +346,19 @@ class LocalScheduler(object):
     self._loop.setDaemon(True)
     self._loop.start()
 
+    atexit.register(LocalScheduler.end_scheduler_thread, self)
+
+
+  def end_scheduler_thread(self):
+    with self._lock:
+      self.stop_thread_loop = True
+      self._loop.join()
+      print "Soma scheduler thread ended nicely."
 
   def _iterate(self):
     # Nothing to do if the queue is empty and nothing is running
     if not self._queue and not self._processes:
       return
-
     #print "#############################"
     # Control the running jobs
     ended_jobs = []
