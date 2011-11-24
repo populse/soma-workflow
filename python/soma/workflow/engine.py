@@ -779,8 +779,9 @@ class WorkflowEngine(RemoteFileController):
       else:
         self._database_server.set_workflow_status(workflow_id, 
                                                   constants.KILL_PENDING)
-        self._wait_wf_status_update(workflow_id)
-    
+        self._wait_wf_status_update(workflow_id, 
+                                    expected_status = constants.WORKFLOW_DONE)
+
     return True
 
 
@@ -806,6 +807,8 @@ class WorkflowEngine(RemoteFileController):
     
     if status == constants.WORKFLOW_DONE:
       self._engine_loop.restart_workflow(workflow_id, status)
+      self._wait_wf_status_update(workflow_id, 
+                                  expected_status=constants.WORKFLOW_IN_PROGRESS)
       return True
     else:
       return False
@@ -1018,18 +1021,30 @@ class WorkflowEngine(RemoteFileController):
     return True
 
 
-  def _wait_wf_status_update(self, wf_id):  
+  def _wait_wf_status_update(self, wf_id, expected_status):  
     self.logger.debug(">> _wait_wf_status_update")
     try:
       (status, 
       last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                  self._user_id)
-      while status and not status == constants.WORKFLOW_DONE and \
-            _out_to_date(last_status_update):
+      if status != None and status != expected_status:
         time.sleep(refreshment_interval)
         (status, 
         last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                   self._user_id) 
+        if status != None and status != expected_status:
+          time.sleep(refreshment_interval)
+          (status, 
+          last_status_update) = self._database_server.get_workflow_status(wf_id,
+                                                                    self._user_id)
+          while status != None and \
+                status != expected_status and \
+                status != constants.WORKFLOW_DONE and \
+                not _out_to_date(last_status_update):
+            time.sleep(refreshment_interval)
+            (status, 
+            last_status_update) = self._database_server.get_workflow_status(wf_id,
+                                                                      self._user_id) 
     except UnknownObjectError, e:
       pass
     self.logger.debug("<< _wait_wf_status_update")
@@ -1041,7 +1056,7 @@ class WorkflowEngine(RemoteFileController):
     last_status_update) = self._database_server.is_valid_workflow(wf_id, 
                                                                 self._user_id)
     while is_valid_wf and \
-          _out_to_date(last_status_update):
+          not _out_to_date(last_status_update):
       time.sleep(refreshment_interval)
       (is_valid_wf, 
       last_status_update) = self._database_server.is_valid_workflow(wf_id, 

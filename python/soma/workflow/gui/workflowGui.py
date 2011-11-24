@@ -694,6 +694,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                 "The workflow is already running.")
     else:
       self.model.restart_current_workflow()
+      self.model.update()
       
   
   @QtCore.pyqtSlot()
@@ -890,6 +891,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                    "queue) using the DRMS interface.")
         break
 
+    self.model.update()
 
   @QtCore.pyqtSlot()
   def delete_workflow(self):
