@@ -39,6 +39,7 @@ import subprocess
 import sys
 
 #import cProfile
+#import traceback
 
 import soma.workflow.connection as connection
 from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal

@@ -475,6 +475,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui_connection_dlg.lineEdit_login.setText(user)
       self.connection_dlg.show()
 
+    if self.model.current_resource_id != None:
+      self.currentConnectionChanged()
+
+    
+
   def closeEvent(self, event):
     self.emit(QtCore.SIGNAL("closing()"))
 
@@ -484,6 +489,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
                             login=None, 
                             password=None, 
                             rsa_key_pass=None):      
+
+    if self.model.resource_exist(resource_id):
+      self.model.set_current_connection(resource_id)
+      return
 
     wf_ctrl = None
     QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
