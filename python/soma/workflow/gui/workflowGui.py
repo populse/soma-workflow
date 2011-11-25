@@ -104,6 +104,9 @@ Ui_WStatusNameDate = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
 Ui_SWMiniWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
                                                           'sw_mini.ui' ))[0]
 
+Ui_SearchWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
+                                                          'search_widget.ui' ))[0]
+
 #-----------------------------------------------------------------------------
 # Local utilities
 #-----------------------------------------------------------------------------
@@ -1215,7 +1218,9 @@ class MainWindow(QtGui.QMainWindow):
     treeWidgetLayout.addWidget(self.treeWidget)
     self.ui.centralwidget.setLayout(treeWidgetLayout)
    
-    self.itemInfoWidget = WorkflowElementInfo(self.model, self)
+    self.itemInfoWidget = WorkflowElementInfo(self.model, 
+                                              self.treeWidget.proxy_model, 
+                                              self)
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.setContentsMargins(2,2,2,2)
     itemInfoLayout.addWidget(self.itemInfoWidget)
@@ -1367,6 +1372,85 @@ class WorkflowStatusNameDate(QtGui.QWidget):
       self.ui.wf_status_icon.setEnabled(False)
 
 
+class SearchWidget(QtGui.QWidget):
+
+  workflow_tree = None
+
+  def __init__(self, workflow_tree, parent=None):
+    '''
+    * workflow_tree *WorkflowTree*
+    '''
+    super(SearchWidget, self).__init__(parent)
+  
+    self.workflow_tree = workflow_tree
+    
+    self.ui = Ui_SearchWidget()
+    self.ui.setupUi(self)
+
+    
+    self.statuses = []
+    self.statuses.append([]) 
+    self.statuses.append([FAILED]) 
+    self.statuses.append([RUNNING])
+    self.statuses.append([QUEUED_ACTIVE])
+    self.statuses.append([RUNNING, QUEUED_ACTIVE])
+    self.statuses.append([DONE])
+
+    self.ui.status_combo_box.addItem("All")
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/failed.png")), FAILED)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/running.png")), RUNNING)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/queued.png")), QUEUED_ACTIVE)
+    self.ui.status_combo_box.addItem( QUEUED_ACTIVE + " or " + RUNNING)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/success.png")), DONE)
+    
+    
+    self.ui.line_edit.textChanged.connect(self.text_changed)
+    self.ui.expand_button.clicked.connect(self.workflow_tree.tree_view.expandAll)
+    self.ui.status_combo_box.currentIndexChanged.connect(self.status_changed)
+
+
+  @QtCore.pyqtSlot(int)
+  def status_changed(self, index):
+    if self.workflow_tree.proxy_model != None:
+      self.workflow_tree.proxy_model.setFilterStatus(self.statuses[index])  
+    
+
+  def text_changed(self, text):
+    if self.workflow_tree.proxy_model != None:
+      self.workflow_tree.proxy_model.setFilterRegExp(
+                              QtCore.QRegExp(text, 
+                                             QtCore.Qt.CaseInsensitive,
+                                             QtCore.QRegExp.FixedString))
+
+
+class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
+  
+  def __init__(self, parent=None):
+    super(JobFilterProxyModel, self).__init__(parent)
+
+    self.statuses = []
+
+  def setFilterStatus(self, statuses):
+    self.statuses = statuses
+    self.invalidateFilter()
+
+  def filterAcceptsRow(self, sourceRow, sourceParent ):
+  
+    index = self.sourceModel().index(sourceRow, 0, sourceParent)
+    
+    if isinstance(index.internalPointer(), GuiGroup):
+      return True
+    elif isinstance(index.internalPointer(), GuiTransfer):
+      return True
+    elif isinstance(index.internalPointer(), GuiJob):
+      if len(self.statuses) != 0  and index.internalPointer().status not in self.statuses:
+        return False
+
+    return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
+                                                        sourceRow, 
+                                                        sourceParent)
+    
+
 
 class WorkflowTree(QtGui.QWidget):
 
@@ -1382,6 +1466,12 @@ class WorkflowTree(QtGui.QWidget):
 
   selection_model_changed = QtCore.pyqtSignal(['QItemSelectionModel'])
 
+  tree_view = None
+  
+  #JobFilterProxyModel
+  proxy_model = None
+
+  search_widget = None
 
   def __init__(self, 
                model, 
@@ -1390,11 +1480,16 @@ class WorkflowTree(QtGui.QWidget):
                parent=None):
     super(WorkflowTree, self).__init__(parent)
 
+    self.proxy_model = QtGui.QSortFilterProxyModel(self)
+    self.proxy_model = JobFilterProxyModel(self)
+
     self.tree_view = QtGui.QTreeView(self)
     self.tree_view.setHeaderHidden(True)
+    self.search_widget = SearchWidget(workflow_tree=self, parent=self)
     self.vLayout = QtGui.QVBoxLayout(self)
     self.vLayout.setContentsMargins(0,0,0,0)
     self.vLayout.addWidget(self.tree_view)
+    self.vLayout.addWidget(self.search_widget)
 
     self.model = model
     self.item_model = None
@@ -1440,10 +1535,11 @@ class WorkflowTree(QtGui.QWidget):
         workflow = self.model.current_workflow()
         if workflow != None:
           self.item_model = WorkflowItemModel(workflow, self)
-          self.tree_view.setModel(self.item_model)
+          self.proxy_model.setSourceModel(self.item_model)
+          self.tree_view.setModel(self.proxy_model)
+          #self.tree_view.setModel(self.item_model)
           self.item_model.emit(QtCore.SIGNAL("modelReset()"))
           self.selection_model_changed.emit(self.tree_view.selectionModel())
-          self.emit(QtCore.SIGNAL("selection_model_changed()"))
         else:
           self.setEnabled(False)
       elif self.assigned_wf_id != None:
@@ -1565,11 +1661,15 @@ class WorkflowPlot(QtGui.QWidget):
     
 class WorkflowElementInfo(QtGui.QWidget):
   
-  def __init__(self, model, parent = None):
+  #QtGui.QAbstractProxyModel used in the widget providing the selection model
+  proxy_model = None
+  
+  def __init__(self, model, proxy_model=None, parent=None):
     super(WorkflowElementInfo, self).__init__(parent)
     self.selectionModel = None
     self.infoWidget = None
     self.model = model # used to update stderr and stdout only
+    self.proxy_model = proxy_model
     
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged) 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear) 
@@ -1615,6 +1715,8 @@ class WorkflowElementInfo(QtGui.QWidget):
     if self.infoWidget:
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
+    if self.proxy_model != None:
+      current = self.proxy_model.mapToSource(current)
     item = current.internalPointer()
     if isinstance(item, GuiJob):
       self.infoWidget = JobInfoWidget(item, self.model.current_connection, self)
