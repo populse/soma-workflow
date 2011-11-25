@@ -1480,8 +1480,7 @@ class WorkflowTree(QtGui.QWidget):
                parent=None):
     super(WorkflowTree, self).__init__(parent)
 
-    self.proxy_model = QtGui.QSortFilterProxyModel(self)
-    self.proxy_model = JobFilterProxyModel(self)
+    self.proxy_model = None #JobFilterProxyModel(self)
 
     self.tree_view = QtGui.QTreeView(self)
     self.tree_view.setHeaderHidden(True)
@@ -1490,6 +1489,8 @@ class WorkflowTree(QtGui.QWidget):
     self.vLayout.setContentsMargins(0,0,0,0)
     self.vLayout.addWidget(self.tree_view)
     self.vLayout.addWidget(self.search_widget)
+
+    self.search_widget.hide()
 
     self.model = model
     self.item_model = None
@@ -1535,9 +1536,11 @@ class WorkflowTree(QtGui.QWidget):
         workflow = self.model.current_workflow()
         if workflow != None:
           self.item_model = WorkflowItemModel(workflow, self)
-          self.proxy_model.setSourceModel(self.item_model)
-          self.tree_view.setModel(self.proxy_model)
-          #self.tree_view.setModel(self.item_model)
+          if self.proxy_model:
+            self.proxy_model.setSourceModel(self.item_model)
+            self.tree_view.setModel(self.proxy_model)
+          else:
+            self.tree_view.setModel(self.item_model)
           self.item_model.emit(QtCore.SIGNAL("modelReset()"))
           self.selection_model_changed.emit(self.tree_view.selectionModel())
         else:
