@@ -1444,8 +1444,38 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
     elif isinstance(index.internalPointer(), GuiTransfer):
       return True
     elif isinstance(index.internalPointer(), GuiJob):
-      if len(self.statuses) != 0  and index.internalPointer().status not in self.statuses:
-        return False
+      if len(self.statuses) != 0:
+        if FAILED in self.statuses:
+          job = index.internalPointer()
+          if job.status == FAILED:
+            return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
+                                                        sourceRow, 
+                                                        sourceParent)
+          elif job.status == DONE:
+              exit_status, exit_value, term_signal, resource_usage = job.exit_info
+              if exit_status != FINISHED_REGULARLY or exit_value != 0:
+                return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
+                                                        sourceRow, 
+                                                        sourceParent)
+              else: 
+                return False
+          else:
+            return False
+        elif DONE in self.statuses:
+          job = index.internalPointer()
+          if job.status == DONE:
+            exit_status, exit_value, term_signal, resource_usage = job.exit_info
+            if exit_status == FINISHED_REGULARLY and exit_value == 0:
+              return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
+                                                        sourceRow, 
+                                                        sourceParent)
+            else:
+              return False
+          else:
+            return False
+
+        elif index.internalPointer().status not in self.statuses:
+          return False
 
     return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
                                                         sourceRow, 
@@ -1481,7 +1511,13 @@ class WorkflowTree(QtGui.QWidget):
                parent=None):
     super(WorkflowTree, self).__init__(parent)
 
+    self.model = model
+    self.item_model = None
+    self.assigned_wf_id = assigned_wf_id 
+    self.assigned_resource_id = assigned_resource_id
+
     self.proxy_model = JobFilterProxyModel(self)
+    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.proxy_model.invalidate)
 
     self.tree_view = QtGui.QTreeView(self)
     self.tree_view.setHeaderHidden(True)
@@ -1490,11 +1526,6 @@ class WorkflowTree(QtGui.QWidget):
     self.vLayout.setContentsMargins(0,0,0,0)
     self.vLayout.addWidget(self.tree_view)
     self.vLayout.addWidget(self.search_widget)
-
-    self.model = model
-    self.item_model = None
-    self.assigned_wf_id = assigned_wf_id 
-    self.assigned_resource_id = assigned_resource_id
 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_about_to_change()'), self.currentWorkflowAboutToChange)
