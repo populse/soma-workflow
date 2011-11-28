@@ -21,6 +21,8 @@ if __name__=="__main__":
   
   app = QtGui.QApplication(sys.argv)
   
+  #QtCore.pyqtRemoveInputHook()
+
   model = ApplicationModel()
 
   i = 1

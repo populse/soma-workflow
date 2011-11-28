@@ -19,6 +19,7 @@ from datetime import timedelta
 import socket
 #import cProfile
 #import traceback
+#import pdb
 
 from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
@@ -1218,9 +1219,9 @@ class MainWindow(QtGui.QMainWindow):
     treeWidgetLayout.addWidget(self.treeWidget)
     self.ui.centralwidget.setLayout(treeWidgetLayout)
    
-    self.itemInfoWidget = WorkflowElementInfo(self.model, 
-                                              self.treeWidget.proxy_model, 
-                                              self)
+    self.itemInfoWidget = WorkflowElementInfo(model=self.model, 
+                                              proxy_model=self.treeWidget.proxy_model, 
+                                              parent=self)
     itemInfoLayout = QtGui.QVBoxLayout()
     itemInfoLayout.setContentsMargins(2,2,2,2)
     itemInfoLayout.addWidget(self.itemInfoWidget)
@@ -1480,7 +1481,7 @@ class WorkflowTree(QtGui.QWidget):
                parent=None):
     super(WorkflowTree, self).__init__(parent)
 
-    self.proxy_model = None #JobFilterProxyModel(self)
+    self.proxy_model = JobFilterProxyModel(self)
 
     self.tree_view = QtGui.QTreeView(self)
     self.tree_view.setHeaderHidden(True)
@@ -1489,8 +1490,6 @@ class WorkflowTree(QtGui.QWidget):
     self.vLayout.setContentsMargins(0,0,0,0)
     self.vLayout.addWidget(self.tree_view)
     self.vLayout.addWidget(self.search_widget)
-
-    self.search_widget.hide()
 
     self.model = model
     self.item_model = None
