@@ -1394,14 +1394,18 @@ class SearchWidget(QtGui.QWidget):
     self.statuses.append([FAILED]) 
     self.statuses.append([RUNNING])
     self.statuses.append([QUEUED_ACTIVE])
+    self.statuses.append([SUBMISSION_PENDING])
     self.statuses.append([RUNNING, QUEUED_ACTIVE])
+    self.statuses.append([RUNNING, QUEUED_ACTIVE, SUBMISSION_PENDING])
     self.statuses.append([DONE])
 
     self.ui.status_combo_box.addItem("All")
     self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/failed.png")), FAILED)
     self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/running.png")), RUNNING)
     self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/queued.png")), QUEUED_ACTIVE)
-    self.ui.status_combo_box.addItem( QUEUED_ACTIVE + " or " + RUNNING)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/pending.png")), SUBMISSION_PENDING)
+    self.ui.status_combo_box.addItem(QUEUED_ACTIVE + " or " + RUNNING)
+    self.ui.status_combo_box.addItem(SUBMISSION_PENDING + " or " + QUEUED_ACTIVE + " or " + RUNNING)
     self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/success.png")), DONE)
     
     
@@ -1440,6 +1444,20 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
     index = self.sourceModel().index(sourceRow, 0, sourceParent)
     
     if isinstance(index.internalPointer(), GuiGroup):
+      if len(self.statuses) != 0:
+        group = index.internalPointer()
+        if DONE in self.statuses and len(group.done) > 0:
+          return True
+        elif FAILED in self.statuses and len(group.failed) > 0:
+          return True
+        elif RUNNING in self.statuses and len(group.running) > 0:
+          return True
+        elif QUEUED_ACTIVE in self.statuses and len(group.queued) > 0:
+          return True
+        elif SUBMISSION_PENDING in self.statuses and len(group.pending) > 0:
+          return True
+        else:
+          return False
       return True
     elif isinstance(index.internalPointer(), GuiTransfer):
       return True
@@ -1473,8 +1491,14 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
               return False
           else:
             return False
-
-        elif index.internalPointer().status not in self.statuses:
+        elif RUNNING in self.statuses:
+          job = index.internalPointer()
+          if job.status == RUNNING or job.status == UNDETERMINED:
+            return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
+                                                        sourceRow, 
+                                                        sourceParent)
+     
+        if index.internalPointer().status not in self.statuses:
           return False
 
     return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
@@ -3219,6 +3243,8 @@ class GuiGroup(GuiWorkflowItem):
     self.done = []
     self.failed = []
     self.running = []
+    self.pending = []
+    self.queued = []
     self.warning = []
     
     self.first_sub_date = None
@@ -3247,6 +3273,8 @@ class GuiGroup(GuiWorkflowItem):
     self.done = []
     self.failed = []
     self.running = []
+    self.pending = []
+    self.queued = []
     self.warning = []
 
     no_status = False
@@ -3270,6 +3298,10 @@ class GuiGroup(GuiWorkflowItem):
             self.running.append(item)
           else:
             self.failed.append(item)
+        elif item.status == SUBMISSION_PENDING:
+          self.pending.append(item)
+        elif item.status == QUEUED_ACTIVE:
+          self.queued.append(item)
         else:
           self.running.append(item)
         if item.ending_date:
@@ -3285,6 +3317,8 @@ class GuiGroup(GuiWorkflowItem):
         self.done.extend(item.done)
         self.failed.extend(item.failed)
         self.running.extend(item.running)
+        self.pending.extend(item.pending)
+        self.queued.extend(item.queued)
         self.warning.extend(item.warning)
         self.input_to_transfer.extend(item.input_to_transfer)
         self.input_transfer_ended.extend(item.input_transfer_ended)
@@ -3302,9 +3336,9 @@ class GuiGroup(GuiWorkflowItem):
       new_status = GuiGroup.GP_WARNING
     elif len(self.failed) > 0:
       new_status = GuiGroup.GP_FAILED
-    elif len(self.not_sub) == 0 and len(self.failed) == 0 and len(self.running) == 0:
+    elif len(self.not_sub) == 0 and len(self.failed) == 0 and len(self.running) + len(self.pending) + len(self.queued) == 0:
       new_status = GuiGroup.GP_DONE
-    elif len(self.running) == 0 and len(self.done) == 0 and len(self.failed) == 0:
+    elif len(self.running) + len(self.pending) + len(self.queued) == 0 and len(self.done) == 0 and len(self.failed) == 0:
       new_status = GuiGroup.GP_NOT_SUBMITTED
       self.first_sub_date = None
       self.last_end_date = None
