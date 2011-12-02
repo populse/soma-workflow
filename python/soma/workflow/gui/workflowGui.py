@@ -874,8 +874,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
     else: 
       name = repr(self.model.current_wf_id)
     
-    answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-    if answer != QtGui.QMessageBox.Yes: return
+    if self.model.workflow_status != WARNING:
+      answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+      if answer != QtGui.QMessageBox.Yes: return
     stopped_properly = False
     while True:
       try: 
