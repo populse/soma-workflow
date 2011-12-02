@@ -26,7 +26,7 @@ from PyQt4 import uic
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 from soma.workflow.constants import *
-from soma.workflow.configuration import Configuration
+import soma.workflow.configuration as configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma.workflow.utils
@@ -426,8 +426,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.update_workflow_status_icons)
 
     try:
-      self.config_file_path = Configuration.search_config_path()
-      self.resource_list = Configuration.get_configured_resources(self.config_file_path)
+      self.config_file_path = configuration.Configuration.search_config_path()
+      self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
     except ConfigurationError, e:
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.close()
@@ -885,7 +885,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if not self.reconnectAfterConnectionClosed():
           return
       else:
-        if not stopped_properly:
+        if not stopped_properly and \
+           self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
           QtGui.QMessageBox.warning(self, 
                                    "Stop workflow", 
                                    "The workflow was stopped. \n However, some jobs " 
