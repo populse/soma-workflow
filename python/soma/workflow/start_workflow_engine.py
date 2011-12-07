@@ -94,7 +94,8 @@ if __name__=="__main__":
     daemon = Pyro.core.Daemon()
 
     drmaa = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
-                                       config.get_parallel_job_config())
+                                  config.get_parallel_job_config(),
+                                  os.path.expanduser("~"))
 
     engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
                                              drmaa,
@@ -157,9 +158,9 @@ if __name__=="__main__":
     
     logger.info("******** jobs are done ! ***************************")
     engine_loop_thread.stop()
+
+    drmaa.clean()
     sys.exit()
-    
-    
   
   if not len(sys.argv) == 3 and not len(sys.argv) == 4:
     sys.stdout.write("start_workflow_engine takes 2 arguments:\n")

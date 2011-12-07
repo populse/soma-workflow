@@ -9,6 +9,7 @@ import sys
 import signal
 import ctypes
 import atexit
+import os.path
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
@@ -85,7 +86,10 @@ class Drmaa(Scheduler):
   
   logger = None
 
-  def __init__(self, drmaa_implementation, parallel_job_submission_info):
+  def __init__(self, 
+               drmaa_implementation, 
+               parallel_job_submission_info, 
+               tmp_file_path=None):
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
@@ -104,19 +108,34 @@ class Drmaa(Scheduler):
 
     # patch for the PBS-torque DRMAA implementation
     if self._drmaa_implementation == "PBS":
+      if tmp_file_path == None:
+        self.tmp_file_path = os.path.abspath("/tmp")
+      else:
+        self.tmp_file_path = os.path.abspath(tmp_file_path)
       try:
         jobTemplateId = self._drmaa.allocateJobTemplate()
         self._drmaa.setCommand(jobTemplateId, "echo", [])
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_output_path", 
-                                "[void]:/tmp/soma-workflow-empty-job.o")
+                                "[void]:" + os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o"))
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_error_path", 
-                                "[void]:/tmp/soma-workflow-empty-job.e")
+                                "[void]:" + os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e"))
         self._drmaa.runJob(jobTemplateId)
       except DrmaaError, e:
         raise DRMError("%s" %e)
       ################################
+
+  def clean(self):
+    if self._drmaa_implementation == "PBS":
+      tmp_out = os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")
+      tmp_err = os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")
+      if os.path.isfile(tmp_out):
+        os.remove(tmp_out)
+      if os.path.isfile(tmp_err):
+        os.remove(tmp_err)
+  
+        
     
 
   def job_submission(self, job):
