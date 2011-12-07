@@ -28,6 +28,13 @@ else()
   message( "WARNING: python wrapping of drmaajobs not built because sip has not been found" )
 endif()
 
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py" @ONLY )
+BRAINVISA_INSTALL( FILES "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py"
+                   DESTINATION "python/soma/workflow"
+                   COMPONENT ${PROJECT_NAME} )
+
+
+
 find_package( Sphinx )
 
 BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
