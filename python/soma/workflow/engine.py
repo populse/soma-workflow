@@ -166,6 +166,7 @@ class WorkflowEngineLoop(object):
     #one_wf_processed = False
     self._running = True
     drms_error_jobs = {}
+    idle_cmpt = 0
     while True:
       if not self._running:
         break
@@ -176,6 +177,15 @@ class WorkflowEngineLoop(object):
           if job.workflow_id != -1: 
             wf_to_inspect.add(job.workflow_id)
         
+        if not (len(self._jobs) == 0 and len(self._workflows) == 0):
+          idle_cmpt = 0
+        else:
+          idle_cmpt = idle_cmpt + 1
+
+        if idle_cmpt > 20 and not self._scheduler.is_sleeping:
+          self.logger.debug("idle => scheduler sleep")
+          self._scheduler.sleep()
+
 
         # --- 1. Jobs and workflow deletion and kill ------------------------
         # Get the jobs and workflow with the status DELETE_PENDING 
@@ -197,7 +207,7 @@ class WorkflowEngineLoop(object):
               stopped = self._stop_job(job_id,  self._jobs[job_id])
             except DRMError, e:
               #TBI how to communicate the error ?
-              self.logger.error("!!!ERROR!!! %s :%s" %(type(e), e))
+              self.logger.error("!!!ERROR!!! stop job %s :%s" %(type(e), e))
             if job_id in jobs_to_delete:
               self.logger.debug("Delete job : " + repr(job_id))
               self._database_server.delete_job(job_id)
@@ -239,7 +249,7 @@ class WorkflowEngineLoop(object):
             try:
               job.status = self._scheduler.get_job_status(job.drmaa_id)
             except DrmaaError, e:
-              self.logger.error("!!!ERROR!!! %s: %s" %(type(e), e))
+              self.logger.error("!!!ERROR!!! get_job_status %s: %s" %(type(e), e))
               job.status = constants.UNDETERMINED
             #self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:

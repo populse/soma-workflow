@@ -29,8 +29,20 @@ class Scheduler(object):
   
   logger = None
 
+  is_sleeping = None
+
   def __init__(self):
     self.parallel_job_submission_info = None
+    self.is_sleeping = False
+
+  def sleep(self):
+    self.is_sleeping = True
+
+  def wake(self):
+    self.is_sleeping = False
+
+  def clean(self):
+    pass
 
   def job_submission(self, job):
     '''
@@ -134,9 +146,24 @@ class Drmaa(Scheduler):
         os.remove(tmp_out)
       if os.path.isfile(tmp_err):
         os.remove(tmp_err)
-  
         
+  def sleep(self):
+    '''
+    Some Drmaa sessions expire if they idle too long.  
+    '''
+    self.is_sleeping = True
+    self._drmaa = None
     
+  def wake(self):
+    '''
+    Creates a fresh Drmaa session.
+    '''
+    self.is_sleeping = False
+    self._drmaa = DrmaaJobs()
+    try:
+      self._drmaa.initSession()
+    except DrmaaError, e:
+      raise DRMError("Could not create the DRMAA session: %s" %e )
 
   def job_submission(self, job):
     '''
@@ -145,6 +172,8 @@ class Drmaa(Scheduler):
     @rtype: string
     @return: drmaa job id 
     '''
+
+    if self.is_sleeping: self.wake()
 
     # patch for the PBS-torque DRMAA implementation
     command = []
@@ -218,6 +247,7 @@ class Drmaa(Scheduler):
     
 
   def get_job_status(self, scheduler_job_id):
+    if self.is_sleeping: self.wake()
     try:
       status = self._drmaa.jobStatus(scheduler_job_id)
     except DrmaaError, e:
@@ -226,6 +256,7 @@ class Drmaa(Scheduler):
 
 
   def get_job_exit_info(self, scheduler_job_id):
+    if self.is_sleeping: self.wake()
     exit_status, exit_value, term_sig, resource_usage = self._drmaa.wait(scheduler_job_id, 0)
 
     str_rusage = ''
@@ -252,7 +283,7 @@ class Drmaa(Scheduler):
     max_node_num: maximum node number the job requests (on a unique machine or 
     separated machine depending on the parallel configuration)
     ''' 
-
+    if self.is_sleeping: self.wake()
     self.logger.debug(">> _setDrmaaParallelJob")
   
     cluster_specific_cfg_name = self.parallel_job_submission_info[configuration_name]
@@ -282,6 +313,7 @@ class Drmaa(Scheduler):
 
 
   def kill_job(self, scheduler_job_id):
+    if self.is_sleeping: self.wake()
     try:
       self._drmaa.terminate(scheduler_job_id)
     except DrmaaError, e:
