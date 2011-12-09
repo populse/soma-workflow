@@ -322,7 +322,7 @@ class Drmaa(Scheduler):
 
 
 
-class LocalScheduler(object):
+class LocalScheduler(Scheduler):
   '''
   Allow to submit, kill and get the status of jobs.
   Run on one machine without dependencies.
