@@ -117,10 +117,24 @@ def setLabelFromString(label, value):
   '''
   @type value: string
   '''
+  if value == label.text():
+    return 
   if value:
     label.setText(unicode(value.encode('utf-8')))
   else:
     label.setText("")
+
+def setTextEditFromString(text_edit, value):
+  '''
+  @type value: string
+  '''
+  if value == text_edit.toPlainText():
+    return 
+  if value:
+    text_edit.setText(unicode(value.encode('utf-8')))
+  else:
+    text_edit.setText("")
+
     
 def setLabelFromInt(label, value):
   '''
@@ -1824,7 +1838,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromString(self.ui.exit_status, exit_status)
     setLabelFromInt(self.ui.exit_value, exit_value)
     setLabelFromString(self.ui.term_signal, term_signal)
-    setLabelFromString(self.ui.command, self.job_item.command)
+    setTextEditFromString(self.ui.command, self.job_item.command)
     
     if resource_usage: 
       self.ui.resource_usage.insertItems(0, resource_usage.split())
@@ -1841,9 +1855,10 @@ class JobInfoWidget(QtGui.QTabWidget):
         if self.job_item.ending_date:
           execution_time = self.job_item.ending_date - self.job_item.execution_date
           setLabelFromTimeDelta(self.ui.execution_time, execution_time)
-    
-    self.ui.stdout_file_contents.setText(self.job_item.stdout)
-    self.ui.stderr_file_contents.setText(self.job_item.stderr)
+
+
+    setTextEditFromString(self.ui.stdout_file_contents, self.job_item.stdout)
+    setTextEditFromString(self.ui.stderr_file_contents, self.job_item.stderr)
     
   
   @QtCore.pyqtSlot(int)
