@@ -320,7 +320,6 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     item = selected_items[0]
     rid = unicode(item.data(QtCore.Qt.UserRole).toString()).encode('utf-8')
     self.model.set_current_connection(rid)
-    
 
   @QtCore.pyqtSlot()
   def connection_changed(self):
@@ -370,6 +369,9 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.ui.table.setRowCount(len(self.resource_ids))
     row = 0
     for rid in self.resource_ids:
+      if not rid in self.model.list_resource_ids():
+        self.resource_ids.remove(rid)
+        continue
       status_list = self.model.list_workflow_status(rid)
       running = status_list.count(WORKFLOW_IN_PROGRESS)
       warning = status_list.count(WARNING)
