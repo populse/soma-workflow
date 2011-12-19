@@ -418,6 +418,7 @@ class WorkflowEngineLoop(object):
     '''
     if engine_job.queue in self._pending_queues:
       self._pending_queues[engine_job.queue].append(engine_job)
+      self._pending_queues[engine_job.queue].sort(key=lambda job: job.priority)
     else:
       self._pending_queues[engine_job.queue] = [engine_job]
     engine_job.status = constants.SUBMISSION_PENDING

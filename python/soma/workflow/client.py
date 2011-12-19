@@ -111,6 +111,10 @@ class Job(object):
     Path of the directory where the job will be executed. The working directory
     is useful if your Job uses relative file path for example.
 
+  **priority**: *int*
+    Job priority: 0 = low priority. If several Jobs are ready to run at the 
+    same time the jobs with higher priority will be submitted first.
+
   **parallel_job_info**: *tuple(string, int)*
     The parallel job information must be set if the Job is parallel (ie. made to
     run on several CPU).
@@ -160,6 +164,9 @@ class Job(object):
   # int (in hours)
   disposal_timeout = None
 
+  # int 
+  priority = None
+
   def __init__( self,
                 command,
                 referenced_input_files=None,
@@ -171,7 +178,8 @@ class Job(object):
                 stdout_file=None,
                 stderr_file=None,
                 working_directory=None,
-                parallel_job_info=None):
+                parallel_job_info=None,
+                priority=0):
     if not name:
       self.name = command[0]
     else:
@@ -190,6 +198,7 @@ class Job(object):
     self.stderr_file = stderr_file
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
+    self.priority = priority
 
 
 class Workflow(object):
@@ -240,14 +249,18 @@ class Workflow(object):
 
   def __init__(self,
                jobs,
-               dependencies,
-               root_group = None,
-               disposal_timeout = 168,
-               user_storage = None):
+               dependencies=None,
+               root_group=None,
+               disposal_timeout=168,
+               user_storage=None,
+               name=None):
 
-    self.name = None
+    self.name = name
     self.jobs = jobs
-    self.dependencies = dependencies
+    if dependencies != None:
+      self.dependencies = dependencies
+    else:
+      self.dependencies = []
     self.disposal_timeout = 168
 
     # Groups
