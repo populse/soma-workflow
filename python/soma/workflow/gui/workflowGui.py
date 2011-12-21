@@ -1841,6 +1841,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromInt(self.ui.exit_value, exit_value)
     setLabelFromString(self.ui.term_signal, term_signal)
     setTextEditFromString(self.ui.command, self.job_item.command)
+    setLabelFromInt(self.ui.priority, self.job_item.priority)
     
     if resource_usage: 
       self.ui.resource_usage.insertItems(0, resource_usage.split())
@@ -3042,7 +3043,8 @@ class GuiWorkflow(object):
                        data=job, 
                        children_nb=len(job.referenced_input_files)+len(job.referenced_output_files),
                        name=job.name,
-                       job_id=job_id)
+                       job_id=job_id,
+                       priority=job.priority)
       ids[job] = item_id
       self.items[item_id] = gui_job
       self.server_jobs[gui_job.job_id] = item_id
@@ -3380,7 +3382,8 @@ class GuiJob(GuiWorkflowItem):
                data=None,
                children_nb=0,
                name="no name",
-               job_id=-1,):
+               job_id=-1,
+               priority=None):
     super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
     
     self.status = "not submitted"
@@ -3390,6 +3393,7 @@ class GuiJob(GuiWorkflowItem):
     self.submission_date = None
     self.execution_date = None
     self.ending_date = None
+    self.priority = priority
     
     self.name = name
     self.job_id = job_id
