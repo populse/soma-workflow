@@ -523,7 +523,8 @@ class LocalScheduler(Scheduler):
       self._queue.append(job.job_id)
       self._jobs[job.job_id] = job
       self._status[job.job_id] = constants.QUEUED_ACTIVE
-
+      self._queue.sort(key=lambda job_id: self._jobs[job.job_id].priority, 
+                       reverse=True)
     return job.job_id
 
 
