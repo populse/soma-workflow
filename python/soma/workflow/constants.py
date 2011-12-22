@@ -4,6 +4,10 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+###########################
+# Soma-workflow constants #
+###########################
+
 '''
 Job status:
 '''
@@ -105,8 +109,14 @@ WORKFLOW_STATUS = [ WORKFLOW_NOT_STARTED,
                     WARNING]
 
 
+
+
+
+###############################
+# Soma-workflow configuration #
+###############################
+
 '''
-Soma job configuration items
 CFG => Mandatory items
 OCFG => Optional
 '''
@@ -167,6 +177,13 @@ OCFG_PARALLEL_ENV_MPI_BIN = 'PARALLEL_ENV_MPI_BIN'
 OCFG_PARALLEL_ENV_NODE_FILE = 'PARALLEL_ENV_NODE_FILE'
 PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 
+
+#################################
+# Local scheduler configuration #
+#################################
+
+OCFG_SCDL_CPU_NB = "CPU_NB"
+OCFG_SCDL_INTERVAL = "SCHEDULER_INTERVAL"
 
 
 

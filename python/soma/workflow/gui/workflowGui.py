@@ -108,6 +108,8 @@ Ui_SWMiniWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
 Ui_SearchWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
                                                           'search_widget.ui' ))[0]
 
+Ui_LocalSchedulerController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
+                                                          'local_scheduler_widget.ui' ))[0]
 #-----------------------------------------------------------------------------
 # Local utilities
 #-----------------------------------------------------------------------------
@@ -365,11 +367,11 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def refresh(self):
     self.ui.table.clear()
-    self.ui.table.setColumnCount(2)
+    self.ui.table.setColumnCount(3)
     self.ui.table.setRowCount(len(self.resource_ids))
     row = 0
     for rid in self.resource_ids:
-      if not rid in self.model.list_resource_ids():
+      if not rid in self.model.resource_pool.resource_ids():
         self.resource_ids.remove(rid)
         continue
       status_list = self.model.list_workflow_status(rid)
@@ -399,12 +401,42 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
       item.setData(QtCore.Qt.UserRole, rid)
       self.ui.table.setItem(row, 0, item)
       self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(icon, repr(len(status_list)) + " workflows" + to_display))
+      resource = self.model.resource_pool.connection(rid)
+      if resource.config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
+        scheduler_widget = LocalSchedulerController(resource.scheduler_config, 
+                                                    self)
+        self.ui.table.setCellWidget(row, 2, scheduler_widget)
+        self.ui.table.resizeColumnToContents(2)
       row = row + 1
     if self.model.current_resource_id != None and \
        self.model.current_resource_id in self.resource_ids:
       self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.ui.table.resizeColumnsToContents()
 
+
+class LocalSchedulerController(QtGui.QWidget):
+
+  scheduler_config = None
+
+  def __init__(self, scheduler_config, parent=None):
+    super(LocalSchedulerController, self).__init__(parent)
+    
+    self.ui = Ui_LocalSchedulerController()
+    self.ui.setupUi(self)
+
+    self.scheduler_config = scheduler_config
+
+    cpu_count = Helper.cpu_count()
+    self.ui.advice_label.setText(" " + repr(cpu_count) + " CPUs detected")
+    self.ui.spin_box.setValue(scheduler_config.get_proc_nb())
+
+    self.ui.spin_box.valueChanged.connect(self.nb_proc_changed)
+
+  def nb_proc_changed(self, nb_proc):
+    self.scheduler_config.set_proc_nb(nb_proc)
+    
+
+  
 
 class SomaWorkflowWidget(QtGui.QWidget):
 
@@ -510,7 +542,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                             password=None, 
                             rsa_key_pass=None):      
 
-    if self.model.resource_exist(resource_id):
+    if self.model.resource_pool.resource_exist(resource_id):
       self.model.set_current_connection(resource_id)
       return
 
@@ -635,8 +667,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     assert(self.model.current_workflow())
 
-
-    if date == None:
+    # date is the only mandatory argument
+    # if date is None the submission dialog has to be open.
+    if date == None: 
       submission_dlg = QtGui.QDialog(self)
       ui = Ui_SubmissionDlg()
       ui.setupUi(submission_dlg)
@@ -809,7 +842,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.combo_resources.setCurrentIndex(index)
       return
     
-    if self.model.resource_exist(resource_id):
+    if self.model.resource_pool.resource_exist(resource_id):
       self.model.set_current_connection(resource_id)
       return
     else:
@@ -855,7 +888,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       else:
         rsa_key_pass = None
       
-      if not replace and resource_id in self.model.list_resource_ids():
+      if not replace and resource_id in self.model.resource_pool.resource_ids():
         QtGui.QMessageBox.information(self, "Connection already exists", "The connection to the resource %s already exists." %(resource_id))
         return (resource_id, None)
 
@@ -2529,7 +2562,7 @@ class ApplicationModel(QtCore.QObject):
   '''
 
   # Computing resource pool
-  _resource_pool = None
+  resource_pool = None
 
   # gui_workflows 
   # dictionary: resource_id => workflow_id => GuiWorkflow
@@ -2588,9 +2621,9 @@ class ApplicationModel(QtCore.QObject):
     super(ApplicationModel, self).__init__(parent)
 
     if resource_pool != None:
-      self._resource_pool = resource_pool
+      self.resource_pool = resource_pool
     else:
-      self._resource_pool = ComputingResourcePool()
+      self.resource_pool = ComputingResourcePool()
     
     self._workflows = {} 
     self._expiration_dates = {} 
@@ -2613,7 +2646,7 @@ class ApplicationModel(QtCore.QObject):
     self._lock = threading.RLock()
 
 
-    for rid, connection in self._resource_pool._connections.iteritems():
+    for rid, connection in self.resource_pool._connections.iteritems():
       self.add_connection(rid, connection)
 
     self.update_thread = None
@@ -2679,15 +2712,15 @@ class ApplicationModel(QtCore.QObject):
         if True:
           #update the status of every workflow
           global_wf_state_changed = False
-          for rid in self._resource_pool.resource_ids():
+          for rid in self.resource_pool.resource_ids():
             if not self._hold[rid]:
               for wfid in self._workflows[rid].keys():
                 if wfid != self.current_wf_id:
                   try:
-                    connection = self._resource_pool.connection(rid)
+                    connection = self.resource_pool.connection(rid)
                     wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(connection, wfid), timeout_duration=20)
 
-                    #wf_status = self._resource_pool.connection(rid).workflow_status(wfid)
+                    #wf_status = self.resource_pool.connection(rid).workflow_status(wfid)
                   except ConnectionClosedError, e:
                     self.emit(QtCore.SIGNAL('connection_closed_error'), rid)
                     self._hold[rid] = True
@@ -2728,12 +2761,6 @@ class ApplicationModel(QtCore.QObject):
       if it.exception != None:
         raise it.exception
       return it.result
-   
-  def resource_exist(self, resource_id):
-    return self._resource_pool.resource_exist(resource_id)
-
-  def list_resource_ids(self):
-    return self._resource_pool.resource_ids()
 
   def list_workflow_names(self, resource_id):
     return self._workflow_names[resource_id].values()
@@ -2761,7 +2788,7 @@ class ApplicationModel(QtCore.QObject):
     Adds a connection and use it as the current connection
     '''
     with self._lock:
-      self._resource_pool.add_connection(resource_id, connection)
+      self.resource_pool.add_connection(resource_id, connection)
       self._workflows[resource_id] = {}
       self._expiration_dates[resource_id] = {}
       self._workflow_names[resource_id] = {}
@@ -2786,7 +2813,7 @@ class ApplicationModel(QtCore.QObject):
     If not the current connection is set to None.
     '''
     with self._lock:
-      self._resource_pool.delete_connection(resource_id)
+      self.resource_pool.delete_connection(resource_id)
       del self._workflows[resource_id]
       del self._expiration_dates[resource_id]
       del self._workflow_names[resource_id]
@@ -2799,29 +2826,29 @@ class ApplicationModel(QtCore.QObject):
         self.current_wf_id = None
         self.workflow_exp_date = None
         self.workflow_name = None
-        resource_ids = self._resource_pool.resource_ids()
+        resource_ids = self.resource_pool.resource_ids()
         if resource_ids != None:
-          self.current_resource_id = self._resource_pool.resource_ids()[0]
+          self.current_resource_id = self.resource_pool.resource_ids()[0]
         else:
           self.current_resource_id = None
         if self.current_resource_id != None:
-          self.current_connection = self._resource_pool.connection(self.current_resource_id)
+          self.current_connection = self.resource_pool.connection(self.current_resource_id)
         self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
     
   def set_current_connection(self, resource_id):
     if resource_id != self.current_resource_id:
       with self._lock:
-        assert(self._resource_pool.resource_exist(resource_id))
+        assert(self.resource_pool.resource_exist(resource_id))
         self.current_resource_id = resource_id
-        self.current_connection = self._resource_pool.connection(resource_id)
+        self.current_connection = self.resource_pool.connection(resource_id)
         self.emit(QtCore.SIGNAL('current_connection_changed()'))
 
   def reinit_connection(self, resource_id, connection):
     with self._lock:
       self.current_resource_id = resource_id
       self.current_connection = connection
-      self._resource_pool.reinit_connection(resource_id, connection)
+      self.resource_pool.reinit_connection(resource_id, connection)
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self._hold[resource_id] = False
 

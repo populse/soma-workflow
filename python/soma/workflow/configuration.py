@@ -14,6 +14,7 @@ import ConfigParser
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import ConfigurationError
+import soma.workflow.observer as observer
 
 
 #-----------------------------------------------------------------------------
@@ -234,22 +235,18 @@ class Configuration(object):
     '''
     returns the path of the soma workflow configuration file
     '''
-    config_path = None
-    if not config_path or not os.path.isfile(config_path):
-      config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
+
+    config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
     if not config_path or not os.path.isfile(config_path):
       config_path = os.path.expanduser("~/.soma-workflow.cfg")
     if not config_path or not os.path.isfile(config_path):
       config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
-      config_path = os.path.dirname(__file__)
       config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
     if not config_path or not os.path.isfile(config_path):
       config_path = "/etc/soma-workflow.cfg"
-    #if not config_path or not os.path.isfile(config_path):
-      #raise ConfigurationError("Can not find the soma-workflow "
-                               #"configuration file. \n")
+    if not config_path or not os.path.isfile(config_path):
+      config_path = None
+
     return config_path
 
 
@@ -506,4 +503,141 @@ class Configuration(object):
       return (None, None, None)
 
 
+
+
+class LocalSchedulerCfg(observer.Observable):
+  '''
+  Local scheduler configuration.
+  '''
+
+  # number of processus which can run in parallel
+  _proc_nb = None
+
+  # interval (second)
+  _interval = None
+
+  # path of the configuration file
+  _config_path = None
+
+  # config parser object
+  _config_parser = None
+
+  PROC_NB_CHANGED = 0
+  INTERVAL_CHANGED = 1
+
+  def __init__(self, proc_nb=1, interval=1):
+    '''
+    * proc_nb *int*
+      Number of processus which can run in parallel
+    
+    * interval *int*
+      Update interval in second
+    '''
+
+    super(LocalSchedulerCfg, self).__init__()
+    self._proc_nb = proc_nb
+    self._interval = interval
+
+
+  @classmethod
+  def load_from_file(cls,
+                     config_file_path=None):
+
+ 
+    if config_file_path:
+      config_path = config_file_path
+    else:
+      config_path = Configuration.search_config_path()
+
+    config_parser = ConfigParser.ConfigParser()
+    config_parser.read(config_path)
+    if not config_parser.has_section("local_scheduler"):
+      raise ConfigurationError("Wrong config file format. Can not find "
+                               "section local_scheduler in configuration " + "file: " + config_path)
+
+    proc_nb = None
+    interval = None
+    
+    if config_parser.has_option("local_scheduler", 
+                                constants.OCFG_SCDL_CPU_NB):
+      proc_nb_str = config_parser.get("local_scheduler",
+                                      constants.OCFG_SCDL_CPU_NB)
+      proc_nb = int(proc_nb_str)
+    if config_parser.has_option("local_scheduler", 
+                                constants.OCFG_SCDL_INTERVAL):
+      interval_str = config_parser.get("local_scheduler",
+                                       constants.OCFG_SCDL_INTERVAL)
+      interval = int(interval_str)
+
+    if proc_nb == None and interval == None:
+      config = cls()
+    elif proc_nb == None and interval != None:
+      config = cls(interval=interval)
+    else:
+      config = cls(proc_nb=proc_nb, interval=interval)
+    config._config_parser = config_parser
+    config._config_path = config_path
+
+    return config
+
   
+  @staticmethod
+  def search_config_path():
+    '''
+    returns the path of the soma workflow configuration file
+    '''
+    config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
+    if not config_path or not os.path.isfile(config_path):
+      config_path = os.path.dirname(__file__)
+      config_path = os.path.join(config_path, "etc/soma-workflow-scheduler.cfg")
+    if not config_path or not os.path.isfile(config_path):
+      config_path = "/etc/soma-workflow-scheduler.cfg"
+    if not config_path or not os.path.isfile(config_path):
+      config_path = None
+
+    return config_path
+
+  def get_proc_nb(self):
+    return self._proc_nb
+
+  def get_interval(self):
+    return self._interval
+
+  def set_proc_nb(self, proc_nb):
+    self._proc_nb = proc_nb
+    self.notifyObservers(LocalSchedulerCfg.PROC_NB_CHANGED, self._proc_nb)
+  
+  def set_interval(self, interval):
+    self._interval = interval
+    self.notifyObservers(LocalSchedulerCfg.INTERVAL_CHANGED, self._interval)
+
+  def save_to_file(self, config_path=None):
+    if config_path:
+      config_file = open(config_path, "w")
+    else:
+      if self._config_path != None:
+        config_file = open(self._config_path, "w")
+        config_path = self._config_path
+      else:
+        config_path = LocalSchedulerCfg.search_config_path()
+        if config_path == None:
+          config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
+        print config_path
+        config_file = open(config_path, "w")
+
+    config_parser = ConfigParser.ConfigParser()
+    config_parser.read(config_path)
+
+    if not config_parser.has_section("local_scheduler"):
+      config_parser.add_section("local_scheduler")
+
+    config_parser.set("local_scheduler", 
+                      constants.OCFG_SCDL_CPU_NB, 
+                      str(self._proc_nb))
+    config_parser.set("local_scheduler", 
+                      constants.OCFG_SCDL_INTERVAL, 
+                      str(self._interval))
+
+    config_parser.write(config_file)
+    config_file.close()
+

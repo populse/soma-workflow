@@ -13,6 +13,7 @@ import os.path
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
+from soma.workflow.configuration import LocalSchedulerCfg
 
 try:
   from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
@@ -318,16 +319,14 @@ class Drmaa(Scheduler):
       self._drmaa.terminate(scheduler_job_id)
     except DrmaaError, e:
       raise DRMError("%s" %e)
-
-
-
+  
 
 class LocalScheduler(Scheduler):
   '''
   Allow to submit, kill and get the status of jobs.
   Run on one machine without dependencies.
 
-  * _nb_proc *int*
+  * _proc_nb *int*
 
   * _queue *list of scheduler jobs ids*
   
@@ -341,7 +340,7 @@ class LocalScheduler(Scheduler):
 
   * _loop *thread*
 
-  * _period *int*
+  * _interval *int*
 
   * _look *threading.RLock*
   '''
@@ -349,7 +348,7 @@ class LocalScheduler(Scheduler):
   
   logger = None
 
-  _nb_proc = None
+  _proc_nb = None
 
   _queue = None
 
@@ -363,18 +362,17 @@ class LocalScheduler(Scheduler):
 
   _loop = None
 
-  _period = None
+  _interval = None
 
   _lock = None
 
-  def __init__(self, nb_proc=1, period=1):
+  def __init__(self, proc_nb=1, interval=1):
     super(LocalScheduler, self).__init__()
   
-
     self.parallel_job_submission_info = None
 
-    self._nb_proc = nb_proc
-    self._period = period
+    self._proc_nb = proc_nb
+    self._interval = interval
     self._queue = []
     self._jobs = {}
     self._processes = {}
@@ -389,7 +387,7 @@ class LocalScheduler(Scheduler):
       while not self.stop_thread_loop:
         with self._lock:
           self._iterate()
-        time.sleep(self._period)
+        time.sleep(self._interval)
 
     self._loop = threading.Thread(name="scheduler_loop",
                                   target=loop,
@@ -399,6 +397,13 @@ class LocalScheduler(Scheduler):
 
     atexit.register(LocalScheduler.end_scheduler_thread, self)
 
+  def change_proc_nb(self, proc_nb):
+    with self._lock:
+      self._proc_nb = proc_nb
+
+  def change_interval(self, interval):
+    with self._lock:
+      self._interval = interval
 
   def end_scheduler_thread(self):
     with self._lock:
@@ -431,7 +436,7 @@ class LocalScheduler(Scheduler):
 
     # run new jobs
     while self._queue and \
-          len(self._processes) < self._nb_proc:
+          len(self._processes) < self._proc_nb:
       job_id = self._queue.pop(0)
       job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
@@ -596,3 +601,37 @@ class LocalScheduler(Scheduler):
                                               None,
                                               None,
                                               None)
+
+
+class ConfiguredLocalScheduler(LocalScheduler):
+  '''
+  Local scheduler synchronized with a configuration object.
+  '''
+
+  _config = None
+  
+  _scheduler = None
+
+  def __init__(self, config):
+    '''
+    * config *LocalSchedulerCfg*
+
+    * scheduler *LocalScheduler*
+    '''
+    super(ConfiguredLocalScheduler, self).__init__(config.get_proc_nb(), 
+                                           config.get_interval())
+    self._config = config
+
+    self._config.addObserver(self,
+                             "update_from_config", 
+                             [LocalSchedulerCfg.PROC_NB_CHANGED, LocalSchedulerCfg.INTERVAL_CHANGED])
+
+
+  def update_from_config(self, observable, event, msg):
+    if event == LocalSchedulerCfg.PROC_NB_CHANGED:
+      self.change_proc_nb(msg)
+    if event == LocalSchedulerCfg.PROC_NB_CHANGED:
+      self.change_interval(msg)
+    self._config.save_to_file()
+    
+

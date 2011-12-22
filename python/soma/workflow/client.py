@@ -455,6 +455,8 @@ class WorkflowController(object):
 
   _resource_id = None
 
+  scheduler_config = None
+
   def __init__(self,
                resource_id=None,
                login=None,
@@ -491,10 +493,14 @@ class WorkflowController(object):
       self.config = configuration.Configuration.load_from_file(resource_id)
     else:
       self.config = config
+    self.scheduler_config = None
+
     mode = self.config.get_mode()
     print  mode + " mode"
 
     self._resource_id = resource_id
+    
+    
 
     # LOCAL MODE
     if mode == configuration.LOCAL_MODE:
@@ -539,7 +545,14 @@ class WorkflowController(object):
 
     # LIGHT MODE
     elif mode == configuration.LIGHT_MODE:
-      self._engine_proxy = _embedded_engine_and_server(self.config)
+      local_scdl_cfg_path = configuration.LocalSchedulerCfg.search_config_path()
+      if local_scdl_cfg_path == None:
+        cpu_count = Helper.cpu_count()
+        self.scheduler_config = configuration.LocalSchedulerCfg(proc_nb=cpu_count)
+      else:
+        self.scheduler_config = configuration.LocalSchedulerCfg.load_from_file(local_scdl_cfg_path)
+      self._engine_proxy = _embedded_engine_and_server(self.config, 
+                                                       self.scheduler_config)
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
       #self._transfer = PortableRemoteTransfer(self._engine_proxy)
@@ -1257,38 +1270,7 @@ class WorkflowController(object):
     return progression
 
 
-def _detectCPUs():
-  """
-  Detects the number of CPUs on a system.
-  ==> Python >= 2.6: multiprocessing.cpu_count
-  """
-  if sys.version_info[:2] >= (2,6):
-    try:
-      import multiprocessing
-      return multiprocessing.cpu_count()
-    except: # sometimes happens on MacOS... ?
-      print >> sys.stderr, \
-          'Warning: CPU count detection failed. Using default (2)'
-      return 2
-  # Linux, Unix and MacOS:
-  if hasattr(os, "sysconf"):
-      if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
-          # Linux & Unix:
-          ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-          if isinstance(ncpus, int) and ncpus > 0:
-              return ncpus
-      else: # OSX:
-          return int(subprocess.Popen(["sysctl", "-n", "hw.ncpu"],
-              stdout=subprocess.PIPE).stdout.read())
-  # Windows:
-  if os.environ.has_key("NUMBER_OF_PROCESSORS"):
-          ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
-          if ncpus > 0:
-              return ncpus
-  return 1 # Default
-
-
-def _embedded_engine_and_server(config):
+def _embedded_engine_and_server(config, local_scheduler_config=None):
   '''
   Creates the workflow engine and workflow database server in the client
   process.
@@ -1330,10 +1312,11 @@ def _embedded_engine_and_server(config):
                       config.get_parallel_job_config())
 
   elif config.get_scheduler_type() == 'local_basic':
-    from soma.workflow.scheduler import LocalScheduler
-    cpu_count = _detectCPUs()
-    print "scheduler type: basic, cpu count: " + repr(cpu_count)
-    scheduler = LocalScheduler(nb_proc=cpu_count)
+    from soma.workflow.scheduler import ConfiguredLocalScheduler
+    if local_scheduler_config == None:
+      local_scheduler_config = LocalSchedulerCfg()
+    print "scheduler type: basic, number of cpu: " + repr(local_scheduler_config.get_proc_nb())
+    scheduler = ConfiguredLocalScheduler(local_scheduler_config)
 
   engine_loop = WorkflowEngineLoop(database_server,
                                    scheduler,
@@ -1481,5 +1464,34 @@ class Helper(object):
     return workflow
 
 
-
+  @staticmethod
+  def cpu_count():
+    """
+    Detects the number of CPUs on a system.
+    ==> Python >= 2.6: multiprocessing.cpu_count
+    """
+    if sys.version_info[:2] >= (2,6):
+      try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+      except: # sometimes happens on MacOS... ?
+        print >> sys.stderr, \
+            'Warning: CPU count detection failed. Using default (2)'
+        return 2
+    # Linux, Unix and MacOS:
+    if hasattr(os, "sysconf"):
+        if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+            # Linux & Unix:
+            ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
+            if isinstance(ncpus, int) and ncpus > 0:
+                return ncpus
+        else: # OSX:
+            return int(subprocess.Popen(["sysctl", "-n", "hw.ncpu"],
+                stdout=subprocess.PIPE).stdout.read())
+    # Windows:
+    if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+            ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
+            if ncpus > 0:
+                return ncpus
+    return 1 # Default
 

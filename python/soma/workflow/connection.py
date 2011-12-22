@@ -332,6 +332,9 @@ class LocalConnection( object ):
     self.__connection_holder = ConnectionHolder(connection_checker)
     self.__connection_holder.start()
 
+  def isValid(self):
+    return self.__connection_holder.isAlive()
+
   def stop(self):
     '''
     For test purpose only !
