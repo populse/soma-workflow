@@ -625,9 +625,9 @@ class ConfiguredLocalScheduler(LocalScheduler):
 
   def update_from_config(self, observable, event, msg):
     if event == LocalSchedulerCfg.PROC_NB_CHANGED:
-      self.change_proc_nb(msg)
+      self.change_proc_nb(self._config.get_proc_nb())
     if event == LocalSchedulerCfg.PROC_NB_CHANGED:
-      self.change_interval(msg)
+      self.change_interval(self._config.get_interval())
     self._config.save_to_file()
     
 

@@ -453,6 +453,8 @@ class WorkflowController(object):
 
   config = None
 
+  engine_config_proxy = None
+
   _resource_id = None
 
   scheduler_config = None
@@ -506,6 +508,7 @@ class WorkflowController(object):
     if mode == configuration.LOCAL_MODE:
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
+      self.engine_config_proxy = self._connection.get_configuration()
       self._transfer = TransferLocal(self._engine_proxy)
       #self._transfer = PortableRemoteTransfer(self._engine_proxy)
       #self._transfer = TransferSCP(self._engine_proxy,
@@ -517,6 +520,7 @@ class WorkflowController(object):
                                     #hostname=None)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
       #self._transfer = PortableRemoteTransfer(self._engine_proxy)
+      
 
     # REMOTE MODE
     elif mode == configuration.REMOTE_MODE:
@@ -534,6 +538,7 @@ class WorkflowController(object):
                                                     "",
                                                     rsa_key_pass)
       self._engine_proxy = self._connection.get_workflow_engine()
+      self.engine_config_proxy = self._connection.get_configuration()
 
       if not password and not rsa_key_pass:
         self._transfer = TransferSCP(self._engine_proxy,
@@ -553,6 +558,7 @@ class WorkflowController(object):
         self.scheduler_config = configuration.LocalSchedulerCfg.load_from_file(local_scdl_cfg_path)
       self._engine_proxy = _embedded_engine_and_server(self.config, 
                                                        self.scheduler_config)
+      self.engine_config_proxy = self.config
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
       #self._transfer = PortableRemoteTransfer(self._engine_proxy)
@@ -1284,7 +1290,7 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
   '''
   import logging
 
-  from soma.workflow.engine import WorkflowEngine, WorkflowEngineLoop, EngineLoopThread
+  from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
   from soma.workflow.database_server import WorkflowDatabaseServer
 
   (engine_log_dir,
@@ -1318,17 +1324,9 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
     print "scheduler type: basic, number of cpu: " + repr(local_scheduler_config.get_proc_nb())
     scheduler = ConfiguredLocalScheduler(local_scheduler_config)
 
-  engine_loop = WorkflowEngineLoop(database_server,
-                                   scheduler,
-                                   config.get_path_translation(),
-                                   config.get_queue_limits())
-
-  workflow_engine = WorkflowEngine(database_server,
-                                   engine_loop)
-
-  engine_loop_thread = EngineLoopThread(engine_loop)
-  engine_loop_thread.setDaemon(True)
-  engine_loop_thread.start()
+  workflow_engine = ConfiguredWorkflowEngine(database_server,
+                                             scheduler, 
+                                             config)
 
   return workflow_engine
 

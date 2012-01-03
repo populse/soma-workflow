@@ -108,8 +108,12 @@ Ui_SWMiniWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
 Ui_SearchWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
                                                           'search_widget.ui' ))[0]
 
-Ui_LocalSchedulerController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
+Ui_LocalSchedulerConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
                                                           'local_scheduler_widget.ui' ))[0]
+
+
+Ui_WorkflowEngineConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
+                                                          'engine_controller_widget.ui' ))[0]
 #-----------------------------------------------------------------------------
 # Local utilities
 #-----------------------------------------------------------------------------
@@ -403,10 +407,16 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
       self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(icon, repr(len(status_list)) + " workflows" + to_display))
       resource = self.model.resource_pool.connection(rid)
       if resource.config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-        scheduler_widget = LocalSchedulerController(resource.scheduler_config, 
-                                                    self)
+        scheduler_widget = LocalSchedulerConfigController(resource.scheduler_config, 
+                                                          self)
         self.ui.table.setCellWidget(row, 2, scheduler_widget)
         self.ui.table.resizeColumnToContents(2)
+      else:
+        controller_widget = WorkflowEngineConfigController(resource.engine_config_proxy, 
+                                                self)
+        self.ui.table.setCellWidget(row, 2, controller_widget)
+        self.ui.table.resizeColumnToContents(2)
+        
       row = row + 1
     if self.model.current_resource_id != None and \
        self.model.current_resource_id in self.resource_ids:
@@ -414,14 +424,14 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.ui.table.resizeColumnsToContents()
 
 
-class LocalSchedulerController(QtGui.QWidget):
+class LocalSchedulerConfigController(QtGui.QWidget):
 
   scheduler_config = None
 
   def __init__(self, scheduler_config, parent=None):
-    super(LocalSchedulerController, self).__init__(parent)
+    super(LocalSchedulerConfigController, self).__init__(parent)
     
-    self.ui = Ui_LocalSchedulerController()
+    self.ui = Ui_LocalSchedulerConfigController()
     self.ui.setupUi(self)
 
     self.scheduler_config = scheduler_config
@@ -436,7 +446,61 @@ class LocalSchedulerController(QtGui.QWidget):
     self.scheduler_config.set_proc_nb(nb_proc)
     
 
+class WorkflowEngineConfigController(QtGui.QWidget):
   
+  engine_config = None
+
+  queue_limits = None
+
+  def __init__(self, engine_config, parent=None):
+    super(WorkflowEngineConfigController, self).__init__(parent)
+
+    self.ui = Ui_WorkflowEngineConfigController()
+    self.ui.setupUi(self)
+
+    self.engine_config = engine_config
+
+    self.queue_limits = self.engine_config.get_queue_limits()
+
+    print "queue limits " + repr(self.engine_config.get_queue_limits())
+
+    if not self.queue_limits:
+      self.ui.label.hide()
+      self.ui.combo_queue.hide()
+      self.ui.limit.hide()
+    else:
+      for queue_name in self.queue_limits.keys():
+        if queue_name == None:
+          self.ui.combo_queue.addItem("default")
+        else:
+          self.ui.combo_queue.addItem(queue_name)
+  
+
+      self.ui.combo_queue.currentIndexChanged.connect(self.update_limit)
+      self.ui.limit.valueChanged.connect(self.limit_changed)
+
+      self.update_limit()
+
+  def update_limit(self):
+    self.ui.limit.valueChanged.disconnect(self.limit_changed)
+    queue_name = unicode(self.ui.combo_queue.currentText()).encode('utf-8')
+    if queue_name == "default":
+      self.ui.limit.setValue(self.queue_limits[None])
+    else:
+      self.ui.limit.setValue(self.queue_limits[queue_name])
+    self.ui.limit.valueChanged.connect(self.limit_changed)
+
+
+  def limit_changed(self, limit):
+    queue_name = unicode(self.ui.combo_queue.currentText()).encode('utf-8')
+    if queue_name == "default":
+      self.engine_config.change_queue_limits(None, limit)
+    else:
+      self.engine_config.change_queue_limits(queue_name, limit)
+  
+    
+
+
 
 class SomaWorkflowWidget(QtGui.QWidget):
 

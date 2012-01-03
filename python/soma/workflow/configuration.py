@@ -38,7 +38,7 @@ SCHEDULER_TYPES = [LOCAL_SCHEDULER,
 # Classes and functions
 #-------------------------------------------------------------------------------
 
-class Configuration(object):
+class Configuration(observer.Observable):
   
   # path of the configuration file
   _config_path = None
@@ -73,6 +73,8 @@ class Configuration(object):
   parallel_job_config = None
 
   path_translation = None
+
+  QUEUE_LIMITS_CHANGED = 0
 
   def __init__(self,
                resource_id,
@@ -136,6 +138,9 @@ class Configuration(object):
 
     
     '''
+
+    super(Configuration, self).__init__()
+
     self._config_path = None
     self._config_parser = None
     self._resource_id = resource_id
@@ -423,6 +428,17 @@ class Configuration(object):
     return self._server_name
 
   
+  def change_queue_limits(self, queue_name, queue_limit):
+    '''
+    * queue_name *string*
+
+    * queue_limit *int*
+    '''
+    self.get_queue_limits()
+    self._queue_limits[queue_name] = queue_limit
+    self.notifyObservers(Configuration.QUEUE_LIMITS_CHANGED)
+  
+
   def get_queue_limits(self):
     if self._config_parser == None or len(self._queue_limits) != 0:
       return self._queue_limits
@@ -503,6 +519,49 @@ class Configuration(object):
       return (None, None, None)
 
 
+  def save_to_file(self, config_path=None):
+    pass 
+    #TBI Not safe for now
+    #if config_path:
+      #config_file = open(config_path, "w")
+    #else:
+      #if self._config_path != None:
+        #config_file = open(self._config_path, "w")
+        #config_path = self._config_path
+      #else:
+        #config_path = Configuration.search_config_path()
+        #if config_path == None:
+          #config_path = os.path.expanduser("~/.soma-workflow.cfg")
+        #print config_path
+        #config_file = open(config_path, "w")
+
+    #config_parser = ConfigParser.ConfigParser()
+    #config_parser.read(config_path)
+
+    #if not config_parser.has_section(self._resource_id):
+      #config_parser.add_section(self._resource_id) 
+      ##config_parser.write(config_file)
+      ##config_file.close()
+      ##raise ConfigurationError("The configuration can not be saved."
+                               ##"The resource " + repr(self._resource_id) + " "
+                               ##"can not be found in the configuration "
+                               ##"file " + repr(config_path) + ".")
+
+    #self.get_queue_limits()
+    #if self._queue_limits != None and len(self._queue_limits):
+      #queue_limits_str = ""
+      #for queue, limit in self._queue_limits.iteritems():
+        #if queue == None:
+          #queue_limits_str = queue_limits_str + "{" + repr(limit) + "} "
+        #else:
+          #queue_limits_str = queue_limits_str + queue + "{" + repr(limit) + "} "
+      #print "queue_limits_str " + queue_limits_str
+      #config_parser.set(self._resource_id, 
+                        #constants.OCFG_MAX_JOB_IN_QUEUE, 
+                        #queue_limits_str)
+
+    #config_parser.write(config_file)
+    #config_file.close() 
 
 
 class LocalSchedulerCfg(observer.Observable):
@@ -605,11 +664,11 @@ class LocalSchedulerCfg(observer.Observable):
 
   def set_proc_nb(self, proc_nb):
     self._proc_nb = proc_nb
-    self.notifyObservers(LocalSchedulerCfg.PROC_NB_CHANGED, self._proc_nb)
+    self.notifyObservers(LocalSchedulerCfg.PROC_NB_CHANGED)
   
   def set_interval(self, interval):
     self._interval = interval
-    self.notifyObservers(LocalSchedulerCfg.INTERVAL_CHANGED, self._interval)
+    self.notifyObservers(LocalSchedulerCfg.INTERVAL_CHANGED)
 
   def save_to_file(self, config_path=None):
     if config_path:

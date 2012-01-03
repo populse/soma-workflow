@@ -146,10 +146,30 @@ class RemoteConnection( object ):
                             "\n" + stderr_content )
 
     connection_checker_uri = line.split()[1] 
+    line = stdout.readline()
+    stdout_content = stdout_content + "\n" + line
+    while line and line.split()[0] != "configuration":
+      line = stdout.readline()
+      stdout_content = stdout_content + "\n" + line
+
+    if not line: # A problem occured while starting the engine.
+      line = stderr.readline()
+      stderr_content = line
+      while line:
+        line = stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n" 
+                            "\n" + stdout_content + \
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content )
+    configuration_uri = line.split()[1] 
     client.close()
     
     print "workflow_engine_uri: " +  workflow_engine_uri
     print "connection_checker_uri: " +  connection_checker_uri
+    print "configuration_uri: " + configuration_uri
     engine_pyro_daemon_port = Pyro.core.processStringURI(workflow_engine_uri).port
     print "Pyro object port: " + repr(engine_pyro_daemon_port)
   
@@ -190,6 +210,7 @@ class RemoteConnection( object ):
     # create the proxies                     #
     self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
+    self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
   
     # setting the proxies to use the tunnel  #
     self.workflow_engine.URI.port = client_pyro_daemon_port
@@ -239,6 +260,9 @@ class RemoteConnection( object ):
 
   def get_workflow_engine(self):
     return self.workflow_engine
+
+  def get_configuration(self):
+    return self.configuration
 
 
 class LocalConnection( object ):
@@ -322,10 +346,35 @@ class LocalConnection( object ):
                             "\n" + stderr_content)
 
     connection_checker_uri = line.split()[1] 
-    
+    line = engine_process.stdout.readline()
+    stdout_content = stdout_content + "\n" + line
+    while line and line.split()[0] != "configuration":
+      line = engine_process.stdout.readline()
+      stdout_content = stdout_content + "\n" + line
+
+    if not line: # A problem occured while starting the engine.
+      line = engine_process.stderr.readline()
+      stderr_content = line
+      while line:
+        line = engine_process.stderr.readline()
+        stderr_content = stderr_content + "\n" + line
+      raise ConnectionError("A problem occured while starting the engine "
+                            "process.\n" 
+                            "Engine process standard output:\n" 
+                            "\n" + stdout_content +\
+                            "Engine process standard error:\n" 
+                            "\n" + stderr_content)
+
+    configuration_uri = line.split()[1]
+
+    print "workflow_engine_uri: " +  workflow_engine_uri
+    print "connection_checker_uri: " +  connection_checker_uri
+    print "configuration_uri: " + configuration_uri
+
     # create the proxies                     #
     self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
     connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
+    self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
   
     # create the connection holder objet for #
     # a clean disconnection in any case      #
@@ -343,6 +392,9 @@ class LocalConnection( object ):
 
   def get_workflow_engine(self):
     return self.workflow_engine
+
+  def get_configuration(self):
+    return self.configuration
 
 class ConnectionChecker(object):
   

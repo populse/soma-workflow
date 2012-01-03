@@ -26,12 +26,14 @@ import itertools
 import atexit
 
 #import cProfile
+#import traceback
 
 from soma.workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer
 import soma.workflow.constants as constants
 from soma.workflow.client import WorkflowController
 from soma.workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma.workflow.transfer import RemoteFileController
+from soma.workflow.configuration import Configuration
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -75,7 +77,7 @@ class EngineLoopThread(threading.Thread):
   def stop(self):
     self.engine_loop.stop_loop()
     self.join()
-    print "Soma workflow engin thread ended nicely."
+    print "Soma workflow engine thread ended nicely."
   
 
 class WorkflowEngineLoop(object):
@@ -365,6 +367,10 @@ class WorkflowEngineLoop(object):
   def stop_loop(self):
     self._running = False
 
+  def set_queue_limits(self, queue_limits):
+    with self._lock:
+      self._queue_limits = queue_limits
+
   def add_job(self, client_job, queue):
     # register
     engine_job = EngineJob(client_job=client_job, 
@@ -591,12 +597,17 @@ class WorkflowEngine(RemoteFileController):
   # soma.workflow.database_server.WorkflowDatabaseServer
   _database_server = None
   # WorkflowEngineLoop
-  _engine_loop = None
+  engine_loop = None
+  # EngineLoopThread
+  engine_loop_thread = None
   # id of the user on the database server
   _user_id = None
 
-
-  def __init__( self, database_server, engine_loop):
+  def __init__( self, 
+                database_server, 
+                scheduler, 
+                path_translation=None,
+                queue_limits={}):
     ''' 
     @type  database_server:
            L{soma.workflow.database_server.WorkflowDatabaseServer}
@@ -606,7 +617,7 @@ class WorkflowEngine(RemoteFileController):
     self.logger = logging.getLogger('engine.WorkflowEngine')
     
     self._database_server= database_server
-    self._engine_loop = engine_loop
+    
     
     try:
       user_login = pwd.getpwuid(os.getuid())[0]
@@ -615,6 +626,14 @@ class WorkflowEngine(RemoteFileController):
     
     self._user_id = self._database_server.register_user(user_login)
     self.logger.debug("user_id : " + repr(self._user_id))
+
+    self.engine_loop = WorkflowEngineLoop(database_server,
+                                           scheduler,
+                                           path_translation,
+                                           queue_limits)
+    self.engine_loop_thread = EngineLoopThread(self.engine_loop)
+    self.engine_loop_thread.setDaemon(True)
+    self.engine_loop_thread.start()
 
   def __del__( self ):
     pass
@@ -723,7 +742,7 @@ class WorkflowEngine(RemoteFileController):
     @type  job: L{soma.workflow.client.Job}
     @param job: job informations 
     '''
-    engine_job = self._engine_loop.add_job(job, queue)
+    engine_job = self.engine_loop.add_job(job, queue)
 
     return engine_job.job_id
 
@@ -754,7 +773,7 @@ class WorkflowEngine(RemoteFileController):
     if not expiration_date:
       expiration_date = datetime.now() + timedelta(days=7)
     
-    wf_id = self._engine_loop.add_workflow(workflow, expiration_date, name, queue)
+    wf_id = self.engine_loop.add_workflow(workflow, expiration_date, name, queue)
 
     return wf_id
 
@@ -786,7 +805,7 @@ class WorkflowEngine(RemoteFileController):
 
     if status != constants.WORKFLOW_DONE:
       if _out_to_date(last_status_update):
-        self._engine_loop.force_stop(workflow_id)
+        self.engine_loop.force_stop(workflow_id)
         return False
       else:
         self._database_server.set_workflow_status(workflow_id, 
@@ -818,7 +837,7 @@ class WorkflowEngine(RemoteFileController):
     (status, last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
     
     if status == constants.WORKFLOW_DONE:
-      self._engine_loop.restart_workflow(workflow_id, status)
+      self.engine_loop.restart_workflow(workflow_id, status)
       self._wait_wf_status_update(workflow_id, 
                                   expected_status=constants.WORKFLOW_IN_PROGRESS)
       return True
@@ -972,7 +991,7 @@ class WorkflowEngine(RemoteFileController):
                                                                 self._user_id)
     
     if status == constants.FAILED or _out_to_date(last_status_update):
-      self._engine_loop.restart_job(job_id, status)
+      self.engine_loop.restart_job(job_id, status)
       return True
     else:
       return False
@@ -1077,6 +1096,37 @@ class WorkflowEngine(RemoteFileController):
     if _out_to_date(last_status_update):
       return False
     return True
+
+class ConfiguredWorkflowEngine(WorkflowEngine):
+  '''
+  WorkflowEngineLoop synchronized with a configuration object.
+  '''
+
+  config = None
+  
+  def __init__(self, 
+               database_server, 
+               scheduler, 
+               config):
+    '''
+    * config *configuration.Configuration*
+    '''
+    super(ConfiguredWorkflowEngine, self).__init__(
+                               database_server,
+                               scheduler,
+                               path_translation=config.get_path_translation(),
+                               queue_limits=config.get_queue_limits())
+
+    self.config = config
+    
+    self.config.addObserver(self,
+                            "update_from_config",
+                            [Configuration.QUEUE_LIMITS_CHANGED])
+
+  def update_from_config(self, observable, event, msg):
+    if event == Configuration.QUEUE_LIMITS_CHANGED:
+      self.engine_loop.set_queue_limits(self.config.get_queue_limits())
+    self.config.save_to_file()
 
     
     

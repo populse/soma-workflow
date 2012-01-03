@@ -22,18 +22,19 @@ if __name__=="__main__":
   import soma.workflow.engine
   import soma.workflow.scheduler
   import soma.workflow.connection 
-  from soma.workflow.configuration import Configuration
+  import soma.workflow.configuration
   from soma.workflow.errors import EngineError
 
 
   ###### WorkflowEngine pyro object
-  class WorkflowEngine(Pyro.core.SynchronizedObjBase, 
-                       soma.workflow.engine.WorkflowEngine):
-    def __init__(self, database_server, engine_loop):
+  class ConfiguredWorkflowEngine(Pyro.core.SynchronizedObjBase, 
+                       soma.workflow.engine.ConfiguredWorkflowEngine):
+    def __init__(self, database_server, scheduler, config):
       Pyro.core.SynchronizedObjBase.__init__(self)
-      soma.workflow.engine.WorkflowEngine.__init__(self, 
+      soma.workflow.engine.ConfiguredWorkflowEngine.__init__(self, 
                                                    database_server, 
-                                                   engine_loop)
+                                                   scheduler,
+                                                   config)
     pass
     
   class ConnectionChecker(Pyro.core.ObjBase, 
@@ -44,6 +45,40 @@ if __name__=="__main__":
                                                           interval, 
                                                           control_interval)
     pass
+
+
+  class Configuration(Pyro.core.ObjBase, 
+                      soma.workflow.configuration.Configuration):
+
+    def __init__( self,
+                  resource_id,
+                  mode,
+                  scheduler_type,
+                  database_file,
+                  transfered_file_dir,
+                  submitting_machines=None,
+                  cluster_address=None,
+                  name_server_host=None,
+                  server_name=None,
+                  queues=None,
+                  queue_limits=None,
+                  drmaa_implementation=None):
+      Pyro.core.ObjBase.__init__(self)
+      soma.workflow.configuration.Configuration.__init__(self,
+                                                         resource_id,
+                                                         mode,
+                                                         scheduler_type,
+                                                         database_file,
+                                                         transfered_file_dir,
+                                                         submitting_machines,
+                                                         cluster_address,
+                                                         name_server_host,
+                                                         server_name,
+                                                         queues,
+                                                         queue_limits,
+                                                         drmaa_implementation)
+      pass
+    
   
   ###### main server program
   def main(resource_id, engine_name, log = ""):
@@ -97,18 +132,10 @@ if __name__=="__main__":
                                   config.get_parallel_job_config(),
                                   os.path.expanduser("~"))
 
-    engine_loop = soma.workflow.engine.WorkflowEngineLoop(database_server,
-                                             drmaa,
-                                             config.get_path_translation(),
-                                             config.get_queue_limits())
-    
-    workflow_engine = WorkflowEngine(database_server, 
-                                     engine_loop)
+    workflow_engine = ConfiguredWorkflowEngine(database_server, 
+                                               drmaa,
+                                               config)
 
-    engine_loop_thread = soma.workflow.engine.EngineLoopThread(engine_loop)
-    engine_loop_thread.setDaemon(True)
-    engine_loop_thread.start()
-    
     # connection to the pyro daemon and output its URI 
     uri_engine = daemon.connect(workflow_engine, engine_name)
     sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
@@ -120,6 +147,11 @@ if __name__=="__main__":
     connection_checker = ConnectionChecker()
     uri_cc = daemon.connect(connection_checker, 'connection_checker')
     sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
+    sys.stdout.flush() 
+
+    # configuration
+    uri_config = daemon.connect(config, 'configuration')
+    sys.stdout.write("configuration " + str(uri_config) + "\n")
     sys.stdout.flush() 
     
     # Daemon request loop thread
@@ -148,16 +180,15 @@ if __name__=="__main__":
     daemon.sock.close() # free the port
     
     del(daemon) 
-    del(workflow_engine)
     
     logger.info("******** second mode: waiting for jobs to finish****")
     jobs_running = True
     while jobs_running:
-      jobs_running = not engine_loop.are_jobs_and_workflow_done()
+      jobs_running = not workflow_engine.engine_loop.are_jobs_and_workflow_done()
       time.sleep(1)
     
     logger.info("******** jobs are done ! ***************************")
-    engine_loop_thread.stop()
+    workflow_engine.engine_loop_thread.stop()
 
     drmaa.clean()
     sys.exit()
