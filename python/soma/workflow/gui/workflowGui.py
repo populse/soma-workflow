@@ -505,6 +505,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
   config_file_path = None
 
   update_workflow_list_from_model = None
+
+  workflow_info_widget = None
   
   def __init__(self, 
                model, 
@@ -517,16 +519,18 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.ui = Ui_ResourceWfSelect()
     self.ui.setupUi(self)
-       
+
     self.model = model
 
     self.update_workflow_list_from_model = False
+
+    self.workflow_info_widget = WorkflowStatusNameDate(self.model, parent=self)
+    self.ui.wf_info_layout.addWidget(self.workflow_info_widget)
+    
     
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.current_workflow_changed)
     self.connect(self.model, QtCore.SIGNAL('connection_closed_error'), self.reconnectAfterConnectionClosed)
-    self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
-    self.updateCurrentWorkflowStatus)
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.update_workflow_status_icons)
 
     try:
@@ -538,12 +542,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
 
     self.ui.combo_resources.addItems(self.resource_list)
-     
-    self.ui.widget_wf_status_date.hide()
+    
+    self.workflow_info_widget.hide()
     
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
-    
-    self.ui.toolButton_change_exp_date.setDefaultAction(self.ui.action_change_expiration_date)
     
     self.ui.action_submit.triggered.connect(self.submit_workflow)
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
@@ -1085,7 +1087,28 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
   @QtCore.pyqtSlot()
   def change_expiration_date(self):
-    qtdt = self.ui.dateTimeEdit_expiration.dateTime()
+    dlg = QtGui.QDialog(self)
+    ui = Ui_SubmissionDlg()
+    ui.setupUi(dlg)
+    ui.resource_label.setText(self.model.current_resource_id)
+    if self.model.workflow_name:
+      ui.lineedit_wf_name.setText(self.model.workflow_name)
+    else: 
+      ui.lineedit_wf_name.setText(repr(self.model.current_wf_id))
+    ui.lineedit_wf_name.setReadOnly(True)
+    ui.lineedit_wf_name.setFrame(False)
+    ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
+    dlg.setWindowTitle("Change expiration date")
+    queue = self.model.current_workflow().queue
+    if queue == None: queue = "default queue"
+    ui.combo_queue.addItem(queue)
+    ui.combo_queue.setEnabled(False)
+
+    if dlg.exec_() != QtGui.QDialog.Accepted:
+        return
+    
+    
+    qtdt = ui.dateTimeEdit_expiration.dateTime()
     date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                     qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
     
@@ -1102,9 +1125,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         break
     if not change_occured:
       QtGui.QMessageBox.information(self, "information", "The workflow expiration date was not changed.")
-      self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
     else:
       self.model.change_expiration_date(date)
+      self.workflow_info_widget.current_workflow_changed()
       
   
   @QtCore.pyqtSlot()
@@ -1119,16 +1142,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     if self.model.current_wf_id == None:
       # No workflow
       
-      ##self.graphWidget.clear()
-      #self.itemInfoWidget.clear()
-      
-      self.ui.wf_name.clear()
-      self.ui.wf_status.clear()
-      self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
-     
-      self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
-      self.ui.dateTimeEdit_expiration.setEnabled(False)
-      
       self.ui.action_optimize_wf.setEnabled(False)
 
       self.ui.action_submit.setEnabled(False)
@@ -1140,7 +1153,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.action_transfer_outfiles.setEnabled(False)
       self.ui.action_save.setEnabled(False)
       
-      self.ui.widget_wf_status_date.hide()
+      self.workflow_info_widget.hide()
 
       self.ui.list_widget_submitted_wfs.clearSelection()
       
@@ -1152,16 +1165,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
       
       if self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
         # Workflow not submitted
-        if self.model.workflow_name != None: 
-          self.ui.wf_name.setText(self.model.workflow_name)
-        else:
-          self.ui.wf_name.clear()
-
-        self.ui.wf_status.setText("not submitted")
-        self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
-         
-        self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
-        self.ui.dateTimeEdit_expiration.setEnabled(True)
         
         self.ui.action_optimize_wf.setEnabled(True)
         self.ui.action_submit.setEnabled(True)
@@ -1172,22 +1175,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_transfer_infiles.setEnabled(False)
         self.ui.action_transfer_outfiles.setEnabled(False)
         
-        self.ui.widget_wf_status_date.show()
+        self.workflow_info_widget.show()
         
         self.ui.list_widget_submitted_wfs.clearSelection()
         
       else:
         # Submitted workflow
-        if self.model.workflow_name:
-          self.ui.wf_name.setText(self.model.workflow_name)
-        else: 
-          self.ui.wf_name.setText(repr(self.model.current_wf_id))
-        
-        self.update_workflow_status_widgets(self.model.workflow_status)
-       
-        self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
-        self.ui.dateTimeEdit_expiration.setEnabled(True)
-        
+      
         self.ui.action_optimize_wf.setEnabled(False)
         self.ui.action_submit.setEnabled(False)
         self.ui.action_change_expiration_date.setEnabled(True)
@@ -1198,31 +1192,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_transfer_outfiles.setEnabled(True)    
         self.ui.action_save.setEnabled(True)    
         
-        self.ui.widget_wf_status_date.show()
+        self.workflow_info_widget.show()
         
         index = None
         for i in range(0, self.ui.list_widget_submitted_wfs.count()):
           if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
             self.ui.list_widget_submitted_wfs.setCurrentRow(i)
             break
-
-
-  @QtCore.pyqtSlot()  
-  def updateCurrentWorkflowStatus(self):
-    self.update_workflow_status_widgets(self.model.workflow_status) 
-
-  def update_workflow_status_widgets(self, status):
-    if status == None:
-      self.ui.wf_status.clear()
-    else:
-      self.ui.wf_status.setText(status)
-    icon_file_path = workflow_status_icon(status)
-    if icon_file_path == None:
-      pixmap = QtGui.QPixmap()
-    else:
-      image = QtGui.QImage(icon_file_path).scaled(30, 30)
-      pixmap = QtGui.QPixmap.fromImage(image)
-    self.ui.wf_status_icon.setPixmap(pixmap) 
           
   @QtCore.pyqtSlot()  
   def refreshWorkflowList(self):
