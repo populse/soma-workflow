@@ -219,7 +219,8 @@ def create_database(database_file):
                                            name               TEXT,
                                            ended_transfers    TEXT,
                                            status             TEXT,
-                                           last_status_update DATE NOT NULL) ''')
+                                           last_status_update DATE NOT NULL,
+                                           queue              TEXT) ''')
   
   cursor.close()
   connection.commit()
@@ -874,14 +875,16 @@ class WorkflowDatabaseServer( object ):
                           expiration_date,
                           name,
                           status, 
-                          last_status_update)
-                          VALUES (?, ?, ?, ?, ?, ?)''',
+                          last_status_update,
+                          queue)
+                          VALUES (?, ?, ?, ?, ?, ?, ?)''',
                          (user_id,
                           None, 
                           engine_workflow.expiration_date,
                           engine_workflow.name,
                           constants.WORKFLOW_NOT_STARTED,
-                          datetime.now()))
+                          datetime.now(),
+                          engine_workflow.queue))
      
         engine_workflow.wf_id = cursor.lastrowid
 
@@ -1090,7 +1093,9 @@ class WorkflowDatabaseServer( object ):
     requests to the database.
     
     @type wf_id: C{WorflowIdentifier}
-    @rtype: tuple (sequence of tuple (job_id, status, 
+    @rtype: tuple (sequence of tuple (job_id, 
+                                      status, 
+                                      queue,
                                       exit_info, 
                                       (submission_date, 
                                        execution_date, 
@@ -1100,7 +1105,8 @@ class WorkflowDatabaseServer( object ):
                                       client_paths,
                                       status,
                                       transfer_type), 
-                   workflow_status)
+                   workflow_status,
+                   workflow_queue)
     '''
     self.logger.debug("=> get_detailed_workflow_status")
     with self._lock:
@@ -1109,12 +1115,13 @@ class WorkflowDatabaseServer( object ):
     
       try:
         # workflow status 
-        wf_status = cursor.execute('''SELECT  
-                                      status
+        (wf_status, wf_queue) = cursor.execute('''SELECT  
+                                      status,
+                                      queue
                                       FROM workflows WHERE id=?''',
-                                      [wf_id]).next()[0]#supposes that the wf_id is valid
+                                      [wf_id]).next()#supposes that the wf_id is valid
                                       
-        workflow_status = ([],[], wf_status)
+        workflow_status = ([],[], wf_status, wf_queue)
         # jobs
         for row in cursor.execute('''SELECT id,
                                             status,
@@ -1124,16 +1131,18 @@ class WorkflowDatabaseServer( object ):
                                             resource_usage,
                                             submission_date,
                                             execution_date,
-                                            ending_date
+                                            ending_date,
+                                            queue
                                      FROM jobs WHERE workflow_id=?''', [wf_id]):
-          job_id, status, exit_status, exit_value, term_signal, resource_usage, submission_date, execution_date, ending_date = row
+          job_id, status, exit_status, exit_value, term_signal, resource_usage, submission_date, execution_date, ending_date, queue = row
           
           submission_date = self._str_to_date_conversion(submission_date)
           execution_date = self._str_to_date_conversion(execution_date)
           ending_date = self._str_to_date_conversion(ending_date)
+          queue = self._string_conversion(queue)
           
           
-          workflow_status[0].append((job_id, status, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date)))
+          workflow_status[0].append((job_id, status, queue, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date, queue)))
                           
         # transfers 
         for row in cursor.execute('''SELECT engine_file_path, 
@@ -1440,6 +1449,37 @@ class WorkflowDatabaseServer( object ):
       connection.commit()
       connection.close()
       self.clean()
+
+  def set_queue(self, queue_name, job_ids, wf_id=None):
+    '''
+    job_ids: list of job_id
+
+    queue_name: string
+    '''
+    with self._lock:
+      # TBI if the status is not valid raise an exception ??
+      connection = self._connect()
+      cursor = connection.cursor()
+      try:
+        if wf_id != None:
+          count = cursor.execute('SELECT count(*) FROM workflows WHERE id=?', [wf_id]).next()[0]
+          if not count == 0 :
+            cursor.execute('''UPDATE workflows SET queue=? WHERE id=?''',
+                                            (queue_name, wf_id))
+
+        for job_id in job_ids:
+          count = cursor.execute('SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+          if not count == 0 :
+            cursor.execute('''UPDATE jobs SET queue=? WHERE id=?''',
+                                              (queue_name, job_id))
+      except Exception, e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise DatabaseError('%s: %s \n' %(type(e), e))
+      connection.commit()
+      cursor.close()
+      connection.close()
 
 
   def set_jobs_status(self, job_status, force=False):

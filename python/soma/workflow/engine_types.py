@@ -660,7 +660,7 @@ class EngineWorkflow(Workflow):
     wf_status = database_server.get_detailed_workflow_status(self.wf_id)
 
     for job_info in wf_status[0]:
-      job_id, status, exit_info, date_info = job_info
+      job_id, status, queue, exit_info, date_info = job_info
       self.registered_jobs[job_id].status = status
       exit_status, exit_value, term_signal, resource_usage = exit_info
       self.registered_jobs[job_id].exit_status = exit_status
@@ -675,6 +675,8 @@ class EngineWorkflow(Workflow):
        status, 
        transfer_type) = ft_info 
       self.registered_tr[engine_path].status = status
+
+    self.queue = wf_status[3]
 
 
   def force_stop(self, database_server):
@@ -706,15 +708,17 @@ class EngineWorkflow(Workflow):
     database_server.set_workflow_status(self.wf_id, self.status)
 
 
-  def restart(self, database_server):
+  def restart(self, database_server, queue):
    
     self._update_state_from_database_server(database_server)
 
+    self.queue = queue
     to_restart = False
     undone_jobs = []
     done = True
     sub_info_to_resert = {}
     new_status = {}
+    jobs_queue_changed = []
     for client_job in self.jobs:
       job = self.job_mapping[client_job]
       if job.failed():
@@ -724,6 +728,8 @@ class EngineWorkflow(Workflow):
         job.exit_value = None
         job.terminating_signal = None
         job.drmaa_id = None
+        job.queue = self.queue
+        jobs_queue_changed.append(job.job_id)
         stdout = open(job.stdout_file, "w")
         stdout.close()
         stderr = open(job.stderr_file, "w")
@@ -734,9 +740,12 @@ class EngineWorkflow(Workflow):
 
       if not job.ended_with_success():
         undone_jobs.append(job)
-
+        job.queue = self.queue
+        jobs_queue_changed.append(job.job_id)
+        
     database_server.set_submission_information(sub_info_to_resert, None)
     database_server.set_jobs_status(new_status)
+    database_server.set_queue(self.queue, jobs_queue_changed, self.wf_id)
 
     to_run = []
     if undone_jobs:

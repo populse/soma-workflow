@@ -20,14 +20,14 @@
       <widget class="QDateTimeEdit" name="dateTimeEdit_expiration"/>
      </item>
      <item row="5" column="0">
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="label_exp_date">
        <property name="text">
         <string>expiration date:</string>
        </property>
       </widget>
      </item>
      <item row="4" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="label_wf_name">
        <property name="text">
         <string>workflow name:</string>
        </property>
@@ -37,7 +37,7 @@
       <widget class="QLineEdit" name="lineedit_wf_name"/>
      </item>
      <item row="3" column="0">
-      <widget class="QLabel" name="label_4">
+      <widget class="QLabel" name="label_queue">
        <property name="text">
         <string>queue:</string>
        </property>
@@ -47,7 +47,7 @@
       <widget class="QComboBox" name="combo_queue"/>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="label_resource">
        <property name="text">
         <string>resource:</string>
        </property>

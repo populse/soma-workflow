@@ -63,9 +63,6 @@ RED=QtGui.QColor(255,100,50)
 GREEN=QtGui.QColor(155,255,50)
 LIGHT_BLUE=QtGui.QColor(200,255,255)
 
-Ui_WorkflowMainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                 'WorkflowMainWindow.ui' ))[0]
-
 Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
                                                             'JobInfo.ui' ))[0]
 
@@ -89,9 +86,6 @@ Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ )
 
 Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
                                                       'submissionDlg.ui' ))[0]
-
-Ui_WorkflowInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
-                                                      'workflow_info.ui' ))[0]
 
 Ui_ResourceWfSelect = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
                                                       'resource_wf_select.ui' ))[0]
@@ -223,8 +217,8 @@ class Controller(object):
     return wf_ctrl.workflows()
 
   @staticmethod
-  def restart_workflow(workflow_id, wf_ctrl):
-    return wf_ctrl.restart_workflow(workflow_id)
+  def restart_workflow(workflow_id, queue, wf_ctrl):
+    return wf_ctrl.restart_workflow(workflow_id, queue)
 
   @staticmethod
   def get_connection(resource_id, 
@@ -461,8 +455,6 @@ class WorkflowEngineConfigController(QtGui.QWidget):
     self.engine_config = engine_config
 
     self.queue_limits = self.engine_config.get_queue_limits()
-
-    print "queue limits " + repr(self.engine_config.get_queue_limits())
 
     if not self.queue_limits:
       self.ui.label.hide()
@@ -798,9 +790,49 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   @QtCore.pyqtSlot()
   def restart_workflow(self):
+
+    queue = None
+    date = None
+    if Controller.get_queues(self.model.current_connection):
+      submission_dlg = QtGui.QDialog(self)
+      ui = Ui_SubmissionDlg()
+      ui.setupUi(submission_dlg)
+      ui.resource_label.setText(self.model.current_resource_id)
+      if self.model.workflow_name:
+        ui.lineedit_wf_name.setText(self.model.workflow_name)
+      else: 
+        ui.lineedit_wf_name.setText(repr(self.model.current_wf_id))
+      ui.lineedit_wf_name.setEnabled(False)
+      ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
+      submission_dlg.setWindowTitle("Restart")
+      queues = ["default queue"]
+      queues.extend(Controller.get_queues(self.model.current_connection))
+      ui.combo_queue.addItems(queues)
+      previous_queue = self.model.current_workflow().queue
+      if previous_queue == None: 
+        previous_queue = "default queue"
+      print "previous queue " + repr(previous_queue)
+      index = queues.index(previous_queue)
+      ui.combo_queue.setCurrentIndex(index)
+
+      if submission_dlg.exec_() != QtGui.QDialog.Accepted:
+        return
+      queue =  unicode(ui.combo_queue.currentText()).encode('utf-8')
+      if queue == "default queue": queue = None
+
+      qtdt = ui.dateTimeEdit_expiration.dateTime()
+      date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
+                      qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
+    
     try:
       done = Controller.restart_workflow(self.model.current_wf_id,
+                                         queue,
                                          self.model.current_connection)
+      if done and date != None:
+        Controller.change_workflow_expiration_date(
+                            self.model.current_wf_id, 
+                            date,  
+                            self.model.current_connection)
     except ConnectionClosedError, e:
       pass
     except SystemExit, e:
@@ -1939,6 +1971,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromString(self.ui.term_signal, term_signal)
     setTextEditFromString(self.ui.command, self.job_item.command)
     setLabelFromInt(self.ui.priority, self.job_item.priority)
+    setLabelFromString(self.ui.queue, self.job_item.queue)
     
     if resource_usage: 
       self.ui.resource_usage.insertItems(0, resource_usage.split())
@@ -3084,17 +3117,22 @@ class GuiWorkflow(object):
   server_file_transfers = None
   # dict: Job id => gui item job id
   server_jobs = None
+
+  queue = None
   
   
   def __init__(self, workflow):
     
     #print("wf " +repr(workflow))
     self.name = workflow.name 
+    
   
     if isinstance(workflow, EngineWorkflow):
       self.wf_id = workflow.wf_id
+      self.queue = workflow.queue
     else:
       self.wf_id = NOT_SUBMITTED_WF_ID
+      self.queue = None
 
     self.wf_status = None
     
@@ -3127,6 +3165,7 @@ class GuiWorkflow(object):
       else:
         job_id = -1
         command = job.command
+      
       gui_job = GuiJob(it_id = item_id, 
                        command=command,
                        parent=-1, 
@@ -3263,15 +3302,17 @@ class GuiWorkflow(object):
     if self.wf_id == NOT_SUBMITTED_WF_ID: 
       return False
     data_changed = False
+
+    self.queue = wf_status[3]
     
     if not wf_status:
       return False
     #updating jobs:
     for job_info in wf_status[0]:
-      job_id, status, exit_info, date_info = job_info
+      job_id, status, queue, exit_info, date_info = job_info
       #date_info = (None, None, None) # (submission_date, execution_date, ending_date)
       item = self.items[self.server_jobs[job_id]]
-      data_changed = item.updateState(status, exit_info, date_info) or data_changed
+      data_changed = item.updateState(status, queue, exit_info, date_info) or data_changed
 
     #end = datetime.now() - begining
     #print " <== end updating jobs" + repr(self.wf_id) + " : " + repr(end.seconds)
@@ -3485,6 +3526,7 @@ class GuiJob(GuiWorkflowItem):
     self.execution_date = None
     self.ending_date = None
     self.priority = priority
+    self.queue = None
     
     self.name = name
     self.job_id = job_id
@@ -3508,7 +3550,7 @@ class GuiJob(GuiWorkflowItem):
     separator = " " 
     self.command = separator.join(cmd_seq)
     
-  def updateState(self, status, exit_info, date_info):
+  def updateState(self, status, queue, exit_info, date_info):
     self.initiated = True
     state_changed = False
     state_changed = self.status != status or state_changed
@@ -3518,6 +3560,8 @@ class GuiJob(GuiWorkflowItem):
     self.submission_date = date_info[0]
     self.execution_date = date_info[1]
     self.ending_date = date_info[2]
+    state_changed = self.queue != queue or state_changed
+    self.queue = queue
     if self.exit_info: 
       exit_status, exit_value, term_signal, resource_usage = self.exit_info
       if resource_usage:

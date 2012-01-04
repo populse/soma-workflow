@@ -546,17 +546,18 @@ class WorkflowEngineLoop(object):
     return ended_jobs
 
 
-  def restart_workflow(self, wf_id, status):
+  def restart_workflow(self, wf_id, status, queue):
     if wf_id in self._workflows:
       workflow = self._workflows[wf_id]
+      workflow.queue = queue
       (jobs_to_run, 
-       workflow.status) = workflow.restart(self._database_server)
+       workflow.status) = workflow.restart(self._database_server, queue)
       for job in jobs_to_run:
         self._pend_for_submission(job)
     else:
       workflow = self._database_server.get_engine_workflow(wf_id, self._user_id)
       workflow.status = status
-      (jobs_to_run, workflow.status) = workflow.restart(self._database_server)
+      (jobs_to_run, workflow.status) = workflow.restart(self._database_server, queue)
       for job in jobs_to_run:
         self._pend_for_submission(job)
       # add to the engine managed workflow list
@@ -830,14 +831,14 @@ class WorkflowEngine(RemoteFileController):
     return True
 
 
-  def restart_workflow(self, workflow_id):
+  def restart_workflow(self, workflow_id, queue):
     '''
     Implementation of soma.workflow.client.WorkflowController API
     '''
     (status, last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
     
     if status == constants.WORKFLOW_DONE:
-      self.engine_loop.restart_workflow(workflow_id, status)
+      self.engine_loop.restart_workflow(workflow_id, status, queue)
       self._wait_wf_status_update(workflow_id, 
                                   expected_status=constants.WORKFLOW_IN_PROGRESS)
       return True
@@ -919,7 +920,7 @@ class WorkflowEngine(RemoteFileController):
     if status and \
        not status == constants.WORKFLOW_DONE and \
        _out_to_date(last_status_update):
-      wf_status = (wf_status[0], wf_status[1], constants.WARNING)
+      wf_status = (wf_status[0], wf_status[1], constants.WARNING, wf_status[3])
     
     return wf_status
         

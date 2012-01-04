@@ -495,6 +495,7 @@ class WorkflowController(object):
       self.config = configuration.Configuration.load_from_file(resource_id)
     else:
       self.config = config
+
     self.scheduler_config = None
 
     mode = self.config.get_mode()
@@ -741,9 +742,9 @@ class WorkflowController(object):
 
     * workflow_id *workflow identifier*
 
-    * returns: tuple (sequence of tuple (job_id, status, exit_info,
+    * returns: tuple (sequence of tuple (job_id, status, queue, exit_info, 
       (submission_date, execution_date, ending_date)), sequence of tuple
-      (transfer_id, (status, progression_info)), workflow_status)
+      (transfer_id, (status, progression_info)), workflow_status, workflow_queue)
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
@@ -759,7 +760,7 @@ class WorkflowController(object):
 
       new_transfer_status.append((engine_path, (status, progression)))
 
-    new_wf_status = (wf_status[0], new_transfer_status, wf_status[2])
+    new_wf_status = (wf_status[0], new_transfer_status, wf_status[2], wf_status[3])
     return new_wf_status
 
 
@@ -870,7 +871,7 @@ class WorkflowController(object):
 
   ########## WORKFLOW CONTROL ############################################
 
-  def restart_workflow(self, workflow_id):
+  def restart_workflow(self, workflow_id, queue=None):
     '''
     Restarts the jobs of the workflow which failed. The jobs will be submitted
     again.
@@ -878,12 +879,16 @@ class WorkflowController(object):
 
     * workflow_id *workflow identifier*
 
+    * queue *string*
+        Optional name of the queue where to submit jobs. If it is not specified
+        the jobs will be submitted to the default queue.
+
     * returns: *boolean*
         True if some jobs were restarted.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
-    return self._engine_proxy.restart_workflow(workflow_id)
+    return self._engine_proxy.restart_workflow(workflow_id, queue)
 
 
   def delete_workflow(self, workflow_id, force=True):
