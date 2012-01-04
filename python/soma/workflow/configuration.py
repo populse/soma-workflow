@@ -521,31 +521,27 @@ class Configuration(observer.Observable):
 
   def save_to_file(self, config_path=None):
     pass 
-    #TBI Not safe for now
-    #if config_path:
-      #config_file = open(config_path, "w")
-    #else:
+    # disabled for now because it erases the commented part of the configuration
+    #if not config_path:
       #if self._config_path != None:
-        #config_file = open(self._config_path, "w")
         #config_path = self._config_path
       #else:
         #config_path = Configuration.search_config_path()
         #if config_path == None:
           #config_path = os.path.expanduser("~/.soma-workflow.cfg")
         #print config_path
-        #config_file = open(config_path, "w")
 
     #config_parser = ConfigParser.ConfigParser()
     #config_parser.read(config_path)
 
     #if not config_parser.has_section(self._resource_id):
-      #config_parser.add_section(self._resource_id) 
-      ##config_parser.write(config_file)
-      ##config_file.close()
-      ##raise ConfigurationError("The configuration can not be saved."
-                               ##"The resource " + repr(self._resource_id) + " "
-                               ##"can not be found in the configuration "
-                               ##"file " + repr(config_path) + ".")
+      #config_file = open(config_path, "w")
+      #config_parser.write(config_file)
+      #config_file.close()
+      #raise ConfigurationError("The configuration can not be saved."
+                               #"The resource " + repr(self._resource_id) + " "
+                               #"can not be found in the configuration "
+                               #"file " + repr(config_path) + ".")
 
     #self.get_queue_limits()
     #if self._queue_limits != None and len(self._queue_limits):
@@ -560,6 +556,7 @@ class Configuration(observer.Observable):
                         #constants.OCFG_MAX_JOB_IN_QUEUE, 
                         #queue_limits_str)
 
+    #config_file = open(config_path, "w")
     #config_parser.write(config_file)
     #config_file.close() 
 
@@ -578,8 +575,6 @@ class LocalSchedulerCfg(observer.Observable):
   # path of the configuration file
   _config_path = None
 
-  # config parser object
-  _config_parser = None
 
   PROC_NB_CHANGED = 0
   INTERVAL_CHANGED = 1
@@ -602,7 +597,7 @@ class LocalSchedulerCfg(observer.Observable):
   def load_from_file(cls,
                      config_file_path=None):
 
- 
+    hostname = socket.gethostname()
     if config_file_path:
       config_path = config_file_path
     else:
@@ -610,21 +605,22 @@ class LocalSchedulerCfg(observer.Observable):
 
     config_parser = ConfigParser.ConfigParser()
     config_parser.read(config_path)
-    if not config_parser.has_section("local_scheduler"):
+
+    if not config_parser.has_section(hostname):
       raise ConfigurationError("Wrong config file format. Can not find "
-                               "section local_scheduler in configuration " + "file: " + config_path)
+                               "section " + hostname + " in configuration " + "file: " + config_path)
 
     proc_nb = None
     interval = None
     
-    if config_parser.has_option("local_scheduler", 
+    if config_parser.has_option(hostname, 
                                 constants.OCFG_SCDL_CPU_NB):
-      proc_nb_str = config_parser.get("local_scheduler",
+      proc_nb_str = config_parser.get(socket.gethostname(),
                                       constants.OCFG_SCDL_CPU_NB)
       proc_nb = int(proc_nb_str)
-    if config_parser.has_option("local_scheduler", 
+    if config_parser.has_option(hostname, 
                                 constants.OCFG_SCDL_INTERVAL):
-      interval_str = config_parser.get("local_scheduler",
+      interval_str = config_parser.get(hostname,
                                        constants.OCFG_SCDL_INTERVAL)
       interval = int(interval_str)
 
@@ -634,9 +630,7 @@ class LocalSchedulerCfg(observer.Observable):
       config = cls(interval=interval)
     else:
       config = cls(proc_nb=proc_nb, interval=interval)
-    config._config_parser = config_parser
     config._config_path = config_path
-
     return config
 
   
@@ -645,13 +639,27 @@ class LocalSchedulerCfg(observer.Observable):
     '''
     returns the path of the soma workflow configuration file
     '''
+    hostname = socket.gethostname()
+    section_exist = False
     config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
-    if not config_path or not os.path.isfile(config_path):
+    if os.path.isfile(config_path):
+      config_parser = ConfigParser.ConfigParser()
+      config_parser.read(config_path)
+      section_exist = config_parser.has_section(hostname)
+    if not section_exist:
       config_path = os.path.dirname(__file__)
       config_path = os.path.join(config_path, "etc/soma-workflow-scheduler.cfg")
-    if not config_path or not os.path.isfile(config_path):
+      if os.path.isfile(config_path):
+        config_parser = ConfigParser.ConfigParser()
+        config_parser.read(config_path)
+        section_exist = config_parser.has_section(hostname)
+    if not section_exist:
       config_path = "/etc/soma-workflow-scheduler.cfg"
-    if not config_path or not os.path.isfile(config_path):
+      if os.path.isfile(config_path):
+        config_parser = ConfigParser.ConfigParser()
+        config_parser.read(config_path)
+        section_exist = config_parser.has_section(hostname)
+    if not section_exist:
       config_path = None
 
     return config_path
@@ -671,32 +679,29 @@ class LocalSchedulerCfg(observer.Observable):
     self.notifyObservers(LocalSchedulerCfg.INTERVAL_CHANGED)
 
   def save_to_file(self, config_path=None):
-    if config_path:
-      config_file = open(config_path, "w")
-    else:
+    hostname = socket.gethostname()
+    if not config_path:
       if self._config_path != None:
-        config_file = open(self._config_path, "w")
+        
         config_path = self._config_path
       else:
         config_path = LocalSchedulerCfg.search_config_path()
         if config_path == None:
           config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
-        print config_path
-        config_file = open(config_path, "w")
 
     config_parser = ConfigParser.ConfigParser()
     config_parser.read(config_path)
 
-    if not config_parser.has_section("local_scheduler"):
-      config_parser.add_section("local_scheduler")
+    if not config_parser.has_section(hostname):
+      config_parser.add_section(hostname)
 
-    config_parser.set("local_scheduler", 
+    config_parser.set(hostname, 
                       constants.OCFG_SCDL_CPU_NB, 
                       str(self._proc_nb))
-    config_parser.set("local_scheduler", 
+    config_parser.set(hostname, 
                       constants.OCFG_SCDL_INTERVAL, 
                       str(self._interval))
-
+    config_file = open(self._config_path, "w")
     config_parser.write(config_file)
     config_file.close()
 
