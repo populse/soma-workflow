@@ -405,7 +405,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                                                           self)
         self.ui.table.setCellWidget(row, 2, scheduler_widget)
         self.ui.table.resizeColumnToContents(2)
-      else:
+      elif resource.engine_config_proxy.get_queue_limits():
         controller_widget = WorkflowEngineConfigController(resource.engine_config_proxy, 
                                                 self)
         self.ui.table.setCellWidget(row, 2, controller_widget)
