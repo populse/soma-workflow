@@ -70,6 +70,8 @@ class Configuration(observer.Observable):
 
   _drmaa_implementation = None
 
+  _login = None
+
   parallel_job_config = None
 
   path_translation = None
@@ -88,7 +90,8 @@ class Configuration(observer.Observable):
                server_name=None,
                queues=None,
                queue_limits=None,
-               drmaa_implementation=None
+               drmaa_implementation=None,
+               login=None
                ):
     '''
     * resource_id *string*
@@ -152,6 +155,7 @@ class Configuration(observer.Observable):
     self._cluster_address = cluster_address
     self._name_server_host = name_server_host
     self._server_name = server_name
+    self._login = login
     if queues == None:
       self._queues = []
     else:
@@ -257,6 +261,9 @@ class Configuration(observer.Observable):
 
   @staticmethod
   def get_configured_resources(config_file_path=None):
+    '''
+    returns the list of resouce ids
+    '''
     resource_ids = []
     if config_file_path == None:
       return [socket.gethostname()]
@@ -267,6 +274,26 @@ class Configuration(observer.Observable):
     resource_ids.append(socket.gethostname())
     return resource_ids
 
+
+  @staticmethod
+  def get_logins(config_file_path=None):
+    '''
+    returns the dictionary resouce_id -> login
+    '''
+    resource_ids = []
+    if config_file_path == None:
+      return [socket.gethostname()]
+    config_parser = ConfigParser.ConfigParser()
+    config_parser.read(config_file_path)
+    logins = {}
+    for r_id in config_parser.sections():
+      resource_ids.append(r_id)
+      if config_parser.has_option(r_id, constants.OCFG_LOGIN):
+        logins[r_id] = config_parser.get(r_id, constants.OCFG_LOGIN)
+      else:
+        logins[r_id] = None
+    logins[socket.gethostname()] = None
+    return logins
 
   def get_mode(self):
     '''
@@ -365,7 +392,17 @@ class Configuration(observer.Observable):
                                              constants.OCFG_DRMAA_IMPLEMENTATION)
     return self._drmaa_implementation
 
-  
+  def get_login(self):
+    if self._config_parser == None or self._login != None:
+      return self._login
+    self._login = None
+    if self._config_parser != None and \
+       self._config_parser.has_option(self._resource_id, 
+                              constants.OCFG_DRMAA_IMPLEMENTATION):
+      self._login = self._config_parser.get(self._resource_id,                    
+                                             constants.OCFG_LOGIN)
+    return self._login
+
   def get_path_translation(self):
     if self._config_parser == None or self.path_translation != None:
       return self.path_translation

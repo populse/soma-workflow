@@ -491,7 +491,39 @@ class WorkflowEngineConfigController(QtGui.QWidget):
       self.engine_config.change_queue_limits(queue_name, limit)
   
     
+class ConnectionDialog(QtGui.QDialog):
 
+  def __init__(self, 
+               login_list,
+               resource_list,
+               resource_id=None, 
+               editable_resource=True,
+               parent=None):
+
+    super(ConnectionDialog, self).__init__(parent=parent)
+
+    self.ui = Ui_ConnectionDlg()
+    self.ui.setupUi(self)
+
+    self.login_list = login_list
+
+    self.ui.combo_resources.addItems(resource_list)
+    self.ui.combo_resources.setEnabled(editable_resource)
+    if resource_id != None:
+      index = resource_list.index(resource_id)
+      self.ui.combo_resources.setCurrentIndex(index)
+
+    self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
+    self.update_login()
+
+  def update_login(self):
+    resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
+    login = self.login_list[resource_id]
+    print login 
+    if login != None:
+      self.ui.lineEdit_login.setText(login)
+    else:
+      self.ui.lineEdit_login.clear()
 
 
 class SomaWorkflowWidget(QtGui.QWidget):
@@ -536,6 +568,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     try:
       self.config_file_path = configuration.Configuration.search_config_path()
       self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
+      self.login_list = configuration.Configuration.get_logins(self.config_file_path)
     except ConfigurationError, e:
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.close()
@@ -564,10 +597,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.ui.wf_list_refresh_button.clicked.connect(self.refreshWorkflowList)
     
-    self.connection_dlg = QtGui.QDialog(self)
-    self.ui_connection_dlg = Ui_ConnectionDlg()
-    self.ui_connection_dlg.setupUi(self.connection_dlg)
-    self.ui_connection_dlg.combo_resources.addItems(self.resource_list)
+    self.connection_dlg = ConnectionDialog(self.login_list,
+                                           self.resource_list, 
+                                           parent=self)
     self.connection_dlg.accepted.connect(self.firstConnection)
     self.connection_dlg.rejected.connect(self.close)
     
@@ -582,7 +614,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connect_to_controller(socket.gethostname())
     else: # Show connection dialog:
       if user is not None:
-        self.ui_connection_dlg.lineEdit_login.setText(user)
+        self.connection_dlg.ui.lineEdit_login.setText(user)
       self.connection_dlg.show()
 
     if self.model.current_resource_id != None:
@@ -615,12 +647,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
     except ConfigurationError, e:
       QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.ui_connection_dlg.lineEdit_password.clear()
+      self.connection_dlg.ui.lineEdit_password.clear()
       self.connection_dlg.show()
     except Exception, e:
       QtGui.QApplication.restoreOverrideCursor()
       QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
-      self.ui_connection_dlg.lineEdit_password.clear()
+      self.connection_dlg.ui.lineEdit_password.clear()
       self.connection_dlg.show()
     else:
       self.model.add_connection(resource_id, wf_ctrl)
@@ -631,17 +663,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
       
   @QtCore.pyqtSlot()
   def firstConnection(self):
-    resource_id = unicode(self.ui_connection_dlg.combo_resources.currentText())
-    if self.ui_connection_dlg.lineEdit_login.text(): 
-      login = unicode(self.ui_connection_dlg.lineEdit_login.text()).encode('utf-8')
+    resource_id = unicode(self.connection_dlg.ui.combo_resources.currentText())
+    if self.connection_dlg.ui.lineEdit_login.text(): 
+      login = unicode(self.connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
     else: 
       login = None
-    if self.ui_connection_dlg.lineEdit_password.text():
-      password = unicode(self.ui_connection_dlg.lineEdit_password.text()).encode('utf-8')
+    if self.connection_dlg.ui.lineEdit_password.text():
+      password = unicode(self.connection_dlg.ui.lineEdit_password.text()).encode('utf-8')
     else:
       password = None
-    if self.ui_connection_dlg.lineEdit_rsa_password.text():
-      rsa_key_pass = unicode(self.ui_connection_dlg.lineEdit_rsa_password.text()).encode('utf-8')
+    if self.connection_dlg.ui.lineEdit_rsa_password.text():
+      rsa_key_pass = unicode(self.connection_dlg.ui.lineEdit_rsa_password.text()).encode('utf-8')
     else:
       rsa_key_pass = None
 
@@ -959,30 +991,26 @@ class SomaWorkflowWidget(QtGui.QWidget):
     connection_invalid = True
     try_again = True
     while connection_invalid or try_again: 
-      connection_dlg = QtGui.QDialog()
+      connection_dlg = ConnectionDialog(self.login_list,
+                                        self.resource_list,
+                                        resource_id,
+                                        editable_resource)
       connection_dlg.setModal(True)
-      ui = Ui_ConnectionDlg()
-      ui.setupUi(connection_dlg)
-      ui.combo_resources.addItems(self.resource_list)
-      ui.combo_resources.setEnabled(editable_resource)
-      if resource_id != None:
-        index = self.resource_list.index(resource_id)
-        ui.combo_resources.setCurrentIndex(index)
       if connection_dlg.exec_() != QtGui.QDialog.Accepted: 
         try_again = False
         index = self.ui.combo_resources.findText(self.model.current_resource_id)
         self.ui.combo_resources.setCurrentIndex(index)
         break
-      index = ui.combo_resources.currentIndex()
+      index = connection_dlg.ui.combo_resources.currentIndex()
       resource_id = self.resource_list[index]
-      if ui.lineEdit_login.text(): 
-        login = unicode(ui.lineEdit_login.text()).encode('utf-8')
+      if connection_dlg.ui.lineEdit_login.text(): 
+        login = unicode(connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
       else: login = None
-      if ui.lineEdit_password.text():
-        password = unicode(ui.lineEdit_password.text()).encode('utf-8')
+      if connection_dlg.ui.lineEdit_password.text():
+        password = unicode(connection_dlg.ui.lineEdit_password.text()).encode('utf-8')
       else: password = None
-      if ui.lineEdit_rsa_password.text():
-        rsa_key_pass = unicode(ui.lineEdit_rsa_password.text()).encode('utf-8')
+      if connection_dlg.ui.lineEdit_rsa_password.text():
+        rsa_key_pass = unicode(connection_dlg.ui.lineEdit_rsa_password.text()).encode('utf-8')
       else:
         rsa_key_pass = None
       

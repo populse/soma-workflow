@@ -124,14 +124,16 @@ CFG_CLUSTER_ADDRESS = 'CLUSTER_ADDRESS'
 CFG_SUBMITTING_MACHINES = 'SUBMITTING_MACHINES'
 OCFG_DRMAA_IMPLEMENTATION = 'DRMAA_IMPLEMENTATION'
 
-#queues
+
 #OCFG_QUEUES is a list of queue name separated by white spaces.
 #ex: "queue1 queue2"
+OCFG_QUEUES = 'QUEUES'
+OCFG_LOGIN = 'LOGIN'
+
 #OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
 #in the queue for one user. The engine won't submit more than N job at once. The 
 #also wait for the job to leave the queue before submitting new jobs.
 #syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1} queue2{max_nb_job2}"
-OCFG_QUEUES = 'QUEUES'
 OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE' 
 
 #database server
