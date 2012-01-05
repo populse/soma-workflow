@@ -352,7 +352,7 @@ class Configuration(observer.Observable):
     '''
     resource_ids = []
     if config_file_path == None:
-      return [socket.gethostname()]
+      return { socket.gethostname(): None }
     config_parser = ConfigParser.ConfigParser()
     config_parser.read(config_file_path)
     logins = {}
