@@ -1449,13 +1449,19 @@ class WorkflowInfoWidget(QtGui.QWidget):
   @QtCore.pyqtSlot()
   def update_workflow_status(self):
     if self.check_workflow():
-      self.update_workflow_status_widgets(self.model.workflow_status) 
+      self.update_workflow_status_widgets(self.model.workflow_status,
+                                          self.model.current_workflow().queue) 
 
-  def update_workflow_status_widgets(self, status):
+  def update_workflow_status_widgets(self, status, queue):
     if status == None:
       self.ui.wf_status.clear()
+      self.ui.wf_queue.clear()
     else:
       self.ui.wf_status.setText(status)
+      if queue == None:
+        self.ui.wf_queue.setText("default queue")
+      else:
+        self.ui.wf_queue.setText(queue)
     icon_file_path = workflow_status_icon(status)
     if icon_file_path == None:
       pixmap = QtGui.QPixmap()
@@ -1473,7 +1479,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
       self.ui.wf_status_icon.setEnabled(True)
       if self.model.current_wf_id == None:
         self.ui.wf_name.clear()
-        self.update_workflow_status_widgets(None)
+        self.update_workflow_status_widgets(None, None)
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       elif self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
         if self.model.workflow_name :
@@ -1488,7 +1494,8 @@ class WorkflowInfoWidget(QtGui.QWidget):
           self.ui.wf_name.setText(self.model.workflow_name)
         else: 
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
-        self.update_workflow_status_widgets(self.model.workflow_status)
+        self.update_workflow_status_widgets(self.model.workflow_status,
+                                            self.model.current_workflow().queue)
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
