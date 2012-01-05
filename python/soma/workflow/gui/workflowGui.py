@@ -524,7 +524,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.update_workflow_list_from_model = False
 
-    self.workflow_info_widget = WorkflowStatusNameDate(self.model, parent=self)
+    self.workflow_info_widget = WorkflowInfoWidget(self.model, parent=self)
     self.ui.wf_info_layout.addWidget(self.workflow_info_widget)
     
     
@@ -1354,7 +1354,7 @@ class MainWindow(QtGui.QMainWindow):
 
     self.connect(self.itemInfoWidget, QtCore.SIGNAL('connection_closed_error'), self.sw_widget.reconnectAfterConnectionClosed)
 
-    self.workflowInfoWidget = WorkflowInfo(self.model, self)
+    self.workflowInfoWidget = WorkflowGroupInfo(self.model, self)
     wfInfoLayout = QtGui.QVBoxLayout()
     wfInfoLayout.setContentsMargins(2,2,2,2)
     wfInfoLayout.addWidget(self.workflowInfoWidget)
@@ -1420,14 +1420,14 @@ class MainWindow(QtGui.QMainWindow):
     self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
       
       
-class WorkflowStatusNameDate(QtGui.QWidget):
+class WorkflowInfoWidget(QtGui.QWidget):
 
   def __init__(self, 
                model,
                assigned_wf_id=None,
                assigned_resource_id=None,
                parent=None):
-    super(WorkflowStatusNameDate, self).__init__(parent)
+    super(WorkflowInfoWidget, self).__init__(parent)
     
     self.ui = Ui_WStatusNameDate()
     self.ui.setupUi(self)
@@ -1740,10 +1740,10 @@ class WorkflowTree(QtGui.QWidget):
       
 
 
-class WorkflowInfo(QtGui.QWidget):
+class WorkflowGroupInfo(QtGui.QWidget):
   
   def __init__(self, model, parent = None):
-    super(WorkflowInfo, self).__init__(parent)
+    super(WorkflowGroupInfo, self).__init__(parent)
     
     self.infoWidget = None
     self.vLayout = QtGui.QVBoxLayout(self)
