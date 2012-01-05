@@ -12,7 +12,6 @@ import os
 import socket
 import ConfigParser
 
-import soma.workflow.constants as constants
 from soma.workflow.errors import ConfigurationError
 import soma.workflow.observer as observer
 
@@ -32,6 +31,77 @@ LOCAL_SCHEDULER = 'local_basic'
 DRMAA_SCHEDULER = 'drmaa'
 SCHEDULER_TYPES = [LOCAL_SCHEDULER,
                    DRMAA_SCHEDULER]
+
+# configuration variables ------------------------------------------------------
+
+'''
+CFG => Mandatory items
+OCFG => Optional
+'''
+CFG_CLUSTER_ADDRESS = 'CLUSTER_ADDRESS'
+CFG_SUBMITTING_MACHINES = 'SUBMITTING_MACHINES'
+OCFG_DRMAA_IMPLEMENTATION = 'DRMAA_IMPLEMENTATION'
+
+
+#OCFG_QUEUES is a list of queue name separated by white spaces.
+#ex: "queue1 queue2"
+OCFG_QUEUES = 'QUEUES'
+
+OCFG_LOGIN = 'LOGIN'
+
+#OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
+#in the queue for one user. The engine won't submit more than N job at once. The 
+#also wait for the job to leave the queue before submitting new jobs.
+#syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1} queue2{max_nb_job2}"
+OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE' 
+
+#database server
+CFG_DATABASE_FILE = 'DATABASE_FILE'
+CFG_TRANSFERED_FILES_DIR = 'TRANSFERED_FILES_DIR'
+CFG_SERVER_NAME = 'SERVER_NAME'
+CFG_NAME_SERVER_HOST ='NAME_SERVER_HOST'
+
+OCFG_SERVER_LOG_FILE = 'SERVER_LOG_FILE'
+OCFG_SERVER_LOG_LEVEL = 'SERVER_LOG_LEVEL'
+OCFG_SERVER_LOG_FORMAT = 'SERVER_LOG_FORMAT'
+
+#Engine
+OCFG_ENGINE_LOG_DIR = 'ENGINE_LOG_DIR'
+OCFG_ENGINE_LOG_LEVEL = 'ENGINE_LOG_LEVEL'
+OCFG_ENGINE_LOG_FORMAT = 'ENGINE_LOG_FORMAT'
+
+#Shared resource path translation files 
+#specify the translation files (if any) associated to a namespace
+#eg. translation_files = brainvisa{/home/toto/.brainvisa/translation.sjtr} namespace2{path/translation1.sjtr} namespace2{path/translation2.sjtr}
+OCFG_PATH_TRANSLATION_FILES = 'PATH_TRANSLATION_FILES' 
+
+# Soma-workflow light mode.
+# Define this item to use soma-workflow in the light mode.
+# This mode doesn't require a database server to run. It can not be used on
+# remote computing resource. The client application can not be closed before the
+# workflows and jobs are done. 
+OCFG_LIGHT_MODE = 'LIGHT_MODE'
+
+# Parallel job configuration :
+# DRMAA attributes used in parallel job submission (their value depends on the cluster and DRMS) 
+OCFG_PARALLEL_COMMAND = "drmaa_native_specification"
+OCFG_PARALLEL_JOB_CATEGORY = "drmaa_job_category"
+PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
+# kinds of parallel jobs (items can be added by administrator)
+OCFG_PARALLEL_PC_MPI="MPI"
+OCFG_PARALLEL_PC_OPEN_MP="OpenMP"
+PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
+# parallel job environment variables for the execution machine (items can be added by administrators) 
+OCFG_PARALLEL_ENV_MPI_BIN = 'PARALLEL_ENV_MPI_BIN'
+OCFG_PARALLEL_ENV_NODE_FILE = 'PARALLEL_ENV_NODE_FILE'
+PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
+
+
+# local sheduler configuration -------------------------------------------------
+
+OCFG_SCDL_CPU_NB = "CPU_NB"
+OCFG_SCDL_INTERVAL = "SCHEDULER_INTERVAL"
+
 
 
 #-------------------------------------------------------------------------------
@@ -228,14 +298,14 @@ class Configuration(observer.Observable):
       return self._submitting_machines
 
     if not self._config_parser.has_option(self._resource_id,
-                                  constants.CFG_SUBMITTING_MACHINES):
+                                          CFG_SUBMITTING_MACHINES):
       raise ConfigurationError("Can not find the configuration item %s for the "
                                "resource %s, in the configuration file %s." %
-                               (constants.CFG_SUBMITTING_MACHINES,
+                               (CFG_SUBMITTING_MACHINES,
                                 self._resource_id,
                                 self._config_path))
     self._submitting_machines = self._config_parser.get(self._resource_id, 
-                                         constants.CFG_SUBMITTING_MACHINES).split()
+                                         CFG_SUBMITTING_MACHINES).split()
     return self._submitting_machines
 
 
@@ -288,8 +358,8 @@ class Configuration(observer.Observable):
     logins = {}
     for r_id in config_parser.sections():
       resource_ids.append(r_id)
-      if config_parser.has_option(r_id, constants.OCFG_LOGIN):
-        logins[r_id] = config_parser.get(r_id, constants.OCFG_LOGIN)
+      if config_parser.has_option(r_id, OCFG_LOGIN):
+        logins[r_id] = config_parser.get(r_id, OCFG_LOGIN)
       else:
         logins[r_id] = None
     logins[socket.gethostname()] = None
@@ -302,8 +372,7 @@ class Configuration(observer.Observable):
     if self._mode:
       return self._mode
 
-    if self._config_parser.has_option(self._resource_id, 
-                              constants.OCFG_LIGHT_MODE):
+    if self._config_parser.has_option(self._resource_id, OCFG_LIGHT_MODE):
       self._mode = LIGHT_MODE
       return self._mode
     
@@ -323,15 +392,14 @@ class Configuration(observer.Observable):
     if self._config_parser == None or self._cluster_address:
       return self._cluster_address
     
-    if not self._config_parser.has_option(self._resource_id,
-                                  constants.CFG_CLUSTER_ADDRESS):
+    if not self._config_parser.has_option(self._resource_id, CFG_CLUSTER_ADDRESS):
       raise ConfigurationError("Can not find the configuration item %s for the "
                                "resource %s, in the configuration file %s." %
-                               (constants.CFG_CLUSTER_ADDRESS,
+                               (CFG_CLUSTER_ADDRESS,
                                 self._resource_id,
                                 self._config_path))
     self._cluster_address= self._config_parser.get(self._resource_id, 
-                                     constants.CFG_CLUSTER_ADDRESS)
+                                                   CFG_CLUSTER_ADDRESS)
     return self._cluster_address
 
 
@@ -339,15 +407,14 @@ class Configuration(observer.Observable):
     if self._database_file:
       return self._database_file
 
-    if not self._config_parser.has_option(self._resource_id,
-                                  constants.CFG_DATABASE_FILE):
+    if not self._config_parser.has_option(self._resource_id, CFG_DATABASE_FILE):
       raise ConfigurationError("Can not find the configuration item %s " 
                                 "for the resource %s, in the configuration " "file %s." %
-                                (constants.CFG_DATABASE_FILE,
+                                (CFG_DATABASE_FILE,
                                   self._resource_id,
                                   self._config_path))
     self._database_file = self._config_parser.get(self._resource_id, 
-                                        constants.CFG_DATABASE_FILE)
+                                                  CFG_DATABASE_FILE)
     return self._database_file
 
 
@@ -355,15 +422,15 @@ class Configuration(observer.Observable):
     if self._transfered_file_dir:
       return self._transfered_file_dir
 
-    if not self._config_parser.has_option(self._resource_id,
-                                  constants.CFG_TRANSFERED_FILES_DIR):
+    if not self._config_parser.has_option(self._resource_id, 
+                                          CFG_TRANSFERED_FILES_DIR):
       raise ConfigurationError("Can not find the configuration item %s " 
                                 "for the resource %s, in the configuration " "file %s." %
-                                (constants.CFG_TRANSFERED_FILES_DIR,
+                                (CFG_TRANSFERED_FILES_DIR,
                                   self._resource_id,
                                   self._config_path))
     self._transfered_file_dir = self._config_parser.get(self._resource_id, 
-                                              constants.CFG_TRANSFERED_FILES_DIR)
+                                                      CFG_TRANSFERED_FILES_DIR)
     return self._transfered_file_dir
 
 
@@ -372,9 +439,9 @@ class Configuration(observer.Observable):
       return self.parallel_job_config
     
     self.parallel_job_config = {}
-    for parallel_config_info in constants.PARALLEL_DRMAA_ATTRIBUTES + \
-                                constants.PARALLEL_JOB_ENV + \
-                                constants.PARALLEL_CONFIGURATIONS:
+    for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
+                                PARALLEL_JOB_ENV + \
+                                PARALLEL_CONFIGURATIONS:
       if self._config_parser.has_option(self._resource_id, parallel_config_info):
         self.parallel_job_config[parallel_config_info] = self._config_parser.get(self._resource_id, parallel_config_info)
 
@@ -387,9 +454,9 @@ class Configuration(observer.Observable):
     self._drmaa_implementation = None
     if self._config_parser != None and \
        self._config_parser.has_option(self._resource_id, 
-                              constants.OCFG_DRMAA_IMPLEMENTATION):
+                                      OCFG_DRMAA_IMPLEMENTATION):
       self._drmaa_implementation = self._config_parser.get(self._resource_id,                    
-                                             constants.OCFG_DRMAA_IMPLEMENTATION)
+                                                      OCFG_DRMAA_IMPLEMENTATION)
     return self._drmaa_implementation
 
   def get_login(self):
@@ -398,9 +465,9 @@ class Configuration(observer.Observable):
     self._login = None
     if self._config_parser != None and \
        self._config_parser.has_option(self._resource_id, 
-                              constants.OCFG_DRMAA_IMPLEMENTATION):
+                                      OCFG_DRMAA_IMPLEMENTATION):
       self._login = self._config_parser.get(self._resource_id,                    
-                                             constants.OCFG_LOGIN)
+                                            OCFG_LOGIN)
     return self._login
 
   def get_path_translation(self):
@@ -409,9 +476,9 @@ class Configuration(observer.Observable):
 
     self.path_translation = {}
     if self._config_parser.has_option(self._resource_id, 
-                              constants.OCFG_PATH_TRANSLATION_FILES):
+                                      OCFG_PATH_TRANSLATION_FILES):
       translation_files_str = self._config_parser.get(self._resource_id, 
-                                              constants.OCFG_PATH_TRANSLATION_FILES)
+                                                    OCFG_PATH_TRANSLATION_FILES)
       #logger.info("Path translation files configured:")
       for ns_file_str in translation_files_str.split():
         ns_file = ns_file_str.split("{")
@@ -446,7 +513,7 @@ class Configuration(observer.Observable):
     self._name_server_host = None
     if self._config_parser != None:
       self._name_server_host = self._config_parser.get(self._resource_id, 
-                                        constants.CFG_NAME_SERVER_HOST)
+                                                       CFG_NAME_SERVER_HOST)
     return self._name_server_host
 
 
@@ -454,14 +521,14 @@ class Configuration(observer.Observable):
     if self._config_parser == None or self._server_name != None:
       return self._server_name
     if not self._config_parser.has_option(self._resource_id,
-                                  constants.CFG_SERVER_NAME):
+                                          CFG_SERVER_NAME):
       raise ConfigurationError("Can not find the configuration item %s " 
                                 "for the resource %s, in the configuration " "file %s." %
-                                (constants.CFG_SERVER_NAME,
+                                (CFG_SERVER_NAME,
                                   self._resource_id,
                                   self._config_path))
     self._server_name = self._config_parser.get(self._resource_id, 
-                                  constants.CFG_SERVER_NAME)
+                                  CFG_SERVER_NAME)
     return self._server_name
 
   
@@ -482,9 +549,9 @@ class Configuration(observer.Observable):
 
     self._queue_limits = {}
     if self._config_parser.has_option(self._resource_id, 
-                              constants.OCFG_MAX_JOB_IN_QUEUE):
+                                      OCFG_MAX_JOB_IN_QUEUE):
       queue_limits_str = self._config_parser.get(self._resource_id,
-                                         constants.OCFG_MAX_JOB_IN_QUEUE)
+                                                 OCFG_MAX_JOB_IN_QUEUE)
       for info_str in queue_limits_str.split():
         info = info_str.split("{")
         if len(info[0]) == 0:
@@ -502,29 +569,27 @@ class Configuration(observer.Observable):
       return self._queues
 
     self._queues = []
-    if self._config_parser.has_option(self._resource_id,
-                              constants.OCFG_QUEUES):
+    if self._config_parser.has_option(self._resource_id, OCFG_QUEUES):
       self._queues.extend(self._config_parser.get(self._resource_id,
-                                         constants.OCFG_QUEUES).split())
+                                                  OCFG_QUEUES).split())
     return self._queues
 
 
   def get_engine_log_info(self):
-    if self._config_parser != None and self._config_parser.has_option(self._resource_id,
-                                                  constants.OCFG_ENGINE_LOG_DIR):
+    if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_ENGINE_LOG_DIR):
       engine_log_dir = self._config_parser.get(self._resource_id, 
-                                       constants.OCFG_ENGINE_LOG_DIR)
+                                               OCFG_ENGINE_LOG_DIR)
       if self._config_parser.has_option(self._resource_id,
-                                    constants.OCFG_ENGINE_LOG_FORMAT):
+                                        OCFG_ENGINE_LOG_FORMAT):
         engine_log_format = self._config_parser.get(self._resource_id,
-                                            constants.OCFG_ENGINE_LOG_FORMAT,
-                                            1)
+                                                    OCFG_ENGINE_LOG_FORMAT,
+                                                    1)
       else:
         engine_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
       if self._config_parser.has_option(self._resource_id,
-                                constants.OCFG_ENGINE_LOG_LEVEL):
+                                        OCFG_ENGINE_LOG_LEVEL):
         engine_log_level = self._config_parser.get(self._resource_id,
-                                          constants.OCFG_ENGINE_LOG_LEVEL)
+                                                   OCFG_ENGINE_LOG_LEVEL)
       else:
         engine_log_level = "WARNING"
       return (engine_log_dir, engine_log_format, engine_log_level)
@@ -534,21 +599,20 @@ class Configuration(observer.Observable):
 
 
   def get_server_log_info(self):
-    if self._config_parser != None and self._config_parser.has_option(self._resource_id,
-                                                constants.OCFG_SERVER_LOG_FILE):
-      server_log_file = self._config_parser.get(self._resource_id, 
-                                        constants.OCFG_SERVER_LOG_FILE)
+    if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_SERVER_LOG_FILE):
+      server_log_file = self._config_parser.get(self._resource_id,  
+                                                OCFG_SERVER_LOG_FILE)
       if self._config_parser.has_option(self._resource_id,
-                                constants.OCFG_SERVER_LOG_FORMAT):
+                                        OCFG_SERVER_LOG_FORMAT):
         server_log_format = self._config_parser.get(self._resource_id,
-                                            constants.OCFG_SERVER_LOG_FORMAT, 
-                                            1)
+                                                    OCFG_SERVER_LOG_FORMAT, 
+                                                    1)
       else:
         server_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
       if self._config_parser.has_option(self._resource_id,
-                                constants.OCFG_SERVER_LOG_LEVEL):
+                                        OCFG_SERVER_LOG_LEVEL):
         server_log_level = self._config_parser.get(self._resource_id,
-                                          constants.OCFG_SERVER_LOG_LEVEL)
+                                                    OCFG_SERVER_LOG_LEVEL)
       else:
         server_log_level = "WARNING"
       return (server_log_file, server_log_format, server_log_level)
@@ -590,7 +654,7 @@ class Configuration(observer.Observable):
           #queue_limits_str = queue_limits_str + queue + "{" + repr(limit) + "} "
       #print "queue_limits_str " + queue_limits_str
       #config_parser.set(self._resource_id, 
-                        #constants.OCFG_MAX_JOB_IN_QUEUE, 
+                        #OCFG_MAX_JOB_IN_QUEUE, 
                         #queue_limits_str)
 
     #config_file = open(config_path, "w")
@@ -651,14 +715,14 @@ class LocalSchedulerCfg(observer.Observable):
     interval = None
     
     if config_parser.has_option(hostname, 
-                                constants.OCFG_SCDL_CPU_NB):
+                                OCFG_SCDL_CPU_NB):
       proc_nb_str = config_parser.get(socket.gethostname(),
-                                      constants.OCFG_SCDL_CPU_NB)
+                                      OCFG_SCDL_CPU_NB)
       proc_nb = int(proc_nb_str)
     if config_parser.has_option(hostname, 
-                                constants.OCFG_SCDL_INTERVAL):
+                                OCFG_SCDL_INTERVAL):
       interval_str = config_parser.get(hostname,
-                                       constants.OCFG_SCDL_INTERVAL)
+                                       OCFG_SCDL_INTERVAL)
       interval = int(interval_str)
 
     if proc_nb == None and interval == None:
@@ -733,10 +797,10 @@ class LocalSchedulerCfg(observer.Observable):
       config_parser.add_section(hostname)
 
     config_parser.set(hostname, 
-                      constants.OCFG_SCDL_CPU_NB, 
+                      OCFG_SCDL_CPU_NB, 
                       str(self._proc_nb))
     config_parser.set(hostname, 
-                      constants.OCFG_SCDL_INTERVAL, 
+                      OCFG_SCDL_INTERVAL, 
                       str(self._interval))
     config_file = open(config_path, "w")
     config_parser.write(config_file)

@@ -43,7 +43,7 @@ import sys
 
 import soma.workflow.connection as connection
 from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
-from soma.workflow.constants import *
+import soma.workflow.constants as constants
 import soma.workflow.configuration as configuration
 from soma.workflow.errors import TransferError, SerializationError
 
@@ -390,9 +390,9 @@ class FileTransfer(object):
     self.client_paths = client_paths
 
     if is_input:
-      self.initial_status = FILES_ON_CLIENT
+      self.initial_status = constants.FILES_ON_CLIENT
     else:
-      self.initial_status = FILES_DO_NOT_EXIST
+      self.initial_status = constants.FILES_DO_NOT_EXIST
 
 
 class SharedResourcePath(object):
@@ -1085,22 +1085,22 @@ class WorkflowController(object):
      transfer_type,
      status) = self._engine_proxy.transfer_information(transfer_id)
 
-    if status == FILES_ON_CLIENT:
+    if status == constants.FILES_ON_CLIENT:
       if not client_paths:
         if os.path.isfile(client_path):
-          transfer_type = TR_FILE_C_TO_CR
+          transfer_type = constants.TR_FILE_C_TO_CR
           self._engine_proxy.set_transfer_status(transfer_id,
-                                                 TRANSFERING_FROM_CLIENT_TO_CR)
+                                                 constants.TRANSFERING_FROM_CLIENT_TO_CR)
           self._engine_proxy.set_transfer_type(transfer_id,
                                                transfer_type)
 
 
         elif os.path.isdir(client_path):
-          transfer_type = TR_DIR_C_TO_CR
+          transfer_type = constants.TR_DIR_C_TO_CR
           self._engine_proxy.set_transfer_status(transfer_id,
-                                                 TRANSFERING_FROM_CLIENT_TO_CR)
+                                                 constants.TRANSFERING_FROM_CLIENT_TO_CR)
           self._engine_proxy.set_transfer_type(transfer_id,
-                                               TR_DIR_C_TO_CR)
+                                               constants.TR_DIR_C_TO_CR)
         else:
           print("WARNING: The file or directory %s doesn't exist "
                 "on the client machine." %(client_path))
@@ -1109,15 +1109,15 @@ class WorkflowController(object):
           if not os.path.isfile(path) and not os.path.isdir(path):
             print("WARNING: The file or directory %s doesn't exist "
                   "on the client machine." %(path))
-        transfer_type = TR_MFF_C_TO_CR
+        transfer_type = constants.TR_MFF_C_TO_CR
 
       self._engine_proxy.set_transfer_status(transfer_id,
-                                                TRANSFERING_FROM_CLIENT_TO_CR)
+                                             constants.TRANSFERING_FROM_CLIENT_TO_CR)
       self._engine_proxy.set_transfer_type(transfer_id,
                                            transfer_type)
       return transfer_type
 
-    elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR:
+    elif status == constants.FILES_ON_CR or status == constants.FILES_ON_CLIENT_AND_CR:
       #transfer_type = self._engine_proxy.init_transfer_from_cr(transfer_id,
                                                #client_path,
                                                #expiration_date,
@@ -1126,9 +1126,9 @@ class WorkflowController(object):
                                                #status)
       if not client_paths:
         if self._engine_proxy.is_file(transfer_id):
-          transfer_type = TR_FILE_CR_TO_C
+          transfer_type = constants.TR_FILE_CR_TO_C
         elif self._engine_proxy.is_dir(transfer_id):
-          transfer_type = TR_DIR_CR_TO_C
+          transfer_type = constants.TR_DIR_CR_TO_C
         else:
           print("WARNING: The file or directory %s doesn't exist "
                 "on the computing resource side." %(transfer_id))
@@ -1140,10 +1140,10 @@ class WorkflowController(object):
              not self._engine_proxy.is_dir(r_path):
             print("WARNING: The file or directory %s doesn't exist "
                   "on the computing resource side." %(r_path))
-        transfer_type = TR_MFF_CR_TO_C
+        transfer_type = constants.TR_MFF_CR_TO_C
 
       self._engine_proxy.set_transfer_status(transfer_id,
-                                        TRANSFERING_FROM_CR_TO_CLIENT)
+                                        constants.TRANSFERING_FROM_CR_TO_CLIENT)
       self._engine_proxy.set_transfer_type(transfer_id,
                                            transfer_type)
 
@@ -1160,30 +1160,30 @@ class WorkflowController(object):
      transfer_type,
      status) = self._engine_proxy.transfer_information(transfer_id)
 
-    if status == FILES_ON_CLIENT or \
-       status == TRANSFERING_FROM_CLIENT_TO_CR:
+    if status == constants.FILES_ON_CLIENT or \
+       status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
       # transfer from client to computing resource
       #overwrite = False
       #if not transfer_type or \
-         #transfer_type == TR_FILE_CR_TO_C or \
-         #transfer_type == TR_DIR_CR_TO_C or \
-         #transfer_type == TR_MFF_CR_TO_C:
+         #transfer_type == constants.TR_FILE_CR_TO_C or \
+         #transfer_type == constants.TR_DIR_CR_TO_C or \
+         #transfer_type == constants.TR_MFF_CR_TO_C:
         ## transfer reset
         #overwrite = True
       transfer_type = self._initialize_transfer(transfer_id)
 
       remote_path = transfer_id
 
-      if transfer_type == TR_FILE_C_TO_CR or \
-         transfer_type == TR_DIR_C_TO_CR:
+      if transfer_type == constants.TR_FILE_C_TO_CR or \
+         transfer_type == constants.TR_DIR_C_TO_CR:
         self._transfer.transfer_to_remote(client_path,
                                          remote_path)
         self._engine_proxy.set_transfer_status(transfer_id,
-                                               FILES_ON_CLIENT_AND_CR)
+                                               constants.FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
-      if transfer_type == TR_MFF_C_TO_CR:
+      if transfer_type == constants.TR_MFF_C_TO_CR:
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(remote_path, relative_path)
@@ -1191,36 +1191,36 @@ class WorkflowController(object):
                                             r_path)
 
         self._engine_proxy.set_transfer_status(transfer_id,
-                                               FILES_ON_CLIENT_AND_CR)
+                                               constants.FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
-    if status == FILES_ON_CR or \
-       status == TRANSFERING_FROM_CR_TO_CLIENT or \
-       status == FILES_ON_CLIENT_AND_CR:
+    if status == constants.FILES_ON_CR or \
+       status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
+       status == constants.FILES_ON_CLIENT_AND_CR:
       # transfer from computing resource to client
       #overwrite = False
       #if not transfer_type or \
-         #transfer_type == TR_FILE_C_TO_CR or \
-         #transfer_type == TR_DIR_C_TO_CR or \
-         #transfer_type == TR_MFF_C_TO_CR :
+         #transfer_type == constants.TR_FILE_C_TO_CR or \
+         #transfer_type == constants.TR_DIR_C_TO_CR or \
+         #transfer_type == constants.TR_MFF_C_TO_CR :
         ## TBI remove existing files
         #overwrite = True
       transfer_type = self._initialize_transfer(transfer_id)
 
 
       remote_path = transfer_id
-      if transfer_type == TR_FILE_CR_TO_C or \
-         transfer_type == TR_DIR_CR_TO_C:
+      if transfer_type == constants.TR_FILE_CR_TO_C or \
+         transfer_type == constants.TR_DIR_CR_TO_C:
         # file case
         self._transfer.transfer_from_remote(remote_path,
                                             client_path)
         self._engine_proxy.set_transfer_status(transfer_id,
-                                               FILES_ON_CLIENT_AND_CR)
+                                               constants.FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
-      if transfer_type == TR_MFF_CR_TO_C:
+      if transfer_type == constants.TR_MFF_CR_TO_C:
         for path in client_paths:
           relative_path = os.path.basename(path)
           r_path = os.path.join(remote_path, relative_path)
@@ -1228,7 +1228,7 @@ class WorkflowController(object):
                                               path)
 
         self._engine_proxy.set_transfer_status(transfer_id,
-                                               FILES_ON_CLIENT_AND_CR)
+                                               constants.FILES_ON_CLIENT_AND_CR)
         self._engine_proxy.signalTransferEnded(transfer_id, workflow_id)
         return True
 
@@ -1241,8 +1241,8 @@ class WorkflowController(object):
                             client_path,
                             client_paths,
                             engine_path):
-    if status == TRANSFERING_FROM_CLIENT_TO_CR:
-      if transfer_type == TR_MFF_C_TO_CR:
+    if status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
+      if transfer_type == constants.TR_MFF_C_TO_CR:
         data_size = 0
         data_transfered = 0
         for path in client_paths:
@@ -1259,8 +1259,8 @@ class WorkflowController(object):
                                                                 client_path,
                                                                 engine_path)
 
-    elif status == TRANSFERING_FROM_CR_TO_CLIENT:
-      if transfer_type == TR_MFF_CR_TO_C:
+    elif status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+      if transfer_type == constants.TR_MFF_CR_TO_C:
         data_size = 0
         data_transfered = 0
         for path in client_paths:
@@ -1385,10 +1385,10 @@ class Helper(object):
     to_transfer = []
     for transfer_info in wf_elements_status[1]:
       status = transfer_info[1][0]
-      if status == FILES_ON_CLIENT:
+      if status == constants.FILES_ON_CLIENT:
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
-      if status == TRANSFERING_FROM_CLIENT_TO_CR:
+      if status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
 
@@ -1418,10 +1418,10 @@ class Helper(object):
     to_transfer = []
     for transfer_info in wf_elements_status[1]:
       status = transfer_info[1][0]
-      if status == FILES_ON_CR:
+      if status == constants.FILES_ON_CR:
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
-      if status == TRANSFERING_FROM_CR_TO_CLIENT:
+      if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
         engine_path = transfer_info[0]
         to_transfer.append(engine_path)
 

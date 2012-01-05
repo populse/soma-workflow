@@ -1,3 +1,9 @@
+'''
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
+
 import unittest
 import time
 import os
@@ -8,8 +14,7 @@ from datetime import timedelta
 
 import soma.workflow.constants as constants
 from soma.workflow.client import WorkflowController, Job, FileTransfer
-from soma.workflow.configuration import Configuration
-
+import soma.workflow.configuration as configuration
 
 def checkFiles(files, filesModels, tolerance = 0):
   index = 0
@@ -328,7 +333,7 @@ class JobExamples(object):
     #/opt/mpich/gnu/bin/
     
     mpibin = self.wf_ctrl.config.get(self.wf_ctrl.resource_id, 
-                                     constants.OCFG_PARALLEL_ENV_MPI_BIN)
+                                     configuration.OCFG_PARALLEL_ENV_MPI_BIN)
     print "mpibin = " + mpibin
     
     print "source_tr.engine_path = " + source_tr.engine_path
@@ -376,7 +381,7 @@ class JobExamples(object):
                                       join_stderrout=False, 
                                       disposal_timeout=self.jobs_timeout,
                                       name="parallel job mpi",
-                                      parallel_job_info= (constants.OCFG_PARALLEL_PC_MPI,node_num)))
+                                      parallel_job_info= (configuration.OCFG_PARALLEL_PC_MPI,node_num)))
 
     self.wf_ctrl.delete_job(compil1job_id)
     self.wf_ctrl.delete_job(compil2job_id)
@@ -1039,9 +1044,9 @@ if __name__ == '__main__':
      
   sys.stdout.write("----- soma-workflow tests: JOBS -------------\n")
 
-  config_file_path = Configuration.search_config_path()
+  config_file_path = configuration.Configuration.search_config_path()
   sys.stdout.write("Configuration file: " + config_file_path)
-  resource_ids = Configuration.get_configured_resources(config_file_path)
+  resource_ids = configuration.Configuration.get_configured_resources(config_file_path)
   
   # Resource
   sys.stdout.write("Configured resources:\n")
@@ -1055,7 +1060,7 @@ if __name__ == '__main__':
   login = None
   password = None
   
-  config = Configuration.load_from_file(resource_id, config_file_path)
+  config = configuration.Configuration.load_from_file(resource_id, config_file_path)
 
   if config.get_mode() == 'remote':
     sys.stdout.write("This is a remote connection\n")

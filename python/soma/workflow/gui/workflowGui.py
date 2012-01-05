@@ -25,7 +25,7 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
-from soma.workflow.constants import *
+import soma.workflow.constants as  constants
 import soma.workflow.configuration as configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
@@ -177,15 +177,15 @@ def workflow_status_icon(status=None):
   file_path = None
   if status == None:
     file_path =  None
-  elif status == WORKFLOW_NOT_STARTED:
+  elif status == constants.WORKFLOW_NOT_STARTED:
     file_path = os.path.join(os.path.dirname(__file__),"icon/no_status.png")
-  elif status == WORKFLOW_IN_PROGRESS:
+  elif status == constants.WORKFLOW_IN_PROGRESS:
     file_path = os.path.join(os.path.dirname(__file__),"icon/running.png")
-  elif status == WORKFLOW_DONE:
+  elif status == constants.WORKFLOW_DONE:
     file_path = os.path.join(os.path.dirname(__file__),"icon/done.png")
-  elif status == DELETE_PENDING:
+  elif status == constants.DELETE_PENDING:
     file_path = os.path.join(os.path.dirname(__file__),"icon/kill_delete_pending.png")
-  elif status == WARNING:
+  elif status == constants.WARNING:
     file_path = os.path.join(os.path.dirname(__file__),"icon/warning.png")
   return file_path
 
@@ -373,8 +373,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
         self.resource_ids.remove(rid)
         continue
       status_list = self.model.list_workflow_status(rid)
-      running = status_list.count(WORKFLOW_IN_PROGRESS)
-      warning = status_list.count(WARNING)
+      running = status_list.count(constants.WORKFLOW_IN_PROGRESS)
+      warning = status_list.count(constants.WARNING)
       to_display = ""
       if running == 0 and warning == 0:
         icon = QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/done.png"))
@@ -519,7 +519,6 @@ class ConnectionDialog(QtGui.QDialog):
   def update_login(self):
     resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
     login = self.login_list[resource_id]
-    print login 
     if login != None:
       self.ui.lineEdit_login.setText(login)
     else:
@@ -693,7 +692,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
                                 datetime.now() + timedelta(days=5), 
                                 workflow.name, 
-                                WORKFLOW_NOT_STARTED,
+                                constants.WORKFLOW_NOT_STARTED,
                                 workflow)
         self.updateWorkflowList()
 
@@ -708,7 +707,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
                             datetime.now() + timedelta(days=5), 
                             new_workflow.name, 
-                            WORKFLOW_NOT_STARTED,
+                            constants.WORKFLOW_NOT_STARTED,
                             new_workflow)
     self.updateWorkflowList()
     
@@ -816,7 +815,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.model.add_workflow(workflow.wf_id, 
                             date, 
                             workflow.name, 
-                            WORKFLOW_NOT_STARTED,
+                            constants.WORKFLOW_NOT_STARTED,
                             workflow) 
     self.updateWorkflowList()
     return (workflow.wf_id, self.model.current_resource_id)
@@ -1049,7 +1048,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     else: 
       name = repr(self.model.current_wf_id)
     
-    if self.model.workflow_status != WARNING:
+    if self.model.workflow_status != constants.WARNING:
       answer = QtGui.QMessageBox.question(self, "confirmation", "The running jobs will be killed and the jobs in the queue will be removed. \nDo you want to stop the workflow " + name +" anyway?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
       if answer != QtGui.QMessageBox.Yes: return
     stopped_properly = False
@@ -1246,7 +1245,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
       status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
       icon_path = workflow_status_icon(status)
-      if status != WORKFLOW_DONE and icon_path != None:
+      if status != constants.WORKFLOW_DONE and icon_path != None:
         item.setIcon(QtGui.QIcon(icon_path))
       else:
         item.setIcon(QtGui.QIcon())
@@ -1276,7 +1275,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if not workflow_name: workflow_name = repr(wf_id)
       status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
       icon_path = workflow_status_icon(status)
-      if status != WORKFLOW_DONE and icon_path != None:
+      if status != constants.WORKFLOW_DONE and icon_path != None:
         item = QtGui.QListWidgetItem(QtGui.QIcon(icon_path), 
                                      workflow_name, 
                                      self.ui.list_widget_submitted_wfs)
@@ -1549,22 +1548,22 @@ class SearchWidget(QtGui.QWidget):
     
     self.statuses = []
     self.statuses.append([]) 
-    self.statuses.append([FAILED]) 
-    self.statuses.append([RUNNING])
-    self.statuses.append([QUEUED_ACTIVE])
-    self.statuses.append([SUBMISSION_PENDING])
-    self.statuses.append([RUNNING, QUEUED_ACTIVE])
-    self.statuses.append([RUNNING, QUEUED_ACTIVE, SUBMISSION_PENDING])
-    self.statuses.append([DONE])
+    self.statuses.append([constants.FAILED]) 
+    self.statuses.append([constants.RUNNING])
+    self.statuses.append([constants.QUEUED_ACTIVE])
+    self.statuses.append([constants.SUBMISSION_PENDING])
+    self.statuses.append([constants.RUNNING, constants.QUEUED_ACTIVE])
+    self.statuses.append([constants.RUNNING, constants.QUEUED_ACTIVE, constants.SUBMISSION_PENDING])
+    self.statuses.append([constants.DONE])
 
     self.ui.status_combo_box.addItem("All")
-    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/failed.png")), FAILED)
-    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/running.png")), RUNNING)
-    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/queued.png")), QUEUED_ACTIVE)
-    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/pending.png")), SUBMISSION_PENDING)
-    self.ui.status_combo_box.addItem(QUEUED_ACTIVE + " or " + RUNNING)
-    self.ui.status_combo_box.addItem(SUBMISSION_PENDING + " or " + QUEUED_ACTIVE + " or " + RUNNING)
-    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/success.png")), DONE)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/failed.png")), constants.FAILED)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/running.png")), constants.RUNNING)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/queued.png")), constants.QUEUED_ACTIVE)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/pending.png")), constants.SUBMISSION_PENDING)
+    self.ui.status_combo_box.addItem(constants.QUEUED_ACTIVE + " or " + constants.RUNNING)
+    self.ui.status_combo_box.addItem(constants.SUBMISSION_PENDING + " or " + constants.QUEUED_ACTIVE + " or " + constants.RUNNING)
+    self.ui.status_combo_box.addItem(QtGui.QIcon(os.path.join(os.path.dirname(__file__),"icon/success.png")), constants.DONE)
     
     
     self.ui.line_edit.textChanged.connect(self.text_changed)
@@ -1604,15 +1603,15 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
     if isinstance(index.internalPointer(), GuiGroup):
       if len(self.statuses) != 0:
         group = index.internalPointer()
-        if DONE in self.statuses and len(group.done) > 0:
+        if constants.DONE in self.statuses and len(group.done) > 0:
           return True
-        elif FAILED in self.statuses and len(group.failed) > 0:
+        elif constants.FAILED in self.statuses and len(group.failed) > 0:
           return True
-        elif RUNNING in self.statuses and len(group.running) > 0:
+        elif constants.RUNNING in self.statuses and len(group.running) > 0:
           return True
-        elif QUEUED_ACTIVE in self.statuses and len(group.queued) > 0:
+        elif constants.QUEUED_ACTIVE in self.statuses and len(group.queued) > 0:
           return True
-        elif SUBMISSION_PENDING in self.statuses and len(group.pending) > 0:
+        elif constants.SUBMISSION_PENDING in self.statuses and len(group.pending) > 0:
           return True
         else:
           return False
@@ -1621,15 +1620,15 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
       return True
     elif isinstance(index.internalPointer(), GuiJob):
       if len(self.statuses) != 0:
-        if FAILED in self.statuses:
+        if constants.FAILED in self.statuses:
           job = index.internalPointer()
-          if job.status == FAILED:
+          if job.status == constants.FAILED:
             return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
                                                         sourceRow, 
                                                         sourceParent)
-          elif job.status == DONE:
+          elif job.status == constants.DONE:
               exit_status, exit_value, term_signal, resource_usage = job.exit_info
-              if exit_status != FINISHED_REGULARLY or exit_value != 0:
+              if exit_status != constants.FINISHED_REGULARLY or exit_value != 0:
                 return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
                                                         sourceRow, 
                                                         sourceParent)
@@ -1637,11 +1636,11 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
                 return False
           else:
             return False
-        elif DONE in self.statuses:
+        elif constants.DONE in self.statuses:
           job = index.internalPointer()
-          if job.status == DONE:
+          if job.status == constants.DONE:
             exit_status, exit_value, term_signal, resource_usage = job.exit_info
-            if exit_status == FINISHED_REGULARLY and exit_value == 0:
+            if exit_status == constants.FINISHED_REGULARLY and exit_value == 0:
               return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
                                                         sourceRow, 
                                                         sourceParent)
@@ -1649,9 +1648,9 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
               return False
           else:
             return False
-        elif RUNNING in self.statuses:
+        elif constants.RUNNING in self.statuses:
           job = index.internalPointer()
-          if job.status == RUNNING or job.status == UNDETERMINED:
+          if job.status == constants.RUNNING or job.status == constants.UNDETERMINED:
             return QtGui.QSortFilterProxyModel.filterAcceptsRow(self, 
                                                         sourceRow, 
                                                         sourceParent)
@@ -2358,15 +2357,15 @@ class WorkflowGraphView(QtGui.QWidget):
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
           status = self.connection.job_status(node.job_id)
-          if status == NOT_SUBMITTED:
+          if status == constants.NOT_SUBMITTED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-          elif status == DONE:
+          elif status == constants.DONE:
             exit_status, exit_value, term_signal, resource_usage = self.connection.job_termination_status(node.job_id)
-            if exit_status == FINISHED_REGULARLY and exit_value == 0:
+            if exit_status == constants.FINISHED_REGULARLY and exit_value == 0:
               print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
             else: 
               print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
-          elif status == FAILED:
+          elif status == constants.FAILED:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + RED +"];"
           else:
             print >> file, names[node][0] + "[shape=box label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
@@ -2375,13 +2374,13 @@ class WorkflowGraphView(QtGui.QWidget):
           print >> file, names[node][0] + "[label="+ names[node][1] +"];"
         else:
           status = self.connection.transfer_status(node.engine_path)[0]
-          if status == FILES_DONT_EXIST:
+          if status == constants.FILES_DONT_EXIST:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GRAY +"];"
-          elif status == FILES_ON_CR or status == FILES_ON_CLIENT_AND_CR or status == FILES_ON_CLIENT:
+          elif status == constants.FILES_ON_CR or status == constants.FILES_ON_CLIENT_AND_CR or status == constants.FILES_ON_CLIENT:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + BLUE +"];"
-          elif status == TRANSFERING_FROM_CLIENT_TO_CR or status == TRANSFERING_FROM_CR_TO_CLIENT:
+          elif status == constants.TRANSFERING_FROM_CLIENT_TO_CR or status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + GREEN +"];"
-          elif status == FILES_UNDER_EDITION:
+          elif status == constants.FILES_UNDER_EDITION:
             print >> file, names[node][0] + "[label="+ names[node][1] +", style=filled, color=" + LIGHT_BLUE +"];"
           
     print >> file, "}"
@@ -2524,14 +2523,14 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       else:
         status = item.status
         # Done or Failed
-        if status == DONE or status == FAILED:
+        if status == constants.DONE or status == constants.FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
           if role == QtCore.Qt.DisplayRole:
             return item.name #+ " status " + repr(exit_status) + " exit_value: " + repr(exit_value) + " signal " + repr(term_signal) 
           if role == QtCore.Qt.DecorationRole:
-            if status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
+            if status == constants.DONE and exit_status == constants.FINISHED_REGULARLY and exit_value == 0:
               return self.done_icon
-            elif status == DONE and exit_status == None:
+            elif status == constants.DONE and exit_status == None:
               return self.undetermined_icon
             else:
               return self.failed_icon
@@ -2541,19 +2540,19 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           return item.name #+ " " + status 
 
         if role == QtCore.Qt.DecorationRole:
-          if status == NOT_SUBMITTED:
+          if status == constants.NOT_SUBMITTED:
             return QtGui.QIcon()
-          if status == UNDETERMINED:
+          if status == constants.UNDETERMINED:
             return self.undetermined_icon
-          elif status == QUEUED_ACTIVE:
+          elif status == constants.QUEUED_ACTIVE:
             return self.queued_icon
-          elif status == RUNNING:
+          elif status == constants.RUNNING:
             return self.running_icon
-          elif status == DELETE_PENDING or status == KILL_PENDING:
+          elif status == constants.DELETE_PENDING or status == constants.KILL_PENDING:
             return self.kill_delete_pending_icon
-          elif status == SUBMISSION_PENDING:
+          elif status == constants.SUBMISSION_PENDING:
             return self.pending_icon
-          elif status == WARNING:
+          elif status == constants.WARNING:
             return self.warning_icon
           else: #SYSTEM_ON_HOLD USER_ON_HOLD USER_SYSTEM_ON_HOLD
                 #SYSTEM_SUSPENDED USER_SUSPENDED USER_SYSTEM_SUSPENDED
@@ -2564,14 +2563,14 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
       if isinstance(item, GuiInputTransfer):
         #if role == QtCore.Qt.ForegroundRole:
           #return QtGui.QBrush(RED)
-        if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
+        if item.transfer_status == constants.TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
           display = "in: " + item.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "in: " + item.name
       if isinstance(item, GuiOutputTransfer):
         #if role == QtCore.Qt.ForegroundRole:
           #return QtGui.QBrush(BLUE)
-        if item.transfer_status == TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == TRANSFERING_FROM_CR_TO_CLIENT:
+        if item.transfer_status == constants.TRANSFERING_FROM_CLIENT_TO_CR or item.transfer_status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
           display = "out: " + item.name + " " + repr(item.percentage_achievement) + "%"
         else:
           display = "out: " + item.name
@@ -2583,25 +2582,25 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
         status = item.transfer_status
         if role == QtCore.Qt.DisplayRole:
           return display #+ " => " + status
-        if status == FILES_DO_NOT_EXIST:
+        if status == constants.FILES_DO_NOT_EXIST:
           if role == QtCore.Qt.DecorationRole:
             return self.transfer_files_dont_exit
-        if status == FILES_ON_CLIENT:
+        if status == constants.FILES_ON_CLIENT:
           if role == QtCore.Qt.DecorationRole:
             return self.transfer_files_on_client
-        if status == FILES_ON_CR:
+        if status == constants.FILES_ON_CR:
           if role == QtCore.Qt.DecorationRole:
             return self.transfer_files_on_cr
-        if status == FILES_ON_CLIENT_AND_CR:
+        if status == constants.FILES_ON_CLIENT_AND_CR:
           if role == QtCore.Qt.DecorationRole:
             return self.transfer_files_on_both
-        if status == TRANSFERING_FROM_CLIENT_TO_CR:
+        if status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
           if role == QtCore.Qt.DecorationRole:
             return self.transfering_from_client_to_cr
-        if status == TRANSFERING_FROM_CR_TO_CLIENT:
+        if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
           if role == QtCore.Qt.DecorationRole:
             return self.transfering_from_cr_to_client
-        if status == FILES_UNDER_EDITION:
+        if status == constants.FILES_UNDER_EDITION:
           if role == QtCore.Qt.DecorationRole:
             return self.files_under_edition
       
@@ -3450,21 +3449,21 @@ class GuiGroup(GuiWorkflowItem):
         if item.job_id == -1:
           no_status = True
           break
-        if item.status == WARNING:
+        if item.status == constants.WARNING:
           self.warning.append(item)
-        elif item.status == NOT_SUBMITTED:
+        elif item.status == constants.NOT_SUBMITTED:
           self.not_sub.append(item)
-        elif item.status == DONE or item.status == FAILED:
+        elif item.status == constants.DONE or item.status == constants.FAILED:
           exit_status, exit_value, term_signal, resource_usage = item.exit_info
-          if item.status == DONE and exit_status == FINISHED_REGULARLY and exit_value == 0:
+          if item.status == constants.DONE and exit_status == constants.FINISHED_REGULARLY and exit_value == 0:
             self.done.append(item)
-          elif item.status == DONE and exit_status == None:
+          elif item.status == constants.DONE and exit_status == None:
             self.running.append(item)
           else:
             self.failed.append(item)
-        elif item.status == SUBMISSION_PENDING:
+        elif item.status == constants.SUBMISSION_PENDING:
           self.pending.append(item)
-        elif item.status == QUEUED_ACTIVE:
+        elif item.status == constants.QUEUED_ACTIVE:
           self.queued.append(item)
         else:
           self.running.append(item)
