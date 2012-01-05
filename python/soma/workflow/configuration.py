@@ -701,7 +701,7 @@ class LocalSchedulerCfg(observer.Observable):
     config_parser.set(hostname, 
                       constants.OCFG_SCDL_INTERVAL, 
                       str(self._interval))
-    config_file = open(self._config_path, "w")
+    config_file = open(config_path, "w")
     config_parser.write(config_file)
     config_file.close()
 
