@@ -12,9 +12,6 @@ Soma-workflow: A unified and simple interface to parallel computing resource
   ..
     .. warning:: Documentation under construction.
 
-  ..
-    .. image:: images/soma_workflow_general.*
-      :scale: 60
 
 
 Main Features
@@ -25,9 +22,20 @@ Main Features
     parallel resources: multiple core machines or clusters which can be 
     managed by various systems (such as Grid Engine, Condor, Torque/PBS, LSF..)
 
+  ..
+    .. image:: images/soma_workflow_general.*
+      :scale: 40
+
+
   **Workflow management:**
     Soma-workflow provides the possibility to submit a set of tasks (called jobs) 
     with execution dependencies without dealing with individual task submission.
+
+
+    .. figure:: images/workflow_example.*
+      :scale: 50
+    
+      *Workflow example*
 
   **Python API and Graphical User Interface:**
     The Python API was designed to be easily used by non expert user, but also
@@ -35,6 +43,18 @@ Main Features
     of jobs and workflows. The GUI provides an easy and quick way of monitoring 
     workflows on various computing resources. The workflows can also be 
     submitted and controlled using the GUI.
+
+    .. figure:: images/gui_overview.*
+      :scale: 50 
+
+      *Overview of soma-workflow graphical interface*
+
+    .. figure:: images/API_overview.*
+      :scale: 50 
+
+      *Overview of soma-workflow python API*
+
+    
 
   **Quick start on multiple core machines:**
     Soma-workflow is directly operational on any multiple core machine. 
@@ -61,13 +81,19 @@ Contents
    :maxdepth: 1
 
    concepts.txt
-   install_config.txt
+   gui.txt
+   errors_troubleshooting.txt
+   examples.txt
+   status_list.txt
    workflow_creation.txt
    client_API.txt
-   status_list.txt
-   errors_troubleshooting.txt
-   gui.txt
-   examples.txt
+   install_config.txt
+   
+   
+   
+   
+   
+   
 
 ..
   light_mode_config.txt
@@ -85,6 +111,14 @@ Contents
 
 About
 =====
+
+Soma-workflow release log and communication can be found at the project `main page. <http://brainvisa.info/soma-workflow>`_
+
+Funded by CATI.
+
+.. image:: images/logo_cati_couleur_100.* 
+  :scale: 40
+
 
 Funded by `HiPiP <http://hipip.eu>`_ an `ITEA2 <http://www.itea2.org/>`_ project. 
 

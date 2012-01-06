@@ -4,10 +4,88 @@
 Graphical User Interface 
 ========================
 
-This section gives an quick overview of the GUI.
 
-.. image:: images/gui_overview.*
+Connection
+==========
+
+.. image:: images/gui_connection_dlg.*
+   :scale: 70
+
+
+Main Window
+===========
+
+.. image:: images/soma_workflow_gui.*
+   :scale: 70
+
+
+1. Computing resources
+----------------------
+
+.. image:: images/gui_resource_list.*
    :scale: 80
+
+to do
+
+2. Workflow selection
+---------------------
+
+
+.. image:: images/gui_workflow_selection.*
+   :scale: 80
+
+to do
+
+3. Workflow global information
+------------------------------
+
+.. image:: images/gui_workflow_info.*
+   :scale: 80
+
+bla 
+
+4. Workflow view
+----------------
+
+.. image:: images/gui_workflow_view.*
+   :scale: 80
+
+bla
+
+5. Job filter
+-------------
+
+bla
+
+6. Selection information
+------------------------
+
+.. image:: images/gui_job_info_1.*
+   :scale: 80
+
+.. image:: images/gui_job_info_2.*
+   :scale: 80
+
+.. image:: images/gui_job_info_3.*
+   :scale: 80
+
+bla
+
+7. Workflow control
+-------------------
+
+bla
+
+
+8. Plots
+--------
+
+bla
+
+
+
+ 
+
 
 Computing resource and workflow selection
 =========================================

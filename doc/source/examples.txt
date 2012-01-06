@@ -304,6 +304,7 @@ Transfer the working directory back the "Transfer Output Files" button:
 The working directory on your machine should contain the files myfile1, myfile2,
 copy_of_myfile1 and copy_of_myfile2 now.
 
+.. _shared_resource_path_examples:
 
 Workflows with SharedResourcePath
 =================================

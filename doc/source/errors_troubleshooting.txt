@@ -1,9 +1,21 @@
 
 .. _good_pratices_troubleshooting:
 
-=========================
-Good Practices and Errors
-=========================
+===============================
+Tips, Good Practices and Errors
+===============================
+
+Tips
+====
+
+**Use RSA key**
+  So that you will not have to type you password every time you open the GUI or
+  create a WorklfowController object.
+
+**Configure a LOGIN**
+
+**Job Priorities**
+
 
 Good Practices
 ==============
@@ -47,12 +59,10 @@ Good Practices
   workflow in parallel, the jobs should not be to short: more than 1 minute 
   usually.
 
-**Use RSA key**
-  So that you will not have to type you password every time you open the GUI or
-  create a WorklfowController object.
-
-**Open only one application at a time in the one process mode.**
+**Open only one application at a time in the mono process mode.**
   This will be fixed in a future version. 
+
+**Run one database server by user.**
 
 ..
   Use working directory transfer when possible.
