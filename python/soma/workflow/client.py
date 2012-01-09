@@ -1432,7 +1432,7 @@ class Helper(object):
   @staticmethod
   def serialize(file_path, workflow):
     '''
-    Saves a workflow to a file
+    Saves a workflow to a file => Python Pickle for now.
 
     * file_path *String*
 
@@ -1450,7 +1450,7 @@ class Helper(object):
   @staticmethod
   def unserialize(file_path):
     '''
-    Loads a workflow from a file
+    Loads a workflow from a file 
 
     * file_path *String*
 

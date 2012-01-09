@@ -43,10 +43,10 @@ Here is the list of the job status and the associated icons displayed in the GUI
     was killed or failed. The job or the workflow containing the job has to be 
     restarted.
 
-  |kd_pending| **delete_pending**    
+  **delete_pending**    
     Transitive status. The job will be deleted soon.
 
-  |kd_pending| **kill_pending**       
+  **kill_pending**       
     Transitive status. The job will be killed soon.
     
 ..
@@ -88,19 +88,19 @@ Job exit status
 Workflow status
 ===============
 
-  **worklflow_not_started**
+  |no_status| **worklflow_not_started**
     The workflow was not submitted to soma-workflow.
   
-  **workflow_in_progress**
+  |running| **workflow_in_progress**
     The workflow was submitted to soma-workflow.
 
-  **workflow_done**
+  |done| **workflow_done**
     The workflow is done.
 
   **delete_pending**
     Transitive status. The workflow will be deleted soon.
 
-  **warning**
+  |warning| **warning**
     The workflow engine process in charge of the workflow execution was killed 
     or failed on the computing resource side. The workflow has to be restarted
     (the jobs which ended with success will not be restarted).
@@ -196,6 +196,12 @@ File Transfer status
             :width: 100 px
             :scale: 30 
 
+
+.. |done| image:: ../../python/soma/workflow/gui/icon/done.png
+            :height: 100 px
+            :width: 100 px
+            :scale: 30 
+            
 
 .. |tr_dont_exist| image:: ../../python/soma/workflow/gui/icon/transfer_files_dont_exist.png
                   :height: 100 px

@@ -8,12 +8,24 @@ Graphical User Interface
 Connection
 ==========
 
+When the GUI is started, you can connect to one of the configured 
+computing resources (see :ref:`client_configuration`) through a dialog window. 
+Without special configuration, you can always choose the current machine you are 
+using, the number of CPU will be detected and you will be able to control at 
+any time the number of CPU used. 
+
 .. image:: images/gui_connection_dlg.*
    :scale: 70
 
+A login and password are only requested if the connection is remote. To avoid 
+to fill them, the login can be registered in the configuration file, and a
+RSA key can be used. 
 
 Main Window
 ===========
+
+When at least one resource is activated. The main application window is the 
+following: 
 
 .. image:: images/soma_workflow_gui.*
    :scale: 70
@@ -22,43 +34,85 @@ Main Window
 1. Computing resources
 ----------------------
 
+This widget displays the list of active computing resource (two in the example) 
+and gives at any time their current status (if some workflows are running or 
+not). Connection to other computing resources is achieved with the "Add" button
+which open the connection dialog window.
+
 .. image:: images/gui_resource_list.*
    :scale: 80
 
-to do
+Some special controls may appear for some computing resources. In the example, 
+the computing resource named "is206464" is the local computer: 2 CPUs were 
+detected, however you can change the number of used CPUs 
+at any time. The other computing resource is a remote cluster where a limitation 
+of the number of job in the queues was configured. When such a configuration 
+exist, the limits are displayed here and can be adjusted at any time. 
 
 2. Workflow selection
 ---------------------
 
+When a computing resource is selected, this widget display the list of the 
+workflow previously submitted to the computing resource. These workflows can 
+either be done or still running. At any time, a blue icon with an white "r" 
+signals the running workflows. The ended workflows stay in the list until they 
+are deleted or their expiration date is reached. The expiration date can be 
+changed in the "Workflow" menu. 
 
 .. image:: images/gui_workflow_selection.*
    :scale: 80
 
-to do
 
 3. Workflow global information
 ------------------------------
 
+This widget displays the main information about the selected workflow. 
+
 .. image:: images/gui_workflow_info.*
    :scale: 80
 
-bla 
+The workflow status is updated at regular time interval (3 seconds). 
+If you are using a cluster, the workflow queue can be changed stopping and 
+restarting the workflow. 
+You can change the workflow expiration date in the "Workflow" menu. However, 
+the running workflows are never deleted. 
+
 
 4. Workflow view
 ----------------
 
+The selected workflow is displayed as a tree in the central window. At any time, 
+the icons show the state of the workflow elements (see :ref:`status_list`). Gray 
+icons mean that the workflow was not submitted yet. 
+
+The groups can be extended to be explored. Their icons are little disks.
+
+* A blue disk: at least on job in running inside the group. 
+* A red disk: at least on job failed inside the group.
+* A green disk: all the jobs finished with success inside the group.
+
 .. image:: images/gui_workflow_view.*
    :scale: 80
 
-bla
+In the example, the groups displayed contains all running jobs except the group 
+named "103. Morphologist 2011", where a job failed. The groups named "104. 
+Morphologist 2011" and "107. Morphologist 2011" were extended to display the 
+jobs inside. Among the displayed jobs, some ended, one is running, one is in 
+the submission queue, and some are waiting to be submitted (no icon).
+
 
 5. Job filter
 -------------
 
-bla
+The widget under the tree can be used to filter the displayed jobs. Enter text
+and/or select job status: the tree will be automatically updated.
 
 6. Selection information
 ------------------------
+
+This widget display the information about the selected item in the tree. 
+
+Here is what is displayed when a job is selected:
 
 .. image:: images/gui_job_info_1.*
    :scale: 80
@@ -69,77 +123,33 @@ bla
 .. image:: images/gui_job_info_3.*
    :scale: 80
 
-bla
+
 
 7. Workflow control
 -------------------
 
-bla
+In the menu, select "File/Open" to load a workflow saved into a file. 
+Then press the "submit" button to submit the workflow.
+
+If a workflow was submitted outside of the GUI (using the python API for 
+example) use the "refresh" button to load it into the GUI.
+
+The running workflows can be stopped at any time. This action remove the jobs 
+from the submission queue and kills the running jobs which statuses toggle from 
+running to failed.
+
+When an ended workflow has some failed jobs, it can be restarted. The failed 
+jobs will be submitted again to the computing resource. Note that the submission
+queue can be changed at that time. 
 
 
 8. Plots
 --------
 
-bla
+Several plots can be displayed and refreshed at regular time interval:
 
-
-
- 
-
-
-Computing resource and workflow selection
-=========================================
-
-When the GUI is started a window invites you to chose a computing resource 
-among the configured ones (see :ref:`client_configuration`) and to enter 
-authentication information if necessary. 
-
-If several computing resources are configured, you can switch at any time from 
-one computing resource to another using the top left combo box.
-
-Once connected to a computing resource, you can select a workflow in the list
-or submit one. General information about the current workflow will be displayed 
-in the bottom left window.
-
-
-Workflow loading, submission and control
-========================================
-
-In the menu, select "File/Open" to load a workflow saved into a file. 
-Then press the "submit" button to submit the workflow.
-
-If a workflow is submitted outside of the GUI (using the python API for 
-example) use the "refresh" button to load it into the GUI.
-
-The expiration date of the current workflow is displayed below the workflow list 
-and can be modified using the "change date" button.
-
-Use the "delete" button to delete the current workflow. If the workflow is 
-running, it will kill all the jobs running on the computing resource.
-
-When a workflow ended with errors, you can use the "restart" button to submit 
-again the jobs which failed.
-
-
-
-Workflow representation in a tree view
-======================================
-
-The current workflow is displayed as a tree in the central window. The icons 
-show the state of the workflow elements (see :ref:`status_list`). Gray 
-icons mean that the workflow was not submitted yet.
-
-The groups can be extended to be explored. Their icons are little disks.
-
-* A blue disk: at least on job in running inside the group
-* A red disk: at least on job failed inside the group
-* A green disk: all the jobs finished with success inside the group.
-
-The window below the tree view displays information about the item selected in the 
-tree. If the selected item is a job you can display the content of its standard 
-output and error clicking on the "standard output" and "standard error" tabs.
-
-
+* the jobs function of the time.
+* the number of jobs running function of the time.
 
 
 

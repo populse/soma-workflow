@@ -20,6 +20,7 @@ Group
 
 .. autoclass:: client.Group(object)
 
+
 Job
 ===
 
