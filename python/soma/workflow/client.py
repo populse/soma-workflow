@@ -930,6 +930,7 @@ class WorkflowController(object):
     It will be possible to restart the workflow afterwards.
 
      * returns: *boolean*
+
       return True if the running jobs were killed and False
       if some jobs are possibly still running on the computing resource 
       despite the workflow was stopped.

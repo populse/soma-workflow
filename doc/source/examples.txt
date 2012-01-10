@@ -7,46 +7,16 @@ Examples
 You will find here a set of examples. The objective is to illustrate how to 
 build simple to more complex workflows and submit them to soma-workflow. 
 
-The content of the jobs is not relevant here: 
-  * The "sleep" command was use as an example to stand for any job.
+The content of the jobs is not relevant here:
+  * The "sleep" command was used in the examples to stand for any job.
 
-  * The "cp" command was use as an example of a job reading a file and writing another file.  
+  * The "cp" command was used in the examples to stand for a job reading a file 
+    and writing another file.  
 
+However, **the job examples were chosen to enable anyone to copy the examples and run them directly on his machine**: 
 
 .. contents:: Examples
    :local:
-
-.. _examples_multiple_core_machine:
-
-Running examples on a multiple core machine
-===========================================
-
-When soma-workflow runs as a regular single process application (vs 
-client-server application) all the workflows must be run in a single session and the workflow executions are stopped when this session is 
-closed.
-
-To run the following examples in this case, you must not submit the workflow at the end of the script but save it to a file:
-
-::
-
-  from soma.workflow.client import Helper
-
-  # workflow creation as described in the following examples
-  # ! without the two submission lines !
-
-  Helper.serialize("/tmp/workflow_example", workflow)
-  
-
-Then use the GUI to open the file */tmp/workflow_example* and use the submit 
-button to submit the workflow. 
-
-Use the same session of the GUI to run all your workflows, if you close the
-application before the end of the workflow execution, they will be stopped and 
-the status won't be updated. 
-
-If you want to quit the application before the end of a workflow execution it is better to use 
-the stop button then quit the application.
-
 
 Simple workflows
 ================
@@ -58,12 +28,12 @@ Basic example
 .. figure:: images/simple_example.png
   :scale: 60
 
-  Simple example: 4 jobs with dependencies
+  Simple example: 4 jobs with dependencies.
 
 
 ::
 
-  from soma.workflow.client import Job, Workflow, WorkflowController
+  from soma.workflow.client import Job, Workflow, Helper
 
 
   # create the workflow:
@@ -82,38 +52,37 @@ Basic example
   workflow = Workflow(jobs=jobs, 
                       dependencies=dependencies)
 
+  # save the workflow into a file
+  Helper.serialize("/tmp/workflow_example", workflow)
 
-  # submit the workflow:
+Run the Python script, then open the GUI (command: "soma_workflow_gui").
 
-  controller = WorkflowController("Titan", login, password)
-
-  controller.submit_workflow(workflow=workflow,
-                             name="simple example")
-
-Run the Python script and monitor the execution of the workflow using 
-the GUI (soma_workflow_gui command):
+In the GUI, you can now: 
+  * Open the workflow file.
+  * Submit the workflow to the computing resource of your choice.  
+  * Monitor the workflow execution:
 
 .. image:: images/simple_example_gui.png
   :scale: 60
 
-You can close and open the GUI at any time. It will not interrupt the workflow
-execution.
+.. seealso:: The :ref:`workflow creation API <workflow-creation-api>` for a 
+             full description of job and workflow options. 
 
 
-Worklfow with Group
+Workflow with Group
 -------------------
 
-Creating groups can be useful to organise jobs within a workflow for displaying 
-purpose. Groups do not have any impact on the execution of the workflow.  
+Creating groups can be useful to organize jobs within workflows for displaying 
+purpose. Groups do not have any impact on the execution of workflows.  
 
 .. figure:: images/simple_example_group.png
   :scale: 60
 
-  Simple example with a group: The 30 jobs are in the group "my 30 jobs".
+  Simple example with a group: 30 jobs are in the group "my 30 jobs".
 
 ::
 
-  from soma.workflow.client import Job, Workflow, Group, WorkflowController
+  from soma.workflow.client import Job, Workflow, Group, Helper
 
 
   # create the workflow:
@@ -145,31 +114,63 @@ purpose. Groups do not have any impact on the execution of the workflow.
                       dependencies= dependencies,
                       root_group=[first_job, thirty_jobs_group, last_job])
 
+  # save the workflow into a file
+  Helper.serialize("/tmp/workflow_example", workflow)
 
-  # submit the workflow: 
-  controller = WorkflowController("Titan", login, password)
-
-  controller.submit_workflow(workflow=workflow,
-                             name="Simple workflow with group")
-
-
-Run the Python script and monitor the execution of the workflow using 
-the GUI (soma_workflow_gui command):
+Run the Python script, then open the GUI (command: "soma_workflow_gui") to 
+open, submit and monitor your workflow:
 
 .. image:: images/simple_example_group_gui.png
   :scale: 60
   
-The 30 jobs within the group can now be extanded (visible) or collapsed (hided).
+The 30 jobs within the group can be extended (visible) or collapsed (hidden).
 
+Go further with the client-server mode
+======================================
+
+When the computing resource you want to use is configured in the mono process 
+mode (this is the case if you use your multi core machine without special 
+configuration), all the workflows must run in a single session and the workflow 
+executions are stopped when this session is closed. In this case, it is thus 
+safer to save the workflows into files and submit them through the same GUI 
+you will use to monitor the execution (the workflows will be stopped  
+if you close the GUI).
+
+The client-server mode is much more flexible. When you want to submit a workflow
+to a computing resource configured in the client-server mode (remote cluster for
+example), you can submit it directly to the computing resource in the Python
+script instead of saving the workflow into a file: 
+
+::
+  
+  from soma.workflow.client import WorkflowController
+
+  # workflow creation as described in the examples
+  # no need to save the workflow into a file
+
+  # submit the workflow to computing resource (configured in the client-server mode)
+
+  controller = WorkflowController("Titan", login, password)
+
+  controller.submit_workflow(workflow=workflow,
+                             name="simple example")
+
+**You can now close and open the GUI at any time and even shut down you computer. 
+It will not interrupt the workflow execution.**
 
 .. _file_transfer_examples:
 
 Workflows with FileTransfer
 ===========================
 
-These examples show example of workflows with file transfers (see :ref:`file-transfers-concept`). 
-An easy way to deal with file transfer is to transfer a working directory and
-work with relative path (see :ref:`working_directory_transfer_example`). 
+The file transfers are optional. However, they can be useful if you use a remote 
+computing resource and there is no shared file system between
+your machine and the computing resource (see :ref:`file-transfers-concept`).
+
+These examples show how to create workflows managing file transfers. 
+
+.. note:: An easy way to deal with file transfers is to transfer a working 
+          directory and work with relative paths (see :ref:`working_directory_transfer_example`). 
 
 
 Basic file transfer
@@ -215,23 +216,23 @@ Run the Python script and open the GUI:
 .. image:: images/file_transfer_example_gui.png
   :scale: 60
 
-Transfer the input files, clicking the "Transfer Input Files" button:
+Transfer the input files using the "Transfer Input Files" button:
 
 .. image:: images/file_transfer_example_gui_1.png
   :scale: 80
 
-The job will start as soon as the transfer ended:
+The job will start as soon as the transfers ended:
 
 .. image:: images/file_transfer_example_gui_2.png
   :scale: 80
 
-When the workflow is done, transfer the output files clicking the 
+When the workflow is done, transfer the output files using the 
 "Transfer Output Files" button:
 
 .. image:: images/file_transfer_example_gui_3.png
   :scale: 80
 
-The progression and the end of the transfer are displayed in the GUI.
+The progression and the end of the transfer are visible in the GUI.
 
 .. image:: images/file_transfer_example_gui_4.png
   :scale: 80
@@ -290,28 +291,31 @@ the GUI (soma_workflow_gui command):
 .. image:: images/wd_transfer_example_gui.png
   :scale: 80
 
-Transfer the working directory to the computing resource clicking the "Transfer 
+Transfer the working directory to the computing resource using the "Transfer 
 Input Files" button and wait for the jobs to execute: 
 
 .. image:: images/wd_transfer_example_gui_1.png
   :scale: 80
 
-Transfer the working directory back the "Transfer Output Files" button: 
+Transfer the working directory back using the "Transfer Output Files" button: 
 
 .. image:: images/wd_transfer_example_gui_2.png
   :scale: 80
 
-The working directory on your machine should contain the files myfile1, myfile2,
-copy_of_myfile1 and copy_of_myfile2 now.
+The working directory on your machine should now contains the files: myfile1, myfile2,
+copy_of_myfile1 and copy_of_myfile2.
 
 .. _shared_resource_path_examples:
 
 Workflows with SharedResourcePath
 =================================
 
-A copy of the data you want to process can already exist on the computing resource
-file system. In this case, you can use SharedResourcePath objects to build your 
-workflows (see :ref:`shared-resource-path-concept`).
+As file transfers, shared resource paths are optional but can be useful if 
+you use a remote computing resource and there is no shared file system between
+your machine and the computing resource. 
+
+SharedResourcePath are convenient when a copy of the data already exist on the 
+computing resource file system (see :ref:`shared-resource-path-concept`).
 
 To run this example:
 
@@ -371,8 +375,10 @@ Run the script to create and submit the workflow:
 Open the GUI to monitor the workflow. Once the execution is done, transfer back 
 the output files.
 
-The data directory directory on your machine "/tmp/soma_workflow_examples/" should contain the 
-file copy_of_myfile now.
+The data directory "/tmp/soma_workflow_examples/" on your machine  should now 
+contains the file copy_of_myfile.
+
+
 
 
 

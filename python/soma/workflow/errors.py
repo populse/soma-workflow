@@ -7,7 +7,7 @@
 class ConfigurationError(Exception): 
   '''
   Raised when the configuration is not correct or when configuration
-  items are missing
+  items are missing.
   '''
   pass 
 

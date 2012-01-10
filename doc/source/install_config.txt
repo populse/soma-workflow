@@ -14,119 +14,7 @@ Mono process application on a multiple core machine
 **No configuration is needed to use soma-workflow on a multiple core machine.**
 
 See :ref:`quick start on multiple core machine <quick_start>`.
-
-.. _light_mode_config:
-
-Mono process application on clusters
-====================================
-
-This mode is called light mode, it is the installation you need if you are 
-not interested in the remote access and disconnection features (see :ref:`client_server_application_concept`)
-
-Requirements
-------------
-
-The requirements are identical to the server installation requirements. 
-If you do not intend to access an other computing resource with the remote 
-access feature, the installation of Pyro can be skipped.
-
-The requirements are thus:
-
-* A distributed resource management system (DRMS) such as Grid Engine, Condor, 
-  Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
-* Python *version 2.5 or more*
-* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
-* SQLite *version 3 or more*
-* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
-
-More details about the implementation of DRMAA can be found in the server 
-installation section (see :ref:`server_requirements`).
-
-
-Installation
-------------
-
-
-1. install the soma-workflow python module and compile the sip module
-
-2. Choose a resource identifier for the computing resource, ex: "Local Titan"
-
-3. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
-
-Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
-
-.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for soma-workflow Python API documentation and :ref:`examples`.
-
-.. _light_mode_configuration:
-
-Configuration
--------------
-
-This section defines the required and optional configuration items for the light 
-mode. 
-
-The configuration file syntax is the `ConfigParser 
-<http://docs.python.org/library/configparser.html>`_  syntax. All the 
-configuration items are defined in one section. The section name corresponds to
-the name you chose for the resource: "Local Titan" in the example.
-
-Configuration file example: ::
-
-  [Local Titan]
-
-  LIGHT_MODE    = True
-
-  TRANSFERED_FILE_DIR = path/soma_workflow.db
-  DATABASE_FILE       = path/transfered_files
-  
-..
-  If you want to use the same application as a client to other computing resources, 
-  make sure that Pyro was installed and add the configuration items required in the 
-  configuration file as described here: :ref:`client_configuration`.
-
-  Configuration file example: ::
-  
-    [Local Titan]
-
-    LIGHT_MODE    = True
-
-    TRANSFERED_FILE_DIR = path/soma_workflow.db
-    DATABASE_FILE       = path/transfered_files
-
-    
-    [LabDesktops]
-
-    CLUSTER_ADDRESS     = mydesktop.mylab.fr
-    SUBMITTING_MACHINES = mydesktop
-
-
-
-*Required configuration items:*
-
-  **LIGHT_MODE**
-    This item can be set up with any value, however it must be defined to use 
-    soma_workflow in the light mode.
-  
-  **DATABASE_FILE**
-    Path of the SQLite database file. The file will be created the first time 
-    the application is launch.  
-
-  **TRANSFERED_FILE_DIR**
-    Path of the directory where the transfered files will be copied. The
-    directory must be empty and will be managed entirely by soma-workflow.
-    This item is required to let you run workflow with file transfer for 
-    test purposes in the light mode. 
-
-    .. warning::
-      Do not copy any file in this directory. Soma_workflow manages the 
-      entire directory and might delete any external file.
-
-*Optional configuration items:*
-
-  Many optional configuration item can be added to customize the installation, see
-  :ref:`server_configuration` for a full list of the items and their description.
-  
+ 
 
 .. _client_intall_config:
 
@@ -242,7 +130,7 @@ database server.
 
 In the client-server mode the communication between the processes is done using 
 `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_. The server is registered on a Pyro
-name server. The Workflow Engines querie the Pyro name server for the
+name server. The Workflow Engines query the Pyro name server for the
 location the database server. 
 
 .. _server_requirements:
@@ -375,7 +263,7 @@ Configuration items optional on the server side:
 
   **DRMAA_IMPLEMENTATION**
     Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation,
-    otherwise it doesn not has to be set.
+    otherwise it does not has to be set.
     Soma-workflow is designed to be independent of the DRMS and the DRMAA 
     implementation. However, we found two bugs in the FedStage PBS DRMAA 1.0 
     implementation, and correct it temporarily writing specific code for this 
@@ -437,4 +325,114 @@ uses several CPUs and involves parallel code: MPI, OpenMP for example.
 
 
     
+.. _light_mode_config:
 
+Mono process application on clusters
+====================================
+
+This mode is called light mode, it is the installation you need if you are 
+not interested in the remote access and disconnection features (see :ref:`client_server_application_concept`)
+
+Requirements
+------------
+
+The requirements are identical to the server installation requirements. 
+If you do not intend to access an other computing resource with the remote 
+access feature, the installation of Pyro can be skipped.
+
+The requirements are thus:
+
+* A distributed resource management system (DRMS) such as Grid Engine, Condor, 
+  Torque/PBS, LSF..
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
+* Python *version 2.5 or more*
+* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
+* SQLite *version 3 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+
+More details about the implementation of DRMAA can be found in the server 
+installation section (see :ref:`server_requirements`).
+
+
+Installation
+------------
+
+
+1. install the soma-workflow python module and compile the sip module
+
+2. Choose a resource identifier for the computing resource, ex: "Local Titan"
+
+3. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
+
+Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
+
+.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for soma-workflow Python API documentation and :ref:`examples`.
+
+.. _light_mode_configuration:
+
+Configuration
+-------------
+
+This section defines the required and optional configuration items for the light 
+mode. 
+
+The configuration file syntax is the `ConfigParser 
+<http://docs.python.org/library/configparser.html>`_  syntax. All the 
+configuration items are defined in one section. The section name corresponds to
+the name you chose for the resource: "Local Titan" in the example.
+
+Configuration file example: ::
+
+  [Local Titan]
+
+  LIGHT_MODE    = True
+
+  TRANSFERED_FILE_DIR = path/soma_workflow.db
+  DATABASE_FILE       = path/transfered_files
+  
+..
+  If you want to use the same application as a client to other computing resources, 
+  make sure that Pyro was installed and add the configuration items required in the 
+  configuration file as described here: :ref:`client_configuration`.
+
+  Configuration file example: ::
+  
+    [Local Titan]
+
+    LIGHT_MODE    = True
+
+    TRANSFERED_FILE_DIR = path/soma_workflow.db
+    DATABASE_FILE       = path/transfered_files
+
+    
+    [LabDesktops]
+
+    CLUSTER_ADDRESS     = mydesktop.mylab.fr
+    SUBMITTING_MACHINES = mydesktop
+
+
+
+*Required configuration items:*
+
+  **LIGHT_MODE**
+    This item can be set up with any value, however it must be defined to use 
+    soma_workflow in the light mode.
+  
+  **DATABASE_FILE**
+    Path of the SQLite database file. The file will be created the first time 
+    the application is launch.  
+
+  **TRANSFERED_FILE_DIR**
+    Path of the directory where the transfered files will be copied. The
+    directory must be empty and will be managed entirely by soma-workflow.
+    This item is required to let you run workflow with file transfer for 
+    test purposes in the light mode. 
+
+    .. warning::
+      Do not copy any file in this directory. Soma_workflow manages the 
+      entire directory and might delete any external file.
+
+*Optional configuration items:*
+
+  Many optional configuration item can be added to customize the installation, see
+  :ref:`server_configuration` for a full list of the items and their description.
