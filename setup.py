@@ -7,29 +7,17 @@ from setuptools import setup, find_packages, Extension, Distribution
 
 commands = [op.join('bin','soma_workflow_gui')]
 
-
-
 setup(
     name="soma-workflow", 
     author='Soizic Laguitton',
     author_email='soizic.laguitton@gmail.com',
-    version='development version',
-    url='http://www.brainvisa.info/soma/soma-workflow',
-    #setup_requires=['numpy>=1.0'],
-    #install_requires=['Pyro==3.10'],
-    # dependency_links = ["http://sourceforge.net/project/showfiles.php?" \
-    #                         "group_id=126549&package_id=234596", 
-    #                     "http://sourceforge.net/projects/pyro/files/",
-    #                     'http://www.pytables.org/download/preliminary/'],
+    version='2.1',
+    url='http://www.brainvisa.info/soma-workflow',
     package_dir = {'' : 'python'},
     packages=find_packages('python'),
     include_package_data=True,
     package_data={'soma.workflow.gui':['*ui','icon/*png']},
-    #ext_modules=cExtensions,
-    #cmdclass={'build_ext':build_ext},
     scripts=commands,
     platforms=['linux'],
-    #zip_safe=False,
-    #configuration=configuration,
     )
 
