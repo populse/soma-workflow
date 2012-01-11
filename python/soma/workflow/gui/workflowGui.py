@@ -30,6 +30,7 @@ import soma.workflow.configuration as configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma.workflow.utils
+import soma.workflow.version as version
 
 try:
   import matplotlib
@@ -579,6 +580,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
     
+    self.ui.action_about.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
+    self.ui.action_about.triggered.connect(self.display_about_dlg)
+
     self.ui.action_submit.triggered.connect(self.submit_workflow)
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
     self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
@@ -623,6 +627,15 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   def closeEvent(self, event):
     self.emit(QtCore.SIGNAL("closing()"))
+
+  def display_about_dlg(self):
+    message_box = QtGui.QMessageBox(QtGui.QMessageBox.NoIcon,
+                      "About Soma-workflow",
+                      "\n\nVersion: %s \n\nDocumentation and examples: http://www.brainvisa.info/soma-workflow" %(version.shortVersion),
+                      parent=self)
+    message_box.setIconPixmap(QtGui.QPixmap(os.path.join(os.path.dirname(__file__), "icon/logo.png")))#.scaledToWidth(100))
+
+    message_box.exec_()
 
 
   def connect_to_controller(self, 
@@ -1427,6 +1440,8 @@ class MainWindow(QtGui.QMainWindow):
 
     self.ui.menu_view.addAction(self.ui.dock_plot.toggleViewAction())
     self.ui.menu_view.addAction(self.ui.dock_graph.toggleViewAction())
+
+    self.ui.menu_help.addAction(self.sw_widget.ui.action_about)
     
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_open_wf)
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_optimize_wf)
