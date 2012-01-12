@@ -11,7 +11,7 @@ Installation and configuration
 Mono process application on a multiple core machine
 ===================================================
 
-**No configuration is needed to use soma-workflow on a multiple core machine.**
+**No configuration is needed to use Soma-workflow on a multiple core machine.**
 
 See :ref:`quick start on multiple core machine <quick_start>`.
  
@@ -22,9 +22,9 @@ See :ref:`quick start on multiple core machine <quick_start>`.
 Client-server application: Client
 =================================
 
-This page describes the installation and configuration of the soma-workflow
-client. The installation of a soma-workflow client supposes that at least one 
-soma-workflow database servers is installed on a remote or a local computing 
+This page describes the installation and configuration of the Soma-workflow
+client. The installation of a Soma-workflow client supposes that at least one 
+Soma-workflow database servers is installed on a remote or a local computing 
 resources (see :ref:`server`).
 
 
@@ -40,17 +40,27 @@ Requirements
 Installation
 ------------
 
-1. Install the soma-workflow python modules and command.
+1. Download: `soma-workflow 2.1 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.1.tar.bz2>`_
 
-2. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the /etc/ directory.
+2. Installation:
+
+      :: 
+
+        $ python setup.py build
+
+        $ python setup.py install --prefix my_directory
+        or 
+        $ sudo python setup.py install
+
+3. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the /etc/ directory.
 
 Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
 
-.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for soma-workflow Python API documentation and :ref:`examples`.
+.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for Soma-workflow Python API documentation and :ref:`examples`.
 
 
 ..
-  The client only need the soma-workflow modules to be installed and the
+  The client only need the Soma-workflow modules to be installed and the
   soma_workflow_gui file to be located in the PATH
 
 
@@ -61,7 +71,7 @@ Configuration
 
 The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax.
 
-There is one section for each computing resource (that is for each soma-workflow
+There is one section for each computing resource (that is for each Soma-workflow
 database server). 
 
 Only for items are required:
@@ -73,8 +83,8 @@ Only for items are required:
 
 The two first items are mandatory and the last ones are 
 optional. The values of these configuration items are set up at each 
-soma-workflow server installation (see :ref:`server_configuration`). Ask these item 
-values to the soma-workflow administrator if you did not install the server yourself.  
+Soma-workflow server installation (see :ref:`server_configuration`). Ask these item 
+values to the Soma-workflow administrator if you did not install the server yourself.  
 
 Configuration file example (2 computing resources are configured): ::
 
@@ -125,7 +135,7 @@ Configuration file example (2 computing resources are configured): ::
 Client-server application: Server 
 =================================
 
-This page explains how to configure, install and run the soma-workflow
+This page explains how to configure, install and run the Soma-workflow
 database server. 
 
 In the client-server mode the communication between the processes is done using 
@@ -151,7 +161,7 @@ Here is the list of the server dependencies:
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
 * `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
-The implementations of DRMAA tested successfully with soma-workflow:
+The implementations of DRMAA tested successfully with Soma-workflow:
   
   ===================  ==========================
   DRMS                 DRMAA implementation
@@ -162,15 +172,81 @@ The implementations of DRMAA tested successfully with soma-workflow:
   Condor 7.4.0         Embeded implementation
   ===================  ==========================
 
-\* set soma-workflow DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
+\* set Soma-workflow DRMAA_IMPLEMENTATION configuration item to 'PBS' when 
 using this implementation
+
+.. _sip_drmaa:
+
+Installation to use with DRMAA
+------------------------------
+
+The use of Soma-workflow with DRMAA requires the generation of a SIP Python 
+binding for the DRMAA C library. This section describes a way to compile and 
+install this binding together with Soma-workflow:
+
+1. Download bv_maker (a CMake customization of the `BrainVISA project <http://brainvisa.info>`_)
+
+  ::
+    
+    svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/development/brainvisa-cmake/branches/1.0 /tmp/brainvisa-cmake
+    cd /tmp/brainvisa-cmake
+    cmake -DCMAKE_INSTALL_PREFIX=. .
+    make install
+
+2. Create the file: $HOME/.brainvisa/bv_maker.cfg with the content: 
+
+  ::
+
+    [source <source_directory>]
+      + soma_workflow latest_release
+
+    [build <build_directory>]
+      soma_workflow latest_release <source_directory>
+
+  replacing <source_directory> and <build_directory> by the paths you choose
+  for Soma-workflow. For example:
+
+  ::
+
+    [source $HOME/soma-workflow/source]
+      + soma_workflow latest_release
+
+    [build $HOME/soma-workflow/build]
+      soma_workflow latest_release $HOME/soma-workflow/source
+
+  Note that you can also replace "latest_release" to obtain another version: for 
+  example: "tag 2.1.0" or trunk" for the version in development or "bug_fix" 
+  for the bug fixes of the latest release.
+
+
+3. Download Soma-workflow sources and do a first configuration:
+
+  ::
+
+    /tmp/brainvisa-cmake/bin/bv_maker sources configure
+
+4. Configure with CMake and build 
+
+  ::
+    
+    cd <build_directory>/build_files/soma-workflow
+    cmake .
+    make
+
+5. Set the environment variables:
+  
+  ::
+
+    . <build_directory>/bin/bv_env.sh <build_directory>
+
+  
  
 .. _server_installation:
 
-Server installation
--------------------
+Server creation
+---------------
 
-1. *install the soma-workflow python module and compile the sip module => under construction*
+1. Install the Soma-workflow python modules and generate the SIP Python binding for the DRMAA C library if needed. (see :ref:`sip_drmaa`)
 
 2. Choose a resource identifier for the computing resource, ex: "Titan"
 
@@ -231,7 +307,7 @@ Configuration items required on the server side:
 
   **TRANSFERED_FILES_DIR**
     Path of the directory where the transfered files will be copied. The
-    directory must be empty and will be managed entirely by soma-workflow. 
+    directory must be empty and will be managed entirely by Soma-workflow. 
 
     .. warning::
       Do not copy any file in this directory. Soma_workflow manages the 
@@ -250,7 +326,7 @@ Configuration items optional on the server side:
 
   **MAX_JOB_IN_QUEUE**
     Maximum number of job in each queue. If a queue does not appear here, 
-    soma-workflow considers that there is no limitation.
+    Soma-workflow considers that there is no limitation.
     The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
 
   **PATH_TRANSLATION_FILES**
@@ -267,7 +343,7 @@ Configuration items optional on the server side:
     Soma-workflow is designed to be independent of the DRMS and the DRMAA 
     implementation. However, we found two bugs in the FedStage PBS DRMAA 1.0 
     implementation, and correct it temporarily writing specific code for this 
-    implementation in soma-workflow at 2 locations (soma.workflow.engine Drmaa 
+    implementation in Soma-workflow at 2 locations (soma.workflow.engine Drmaa 
     class: __init__ and submit_job method). 
 
 Logging configuration:
@@ -358,7 +434,7 @@ Installation
 ------------
 
 
-1. install the soma-workflow python module and compile the sip module
+1. Install the Soma-workflow python modules and generate the SIP Python binding for the DRMAA C library if needed. (see :ref:`sip_drmaa`)
 
 2. Choose a resource identifier for the computing resource, ex: "Local Titan"
 
@@ -366,7 +442,7 @@ Installation
 
 Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
 
-.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for soma-workflow Python API documentation and :ref:`examples`.
+.. seealso:: :ref:`gui` for the GUI documentation, :ref:`client_api` for Soma-workflow Python API documentation and :ref:`examples`.
 
 .. _light_mode_configuration:
 
@@ -424,7 +500,7 @@ Configuration file example: ::
 
   **TRANSFERED_FILE_DIR**
     Path of the directory where the transfered files will be copied. The
-    directory must be empty and will be managed entirely by soma-workflow.
+    directory must be empty and will be managed entirely by Soma-workflow.
     This item is required to let you run workflow with file transfer for 
     test purposes in the light mode. 
 
