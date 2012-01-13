@@ -2073,19 +2073,24 @@ class GroupInfoWidget(QtGui.QWidget):
     
   def dataChanged(self):
     
-    job_nb = len(self.group_item.not_sub) + len(self.group_item.done) + len(self.group_item.failed) + len(self.group_item.running) + len(self.group_item.warning)
+    #job_nb = len(self.group_item.not_sub) + len(self.group_item.done) + len(self.group_item.failed) + len(self.group_item.running) + len(self.group_item.warning) + len(self.group_item.queued)
     
     ended_job_nb = len(self.group_item.done) + len(self.group_item.failed)
     
     total_time = None
-    if self.group_item.first_sub_date and self.group_item.last_end_date:
-      total_time = self.group_item.last_end_date - self.group_item.first_sub_date
+    if self.group_item.first_sub_date != datetime.max:
+      if self.group_item.first_sub_date:
+        if self.group_item.last_end_date:
+          total_time = self.group_item.last_end_date - self.group_item.first_sub_date
+        else:
+          total_time = datetime.now() - self.group_item.first_sub_date
+        
     
     #input_file_nb = len(self.group_item.input_to_transfer) + len(self.group_item.input_transfer_ended)
     #ended_input_transfer_nb = len(self.group_item.input_transfer_ended)
     
     setLabelFromString(self.ui.status, self.group_item.status)
-    setLabelFromInt(self.ui.job_nb, job_nb)
+    setLabelFromInt(self.ui.job_nb, self.group_item.job_count)
     setLabelFromInt(self.ui.ended_job_nb, ended_job_nb)
     setLabelFromTimeDelta(self.ui.total_time, total_time)
     setLabelFromTimeDelta(self.ui.theoretical_serial_time, self.group_item.theoretical_serial_time)
@@ -3424,6 +3429,8 @@ class GuiGroup(GuiWorkflowItem):
     self.pending = []
     self.queued = []
     self.warning = []
+
+    self.job_count = 0
     
     self.first_sub_date = None
     self.last_end_date = None
@@ -3456,11 +3463,14 @@ class GuiGroup(GuiWorkflowItem):
     self.warning = []
 
     no_status = False
+
+    self.job_count = 0
     
     for child in self.children:
       item = self.gui_workflow.items[child]
       # TO DO : explore files 
       if isinstance(item, GuiJob):
+        self.job_count = self.job_count + 1
         if item.job_id == -1:
           no_status = True
           break
@@ -3491,6 +3501,7 @@ class GuiGroup(GuiWorkflowItem):
           
       if isinstance(item, GuiGroup):
         item.updateState()
+        self.job_count = self.job_count + item.job_count
         self.not_sub.extend(item.not_sub)
         self.done.extend(item.done)
         self.failed.extend(item.failed)
