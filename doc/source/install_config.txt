@@ -198,10 +198,10 @@ install this binding together with Soma-workflow:
   ::
 
     [source <source_directory>]
-      + soma_workflow latest_release
+      + soma-workflow latest_release
 
     [build <build_directory>]
-      soma_workflow latest_release <source_directory>
+      soma-workflow latest_release <source_directory>
 
   replacing <source_directory> and <build_directory> by the paths you choose
   for Soma-workflow. For example:
@@ -209,29 +209,31 @@ install this binding together with Soma-workflow:
   ::
 
     [source $HOME/soma-workflow/source]
-      + soma_workflow latest_release
+      + soma-workflow latest_release
 
     [build $HOME/soma-workflow/build]
-      soma_workflow latest_release $HOME/soma-workflow/source
+      soma-workflow latest_release $HOME/soma-workflow/source
 
   Note that you can also replace "latest_release" to obtain another version: for 
   example: "tag 2.1.0" or trunk" for the version in development or "bug_fix" 
   for the bug fixes of the latest release.
 
 
-3. Download Soma-workflow sources and do a first configuration:
+3. Download Soma-workflow sources (use username "brainvisa" and password "Soma2009" if needed), configure and build with CMake and make:
 
   ::
 
-    /tmp/brainvisa-cmake/bin/bv_maker sources configure
+    /tmp/brainvisa-cmake/bin/bv_maker sources 
 
-4. Configure with CMake and build 
+    /tmp/brainvisa-cmake/bin/bv_maker configure
+
+    /tmp/brainvisa-cmake/bin/bv_maker build
+
+4. You can remove the temporary directory
 
   ::
     
-    cd <build_directory>/build_files/soma-workflow
-    cmake .
-    make
+    rm -rf /tmp/brainvisa-cmake
 
 5. Set the environment variables:
   
