@@ -1,3 +1,2 @@
-include ez_setup.py
 include python/soma/workflow/gui/*ui
 include python/soma/workflow/gui/icon/*png

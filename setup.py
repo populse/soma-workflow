@@ -1,12 +1,12 @@
 """
 Soma-workflow is a unified and simple interface to parallel computing resources. It aims at making easier the use of parallel resources by non expert users and software.
 """
-
-import ez_setup
-ez_setup.use_setuptools()
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 import os.path as op
-from setuptools import setup, find_packages, Extension, Distribution
 
 commands = [op.join('bin','soma_workflow_gui')]
 
@@ -34,10 +34,10 @@ setup(
       ],
     author='Soizic Laguitton',
     author_email='soizic.laguitton@gmail.com',
-    version='2.1.0a',
+    version='2.1.0a5',
     url='http://www.brainvisa.info/soma-workflow',
     package_dir = {'': 'python'},
-    packages=find_packages('python'),
+    packages=['soma', 'soma.workflow', 'soma.workflow.gui', 'soma.workflow.test'],
     include_package_data=True,
     package_data={'soma.workflow.gui': ['*ui', 'icon/*png']},
     scripts=commands,
