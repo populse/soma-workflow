@@ -422,13 +422,14 @@ class WorkflowEngineLoop(object):
     The jobs to submit after add_job, add_workflow and restart_workflow are 
     first stored in _pending_queues waiting to be submitted.
     '''
-    if engine_job.queue in self._pending_queues:
-      self._pending_queues[engine_job.queue].append(engine_job)
-      self._pending_queues[engine_job.queue].sort(key=lambda job: job.priority, 
-                                                  reverse=True)
-    else:
-      self._pending_queues[engine_job.queue] = [engine_job]
-    engine_job.status = constants.SUBMISSION_PENDING
+    with self._lock:
+      if engine_job.queue in self._pending_queues:
+        self._pending_queues[engine_job.queue].append(engine_job)
+        self._pending_queues[engine_job.queue].sort(key=lambda job: job.priority, 
+                                                    reverse=True)
+      else:
+        self._pending_queues[engine_job.queue] = [engine_job]
+      engine_job.status = constants.SUBMISSION_PENDING
 
 
   def _get_pending_job_to_submit(self):
@@ -514,23 +515,24 @@ class WorkflowEngineLoop(object):
     if job.status == constants.DONE or job.status == constants.FAILED:
       return False
     else:
-      if job.drmaa_id:
-        self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
-        try:
-          self._scheduler.kill_job(job.drmaa_id)
-        except DRMError, e:
-          #TBI how to communicate the error
-          self.logger.error("!!!ERROR!!! %s:%s" %(type(e), e))
-      elif job.queue in self._pending_queues and \
-           job in self._pending_queues[job.queue]:
-        self._pending_queues[job.queue].remove(job)
-      job.status = constants.FAILED
-      job.exit_status = constants.USER_KILLED
-      job.exit_value = None
-      job.terminating_signal = None
-      job.str_rusage = None
+      with self._lock:
+        if job.drmaa_id:
+          self.logger.debug("Kill job " + repr(job_id) + " drmaa id: " + repr(job.drmaa_id) + " status " + repr(job.status))
+          try:
+            self._scheduler.kill_job(job.drmaa_id)
+          except DRMError, e:
+            #TBI how to communicate the error
+            self.logger.error("!!!ERROR!!! %s:%s" %(type(e), e))
+        elif job.queue in self._pending_queues and \
+            job in self._pending_queues[job.queue]:
+          self._pending_queues[job.queue].remove(job)
+        job.status = constants.FAILED
+        job.exit_status = constants.USER_KILLED
+        job.exit_value = None
+        job.terminating_signal = None
+        job.str_rusage = None
 
-      return True
+        return True
     
 
   def _stop_wf(self, wf_id):
