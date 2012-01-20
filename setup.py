@@ -34,7 +34,7 @@ setup(
       ],
     author='Soizic Laguitton',
     author_email='soizic.laguitton@gmail.com',
-    version='2.1.0a6',
+    version='2.1.0',
     url='http://www.brainvisa.info/soma-workflow',
     package_dir = {'': 'python'},
     packages=['soma', 'soma.workflow', 'soma.workflow.gui', 'soma.workflow.test'],
@@ -42,7 +42,7 @@ setup(
     package_data={'soma.workflow.gui': ['*ui', 'icon/*png']},
     scripts=commands,
     platforms=['linux'],
-    requires=['PyQt', ],
+    #requires=['PyQt', ],
     extras_require={
        'plotting': ['matplotlib'],
        'client': ['Pyro', 'paramiko'],
