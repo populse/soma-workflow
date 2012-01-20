@@ -32,6 +32,7 @@ from datetime import timedelta
 import threading
 import time
 import socket
+import getpass 
 import os
 import select
 import SocketServer
@@ -280,7 +281,8 @@ class LocalConnection( object ):
     from Pyro.errors import ConnectionClosedError 
     import subprocess
 
-    pyro_objet_name = "workflow_engine" 
+    login = getpass.getuser()
+    pyro_objet_name = "workflow_engine_" + login
 
     # run the workflow engine process and get back the  
     # workflow_engine and ConnectionChecker URIs  

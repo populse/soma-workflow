@@ -17,7 +17,7 @@ soma-workflow engine classes
 
 from datetime import date, timedelta, datetime
 import threading
-import pwd
+import getpass
 import os
 import time
 import logging
@@ -144,7 +144,7 @@ class WorkflowEngineLoop(object):
     self._running = False
 
     try:
-      userLogin = pwd.getpwuid(os.getuid())[0] 
+      userLogin = getpass.getuser()
     except Exception, e:
       self.logger.critical("Couldn't identify user %s: %s \n" %(type(e), e))
       raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
@@ -623,7 +623,7 @@ class WorkflowEngine(RemoteFileController):
     
     
     try:
-      user_login = pwd.getpwuid(os.getuid())[0]
+      user_login = getpass.getuser()
     except Exception, e:
       raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
     
