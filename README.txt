@@ -54,23 +54,31 @@ An extensive documentation_ is available, with ready to use examples_.
 Installation
 ------------
 
-For a quick start/test on a multiple core machine::
+Qt version 4.6.2 or more, PyQt version 4.7.2 or more are required if you want to 
+use the graphical interface. 
+
+To provide you quickly with a functional application, your own multiple core 
+machine can be used directly and without any configuration to distribute 
+computation, no matter the installation mode chosen.
+
+For a quick start/test on a multiple core machine, this command will just install Soma-workflow::
 
   $ easy_install "soma-workflow"
 
-To enable plotting in the GUI, it may be useful to install matplotlib::
+To enable plotting in the GUI, this command will install matplotlib as well::
 
   $ easy_install "soma-workflow[plotting]"
 
-To install the client interface to a remote computing resource::
+To install the client interface to a remote computing resource, this command 
+will install Soma-workflow, Pyro and Paramiko ::
 
   $ easy_install "soma-workflow[client]"
 
-To install the client application with plotting enabled::
+To install the client application with plotting enabled, this command 
+will install Soma-workflow, Pyro, Paramiko and matplotlib::
 
   $ easy_install "soma-workflow[client,plotting]"
 
-For easy testing, the access to the local machine via Soma-workflow is always
-enabled, no matter the installation chosen.
+
 
 
