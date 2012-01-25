@@ -215,7 +215,7 @@ install this binding together with Soma-workflow:
       soma-workflow latest_release $HOME/soma-workflow/source
 
   Note that you can also replace "latest_release" to obtain another version: for 
-  example: "tag 2.1.0" or trunk" for the version in development or "bug_fix" 
+  example: "2.1.0" or trunk" for the version in development or "bug_fix" 
   for the bug fixes of the latest release.
 
 
