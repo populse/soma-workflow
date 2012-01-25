@@ -34,9 +34,9 @@ import operator
 import random
 import pickle
 import types
-import collections
 import subprocess
 import sys
+import posixpath
 
 #import cProfile
 #import traceback
@@ -1038,8 +1038,7 @@ class WorkflowController(object):
     Raises *UnknownObjectError* if the transfer_id is not valid
     #Raises *TransferError*
     '''
-    if not type(transfer_ids) in types.StringTypes and \
-      isinstance(transfer_ids, collections.Iterable):
+    if not type(transfer_ids) in types.StringTypes:
         for transfer_id in transfer_ids:
           self._transfer_file(transfer_id, buffer_size)
     else:
@@ -1136,7 +1135,7 @@ class WorkflowController(object):
       else: #client_paths
         for path in client_paths:
           relative_path = os.path.basename(path)
-          r_path = os.path.join(transfer_id, relative_path)
+          r_path = posixpath.join(transfer_id, relative_path)
           if not self._engine_proxy.is_file(r_path) and \
              not self._engine_proxy.is_dir(r_path):
             print("WARNING: The file or directory %s doesn't exist "
@@ -1187,7 +1186,7 @@ class WorkflowController(object):
       if transfer_type == constants.TR_MFF_C_TO_CR:
         for path in client_paths:
           relative_path = os.path.basename(path)
-          r_path = os.path.join(remote_path, relative_path)
+          r_path = posixpath.join(remote_path, relative_path)
           self._transfer.transfer_to_remote(path,
                                             r_path)
 
@@ -1224,7 +1223,7 @@ class WorkflowController(object):
       if transfer_type == constants.TR_MFF_CR_TO_C:
         for path in client_paths:
           relative_path = os.path.basename(path)
-          r_path = os.path.join(remote_path, relative_path)
+          r_path = posixpath.join(remote_path, relative_path)
           self._transfer.transfer_from_remote(r_path,
                                               path)
 
@@ -1248,7 +1247,7 @@ class WorkflowController(object):
         data_transfered = 0
         for path in client_paths:
           relative_path = os.path.basename(path)
-          r_path = os.path.join(engine_path, relative_path)
+          r_path = posixpath.join(engine_path, relative_path)
           (ds,
           dt) = self._transfer_monitoring.transfer_to_remote_progression(path,
                                                                 r_path)
@@ -1266,7 +1265,7 @@ class WorkflowController(object):
         data_transfered = 0
         for path in client_paths:
           relative_path = os.path.basename(path)
-          r_path = os.path.join(engine_path, relative_path)
+          r_path = posixpath.join(engine_path, relative_path)
           (ds,
           dt) = self._transfer_monitoring.transfer_from_remote_progression(r_path,
                                                                          path)
