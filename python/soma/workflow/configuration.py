@@ -356,7 +356,7 @@ class Configuration(observer.Observable):
       resource_ids.append(r_id)
     local_resource_id = socket.gethostname()
     if not local_resource_id in resource_ids:
-      resource_ids.append()
+      resource_ids.append(local_resource_id)
     return resource_ids
 
 
