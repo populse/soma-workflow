@@ -244,7 +244,15 @@ class Configuration(observer.Observable):
                      resource_id=None, 
                      config_file_path=None):
 
-    if resource_id == None or resource_id == socket.gethostname():
+    if config_file_path:
+      config_path = config_file_path
+    else:
+      config_path = Configuration.search_config_path()
+
+    config = None
+
+    if resource_id == None or resource_id == socket.gethostname() :
+      
       #scheduler local on the local machine
       resource_id = socket.gethostname()
       mode = LIGHT_MODE
@@ -257,7 +265,14 @@ class Configuration(observer.Observable):
                    scheduler_type=scheduler_type,
                    database_file=database_file,
                    transfered_file_dir=transfered_file_dir)
-      
+
+      if config_path != None:
+        config_parser = ConfigParser.ConfigParser()
+        config_parser.read(config_path)
+        if config_parser.has_section(resource_id):
+          config._config_parser = config_parser
+          config._config_path = config_path
+
       if not os.path.isdir(os.path.expanduser("~/.soma-workflow")):
         os.mkdir(os.path.expanduser("~/.soma-workflow"))
       if not os.path.isdir(transfered_file_dir):
@@ -267,12 +282,10 @@ class Configuration(observer.Observable):
 
     else:
       scheduler_type = DRMAA_SCHEDULER
-      
-      if config_file_path:
-        config_path = config_file_path
-      else:
-        config_path = Configuration.search_config_path()
 
+      if config_path == None:
+        raise ConfigurationError("Could not find Soma-workflow "
+                                 "configuration file")
       config_parser = ConfigParser.ConfigParser()
       config_parser.read(config_path)
       if not config_parser.has_section(resource_id):
@@ -341,7 +354,9 @@ class Configuration(observer.Observable):
     config_parser.read(config_file_path)
     for r_id in config_parser.sections():
       resource_ids.append(r_id)
-    resource_ids.append(socket.gethostname())
+    local_resource_id = socket.gethostname()
+    if not local_resource_id in resource_ids:
+      resource_ids.append()
     return resource_ids
 
 
