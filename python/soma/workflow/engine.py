@@ -792,12 +792,20 @@ class WorkflowEngine(RemoteFileController):
       self._database_server.delete_workflow(workflow_id)
       return True
     else:
+      (is_valid_wf, 
+      last_status_update) = self._database_server.is_valid_workflow(workflow_id, 
+                                                                  self._user_id)
+      if is_valid_wf and _out_to_date(last_status_update):
+        self.logger.critical("The workflow may not be properly deleted.")
+        self._database_server.delete_workflow(workflow_id)
+        return False
+      
       self._database_server.set_workflow_status(workflow_id, 
                                                 constants.DELETE_PENDING)
       if force and not self._wait_for_wf_deletion(workflow_id):
-       self.logger.critical("!! The workflow may not be properly deleted !!")
-       self._database_server.delete_workflow(workflow_id)
-       return False
+        self.logger.critical("The workflow may not be properly deleted.")
+        self._database_server.delete_workflow(workflow_id)
+        return False
       return True
 
 

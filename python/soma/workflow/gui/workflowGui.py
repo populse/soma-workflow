@@ -1116,7 +1116,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
     if force:
       self.model.delete_workflow()
       self.updateWorkflowList()
-      if not deleled_properly:
+      if not deleled_properly and \
+         self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
          QtGui.QMessageBox.warning(self, 
                                    "Delete workflow", 
                                    "The workflow was deleted. \n However, some jobs " 
