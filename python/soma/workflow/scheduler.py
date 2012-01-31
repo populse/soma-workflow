@@ -251,7 +251,14 @@ class Drmaa(Scheduler):
       raise DRMError("Job submission error: %s" %(e))
 
     return drmaaSubmittedJobId
-    
+  
+  #def process_str(self, value):
+    #if value and value.find(' ') != -1:
+      #result = "\'"+value+"\'"
+    #else: 
+      #result = value
+    #return result
+
 
   def get_job_status(self, scheduler_job_id):
     if self.is_sleeping: self.wake()

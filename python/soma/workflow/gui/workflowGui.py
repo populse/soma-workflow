@@ -57,6 +57,7 @@ except ImportError:
 #-----------------------------------------------------------------------------
 
 NOT_SUBMITTED_WF_ID = -1
+NOT_SUBMITTED_JOB_ID = -1
 
 GRAY=QtGui.QColor(200, 200, 180)
 BLUE=QtGui.QColor(0,200,255)
@@ -2373,7 +2374,7 @@ class WorkflowGraphView(QtGui.QWidget):
       print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0] 
     for node in self.workflow.jobs:
       if isinstance(node, Job):
-        if node.job_id == -1:
+        if node.job_id == NOT_SUBMITTED_JOB_ID:
           print >> file, names[node][0] + "[shape=box label="+ names[node][1] +"];"
         else:
           status = self.connection.job_status(node.job_id)
@@ -2535,7 +2536,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     
     #### Jobs ####
     if isinstance(item, GuiJob): 
-      if item.job_id == -1:
+      if item.job_id == NOT_SUBMITTED_JOB_ID:
         if role == QtCore.Qt.DisplayRole:
           return item.name
         if role == QtCore.Qt.DecorationRole:
@@ -3193,7 +3194,7 @@ class GuiWorkflow(object):
         job_id = workflow.job_mapping[job].job_id
         command = workflow.job_mapping[job].plain_command()
       else:
-        job_id = -1
+        job_id = NOT_SUBMITTED_JOB_ID
         command = job.command
       
       gui_job = GuiJob(it_id = item_id, 
@@ -3471,7 +3472,7 @@ class GuiGroup(GuiWorkflowItem):
       # TO DO : explore files 
       if isinstance(item, GuiJob):
         self.job_count = self.job_count + 1
-        if item.job_id == -1:
+        if item.job_id == NOT_SUBMITTED_JOB_ID:
           no_status = True
           break
         if item.status == constants.WARNING:
@@ -3550,7 +3551,7 @@ class GuiJob(GuiWorkflowItem):
                data=None,
                children_nb=0,
                name="no name",
-               job_id=-1,
+               job_id=NOT_SUBMITTED_JOB_ID,
                priority=None):
     super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
     
@@ -3566,10 +3567,6 @@ class GuiJob(GuiWorkflowItem):
     
     self.name = name
     self.job_id = job_id
-    #if isinstance(data, EngineJob):
-      #self.job_id = data.job_id
-    #else:
-      #self.job_id = -1
     
     cmd_seq = []
     for command_el in command:
@@ -3618,7 +3615,7 @@ class GuiJob(GuiWorkflowItem):
     return state_changed
     
   def updateStdOutErr(self, connection):
-    if self.data:
+    if self.data and self.job_id != NOT_SUBMITTED_JOB_ID:
       stdout_path = "/tmp/soma_workflow_stdout"
       stderr_path = "/tmp/soma_workflow_stderr"
       connection.retrieve_job_stdouterr(self.job_id, stdout_path, stderr_path)
