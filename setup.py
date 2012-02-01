@@ -41,7 +41,7 @@ setup(
     include_package_data=True,
     package_data={'soma.workflow.gui': ['*ui', 'icon/*png']},
     scripts=commands,
-    platforms=['linux'],
+    platforms=['Linux', 'MacOS X', 'Windows' ],
     #requires=['PyQt', ],
     extras_require={
        'plotting': ['matplotlib'],
