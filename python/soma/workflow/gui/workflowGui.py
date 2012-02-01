@@ -2855,7 +2855,7 @@ class ApplicationModel(QtCore.QObject):
                     self._hold[rid] = True
                     break
                   except UnknownObjectError, e:
-                    self.delete_workflow()
+                    self.delete_workflow(wfid)
                     continue
                   else:
                     if wf_status != self._workflow_statuses[rid][wfid]:
@@ -3073,20 +3073,26 @@ class ApplicationModel(QtCore.QObject):
   def restart_current_workflow(self):
     self._current_workflow.restart()
     
-  def delete_workflow(self):
+  def delete_workflow(self, workflow_id=None):
     with self._lock:
-      self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-      if self._current_workflow and self._current_workflow.wf_id in self._workflows[self.current_resource_id].keys():
-        del self._workflows[self.current_resource_id][self._current_workflow.wf_id]
-        del self._expiration_dates[self.current_resource_id][self._current_workflow.wf_id]
-        del self._workflow_names[self.current_resource_id][self._current_workflow.wf_id]
-        del self._workflow_statuses[self.current_resource_id][self._current_workflow.wf_id]
-      self._current_workflow = None
-      self.current_wf_id = None
-      self.workflow_exp_date = None #datetime.now()
-      self.workflow_status = None
-      self.workflow_name = None
-      self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+      if workflow_id != None and (self._current_workflow == None or workflow_id != self._current_workflow.wf_id):
+        del self._workflows[self.current_resource_id][workflow_id]
+        del self._expiration_dates[self.current_resource_id][workflow_id]
+        del self._workflow_names[self.current_resource_id][workflow_id]
+        del self._workflow_statuses[self.current_resource_id][workflow_id]
+      else:
+        self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+        if self._current_workflow and self._current_workflow.wf_id in self._workflows[self.current_resource_id].keys():
+          del self._workflows[self.current_resource_id][self._current_workflow.wf_id]
+          del self._expiration_dates[self.current_resource_id][self._current_workflow.wf_id]
+          del self._workflow_names[self.current_resource_id][self._current_workflow.wf_id]
+          del self._workflow_statuses[self.current_resource_id][self._current_workflow.wf_id]
+        self._current_workflow = None
+        self.current_wf_id = None
+        self.workflow_exp_date = None #datetime.now()
+        self.workflow_status = None
+        self.workflow_name = None
+        self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
     
   def clear_current_workflow(self):
