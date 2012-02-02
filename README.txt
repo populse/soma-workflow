@@ -92,7 +92,7 @@ Installation
 
         $ python setup.py install
 
-  **With easy_install**
+  **With easy_install:**
 
     This command will just install Soma-workflow::
 
