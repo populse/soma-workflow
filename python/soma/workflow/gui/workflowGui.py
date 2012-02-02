@@ -122,7 +122,7 @@ def setLabelFromString(label, value):
   if value == label.text():
     return 
   if value:
-    label.setText(unicode(value.encode('utf-8')))
+    label.setText(value.encode('utf-8'))
   else:
     label.setText("")
 
@@ -133,7 +133,7 @@ def setTextEditFromString(text_edit, value):
   if value == text_edit.toPlainText():
     return 
   if value:
-    text_edit.setText(unicode(value.encode('utf-8')))
+    text_edit.setText(value.encode('utf-8'))
   else:
     text_edit.setText("")
 
@@ -792,7 +792,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if submission_dlg.exec_() != QtGui.QDialog.Accepted:
         return (None, None)
 
-      name = unicode(ui.lineedit_wf_name.text())
+      name = ui.lineedit_wf_name.text().toUtf8().data()
       if name == "": name = None
       qtdt = ui.dateTimeEdit_expiration.dateTime()
       date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
