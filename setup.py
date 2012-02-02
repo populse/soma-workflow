@@ -34,7 +34,7 @@ setup(
       ],
     author='Soizic Laguitton',
     author_email='soizic.laguitton@gmail.com',
-    version='2.1.0',
+    version='2.1.2',
     url='http://www.brainvisa.info/soma-workflow',
     package_dir = {'': 'python'},
     packages=['soma', 'soma.workflow', 'soma.workflow.gui', 'soma.workflow.test'],
