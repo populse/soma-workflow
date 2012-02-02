@@ -881,7 +881,7 @@ class WorkflowDatabaseServer( object ):
                          (user_id,
                           None, 
                           engine_workflow.expiration_date,
-                          engine_workflow.name,
+                          engine_workflow.name.decode('utf8'),
                           constants.WORKFLOW_NOT_STARTED,
                           datetime.now(),
                           engine_workflow.queue))
@@ -1007,9 +1007,9 @@ class WorkflowDatabaseServer( object ):
         raise DatabaseError('%s: %s \n' %(type(e), e))
       cursor.close()
       connection.close()
-      
-    pickled_workflow = self._string_conversion(pickled_workflow)
+    
     if pickled_workflow:
+      pickled_workflow = pickled_workflow.encode('utf-8')
       workflow = pickle.loads(pickled_workflow)
     else:
       workflow = None
@@ -1412,8 +1412,8 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.close()
       
-    pickled_job = self._string_conversion(pickled_job)
     if pickled_job:
+      pickled_job = pickled_job.encode('utf-8')
       job = pickle.loads(pickled_job)
     else:
       job = None
@@ -1850,6 +1850,7 @@ class WorkflowDatabaseServer( object ):
         connection.close()
 
   def _string_conversion(self, string):
+    #return string
     if string: 
       return string.encode('utf-8')
     else: 
