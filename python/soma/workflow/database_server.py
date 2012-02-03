@@ -29,6 +29,7 @@ import pickle
 from datetime import date
 from datetime import timedelta
 from datetime import datetime
+import socket
 
 import soma.workflow.constants as constants
 from soma.workflow.client import FileTransfer
@@ -39,6 +40,8 @@ __docformat__ = "epytext en"
 #-----------------------------------------------------------------------------
 # Globals and constants
 #-----------------------------------------------------------------------------
+
+DB_VERSION = '1.0'
 
 strtime_format = '%Y-%m-%d %H:%M:%S'
 file_separator = ', '
@@ -221,7 +224,11 @@ def create_database(database_file):
                                            status             TEXT,
                                            last_status_update DATE NOT NULL,
                                            queue              TEXT) ''')
+
+  cursor.execute('''CREATE TABLE db_version (version TEXT NOT NULL)''')
   
+  cursor.execute('INSERT INTO db_version (version) VALUES (?)', [DB_VERSION])
+
   cursor.close()
   connection.commit()
   connection.close()
@@ -303,6 +310,32 @@ class WorkflowDatabaseServer( object ):
         print "Database creation " + database_file
         self.logger.info("Database creation " + database_file)
         create_database(database_file)
+      else:
+        connection = self._connect()
+        cursor = connection.cursor()
+        version = None
+        try:
+          for row in cursor.execute("SELECT * FROM db_version"):
+            version = row
+          print "version " + repr(version)
+        except Exception, e:
+          pass
+
+        try:
+          if version == None:
+            count = cursor.execute("SELECT count(*) FROM workflows WHERE "
+                                  "queue=?", ["default queue"]).next()[0]
+          elif version != DB_VERSION:
+            raise Exception('Wrong db version')
+        except Exception, e:
+          cursor.close()
+          connection.close()
+          raise DatabaseError("Your database file might not be compatible "
+                              "with the current version of Soma-workflow.\n\n"
+                              "To solve the problem: \n  1. Log on the host"
+                              " " + repr(socket.gethostname()) + " (if it is not the current machine). \n  2. Delete"
+                              " the file " + str(database_file)+" \n"
+                              "  3. Clear the content of the directory: " + repr(tmp_file_dir_path))
       
       
       
