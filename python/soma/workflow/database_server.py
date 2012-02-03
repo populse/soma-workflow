@@ -316,8 +316,7 @@ class WorkflowDatabaseServer( object ):
         version = None
         try:
           for row in cursor.execute("SELECT * FROM db_version"):
-            version = row
-          print "version " + repr(version)
+            version = row[0]
         except Exception, e:
           pass
 
@@ -325,7 +324,7 @@ class WorkflowDatabaseServer( object ):
           if version == None:
             count = cursor.execute("SELECT count(*) FROM workflows WHERE "
                                   "queue=?", ["default queue"]).next()[0]
-          elif version != DB_VERSION:
+          elif unicode(version) != unicode(DB_VERSION):
             raise Exception('Wrong db version')
         except Exception, e:
           cursor.close()
