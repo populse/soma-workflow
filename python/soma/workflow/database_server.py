@@ -900,6 +900,9 @@ class WorkflowDatabaseServer( object ):
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
+      name = None
+      if engine_workflow.name != None:
+        name = engine_workflow.name.decode('utf8')
       try:
         cursor.execute('''INSERT INTO workflows 
                          (user_id,
@@ -913,7 +916,7 @@ class WorkflowDatabaseServer( object ):
                          (user_id,
                           None, 
                           engine_workflow.expiration_date,
-                          engine_workflow.name.decode('utf8'),
+                          name,
                           constants.WORKFLOW_NOT_STARTED,
                           datetime.now(),
                           engine_workflow.queue))
