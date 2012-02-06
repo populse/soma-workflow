@@ -858,7 +858,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
       previous_queue = self.model.current_workflow().queue
       if previous_queue == None: 
         previous_queue = "default queue"
-      print "previous queue " + repr(previous_queue)
       index = queues.index(previous_queue)
       ui.combo_queue.setCurrentIndex(index)
 
