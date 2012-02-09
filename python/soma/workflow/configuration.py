@@ -239,6 +239,33 @@ class Configuration(observer.Observable):
     self.path_translation = None
 
 
+  @staticmethod
+  def get_home_dir():
+    # if python version > 2.5 expanduser should be ok
+    homedir = os.getenv( 'HOME' )
+    if not homedir:
+      homedir = ''
+      if sys.platform[:3] == 'win':
+        homedir = os.getenv( 'USERPROFILE' )
+        if not homedir:
+          homedir = os.getenv( 'HOMEPATH' )
+          if not homedir:
+            homedir = '\\'
+          drive = os.getenv( 'HOMEDRIVE' )
+          if not drive:
+            drive = os.getenv( 'SystemDrive' )
+            if not drive:
+              drive = os.getenv( 'SystemRoot' )
+              if not drive:
+                drive = os.getenv( 'windir' )
+              if drive and len( drive ) >= 2:
+                drive = drive[ :2 ]
+              else:
+                drive = ''
+          homedir = drive + homedir
+    return homedir
+
+
   @classmethod
   def load_from_file(cls,
                      resource_id=None, 
@@ -250,6 +277,7 @@ class Configuration(observer.Observable):
       config_path = Configuration.search_config_path()
 
     config = None
+    home_dir = Configuration.get_home_dir() 
 
     if resource_id == None or resource_id == socket.gethostname() :
       
@@ -257,8 +285,8 @@ class Configuration(observer.Observable):
       resource_id = socket.gethostname()
       mode = LIGHT_MODE
       scheduler_type = LOCAL_SCHEDULER
-      database_file = os.path.expanduser("~/.soma-workflow/soma_workflow.db")
-      transfered_file_dir = os.path.expanduser("~/.soma-workflow/transfered_files")
+      database_file = os.path.join(home_dir, ".soma-workflow/soma_workflow.db")
+      transfered_file_dir = os.path.join(home_dir, ".soma-workflow/transfered_files")
       
       config = cls(resource_id=resource_id,
                    mode=mode,
@@ -273,8 +301,8 @@ class Configuration(observer.Observable):
           config._config_parser = config_parser
           config._config_path = config_path
 
-      if not os.path.isdir(os.path.expanduser("~/.soma-workflow")):
-        os.mkdir(os.path.expanduser("~/.soma-workflow"))
+      if not os.path.isdir(os.path.join(home_dir, ".soma-workflow")):
+        os.mkdir(os.path.join(home_dir, ".soma-workflow"))
       if not os.path.isdir(transfered_file_dir):
         os.mkdir(transfered_file_dir)
 
@@ -284,8 +312,9 @@ class Configuration(observer.Observable):
       scheduler_type = DRMAA_SCHEDULER
 
       if config_path == None:
-        raise ConfigurationError("Could not find Soma-workflow "
-                                 "configuration file")
+        raise ConfigurationError("A configuration file is required to connect " 
+                                 "to " + repr(resource_id) + ": the soma-workflow "
+                                 "configuration file could not be found.")
       config_parser = ConfigParser.ConfigParser()
       config_parser.read(config_path)
       if not config_parser.has_section(resource_id):
@@ -328,9 +357,11 @@ class Configuration(observer.Observable):
     returns the path of the soma workflow configuration file
     '''
 
+    home_dir = Configuration.get_home_dir() 
+
     config_path = os.getenv('SOMA_WORKFLOW_CONFIG')
     if not config_path or not os.path.isfile(config_path):
-      config_path = os.path.expanduser("~/.soma-workflow.cfg")
+      config_path = os.path.join(home_dir, ".soma-workflow.cfg")
     if not config_path or not os.path.isfile(config_path):
       config_path = os.path.dirname(__file__)
       config_path = os.path.join(config_path, "etc/soma-workflow.cfg")
@@ -637,6 +668,9 @@ class Configuration(observer.Observable):
 
   def save_to_file(self, config_path=None):
     pass 
+
+    #home_dir = Configuration.get_home_dir() 
+
     # disabled for now because it erases the commented part of the configuration
     #if not config_path:
       #if self._config_path != None:
@@ -644,7 +678,7 @@ class Configuration(observer.Observable):
       #else:
         #config_path = Configuration.search_config_path()
         #if config_path == None:
-          #config_path = os.path.expanduser("~/.soma-workflow.cfg")
+          #config_path = os.path.join(home_dir, ".soma-workflow.cfg")
         #print config_path
 
     #config_parser = ConfigParser.ConfigParser()
@@ -756,8 +790,9 @@ class LocalSchedulerCfg(observer.Observable):
     returns the path of the soma workflow configuration file
     '''
     hostname = socket.gethostname()
+    home_dir = Configuration.get_home_dir() 
     section_exist = False
-    config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
+    config_path = os.path.join(home_dir, ".soma-workflow-scheduler.cfg")
     if os.path.isfile(config_path):
       config_parser = ConfigParser.ConfigParser()
       config_parser.read(config_path)
@@ -803,7 +838,8 @@ class LocalSchedulerCfg(observer.Observable):
       else:
         config_path = LocalSchedulerCfg.search_config_path()
         if config_path == None:
-          config_path = os.path.expanduser("~/.soma-workflow-scheduler.cfg")
+          home_dir = Configuration.get_home_dir()
+          config_path = os.path.join(home_dir, ".soma-workflow-scheduler.cfg")
 
     config_parser = ConfigParser.ConfigParser()
     config_parser.read(config_path)
