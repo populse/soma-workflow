@@ -116,6 +116,7 @@ class Drmaa(Scheduler):
     try:
       self._drmaa.initSession()
     except DrmaaError, e:
+      self.logger.critical("Could not create the DRMAA session: %s" %e )
       raise DRMError("Could not create the DRMAA session: %s" %e )
 
     self._drmaa_implementation = drmaa_implementation
@@ -142,6 +143,7 @@ class Drmaa(Scheduler):
                                 "[void]:" + os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e"))
         self._drmaa.runJob(jobTemplateId)
       except DrmaaError, e:
+        self.logger.critical("%s" %e)
         raise DRMError("%s" %e)
       ################################
 
@@ -170,6 +172,7 @@ class Drmaa(Scheduler):
     try:
       self._drmaa.initSession()
     except DrmaaError, e:
+      self.logger.critical("Could not create the DRMAA session: %s" %e)
       raise DRMError("Could not create the DRMAA session: %s" %e )
 
   def job_submission(self, job):
@@ -247,7 +250,7 @@ class Drmaa(Scheduler):
       drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
       self._drmaa.deleteJobTemplate(drmaaJobId)
     except DrmaaError, e:
-      self.logger.debug("Error in job submission: %s" %(e))
+      self.logger.error("Error in job submission: %s" %(e))
       raise DRMError("Job submission error: %s" %(e))
 
     return drmaaSubmittedJobId
@@ -265,6 +268,7 @@ class Drmaa(Scheduler):
     try:
       status = self._drmaa.jobStatus(scheduler_job_id)
     except DrmaaError, e:
+      self.logger.error("%s" %(e))
       raise DRMError("%s" %(e))
     return status
 
@@ -331,6 +335,7 @@ class Drmaa(Scheduler):
     try:
       self._drmaa.terminate(scheduler_job_id)
     except DrmaaError, e:
+      self.logger.critical("%s" %e)
       raise DRMError("%s" %e)
   
 
