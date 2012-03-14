@@ -1899,7 +1899,9 @@ class WorkflowElementInfo(QtGui.QWidget):
     self.selectionModel = None
     self.infoWidget = None
     self.model = model # used to update stderr and stdout only
-    self.proxy_model = proxy_model
+    self.proxy_model = proxy_model    
+    
+    self.job_info_current_tab = 0
     
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged) 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.clear) 
@@ -1943,13 +1945,18 @@ class WorkflowElementInfo(QtGui.QWidget):
   @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
   def currentChanged(self, current, previous):
     if self.infoWidget:
+      if isinstance(self.infoWidget, JobInfoWidget):
+        self.job_info_current_tab = self.infoWidget.currentIndex()
       self.infoWidget.hide()
       self.vLayout.removeWidget(self.infoWidget)
     if self.proxy_model != None:
       current = self.proxy_model.mapToSource(current)
     item = current.internalPointer()
     if isinstance(item, GuiJob):
-      self.infoWidget = JobInfoWidget(item, self.model.current_connection, self)
+      self.infoWidget = JobInfoWidget(item, 
+                                      self.model.current_connection, 
+                                      self.job_info_current_tab,
+                                      self)
     elif isinstance(item, GuiTransfer):
       self.infoWidget = TransferInfoWidget(item, self)
     elif isinstance(item, GuiGroup):
@@ -1972,7 +1979,11 @@ class WorkflowElementInfo(QtGui.QWidget):
  
 class JobInfoWidget(QtGui.QTabWidget):
   
-  def __init__(self, job_item, connection, parent = None):
+  def __init__(self, 
+               job_item, 
+               connection, 
+               current_tab_index=0, 
+               parent=None):
     super(JobInfoWidget, self).__init__(parent)
     
     self.ui = Ui_JobInfo()
@@ -1986,6 +1997,8 @@ class JobInfoWidget(QtGui.QTabWidget):
     self.currentChanged.connect(self.currentTabChanged)
     self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
     self.ui.stdout_refresh_button.clicked.connect(self.refreshStdErrOut)
+    
+    self.setCurrentIndex(current_tab_index)
     
   def dataChanged(self):
  
