@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>resource_wf_select</class>
- <widget class="QWidget" name="resource_wf_select">
+ <class>ResourceWfSelect</class>
+ <widget class="QWidget" name="ResourceWfSelect">
   <property name="geometry">
    <rect>
     <x>0</x>

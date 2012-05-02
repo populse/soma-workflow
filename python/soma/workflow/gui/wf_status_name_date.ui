@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>WStatusNameDate</class>
+ <widget class="QWidget" name="WStatusNameDate">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>311</width>
-    <height>105</height>
+    <height>106</height>
    </rect>
   </property>
   <property name="windowTitle">

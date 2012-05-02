@@ -21,8 +21,32 @@ import socket
 #import traceback
 #import pdb
 
-from PyQt4 import QtGui, QtCore
-from PyQt4 import uic
+use_py_qt = True
+
+if use_py_qt:
+  print "USE PYQT"
+  # PyQT 
+  from PyQt4 import QtGui, QtCore
+  use_qvariant = False
+  use_qstring = False
+  from PyQt4 import uic
+  from PyQt4.uic import loadUiType
+  import sip
+  if sip.getapi( 'QVariant' ) < 2:
+    use_qvariant = True
+  if sip.getapi( 'QString' ) < 2:
+    use_qstring = True
+  QtCore.Slot = QtCore.pyqtSlot
+  QtCore.Signal = QtCore.pyqtSignal
+else:
+  print "USE PYSIDE"
+  use_qvariant = False
+  use_qstring = False
+
+  # PySide
+  from PySide import QtGui, QtCore
+  from PySide import QtUiTools
+  
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma.workflow.constants as  constants
@@ -32,17 +56,22 @@ from soma.workflow.errors import UnknownObjectError, ConfigurationError, Seriali
 import soma.workflow.utils
 import soma.workflow.version as version
 
+
+MATPLOTLIB = True
 try:
   import matplotlib
   matplotlib.use('Qt4Agg')
+  if not use_py_qt:
+    if 'backend.qt4' in matplotlib.rcParams.keys():
+      matplotlib.rcParams['backend.qt4']='PySide'
+    else:
+      print "Could not use Matplotlib, the backend using PySide is missing."
+      MATPLOTLIB = False
   from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
   from matplotlib.figure import Figure 
 except ImportError, e:
   print "Could not use Matplotlib: %s %s" %(type(e), e)
   MATPLOTLIB = False
-else:
-  MATPLOTLIB = True
-
 
 try:
   from Pyro.errors import ConnectionClosedError
@@ -51,6 +80,7 @@ except ImportError:
   class PyroError(Exception):     pass
   class ProtocolError(PyroError): pass
   class ConnectionClosedError(ProtocolError): pass
+
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -65,51 +95,75 @@ RED=QtGui.QColor(255,100,50)
 GREEN=QtGui.QColor(155,255,50)
 LIGHT_BLUE=QtGui.QColor(200,255,255)
 
-Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                            'JobInfo.ui' ))[0]
 
-Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                        'graphWidget.ui' ))[0]
-
-Ui_PlotWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                         'PlotWidget.ui' ))[0]
-
-Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                       'TransferInfo.ui' ))[0]
-
-Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                          'GroupInfo.ui' ))[0]
-
-Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                 'connection_dlg.ui' ))[0]
-
-Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
-                                                 'workflowExampleDlg.ui' ))[0]
-
-Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
-                                                      'submissionDlg.ui' ))[0]
-
-Ui_ResourceWfSelect = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),  
-                                                      'resource_wf_select.ui' ))[0]
-
-Ui_MainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                 'main_window.ui' ))[0]
-
-Ui_WStatusNameDate = uic.loadUiType(os.path.join( os.path.dirname( __file__ ), 
-                                                 'wf_status_name_date.ui' ))[0]
-
-Ui_SWMiniWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
-                                                          'sw_mini.ui' ))[0]
-
-Ui_SearchWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
-                                                          'search_widget.ui' ))[0]
-
-Ui_LocalSchedulerConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
-                                                          'local_scheduler_widget.ui' ))[0]
-
-
-Ui_WorkflowEngineConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ), 
+if use_py_qt:
+  Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                              'JobInfo.ui' ))[0]
+  
+  Ui_GraphWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                          'graphWidget.ui' ))[0]
+  
+  Ui_PlotWidget = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                           'PlotWidget.ui' ))[0]
+  
+  Ui_TransferInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                         'TransferInfo.ui' ))[0]
+  
+  Ui_GroupInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                            'GroupInfo.ui' ))[0]
+  
+  Ui_ConnectionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                   'connection_dlg.ui' ))[0]
+  
+  Ui_WorkflowExampleDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                   'workflowExampleDlg.ui' ))[0]
+  
+  Ui_SubmissionDlg = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                        'submissionDlg.ui' ))[0]
+  
+  Ui_ResourceWfSelect = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                        'resource_wf_select.ui' ))[0]
+  
+  Ui_MainWindow = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                   'main_window.ui' ))[0]
+  
+  Ui_WStatusNameDate = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                   'wf_status_name_date.ui' ))[0]
+  
+  Ui_SWMiniWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
+                                                            'sw_mini.ui' ))[0]
+  
+  Ui_SearchWidget = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
+                                                            'search_widget.ui' ))[0]
+  
+  Ui_LocalSchedulerConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
+                                                            'local_scheduler_widget.ui' ))[0]
+  
+  
+  Ui_WorkflowEngineConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
                                                           'engine_controller_widget.ui' ))[0]
+
+else:
+  #PySide
+  from soma.workflow.gui.Ui_JobInfo import Ui_JobInfo
+  from soma.workflow.gui.Ui_GraphWidget import Ui_GraphWidget
+  from soma.workflow.gui.Ui_PlotWidget import Ui_PlotWidget
+  from soma.workflow.gui.Ui_TransferInfo import Ui_TransferInfo
+  from soma.workflow.gui.Ui_GroupInfo import Ui_GroupInfo
+  from soma.workflow.gui.Ui_ConnectionDlg import Ui_ConnectionDlg
+  from soma.workflow.gui.Ui_WorkflowExampleDlg import Ui_WorkflowExampleDlg
+  from soma.workflow.gui.Ui_SubmissionDlg import Ui_SubmissionDlg
+  from soma.workflow.gui.Ui_ResourceWfSelect import Ui_ResourceWfSelect
+  from soma.workflow.gui.Ui_MainWindow import Ui_MainWindow
+  from soma.workflow.gui.Ui_WStatusNameDate import Ui_WStatusNameDate
+  from soma.workflow.gui.Ui_SWMiniWidget import Ui_SWMiniWidget
+  from soma.workflow.gui.Ui_SearchWidget import Ui_SearchWidget
+  from soma.workflow.gui.Ui_LocalSchedulerConfigController import Ui_LocalSchedulerConfigController
+  from soma.workflow.gui.Ui_WorkflowEngineConfigController import Ui_WorkflowEngineConfigController
+
+
+
+
 #-----------------------------------------------------------------------------
 # Local utilities
 #-----------------------------------------------------------------------------
@@ -310,20 +364,23 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
     self.connection_changed()
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def raise_sw_widget(self):
     self.sw_widget.raise_()
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def resource_selection_changed(self):
     selected_items = self.ui.table.selectedItems()
     if len(selected_items) == 0:
       return
     item = selected_items[0]
-    rid = unicode(item.data(QtCore.Qt.UserRole).toString()).encode('utf-8')
+    if use_qvariant:
+      rid = unicode(item.data(QtCore.Qt.UserRole).toString()).encode('utf-8')
+    else:
+      rid = unicode(item.data(QtCore.Qt.UserRole)).encode('utf-8')
     self.model.set_current_connection(rid)
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def connection_changed(self):
     if self.model.current_resource_id == None:
       return 
@@ -358,13 +415,13 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     self.ui.table.selectRow(self.resource_ids.index(self.model.current_resource_id))
     self.model.set_no_current_workflow()
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def add_resource(self):
     (resource_id, new_connection) = self.sw_widget.createConnection()
     if new_connection:
       self.model.add_connection(resource_id, new_connection)
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def refresh(self):
     self.ui.table.clear()
     self.ui.table.setColumnCount(3)
@@ -650,7 +707,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       return
 
     wf_ctrl = None
-    QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
     try:
       wf_ctrl = Controller.get_connection(resource_id, 
                                           login, 
@@ -674,7 +731,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     #pass
 
       
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def firstConnection(self):
     resource_id = unicode(self.connection_dlg.ui.combo_resources.currentText())
     if self.connection_dlg.ui.lineEdit_login.text(): 
@@ -694,9 +751,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
     #pass
     
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def openWorkflow(self):
-    file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow");
+    file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow")
+    if not use_qstring:
+      file_path = file_path[0]
     if file_path:
       try:
         workflow = Controller.unserialize_workflow(file_path)
@@ -711,7 +770,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.updateWorkflowList()
 
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def optimize_workflow(self):
     assert(self.model.current_workflow())
     assert(self.model.current_wf_id == NOT_SUBMITTED_WF_ID)
@@ -726,9 +785,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.updateWorkflowList()
     
       
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def saveWorkflow(self):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
+    if not use_qstring:
+      file_path = file_path[0]
+
     if file_path:
       try:
         Controller.serialize_workflow(file_path, self.model.current_workflow())
@@ -736,7 +798,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
         
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def createWorkflowExample(self):
     worflowExample_dlg = QtGui.QDialog(self)
     ui = Ui_WorkflowExampleDlg()
@@ -748,6 +810,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
       example_type = ui.comboBox_example_type.currentIndex()
       file_path = QtGui.QFileDialog.getSaveFileName(self, 
                                                     "Create a workflow example")
+      if not use_qstring:
+        file_path = file_path[0]
       if file_path:
         try:
           wf_examples = WorkflowExamples(with_file_transfer,
@@ -762,7 +826,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
 
         
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def submit_workflow(self,
                       date=None, 
                       name=None,
@@ -792,7 +856,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if submission_dlg.exec_() != QtGui.QDialog.Accepted:
         return (None, None)
 
-      name = ui.lineedit_wf_name.text().toUtf8().data()
+      if use_qstring:
+        name = ui.lineedit_wf_name.text().toUtf8().data()
+      else:
+        name = ui.lineedit_wf_name.text()
       if name == "": name = None
       qtdt = ui.dateTimeEdit_expiration.dateTime()
       date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
@@ -835,7 +902,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     return (workflow.wf_id, self.model.current_resource_id)
 
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def restart_workflow(self):
 
     queue = None
@@ -892,7 +959,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.model.update()
       
   
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def transferInputFiles(self):
     def transfer(self):
       try:
@@ -914,7 +981,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     thread.start()
 
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def transferOutputFiles(self):
     def transfer(self):
       try:
@@ -935,14 +1002,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
     thread.start()
 
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def workflowSelectionChanged(self):
     selected_items = self.ui.list_widget_submitted_wfs.selectedItems()
     if not selected_items:
         return
-    QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+    QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
     try:
-      wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
+      if use_qstring:
+        wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
+      else:
+        wf_id = int( selected_items[0].data(QtCore.Qt.UserRole) )
       if wf_id != NOT_SUBMITTED_WF_ID:
         if self.model.is_loaded_workflow(wf_id):
           self.model.set_current_workflow(wf_id)
@@ -971,7 +1041,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     
 
     
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def resourceSelectionChanged(self, index):
     if index <0 or index >= self.ui.combo_resources.count():
       index = self.ui.combo_resources.findText(self.model.current_resource_id)
@@ -1030,7 +1100,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         QtGui.QMessageBox.information(self, "Connection already exists", "The connection to the resource %s already exists." %(resource_id))
         return (resource_id, None)
 
-      QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+      QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
       try:
         wf_ctrl = Controller.get_connection(resource_id, 
                                             login, 
@@ -1051,7 +1121,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     return (resource_id, None)
 
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def stop_workflow(self):
     assert(self.model.current_workflow() and \
            self.model.current_wf_id != NOT_SUBMITTED_WF_ID)
@@ -1086,7 +1156,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.model.update()
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def delete_workflow(self):
     assert(self.model.current_workflow() and \
            self.model.current_wf_id != NOT_SUBMITTED_WF_ID)
@@ -1126,7 +1196,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                    "queue) using the DRMS interface.")
         
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def change_expiration_date(self):
     dlg = QtGui.QDialog(self)
     ui = Ui_SubmissionDlg()
@@ -1171,14 +1241,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.workflow_info_widget.current_workflow_changed()
       
   
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def currentConnectionChanged(self):
     self.model.clear_current_workflow()
     self.updateWorkflowList()
     index = self.ui.combo_resources.findText(self.model.current_resource_id)
     self.ui.combo_resources.setCurrentIndex(index)
       
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def current_workflow_changed(self):
     if self.model.current_wf_id == None:
       # No workflow
@@ -1237,11 +1307,15 @@ class SomaWorkflowWidget(QtGui.QWidget):
         
         index = None
         for i in range(0, self.ui.list_widget_submitted_wfs.count()):
-          if self.model.current_wf_id == self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]:
+          if use_qstring:
+            wf_id = self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]
+          else:
+            wf_id = int( self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole) )
+          if self.model.current_wf_id == wf_id:
             self.ui.list_widget_submitted_wfs.setCurrentRow(i)
             break
           
-  @QtCore.pyqtSlot()  
+  @QtCore.Slot()
   def refreshWorkflowList(self):
     self.model.clear_current_workflow()
     self.updateWorkflowList(force_not_from_model=True)
@@ -1252,11 +1326,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
     ''' 
     return workflows
 
-  @QtCore.pyqtSlot()  
+  @QtCore.Slot()
   def update_workflow_status_icons(self):
     for i in range(0, self.ui.list_widget_submitted_wfs.count()):
       item = self.ui.list_widget_submitted_wfs.item(i)
-      wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
+      if use_qstring:
+        wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
+      else:
+        wf_id = int( item.data(QtCore.Qt.UserRole) )
       status = self.model.get_workflow_status(self.model.current_resource_id, wf_id)
       icon_path = workflow_status_icon(status)
       if status != constants.WORKFLOW_DONE and icon_path != None:
@@ -1299,7 +1376,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.list_widget_submitted_wfs.addItem(item)
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     
-  #@QtCore.pyqtSlot(QtCore.QString)
+  #@QtCore.Slot(QtCore.QString)
   def reconnectAfterConnectionClosed(self, resource_id=None):
     if resource_id == None:
       resource_id = self.model.current_resource_id
@@ -1366,7 +1443,7 @@ class MainWindow(QtGui.QMainWindow):
       self.mini_widget = SomaWorkflowMiniWidget(self.model,
                                               self.sw_widget,
                                               self)
-      self.mini_widget.layout().setMargin(0)
+      self.mini_widget.layout().setContentsMargins(0,0,0,0)
       self.sw_widget.ui.combo_resources.hide()
       self.sw_widget.ui.resource_selection_frame.layout().addWidget(self.mini_widget)
 
@@ -1458,7 +1535,7 @@ class MainWindow(QtGui.QMainWindow):
     self.showMaximized()
 
      
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def currentConnectionChanged(self):
     self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
       
@@ -1489,7 +1566,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
            (self.assigned_wf_id == self.model.current_wf_id and \
             self.assigned_resource_id == self.model.current_resource_id)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def update_workflow_status(self):
     if self.check_workflow():
       self.update_workflow_status_widgets(self.model.workflow_status,
@@ -1514,7 +1591,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
     self.ui.wf_status_icon.setPixmap(pixmap) 
 
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def current_workflow_changed(self):
     if self.check_workflow():
       self.setEnabled(True)
@@ -1587,7 +1664,7 @@ class SearchWidget(QtGui.QWidget):
     self.ui.status_combo_box.currentIndexChanged.connect(self.status_changed)
 
 
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def status_changed(self, index):
     if self.workflow_tree.proxy_model != None:
       self.workflow_tree.proxy_model.setFilterStatus(self.statuses[index])  
@@ -1692,7 +1769,7 @@ class WorkflowTree(QtGui.QWidget):
 
   assigned_wf_id = None
 
-  selection_model_changed = QtCore.pyqtSignal(['QItemSelectionModel'])
+  selection_model_changed = QtCore.Signal(['QItemSelectionModel'])
 
   tree_view = None
   
@@ -1734,7 +1811,7 @@ class WorkflowTree(QtGui.QWidget):
            (self.assigned_wf_id == self.model.current_wf_id and \
             self.assigned_resource_id == self.model.current_resource_id)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def clear(self):
     if self.item_model:
       if self.assigned_wf_id != None:
@@ -1745,7 +1822,7 @@ class WorkflowTree(QtGui.QWidget):
         self.tree_view.setModel(None)
         #self.item_model.emit(QtCore.SIGNAL("modelReset()"))
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def currentWorkflowAboutToChange(self):
     if self.item_model:
       if self.assigned_wf_id != None:
@@ -1755,7 +1832,7 @@ class WorkflowTree(QtGui.QWidget):
         self.item_model = None
         self.tree_view.setModel(None)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def current_workflow_changed(self):
     if self.model.current_wf_id != None:
       if self.check_workflow():
@@ -1775,7 +1852,7 @@ class WorkflowTree(QtGui.QWidget):
       elif self.assigned_wf_id != None:
         self.setEnabled(False)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def dataChanged(self):
     if self.item_model:
       if self.check_workflow():
@@ -1804,7 +1881,7 @@ class WorkflowGroupInfo(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'),  self.current_workflow_changed)
     self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.dataChanged)
   
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def clear(self):
     if self.infoWidget:
       self.infoWidget.hide()
@@ -1812,7 +1889,7 @@ class WorkflowGroupInfo(QtGui.QWidget):
     self.infoWidget = None
     self.dataChanged()
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def current_workflow_changed(self):
     if self.infoWidget:
       self.infoWidget.hide()
@@ -1823,7 +1900,7 @@ class WorkflowGroupInfo(QtGui.QWidget):
       self.vLayout.addWidget(self.infoWidget)
     self.update()
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def dataChanged(self):
     if self.infoWidget:
       self.infoWidget.dataChanged()
@@ -1854,7 +1931,7 @@ class WorkflowPlot(QtGui.QWidget):
            (self.assigned_wf_id == self.model.current_wf_id and \
             self.assigned_resource_id == self.model.current_resource_id)
   
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def clear(self):
     if self.assigned_wf_id != None:
       self.setEnabled(False)
@@ -1865,7 +1942,7 @@ class WorkflowPlot(QtGui.QWidget):
       self.plotWidget = None
       self.dataChanged()
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def current_workflow_changed(self):
     if self.check_workflow():
       self.setEnabled(True)
@@ -1880,7 +1957,7 @@ class WorkflowPlot(QtGui.QWidget):
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def dataChanged(self):
     if self.plotWidget:
       if self.check_workflow():
@@ -1909,7 +1986,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     
     self.vLayout = QtGui.QVBoxLayout(self)
     
-  @QtCore.pyqtSlot(QtGui.QItemSelectionModel)
+  @QtCore.Slot(QtGui.QItemSelectionModel)
   def setSelectionModel(self, selectionModel):
     if self.selectionModel:
       #patch PyQt 4.7.4: use of old style disconnection 
@@ -1933,7 +2010,7 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.vLayout.removeWidget(self.infoWidget)
       self.infoWidget = None
       
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def clear(self):
     if self.infoWidget:
       self.infoWidget.hide()
@@ -1942,7 +2019,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     self.dataChanged()
     
     
-  @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+  @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
   def currentChanged(self, current, previous):
     if self.infoWidget:
       if isinstance(self.infoWidget, JobInfoWidget):
@@ -1967,7 +2044,7 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.vLayout.addWidget(self.infoWidget)
     self.update()
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def dataChanged(self):
     if self.infoWidget:
       self.infoWidget.dataChanged()
@@ -2033,7 +2110,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setTextEditFromString(self.ui.stderr_file_contents, self.job_item.stderr)
     
   
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def currentTabChanged(self, index):
     if (index == 1 or index == 2) and self.job_item.stdout == "":
       try:
@@ -2043,7 +2120,7 @@ class JobInfoWidget(QtGui.QTabWidget):
       else:
         self.dataChanged() 
       
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def refreshStdErrOut(self):
     try:
       self.job_item.updateStdOutErr(self.connection)
@@ -2155,12 +2232,12 @@ class PlotView(QtGui.QWidget):
     else:
       return datetime.max
     
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def plotTypeChanged(self, index):
     self.plot_type = index
     self.updatePlot()
      
-  QtCore.pyqtSlot()
+  QtCore.Slot()
   def refresh(self):
     self.updatePlot()
      
@@ -2188,7 +2265,15 @@ class PlotView(QtGui.QWidget):
     self.axes = self.figure.add_subplot(111)
     self.axes.hold(True)
     self.canvas = FigureCanvas(self.figure)
-    self.canvas.setParent(self)
+    try:
+      self.canvas.setParent(self)
+    except TypeError, e:
+      print e
+      if use_py_qt:
+        print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow (PyQt4)"
+      else:
+        print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow (PySide)"
+      return
     self.canvas.updateGeometry()
     self.vlayout.addWidget(self.canvas)
     
@@ -2332,23 +2417,23 @@ class WorkflowGraphView(QtGui.QWidget):
     self.workflow = None
     self.dataChanged()
     
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def zoomChanged(self, percentage):
     self.scale_factor = percentage / 100.0
     if self.workflow:
       self.image_label.resize(self.image_label.pixmap().size()*self.scale_factor)
     
-  @QtCore.pyqtSlot(int)
+  @QtCore.Slot(int)
   def adjustSizeChanged(self, state):
     if self.ui.adjust_size_checkBox.isChecked():
       pass
       # TBI
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def refresh(self):
     self.dataChanged(force = True)
     
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def dataChanged(self, force = False):
     if self.workflow and (force or self.ui.checkbox_auto_update.isChecked()):
       image_file_path = self.printWorkflow()
@@ -2512,7 +2597,10 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
 
   def data(self, index, role):
     if not index.isValid():
-      return QtCore.QVariant()
+      if use_qvariant:
+        return QtCore.QVariant()
+      else:
+        return None
   
     item = index.internalPointer()
     
@@ -2638,8 +2726,10 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
           if role == QtCore.Qt.DecorationRole:
             return self.files_under_edition
       
-    
-    return QtCore.QVariant()
+    if use_qvariant:
+      return QtCore.QVariant()
+    else:
+      return None
     
 ########################################################
 #######################   MODEL   ######################
@@ -2800,12 +2890,12 @@ class ApplicationModel(QtCore.QObject):
 
     QtGui.QApplication.instance().lastWindowClosed.connect(self.wait_for_thread)
 
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def threaded_update(self):
     self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=self)
     self.update_thread.start(QtCore.QThread.LowPriority)
   
-  @QtCore.pyqtSlot()
+  @QtCore.Slot()
   def wait_for_thread(self):
     print "wait for soma gui thread"
     if self.update_thread != None:

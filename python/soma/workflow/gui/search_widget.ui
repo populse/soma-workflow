@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>search_widget</class>
- <widget class="QWidget" name="search_widget">
+ <class>SearchWidget</class>
+ <widget class="QWidget" name="SearchWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>42</height>
+    <height>49</height>
    </rect>
   </property>
   <property name="windowTitle">

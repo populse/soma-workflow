@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>sw_mini</class>
- <widget class="QWidget" name="sw_mini">
+ <class>SWMiniWidget</class>
+ <widget class="QWidget" name="SWMiniWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -108,6 +108,18 @@
       <bool>true</bool>
      </attribute>
      <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderStretchLastSection">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="horizontalHeaderVisible">
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderStretchLastSection">
