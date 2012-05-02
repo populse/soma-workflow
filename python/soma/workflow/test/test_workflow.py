@@ -33,7 +33,7 @@ class WorkflowExamples(object):
   
   @staticmethod
   def get_workflow_example_list():
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies"]
   
   def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
@@ -206,6 +206,10 @@ class WorkflowExamples(object):
       workflow = self.serial_jobs()
     elif example_index == 10:
       workflow = self.n_jobs_with_dependencies(500)
+    elif example_index == 11:
+      workflow = self.n_jobs(12000)
+    elif example_index == 12:
+      workflow = self.n_jobs_with_dependencies(2000)
     return workflow
 
   def job1(self):
