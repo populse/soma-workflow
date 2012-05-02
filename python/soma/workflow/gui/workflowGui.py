@@ -145,21 +145,21 @@ if use_py_qt:
 
 else:
   #PySide
-  from soma.workflow.gui.Ui_JobInfo import Ui_JobInfo
-  from soma.workflow.gui.Ui_GraphWidget import Ui_GraphWidget
-  from soma.workflow.gui.Ui_PlotWidget import Ui_PlotWidget
-  from soma.workflow.gui.Ui_TransferInfo import Ui_TransferInfo
-  from soma.workflow.gui.Ui_GroupInfo import Ui_GroupInfo
-  from soma.workflow.gui.Ui_ConnectionDlg import Ui_ConnectionDlg
-  from soma.workflow.gui.Ui_WorkflowExampleDlg import Ui_WorkflowExampleDlg
-  from soma.workflow.gui.Ui_SubmissionDlg import Ui_SubmissionDlg
-  from soma.workflow.gui.Ui_ResourceWfSelect import Ui_ResourceWfSelect
-  from soma.workflow.gui.Ui_MainWindow import Ui_MainWindow
-  from soma.workflow.gui.Ui_WStatusNameDate import Ui_WStatusNameDate
-  from soma.workflow.gui.Ui_SWMiniWidget import Ui_SWMiniWidget
-  from soma.workflow.gui.Ui_SearchWidget import Ui_SearchWidget
-  from soma.workflow.gui.Ui_LocalSchedulerConfigController import Ui_LocalSchedulerConfigController
-  from soma.workflow.gui.Ui_WorkflowEngineConfigController import Ui_WorkflowEngineConfigController
+  from soma.workflow.gui.ui_job_info import Ui_JobInfo
+  from soma.workflow.gui.ui_graph_widget import Ui_GraphWidget
+  from soma.workflow.gui.ui_plot_widget import Ui_PlotWidget
+  from soma.workflow.gui.ui_transfer_info import Ui_TransferInfo
+  from soma.workflow.gui.ui_group_info import Ui_GroupInfo
+  from soma.workflow.gui.ui_connection_dlg import Ui_ConnectionDlg
+  from soma.workflow.gui.ui_workflow_example_dlg import Ui_WorkflowExampleDlg
+  from soma.workflow.gui.ui_submission_dlg import Ui_SubmissionDlg
+  from soma.workflow.gui.ui_resource_wf_select import Ui_ResourceWfSelect
+  from soma.workflow.gui.ui_main_window import Ui_MainWindow
+  from soma.workflow.gui.ui_wf_status_name_date import Ui_WStatusNameDate
+  from soma.workflow.gui.ui_sw_mini_widget import Ui_SWMiniWidget
+  from soma.workflow.gui.ui_search_widget import Ui_SearchWidget
+  from soma.workflow.gui.ui_local_scheduler_cfg_ctrl import Ui_LocalSchedulerConfigController
+  from soma.workflow.gui.ui_workflow_engine_cfg_ctrl import Ui_WorkflowEngineConfigController
 
 
 
