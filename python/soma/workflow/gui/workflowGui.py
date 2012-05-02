@@ -21,32 +21,38 @@ import socket
 #import traceback
 #import pdb
 
-use_py_qt = True
+PYQT = "pyqt"
+PYSIDE = "pyside"
 
-if use_py_qt:
-  print "USE PYQT"
-  # PyQT 
+QT_BACKEND = PYQT
+#QT_BACKEND = PYSIDE
+print "qt backend "  + repr(QT_BACKEND)
+
+if QT_BACKEND == PYQT:
   from PyQt4 import QtGui, QtCore
-  use_qvariant = False
-  use_qstring = False
   from PyQt4 import uic
   from PyQt4.uic import loadUiType
   import sip
+  use_qvariant = False
+  use_qstring = False
   if sip.getapi( 'QVariant' ) < 2:
     use_qvariant = True
   if sip.getapi( 'QString' ) < 2:
     use_qstring = True
   QtCore.Slot = QtCore.pyqtSlot
   QtCore.Signal = QtCore.pyqtSignal
-else:
-  print "USE PYSIDE"
+
+elif QT_BACKEND == PYSIDE:
   use_qvariant = False
   use_qstring = False
 
   # PySide
   from PySide import QtGui, QtCore
   from PySide import QtUiTools
-  
+
+else:
+  raise Exception("PyQt and PySide are the only supported Qt backends.")
+
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma.workflow.constants as  constants
@@ -61,7 +67,7 @@ MATPLOTLIB = True
 try:
   import matplotlib
   matplotlib.use('Qt4Agg')
-  if not use_py_qt:
+  if QT_BACKEND == PYSIDE:
     if 'backend.qt4' in matplotlib.rcParams.keys():
       matplotlib.rcParams['backend.qt4']='PySide'
     else:
@@ -96,7 +102,10 @@ GREEN=QtGui.QColor(155,255,50)
 LIGHT_BLUE=QtGui.QColor(200,255,255)
 
 
-if use_py_qt:
+if QT_BACKEND == PYQT:
+  '''
+  The types can be loaded directly from the ui files (useful during developpement)
+  '''
   Ui_JobInfo = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
                                                               'JobInfo.ui' ))[0]
   
@@ -144,7 +153,6 @@ if use_py_qt:
                                                           'engine_controller_widget.ui' ))[0]
 
 else:
-  #PySide
   from soma.workflow.gui.ui_job_info import Ui_JobInfo
   from soma.workflow.gui.ui_graph_widget import Ui_GraphWidget
   from soma.workflow.gui.ui_plot_widget import Ui_PlotWidget
@@ -754,7 +762,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
   @QtCore.Slot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow")
-    if not use_qstring:
+    if QT_BACKEND == PYSIDE:
       file_path = file_path[0]
     if file_path:
       try:
@@ -788,7 +796,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
   @QtCore.Slot()
   def saveWorkflow(self):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
-    if not use_qstring:
+    if QT_BACKEND == PYSIDE:
       file_path = file_path[0]
 
     if file_path:
@@ -810,7 +818,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
       example_type = ui.comboBox_example_type.currentIndex()
       file_path = QtGui.QFileDialog.getSaveFileName(self, 
                                                     "Create a workflow example")
-      if not use_qstring:
+      if QT_BACKEND == PYSIDE:
         file_path = file_path[0]
       if file_path:
         try:
@@ -2269,10 +2277,7 @@ class PlotView(QtGui.QWidget):
       self.canvas.setParent(self)
     except TypeError, e:
       print e
-      if use_py_qt:
-        print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow (PyQt4)"
-      else:
-        print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow (PySide)"
+      print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND)
       return
     self.canvas.updateGeometry()
     self.vlayout.addWidget(self.canvas)
