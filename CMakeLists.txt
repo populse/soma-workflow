@@ -28,6 +28,20 @@ else()
   endif()
 endif()
 
+# PySide-compatible .ui -> .py generation
+# find_program( PYUIC, "pyside-uic" )
+find_program( PYUIC "pyside-uic" )
+if( NOT PYUIC )
+  find_program( PYUIC "pyuic" )
+endif()
+if( PYUIC )
+  BRAINVISA_GENERATE_TARGET_NAME( target )
+  add_custom_target( ${target} ALL
+    ${PYUIC} -o ui_job_info.py JobInfo.ui
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/python/soma/workflow/gui"
+    DEPENDS "${CMAKE_BINARY_DIR}/python/soma/workflow/gui/JobInfo.ui"
+  )
+endif()
 
 configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py" @ONLY )
 BRAINVISA_INSTALL( FILES "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py"
