@@ -37,12 +37,14 @@ if( NOT PYUIC )
   find_program( PYUIC "pyuic" )
 endif()
 if( PYUIC )
-  BRAINVISA_GENERATE_TARGET_NAME( target )
-  add_custom_target( ${target} ALL
-    ${PYUIC} -o ui_job_info.py JobInfo.ui
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/python/soma/workflow/gui"
-    DEPENDS "${CMAKE_BINARY_DIR}/python/soma/workflow/gui/JobInfo.ui"
-  )
+  message( "run BRAINVISA_PYUIC" )
+  BRAINVISA_PYUIC( JobInfo.ui ui_job_info.py python/soma/workflow/gui )
+#  BRAINVISA_GENERATE_TARGET_NAME( target )
+#  add_custom_target( ${target} ALL
+#    ${PYUIC} -o ui_job_info.py JobInfo.ui
+#    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/python/soma/workflow/gui"
+#    DEPENDS "${CMAKE_BINARY_DIR}/python/soma/workflow/gui/JobInfo.ui"
+#  )
   BRAINVISA_GENERATE_TARGET_NAME( target )
   add_custom_target( ${target} ALL
     ${PYUIC} -o ui_graph_widget.py graphWidget.ui
