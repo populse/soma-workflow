@@ -17,7 +17,7 @@ if __name__=="__main__":
 
   import Pyro.naming
   import Pyro.core
-  from Pyro.errors import PyroError, NamingError
+  from Pyro.errors import PyroError, NamingError, ProtocolError
   
   import soma.workflow.engine
   import soma.workflow.scheduler
@@ -125,7 +125,15 @@ if __name__=="__main__":
                         "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
 
     database_server = Pyro.core.getProxyForURI(uri)
-    
+	
+    try:
+      database_server.test()
+    except ProtocolError,e:
+      raise EngineError("%s %s \n"
+	                "The database server might not be running. "
+                        "Run the following command on %s to start the server: \n"
+                        "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
+
     #Pyro.config.PYRO_MULTITHREADED = 0
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()

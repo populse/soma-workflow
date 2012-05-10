@@ -28,6 +28,9 @@ if __name__ == '__main__':
                                                            database_file, 
                                                            tmp_file_dir_path)
     pass
+
+    def test(self):
+      return True
   
   if not len(sys.argv) == 2:
     sys.stdout.write("start_database_server takes 1 argument: resource id. \n")
