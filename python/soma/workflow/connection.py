@@ -119,10 +119,13 @@ class RemoteConnection( object ):
         line = stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n" 
+                            "process on the remote machine " + repr(cluster_address) + "\n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
                             "\n" + stdout_content + \
-                            "Engine process standard error:\n" 
+                            "**Engine process standard error:** \n" 
                             "\n" + stderr_content )
 
     workflow_engine_uri = line.split()[1] 
@@ -139,10 +142,13 @@ class RemoteConnection( object ):
         line = stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n" 
+                            "process on the remote machine " + repr(cluster_address) + "\n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
                             "\n" + stdout_content + \
-                            "Engine process standard error:\n" 
+                            "**Engine process standard error:** \n" 
                             "\n" + stderr_content )
 
     connection_checker_uri = line.split()[1] 
@@ -159,11 +165,15 @@ class RemoteConnection( object ):
         line = stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n" 
+                            "process on the remote machine " + repr(cluster_address) + "\n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
                             "\n" + stdout_content + \
-                            "Engine process standard error:\n" 
+                            "**Engine process standard error:** \n" 
                             "\n" + stderr_content )
+
     configuration_uri = line.split()[1] 
     client.close()
     
@@ -319,12 +329,14 @@ class LocalConnection( object ):
         line = engine_process.stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n"
+                            "process on the local machine. \n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
                             "\n" + stdout_content + \
-                            "Engine process standard error:\n" 
-                            "\n" + stderr_content)
-
+                            "**Engine process standard error:** \n" 
+                            "\n" + stderr_content )
     workflow_engine_uri = line.split()[1]
     line = engine_process.stdout.readline()
     stdout_content = stdout_content + "\n" + line
@@ -339,11 +351,14 @@ class LocalConnection( object ):
         line = engine_process.stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n" 
-                            "\n" + stdout_content +\
-                            "Engine process standard error:\n" 
-                            "\n" + stderr_content)
+                            "process on the local machine. \n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
+                            "\n" + stdout_content + \
+                            "**Engine process standard error:** \n" 
+                            "\n" + stderr_content )
 
     connection_checker_uri = line.split()[1] 
     line = engine_process.stdout.readline()
@@ -359,12 +374,14 @@ class LocalConnection( object ):
         line = engine_process.stderr.readline()
         stderr_content = stderr_content + "\n" + line
       raise ConnectionError("A problem occured while starting the engine "
-                            "process.\n" 
-                            "Engine process standard output:\n" 
-                            "\n" + stdout_content +\
-                            "Engine process standard error:\n" 
-                            "\n" + stderr_content)
-
+                            "process on the local machine. \n"  
+                            "**More details:**\n"
+                            "**Start engine process command line:** \n"
+                            "\n" + command + "\n\n"
+                            "**Engine process standard output:** \n"
+                            "\n" + stdout_content + \
+                            "**Engine process standard error:** \n" 
+                            "\n" + stderr_content )
     configuration_uri = line.split()[1]
 
     print "workflow_engine_uri: " +  workflow_engine_uri

@@ -119,8 +119,10 @@ if __name__=="__main__":
       uri = ns.resolve(server_name)
       logger.info('Server URI:'+ repr(uri))
     except NamingError,e:
-      raise EngineError("Could not find the database server supposed to be "
-                        "registered on the Pyro name server: %s %s" %(type(e), e))
+      raise EngineError("%s %s \n"   
+                        "Could not find soma-workflow database server. "
+                        "Run the following command on %s to start the server: \n"
+                        "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
 
     database_server = Pyro.core.getProxyForURI(uri)
     

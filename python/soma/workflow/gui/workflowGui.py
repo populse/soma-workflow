@@ -24,12 +24,22 @@ import socket
 PYQT = "pyqt"
 PYSIDE = "pyside"
 
-QT_BACKEND = PYQT
-#QT_BACKEND = PYSIDE
+try:
+  from PyQt4 import QtGui, QtCore
+  QT_BACKEND = PYQT
+except ImportError, e:
+  QT_BACKEND = None
+
+if QT_BACKEND == None:
+  try:
+    from PySide import QtGui, QtCore
+    QT_BACKEND = PYSIDE
+  except ImportError, e:
+    raise Exception("Soma-workflow Gui requires PyQt or PySide.")
+
 print "qt backend "  + repr(QT_BACKEND)
 
 if QT_BACKEND == PYQT:
-  from PyQt4 import QtGui, QtCore
   from PyQt4 import uic
   from PyQt4.uic import loadUiType
   import sip
@@ -46,12 +56,8 @@ elif QT_BACKEND == PYSIDE:
   use_qvariant = False
   use_qstring = False
 
-  # PySide
-  from PySide import QtGui, QtCore
   from PySide import QtUiTools
 
-else:
-  raise Exception("PyQt and PySide are the only supported Qt backends.")
 
 from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
 from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
@@ -252,6 +258,25 @@ def workflow_status_icon(status=None):
   elif status == constants.WARNING:
     file_path = os.path.join(os.path.dirname(__file__),"icon/warning.png")
   return file_path
+
+
+def detailed_critical_message_box(msg, title, parent):
+  long_msg_indic = "**More details:**"
+  if long_msg_indic in msg:
+    indic_index = msg.index(long_msg_indic)
+    long_msg = msg[indic_index + len(long_msg_indic):]
+    short_msg = msg[:indic_index]
+    message_box = QtGui.QMessageBox(parent)
+    message_box.setIcon(QtGui.QMessageBox.Critical)
+    message_box.setWindowTitle(title)
+    message_box.setText(short_msg)
+    message_box.setDetailedText(long_msg)
+    message_box.setSizeGripEnabled(True)
+    message_box.exec_()
+  else:
+    QtGui.QMessageBox.critical(parent, "%s" %(e))
+
+
 
 #-----------------------------------------------------------------------------
 # Classes and functions
@@ -729,7 +754,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.connection_dlg.show()
     except Exception, e:
       QtGui.QApplication.restoreOverrideCursor()
-      QtGui.QMessageBox.critical(self, "Connection failed", "%s" %(e))
+      detailed_critical_message_box(msg=e.__str__(), 
+                                    title="Connection failed",
+                                    parent=self)
       self.connection_dlg.ui.lineEdit_password.clear()
       self.connection_dlg.show()
     else:
@@ -1121,9 +1148,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         return (resource_id, None)
       except Exception, e:
         QtGui.QApplication.restoreOverrideCursor()
-        QtGui.QMessageBox.information(self, 
-                                      "Connection failed", 
-                                      "%s: %s" %(type(e),e))
+        detailed_critical_message_box(msg=e.__str__(), 
+                                      title="Connection failed",
+                                      parent=self)
       else:
         return (resource_id, wf_ctrl)
     return (resource_id, None)

@@ -23,10 +23,11 @@ from soma.workflow.configuration import LocalSchedulerCfg
 
 try:
   from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
+  DRMAA_READY = True
 except ImportError:
   class DrmaaError(Exception): pass 
   class DrmaaJobs(object): pass
-
+  DRMAA_READY = False
 
 class Scheduler(object):
   '''
@@ -112,6 +113,9 @@ class Drmaa(Scheduler):
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
+    if not DRMAA_READY:
+      raise DRMError("ImportError, could not load the sip binding module for Drmaa: "
+                     "soma.workflow.somadrmaajobssip" ) 
     self._drmaa = DrmaaJobs()
     try:
       self._drmaa.initSession()
