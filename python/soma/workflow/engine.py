@@ -317,6 +317,7 @@ class WorkflowEngineLoop(object):
             #job.status = constants.SUBMISSION_PENDING
             self.logger.error("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
             job.status = constants.FAILED
+            job.exit_status = constants.EXIT_ABORTED
             drms_error_jobs[job.job_id] = job
           else:
             drmaa_id_for_db_up[job.job_id] = job.drmaa_id
