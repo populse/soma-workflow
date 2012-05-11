@@ -47,15 +47,15 @@ Documentation
   An extensive documentation_ is available, with ready to use examples_.
 
   .. _Soma-workflow: http://www.brainvisa.info/soma-workflow
-  .. _examples: http://www.brainvisa.info/doc/soma-workflow-2.1/sphinx/examples.html
-  .. _documentation: http://www.brainvisa.info/doc/soma-workflow-2.1/sphinx/index.html
+  .. _examples: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/examples.html
+  .. _documentation: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/index.html
 
 
 Installation
 ------------
 
-  Qt version 4.6.2 or more, PyQt version 4.7.2 or more are required if you want to 
-  use the graphical interface. 
+  Qt version 4.6.2 or more, PyQt version 4.7.2 or more or PySide version 1.1.1 or
+  more are required if you want to use the graphical interface. 
 
   To provide you quickly with a functional application, your own multiple core 
   machine can be used directly and without any configuration to distribute 
