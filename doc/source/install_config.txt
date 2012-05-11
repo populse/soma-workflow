@@ -35,12 +35,12 @@ Requirements
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
 * `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in   
   only required if the computing resource is remote. 
-* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 
 Installation
 ------------
 
-1. Download: `soma-workflow 2.1 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.1.tar.bz2>`_
+1. Download: `soma-workflow 2.2 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.2.tar.bz2>`_
 
 2. Installation:
 
@@ -185,12 +185,19 @@ binding for the DRMAA C library. This section describes a way to compile and
 install this binding together with Soma-workflow:
 
 1. Download bv_maker (a CMake customization of the `BrainVISA project <http://brainvisa.info>`_)
+    
+    ..
+         svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/development/brainvisa-cmake/branches/1.0 /tmp/brainvisa-cmake
+        cd /tmp/brainvisa-cmake
+        cmake -DCMAKE_INSTALL_PREFIX=. .
+        make install
+
 
   ::
     
-    svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/development/brainvisa-cmake/branches/1.0 /tmp/brainvisa-cmake
+    svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/source_views/brainvisa-cmake /tmp/brainvisa-cmake
     cd /tmp/brainvisa-cmake
-    cmake -DCMAKE_INSTALL_PREFIX=. .
+    cmake -DCMAKE_INSTALL_PREFIX=. latest_release
     make install
 
 2. Create the file: $HOME/.brainvisa/bv_maker.cfg with the content: 
@@ -426,7 +433,7 @@ The requirements are thus:
 * Python *version 2.5 or more*
 * `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
 * SQLite *version 3 or more*
-* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 
 More details about the implementation of DRMAA can be found in the server 
 installation section (see :ref:`server_requirements`).
