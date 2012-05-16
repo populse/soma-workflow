@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import with_statement
 '''
 @author: Soizic Laguitton
@@ -1044,7 +1045,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         return
     QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
     try:
-      if use_qstring:
+      if use_qvariant:
         wf_id = selected_items[0].data(QtCore.Qt.UserRole).toInt()[0]
       else:
         wf_id = int( selected_items[0].data(QtCore.Qt.UserRole) )
@@ -1342,7 +1343,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         
         index = None
         for i in range(0, self.ui.list_widget_submitted_wfs.count()):
-          if use_qstring:
+          if use_qvariant:
             wf_id = self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole).toInt()[0]
           else:
             wf_id = int( self.ui.list_widget_submitted_wfs.item(i).data(QtCore.Qt.UserRole) )
@@ -1365,7 +1366,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
   def update_workflow_status_icons(self):
     for i in range(0, self.ui.list_widget_submitted_wfs.count()):
       item = self.ui.list_widget_submitted_wfs.item(i)
-      if use_qstring:
+      if use_qvariant:
         wf_id = item.data(QtCore.Qt.UserRole).toInt()[0]
       else:
         wf_id = int( item.data(QtCore.Qt.UserRole) )
