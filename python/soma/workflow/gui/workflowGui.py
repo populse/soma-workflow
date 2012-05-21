@@ -45,17 +45,13 @@ if QT_BACKEND == PYQT:
   from PyQt4.uic import loadUiType
   import sip
   use_qvariant = False
-  use_qstring = False
   if sip.getapi( 'QVariant' ) < 2:
     use_qvariant = True
-  if sip.getapi( 'QString' ) < 2:
-    use_qstring = True
   QtCore.Slot = QtCore.pyqtSlot
   QtCore.Signal = QtCore.pyqtSignal
 
 elif QT_BACKEND == PYSIDE:
   use_qvariant = False
-  use_qstring = False
 
   from PySide import QtUiTools
 
@@ -892,11 +888,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if submission_dlg.exec_() != QtGui.QDialog.Accepted:
         return (None, None)
 
-      if use_qstring:
-        name = ui.lineedit_wf_name.text().toUtf8().data()
+      if ui.lineedit_wf_name.text():
+        name = unicode(ui.lineedit_wf_name.text()).encode('utf-8') 
       else:
-        name = ui.lineedit_wf_name.text()
-      if name == "": name = None
+        name = None
       qtdt = ui.dateTimeEdit_expiration.dateTime()
       date = datetime(qtdt.date().year(), qtdt.date().month(), qtdt.date().day(), 
                       qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
