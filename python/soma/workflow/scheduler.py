@@ -457,8 +457,8 @@ class LocalScheduler(Scheduler):
       del self._processes[job_id]
 
     # run new jobs
-    while self._queue and \
-          len(self._processes) < self._proc_nb:
+    while (self._queue and
+           len(self._processes) < self._proc_nb):
       job_id = self._queue.pop(0)
       job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
@@ -472,6 +472,7 @@ class LocalScheduler(Scheduler):
       else:
         self._processes[job.job_id] = process
         self._status[job.job_id] = constants.RUNNING
+
 
   def _create_process(self, engine_job):
 
