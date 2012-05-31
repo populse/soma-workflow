@@ -115,6 +115,16 @@ class Job(object):
     Job priority: 0 = low priority. If several Jobs are ready to run at the 
     same time the jobs with higher priority will be submitted first.
 
+  **native_specification**: *string*
+    Some specific option/function of the computing resource you want to use 
+    might not be available among the list of Soma-workflow Job attributes.
+    Use the native specification attribute to define functionality which are
+    specific to the resource you want to use. 
+
+    Example: Specification of a job walltime,
+    using a PBS cluster: native_specification="-l walltime=10:00:00", 
+    using a SGE cluster: native_specifivation="-l h_rt=10:00:00".
+
   **parallel_job_info**: *tuple(string, int)*
     The parallel job information must be set if the Job is parallel (ie. made to
     run on several CPU).
@@ -128,7 +138,6 @@ class Job(object):
   ..
     **disposal_time_out**: int
     Only requiered outside of a workflow
-
   '''
 
   # sequence of sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)
@@ -179,7 +188,8 @@ class Job(object):
                 stderr_file=None,
                 working_directory=None,
                 parallel_job_info=None,
-                priority=0):
+                priority=0,
+                native_specification=None):
     if not name:
       self.name = command[0]
     else:
@@ -199,6 +209,7 @@ class Job(object):
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
     self.priority = priority
+    self.native_specification = native_specification
 
 
 class Workflow(object):
@@ -1458,12 +1469,21 @@ class Helper(object):
 
     Raises *SerializationError*
     '''
+    
     try:
       file = open(file_path, "r")
       workflow = pickle.load(file)
       file.close()
     except Exception, e:
       raise SerializationError("%s: %s" %(type(e), e))
+
+    # compatibility with version 2.2 and previous
+    for job in workflow.jobs:
+      if not hasattr(job, "native_specification"):
+        job.native_specification = None
+      else: 
+        print "job.native_specification " + repr(job.native_specification) 
+
     return workflow
 
 

@@ -200,7 +200,7 @@ class Drmaa(Scheduler):
     else:
       command = job_command
 
-    #self.logger.debug("command: " + repr(command))
+    self.logger.debug("command: " + repr(command))
     
     stdout_file = job.plain_stdout()
     stderr_file = job.plain_stderr()
@@ -238,10 +238,18 @@ class Drmaa(Scheduler):
       if working_directory:
         self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
 
-      if job.queue:
+      self.logger.debug("JOB NATIVE_SPEC " + repr(job.native_specification))
+      if job.queue and job.native_specification:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue) + " " + str(job.native_specification))
+        self.logger.debug("NATIVE specification " + "-q " + str(job.queue) + " " + str(job.native_specification))
+      elif job.queue:
         self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
+        self.logger.debug("NATIVE specification " + "-q " + str(job.queue))
+      elif job.native_specification:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", str(job.native_specification))
+        self.logger.debug("NATIVE specification " + str(job.native_specification))
 
-      #self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-l h_rt=0:0:30" )
+
       
       if job.parallel_job_info :
         parallel_config_name, max_node_number = job.parallel_job_info
