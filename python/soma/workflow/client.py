@@ -121,8 +121,8 @@ class Job(object):
     Use the native specification attribute to define functionality which are
     specific to the resource you want to use. 
 
-    Example: Specification of a job walltime,
-    using a PBS cluster: native_specification="-l walltime=10:00:00", 
+    Example: Specification of a job walltime and more
+    using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb", 
     using a SGE cluster: native_specifivation="-l h_rt=10:00:00".
 
   **parallel_job_info**: *tuple(string, int)*
@@ -1481,8 +1481,6 @@ class Helper(object):
     for job in workflow.jobs:
       if not hasattr(job, "native_specification"):
         job.native_specification = None
-      else: 
-        print "job.native_specification " + repr(job.native_specification) 
 
     return workflow
 

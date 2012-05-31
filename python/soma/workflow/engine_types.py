@@ -84,7 +84,8 @@ class EngineJob(Job):
                                     client_job.stderr_file ,
                                     client_job.working_directory ,
                                     client_job.parallel_job_info,
-                                    client_job.priority)
+                                    client_job.priority,
+                                    client_job.native_specification)
     
     self.job_id = -1
 
