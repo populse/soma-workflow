@@ -33,7 +33,7 @@ class WorkflowExamples(object):
   
   @staticmethod
   def get_workflow_example_list():
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies", "native specification for PBS"]
   
   def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
@@ -210,29 +210,31 @@ class WorkflowExamples(object):
       workflow = self.n_jobs(12000)
     elif example_index == 12:
       workflow = self.n_jobs_with_dependencies(2000)
+    elif example_index == 13:
+      workflow = self.native_spec_pbs()
     return workflow
 
-  def job1(self):
+  def job1(self, option=None):
     if self.with_transfers and not self.with_shared_resource_path: 
       job1 = Job(["python", self.tr_script1, self.tr_file0,  self.tr_file11, self.tr_file12, "20"], 
                   [self.tr_file0, self.tr_script1, self.tr_stdin1], 
                   [self.tr_file11, self.tr_file12], 
-                  self.tr_stdin1, False, 168, "job1")
+                  self.tr_stdin1, False, 168, "job1", native_specification=option)
     elif self.with_transfers and self.with_shared_resource_path:
       job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.tr_file11, self.tr_file12, "20"], 
                   [], 
                   [self.tr_file11, self.tr_file12], 
-                  self.sh_stdin1, False, 168, "job1")
+                  self.sh_stdin1, False, 168, "job1", native_specification=option)
     elif not self.with_transfers and self.with_shared_resource_path:
       job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.sh_file11, self.sh_file12, "20"], 
                   None, 
                   None, 
-                  self.sh_stdin1, False, 168, "job1")
+                  self.sh_stdin1, False, 168, "job1", native_specification=option)
     else:
       job1 = Job( ["python", self.lo_script1, self.lo_file0,  self.lo_file11, self.lo_file12, "20"], 
                   None, 
                   None, 
-                  self.lo_stdin1,  False, 168, "job1")
+                  self.lo_stdin1,  False, 168, "job1", native_specification=option)
     return job1
     
   def job2(self):
@@ -468,6 +470,22 @@ class WorkflowExamples(object):
     workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
     
     return workflow
+
+
+  def native_spec_pbs(self):
+     # jobs
+    job1 = self.job1(option="-l walltime=5:00:00,pmem=16gb")
+    job2 = self.job1(option="-l walltime=5:00:0")
+    job3 = self.job1()
+    
+    #building the workflow
+    jobs = [job1, job2, job3]
+    
+    workflow = Workflow(jobs, dependencies=[], name="jobs with native spec for pbs")
+    
+    return workflow
+
+ 
   
   def simpleExampleWithException1(self):
                                                           
