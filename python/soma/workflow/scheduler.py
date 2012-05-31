@@ -262,6 +262,12 @@ class Drmaa(Scheduler):
       drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
       self._drmaa.deleteJobTemplate(drmaaJobId)
     except DrmaaError, e:
+      try:
+        f = open(stderr_file, "wa")
+        f.write("Error in job submission: %s" %(e))
+        f.close()
+      except IOError, ioe:
+        pass
       self.logger.error("Error in job submission: %s" %(e))
       raise DRMError("Job submission error: %s" %(e))
 

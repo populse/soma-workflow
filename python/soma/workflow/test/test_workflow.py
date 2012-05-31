@@ -33,7 +33,7 @@ class WorkflowExamples(object):
   
   @staticmethod
   def get_workflow_example_list():
-    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies", "native specification for PBS"]
+    return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies", "native specification for PBS", "wrong native specification for PBS"]
   
   def __init__(self, with_tranfers, with_shared_resource_path = False):
     '''
@@ -212,6 +212,8 @@ class WorkflowExamples(object):
       workflow = self.n_jobs_with_dependencies(2000)
     elif example_index == 13:
       workflow = self.native_spec_pbs()
+    elif example_index == 14:
+      workflow = self.wrong_native_spec_pbs()
     return workflow
 
   def job1(self, option=None):
@@ -468,6 +470,19 @@ class WorkflowExamples(object):
     group_2 = Group(name='group_2', elements=[job1, group_1])
     
     workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
+    
+    return workflow
+
+  def wrong_native_spec_pbs(self):
+     # jobs
+    job1 = self.job1(option="-l walltime=5:00:00, pmem=16gb")
+    job2 = self.job1(option="-l walltime=5:00:0")
+    job3 = self.job1()
+    
+    #building the workflow
+    jobs = [job1, job2, job3]
+    
+    workflow = Workflow(jobs, dependencies=[], name="jobs with wrong native spec for pbs")
     
     return workflow
 
