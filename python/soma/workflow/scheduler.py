@@ -462,7 +462,7 @@ class LocalScheduler(Scheduler):
       job_id = self._queue.pop(0)
       job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
-      process = self._create_process(job)
+      process = LocalScheduer.create_process(job)
       if process == None:
         self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
                                    None,
@@ -474,7 +474,13 @@ class LocalScheduler(Scheduler):
         self._status[job.job_id] = constants.RUNNING
 
 
-  def _create_process(self, engine_job):
+  @staticmethod
+  def create_process(engine_job):
+    '''
+    * engine_job *EngineJob*
+   
+    * returns: *Subprocess process* 
+    '''
 
     command = engine_job.plain_command()
 
