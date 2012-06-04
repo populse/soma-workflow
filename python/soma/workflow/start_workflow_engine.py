@@ -138,12 +138,18 @@ if __name__=="__main__":
     Pyro.core.initServer()
     daemon = Pyro.core.Daemon()
 
-    drmaa = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
-                                  config.get_parallel_job_config(),
-                                  os.path.expanduser("~"))
+    if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
+      sch = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
+                                    config.get_parallel_job_config(),
+                                    os.path.expanduser("~"))
+    elif config.get_scheduler_type() == soma.workflow.configuration.LOCAL_SCHEDULER:
+      from soma.workflow.scheduler import ConfiguredLocalScheduler
+      local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()
+      sch = ConfiguredLocalScheduler(local_scheduler_config)
+
 
     workflow_engine = ConfiguredWorkflowEngine(database_server, 
-                                               drmaa,
+                                               sch,
                                                config)
 
     # connection to the pyro daemon and output its URI 
@@ -200,7 +206,7 @@ if __name__=="__main__":
     logger.info("******** jobs are done ! ***************************")
     workflow_engine.engine_loop_thread.stop()
 
-    drmaa.clean()
+    sch.clean()
     sys.exit()
   
   if not len(sys.argv) == 3 and not len(sys.argv) == 4:

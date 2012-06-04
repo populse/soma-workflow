@@ -490,10 +490,11 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
       self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(icon, repr(len(status_list)) + " workflows" + to_display))
       resource = self.model.resource_pool.connection(rid)
       if resource.config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-        scheduler_widget = LocalSchedulerConfigController(resource.scheduler_config, 
-                                                          self)
-        self.ui.table.setCellWidget(row, 2, scheduler_widget)
-        self.ui.table.resizeColumnToContents(2)
+        if resource.scheduler_config:
+          scheduler_widget = LocalSchedulerConfigController(resource.scheduler_config, 
+                                                            self)
+          self.ui.table.setCellWidget(row, 2, scheduler_widget)
+          self.ui.table.resizeColumnToContents(2)
       elif resource.engine_config_proxy.get_queue_limits():
         controller_widget = WorkflowEngineConfigController(resource.engine_config_proxy, 
                                                 self)

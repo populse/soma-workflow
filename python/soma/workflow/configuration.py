@@ -43,6 +43,7 @@ OCFG => Optional
 CFG_CLUSTER_ADDRESS = 'CLUSTER_ADDRESS'
 CFG_SUBMITTING_MACHINES = 'SUBMITTING_MACHINES'
 OCFG_DRMAA_IMPLEMENTATION = 'DRMAA_IMPLEMENTATION'
+OCFG_SCHEDULER_TYPE = 'SCHEDULER_TYPE'
 
 
 #OCFG_QUEUES is a list of queue name separated by white spaces.
@@ -311,7 +312,6 @@ class Configuration(observer.Observable):
       return config
 
     else:
-      scheduler_type = DRMAA_SCHEDULER
 
       if config_path == None:
         raise ConfigurationError("A configuration file is required to connect " 
@@ -322,6 +322,12 @@ class Configuration(observer.Observable):
       if not config_parser.has_section(resource_id):
         raise ConfigurationError("Can not find section " + resource_id + " "
                                 "in configuration file: " + config_path)
+
+      scheduler_type = None
+      if config_parser.has_option(resource_id, OCFG_SCHEDULER_TYPE):
+        scheduler_type = config_parser.get(resource_id, OCFG_SCHEDULER_TYPE)
+      if scheduler_type not in SCHEDULER_TYPES:
+        scheduler_type = DRMAA_SCHEDULER
 
       config = cls(resource_id=resource_id,
                    mode=None,
