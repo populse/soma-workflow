@@ -10,29 +10,28 @@ import atexit
 
 def slave_loop(communicator, cpu_count=1):
     status = MPI.Status()
-    to_send = True
+    rank = communicator.Get_rank()
     while True:
         processes = {}
-        if to_send:
-            communicator.send(cpu_count, dest=0,
-                             tag=MPIScheduler.JOB_REQUEST)
-            to_send = False
+        communicator.send(cpu_count, dest=0,
+                          tag=MPIScheduler.JOB_REQUEST)
         communicator.Probe(source=MPI.ANY_SOURCE,
                            tag=MPI.ANY_TAG, status=status)
-        print "job request slave " + repr(communicator.Get_rank())
+        print "Slave " + repr(rank) + " job request"         
         t = status.Get_tag()
         if t == MPIScheduler.job_sending:
             job_list = communicator.recv(source=0, tag=t)
             for j in job_list:
+                print "Slave " + repr(rank) + " RUNS JOB"
                 process = scheduler.LocalScheduler.create_process(j)
                 processes[j.job_id] = process
         elif t == MPIScheduler.NO_JOB:
             communicator.recv(source=0, tag=t)
-            print "received no job " + repr(processes)
+            print "Slave " + repr(rank) + " received no job " + repr(processes)
             time.sleep(1)
         elif t == MPIScheduler.EXIT_SIGNAL:
             communicator.send('STOP', dest=0, tag=MPIScheduler.EXIT_SIGNAL)
-            print "STOP !!!!! received (slave %d)" % communicator.Get_rank()
+            print "Slave " + repr(rank) + "STOP !!!!! received"
             break
         else:
             raise Exception('Unknown tag')
@@ -43,6 +42,7 @@ def slave_loop(communicator, cpu_count=1):
             else:
                 returns[job_id] = process.wait()
         if returns:
+            print "Salve " + repr(rank) + " send job_result"
             communicator.send(returns, dest=0,
                               tag=MPIScheduler.job_result)
 
@@ -98,11 +98,11 @@ class MPIScheduler(scheduler.Scheduler):
         self._interval = interval
 
         def master_loop(self):
-            self._stopped_saves = 0
+            self._stopped_slaves = 0
             while not self.stop_thread_loop:
                 with self._lock:
                     self._master_iteration()
-                # time.sleep(self._interval)
+                time.sleep(self._interval)
 
         self._loop = threading.Thread(name="scheduler_loop",
                                       target=master_loop,
@@ -119,7 +119,6 @@ class MPIScheduler(scheduler.Scheduler):
             print "Soma scheduler thread ended nicely."
 
     def _master_iteration(self):
-        print "master iteration"
         MPIStatus = MPI.Status()
         #if not self._queue:
         #    return
@@ -131,7 +130,7 @@ class MPIScheduler(scheduler.Scheduler):
             print "Master received the JOB_REQUEST signal"
             s = MPIStatus.Get_source()
             if not self._queue:
-                print "No job for now"
+                print "Master No job for now"
                 self._communicator.recv(source=s, 
                                         tag=MPIScheduler.JOB_REQUEST)
                 self._communicator.send("No job for now", 
@@ -139,6 +138,7 @@ class MPIScheduler(scheduler.Scheduler):
                                         tag=MPIScheduler.NO_JOB)            
                 time.sleep(self._interval)
             else:
+                print "Master send a Job !!!"
                 self._communicator.recv(source=s, tag=MPIScheduler.JOB_REQUEST)
                 job_id = self._queue.pop(0)
                 job_list = [self._jobs[job_id]]
@@ -167,7 +167,7 @@ class MPIScheduler(scheduler.Scheduler):
             if self._stopped_slaves == self._communicator.size -1:
               self.stop_thread_loop = True
         else:
-          print "Unknown tag"
+          print "Master unknown tag"
         #else:
         #    print "sleep"
         #    time.sleep(self._interval)
@@ -196,6 +196,7 @@ class MPIScheduler(scheduler.Scheduler):
             self._status[job.job_id] = constants.QUEUED_ACTIVE
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
+            print "A Job was submitted " + repr(self._queue)
         return job.job_id
 
     def get_job_status(self, scheduler_job_id):
@@ -248,6 +249,7 @@ if rank == 0:
     r_param = abs(np.random.randn(max_elt))
     tasks = []
     for r in r_param:
+    
         mon_job = EngineJob(Job(command=['echo', '%f' % r], name="job"),
                             queue='toto')
         mon_job.job_id = '%s ' % mon_job.command
