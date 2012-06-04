@@ -462,7 +462,7 @@ class LocalScheduler(Scheduler):
       job_id = self._queue.pop(0)
       job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
-      process = LocalScheduer.create_process(job)
+      process = LocalScheduler.create_process(job)
       if process == None:
         self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
                                    None,
