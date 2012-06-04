@@ -260,21 +260,6 @@ if rank == 0:
         mon_job.job_id = '%s ' % mon_job.command
         tasks.append(mon_job)
         sch.job_submission(mon_job)
-    ## status = MPI.Status()
-
-    ## for task in tasks:
-    ##     # print 'ask me.'
-    ##     send_task = False
-    ##     while send_task == False:
-    ##         comm.Probe(source=MPI.ANY_SOURCE, tag=11, status=status)
-    ##         s = status.Get_source()
-    ##         data = comm.recv(source=s, tag=11)
-    ##         # print "receive %s from %d " % (data, s)
-    ##         if data == 'JOB_PLEASE':
-    ##             comm.send(task, dest=s, tag=12)
-    ##         else:
-    ##             print 'bad message from %d' % s
-    ##         send_task = True
     time.sleep(20)
     for slave in range(1, comm.size):
         logger.debug("STOP STOP STOP STOP STOP STOP STOP STOP slave " + repr(slave))
