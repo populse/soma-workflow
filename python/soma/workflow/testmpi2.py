@@ -4,6 +4,7 @@ import threading
 import subprocess
 import atexit
 import logging
+import sys
 
 from mpi4py import MPI
 
@@ -245,27 +246,59 @@ if __name__ == '__main__':
 print rank
 # master code
 if rank == 0:
+    from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
+    from soma.workflow.database_server import WorkflowDatabaseServer
+    from soma.workflow.client import Helper
+    import soma.workflow.configuration
+
+    if not len(sys.argv) == 3:
+      raise Exception("Mandatory arguments: \n"
+                      " 1. resource id. \n"
+                      " 2. workflow file to run. \n")
+
+    resource_id = sys.argv[1]
+    workflow_file = sys.argv[2]
+
+    config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
+    
     logging.basicConfig(filename="/tmp/logtestmpi",
                         format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
                         level=logging.DEBUG)
     logger = logging.getLogger("testMPI")
-    # on initie les differents process Engine, etc...
+
+    database_server = WorkflowDatabaseServer(config.get_database_file(),
+                                             config.get_transfered_file_dir())
+
     sch = MPIScheduler(comm, interval=1)
-    # a partir d'ici on gere le schedeling (ie. soumission, stop, status)
-    import numpy as np
-    max_elt = 10
-    r_param = abs(np.random.randn(max_elt))
-    tasks = []
-    for r in r_param:
+
+    workflow_engine = ConfiguredWorkflowEngine(database_server,
+                                               sch,
+                                               config)
     
-        mon_job = EngineJob(Job(command=['echo', '%f' % r], name="job"),
-                            queue='toto')
-        mon_job.job_id = '%s ' % mon_job.command
-        tasks.append(mon_job)
-        sch.job_submission(mon_job)
+    workflow = Helper.unserialize(workflow_file)
+    workflow_engine.submit_workflow(workflow,
+                                    expiration_date=None,
+                                    name=None,
+                                    queue=None)
     
-    while sch.queued_job_count() > 0:
-        time.sleep(2) 
+    #import numpy as np
+    #max_elt = 10
+    #r_param = abs(np.random.randn(max_elt))
+    #tasks = []
+    #for r in r_param:
+    #
+    #    mon_job = EngineJob(Job(command=['echo', '%f' % r], name="job"),
+    #                        queue='toto')
+    #    mon_job.job_id = '%s ' % mon_job.command
+    #    tasks.append(mon_job)
+    #    sch.job_submission(mon_job)
+ 
+    #while sch.queued_job_count() > 0:
+    #    time.sleep(2) 
+   
+ 
+    while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
+        time.sleep(2)
     for slave in range(1, comm.size):
         logger.debug("STOP STOP STOP STOP STOP STOP STOP STOP slave " + repr(slave))
         comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
