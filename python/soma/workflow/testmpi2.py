@@ -241,70 +241,69 @@ if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.size
+        
     
-
-print rank
-# master code
-if rank == 0:
-    from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
-    from soma.workflow.database_server import WorkflowDatabaseServer
-    from soma.workflow.client import Helper
-    import soma.workflow.configuration
-
-    if not len(sys.argv) == 3:
-      raise Exception("Mandatory arguments: \n"
-                      " 1. resource id. \n"
-                      " 2. workflow file to run. \n")
-
-    resource_id = sys.argv[1]
-    workflow_file = sys.argv[2]
-
-    config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
+    print rank
+    # master code
+    if rank == 0:
+        from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
+        from soma.workflow.database_server import WorkflowDatabaseServer
+        from soma.workflow.client import Helper
+        import soma.workflow.configuration
     
-    logging.basicConfig(filename="/tmp/logtestmpi",
-                        format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
-                        level=logging.DEBUG)
-    logger = logging.getLogger("testMPI")
-
-    database_server = WorkflowDatabaseServer(config.get_database_file(),
-                                             config.get_transfered_file_dir())
-
-    sch = MPIScheduler(comm, interval=1)
-
-    workflow_engine = ConfiguredWorkflowEngine(database_server,
-                                               sch,
-                                               config)
+        if not len(sys.argv) == 3:
+          raise Exception("Mandatory arguments: \n"
+                          " 1. resource id. \n"
+                          " 2. workflow file to run. \n")
     
-    workflow = Helper.unserialize(workflow_file)
-    workflow_engine.submit_workflow(workflow,
-                                    expiration_date=None,
-                                    name=None,
-                                    queue=None)
+        resource_id = sys.argv[1]
+        workflow_file = sys.argv[2]
     
-    #import numpy as np
-    #max_elt = 10
-    #r_param = abs(np.random.randn(max_elt))
-    #tasks = []
-    #for r in r_param:
-    #
-    #    mon_job = EngineJob(Job(command=['echo', '%f' % r], name="job"),
-    #                        queue='toto')
-    #    mon_job.job_id = '%s ' % mon_job.command
-    #    tasks.append(mon_job)
-    #    sch.job_submission(mon_job)
- 
-    #while sch.queued_job_count() > 0:
-    #    time.sleep(2) 
+        config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
+        
+        logging.basicConfig(filename="/home/sl231636/logtestmpi",
+                            format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
+                            level=logging.DEBUG)
+        logger = logging.getLogger('testMPI')
+        logger.addFilter(logging.Filter('testMPI'))
    
- 
-    while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
-        time.sleep(2)
-    for slave in range(1, comm.size):
-        logger.debug("STOP STOP STOP STOP STOP STOP STOP STOP slave " + repr(slave))
-        comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-    while not sch.stop_thread_loop:
-        time.sleep(1)
-    logger.debug("### master ends ###")
-# slave code
-else:
-    slave_loop(comm)
+        logger.info(" ")
+	logger.info(" ")
+        logger.info(" ")
+        logger.info(" ")
+        logger.info(" ")
+        logger.info(" ")
+        logger.info("################ MASTER STARTS ####################")
+    
+        database_server = WorkflowDatabaseServer(config.get_database_file(),
+                                                 config.get_transfered_file_dir())
+    
+        sch = MPIScheduler(comm, interval=1)
+    
+        workflow_engine = ConfiguredWorkflowEngine(database_server,
+                                                   sch,
+                                                   config)
+        
+        workflow = Helper.unserialize(workflow_file)
+        workflow_engine.submit_workflow(workflow,
+                                        expiration_date=None,
+                                        name=None,
+                                        queue=None)
+        
+     
+        while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
+            time.sleep(2)
+        for slave in range(1, comm.size):
+            logger.debug("STOP !!!  slave " + repr(slave))
+            comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+        while not sch.stop_thread_loop:
+            time.sleep(1)
+        logger.debug("######### master ends #############")
+    # slave code
+    else:
+        logging.basicConfig(filename="/home/sl231636/logtestmpi",
+                            format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
+                            level=logging.DEBUG)
+        logger = logging.getLogger("testMPI.slave")
+    
+        slave_loop(comm)
