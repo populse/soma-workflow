@@ -237,6 +237,7 @@ class Configuration(observer.Observable):
       self._queue_limits = {}
     else:
       self._queue_limits = queue_limits
+    self._queue_limits_disabled = False 
     self._drmaa_implementation = drmaa_implementation
     self.parallel_job_config = None
     self.path_translation = None
@@ -598,9 +599,12 @@ class Configuration(observer.Observable):
  
 
   def disable_queue_limits(self):
-    self._queue_limits = {} 
+    self._queue_limits_disabled = True 
 
   def get_queue_limits(self):
+    if self._queue_limits_disabled:
+      return {}
+
     if self._config_parser == None or len(self._queue_limits) != 0:
       return self._queue_limits
 
