@@ -199,7 +199,7 @@ class WorkflowExamples(object):
     elif example_index == 6:
       workflow = self.n_jobs(500)
     elif example_index == 7:
-      workflow = self.n_jobs(50)
+      workflow = self.n_jobs(10)
     elif example_index == 8:
       workflow = self.fake_pipelineT1()
     elif example_index == 9:

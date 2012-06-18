@@ -106,8 +106,7 @@ class MPIScheduler(scheduler.Scheduler):
         def master_loop(self):
             self._stopped_slaves = 0
             while not self.stop_thread_loop:
-                with self._lock:
-                    self._master_iteration()
+                self._master_iteration()
                 #time.sleep(0)#self._interval)
 
         self._loop = threading.Thread(name="scheduler_loop",
@@ -131,48 +130,49 @@ class MPIScheduler(scheduler.Scheduler):
         self._communicator.Probe(source=MPI.ANY_SOURCE,
                                      tag=MPI.ANY_TAG,
                                      status=MPIStatus)
-        t = MPIStatus.Get_tag()
-        if t == MPIScheduler.JOB_REQUEST:
-            self._logger.debug("Master received the JOB_REQUEST signal")
-            s = MPIStatus.Get_source()
-            if not self._queue:
-                self._logger.debug("Master No job for now")
-                self._communicator.recv(source=s, 
-                                        tag=MPIScheduler.JOB_REQUEST)
-                self._communicator.send("No job for now", 
-                                        dest=s,
-                                        tag=MPIScheduler.NO_JOB)            
-            else:
-                self._logger.debug("Master send a Job !!!")
-                self._communicator.recv(source=s, tag=MPIScheduler.JOB_REQUEST)
-                job_id = self._queue.pop(0)
-                job_list = [self._jobs[job_id]]
-                self._communicator.send(job_list, dest=s,
-                                      tag=MPIScheduler.JOB_SENDING)
-                for j in job_list:
-                    self._status[j.job_id] = constants.RUNNING
-        elif t == MPIScheduler.JOB_RESULT:
-            self._logger.debug("Master received the JOB_RESULT signal")
-            s = MPIStatus.Get_source()
-            results = self._communicator.recv(source=s,
-                                              tag=MPIScheduler.JOB_RESULT)
-            for job_id, ret_value in results.iteritems():
-                if ret_value != None:
-                    self._exit_info[job_id] = (
-                                           constants.FINISHED_REGULARLY,
-                                           ret_value, None, None)
-                    self._status[job_id] = constants.DONE
+        with self._lock:
+            t = MPIStatus.Get_tag()
+            if t == MPIScheduler.JOB_REQUEST:
+                self._logger.debug("Master received the JOB_REQUEST signal")
+                s = MPIStatus.Get_source()
+                if not self._queue:
+                    self._logger.debug("Master No job for now")
+                    self._communicator.recv(source=s, 
+                                            tag=MPIScheduler.JOB_REQUEST)
+                    self._communicator.send("No job for now", 
+                                            dest=s,
+                                            tag=MPIScheduler.NO_JOB)            
                 else:
-                    self._exit_info[job_id] = (constants.EXIT_ABORTED,
-                                           None, None, None)
-                    self._status[job_id] = constants.FAILED
-        elif t == MPIScheduler.EXIT_SIGNAL:
-            self._logger.debug("Master received the EXIT_SIGNAL")
-            self._stopped_slaves = self._stopped_slaves + 1
-            if self._stopped_slaves == self._communicator.size -1:
-              self.stop_thread_loop = True
-        else:
-            self._logger.critical("Master unknown tag")
+                    self._logger.debug("Master send a Job !!!")
+                    self._communicator.recv(source=s, tag=MPIScheduler.JOB_REQUEST)
+                    job_id = self._queue.pop(0)
+                    job_list = [self._jobs[job_id]]
+                    self._communicator.send(job_list, dest=s,
+                                          tag=MPIScheduler.JOB_SENDING)
+                    for j in job_list:
+                        self._status[j.job_id] = constants.RUNNING
+            elif t == MPIScheduler.JOB_RESULT:
+                self._logger.debug("Master received the JOB_RESULT signal")
+                s = MPIStatus.Get_source()
+                results = self._communicator.recv(source=s,
+                                                  tag=MPIScheduler.JOB_RESULT)
+                for job_id, ret_value in results.iteritems():
+                    if ret_value != None:
+                        self._exit_info[job_id] = (
+                                               constants.FINISHED_REGULARLY,
+                                               ret_value, None, None)
+                        self._status[job_id] = constants.DONE
+                    else:
+                        self._exit_info[job_id] = (constants.EXIT_ABORTED,
+                                               None, None, None)
+                        self._status[job_id] = constants.FAILED
+            elif t == MPIScheduler.EXIT_SIGNAL:
+                self._logger.debug("Master received the EXIT_SIGNAL")
+                self._stopped_slaves = self._stopped_slaves + 1
+                if self._stopped_slaves == self._communicator.size -1:
+                  self.stop_thread_loop = True
+            else:
+                self._logger.critical("Master unknown tag")
 
     def sleep(self):
         self.is_sleeping = True
