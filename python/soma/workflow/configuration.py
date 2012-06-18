@@ -595,7 +595,10 @@ class Configuration(observer.Observable):
     self.get_queue_limits()
     self._queue_limits[queue_name] = queue_limit
     self.notifyObservers(Configuration.QUEUE_LIMITS_CHANGED)
-  
+ 
+
+  def disable_queue_limits(self):
+    self._queue_limits = {} 
 
   def get_queue_limits(self):
     if self._config_parser == None or len(self._queue_limits) != 0:

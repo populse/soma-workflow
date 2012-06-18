@@ -280,6 +280,8 @@ if __name__ == '__main__':
     
         sch = MPIScheduler(comm, interval=1)
     
+        config.disable_queue_limits()    
+        
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)

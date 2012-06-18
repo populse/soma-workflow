@@ -274,12 +274,14 @@ if __name__ == '__main__':
         logger.info(" ")
         logger.info(" ")
         logger.info("################ MASTER STARTS ####################")
-    
+ 
         database_server = WorkflowDatabaseServer(config.get_database_file(),
                                                  config.get_transfered_file_dir())
     
         sch = MPIScheduler(comm, interval=1)
-    
+
+        config.disable_queue_limits()    
+
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
