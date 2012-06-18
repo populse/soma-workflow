@@ -268,7 +268,7 @@ if __name__ == '__main__':
         logger.addFilter(logging.Filter('testMPI'))
    
         logger.info(" ")
-	logger.info(" ")
+	      logger.info(" ")
         logger.info(" ")
         logger.info(" ")
         logger.info(" ")

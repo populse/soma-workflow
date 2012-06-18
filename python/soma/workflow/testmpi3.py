@@ -12,45 +12,82 @@ from soma.workflow import scheduler, constants
 from soma.workflow.client import Job
 from soma.workflow.engine_types import EngineJob
 
-def slave_loop(communicator, cpu_count=1):
+
+def slave_loop(communicator, cpu_count=1, logger=None):
     status = MPI.Status()
     rank = communicator.Get_rank()
-    logger = logging.getLogger("TestMPI")
+    if not logger:
+      logger = logging.getLogger("testMPI.slave")
+    processes = {}
+    max_nb_jobs = 1
     while True:
-        processes = {}
-        communicator.send(cpu_count, dest=0,
-                          tag=MPIScheduler.JOB_REQUEST)
-        communicator.Probe(source=MPI.ANY_SOURCE,
-                           tag=MPI.ANY_TAG, status=status)
-        logger.debug("Slave " + repr(rank) + " job request")
-        t = status.Get_tag()
-        if t == MPIScheduler.JOB_SENDING:
-            job_list = communicator.recv(source=0, tag=t)
-            for j in job_list:
-                logger.debug("Slave " + repr(rank) + " RUNS JOB")
-                process = scheduler.LocalScheduler.create_process(j)
-                processes[j.job_id] = process
-        elif t == MPIScheduler.NO_JOB:
-            communicator.recv(source=0, tag=t)
-            logger.debug("Slave " + repr(rank) + " received no job " + repr(processes))
-            time.sleep(1)
-        elif t == MPIScheduler.EXIT_SIGNAL:
-            communicator.send('STOP', dest=0, tag=MPIScheduler.EXIT_SIGNAL)
-            logger.debug("Slave " + repr(rank) + "STOP !!!!! received")
-            break
-        else:
-            raise Exception('Unknown tag')
-        returns = {}
-        for job_id, process in processes.iteritems():
-            if process == None:
-                returns[job_id] = None
-            else:
-                returns[job_id] = process.wait()
-        if returns:
-            logger.debug("Salve " + repr(rank) + " send JOB_RESULT")
-            communicator.send(returns, dest=0,
-                              tag=MPIScheduler.JOB_RESULT)
+        ended_jobs_info = {} # job_id -> (job_status, job_exit_status)
+        t = None
+        if len(processes) < max_nb_jobs:    
+            communicator.send(cpu_count, dest=0,
+                              tag=MPIScheduler.JOB_REQUEST)
 
+            logger.debug("Slave " + repr(rank) + " job request")
+            communicator.Probe(source=MPI.ANY_SOURCE,
+                               tag=MPI.ANY_TAG, status=status)
+            t = status.Get_tag()
+        elif communicator.Iprobe(source=MPI.ANY_SOURCE,
+                               tag=MPI.ANY_TAG, status=status):
+            t = status.Get_tag()
+        if t != None:
+            if t == MPIScheduler.JOB_SENDING:
+                job_list = communicator.recv(source=0, tag=t)
+                for j in job_list:
+                    logger.debug("Slave " + repr(rank) + " RUNS JOB")
+                    process = scheduler.LocalScheduler.create_process(j)
+                    processes[j.job_id] = process
+            elif t == MPIScheduler.NO_JOB:
+                communicator.recv(source=0, tag=t)
+                logger.debug("Slave " + repr(rank) + " "
+                             "received no job " + repr(processes))
+                #time.sleep(1)
+            elif t == MPIScheduler.EXIT_SIGNAL:
+                communicator.send('STOP', dest=0, tag=MPIScheduler.EXIT_SIGNAL)
+                logger.debug("Slave " + repr(rank) + " STOP !!!!! received")
+                break
+            elif t == MPIScheduler.JOB_KILL:
+                job_ids = communicator.recv(source=0, tag=t)
+                for job_id in job_ids:
+                    if job_id in processes.keys():
+                        logger.debug("Slave " + repr(rank) + " KILL job " + repr(job_id))
+                        # TODO => if python < 2.5 or windows ?  
+                        processes[job_id].kill() 
+                        ended_jobs_info[job_id] = (constants.FAILED, 
+                                                   (constant.USER_KILLED, None, 
+                                                    None, None))
+
+
+            else:
+                raise Exception('Unknown tag')
+        for job_id, process in processes.iteritems():
+            logger.debug("Salve " + repr(rank) + " process ended ? ")
+            if process == None:
+                ended_jobs_info[job_id] = (constants.FAILED,
+                                           (constants.EXIT_ABORTED, None, 
+                                            None, None))
+            else:
+                ret_value = process.poll() # TO DO: wait works but not poll why ?
+                logger.debug("Salve " + repr(rank) + " " + repr(ret_value) + " " + repr(process))
+                if ret_value != None:
+                    ended_jobs_info[job_id] = (constants.DONE,
+                                               (constants.FINISHED_REGULARLY, 
+                                                ret_value, None, None))
+     
+        if ended_jobs_info:
+            for job_id in ended_jobs_info.iterkeys():
+                del processes[job_id]
+            logger.debug("Salve " + repr(rank) + " send JOB_RESULT")
+            communicator.send(ended_jobs_info, dest=0,
+                              tag=MPIScheduler.JOB_RESULT)
+        else:
+            pass
+            # TO DO send Slave is alive
+        time.sleep(1)
 
 class MPIScheduler(scheduler.Scheduler):
     '''
@@ -154,18 +191,12 @@ class MPIScheduler(scheduler.Scheduler):
             elif t == MPIScheduler.JOB_RESULT:
                 self._logger.debug("Master received the JOB_RESULT signal")
                 s = MPIStatus.Get_source()
-                results = self._communicator.recv(source=s,
+                ended_jobs_info = self._communicator.recv(source=s,
                                                   tag=MPIScheduler.JOB_RESULT)
-                for job_id, ret_value in results.iteritems():
-                    if ret_value != None:
-                        self._exit_info[job_id] = (
-                                               constants.FINISHED_REGULARLY,
-                                               ret_value, None, None)
-                        self._status[job_id] = constants.DONE
-                    else:
-                        self._exit_info[job_id] = (constants.EXIT_ABORTED,
-                                               None, None, None)
-                        self._status[job_id] = constants.FAILED
+                for job_id, end_info in ended_jobs_info.iteritems():
+                    job_status, exit_info = end_info
+                    self._exit_info[job_id] = exit_info
+                    self._status[job_id] = job_status
             elif t == MPIScheduler.EXIT_SIGNAL:
                 self._logger.debug("Master received the EXIT_SIGNAL")
                 self._stopped_slaves = self._stopped_slaves + 1
@@ -242,7 +273,12 @@ if __name__ == '__main__':
     rank = comm.Get_rank()
     size = comm.size
         
-    
+    # TODO change the path
+    log_file_handler = logging.FileHandler("/home/sl231636/logtestmpi")
+    log_file_handler.setLevel(logging.DEBUG)
+    log_formatter = logging.Formatter("%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
+    log_file_handler.setFormatter(log_formatter)
+
     print rank
     # master code
     if rank == 0:
@@ -260,15 +296,14 @@ if __name__ == '__main__':
         workflow_file = sys.argv[2]
     
         config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
-        
-        logging.basicConfig(filename="/home/sl231636/logtestmpi",
-                            format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
-                            level=logging.DEBUG)
+               
         logger = logging.getLogger('testMPI')
-        logger.addFilter(logging.Filter('testMPI'))
-   
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(log_file_handler)
+           
+
         logger.info(" ")
-	logger.info(" ")
+      	logger.info(" ")
         logger.info(" ")
         logger.info(" ")
         logger.info(" ")
@@ -303,9 +338,7 @@ if __name__ == '__main__':
         logger.debug("######### master ends #############")
     # slave code
     else:
-        logging.basicConfig(filename="/home/sl231636/logtestmpi",
-                            format="%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s)", 
-                            level=logging.DEBUG)
         logger = logging.getLogger("testMPI.slave")
-    
-        slave_loop(comm)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(log_file_handler)
+        slave_loop(comm, logger=logger)
