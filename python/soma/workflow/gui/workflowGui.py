@@ -2257,7 +2257,14 @@ class PlotView(QtGui.QWidget):
     
     self.ui.combo_plot_type.currentIndexChanged.connect(self.plotTypeChanged)
     self.ui.button_refresh.clicked.connect(self.refresh)
-    
+
+  def __del__( self ):
+    if self.canvas is not None:
+      del self.axes
+      matplotlib.pyplot.close( self.figure )
+      self.canvas.setAttribute( QtCore.Qt.WA_DeleteOnClose, True )
+      self.canvas.close()
+
   def sortkey(self, j):
     if j.execution_date:
       return j.execution_date
@@ -2293,7 +2300,7 @@ class PlotView(QtGui.QWidget):
       #self.canvas.hide()
       #self.vlayout.removeWidget(self.canvas)
       #matplotlib.pyplot.close( self.figure )
-      #self.canvas.setAttribute( QtCore.Qt.WA_DeleteOnClose )
+      #self.canvas.setAttribute( QtCore.Qt.WA_DeleteOnClose, True )
       #self.canvas.close()
       #self.canvas = None
 
