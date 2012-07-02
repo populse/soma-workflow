@@ -77,7 +77,8 @@ try:
       print "Could not use Matplotlib, the backend using PySide is missing."
       MATPLOTLIB = False
   from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-  from matplotlib.figure import Figure 
+  from matplotlib.figure import Figure
+  import matplotlib.pyplot
 except ImportError, e:
   print "Could not use Matplotlib: %s %s" %(type(e), e)
   MATPLOTLIB = False
@@ -2288,31 +2289,36 @@ class PlotView(QtGui.QWidget):
   def jobsFctTime(self):
     
     if self.canvas:
-      self.canvas.hide()
-      self.vlayout.removeWidget(self.canvas)
-      self.canvas = None
-      
-    self.figure = Figure()
-    self.axes = self.figure.add_subplot(111)
-    self.axes.hold(True)
-    self.canvas = FigureCanvas(self.figure)
-    try:
-      self.canvas.setParent(self)
-    except TypeError, e:
-      print e
-      print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND)
-      return
-    self.canvas.updateGeometry()
-    self.vlayout.addWidget(self.canvas)
-    
+      self.axes.clear()
+      #self.canvas.hide()
+      #self.vlayout.removeWidget(self.canvas)
+      #matplotlib.pyplot.close( self.figure )
+      #self.canvas.setAttribute( QtCore.Qt.WA_DeleteOnClose )
+      #self.canvas.close()
+      #self.canvas = None
+
+    else:
+      self.figure = Figure()
+      self.axes = self.figure.add_subplot(111)
+      self.axes.hold(True)
+      self.canvas = FigureCanvas(self.figure)
+      try:
+        self.canvas.setParent(self)
+      except TypeError, e:
+        print e
+        print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND)
+        return
+      self.canvas.updateGeometry()
+      self.vlayout.addWidget(self.canvas)
+
     def key(j):
       if j.execution_date:
         return j.execution_date
       else:
         return datetime.max
-    
+
     self.jobs = sorted(self.jobs, key=self.sortkey)
-  
+
     nb_jobs = 0 
     x_min = datetime.max
     x_max = datetime.min
@@ -2344,17 +2350,18 @@ class PlotView(QtGui.QWidget):
   def nbProcFctTime(self):
     
     if self.canvas:
-      self.canvas.hide()
-      self.vlayout.removeWidget(self.canvas)
-      self.canvas = None
-      
-    self.figure = Figure()
-    self.axes = self.figure.add_subplot(111)
-    self.axes.hold(True)
-    self.canvas = FigureCanvas(self.figure)
-    self.canvas.setParent(self)
-    self.canvas.updateGeometry()
-    self.vlayout.addWidget(self.canvas)
+      self.axes.clear()
+      #self.canvas.hide()
+      #self.vlayout.removeWidget(self.canvas)
+      #self.canvas = None
+    else:
+      self.figure = Figure()
+      self.axes = self.figure.add_subplot(111)
+      self.axes.hold(True)
+      self.canvas = FigureCanvas(self.figure)
+      self.canvas.setParent(self)
+      self.canvas.updateGeometry()
+      self.vlayout.addWidget(self.canvas)
     
     
     dates = []
