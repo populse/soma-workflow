@@ -271,7 +271,7 @@ def detailed_critical_message_box(msg, title, parent):
     message_box.setSizeGripEnabled(True)
     message_box.exec_()
   else:
-    QtGui.QMessageBox.critical(parent, "%s" %(e))
+    QtGui.QMessageBox.critical(parent, "error", "%s" %(msg))
 
 
 
