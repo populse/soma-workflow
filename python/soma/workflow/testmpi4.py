@@ -19,12 +19,12 @@ def slave_loop(communicator, cpu_count=1, logger=None):
     rank = communicator.Get_rank()
     if not logger:
       logger = logging.getLogger("testMPI.slave")
-    processes = {}
+    commands = {}
     max_nb_jobs = 1
     while True:
         ended_jobs_info = {} # job_id -> (job_status, job_exit_status)
         t = None
-        if len(processes) < max_nb_jobs:    
+        if len(commands) < max_nb_jobs:    
             communicator.send(cpu_count, dest=0,
                               tag=MPIScheduler.JOB_REQUEST)
 
@@ -39,13 +39,15 @@ def slave_loop(communicator, cpu_count=1, logger=None):
             if t == MPIScheduler.JOB_SENDING:
                 job_list = communicator.recv(source=0, tag=t)
                 for j in job_list:
-                    logger.debug("Slave " + repr(rank) + " RUNS JOB")
-                    process = scheduler.LocalScheduler.create_process(j)
-                    processes[j.job_id] = process
+                    logger.debug("Slave " + repr(rank) + " RUNS JOB" + repr(j.job_id))
+                    #process = scheduler.LocalScheduler.create_process(j)
+                    separator = " "
+                    command = separator.join(j.plain_command())
+                    commands[j.job_id] = command
             elif t == MPIScheduler.NO_JOB:
                 communicator.recv(source=0, tag=t)
                 logger.debug("Slave " + repr(rank) + " "
-                             "received no job " + repr(processes))
+                             "received no job " + repr(commands))
                 #time.sleep(1)
             elif t == MPIScheduler.EXIT_SIGNAL:
                 communicator.send('STOP', dest=0, tag=MPIScheduler.EXIT_SIGNAL)
@@ -54,26 +56,26 @@ def slave_loop(communicator, cpu_count=1, logger=None):
             elif t == MPIScheduler.JOB_KILL:
                 job_ids = communicator.recv(source=0, tag=t)
                 for job_id in job_ids:
-                    if job_id in processes.keys():
-                        logger.debug("Slave " + repr(rank) + " KILL job " + repr(job_id))
-                        # TODO => if python < 2.5 or windows ?  
-                        processes[job_id].kill() 
-                        ended_jobs_info[job_id] = (constants.FAILED, 
-                                                   (constant.USER_KILLED, None, 
-                                                    None, None))
-
+                    if job_id in commands.keys():
+                        # TO DO: relevant exception type and message
+                        raise Exception("The job " + repr(job_id) + " can not be killed")
 
             else:
                 raise Exception('Unknown tag')
-        for job_id, process in processes.iteritems():
-            logger.debug("Slave " + repr(rank) + " process ended ? ")
-            if process == None:
+        for job_id, command in commands.iteritems():
+            if command == None:
                 ended_jobs_info[job_id] = (constants.FAILED,
                                            (constants.EXIT_ABORTED, None, 
                                             None, None))
             else:
-                ret_value = process.wait() # TO DO: wait works but not poll why ?
-                logger.debug("Slave " + repr(rank) + " " + repr(ret_value) + " " + repr(process))
+                #ret_value = process.wait() # TO DO: wait works but not poll why ?
+                if j.plain_stderr():
+                    command = command + " > " + repr(j.plain_stdout()) + " 2> " + repr(j.plain_stderr())
+                else:
+                    command = command +  " > " + repr(j.plain_stdout()) 
+                logger.debug("command " + repr(command))
+                ret_value = os.system(command)
+                logger.debug("Slave " + repr(rank) + " " + repr(ret_value) + " " + repr(command))
                 if ret_value != None:
                     ended_jobs_info[job_id] = (constants.DONE,
                                                (constants.FINISHED_REGULARLY, 
@@ -81,7 +83,7 @@ def slave_loop(communicator, cpu_count=1, logger=None):
      
         if ended_jobs_info:
             for job_id in ended_jobs_info.iterkeys():
-                del processes[job_id]
+                del commands[job_id]
             logger.debug("Slave " + repr(rank) + " send JOB_RESULT")
             communicator.send(ended_jobs_info, dest=0,
                               tag=MPIScheduler.JOB_RESULT)
@@ -290,21 +292,28 @@ if __name__ == '__main__':
         from soma.workflow.database_server import WorkflowDatabaseServer
         from soma.workflow.client import Helper
         import soma.workflow.configuration
-    
-        if not len(sys.argv) == 3:
-          raise Exception("Mandatory arguments: \n"
-                          " 1. resource id. \n"
-                          " 2. workflow file to run. \n")
-    
-        resource_id = sys.argv[1]
-        workflow_file = sys.argv[2]
-    
-        config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
                
         logger = logging.getLogger('testMPI')
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
-           
+ 
+        if not len(sys.argv) == 3:
+          #TO DO: stopping slave procedure in a function
+          logger.critical("Mandatory arguments: "
+                          "1. resource id "
+                          "2. workflow file to run or workflow id to restart.")
+          for slave in range(1, comm.size):
+              logger.debug("STOP !!!  slave " + repr(slave))
+              comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+          logger.debug("######### master ends #############")
+          raise Exception("Mandatory arguments: \n"
+                          " 1. resource id. \n"
+                          " 2. workflow file to run or workflow id to restart. \n")
+
+        resource_id = sys.argv[1]
+        wf_arg = sys.argv[2]
+   
+        config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
 
         logger.info(" ")
       	logger.info(" ")
@@ -324,13 +333,23 @@ if __name__ == '__main__':
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
-        
-        workflow = Helper.unserialize(workflow_file)
-        workflow_engine.submit_workflow(workflow,
-                                        expiration_date=None,
-                                        name=None,
-                                        queue=None)
-        
+        if os.path.exists(wf_arg):
+            workflow_file = wf_arg  
+            logger.info(" ")
+            logger.info("******* submission of worklfow **********")
+            logger.info("workflow file: " + repr(workflow_file))
+
+            workflow = Helper.unserialize(workflow_file)
+            workflow_engine.submit_workflow(workflow,
+                                            expiration_date=None,
+                                            name=None,
+                                            queue=None)
+        else:
+            workflow_id = int(wf_arg)
+            logger.info(" ")
+            logger.info("******* restart worklfow **********")
+            logger.info("workflow if: " + repr(workflow_id))
+            workflow_engine.restart_workflow(workflow_id, queue=None)
      
         while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
             time.sleep(2)
