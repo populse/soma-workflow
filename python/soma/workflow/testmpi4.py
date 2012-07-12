@@ -6,6 +6,7 @@ import atexit
 import logging
 import sys
 import os
+#import socket
 
 from mpi4py import MPI
 
@@ -18,7 +19,7 @@ def slave_loop(communicator, cpu_count=1, logger=None):
     status = MPI.Status()
     rank = communicator.Get_rank()
     if not logger:
-      logger = logging.getLogger("testMPI.slave")
+        logger = logging.getLogger("testMPI.slave")
     commands = {}
     max_nb_jobs = 1
     while True:
@@ -69,10 +70,16 @@ def slave_loop(communicator, cpu_count=1, logger=None):
                                             None, None))
             else:
                 #ret_value = process.wait() # TO DO: wait works but not poll why ?
+                #stdout_file = open(j.plain_stdout(), 'w')
+                #stdout_file.write("hostname " + repr(socket.gethostname()) + "\n")
+                #stdout_file.write("slave rank " + repr(rank) + "\n")
+                #stdout_file.write("os.__file__ " + repr(os.__file__) + "\n")
+                #stdout_file.close()
                 if j.plain_stderr():
-                    command = command + " > " + repr(j.plain_stdout()) + " 2> " + repr(j.plain_stderr())
+                    command = command + " >> " + repr(j.plain_stdout()) + " 2>> " + repr(j.plain_stderr())
                 else:
-                    command = command +  " > " + repr(j.plain_stdout()) 
+                    command = command +  " >> " + repr(j.plain_stdout()) 
+                #command = "which python >> " + repr(j.plain_stdout()) + " ; " + command
                 logger.debug("command " + repr(command))
                 ret_value = os.system(command)
                 logger.debug("Slave " + repr(rank) + " " + repr(ret_value) + " " + repr(command))
@@ -237,7 +244,7 @@ class MPIScheduler(scheduler.Scheduler):
             self._status[job.job_id] = constants.QUEUED_ACTIVE
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
-            self._logger.debug("A Job was submitted " + repr(self._queue))
+            self._logger.debug("A Job was submitted.")
         return job.job_id
 
     def get_job_status(self, scheduler_job_id):
@@ -312,53 +319,59 @@ if __name__ == '__main__':
 
         resource_id = sys.argv[1]
         wf_arg = sys.argv[2]
-   
-        config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
-
-        logger.info(" ")
-      	logger.info(" ")
-        logger.info(" ")
-        logger.info(" ")
-        logger.info(" ")
-        logger.info(" ")
-        logger.info("################ MASTER STARTS ####################")
+        
+        try:
+            config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
+            
+            logger.info(" ")
+            logger.info(" ")
+            logger.info(" ")
+            logger.info(" ")
+            logger.info(" ")
+            logger.info(" ")
+            logger.info("################ MASTER STARTS ####################")
  
-        database_server = WorkflowDatabaseServer(config.get_database_file(),
-                                                 config.get_transfered_file_dir())
+            database_server = WorkflowDatabaseServer(config.get_database_file(),
+                                                     config.get_transfered_file_dir())
     
-        sch = MPIScheduler(comm, interval=1)
+            sch = MPIScheduler(comm, interval=1)
 
-        config.disable_queue_limits()    
+            config.disable_queue_limits()    
 
-        workflow_engine = ConfiguredWorkflowEngine(database_server,
-                                                   sch,
-                                                   config)
-        if os.path.exists(wf_arg):
-            workflow_file = wf_arg  
-            logger.info(" ")
-            logger.info("******* submission of worklfow **********")
-            logger.info("workflow file: " + repr(workflow_file))
+            workflow_engine = ConfiguredWorkflowEngine(database_server,
+                                                       sch,
+                                                       config)
+            if os.path.exists(wf_arg):
+                workflow_file = wf_arg  
+                logger.info(" ")
+                logger.info("******* submission of worklfow **********")
+                logger.info("workflow file: " + repr(workflow_file))
 
-            workflow = Helper.unserialize(workflow_file)
-            workflow_engine.submit_workflow(workflow,
-                                            expiration_date=None,
-                                            name=None,
-                                            queue=None)
-        else:
-            workflow_id = int(wf_arg)
-            logger.info(" ")
-            logger.info("******* restart worklfow **********")
-            logger.info("workflow if: " + repr(workflow_id))
-            workflow_engine.restart_workflow(workflow_id, queue=None)
+                workflow = Helper.unserialize(workflow_file)
+                workflow_engine.submit_workflow(workflow,
+                                                expiration_date=None,
+                                                name=None,
+                                                queue=None)
+            else:
+                workflow_id = int(wf_arg)
+                logger.info(" ")
+                logger.info("******* restart worklfow **********")
+                logger.info("workflow if: " + repr(workflow_id))
+                workflow_engine.restart_workflow(workflow_id, queue=None)
      
-        while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
-            time.sleep(2)
-        for slave in range(1, comm.size):
-            logger.debug("STOP !!!  slave " + repr(slave))
-            comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-        while not sch.stop_thread_loop:
-            time.sleep(1)
-        logger.debug("######### master ends #############")
+            while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
+                time.sleep(2)
+            for slave in range(1, comm.size):
+                logger.debug("STOP !!!  slave " + repr(slave))
+                comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+            while not sch.stop_thread_loop:
+                time.sleep(1)
+            logger.debug("######### master ends #############")
+        except Exception, e:
+             for slave in range(1, comm.size):
+                logger.debug("STOP !!!  slave " + repr(slave))
+                comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+             raise e
     # slave code
     else:
         logger = logging.getLogger("testMPI.slave")
