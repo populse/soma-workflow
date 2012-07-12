@@ -1629,8 +1629,10 @@ class WorkflowInfoWidget(QtGui.QWidget):
       self.setEnabled(True)
       self.ui.wf_name.setEnabled(True)
       self.ui.wf_status_icon.setEnabled(True)
+      self.ui.wf_id.setEnabled(True)
       if self.model.current_wf_id == None:
         self.ui.wf_name.clear()
+        self.ui.wf_id.clear()
         self.update_workflow_status_widgets(None, None)
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now())
       elif self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
@@ -1638,6 +1640,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
           self.ui.wf_name.setText(self.model.workflow_name)
         else:
           self.ui.wf_name.clear()
+        self.ui.wf_id.clear()
         self.ui.wf_status.setText("not submitted")
         self.ui.wf_status_icon.setPixmap(QtGui.QPixmap())
         self.ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
@@ -1646,12 +1649,14 @@ class WorkflowInfoWidget(QtGui.QWidget):
           self.ui.wf_name.setText(self.model.workflow_name)
         else: 
           self.ui.wf_name.setText(repr(self.model.current_wf_id))
+        self.ui.wf_id.setText(repr(self.model.current_wf_id))
         self.update_workflow_status_widgets(self.model.workflow_status,
                                             self.model.current_workflow().queue)
         self.ui.dateTimeEdit_expiration.setDateTime(self.model.workflow_exp_date)
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
       self.ui.wf_name.setEnabled(False)
+      self.ui.wf_id.setEndabled(False)
       self.ui.wf_status_icon.setEnabled(False)
 
 
