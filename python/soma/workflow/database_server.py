@@ -394,7 +394,6 @@ class WorkflowDatabaseServer( object ):
     by valid job.
     '''
     self.logger.debug("=> clean")
-    self.remove_non_registered_files()
     with self._lock:
       connection = self._connect()
       cursor = connection.cursor()
@@ -458,6 +457,8 @@ class WorkflowDatabaseServer( object ):
       cursor.close()
       connection.commit()
       connection.close()
+
+      #self.remove_non_registered_files()
      
   def remove_non_registered_files(self):
     self.logger.debug("=> remove_non_registered_files")
