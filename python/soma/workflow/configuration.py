@@ -99,6 +99,8 @@ OCFG_PARALLEL_ENV_MPI_BIN = 'PARALLEL_ENV_MPI_BIN'
 OCFG_PARALLEL_ENV_NODE_FILE = 'PARALLEL_ENV_NODE_FILE'
 PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 
+# Native_specification for all jobs
+OCFG_NATIVE_SPECIFICATION = 'NATIVE_SPECIFICATION'
 
 # local sheduler configuration -------------------------------------------------
 
@@ -145,6 +147,8 @@ class Configuration(observer.Observable):
 
   _login = None
 
+  _native_specification = None
+
   parallel_job_config = None
 
   path_translation = None
@@ -164,7 +168,8 @@ class Configuration(observer.Observable):
                queues=None,
                queue_limits=None,
                drmaa_implementation=None,
-               login=None
+               login=None,
+               native_specification=None                
                ):
     '''
     * resource_id *string*
@@ -212,7 +217,20 @@ class Configuration(observer.Observable):
       Set this item to "PBS" if you use FedStage PBS DRMAA 1.0 implementation, 
       otherwise it does not has to be set. 
 
-    
+    * login *string*
+      Configure a login to avoid some typing in the GUI.
+
+    * native_specification *string*
+      Some specific option/function of the computing resource you want to use 
+      might not be available among the list of Soma-workflow Job attributes.
+      Use the native specification attribute to define functionality which are
+      specific to the resource you want to use. 
+      The configured native specification will be used for every jobs unless
+      it is redifined in the job definition.
+
+      Example: Specification of a job walltime and more
+      using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb", 
+      using a SGE cluster: native_specifivation="-l h_rt=10:00:00".
     '''
 
     super(Configuration, self).__init__()
@@ -229,6 +247,7 @@ class Configuration(observer.Observable):
     self._name_server_host = name_server_host
     self._server_name = server_name
     self._login = login
+    self._native_specification = native_specification
     if queues == None:
       self._queues = []
     else:
@@ -529,6 +548,20 @@ class Configuration(observer.Observable):
       self._login = self._config_parser.get(self._resource_id,                    
                                             OCFG_LOGIN)
     return self._login
+
+  def get_native_specification(self):
+    if self._config_parser == None or self._native_specification != None:
+      return self._native_specification
+    self._native_specification = None
+    if self._config_parser != None and \
+       self._config_parser.has_option(self._resource_id, 
+                                      OCFG_NATIVE_SPECIFICATION):
+      self._native_specification = self._config_parser.get(self._resource_id,                    
+                                                    OCFG_NATIVE_SPECIFICATION)
+    return self._native_specification
+
+
+
 
   def get_path_translation(self):
     if self._config_parser == None or self.path_translation != None:

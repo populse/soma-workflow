@@ -120,6 +120,8 @@ class Job(object):
     might not be available among the list of Soma-workflow Job attributes.
     Use the native specification attribute to define functionality which are
     specific to the resource you want to use. 
+    If a native_specification is defined here, the configured native 
+    specification will be ignored.
 
     Example: Specification of a job walltime and more
     using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb", 
@@ -1331,7 +1333,8 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
     from soma.workflow.scheduler import Drmaa
     print "scheduler type: drmaa"
     scheduler = Drmaa(config.get_drmaa_implementation(),
-                      config.get_parallel_job_config())
+                      config.get_parallel_job_config(),
+                      configured_native_spec=config.get_native_specification())
 
   elif config.get_scheduler_type() == 'local_basic':
     from soma.workflow.scheduler import ConfiguredLocalScheduler

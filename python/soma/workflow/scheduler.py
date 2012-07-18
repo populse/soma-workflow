@@ -106,10 +106,13 @@ class Drmaa(Scheduler):
   
   logger = None
 
+  _configured_native_spec = None
+
   def __init__(self, 
                drmaa_implementation, 
                parallel_job_submission_info, 
-               tmp_file_path=None):
+               tmp_file_path=None, 
+               configured_native_spec=None):
 
     self.logger = self.logger = logging.getLogger('ljp.drmaajs')
 
@@ -126,6 +129,8 @@ class Drmaa(Scheduler):
     self._drmaa_implementation = drmaa_implementation
 
     self.parallel_job_submission_info = parallel_job_submission_info
+
+    self._configured_native_spec = configured_native_spec 
 
     self.logger.debug("Parallel job submission info: %s", 
                       repr(parallel_job_submission_info))
@@ -239,15 +244,22 @@ class Drmaa(Scheduler):
         self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
 
       self.logger.debug("JOB NATIVE_SPEC " + repr(job.native_specification))
-      if job.queue and job.native_specification:
-        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue) + " " + str(job.native_specification))
-        self.logger.debug("NATIVE specification " + "-q " + str(job.queue) + " " + str(job.native_specification))
+      self.logger.debug("CONFIGURED NATIVE SPEC " + repr(self._configured_native_spec))
+      native_spec = None
+      if job.native_specification:
+        native_spec = job.native_specification
+      elif self._configured_native_spec:
+        native_spec = self._configured_native_spec
+      
+      if job.queue and native_spec:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue) + " " + str(native_spec))
+        self.logger.debug("NATIVE specification " + "-q " + str(job.queue) + " " + str(native_spec))
       elif job.queue:
         self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", "-q " + str(job.queue))
         self.logger.debug("NATIVE specification " + "-q " + str(job.queue))
-      elif job.native_specification:
-        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", str(job.native_specification))
-        self.logger.debug("NATIVE specification " + str(job.native_specification))
+      elif native_spec:
+        self._drmaa.setAttribute(drmaaJobId, "drmaa_native_specification", str(native_spec))
+        self.logger.debug("NATIVE specification " + str(native_spec))
 
 
       

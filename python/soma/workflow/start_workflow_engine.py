@@ -141,7 +141,8 @@ if __name__=="__main__":
     if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
       sch = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
                                     config.get_parallel_job_config(),
-                                    os.path.expanduser("~"))
+                                    os.path.expanduser("~"),
+                                    configured_native_spec=config.get_native_specification())
     elif config.get_scheduler_type() == soma.workflow.configuration.LOCAL_SCHEDULER:
       from soma.workflow.scheduler import ConfiguredLocalScheduler
       local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()
