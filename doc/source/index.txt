@@ -116,7 +116,7 @@ About
 
 Soma-workflow release logs and communication can be found at the project `main page. <http://brainvisa.info/soma-workflow>`_
 
-Funded by CATI.
+Funded by `CATI <http://cati-neuroimaging.com>`_.
 
 .. image:: images/logo_cati_couleur_100.* 
   :scale: 40
