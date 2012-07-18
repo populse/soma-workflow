@@ -74,7 +74,7 @@ The configuration syntax is the `ConfigParser <http://docs.python.org/library/co
 There is one section for each computing resource (that is for each Soma-workflow
 database server). 
 
-Only for items are required:
+Only four items are required:
  
   * CLUSTER_ADDRESS
   * SUBMITTING_MACHINES
@@ -354,6 +354,18 @@ Configuration items optional on the server side:
     implementation, and correct it temporarily writing specific code for this 
     implementation in Soma-workflow at 2 locations (soma.workflow.engine Drmaa 
     class: __init__ and submit_job method). 
+
+  **NATIVE_SPECIFICATION**
+    Some specific option/function of the computing resource you want to use
+    might not be available among the list of Soma-workflow Job attributes. 
+    Use the native specification attribute to use these specific functionalities.
+    Once configured it will be applied to every jobs submitted to the resource
+    unless a different value is specified in the Job attribute native_specification.
+
+    *Example:* Specification of a job walltime and more:
+      * using a PBS cluster: NATIVE_SPECIFICATION= -l walltime=10:00:00,pmem=16gb
+      * using a SGE cluster: NATIVE_SPECIFICATION= -l h_rt=10:00:00
+
 
 Logging configuration:
 

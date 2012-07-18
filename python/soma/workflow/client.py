@@ -118,14 +118,13 @@ class Job(object):
   **native_specification**: *string*
     Some specific option/function of the computing resource you want to use 
     might not be available among the list of Soma-workflow Job attributes.
-    Use the native specification attribute to define functionality which are
-    specific to the resource you want to use. 
+    Use the native specification attribute to use these specific functionalities. 
     If a native_specification is defined here, the configured native 
-    specification will be ignored.
+    specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
 
-    Example: Specification of a job walltime and more
-    using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb", 
-    using a SGE cluster: native_specifivation="-l h_rt=10:00:00".
+    *Example:* Specification of a job walltime and more:
+      * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb" 
+      * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
   **parallel_job_info**: *tuple(string, int)*
     The parallel job information must be set if the Job is parallel (ie. made to
@@ -134,8 +133,8 @@ class Job(object):
     maximum number of CPU used by the Job).
     The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
-  .. warning::
-    The computing resources must be configured explicitly to use this feature.
+    .. warning::
+      The computing resources must be configured explicitly to use this feature.
 
   ..
     **disposal_time_out**: int

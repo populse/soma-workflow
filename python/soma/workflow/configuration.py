@@ -221,16 +221,9 @@ class Configuration(observer.Observable):
       Configure a login to avoid some typing in the GUI.
 
     * native_specification *string*
-      Some specific option/function of the computing resource you want to use 
-      might not be available among the list of Soma-workflow Job attributes.
-      Use the native specification attribute to define functionality which are
-      specific to the resource you want to use. 
-      The configured native specification will be used for every jobs unless
-      it is redifined in the job definition.
-
-      Example: Specification of a job walltime and more
-      using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb", 
-      using a SGE cluster: native_specifivation="-l h_rt=10:00:00".
+      Native specification applied to every jobs submitted to the resource 
+      unless a different value is specified in the Job attribute 
+      native_specification.
     '''
 
     super(Configuration, self).__init__()
