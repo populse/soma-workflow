@@ -329,7 +329,8 @@ class WorkflowDatabaseServer( object ):
         except Exception, e:
           cursor.close()
           connection.close()
-          raise DatabaseError("Your database file might not be compatible "
+          raise DatabaseError(str(e) + "\n\n"
+                              "Your database file might not be compatible "
                               "with the current version of Soma-workflow.\n\n"
                               "To solve the problem: \n  1. Log on the host"
                               " " + repr(socket.gethostname()) + " (if it is not the current machine). \n  2. Delete"

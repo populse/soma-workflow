@@ -43,6 +43,7 @@ OCFG => Optional
 CFG_CLUSTER_ADDRESS = 'CLUSTER_ADDRESS'
 CFG_SUBMITTING_MACHINES = 'SUBMITTING_MACHINES'
 OCFG_DRMAA_IMPLEMENTATION = 'DRMAA_IMPLEMENTATION'
+OCFG_SCHEDULER_TYPE = 'SCHEDULER_TYPE'
 
 
 #OCFG_QUEUES is a list of queue name separated by white spaces.
@@ -236,6 +237,7 @@ class Configuration(observer.Observable):
       self._queue_limits = {}
     else:
       self._queue_limits = queue_limits
+    self._queue_limits_disabled = False 
     self._drmaa_implementation = drmaa_implementation
     self.parallel_job_config = None
     self.path_translation = None
@@ -311,7 +313,6 @@ class Configuration(observer.Observable):
       return config
 
     else:
-      scheduler_type = DRMAA_SCHEDULER
 
       if config_path == None:
         raise ConfigurationError("A configuration file is required to connect " 
@@ -322,6 +323,12 @@ class Configuration(observer.Observable):
       if not config_parser.has_section(resource_id):
         raise ConfigurationError("Can not find section " + resource_id + " "
                                 "in configuration file: " + config_path)
+
+      scheduler_type = None
+      if config_parser.has_option(resource_id, OCFG_SCHEDULER_TYPE):
+        scheduler_type = config_parser.get(resource_id, OCFG_SCHEDULER_TYPE)
+      if scheduler_type not in SCHEDULER_TYPES:
+        scheduler_type = DRMAA_SCHEDULER
 
       config = cls(resource_id=resource_id,
                    mode=None,
@@ -348,8 +355,11 @@ class Configuration(observer.Observable):
                                (CFG_SUBMITTING_MACHINES,
                                 self._resource_id,
                                 self._config_path))
-    self._submitting_machines = self._config_parser.get(self._resource_id, 
+    submitting_machines = self._config_parser.get(self._resource_id, 
                                          CFG_SUBMITTING_MACHINES).split()
+    self._submitting_machines = []
+    for sub_machine in submitting_machines:
+      self._submitting_machines.append(os.path.expandvars(sub_machine))
     return self._submitting_machines
 
 
@@ -463,6 +473,7 @@ class Configuration(observer.Observable):
                                   self._config_path))
     self._database_file = self._config_parser.get(self._resource_id, 
                                                   CFG_DATABASE_FILE)
+    self._database_file = os.path.expandvars(self._database_file)
     return self._database_file
 
 
@@ -479,6 +490,7 @@ class Configuration(observer.Observable):
                                   self._config_path))
     self._transfered_file_dir = self._config_parser.get(self._resource_id, 
                                                       CFG_TRANSFERED_FILES_DIR)
+    self._transfered_file_dir = os.path.expandvars(self._transfered_file_dir)
     return self._transfered_file_dir
 
 
@@ -532,6 +544,7 @@ class Configuration(observer.Observable):
         ns_file = ns_file_str.split("{")
         namespace = ns_file[0]
         filename = ns_file[1].rstrip("}")
+        filename = os.path.expandvars(filename)
         #logger.info(" -namespace: " + namespace + ", translation file: " + filename)
         try: 
           f = open(filename, "r")
@@ -548,7 +561,7 @@ class Configuration(observer.Observable):
             uuid = splitted_line[0]
             content = splitted_line[1].rstrip()
             #logger.info("    uuid: " + uuid + "   translation:" + content)
-            self.path_translation[namespace][uuid] = content
+            self.path_translation[namespace][uuid] = os.path.expandvars(content)
           line = f.readline()
         f.close()
 
@@ -562,6 +575,7 @@ class Configuration(observer.Observable):
     if self._config_parser != None:
       self._name_server_host = self._config_parser.get(self._resource_id, 
                                                        CFG_NAME_SERVER_HOST)
+      self._name_server_host = os.path.expandvars(self._name_server_host)
     return self._name_server_host
 
 
@@ -589,9 +603,15 @@ class Configuration(observer.Observable):
     self.get_queue_limits()
     self._queue_limits[queue_name] = queue_limit
     self.notifyObservers(Configuration.QUEUE_LIMITS_CHANGED)
-  
+ 
+
+  def disable_queue_limits(self):
+    self._queue_limits_disabled = True 
 
   def get_queue_limits(self):
+    if self._queue_limits_disabled:
+      return {}
+
     if self._config_parser == None or len(self._queue_limits) != 0:
       return self._queue_limits
 
@@ -627,6 +647,7 @@ class Configuration(observer.Observable):
     if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_ENGINE_LOG_DIR):
       engine_log_dir = self._config_parser.get(self._resource_id, 
                                                OCFG_ENGINE_LOG_DIR)
+      engine_log_dir = os.path.expandvars(engine_log_dir)
       if self._config_parser.has_option(self._resource_id,
                                         OCFG_ENGINE_LOG_FORMAT):
         engine_log_format = self._config_parser.get(self._resource_id,
@@ -650,6 +671,7 @@ class Configuration(observer.Observable):
     if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_SERVER_LOG_FILE):
       server_log_file = self._config_parser.get(self._resource_id,  
                                                 OCFG_SERVER_LOG_FILE)
+      server_log_file = os.path.expandvars(server_log_file)
       if self._config_parser.has_option(self._resource_id,
                                         OCFG_SERVER_LOG_FORMAT):
         server_log_format = self._config_parser.get(self._resource_id,

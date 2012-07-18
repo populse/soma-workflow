@@ -108,6 +108,7 @@ class EngineJob(Job):
 
     self._map(parallel_job_submission_info)
 
+    
   def _map(self, parallel_job_submission_info):
     '''
     Fill the transfer_mapping and srp_mapping attributes.
@@ -430,6 +431,10 @@ class EngineWorkflow(Workflow):
   # dictonary: tr_id -> EngineTransfer
   registered_tr = None
 
+  # for each job: list of all the jobs which have to end before a job can start
+  #dictionary: job_id -> list of job id
+  _dependency_dict = None
+
   logger = None
   
   def __init__(self, 
@@ -459,6 +464,16 @@ class EngineWorkflow(Workflow):
 
     self.registered_tr = {}
     self.registered_jobs = {}
+
+    self._dependency_dict = {}
+    for dep in self.dependencies:
+      if dep[1] in self._dependency_dict:
+        self._dependency_dict[dep[1]].append(dep[0])
+      else:
+        self._dependency_dict[dep[1]] = [dep[0]] 
+
+
+
 
   def _map(self):
     '''
@@ -587,12 +602,9 @@ class EngineWorkflow(Workflow):
         done.append(job)
       elif job.is_running(): 
         running.append(job)
-      self.logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
-      if job.status == constants.NOT_SUBMITTED:
-        # a job can start to run when all its dependencies succeed and 
-        # all its input files are in the FILES_ON_CR or 
-        # FILES_ON_CLIENT_AND_CR or TRANSFERING_FROM_CLIENT_TO_CR
-        job_to_run = True 
+      elif job.status == constants.NOT_SUBMITTED:
+        job_to_run = True
+        job_to_abort = False
         for ft in job.referenced_input_files:
           eft = job.transfer_mapping[ft]
           if not eft.files_exist_on_server():
@@ -601,17 +613,55 @@ class EngineWorkflow(Workflow):
               pass 
             job_to_run = False
             break
-        for dep in self.dependencies:
-          job_a = self.job_mapping[dep[0]]
-          job_b = self.job_mapping[dep[1]]
-          if job_b == job and not job_a.ended_with_success(): 
-            job_to_run = False
-            if job_a.failed():
-              to_abort.add(job)
-            break
-        if job_to_run: 
-          wf_running = True
+        if client_job in self._dependency_dict:
+          for dep_client_job in self._dependency_dict[client_job]:
+            dep_job = self.job_mapping[dep_client_job]
+            if not dep_job.ended_with_success():
+              job_to_run = False
+              if dep_job.failed():
+                job_to_abort = True
+                break
+            # TO DO to abort
+        if job_to_run:
           to_run.append(job)
+        if job_to_abort:
+          to_abort.add(job)
+
+
+#    to_run = []
+#    to_abort = set([])
+#    done = []
+#    running = []
+#    for client_job in self.jobs:
+#      job = self.job_mapping[client_job]
+#      if job.is_done(): 
+#        done.append(job)
+#      elif job.is_running(): 
+#        running.append(job)
+#      self.logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
+#      if job.status == constants.NOT_SUBMITTED:
+#        # a job can start to run when all its dependencies succeed and 
+#        # all its input files are in the FILES_ON_CR or 
+#        # FILES_ON_CLIENT_AND_CR or TRANSFERING_FROM_CLIENT_TO_CR
+#        job_to_run = True 
+#        for ft in job.referenced_input_files:
+#          eft = job.transfer_mapping[ft]
+#          if not eft.files_exist_on_server():
+#            if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+#              #TBI stop the transfer
+#              pass 
+#            job_to_run = False
+#            break
+#        for dep in self.dependencies:
+#          job_a = self.job_mapping[dep[0]]
+#          job_b = self.job_mapping[dep[1]]
+#          if job_b == job and not job_a.ended_with_success(): 
+#            job_to_run = False
+#            if job_a.failed():
+#              to_abort.add(job)
+#            break
+#        if job_to_run: 
+#          to_run.append(job)
 
     #self.logger.debug(" ")
     #self.logger.debug("to run " + repr(to_run))
