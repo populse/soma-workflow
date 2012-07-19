@@ -1361,15 +1361,17 @@ class Helper(object):
                       include_aborted_jobs=False,
                       include_user_killed_jobs=False):
     '''
-    * workflow_id *Workflow id*
+    To spot the problematic jobs in a workflow.
+
+    * workflow_id *workflow identifier*
     
-    * include_aborted_jobs *Boolean*
+    * include_aborted_jobs *boolean*
       Include the jobs which exit status is constants.EXIT_ABORTED
 
-    * include_user_killed_jobs *Boolean*
+    * include_user_killed_jobs *boolean*
       Include the jobs which exit status is constants.USER_KILLED
 
-    * returns: *list of job id*
+    * returns: *list of job identifier*
       Return the list of id of job which status is constants.FAILED
       or which exit value is not 0.
     '''

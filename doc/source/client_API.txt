@@ -129,6 +129,8 @@ Helper
 
 .. currentmodule:: client
 
+.. automethod:: Helper.list_failed_jobs
+
 .. automethod:: Helper.wait_workflow
 
 .. automethod:: Helper.transfer_input_files
