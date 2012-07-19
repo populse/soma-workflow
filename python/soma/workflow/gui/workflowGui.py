@@ -2135,6 +2135,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     setLabelFromDateTime(self.ui.submission_date, self.job_item.submission_date)
     setLabelFromDateTime(self.ui.execution_date, self.job_item.execution_date)
     setLabelFromDateTime(self.ui.ending_date, self.job_item.ending_date)
+    setLabelFromInt(self.ui.job_id, self.job_item.job_id)
     if self.job_item.submission_date:
       if self.job_item.execution_date:
         time_in_queue = self.job_item.execution_date - self.job_item.submission_date

@@ -1356,6 +1356,39 @@ class Helper(object):
 
 
   @staticmethod
+  def list_failed_jobs(workflow_id,
+                      wf_ctrl,
+                      include_aborted_jobs=False,
+                      include_user_killed_jobs=False):
+    '''
+    * workflow_id *Workflow id*
+    
+    * include_aborted_jobs *Boolean*
+      Include the jobs which exit status is constants.EXIT_ABORTED
+
+    * include_user_killed_jobs *Boolean*
+      Include the jobs which exit status is constants.USER_KILLED
+
+    * returns: *list of job id*
+      Return the list of id of job which status is constants.FAILED
+      or which exit value is not 0.
+    '''
+    (jobs_info, 
+    transfers_info, 
+    workflow_status, 
+    workflow_queue) = wf_ctrl.workflow_elements_status(workflow_id)
+    failed_job_ids = []
+    for (job_id, status, queue, exit_info, dates) in jobs_info:
+      if(status == constants.DONE and exit_info[1] != 0) or \
+        (status == constants.FAILED and \
+        (include_aborted_jobs or exit_info[0] != constants.EXIT_ABORTED) and \
+        (include_user_killed_jobs or exit_info[0] != constants.USER_KILLED)):
+        failed_job_ids.append(job_id)
+    return failed_job_ids
+
+
+
+  @staticmethod
   def wait_workflow(workflow_id,
                     wf_ctrl):
     '''
