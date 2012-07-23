@@ -131,6 +131,8 @@ Helper
 
 .. automethod:: Helper.list_failed_jobs
 
+.. automethod:: Helper.delete_all_workflows
+
 .. automethod:: Helper.wait_workflow
 
 .. automethod:: Helper.transfer_input_files
