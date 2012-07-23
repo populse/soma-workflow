@@ -289,6 +289,11 @@ class Controller(object):
     return wf_ctrl.delete_workflow(wf_id, force)
 
   @staticmethod
+  def delete_all_workflows(force,
+                           wf_ctrl):
+    return Helper.delete_all_workflows(wf_ctrl, force)    
+
+  @staticmethod
   def stop_workflow(wf_id, 
                     wf_ctrl):
     return wf_ctrl.stop_workflow(wf_id)
@@ -669,7 +674,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.workflow_info_widget.hide()
     
     self.ui.toolButton_button_delete_wf.setDefaultAction(self.ui.action_delete_workflow)
-    
+    self.ui.toolButton_delete_all.setDefaultAction(self.ui.action_delete_all)
+ 
     self.ui.action_about.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
     self.ui.action_about.triggered.connect(self.display_about_dlg)
 
@@ -680,6 +686,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.ui.action_optimize_wf.triggered.connect(self.optimize_workflow)
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
     self.ui.action_delete_workflow.triggered.connect(self.delete_workflow)
+    self.ui.action_delete_all.triggered.connect(self.delete_all_workflows)
     self.ui.action_change_expiration_date.triggered.connect(self.change_expiration_date)
     self.ui.action_save.triggered.connect(self.saveWorkflow)
     self.ui.action_restart.triggered.connect(self.restart_workflow)
@@ -1190,6 +1197,44 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.model.update()
 
   @QtCore.Slot()
+  def delete_all_workflows(self):
+    workflow_names = self.model.list_workflow_names(self.model.current_resource_id)
+    if not workflow_names:
+      return
+    separator = ", "
+    names = separator.join(workflow_names) 
+    answer = QtGui.QMessageBox.question(self, 
+                                        "confirmation", 
+                                        "Do you want to delete the "
+                                        "workflows: \n" + names + "?", 
+                                        QtGui.QMessageBox.Yes, 
+                                        QtGui.QMessageBox.No)
+    if answer != QtGui.QMessageBox.Yes: return
+    force = self.ui.check_box_force_delete.isChecked()
+    while True:
+      try:
+        deleled_properly = Controller.delete_all_workflows(force,
+                                   self.model.current_connection)
+      except ConnectionClosedError, e:
+        if not self.reconnectAfterConnectionClosed():
+          return
+      else:
+        break
+
+    if force:
+      self.model.delete_workflow()
+      self.updateWorkflowList()
+      if not deleled_properly and \
+         self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
+         QtGui.QMessageBox.warning(self, 
+                                   "Delete workflow", 
+                                   "The workflow were deleted. \n However, some jobs " 
+                                   "may still be active and burden the computing "
+                                   "resource. \n In case of long jobs, please "
+                                   "inspect the active jobs (running or in the "
+                                   "queue) using the DRMS interface.")
+
+  @QtCore.Slot()
   def delete_workflow(self):
     assert(self.model.current_workflow() and \
            self.model.current_wf_id != NOT_SUBMITTED_WF_ID)
@@ -1547,6 +1592,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_transfer_outfiles)
     self.ui.menu_workflow.addSeparator()
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_delete_workflow)
+    self.ui.menu_workflow.addAction(self.sw_widget.ui.action_delete_all)
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_change_expiration_date)
 
     self.ui.menu_view.addAction(self.ui.dock_plot.toggleViewAction())
@@ -1657,7 +1703,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
     elif self.assigned_wf_id != None:
       self.setEnabled(False)
       self.ui.wf_name.setEnabled(False)
-      self.ui.wf_id.setEndabled(False)
+      self.ui.wf_id.setEnabled(False)
       self.ui.wf_status_icon.setEnabled(False)
 
 
@@ -3245,7 +3291,8 @@ class ApplicationModel(QtCore.QObject):
         self.workflow_name = None
         self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
-    
+  
+      
   def clear_current_workflow(self):
     with self._lock:
       if self._current_workflow != None or \

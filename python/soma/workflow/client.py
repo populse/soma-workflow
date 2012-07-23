@@ -908,24 +908,16 @@ class WorkflowController(object):
     Deletes the workflow and all its associated elements (FileTransfers and
     Jobs). The worklfow_id will become invalid and can not be used anymore.
     The workflow jobs which are running will be killed.
-    If force is set to True: the client will wait for the workflow to be deleted.
-    If it can't be deleted properly workflow will be deleted from
-    the database server. However, if some jobs are running they won't be kill
-    and will burden the computing resource.
+    If force is set to True: the call will block until the workflow is
+    deleted. With force set to True, if the workflow can not be deleted properly
+    it is deleted from Soma-workflow database. However, if some jobs are still
+    running they are not be killed. In this case the return value is False.
 
     * workflow_id *workflow_identifier*
 
     * force *boolean*
-      If force is set to True, the call won't return before the workflow is
-      deleted. It will wait for the workflow to be deleted.
-      If it can't be deleted properly workflow will be deleted from
-      the database server. However, if some jobs are running they won't be kill
-      and will burden the computing resource (see return value).
 
     * returns: *boolean*
-      If force is True: return True if the running jobs were killed and False
-      if some jobs are possibly still running on the computing resource despite
-      the workflow doesn't exist.
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
@@ -1388,6 +1380,27 @@ class Helper(object):
         failed_job_ids.append(job_id)
     return failed_job_ids
 
+  @staticmethod
+  def delete_all_workflows(wf_ctrl, force=True):
+    '''
+    Delete all the workflows.
+    If force is set to True: the call will block until the workflows are
+    deleted. With force set to True, if a workflow can not be deleted properly
+    it is deleted from Soma-workflow database. However, if some jobs are still
+    running they are not be killed. In this case the return value is False.
+    
+    * wf_ctrl *client.WorkflowController*
+
+    * force *boolean*
+
+    * returns: *boolean*
+    '''
+
+    deleted_properly = True
+    while wf_ctrl.workflows():
+      wf_id = wf_ctrl.workflows().keys()[0]
+      deleted_properly = deleted_properly and  wf_ctrl.delete_workflow(wf_id, force)
+    return deleted_properly
 
 
   @staticmethod

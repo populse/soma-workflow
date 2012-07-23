@@ -150,6 +150,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QToolButton" name="toolButton_delete_all">
+       <property name="text">
+        <string>Delete All</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -252,6 +259,14 @@
   <action name="action_about">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="action_delete_all">
+   <property name="text">
+    <string>Delete All</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete all workflows</string>
    </property>
   </action>
  </widget>
