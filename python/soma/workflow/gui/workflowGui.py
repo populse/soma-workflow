@@ -1198,9 +1198,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   @QtCore.Slot()
   def delete_all_workflows(self):
-    workflow_names = self.model.list_workflow_names(self.model.current_resource_id)
-    if not workflow_names:
+    workflows = self.model.workflows(self.model.current_resource_id)
+    if not workflows:
       return
+    workflow_names = []
+    for wf_id, (wf_name, exp_date) in workflows.iteritems():
+      if wf_name:
+        workflow_names.append(wf_name)
+      else:
+        workflow_names.append(str(wf_id))
+  
     separator = ", "
     names = separator.join(workflow_names) 
     answer = QtGui.QMessageBox.question(self, 
