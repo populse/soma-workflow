@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from mpi4py import MPI
 from soma.workflow import scheduler, constants
 from soma.workflow.client import Job
