@@ -59,7 +59,7 @@ class Job(object):
     The command is the only argument required to create a Job.
     It is also useful to fill the job name for the workflow display in the GUI.
 
-  **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (relative_path, FileTransfer) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (relative_path, FileTransfers.)*
+  **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and tuple (FileTransfer, relative_path) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (FileTransfer, relative_path)*
 
     The command to execute. It can not be empty. In case of a shared file system
     the command is a sequence of string.
@@ -67,13 +67,13 @@ class Job(object):
     In the other cases, the FileTransfer and SharedResourcePath objects will be
     replaced by the appropriate path before the job execution.
 
-    The tuples (relative_path, FileTransfer) can be used to refer to a file in a
+    The tuples (FileTransfer, relative_path) can be used to refer to a file in a
     transfered directory.
 
-    The sequences of FileTransfer, SharedResourcePath or tuple (relative_path,
-    FileTransfer) will be replaced by the string "['path1', 'path2', 'path3']"
+    The sequences of FileTransfer, SharedResourcePath or tuple (FileTransfer,
+    relative_path) will be replaced by the string "['path1', 'path2', 'path3']"
     before the job execution. The FileTransfer, SharedResourcePath or tuple
-    (relative_path, FileTransfer) are replaced by the appropriate path inside
+    (FileTransfer, relative_path) are replaced by the appropriate path inside
     the sequence.
 
   **name**: *string*

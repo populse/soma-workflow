@@ -416,9 +416,9 @@ class EngineWorkflow(Workflow):
   # dictionary: Job -> EngineJob
   job_mapping = None
   
-  # mapping between SharedResourcePath and actual path which are valid on the
-  # system
-  # dictonary: SharedResourcePath -> string (path)
+  # mapping between FileTransfer and actual EngineTransfer which are valid on
+  # the system. 
+  # dictionary: FileTransfer -> EngineTransfer
   transfer_mapping = None
 
   # Once registered on the database server each 
@@ -626,49 +626,6 @@ class EngineWorkflow(Workflow):
           to_run.append(job)
         if job_to_abort:
           to_abort.add(job)
-
-
-#    to_run = []
-#    to_abort = set([])
-#    done = []
-#    running = []
-#    for client_job in self.jobs:
-#      job = self.job_mapping[client_job]
-#      if job.is_done(): 
-#        done.append(job)
-#      elif job.is_running(): 
-#        running.append(job)
-#      self.logger.debug("job " + repr(job.name) + " " + repr(job.status) + " r " + repr(job.is_running()) + " d " + repr(job.is_done()))
-#      if job.status == constants.NOT_SUBMITTED:
-#        # a job can start to run when all its dependencies succeed and 
-#        # all its input files are in the FILES_ON_CR or 
-#        # FILES_ON_CLIENT_AND_CR or TRANSFERING_FROM_CLIENT_TO_CR
-#        job_to_run = True 
-#        for ft in job.referenced_input_files:
-#          eft = job.transfer_mapping[ft]
-#          if not eft.files_exist_on_server():
-#            if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
-#              #TBI stop the transfer
-#              pass 
-#            job_to_run = False
-#            break
-#        for dep in self.dependencies:
-#          job_a = self.job_mapping[dep[0]]
-#          job_b = self.job_mapping[dep[1]]
-#          if job_b == job and not job_a.ended_with_success(): 
-#            job_to_run = False
-#            if job_a.failed():
-#              to_abort.add(job)
-#            break
-#        if job_to_run: 
-#          to_run.append(job)
-
-    #self.logger.debug(" ")
-    #self.logger.debug("to run " + repr(to_run))
-    #self.logger.debug("to abort " + repr(to_abort))
-    #self.logger.debug("done " + repr(done))
-    #self.logger.debug("running " + repr(running))
-
     # if a job fails the whole workflow branch has to be stopped
     # look for the node in the branch to abort
     previous_size = 0
