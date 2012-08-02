@@ -339,12 +339,14 @@ class Configuration(observer.Observable):
       scheduler_type = None
       if config_parser.has_option(resource_id, OCFG_SCHEDULER_TYPE):
         scheduler_type = config_parser.get(resource_id, OCFG_SCHEDULER_TYPE)
-      if scheduler_type not in SCHEDULER_TYPES:
-        raise ConfigurationError("Unknown scheduler type:"
-                                 " " + repr(scheduler_type) + 
-                                 "Scheduler type must be one of the "
-                                 "following:" + repr(SCHEDULER_TYPES))
-
+        if scheduler_type not in SCHEDULER_TYPES:
+          raise ConfigurationError("Unknown scheduler type:"
+                                   " " + repr(scheduler_type) + 
+                                   "Scheduler type must be one of the "
+                                   "following:" + repr(SCHEDULER_TYPES))
+      else:
+        scheduler_type = DRMAA_SCHEDULER
+        
       config = cls(resource_id=resource_id,
                    mode=None,
                    scheduler_type=scheduler_type,
