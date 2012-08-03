@@ -168,14 +168,17 @@ class Job(object):
   # string (path)
   working_directory = None
 
+  # int 
+  priority = None
+
+  # string
+  native_specification = None
+
   # tuple(string, int)
   parallel_job_info = None
 
   # int (in hours)
   disposal_timeout = None
-
-  # int 
-  priority = None
 
   def __init__( self,
                 command,
@@ -212,10 +215,50 @@ class Job(object):
     self.priority = priority
     self.native_specification = native_specification
 
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    seq_attributs = [
+                     "command", 
+                     "referenced_input_files",
+                     "referenced_output_files"]
+    for attr_name in seq_attributs:
+      attr = getattr(self, attr_name)
+      other_attr = getattr(other, attr_name)
+      if not len(attr) == len(other_attr):
+        for i in range(0, len(attr)):
+          if not attr[i] == other_attr[i]:
+            return False
+
+    attributs = [
+                 "name", 
+                 "stdin",
+                 "join_stderrout",
+                 "stdout_file",
+                 "stderr_file",
+                 "working_directory",
+                 "priority",
+                 "native_specification",
+                 "parallel_job_info",
+                 "disposal_timeout",
+                 ]
+    for attr_name in attributs:
+      attr = getattr(self, attr_name)
+      other_attr = getattr(other, attr_name)
+      if not attr == other_attr:
+        return False
+    return True
+
+  def __ne__(self,other):
+    return not self.__eq__(other)
+
+
 
 class Workflow(object):
   '''
   Workflow representation.
+
+  **name**: *string*
 
   **jobs**: *sequence of Job*
     Workflow jobs.
@@ -296,6 +339,28 @@ class Workflow(object):
       self.root_group = self.jobs
       self.groups = []
 
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    seq_attributs = [
+                     "jobs",
+                     "dependencies",
+                     "root_group",
+                     "groups"
+                     ]
+    for attr_name in seq_attributs:
+      attr = getattr(self, attr_name)
+      other_attr = getattr(other, attr_name)
+      if not len(attr) == len(other_attr):
+        return False
+      for i in range(0, len(attr)):
+        if not attr[i] == other_attr[i]:
+          return False
+    return self.name == other.name
+
+  def __ne__(self,other):
+    return not self.__eq__(other)
+
 
 
 class Group(object):
@@ -328,6 +393,21 @@ class Group(object):
     self.elements = elements
     self.name = name
 
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    if len(self.elements) != len(other.elements):
+      return False
+    for i in range(0, len(self.elements)):
+      if self.elements[i] != other.elements[i]:
+        return False
+    if self.name != other.name:
+      return False
+    return True
+
+
+  def __ne__(self,other):
+    return not self.__eq__(other)
 
 class FileTransfer(object):
   '''
@@ -406,6 +486,28 @@ class FileTransfer(object):
     else:
       self.initial_status = constants.FILES_DO_NOT_EXIST
 
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    attributs = [
+                "client_path",
+                "client_paths",
+                "initial_status",
+                "disposal_timeout",
+                "name",
+                ]
+    for attr_name in attributs:
+      attr = getattr(self, attr_name)
+      other_attr = getattr(other, attr_name)
+      if not other_attr == attr:
+        return False
+    return True
+
+  def __ne__(self,other):
+    return not self.__eq__(other)
+
+
+
 
 class SharedResourcePath(object):
   '''
@@ -446,6 +548,24 @@ class SharedResourcePath(object):
     self.namespace = namespace
     self.uuid = uuid
     self.disposal_timout = disposal_timeout
+
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    attributs = [
+                "relative_path",
+                "namespace",
+                "uuid",
+                ]
+    for attr_name in attributs:
+      attr = getattr(self, attr_name)
+      other_attr = getattr(other, attr_name)
+      if not attr == other_attr:
+        return False
+    return True
+
+  def __ne__(self,other):
+    return not self.__eq__(other)
 
 
 
