@@ -215,7 +215,7 @@ class Job(object):
     self.priority = priority
     self.native_specification = native_specification
 
-  def __eq__(self, other):
+  def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
       return False
     seq_attributs = [
@@ -249,8 +249,6 @@ class Job(object):
         return False
     return True
 
-  def __ne__(self,other):
-    return not self.__eq__(other)
 
 
 
@@ -339,7 +337,7 @@ class Workflow(object):
       self.root_group = self.jobs
       self.groups = []
 
-  def __eq__(self, other):
+  def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
       return False
     seq_attributs = [
@@ -358,8 +356,6 @@ class Workflow(object):
           return False
     return self.name == other.name
 
-  def __ne__(self,other):
-    return not self.__eq__(other)
 
 
 
@@ -393,7 +389,7 @@ class Group(object):
     self.elements = elements
     self.name = name
 
-  def __eq__(self, other):
+  def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
       return False
     if len(self.elements) != len(other.elements):
@@ -405,9 +401,6 @@ class Group(object):
       return False
     return True
 
-
-  def __ne__(self,other):
-    return not self.__eq__(other)
 
 class FileTransfer(object):
   '''
@@ -486,7 +479,7 @@ class FileTransfer(object):
     else:
       self.initial_status = constants.FILES_DO_NOT_EXIST
 
-  def __eq__(self, other):
+  def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
       return False
     attributs = [
@@ -503,8 +496,6 @@ class FileTransfer(object):
         return False
     return True
 
-  def __ne__(self,other):
-    return not self.__eq__(other)
 
 
 
@@ -549,7 +540,7 @@ class SharedResourcePath(object):
     self.uuid = uuid
     self.disposal_timout = disposal_timeout
 
-  def __eq__(self, other):
+  def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
       return False
     attributs = [
@@ -564,8 +555,6 @@ class SharedResourcePath(object):
         return False
     return True
 
-  def __ne__(self,other):
-    return not self.__eq__(other)
 
 
 
