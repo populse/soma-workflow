@@ -1,7 +1,6 @@
 from __future__ import with_statement
 
 '''
-@author: Yann Cointepas
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
@@ -39,7 +38,6 @@ from soma.workflow.configuration import Configuration
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-__docformat__ = "epytext en"
 refreshment_interval = 1 #seconds
 # if the last status update is older than the refreshment_timeout 
 # the status is changed into WARNING

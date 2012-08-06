@@ -39,7 +39,6 @@ import SocketServer
 
 from soma.workflow.errors import ConnectionError
 
-__docformat__ = "epytext en"
 
 #-------------------------------------------------------------------------------
 # Classes and functions

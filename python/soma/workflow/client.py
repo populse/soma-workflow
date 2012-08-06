@@ -4,7 +4,6 @@
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
-__docformat__ = "epytext en"
 
 '''
 soma-workflow client classes
