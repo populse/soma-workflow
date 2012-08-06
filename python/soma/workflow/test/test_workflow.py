@@ -35,9 +35,9 @@ class WorkflowExamples(object):
   def get_workflow_example_list():
     return ["simple", "multiple", "with exception 1", "with exception 2", "command check test", "special transfers", "hundred of jobs", "ten jobs", "fake pipelineT1", "serial", "hundred with dependencies", "thousands", "thousands with dependencies", "native specification for PBS", "wrong native specification for PBS"]
   
-  def __init__(self, with_tranfers, with_shared_resource_path = False):
+  def __init__(self, with_transfers, with_shared_resource_path = False):
     '''
-    @type with_tranfers: boolean
+    @type with_transfers: boolean
     @type with_shared_resource_path: boolean
 
     if with_transfer and not with_shared_resource_path:
@@ -63,7 +63,7 @@ class WorkflowExamples(object):
     if not os.path.isdir(self.output_dir):
       os.mkdir(self.output_dir)
        
-    self.with_transfers = with_tranfers
+    self.with_transfers = with_transfers
     self.with_shared_resource_path = with_shared_resource_path
     
     # local path
@@ -185,17 +185,17 @@ class WorkflowExamples(object):
   def get_workflow_example(self, example_index):
     workflow = None
     if example_index == 0:
-      workflow = self.simpleExample()
+      workflow = self.simple_example()
     elif example_index == 1:
-      workflow = self.multipleSimpleExample()
+      workflow = self.multiple_simple_example()
     elif example_index == 2:
-      workflow = self.simpleExampleWithException1()
+      workflow = self.simple_example_with_exception1()
     elif example_index == 3:
-      workflow = self.simpleExampleWithException2()
+      workflow = self.simple_example_with_exception2()
     elif example_index == 4:
-      workflow = self.command_test()
+      workflow = self.special_command()
     elif example_index == 5:
-      workflow = self.special_transfer_test()
+      workflow = self.special_transfer()
     elif example_index == 6:
       workflow = self.n_jobs(100)
     elif example_index == 7:
@@ -422,7 +422,7 @@ class WorkflowExamples(object):
     
     return job
     
-  def special_transfer_test(self):
+  def special_transfer(self):
      # jobs
     test_dir_contents = self.job_test_dir_contents()
     test_multi_file_format = self.job_test_multi_file_format()
@@ -436,7 +436,7 @@ class WorkflowExamples(object):
     return workflow
       
 
-  def command_test(self):
+  def special_command(self):
     
     # jobs
     test_command_job = self.job_test_command_1()
@@ -450,7 +450,7 @@ class WorkflowExamples(object):
     
     return workflow
       
-  def simpleExample(self):
+  def simple_example(self):
     
     # jobs
     job1 = self.job1()
@@ -502,7 +502,7 @@ class WorkflowExamples(object):
 
  
   
-  def simpleExampleWithException1(self):
+  def simple_example_with_exception1(self):
                                                           
     # jobs
     if self.with_transfers and not self.with_shared_resource_path:
@@ -546,7 +546,7 @@ class WorkflowExamples(object):
     return workflow
   
   
-  def simpleExampleWithException2(self):
+  def simple_example_with_exception2(self):
    
     # jobs
     job1 = self.job1()
@@ -591,10 +591,10 @@ class WorkflowExamples(object):
     return workflow
   
   
-  def multipleSimpleExample(self):
-    workflow1 = self.simpleExample()
-    workflow2 = self.simpleExampleWithException1()
-    workflow3 = self.simpleExampleWithException2()
+  def multiple_simple_example(self):
+    workflow1 = self.simple_example()
+    workflow2 = self.simple_example_with_exception1()
+    workflow3 = self.simple_example_with_exception2()
     
     jobs = workflow1.jobs
     jobs.extend(workflow2.jobs)
@@ -779,10 +779,10 @@ class WfTest(unittest.TestCase):
 class Simple_Shared(WfTest):
 
   def setUp(self):
-    workflow_examples = WorkflowExamples(with_tranfers=False,
+    workflow_examples = WorkflowExamples(with_transfers=False,
                                          with_shared_resource_path=False)
     self.wf_ex = workflow_examples
-    self.wf = self.wf_ex.simpleExample() 
+    self.wf = self.wf_ex.simple_example() 
     self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
                                               name="unit test multiple")
 
@@ -798,7 +798,7 @@ class Multiple(WfTest):
   def setUp(self):
     workflow_examples = WorkflowExamples(False)
     self.wf_ex = workflow_examples
-    self.wf = self.wf_ex.simpleExample() #multipleSimpleExample()
+    self.wf = self.wf_ex.simple_example() #multiple_simple_example()
     self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
                                                 name="unit test multiple")
 
