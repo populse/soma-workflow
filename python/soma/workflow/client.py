@@ -214,7 +214,37 @@ class Job(object):
     self.priority = priority
     self.native_specification = native_specification
 
+  
+  def _attributs_equal(self, el_list, other_el_list):
+    if not len(el_list) == len(other_el_list):
+      return False
+    for i in range(0, len(el_list)):
+      if isinstance(el_list[i], FileTransfer) or\
+         isinstance(el_list[i], SharedResourcePath):
+        if not el_list[i].attributs_equal(other_el_list[i]):
+          return False
+      elif isinstance(el_list[i], tuple):
+        if not isinstance(other_el_list[i], tuple) or\
+           not len(el_list[i]) == len(other_el_list[i]):
+          return False
+        if not el_list[i][0].attributs_equal(other_el_list[i][0]):
+          return False
+        if not el_list[i][1] == other_el_list[i][1]:
+          return False
+      elif isinstance(el_list[i], list):
+        if not isinstance(other_el_list[i], list):
+          return False
+        if not self._attributs_equal(el_list[i], other_el_list[i]):
+          return False
+      elif not el_list[i] == other_el_list[i]:
+        return False
+    return True
+
   def attributs_equal(self, other):
+    # TODO a better solution would be to overload __eq__ and __neq__ operator
+    # however these operators are used in soma-workflow to test if 
+    # two objects are the same instancete. These tests have to be replaced 
+    # first using the id python function.
     if not isinstance(other, self.__class__):
       return False
     seq_attributs = [
@@ -224,10 +254,8 @@ class Job(object):
     for attr_name in seq_attributs:
       attr = getattr(self, attr_name)
       other_attr = getattr(other, attr_name)
-      if not len(attr) == len(other_attr):
-        for i in range(0, len(attr)):
-          if not attr[i] == other_attr[i]:
-            return False
+      if not self._attributs_equal(attr, other_attr):
+        return False
 
     attributs = [
                  "name", 
@@ -244,7 +272,11 @@ class Job(object):
     for attr_name in attributs:
       attr = getattr(self, attr_name)
       other_attr = getattr(other, attr_name)
-      if not attr == other_attr:
+      if isinstance(attr, FileTransfer) or\
+         isinstance(attr, SharedResourcePath):
+        if not attr.attributs_equal(other_attr):
+          return False
+      elif not attr == other_attr:
         return False
     return True
 
@@ -351,7 +383,19 @@ class Workflow(object):
       if not len(attr) == len(other_attr):
         return False
       for i in range(0, len(attr)):
-        if not attr[i] == other_attr[i]:
+        if isinstance(attr[i], Job) or\
+         isinstance(attr[i], Group):
+          if not attr[i].attributs_equal(other_attr[i]):
+            return False
+        elif isinstance(attr[i], tuple):
+          if not isinstance(other_attr[i], tuple) or\
+             not len(attr[i]) == len(other_attr[i]):
+            return False
+          if not attr[i][0].attributs_equal(other_attr[i][0]):
+            return False
+          if not attr[i][1].attributs_equal(other_attr[i][1]):
+            return False
+        elif not attr[i] == other_attr[i]:
           return False
     return self.name == other.name
 
@@ -394,7 +438,7 @@ class Group(object):
     if len(self.elements) != len(other.elements):
       return False
     for i in range(0, len(self.elements)):
-      if self.elements[i] != other.elements[i]:
+      if not self.elements[i].attributs_equal(other.elements[i]):
         return False
     if self.name != other.name:
       return False
