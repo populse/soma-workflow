@@ -37,6 +37,8 @@ import subprocess
 import sys
 import posixpath
 
+if sys.version_info[:2] >= (2, 6):
+  import json
 #import cProfile
 #import traceback
 
@@ -1103,7 +1105,9 @@ class Helper(object):
   @staticmethod
   def serialize(file_path, workflow):
     '''
-    Saves a workflow to a file => Python Pickle for now.
+    Saves a workflow to a file
+    => Python >= 2.6: JSON
+    => Python 2.5: pickle
 
     * file_path *String*
 
@@ -1111,17 +1115,29 @@ class Helper(object):
 
     Raises *SerializationError*
     '''
-    try:
-      file = open(file_path, "w")
-      pickle.dump(workflow, file)
-      file.close()
-    except Exception, e:
-      raise SerializationError("%s: %s" %(type(e), e))
+    if sys.version_info[:2] >= (2, 6):
+      try:
+        file = open(file_path, "w")
+        workflow_dict = workflow.to_dict()
+        json.dump(workflow_dict, file, indent=4)
+        file.close()
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+    else:
+      try:
+        file = open(file_path, "w")
+        pickle.dump(workflow, file)
+        file.close()
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+  
+
 
   @staticmethod
   def unserialize(file_path):
     '''
-    Loads a workflow from a file 
+    Loads a workflow from a file:
+    pickle of a Workflow instance or JSON if python >= 2.6
 
     * file_path *String*
 
@@ -1129,13 +1145,54 @@ class Helper(object):
 
     Raises *SerializationError*
     '''
-    
-    try:
-      file = open(file_path, "r")
-      workflow = pickle.load(file)
-      file.close()
-    except Exception, e:
-      raise SerializationError("%s: %s" %(type(e), e))
+   
+    if sys.version_info[:2] >= (2, 6):
+      try:
+        file = open(file_path, "r")
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+
+      workflow = None
+      try:
+        dict_from_json = json.load(file)
+      except ValueError, e:
+        pass
+      else:
+        workflow = Workflow.from_dict(dict_from_json)
+
+      if not workflow:
+        file.close()
+        file = open(file_path, "r")
+        try:
+          workflow = pickle.load(file)
+        except Exception, e:
+          raise SerializationError("%s: %s" %(type(e), e))
+
+      try:
+        file.close()
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+      
+    else:
+      try:
+        file = open(file_path, "r")
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+      try: 
+        workflow = pickle.load(file)
+      except Exception, e:
+        raise SerializationError("Error %s: %s \n\n"
+                                 "The workflow file may have been created "
+                                 "using Python >= 2.6 using the JSON format.\n"
+                                 "Use the converter: \n"
+                                 "soma.workflow.client.Helper.convert_wf_file_for_p2_5 "
+                                 " " %(type(e), e))
+      try:
+        file.close()
+      except Exception, e:
+        raise SerializationError("%s: %s" %(type(e), e))
+ 
+
 
     # compatibility with version 2.2 and previous
     for job in workflow.jobs:
@@ -1144,6 +1201,26 @@ class Helper(object):
 
     return workflow
 
+  @staticmethod
+  def convert_wf_file_for_p2_5(origin_file_path, target_file_path):
+    '''
+    This method requires Python >= 2.6
+    To convert a workflow file created using Python >= 2.6 to workflow file
+    usable in Python 2.5.
+    '''
+    if sys.version_info[:2] < (2, 6):
+      raise Exception("convert_wf_file_for_p2_5 requires Python >= 2.6.")
+  
+    try:
+      o_file = open(origin_file_path, "r")
+      dict_from_json = json.load(o_file)
+      workflow = Workflow.from_dict(dict_from_json)  
+      o_file.close()
+      t_file = open(target_file_path, "w")
+      pickle.dump(workflow, t_file)
+      t_file.close()      
+    except Exception, e:
+      SerializationError("%s: %s" %(type(e), e))
 
   @staticmethod
   def cpu_count():
