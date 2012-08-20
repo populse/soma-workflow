@@ -18,6 +18,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 import socket
+import weakref
 #import cProfile
 #import traceback
 #import pdb
@@ -1724,7 +1725,7 @@ class SearchWidget(QtGui.QWidget):
     '''
     super(SearchWidget, self).__init__(parent)
   
-    self.workflow_tree = workflow_tree
+    self.workflow_tree = weakref.ref(workflow_tree)
     
     self.ui = Ui_SearchWidget()
     self.ui.setupUi(self)
@@ -1751,19 +1752,19 @@ class SearchWidget(QtGui.QWidget):
     
     
     self.ui.line_edit.textChanged.connect(self.text_changed)
-    self.ui.expand_button.clicked.connect(self.workflow_tree.tree_view.expandAll)
+    self.ui.expand_button.clicked.connect(self.workflow_tree().tree_view.expandAll)
     self.ui.status_combo_box.currentIndexChanged.connect(self.status_changed)
 
 
   @QtCore.Slot(int)
   def status_changed(self, index):
-    if self.workflow_tree.proxy_model != None:
-      self.workflow_tree.proxy_model.setFilterStatus(self.statuses[index])  
+    if self.workflow_tree().proxy_model != None:
+      self.workflow_tree().proxy_model.setFilterStatus(self.statuses[index])  
     
 
   def text_changed(self, text):
-    if self.workflow_tree.proxy_model != None:
-      self.workflow_tree.proxy_model.setFilterRegExp(
+    if self.workflow_tree().proxy_model != None:
+      self.workflow_tree().proxy_model.setFilterRegExp(
                               QtCore.QRegExp(text, 
                                              QtCore.Qt.CaseInsensitive,
                                              QtCore.QRegExp.FixedString))
@@ -1911,7 +1912,6 @@ class WorkflowTree(QtGui.QWidget):
         self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
         self.item_model = None
         self.tree_view.setModel(None)
-        #self.item_model.emit(QtCore.SIGNAL("modelReset()"))
 
   @QtCore.Slot()
   def currentWorkflowAboutToChange(self):
@@ -2076,7 +2076,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('current_workflow_changed()'), self.clear)
     
     self.vLayout = QtGui.QVBoxLayout(self)
-    
+   
   @QtCore.Slot(QtGui.QItemSelectionModel)
   def setSelectionModel(self, selectionModel):
     if self.selectionModel:
@@ -2108,7 +2108,6 @@ class WorkflowElementInfo(QtGui.QWidget):
       self.vLayout.removeWidget(self.infoWidget)
     self.infoWidget = None
     self.dataChanged()
-    
     
   @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
   def currentChanged(self, current, previous):
