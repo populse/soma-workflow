@@ -999,7 +999,7 @@ class Helper(object):
     If force is set to True: the call will block until the workflows are
     deleted. With force set to True, if a workflow can not be deleted properly
     it is deleted from Soma-workflow database. However, if some jobs are still
-    running they are not be killed. In this case the return value is False.
+    running they will not be killed. In this case the return value is False.
     
     * wf_ctrl *client.WorkflowController*
 
@@ -1105,9 +1105,8 @@ class Helper(object):
   @staticmethod
   def serialize(file_path, workflow):
     '''
-    Saves a workflow to a file
-    => Python >= 2.6: JSON
-    => Python 2.5: pickle
+    Saves a workflow to a file.
+    Uses JSON format if Python >= 2.6, Python pickle otherwise.
 
     * file_path *String*
 
@@ -1136,8 +1135,9 @@ class Helper(object):
   @staticmethod
   def unserialize(file_path):
     '''
-    Loads a workflow from a file:
-    pickle of a Workflow instance or JSON if python >= 2.6
+    Loads a workflow from a file.
+    Opens JSON format or pickle if Python >= 2.6, only Python pickle otherwise 
+    (see the method: Helper.convert_wf_file_for_p2_5).
 
     * file_path *String*
 
@@ -1204,8 +1204,8 @@ class Helper(object):
   @staticmethod
   def convert_wf_file_for_p2_5(origin_file_path, target_file_path):
     '''
-    This method requires Python >= 2.6
-    To convert a workflow file created using Python >= 2.6 to workflow file
+    This method requires Python >= 2.6.
+    It converts a workflow file created using Python >= 2.6 to workflow file
     usable in Python 2.5.
     '''
     if sys.version_info[:2] < (2, 6):
