@@ -28,7 +28,7 @@ Tips
   quickly in a workflow:
 
   .. figure:: images/without_priority.*
-    :scale: 100
+    :scale: 70
 
     *Without job priority: depending on the number of cpu available the 
     tendency will be to execute all the "brain extraction" jobs, then all 
@@ -37,7 +37,7 @@ Tips
     workflow execution.*
 
   .. figure:: images/with_priority.*
-    :scale: 100
+    :scale: 70
 
     *With job priorities: the "sulci recognition" jobs have higher priority. 
     Depending of the number of cpu available, the "sulci recognition" jobs will 
@@ -46,6 +46,30 @@ Tips
     whole processing of the subject 1 will be available early in the workflow 
     execution.*
 
+**Use native specification to access the full range of features of your cluster**
+  Some specific option/feature of your cluster might not be usable through the unified
+  interface of Soma-workflow. The native specification string makes them available. 
+  
+  For example, the native specification parameter can be used to specify the walltime of 
+  a job: 
+
+    ::
+
+      #Using a PBS cluster:  
+      job = Job(command=["program", "argument"], name="max one hour job", native_specification="-l walltime=01:00:00") 
+    
+    ::
+
+      #Using a SGE cluster:
+      job = Job(command=["program", "argument"], name="max one hour job", native_specification="-l h_rt=01:00:00")
+  
+  The main problem of native specification is that it makes jobs dependent of the 
+  resource which will be used for the execution (in the previous example the 
+  job created for the PBS cluster can not be used on the SGE cluster). 
+  **To avoid this drawback**, a default native configuration string can be 
+  configured for each resource and will be applied to every job submitted to the 
+  resource (see :ref:`conf_server_option`).
+      
 
 **Avoid some typing**
   A login and password are required when you connect to a remote computing 

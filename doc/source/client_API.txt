@@ -142,3 +142,6 @@ Helper
 .. automethod:: Helper.serialize
 
 .. automethod:: Helper.unserialize
+
+.. automethod:: Helper.convert_wf_file_for_p2_5
+

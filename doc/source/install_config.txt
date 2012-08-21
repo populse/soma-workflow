@@ -149,7 +149,7 @@ Requirements
 ------------
 
 .. image:: images/third_parties.*
-  :scale: 50
+  :scale: 40
 
 Here is the list of the server dependencies:
 
