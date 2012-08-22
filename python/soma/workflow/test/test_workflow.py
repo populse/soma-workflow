@@ -734,82 +734,88 @@ class WorkflowExamples(object):
 
     return workflow
 
+class WorkflowTest(unittest.TestCase):
+  
+  LOCAL_PATH = "local path"
+  FILE_TRANSFER = "file transfer"
+  SHARED_RESOURCE_PATH = "shared resource path"
 
+  wf_ctrl = None
 
-class WfTest(unittest.TestCase):
-  '''
-  Abstract class for soma-workflow workflow test. 
-  '''
-  wf = None
+  path_management = None
+
+  wf_examples = None
 
   wf_id = None
 
-  wf_ctrl = None
-  
-  wf_ex = None
+  @classmethod
+  def setup_wf_controller(cls, workflow_controller):
+    cls.wf_ctrl = workflow_controller
 
-  @staticmethod
-  def setup_wf_controller(workflow_controller):
-    WfTest.wf_ctrl = workflow_controller
+  @classmethod
+  def setup_path_management(cls, path_management):
+    '''
+    * path_management: LOCAL_PATH, FILE_TRANSFER or SHARED_RESOURCE_PATH
+    '''
+    cls.path_management = path_management
 
-  def setUp(self):
-    raise Exception('WfTest is an abstract class. SetUp must be implemented in subclass')
+  def setUp(self):  
+    if WorkflowTest.path_management == WorkflowTest.LOCAL_PATH:
+      WorkflowTest.wf_examples = WorkflowExamples(with_transfers=False,
+                                          with_shared_resource_path=False)
+    elif WorkflowTest.path_management == WorkflowTest.FILE_TRANSFER: 
+      WorkflowTest.wf_examples = WorkflowExamples(with_transfers=True,
+                                          with_shared_resource_path=False)
+    elif WorkflowTest.path_management == WorkflowTest.SHARED_RESOURCE_PATH:
+      WorkflowTest.wf_examples = WorkflowExamples(with_transfers=False,
+                                          with_shared_resource_path=True)
+    #raise Exception("WorkflowTest is an abstract class.")
 
   def tearDown(self): 
     if self.wf_id:
-      WfTest.wf_ctrl.delete_workflow(self.wf_id)
-    self.assertRaises(UnknownObjectError, WfTest.wf_ctrl.workflow, self.wf_id)
+      WorkflowTest.wf_ctrl.delete_workflow(self.wf_id)
 
-    
-  #def test_workflows(self):
-    #res = WfTest.wf_ctr.workflows.keys()
-    #self.failUnless(self.wf_id in res)
-    
-  #def test_stop(self):
-    ##TBI
-    #pass
 
-  #def test_restart(self):
-    ##TBI
-    #pass
+class MultipleTest(WorkflowTest):
 
   def test_result(self):
-    raise Exception('WfTest is an abstract class. test_result must be implemented in subclass')
+    workflow = WorkflowTest.wf_examples.multiple_simple_example() 
+    self.wf_id = WorkflowTest.wf_ctrl.submit_workflow(workflow=workflow, 
+                                             name="unit test multiple")
+    if self.path_management == WorkflowTest.FILE_TRANSFER:
+      Helper.transfer_input_files(self.wf_id, WorkflowTest.wf_ctrl)
 
-class Simple_Shared(WfTest):
+    Helper.wait_workflow(self.wf_id, WorkflowTest.wf_ctrl)
+    status = self.wf_ctrl.workflow_status(self.wf_id)
+    
+    self.assert_(status == constants.WORKFLOW_DONE)
+    self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
+                                             WorkflowTest.wf_ctrl)) == 2)
+    self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
+                                             WorkflowTest.wf_ctrl,
+                                             include_aborted_jobs=True)) == 6)
+    # TODO: check the stdout and stderrr
 
-  def setUp(self):
-    workflow_examples = WorkflowExamples(with_transfers=False,
-                                         with_shared_resource_path=False)
-    self.wf_ex = workflow_examples
-    self.wf = self.wf_ex.simple_example() 
-    self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
-                                              name="unit test multiple")
+class SpecialCommandTest(WorkflowTest):
 
   def test_result(self):
-    Helper.wait_workflow(self.wf_id, WfTest.wf_ctrl)
-    status = WfTest.wf_ctrl.workflow_status(self.wf_id)
+    workflow = WorkflowTest.wf_examples.special_command() 
+    self.wf_id = WorkflowTest.wf_ctrl.submit_workflow(workflow=workflow, 
+                                             name="unit test command check")
+    if self.path_management == WorkflowTest.FILE_TRANSFER:
+      Helper.transfer_input_files(self.wf_id, WorkflowTest.wf_ctrl)
+
+    Helper.wait_workflow(self.wf_id, WorkflowTest.wf_ctrl)
+    status = self.wf_ctrl.workflow_status(self.wf_id)
     
-    self.failUnless(status == constants.WORKFLOW_DONE)
-
-
-class Multiple(WfTest):
-  
-  def setUp(self):
-    workflow_examples = WorkflowExamples(False)
-    self.wf_ex = workflow_examples
-    self.wf = self.wf_ex.simple_example() #multiple_simple_example()
-    self.wf_id = WfTest.wf_ctrl.submit_workflow(workflow=self.wf, 
-                                                name="unit test multiple")
-
-  def test_result(self):
-    Helper.wait_workflow(self.wf_id, WfTest.wf_ctrl)
-    status = WfTest.wf_ctrl.workflow_status(self.wf_id)
-    
-    self.failUnless(status == constants.WORKFLOW_DONE)
-    
-
-
+    self.assert_(status == constants.WORKFLOW_DONE)
+    self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
+                                             WorkflowTest.wf_ctrl)) == 0)
+    self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
+                                             WorkflowTest.wf_ctrl,
+                                             include_aborted_jobs=True)) == 0)
+    # TODO: check the stdout 
+ 
 
 if __name__ == '__main__':
   
@@ -848,7 +854,7 @@ if __name__ == '__main__':
   sys.stdout.write("---------------------------------\n")
   
   # Workflow types
-  wf_types = ["multiple", "command check test", "special transfers", "ten jobs"]
+  wf_types = ["multiple", "special command"]
   sys.stdout.write("Workflow example to test: \n")
   sys.stdout.write("all -> all \n")
   for i in range(0, len(wf_types)):
@@ -871,7 +877,9 @@ if __name__ == '__main__':
 
   # File path type 
   sys.stdout.write("---------------------------------\n")
-  path_types = ["local path", "shared resource path", "file transfer"]
+  path_types = [WorkflowTest.LOCAL_PATH, 
+                WorkflowTest.FILE_TRANSFER,
+                WorkflowTest.SHARED_RESOURCE_PATH]
   sys.stdout.write("File path type: \n")
   sys.stdout.write("all -> all \n")
   for i in range(0, len(path_types)):
@@ -917,24 +925,35 @@ if __name__ == '__main__':
   sys.stdout.write("---------------------------------\n")
 
   wf_controller = WorkflowController(resource_id, login, password)
-  WfTest.setup_wf_controller(wf_controller)
+  WorkflowTest.setup_wf_controller(wf_controller)
 
-  suite_list =  []
-  tests = selected_test_type
-  wf_types = ["multiple", "command check test", "special transfers", "ten jobs"]
 
-  if "multiple" in selected_wf_type:
-    suite_list.append(unittest.TestSuite(map(Multiple, tests)))
-  if "command check test" in selected_wf_type:
-    suite_list.append(unittest.TestSuite(map(CommandCheck, tests)))
-  if "special transfers" in selected_wf_type:
-    suite_list.append(unittest.TestSuite(map(SpecialTransfers, tests)))
-  if "ten jobs" in selected_wf_type:
-    suite_list.append(unittest.TestSuite(map(TenJobs, tests)))
+  test_results = {}
 
-  alltests = unittest.TestSuite(suite_list)
-  unittest.TextTestRunner(verbosity=2).run(alltests)
-  
+  for path_management in selected_path_type:
+    print "\n**********************************************************************"
+    print "Test Suite: " + repr(path_management) + ":\n"
+    WorkflowTest.setup_path_management(path_management)
+
+    suite_list =  []
+    tests = selected_test_type
+
+    if "multiple" in selected_wf_type:
+      suite_list.append(unittest.TestSuite(map(MultipleTest, 
+                                               selected_test_type)))
+    if "special command" in selected_wf_type:
+      suite_list.append(unittest.TestSuite(map(SpecialCommandTest, 
+                                               selected_test_type)))
+
+    alltests = unittest.TestSuite(suite_list)
+    test_result = unittest.TextTestRunner(verbosity=2).run(alltests)
+    test_results[path_management] = test_result
+
+  if len(test_results) > 1:
+    for path_management, test_result in test_results.iteritems():
+      if not test_result.wasSuccessful():
+        print repr(path_management) + " test suite failed !"
+
   sys.exit(0)
 
 
