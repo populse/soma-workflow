@@ -18,7 +18,7 @@ The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) ar
 objects to be used in the WorkflowController interface.
 
 Definitions:
-A Parallel job is a job requiring more than one node to run.
+Parallel job is a job requiring more than one node to run.
 DRMS: distributed resource management system
 '''
 
