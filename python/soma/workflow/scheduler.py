@@ -285,13 +285,6 @@ class Drmaa(Scheduler):
 
     return drmaaSubmittedJobId
   
-  #def process_str(self, value):
-    #if value and value.find(' ') != -1:
-      #result = "\'"+value+"\'"
-    #else: 
-      #result = value
-    #return result
-
 
   def get_job_status(self, scheduler_job_id):
     if self.is_sleeping: self.wake()
@@ -299,7 +292,7 @@ class Drmaa(Scheduler):
       status = self._drmaa.jobStatus(scheduler_job_id)
     except DrmaaError, e:
       self.logger.error("%s" %(e))
-      raise DRMError("%s" %(e))
+      return constants.UNDETERMINED
     return status
 
 
@@ -339,7 +332,6 @@ class Drmaa(Scheduler):
     for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
       value = self.parallel_job_submission_info.get(drmaa_attribute)
       if value: 
-        #value = value.format(config_name=cluster_specific_cfg_name, max_node=max_num_node)
         value = value.replace("{config_name}", cluster_specific_cfg_name)
         value = value.replace("{max_node}", repr(max_num_node))
         self._drmaa.setAttribute( drmaa_job_template_id, 
