@@ -292,7 +292,7 @@ class Drmaa(Scheduler):
       status = self._drmaa.jobStatus(scheduler_job_id)
     except DrmaaError, e:
       self.logger.error("%s" %(e))
-      return constants.UNDETERMINED
+      raise DRMError("%s" %(e))
     return status
 
 

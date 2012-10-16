@@ -88,7 +88,7 @@ class WorkflowEngineLoop(object):
   # each workflow holds a set of EngineJob
   # dict workflow_id -> workflow 
   _workflows = None
-  # Scheduler => Using Drmaa for example
+   
   _scheduler = None
   # database server proxy
   # soma.workflow.database_server
@@ -233,7 +233,7 @@ class WorkflowEngineLoop(object):
               ended_jobs.update(ended_jobs_in_wf)
               wf_to_inspect.add(wf_id)
         
-        # --- 2. Update job status from DRMAA -------------------------------
+        # --- 2. Update job status from the scheduler -------------------------------
         # get back the termination status and terminate the jobs which ended 
         
         wf_jobs = {}
@@ -248,7 +248,7 @@ class WorkflowEngineLoop(object):
           if job.exit_status == None and job.drmaa_id != None:
             try:
               job.status = self._scheduler.get_job_status(job.drmaa_id)
-            except DrmaaError, e:
+            except DRMError, e:
               self.logger.error("!!!ERROR!!! get_job_status %s: %s" %(type(e), e))
               job.status = constants.UNDETERMINED
             #self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
