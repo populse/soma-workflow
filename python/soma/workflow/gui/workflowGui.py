@@ -2940,6 +2940,8 @@ class ApplicationModel(QtCore.QObject):
   _hold = None
 
   _timer = None
+ 
+  _timeout_duration = None
 
   # signals
   # connection_closed_error
@@ -2984,6 +2986,7 @@ class ApplicationModel(QtCore.QObject):
     self.workflow_name = None
     self.workflow_status = None
     
+    self._timeout_duration = {}
     self.update_interval = 3 # update period in seconds
     self.auto_update = True
     self._hold = {}
@@ -3030,13 +3033,17 @@ class ApplicationModel(QtCore.QObject):
               #begining = datetime.now()
 
               #wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
-              wf_complete_status = self.connection_timeout(WorkflowController.workflow_elements_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
+              wf_complete_status = self.connection_timeout(WorkflowController.workflow_elements_status, 
+                                                           args=(self.current_connection, self.current_wf_id), 
+                                                           timeout_duration=self._timeout_duration[self.current_resource_id])
 
               wf_status = wf_complete_status[2]
               #end = datetime.now() - begining
               #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
             else:
-              wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(self.current_connection, self.current_wf_id), timeout_duration=20)
+              wf_status = self.connection_timeout(WorkflowController.workflow_status, 
+                                                  args=(self.current_connection, self.current_wf_id), 
+                                                  timeout_duration=self._timeout_duration[self.current_resource_id])
               #wf_status = self.current_connection.workflow_status(self.current_wf_id)
           except ConnectionClosedError, e:
             #print e
@@ -3064,7 +3071,9 @@ class ApplicationModel(QtCore.QObject):
                 if wfid != self.current_wf_id:
                   try:
                     connection = self.resource_pool.connection(rid)
-                    wf_status = self.connection_timeout(WorkflowController.workflow_status, args=(connection, wfid), timeout_duration=20)
+                    wf_status = self.connection_timeout(WorkflowController.workflow_status, 
+                                                        args=(connection, wfid), 
+                                                        timeout_duration=self._timeout_duration[self.current_resource_id])
 
                     #wf_status = self.resource_pool.connection(rid).workflow_status(wfid)
                   except ConnectionClosedError, e:
@@ -3087,7 +3096,7 @@ class ApplicationModel(QtCore.QObject):
     """This function will spawn a thread and run the given function
     using the args, kwargs and return the given default value if the
     timeout_duration is exceeded.
-    """ 
+    """
     class InterruptableThread(threading.Thread):
       def __init__(self):
         threading.Thread.__init__(self)
@@ -3147,10 +3156,15 @@ class ApplicationModel(QtCore.QObject):
       self.workflow_exp_date = None
       self.workflow_status = None
       self.workflow_name = None
+      if connection.config.get_mode() == configuration.REMOTE_MODE:
+      	self._timeout_duration[resource_id] = 40
+      else:
+        self._timeout_duration[resource_id] = 240
       self.emit(QtCore.SIGNAL('current_connection_changed()'))
       self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
       self.emit(QtCore.SIGNAL('current_workflow_changed()'))
       self._hold[resource_id] = False
+      
 
   def delete_connection(self, resource_id):
     '''
