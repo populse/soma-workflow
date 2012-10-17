@@ -120,7 +120,7 @@
     <set>QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
-    <string>Worflow</string>
+    <string>Workflow</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>

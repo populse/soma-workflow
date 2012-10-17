@@ -633,6 +633,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   config_file_path = None
 
+  login_list = None
+
   update_workflow_list_from_model = None
 
   workflow_info_widget = None
@@ -669,8 +671,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     except ConfigurationError, e:
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.close()
-
-
+  
     self.ui.combo_resources.addItems(self.resource_list)
     
     self.workflow_info_widget.hide()
@@ -2633,9 +2634,6 @@ class WorkflowGraphView(QtGui.QWidget):
 class WorkflowItemModel(QtCore.QAbstractItemModel):
   
   def __init__(self, gui_workflow, parent=None):
-    '''
-    @type gui_workflow: L{GuiWorkflow}
-    '''
     super(WorkflowItemModel, self).__init__(parent)
     self.workflow = gui_workflow 
 
@@ -2936,6 +2934,8 @@ class ApplicationModel(QtCore.QObject):
 
   workflow_status = None
 
+  tmp_stderrout_dir = None
+
   #dictionary: resource_id => boolean
   _hold = None
 
@@ -2966,6 +2966,12 @@ class ApplicationModel(QtCore.QObject):
     **resource_pool**: *ComputingResourcePool*
     '''
     super(ApplicationModel, self).__init__(parent)
+
+    home_dir = configuration.Configuration.get_home_dir()
+
+    self.tmp_stderrout_dir = os.path.join(home_dir, ".soma-workflow")
+    if not os.path.isdir(self.tmp_stderrout_dir):
+      	os.makedir(self.tmp_stderrout_dir)
 
     if resource_pool != None:
       self.resource_pool = resource_pool
@@ -3227,7 +3233,8 @@ class ApplicationModel(QtCore.QObject):
     with self._lock:      
       if workflow_id != NOT_SUBMITTED_WF_ID:
         if workflow:
-          self._workflows[self.current_resource_id][workflow_id] = GuiWorkflow(workflow)
+          self._workflows[self.current_resource_id][workflow_id] = GuiWorkflow(workflow,
+                                                                               self.tmp_stderrout_dir)
         else:
           self._workflows[self.current_resource_id][workflow_id] = None
         self._expiration_dates[self.current_resource_id][workflow_id] = workflow_exp_date
@@ -3246,12 +3253,11 @@ class ApplicationModel(QtCore.QObject):
     '''
     Build a GuiWorkflow from a soma.workflow.client.Worklfow and 
     use it as the current workflow. 
-    @type workflow: soma.workflow.client.Workflow
     '''
     with self._lock:
       self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
       if workflow:
-        self._current_workflow = GuiWorkflow(workflow)
+        self._current_workflow = GuiWorkflow(workflow, self.tmp_stderrout_dir)
       else:
         self._current_workflow = None
       self.current_wf_id = workflow_id
@@ -3293,7 +3299,7 @@ class ApplicationModel(QtCore.QObject):
         return self._current_workflow
       else:
         try:
-          self._current_workflow = GuiWorkflow(workflow)
+          self._current_workflow = GuiWorkflow(workflow, self.tmp_stderrout_dir)
           self._workflows[self.current_resource_id][self._current_workflow.wf_id] = self._current_workflow
           wf_status = self.current_connection.workflow_elements_status(self.current_wf_id)
         except ConnectionClosedError, e:
@@ -3395,7 +3401,7 @@ class GuiWorkflow(object):
   queue = None
   
   
-  def __init__(self, workflow):
+  def __init__(self, workflow, tmp_stderrout_dir):
     
     #print("wf " +repr(workflow))
     self.name = workflow.name 
@@ -3442,6 +3448,7 @@ class GuiWorkflow(object):
       
       gui_job = GuiJob(it_id = item_id, 
                        command=command,
+                       tmp_stderrout_dir=tmp_stderrout_dir,
                        parent=-1, 
                        row=-1, 
                        data=job, 
@@ -3788,6 +3795,7 @@ class GuiJob(GuiWorkflowItem):
   def __init__(self,
                it_id,
                command,
+               tmp_stderrout_dir,
                parent=-1, 
                row=-1,
                it_type=None,
@@ -3810,7 +3818,9 @@ class GuiJob(GuiWorkflowItem):
     
     self.name = name
     self.job_id = job_id
-    
+   
+    self.tmp_stderrout_dir = tmp_stderrout_dir
+
     cmd_seq = []
     for command_el in command:
       if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
@@ -3859,8 +3869,8 @@ class GuiJob(GuiWorkflowItem):
     
   def updateStdOutErr(self, connection):
     if self.data and self.job_id != NOT_SUBMITTED_JOB_ID:
-      stdout_path = "/tmp/soma_workflow_stdout"
-      stderr_path = "/tmp/soma_workflow_stderr"
+      stdout_path = os.path.join(self.tmp_stderrout_dir, "tmp_stdout_file")
+      stderr_path = os.path.join(self.tmp_stderrout_dir, "tmp_stderr_file")
       connection.retrieve_job_stdouterr(self.job_id, stdout_path, stderr_path)
       
       f = open(stdout_path, "rt")

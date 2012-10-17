@@ -176,7 +176,8 @@ class WorkflowEngineLoop(object):
         for job in drms_error_jobs.itervalues():
           if job.workflow_id != -1: 
             wf_to_inspect.add(job.workflow_id)
-        
+        drms_error_jobs = {} 
+
         if not (len(self._jobs) == 0 and len(self._workflows) == 0):
           idle_cmpt = 0
         else:
@@ -249,8 +250,13 @@ class WorkflowEngineLoop(object):
             try:
               job.status = self._scheduler.get_job_status(job.drmaa_id)
             except DRMError, e:
-              self.logger.error("!!!ERROR!!! get_job_status %s: %s" %(type(e), e))
-              job.status = constants.UNDETERMINED
+              self.logger.debug("!!!ERROR!!! get_job_status %s: %s" %(type(e), e))
+              job.status = constants.FAILED
+              job.exit_status = constants.EXIT_ABORTED
+              stderr_file = open(job.stderr_file, "wa")
+              stderr_file.write("Error while requesting the job status %s: %s \nWarning: the job may still be running.\n" %(type(e),e))
+              stderr_file.close()
+              drms_error_jobs[job.job_id] = job
             #self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:
               #self.logger.debug("End of job %s, drmaaJobId = %s", 
@@ -301,21 +307,23 @@ class WorkflowEngineLoop(object):
         jobs_to_run = self._get_pending_job_to_submit()
 
         # --- 6. Submit jobs -------------------------------------------------
-        drms_error_jobs = {}
         drmaa_id_for_db_up = {}
         for job in jobs_to_run:
           try:
             job.drmaa_id = self._scheduler.job_submission(job)
           except DRMError, e:
-            #TBI how to communicate the error ?
+            #Resubmission ?
             #if job.queue in self._pending_queues:
             #  self._pending_queues[job.queue].insert(0, job)
             #else:
             #  self._pending_queues[job.queue] = [job]
             #job.status = constants.SUBMISSION_PENDING
-            self.logger.error("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
+            self.logger.debug("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
             job.status = constants.FAILED
             job.exit_status = constants.EXIT_ABORTED
+            stderr_file = open(job.stderr_file, "wa")
+            stderr_file.write("Error while submitting the job %s: %s\n" %(type(e),e))
+            stderr_file.close()
             drms_error_jobs[job.job_id] = job
           else:
             drmaa_id_for_db_up[job.job_id] = job.drmaa_id
@@ -668,37 +676,6 @@ class WorkflowEngine(RemoteFileController):
               status)
     '''
     return self._database_server.get_transfer_information(engine_path, self._user_id)
-
-
-  #def init_transfer_from_cr(self, 
-                            #engine_path,
-                            #client_path, 
-                            #expiration_date, 
-                            #workflow_id, 
-                            #client_paths,
-                            #status):
-    #'''
-    #Initialize the transfer of a file or a directory from the computing resource 
-    #to the client.
-    #'''
-    #if not client_paths:
-      #if os.path.isfile(engine_path):
-        #transfer_type = constants.TR_FILE_CR_TO_C
-      #elif os.path.isdir(engine_path):
-        #transfer_type = constants.TR_DIR_CR_TO_C
-      #else:
-        #pass 
-        ## TBI raise execption
-    #else: #client_paths
-      ## TBI check that the files exit
-      #transfer_type = constants.TR_MFF_CR_TO_C
-
-    #self._database_server.set_transfer_status(engine_path,    
-                                              #constants.TRANSFERING_FROM_CR_TO_CLIENT)
-    #self._database_server.set_transfer_type(engine_path, 
-                                            #transfer_type, 
-                                            #self._user_id)     
-    #return transfer_type
 
 
   def set_transfer_type(self, engine_path, transfer_type):
