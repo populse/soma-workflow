@@ -145,8 +145,14 @@ if __name__=="__main__":
                                     configured_native_spec=config.get_native_specification())
     elif config.get_scheduler_type() == soma.workflow.configuration.LOCAL_SCHEDULER:
       from soma.workflow.scheduler import ConfiguredLocalScheduler
-      local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()
+      local_scheduler_cfg_file_path = soma.workflow.configuration.LocalSchedulerCfg.search_config_path()
+      if local_scheduler_cfg_file_path:
+        local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg.load_from_file(local_scheduler_cfg_file_path)
+      else:
+      	local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()
+      
       sch = ConfiguredLocalScheduler(local_scheduler_config)
+      
 
 
     workflow_engine = ConfiguredWorkflowEngine(database_server, 
