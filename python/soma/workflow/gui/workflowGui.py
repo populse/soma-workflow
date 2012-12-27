@@ -3015,7 +3015,10 @@ class ApplicationModel(QtCore.QObject):
 
   @QtCore.Slot()
   def threaded_update(self):
-    self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=self)
+    if self.update_thread != None:
+          # flush running update
+      self.update_thread.wait(10000)
+    self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=None)
     self.update_thread.start(QtCore.QThread.LowPriority)
   
   @QtCore.Slot()
