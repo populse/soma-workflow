@@ -16,6 +16,7 @@ import signal
 import ctypes
 import atexit
 import os.path
+import socket
 
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
@@ -125,6 +126,8 @@ class Drmaa(Scheduler):
     except DrmaaError, e:
       self.logger.critical("Could not create the DRMAA session: %s" %e )
       raise DRMError("Could not create the DRMAA session: %s" %e )
+  
+    self.hostname = socket.gethostname()
 
     self._drmaa_implementation = drmaa_implementation
 
@@ -146,10 +149,10 @@ class Drmaa(Scheduler):
         self._drmaa.setCommand(jobTemplateId, "echo", [])
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_output_path", 
-                                "[void]:" + os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o"))
+                                "[%s]:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")))
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_error_path", 
-                                "[void]:" + os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e"))
+                                "[%s]:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")))
         self._drmaa.runJob(jobTemplateId)
       except DrmaaError, e:
         self.logger.critical("%s" %e)
@@ -210,9 +213,6 @@ class Drmaa(Scheduler):
     stdout_file = job.plain_stdout()
     stderr_file = job.plain_stderr()
     stdin = job.plain_stdin()
-    job_env = []
-    for var_name in os.environ.keys():
-      job_env.append(var_name+"="+os.environ[var_name])
 
     try:
       drmaaJobId = self._drmaa.allocateJobTemplate()
@@ -221,7 +221,7 @@ class Drmaa(Scheduler):
  
       self._drmaa.setAttribute(drmaaJobId, 
                               "drmaa_output_path", 
-                              "[void]:" + stdout_file)
+                              "[%s]:%s" %(self.hostname, stdout_file))
  
       if job.join_stderrout:
         self._drmaa.setAttribute(drmaaJobId,
@@ -231,13 +231,13 @@ class Drmaa(Scheduler):
         if stderr_file:
           self._drmaa.setAttribute(drmaaJobId, 
                                   "drmaa_error_path", 
-                                  "[void]:" + stderr_file)
+                                  "[%s]:%s" %(self.hostname, stderr_file))
       
       if job.stdin:
         #self.logger.debug("stdin: " + repr(stdin))
         self._drmaa.setAttribute(drmaaJobId, 
                                 "drmaa_input_path", 
-                                "[void]:" + stdin)
+                                "[%s]:%s" %(self.hostname, stdin))
         
       working_directory = job.plain_working_directory()
       if working_directory:
@@ -268,8 +268,12 @@ class Drmaa(Scheduler):
         self._setDrmaaParallelJob(drmaaJobId, 
                                   parallel_config_name, 
                                   max_node_number)
-        
-      self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
+       
+      if self._drmaa_implementation == "PBS": 
+        job_env = []
+        for var_name in os.environ.keys():
+          job_env.append(var_name+"="+os.environ[var_name])
+        self._drmaa.setVectorAttribute(drmaaJobId, 'drmaa_v_env', job_env)
 
       drmaaSubmittedJobId = self._drmaa.runJob(drmaaJobId)
       self._drmaa.deleteJobTemplate(drmaaJobId)
