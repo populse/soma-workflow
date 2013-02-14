@@ -201,6 +201,8 @@ class Drmaa(Scheduler):
     command = []
     job_command = job.plain_command()
     if self._drmaa_implementation == "PBS":
+      if job_command[0] == 'python':
+        job_command[0] = sys.executable
       for command_el in job_command:
         command_el = command_el.replace('"', '\\\"')
         command.append("\"" + command_el + "\"")
