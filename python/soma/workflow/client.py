@@ -347,7 +347,7 @@ class WorkflowController(object):
     return self._engine_proxy.workflow_status(workflow_id)
 
 
-  def workflow_elements_status(self, workflow_id, group = None):
+  def workflow_elements_status(self, workflow_id):
     '''
     Gets back the status of all the workflow elements at once, minimizing the
     communication with the server and request to the database.
