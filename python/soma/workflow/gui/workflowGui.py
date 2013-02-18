@@ -39,7 +39,7 @@ if QT_BACKEND == None:
   except ImportError, e:
     raise Exception("Soma-workflow Gui requires PyQt or PySide.")
 
-print "qt backend "  + repr(QT_BACKEND)
+#print "qt backend "  + repr(QT_BACKEND)
 
 if QT_BACKEND == PYQT:
   from PyQt4 import uic
@@ -2995,11 +2995,9 @@ class ApplicationModel(QtCore.QObject):
   
   @QtCore.Slot()
   def wait_for_thread(self):
-    print "wait for soma gui thread"
     if self.update_thread != None:
       if self.update_thread.isRunning():
         self.update_thread.wait(10000)
-    print "Soma gui thread ended nicely."
   
 
   def update(self):

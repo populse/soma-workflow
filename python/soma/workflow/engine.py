@@ -75,7 +75,7 @@ class EngineLoopThread(threading.Thread):
   def stop(self):
     self.engine_loop.stop_loop()
     self.join()
-    print "Soma workflow engine thread ended nicely."
+    #print "Soma workflow engine thread ended nicely."
   
 
 class WorkflowEngineLoop(object):

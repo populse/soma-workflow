@@ -455,7 +455,7 @@ class LocalScheduler(Scheduler):
     with self._lock:
       self.stop_thread_loop = True
       self._loop.join()
-      print "Soma scheduler thread ended nicely."
+      #print "Soma scheduler thread ended nicely."
 
   def _iterate(self):
     # Nothing to do if the queue is empty and nothing is running

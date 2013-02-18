@@ -92,12 +92,12 @@ class RemoteConnection( object ):
     # run the workflow engine process and get back the    #
     # WorkflowEngine and ConnectionChecker URIs       #
     command = "python -m soma.workflow.start_workflow_engine %s %s %s" %(resource_id, pyro_objet_name, log) 
-    print "start engine command: " + command
+    print "start engine command: ssh %s@%s %s" %(login, cluster_address, command)
     try:
       client = paramiko.SSHClient()
       client.set_missing_host_key_policy(paramiko.AutoAddPolicy()) 
       client.load_system_host_keys()
-      client.connect(hostname = cluster_address, port=22, username=login, password=password)
+      client.connect(hostname=cluster_address, port=22, username=login, password=password)
       stdin, stdout, stderr = client.exec_command(command)
     except paramiko.AuthenticationException, e:
       raise ConnectionError("The authentification failed. %s" %(e))
@@ -176,15 +176,15 @@ class RemoteConnection( object ):
     configuration_uri = line.split()[1] 
     client.close()
     
-    print "workflow_engine_uri: " +  workflow_engine_uri
-    print "connection_checker_uri: " +  connection_checker_uri
-    print "configuration_uri: " + configuration_uri
+    #print "workflow_engine_uri: " +  workflow_engine_uri
+    #print "connection_checker_uri: " +  connection_checker_uri
+    #print "configuration_uri: " + configuration_uri
     engine_pyro_daemon_port = Pyro.core.processStringURI(workflow_engine_uri).port
-    print "Pyro object port: " + repr(engine_pyro_daemon_port)
+    #print "Pyro object port: " + repr(engine_pyro_daemon_port)
   
     # find an available port              #
     client_pyro_daemon_port = searchAvailablePort()
-    print "client pyro object port: " + repr(client_pyro_daemon_port)
+    #print "client pyro object port: " + repr(client_pyro_daemon_port)
 
     
     # tunnel creation                      #
@@ -202,9 +202,9 @@ class RemoteConnection( object ):
           key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
         self.__transport.auth_publickey(login, key)
         #TBI DSA Key => see paramamiko/demos/demo.py for an example
-      print "tunnel creation " + repr(login) + "@" + repr(cluster_address)
-      print "   port: " + repr(client_pyro_daemon_port) + " host: " + \
-      repr(submitting_machine) + " host port: " + repr(engine_pyro_daemon_port) 
+      print "tunnel creation " + str(login) + "@" + cluster_address + \
+            "   port: " + repr(client_pyro_daemon_port) + " host: " + \
+            str(submitting_machine) + " host port: " + str(engine_pyro_daemon_port) 
 
       tunnel = Tunnel(client_pyro_daemon_port, submitting_machine, engine_pyro_daemon_port, self.__transport) 
       tunnel.start()

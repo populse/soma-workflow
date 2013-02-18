@@ -123,7 +123,7 @@ class WorkflowController(object):
     self.scheduler_config = None
 
     mode = self.config.get_mode()
-    print  mode + " mode"
+    #print  mode + " mode"
 
     self._resource_id = resource_id
     
@@ -135,16 +135,7 @@ class WorkflowController(object):
       self._engine_proxy = self._connection.get_workflow_engine()
       self.engine_config_proxy = self._connection.get_configuration()
       self._transfer = TransferLocal(self._engine_proxy)
-      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
-      #self._transfer = TransferSCP(self._engine_proxy,
-                                    #username=None,
-                                    #hostname=None)
-
-      #self._transfer = TransferRsync(self._engine_proxy,
-                                    #username=None,
-                                    #hostname=None)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
-      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
       
 
     # REMOTE MODE
@@ -153,8 +144,7 @@ class WorkflowController(object):
       sub_machine = submitting_machines[random.randint(0,
                                                     len(submitting_machines)-1)]
       cluster_address = self.config.get_cluster_address()
-      print 'cluster address: ' + cluster_address
-      print 'submission machine: ' + sub_machine
+      #print 'cluster address: ' + cluster_address + ' submission machine: ' + sub_machine
       self._connection = connection.RemoteConnection(login,
                                                     password,
                                                     cluster_address,
@@ -186,7 +176,6 @@ class WorkflowController(object):
       self.engine_config_proxy = self.config
       self._connection = None
       self._transfer = TransferLocal(self._engine_proxy)
-      #self._transfer = PortableRemoteTransfer(self._engine_proxy)
       self._transfer_stdouterr = TransferLocal(self._engine_proxy)
 
 
@@ -932,18 +921,18 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
   database_server = WorkflowDatabaseServer(config.get_database_file(),
                                            config.get_transfered_file_dir())
 
-  if config.get_scheduler_type() == 'drmaa':
+  if config.get_scheduler_type() == configuration.DRMAA_SCHEDULER:
     from soma.workflow.scheduler import Drmaa
-    print "scheduler type: drmaa"
+    #print "scheduler type: drmaa"
     scheduler = Drmaa(config.get_drmaa_implementation(),
                       config.get_parallel_job_config(),
                       configured_native_spec=config.get_native_specification())
 
-  elif config.get_scheduler_type() == 'local_basic':
+  elif config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
     from soma.workflow.scheduler import ConfiguredLocalScheduler
     if local_scheduler_config == None:
       local_scheduler_config = LocalSchedulerCfg()
-    print "scheduler type: basic, number of cpu: " + repr(local_scheduler_config.get_proc_nb())
+    #print "scheduler type: basic, number of cpu: " + repr(local_scheduler_config.get_proc_nb())
     scheduler = ConfiguredLocalScheduler(local_scheduler_config)
 
   workflow_engine = ConfiguredWorkflowEngine(database_server,

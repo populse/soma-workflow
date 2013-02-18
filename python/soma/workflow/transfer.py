@@ -201,7 +201,7 @@ class TransferSCP(Transfer):
     super(TransferSCP, self).__init__(remote_file_controller)
     self.username = username
     self.hostname = hostname    
-    print "SCP transfer"
+    #print "SCP transfer"
 
   def transfer_to_remote(self, path, remote_path):
     if os.path.isfile(path):
@@ -286,7 +286,7 @@ class TransferRsync(Transfer):
     super(TransferRsync, self).__init__(remote_file_controller)
     self.username = username
     self.hostname = hostname
-    print "Rsync transfer"
+    #print "Rsync transfer"
 
 
   def transfer_to_remote(self, path, remote_path):
@@ -349,7 +349,7 @@ class TransferLocal(Transfer):
    
   def __init__(self, remote_file_controller):
     super(TransferLocal, self).__init__(remote_file_controller)
-    print "Local transfer"
+    #print "Local transfer"
 
   def transfer_to_remote(self, path, remote_path):
     #print "copy " + repr(path) + " to " + repr(remote_path)
@@ -396,7 +396,7 @@ class PortableRemoteTransfer(Transfer):
 
   def __init__(self, remote_file_controller):
     super(PortableRemoteTransfer, self).__init__(remote_file_controller)
-    print "Portable transfer"
+    #print "Portable transfer"
 
   def transfer_to_remote(self, 
                          path, 
