@@ -101,6 +101,9 @@ class Job(object):
     .. warning::
       The computing resources must be configured explicitly to use this feature.
 
+  **user_storage**: *picklable object*
+    For the user needs, any small and picklable object can be stored here.
+
   ..
     **disposal_time_out**: int
     Only requiered outside of a workflow
@@ -145,6 +148,9 @@ class Job(object):
   # int (in hours)
   disposal_timeout = None
 
+  # any small and picklable object needed by the user
+  user_storage = None
+
   def __init__( self,
                 command,
                 referenced_input_files=None,
@@ -158,7 +164,8 @@ class Job(object):
                 working_directory=None,
                 parallel_job_info=None,
                 priority=0,
-                native_specification=None):
+                native_specification=None,
+                user_storage=None):
     if not name:
       self.name = command[0]
     else:
@@ -396,10 +403,6 @@ class Workflow(object):
     (job_a, job_b) must be added to the workflow dependencies. job_a and job_b
     must belong to workflow.jobs.
 
-  **name**: *string*
-    Name of the workflow which will be displayed in the GUI.
-    Default: workflow_id once submitted
-
   **root_group**: *sequence of Job and/or Group*
     Recursive description of the workflow hierarchical structure. For displaying
     purpose only.
@@ -410,6 +413,14 @@ class Workflow(object):
 
     If root_group is not set, all the jobs of the workflow will be
     displayed at the root level in the GUI tree view.
+
+  **user_storage**: *picklable object*
+    For the user needs, any small and picklable object can be stored here.
+
+  **name**: *string*
+    Name of the workflow which will be displayed in the GUI.
+    Default: workflow_id once submitted
+
   '''
   # string
   name = None
@@ -426,7 +437,7 @@ class Workflow(object):
   # sequence of Groups built from the root_group
   groups = None
 
-  # for special user storage
+  # any small and picklable object needed by the user
   user_storage = None
 
   def __init__(self,
@@ -648,11 +659,14 @@ class Group(object):
     It only has a displaying role and does not have any impact on the workflow
     execution.
 
-  **name**: *string*
-    Name of the Group which will be displayed in the GUI.
-
   **elements**: *sequence of Job and/or Group*
     The elements (Job or Group) belonging to the group.
+ 
+  **name**: *string*
+    Name of the Group which will be displayed in the GUI.
+ 
+  **user_storage**: *picklable object*
+    For the user needs, any small and picklable object can be stored here.
   '''
   #string
   name = None
@@ -660,7 +674,11 @@ class Group(object):
   #sequence of Job and/or Group
   elements = None
 
-  def __init__(self, elements, name):
+  # any small and picklable object needed by the user
+  user_storage = None
+
+
+  def __init__(self, elements, name, user_storage=None):
     '''
     @type  elements: sequence of Job and/or Group
     @param elements: the elements belonging to the group
