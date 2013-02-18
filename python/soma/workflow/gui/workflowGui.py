@@ -63,7 +63,6 @@ import soma.workflow.constants as  constants
 import soma.workflow.configuration as configuration
 from soma.workflow.test.test_workflow import WorkflowExamples
 from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
-import soma.workflow.utils
 import soma.workflow.version as version
 
 
@@ -354,10 +353,6 @@ class Controller(object):
   @staticmethod
   def transfer_output_files(workflow_id, wf_ctrl, buffer_size= 256**2):
     Helper.transfer_output_files(workflow_id, wf_ctrl, buffer_size)
-
-  @staticmethod
-  def optimize_workflow(workflow):
-    return soma.workflow.utils.optimize_workflow(workflow)
 
 
 
@@ -686,7 +681,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.ui.action_transfer_infiles.triggered.connect(self.transferInputFiles)
     self.ui.action_transfer_outfiles.triggered.connect(self.transferOutputFiles)
     self.ui.action_open_wf.triggered.connect(self.openWorkflow)
-    self.ui.action_optimize_wf.triggered.connect(self.optimize_workflow)
     self.ui.action_create_wf_ex.triggered.connect(self.createWorkflowExample)
     self.ui.action_delete_workflow.triggered.connect(self.delete_workflow)
     self.ui.action_delete_all.triggered.connect(self.delete_all_workflows)
@@ -814,21 +808,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.updateWorkflowList()
 
 
-  @QtCore.Slot()
-  def optimize_workflow(self):
-    assert(self.model.current_workflow())
-    assert(self.model.current_wf_id == NOT_SUBMITTED_WF_ID)
-  
-    new_workflow = Controller.optimize_workflow(self.model.current_workflow().server_workflow)
-
-    self.model.add_workflow(NOT_SUBMITTED_WF_ID, 
-                            datetime.now() + timedelta(days=5), 
-                            new_workflow.name, 
-                            constants.WORKFLOW_NOT_STARTED,
-                            new_workflow)
-    self.updateWorkflowList()
-    
-      
   @QtCore.Slot()
   def saveWorkflow(self):
     file_path = QtGui.QFileDialog.getSaveFileName(self, "Save the current workflow")
@@ -1350,8 +1329,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     if self.model.current_wf_id == None:
       # No workflow
       
-      self.ui.action_optimize_wf.setEnabled(False)
-
       self.ui.action_submit.setEnabled(False)
       self.ui.action_change_expiration_date.setEnabled(False)
       self.ui.action_stop_wf.setEnabled(False)
@@ -1374,7 +1351,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
       if self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
         # Workflow not submitted
         
-        self.ui.action_optimize_wf.setEnabled(True)
         self.ui.action_submit.setEnabled(True)
         self.ui.action_change_expiration_date.setEnabled(False)
         self.ui.action_delete_workflow.setEnabled(False)
@@ -1390,7 +1366,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
       else:
         # Submitted workflow
       
-        self.ui.action_optimize_wf.setEnabled(False)
         self.ui.action_submit.setEnabled(False)
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
@@ -1602,8 +1577,6 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
     self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
     
-    self.ui.menu_workflow.addAction(self.sw_widget.ui.action_optimize_wf)
-    self.ui.menu_workflow.addSeparator()
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_submit)
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_stop_wf)
     self.ui.menu_workflow.addAction(self.sw_widget.ui.action_restart)
@@ -1621,7 +1594,6 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.menu_help.addAction(self.sw_widget.ui.action_about)
     
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_open_wf)
-    self.ui.tool_bar.addAction(self.sw_widget.ui.action_optimize_wf)
     self.ui.tool_bar.addSeparator()
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_submit)
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_stop_wf)
@@ -3115,7 +3087,6 @@ class ApplicationModel(QtCore.QObject):
         try:
           self.result = func(*args, **kwargs)
         except Exception, e:
-          #print "Exception in Thread !!" + repr(e)
           self.exception = e
     it = InterruptableThread()
     it.start()

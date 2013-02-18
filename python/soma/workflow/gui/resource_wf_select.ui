@@ -248,14 +248,6 @@
     <string>stop a workflow </string>
    </property>
   </action>
-  <action name="action_optimize_wf">
-   <property name="text">
-    <string>Optimize</string>
-   </property>
-   <property name="toolTip">
-    <string>Merge the sequential jobs for a faster execution </string>
-   </property>
-  </action>
   <action name="action_about">
    <property name="text">
     <string>About</string>
