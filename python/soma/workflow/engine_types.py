@@ -332,7 +332,8 @@ class EngineJob(Job):
           else:
             assert(type(list_el) in types.StringTypes)
             new_list.append(list_el)
-        plain_command.append(str(repr(new_list)))
+        str_list = str(repr(new_list)) 
+        plain_command.append(str_list.replace("'", "\""))
       else:
         assert(type(command_el) in types.StringTypes)
         plain_command.append(command_el)
