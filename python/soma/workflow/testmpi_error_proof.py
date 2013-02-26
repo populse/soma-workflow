@@ -44,10 +44,13 @@ def slave_loop(communicator, cpu_count=1, logger=None):
             if t == MPIScheduler.JOB_SENDING:
                 job_list = communicator.recv(source=0, tag=t)
                 for j in job_list:
-                    #logger.debug("Slave " + repr(rank) + " RUNS JOB" + repr(j.job_id))
                     #process = scheduler.LocalScheduler.create_process(j)
                     separator = " "
-                    command = separator.join(j.plain_command())
+                    command = ""
+                    for command_el in j.plain_command():
+                        command = command + "\'" + command_el + "\' "
+                    #command = separator.join(j.plain_command())
+                    logger.debug("Slave " + repr(rank) + " RUNS JOB" + repr(j.job_id) + " " + command)
                     commands[j.job_id] = command
             elif t == MPIScheduler.NO_JOB:
                 communicator.recv(source=0, tag=t)
@@ -56,7 +59,7 @@ def slave_loop(communicator, cpu_count=1, logger=None):
                 #time.sleep(1)
             elif t == MPIScheduler.EXIT_SIGNAL:
                 communicator.send('STOP', dest=0, tag=MPIScheduler.EXIT_SIGNAL)
-                #logger.debug("Slave " + repr(rank) + " STOP !!!!! received")
+                logger.debug("Slave " + repr(rank) + " STOP !!!!! received")
                 break
             elif t == MPIScheduler.JOB_KILL:
                 job_ids = communicator.recv(source=0, tag=t)
@@ -95,7 +98,7 @@ def slave_loop(communicator, cpu_count=1, logger=None):
         if ended_jobs_info:
             for job_id in ended_jobs_info.iterkeys():
                 del commands[job_id]
-            #logger.debug("Slave " + repr(rank) + " send JOB_RESULT")
+            logger.debug("Slave " + repr(rank) + " send JOB_RESULT")
             communicator.send(ended_jobs_info, dest=0,
                               tag=MPIScheduler.JOB_RESULT)
         else:
@@ -205,7 +208,7 @@ class MPIScheduler(scheduler.Scheduler):
                                             dest=s,
                                             tag=MPIScheduler.NO_JOB)            
                 else:
-                    #self._logger.debug("Master send a Job !!!")
+                    self._logger.debug("Master send a Job !!!")
                     self._communicator.recv(source=s, tag=MPIScheduler.JOB_REQUEST)
                     job_id = self._queue.pop(0)
                     job_list = [self._jobs[job_id]]
@@ -270,7 +273,7 @@ class MPIScheduler(scheduler.Scheduler):
             self._status[job.job_id] = constants.QUEUED_ACTIVE
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
-            #self._logger.debug("A Job was submitted.")
+            self._logger.debug("A Job was submitted.")
         return job.job_id
 
     def get_job_status(self, scheduler_job_id):
@@ -395,7 +398,7 @@ if __name__ == '__main__':
             logger.debug("######### master ends #############")
         except Exception, e:
              for slave in range(1, comm.size):
-                #logger.debug("STOP !!!  slave " + repr(slave))
+                logger.debug("STOP !!!  slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
              raise e
     # slave code
@@ -403,4 +406,5 @@ if __name__ == '__main__':
         logger = logging.getLogger("testMPI.slave")
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
+        logger.info("=====> slave starts " + repr(rank))
         slave_loop(comm, logger=logger)
