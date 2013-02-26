@@ -1,21 +1,40 @@
 from __future__ import with_statement
+
+import sys
 import time
 import threading
 import logging
 import os
+import optparse
 
 from mpi4py import MPI
 
 from soma.workflow import scheduler, constants
 
 
-def slave_loop(communicator, logger=None):
+def slave_loop(communicator, 
+               logger=None, 
+               epd_to_deploy=None, 
+               untar_option='xzf'):
     status = MPI.Status()
     rank = communicator.Get_rank()
     
     if not logger:
         logger = logging.getLogger("testMPI.slave")
     commands = {}
+
+    if epd_to_deploy != None:
+        lock_file_path = "/tmp/sw_deploy_lock"
+        if not os.path.isfile(lock_file_path):
+            try:	
+                lock_file = open(lock_file_path, "w")
+                lock_file.write("locked \n")
+                lock_file.close()
+                os.system('cd /tmp ; tar -%s %s' %(untar_option, epd_to_deploy))
+            except IOError, e:
+                pass
+        
+
     max_nb_jobs = 1
 
     ret_value = 0
@@ -102,6 +121,17 @@ def slave_loop(communicator, logger=None):
             break
         else:
              time.sleep(1)
+
+
+    if epd_to_deploy != None:
+        logger.debug("Slave %d cleaning ... \n" %(rank))
+        if os.path.isfile(lock_file_path):
+           try:
+                os.remove(lock_file_path)
+                os.system('rm -rf /tmp/epd')
+           except Exception, e:
+               pass
+        logger.debug("Slave %d: end of cleaning! \n" %(rank))
     logger.debug("Slave %d END!!! \n" %(rank))
 
 class MPIScheduler(scheduler.Scheduler):
@@ -310,35 +340,34 @@ if __name__ == '__main__':
     log_formatter = logging.Formatter("%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
     log_file_handler.setFormatter(log_formatter)
 
-    print rank
-    # master code
+    parser = optparse.OptionParser()
+    parser.add_option('--workflow',
+                      dest='workflow_file', default=None,
+                      help="The workflow to run.")
+    parser.add_option('--restart', '-r', type="int",
+                      dest='wf_id_to_restart', default=None,
+                      help="The workflow id to restart")
+    parser.add_option('--nb_attempt_per_job', type="int",
+    	          dest='nb_attempt_per_job', default=1,
+                      help="A job can be restarted several time if it fails. This option "
+                           "specify the number of attempt per job. "
+                           "By default, the jobs are not restarted.")
+    group_alpha = optparse.OptionGroup(parser, "Alpha options")
+    parser.add_option_group(group_alpha)
+    group_alpha.add_option('--deploy_epd', dest='epd_to_deploy', default=None,
+                      help="EPD tarball which will be inflated on each node using tar.")
+    group_alpha.add_option('--untar_option', dest='untar_option', default='xzf',
+                      help="tar option to inflate the tarball, default: xzf.")
+    
+    options, args = parser.parse_args(sys.argv)
+
     if rank == 0:
-        import optparse
-        import sys
 
         from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
         from soma.workflow.database_server import WorkflowDatabaseServer
         from soma.workflow.client import Helper
         import soma.workflow.configuration
                
-        parser = optparse.OptionParser()
-        parser.add_option('--workflow',
-                          dest='workflow_file', default=None,
-                          help="The workflow to run.")
-        parser.add_option('--restart', '-r', type="int",
-                          dest='wf_id_to_restart', default=None,
-                          help="The workflow id to restart")
-        parser.add_option('--nb_attempt_per_job', type="int",
-    		          dest='nb_attempt_per_job', default=1,
-                          help="A job can be restarted several time if it fails. This option "
-                               "specify the number of attempt per job. "
-                               "By default, the jobs are not restarted.")
-        parser.add_option('--deploy', dest='to_deploy', default=None,
-                          help="Tarball which will be inflated on each node using tar xzf.")
-    
-        options, args = parser.parse_args(sys.argv)
-
-
         logger = logging.getLogger('testMPI')
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
@@ -375,7 +404,8 @@ if __name__ == '__main__':
             logger.info("workflow_file " + repr(options.workflow_file)) 
             logger.info("wf_id_to_restart " + repr(options.wf_id_to_restart)) 
             logger.info("nb_attempt_per_job " + repr(options.nb_attempt_per_job)) 
-            logger.info("to_deploy " + repr(options.to_deploy)) 
+            logger.info("epd_to_deploy " + repr(options.epd_to_deploy)) 
+            logger.info("untar_option " + repr(options.untar_option)) 
             sch = MPIScheduler(comm, interval=1, nb_attempt_per_job=options.nb_attempt_per_job)
 
             config.disable_queue_limits()    
@@ -420,4 +450,7 @@ if __name__ == '__main__':
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
         logger.info("=====> slave starts " + repr(rank))
-        slave_loop(comm, logger=logger)
+        slave_loop(comm, 
+                   logger=logger, 
+                   epd_to_deploy=options.epd_to_deploy, 
+                   untar_option=options.untar_option)
