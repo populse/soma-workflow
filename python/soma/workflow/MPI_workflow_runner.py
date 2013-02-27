@@ -17,7 +17,9 @@ import time
 import threading
 import logging
 import os
+import shutil
 import optparse
+import tarfile
 
 from mpi4py import MPI
 
@@ -27,7 +29,7 @@ from soma.workflow import scheduler, constants
 def slave_loop(communicator, 
                logger=None, 
                epd_to_deploy=None, 
-               untar_option='xzf'):
+               untar_directory='/tmp'):
     status = MPI.Status()
     rank = communicator.Get_rank()
     
@@ -36,14 +38,17 @@ def slave_loop(communicator,
     commands = {}
 
     if epd_to_deploy != None:
-        lock_file_path = "/tmp/sw_deploy_lock"
+        lock_file_path = os.path.join(untar_directory, "sw_deploy_lock")
         if not os.path.isfile(lock_file_path):
             try:	
                 lock_file = open(lock_file_path, "w")
                 lock_file.write("locked \n")
                 lock_file.close()
-                os.system('cd /tmp ; tar -%s %s' %(untar_option, epd_to_deploy))
+                epd_tar = tarfile.open(epd_to_deploy)
+                epd_tar.extractall(path=untar_directory)
+                #logger.debug('extract %s' %(epd_to_deploy))
             except IOError, e:
+                logger.error("Could not deploy epd: %s" %(e))
                 pass
         
 
@@ -140,7 +145,10 @@ def slave_loop(communicator,
         if os.path.isfile(lock_file_path):
            try:
                 os.remove(lock_file_path)
-                os.system('rm -rf /tmp/epd')
+                archive_dir_path = os.path.join(untar_directory, 'epd')
+                if os.path.isdir(archive_dir_path):
+                    shutil.rmtree(archive_dir_path)
+                    logger.debug("remove %s" %(archive_dir_path))
            except Exception, e:
                pass
         logger.debug("Slave %d: end of cleaning! \n" %(rank))
@@ -368,8 +376,8 @@ if __name__ == '__main__':
     parser.add_option_group(group_alpha)
     group_alpha.add_option('--deploy_epd', dest='epd_to_deploy', default=None,
                       help="EPD tarball which will be inflated on each node using tar.")
-    group_alpha.add_option('--untar_option', dest='untar_option', default='xzf',
-                      help="tar option to inflate the tarball, default: xzf.")
+    group_alpha.add_option('--untar_dir', dest='untar_directory', default='/tmp',
+                      help="untar directory")
     
     options, args = parser.parse_args(sys.argv)
 
@@ -417,7 +425,7 @@ if __name__ == '__main__':
             logger.info("wf_id_to_restart " + repr(options.wf_id_to_restart)) 
             logger.info("nb_attempt_per_job " + repr(options.nb_attempt_per_job)) 
             logger.info("epd_to_deploy " + repr(options.epd_to_deploy)) 
-            logger.info("untar_option " + repr(options.untar_option)) 
+            logger.info("untar_directory " + repr(options.untar_directory))
             sch = MPIScheduler(comm, interval=1, nb_attempt_per_job=options.nb_attempt_per_job)
 
             config.disable_queue_limits()    
@@ -464,5 +472,5 @@ if __name__ == '__main__':
         logger.info("=====> slave starts " + repr(rank))
         slave_loop(comm, 
                    logger=logger, 
-                   epd_to_deploy=options.epd_to_deploy, 
-                   untar_option=options.untar_option)
+                   epd_to_deploy=options.epd_to_deploy,
+                   untar_directory=options.untar_directory)
