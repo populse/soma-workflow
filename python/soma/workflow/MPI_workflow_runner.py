@@ -1,5 +1,17 @@
 from __future__ import with_statement
 
+'''
+@author: Benoit Da Mota
+@author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
+@organization: U{IFR 49<http://www.ifr49.org>}, 
+@organization: PARIETAL, INRIA, Saclay, France
+
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
+
 import sys
 import time
 import threading
