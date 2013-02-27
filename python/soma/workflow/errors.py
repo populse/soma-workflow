@@ -8,7 +8,11 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
+class SomaWorkflowError(Exception):
+  '''
+  Wrong usage of Soma-workflow.
+  '''
+  pass
 
 
 class ConfigurationError(Exception): 

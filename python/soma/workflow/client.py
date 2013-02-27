@@ -35,7 +35,7 @@ import soma.workflow.connection as connection
 from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
 import soma.workflow.constants as constants
 import soma.workflow.configuration as configuration
-from soma.workflow.errors import TransferError, SerializationError
+from soma.workflow.errors import TransferError, SerializationError, SomaWorkflowError
 
 
 #-------------------------------------------------------------------------------
@@ -211,6 +211,11 @@ class WorkflowController(object):
     Raises *WorkflowError* or *JobError* if the workflow is not correct.
     '''
 
+    if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
+      raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
+                              "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
+
+
     #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
 
     wf_id = self._engine_proxy.submit_workflow(workflow,
@@ -242,6 +247,11 @@ class WorkflowController(object):
 
     Raises *JobError* if the job is not correct.
     '''
+    if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
+      raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
+                              "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
+
+
 
     job_id = self._engine_proxy.submit_job(job, queue)
     return job_id
@@ -490,6 +500,10 @@ class WorkflowController(object):
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
+    if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
+      raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
+                              "Use soma.workflow.MPI_workflow_runner to restart a workflow using the MPI scheduler.") 
+
     return self._engine_proxy.restart_workflow(workflow_id, queue)
 
 
@@ -529,6 +543,10 @@ class WorkflowController(object):
       if some jobs are possibly still running on the computing resource 
       despite the workflow was stopped.
     '''
+    if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
+      raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
+                              "Kill the soma.workflow.MPI_workflow_runner job to stop the workflow.") 
+
 
     return self._engine_proxy.stop_workflow(workflow_id)
 

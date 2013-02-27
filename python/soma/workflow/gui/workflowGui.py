@@ -1332,6 +1332,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
       
   @QtCore.Slot()
   def current_workflow_changed(self):
+    scheduler_type = self.model.current_connection.engine_config_proxy.get_scheduler_type()
+    control_authorized = (scheduler_type != configuration.MPI_SCHEDULER)
+
     if self.model.current_wf_id == None:
       # No workflow
       
@@ -1349,15 +1352,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
       self.ui.list_widget_submitted_wfs.clearSelection()
       
     else:
-      #self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'), self.graphWidget.dataChanged)
-      
-      #=> TEMPORARY : the graph view has to be built from the guiModel
-      #self.graphWidget.setWorkflow(self.model.current_workflow().server_workflow, self.model.current_connection)
       
       if self.model.current_wf_id == NOT_SUBMITTED_WF_ID:
         # Workflow not submitted
-        
-        self.ui.action_submit.setEnabled(True)
+        self.ui.action_submit.setEnabled(control_authorized)
         self.ui.action_change_expiration_date.setEnabled(False)
         self.ui.action_delete_workflow.setEnabled(False)
         self.ui.action_stop_wf.setEnabled(False)
@@ -1375,10 +1373,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_submit.setEnabled(False)
         self.ui.action_change_expiration_date.setEnabled(True)
         self.ui.action_delete_workflow.setEnabled(True)
-        self.ui.action_stop_wf.setEnabled(True)
-        self.ui.action_restart.setEnabled(True)
-        self.ui.action_transfer_infiles.setEnabled(True)
-        self.ui.action_transfer_outfiles.setEnabled(True)    
+        self.ui.action_stop_wf.setEnabled(control_authorized)
+        self.ui.action_restart.setEnabled(control_authorized)
+        self.ui.action_transfer_infiles.setEnabled(control_authorized)
+        self.ui.action_transfer_outfiles.setEnabled(control_authorized)    
         self.ui.action_save.setEnabled(True)    
         
         self.workflow_info_widget.show()
