@@ -1,26 +1,15 @@
 # -*- coding: utf-8 -*-
+
 '''
 @author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
 @organization: U{IFR 49<http://www.ifr49.org>}
+
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-'''
-soma-workflow client classes
-
-The WorkflowController instances allow to submit, control and monitor jobs and
-workflows on local or remote resources where the WorkflowDatabaseServer runs.
-The contrustor takes a resource id, login and password as parameters and
-connects to the resource. One WorkflowController instance is connected to
-only one resource.
-
-The other classes (Workflow, Job, Group, FileTransfer and SharedResourcePath) are made to build the jobs, workflows, and file transfers
-objects to be used in the WorkflowController interface.
-
-Definitions:
- A Parallel job is a job requiring more than one node to run.
-DRMS: distributed resource management system
-'''
 
 #-------------------------------------------------------------------------------
 # Imports

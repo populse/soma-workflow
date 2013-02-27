@@ -2,18 +2,15 @@ from __future__ import with_statement
 
 '''
 @author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
 @organization: U{IFR 49<http://www.ifr49.org>}
+
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-'''
-soma-workflow database server
 
-The WorkflowDatabaseServer stores all the information related to workflows, jobs 
-and file transfer in a sqlite database file. The database stores the workflows,
-jobs and file transfer objects but also the status of the actions which can be
-done on the objects (submission of a job or a workflow, transfering a file...). 
-'''
 
 #-------------------------------------------------------------------------------
 # Imports

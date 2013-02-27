@@ -3,24 +3,13 @@ from __future__ import with_statement
 
 '''
 @author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
 @organization: U{IFR 49<http://www.ifr49.org>}
+
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
-
-''' 
-soma-workflow local and remote connections from client to computing resource.
-
-The RemoteConnection and LocalConnection instances should be created on the 
-client side. Their constructor creates a WorkflowEngine object on the 
-computing resource and setup the pyro communicaiton with it. The method
-getWorkflowEngine get back a pyro proxy of the remote WorkflowEngine object.
-The RemoteConnection and object contains a thead which signals to the 
-WorkflowEngine object at regular time interval that the client is still
-connected.
-
-requirements: Pyro and Paramiko must be installed on the remote machine.
-'''
-
 
 
 #-------------------------------------------------------------------------------
