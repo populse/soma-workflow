@@ -451,6 +451,7 @@ if __name__ == '__main__':
                 logger.info(" ")
                 logger.info("******* restart worklfow **********")
                 logger.info("workflow if: " + repr(workflow_id))
+                workflow_engine.stop_workflow(workflow_id)
                 workflow_engine.restart_workflow(workflow_id, queue=None)
      
             while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
