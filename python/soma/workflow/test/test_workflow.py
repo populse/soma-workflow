@@ -19,14 +19,13 @@ import sys
 from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow, WorkflowController, Helper
 from soma.workflow.configuration import Configuration
 from soma.workflow.errors import ConfigurationError, UnknownObjectError
+from soma.workflow.utils import checkFiles, identicalFiles
 import soma.workflow.constants as constants
 
 
 #-----------------------------------------------------------------------------
 # Classes and functions
 #-----------------------------------------------------------------------------
-
-
 
 
 class WorkflowExamples(object):
@@ -97,6 +96,24 @@ class WorkflowExamples(object):
     self.lo_file4 = os.path.join(self.output_dir, "file4")
     self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
     self.lo_img_out_file = os.path.join(self.output_dir, "example.img")
+
+    self.lo_stdout1  = os.path.join(complete_path, "outputModels/stdoutjob1")
+    self.lo_stdout2  = os.path.join(complete_path, "outputModels/stdoutjob2")
+    self.lo_stdout3  = os.path.join(complete_path, "outputModels/stdoutjob3")
+    self.lo_stdout4  = os.path.join(complete_path, "outputModels/stdoutjob4")
+    
+    self.lo_stdout1_exception_model = os.path.join(self.examples_dir, "simple/outputModels/stdout_exception_job")
+
+    self.lo_stderr1  = os.path.join(complete_path, "outputModels/stderrjob1")
+    self.lo_stderr2  = os.path.join(complete_path, "outputModels/stderrjob2")
+    self.lo_stderr3  = os.path.join(complete_path, "outputModels/stderrjob3")
+    self.lo_stderr4  = os.path.join(complete_path, "outputModels/stderrjob4")
+
+    self.lo_out_model_file11		= os.path.join(complete_path, "outputModels/file11")
+    self.lo_out_model_file12		= os.path.join(complete_path, "outputModels/file12")
+    self.lo_out_model_file2			= os.path.join(complete_path, "outputModels/file2")
+    self.lo_out_model_file3			= os.path.join(complete_path, "outputModels/file3")
+    self.lo_out_model_file4			= os.path.join(complete_path, "outputModels/file4")
   
     # Shared resource path
     self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
@@ -167,7 +184,7 @@ class WorkflowExamples(object):
                                                         "special_transfers/dir_contents.py"),
                                                         168, "dir_contents")
     self.tr_mff_script = FileTransfer(True, os.path.join(self.examples_dir, "special_transfers/multiple_file_format.py"), 168, "mdd_script")
-      
+    
     self.tr_file11 = FileTransfer(False,os.path.join(self.output_dir, "file11"), 168, "file11")
     self.tr_file12 = FileTransfer(False,os.path.join(self.output_dir, "file12"), 168, "file12")
     self.tr_file2 = FileTransfer(False,os.path.join(self.output_dir, "file2"), 168, "file2")
@@ -217,95 +234,103 @@ class WorkflowExamples(object):
     return workflow
 
   def job1(self, option=None):
+    time_to_wait=2
+    job_name="job1"
     if self.with_transfers and not self.with_shared_resource_path: 
-      job1 = Job(["python", self.tr_script1, self.tr_file0,  self.tr_file11, self.tr_file12, "20"], 
+      job1 = Job(["python", self.tr_script1, self.tr_file0,  self.tr_file11, self.tr_file12, repr(time_to_wait)], 
                   [self.tr_file0, self.tr_script1, self.tr_stdin1], 
                   [self.tr_file11, self.tr_file12], 
-                  self.tr_stdin1, False, 168, "job1", native_specification=option)
+                  self.tr_stdin1, False, 168, job_name, native_specification=option)
     elif self.with_transfers and self.with_shared_resource_path:
-      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.tr_file11, self.tr_file12, "20"], 
+      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.tr_file11, self.tr_file12, repr(time_to_wait)], 
                   [], 
                   [self.tr_file11, self.tr_file12], 
-                  self.sh_stdin1, False, 168, "job1", native_specification=option)
+                  self.sh_stdin1, False, 168, job_name, native_specification=option)
     elif not self.with_transfers and self.with_shared_resource_path:
-      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.sh_file11, self.sh_file12, "20"], 
+      job1 = Job( ["python", self.sh_script1, self.sh_file0,  self.sh_file11, self.sh_file12, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.sh_stdin1, False, 168, "job1", native_specification=option)
+                  self.sh_stdin1, False, 168, job_name, native_specification=option)
     else:
-      job1 = Job( ["python", self.lo_script1, self.lo_file0,  self.lo_file11, self.lo_file12, "20"], 
+      job1 = Job( ["python", self.lo_script1, self.lo_file0,  self.lo_file11, self.lo_file12, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.lo_stdin1,  False, 168, "job1", native_specification=option)
+                  self.lo_stdin1,  False, 168, job_name, native_specification=option)
     return job1
     
   def job2(self):
+    time_to_wait=2
+    job_name="job2"
     if self.with_transfers and not self.with_shared_resource_path:
-      job2 = Job( ["python", self.tr_script2, self.tr_file11,  self.tr_file0, self.tr_file2, "30"], 
+      job2 = Job( ["python", self.tr_script2, self.tr_file11,  self.tr_file0, self.tr_file2, repr(time_to_wait)], 
                   [self.tr_file0, self.tr_file11, self.tr_script2, self.tr_stdin2], 
                   [self.tr_file2], 
-                  self.tr_stdin2, False, 168, "job2")
+                  self.tr_stdin2, False, 168, job_name)
     elif self.with_transfers and self.with_shared_resource_path:
-      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.tr_file2, "30"], 
+      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.tr_file2, repr(time_to_wait)], 
                   [], 
                   [self.tr_file2], 
-                  self.sh_stdin2, False, 168, "job2")
+                  self.sh_stdin2, False, 168, job_name)
     elif not self.with_transfers and self.with_shared_resource_path:
-      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.sh_file2, "30"], 
+      job2 = Job( ["python", self.sh_script2, self.sh_file11,  self.sh_file0, self.sh_file2, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.sh_stdin2, False, 168, "job2")
+                  self.sh_stdin2, False, 168, job_name)
     else:
-      job2 = Job( ["python", self.lo_script2, self.lo_file11,  self.lo_file0, self.lo_file2, "30"], 
+      job2 = Job( ["python", self.lo_script2, self.lo_file11,  self.lo_file0, self.lo_file2, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.lo_stdin2, False, 168, "job2")
+                  self.lo_stdin2, False, 168, job_name)
     return job2
     
   def job3(self):
+    time_to_wait=2
+    job_name="job3"
     if self.with_transfers and not self.with_shared_resource_path:
-      job3 = Job( ["python", self.tr_script3, self.tr_file12,  self.tr_file3, "30"], 
+      job3 = Job( ["python", self.tr_script3, self.tr_file12,  self.tr_file3, repr(time_to_wait)], 
                   [self.tr_file12, self.tr_script3, self.tr_stdin3], 
                   [self.tr_file3], 
-                  self.tr_stdin3, False, 168, "job3")
+                  self.tr_stdin3, False, 168, job_name)
     elif self.with_transfers and self.with_shared_resource_path:
-      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.tr_file3, "30"], 
+      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.tr_file3, repr(time_to_wait)], 
                   [], 
                   [self.tr_file3], 
-                  self.sh_stdin3, False, 168, "job3")
+                  self.sh_stdin3, False, 168, job_name)
     elif not self.with_transfers and self.with_shared_resource_path:
-      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.sh_file3, "30"], 
+      job3 = Job( ["python", self.sh_script3, self.sh_file12,  self.sh_file3, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.sh_stdin3, False, 168, "job3")
+                  self.sh_stdin3, False, 168, job_name)
     else:
-      job3 = Job( ["python", self.lo_script3, self.lo_file12,  self.lo_file3, "30"], 
+      job3 = Job( ["python", self.lo_script3, self.lo_file12,  self.lo_file3, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.lo_stdin3,  False, 168, "job3")
+                  self.lo_stdin3,  False, 168, job_name)
     return job3
     
   def job4(self):
+    time_to_wait=10
+    job_name="job4"
     if self.with_transfers and not self.with_shared_resource_path:
-      job4 = Job( ["python", self.tr_script4, self.tr_file2,  self.tr_file3, self.tr_file4, "10"], 
+      job4 = Job( ["python", self.tr_script4, self.tr_file2,  self.tr_file3, self.tr_file4, repr(time_to_wait)], 
                   [self.tr_file2, self.tr_file3, self.tr_script4, self.tr_stdin4], 
                   [self.tr_file4], 
-                  self.tr_stdin4, False, 168, "job4")
+                  self.tr_stdin4, False, 168, job_name)
     elif self.with_transfers and self.with_shared_resource_path:
-      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.tr_file4, "10"], 
+      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.tr_file4, repr(time_to_wait)], 
                   [], 
                   [self.tr_file4], 
-                  self.sh_stdin4, False, 168, "job4")
+                  self.sh_stdin4, False, 168, job_name)
     elif not self.with_transfers and self.with_shared_resource_path:
-      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.sh_file4, "10"], 
+      job4 = Job( ["python", self.sh_script4, self.sh_file2,  self.sh_file3, self.sh_file4, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.sh_stdin4, False, 168, "job4")
+                  self.sh_stdin4, False, 168, job_name)
     else:
-      job4 = Job( ["python", self.lo_script4, self.lo_file2,  self.lo_file3, self.lo_file4, "10"], 
+      job4 = Job( ["python", self.lo_script4, self.lo_file2,  self.lo_file3, self.lo_file4, repr(time_to_wait)], 
                   None, 
                   None, 
-                  self.lo_stdin4, False, 168, "job4")
+                  self.lo_stdin4, False, 168, job_name)
     return job4
     
   def job_test_command_1(self):
@@ -786,15 +811,130 @@ class MultipleTest(WorkflowTest):
       Helper.transfer_input_files(self.wf_id, WorkflowTest.wf_ctrl)
 
     Helper.wait_workflow(self.wf_id, WorkflowTest.wf_ctrl)
-    status = self.wf_ctrl.workflow_status(self.wf_id)
     
+    if self.path_management == WorkflowTest.FILE_TRANSFER:
+      Helper.transfer_output_files(self.wf_id, WorkflowTest.wf_ctrl)
+    
+    status = self.wf_ctrl.workflow_status(self.wf_id)
+
+
     self.assert_(status == constants.WORKFLOW_DONE)
     self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
                                              WorkflowTest.wf_ctrl)) == 2)
     self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
                                              WorkflowTest.wf_ctrl,
                                              include_aborted_jobs=True)) == 6)
+                                             
+    (jobs_info, 
+    transfers_info, 
+    workflow_status, 
+    workflow_queue) = WorkflowTest.wf_ctrl.workflow_elements_status(self.wf_id)
+                                             
+                                             
     # TODO: check the stdout and stderrr
+    for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
+        job_list=self.wf_ctrl.jobs([job_id])
+        if len(job_list)>0:
+            #print 'len(job_list)='+repr(len(job_list))+"\n"
+            job_name, job_command, job_submission_date=job_list[job_id]
+            #print "name="			+repr(job_name)+"\n"
+            #print "command="		+repr(job_command)+"\n"
+            #print "submission="	+repr(job_submission_date)+"\n"
+            #print "tmp_status="	+repr(tmp_status)+"\n"
+            #print "exit_info="		+repr(exit_info)+"\n"
+            #print "dates="			+repr(dates)+"\n"
+            
+            
+            ##To check job standard out 
+            if repr(job_name)=="'job1'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1)
+                self.failUnless(isSame == True)
+
+                if self.path_management==WorkflowTest.LOCAL_PATH:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.lo_file11)
+                    self.failUnless(isSame == True)    
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.lo_file11)
+                    self.failUnless(isSame == True)
+                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
+                    self.failUnless(isSame == True)
+                if self.path_management==WorkflowTest.FILE_TRANSFER:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.tr_file11.client_path)
+                    self.failUnless(isSame == True)    
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.tr_file12.client_path)
+                    self.failUnless(isSame == True)
+                    #For unknown reason, it raise some errors
+                    #http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running 
+                    #isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
+                    #self.failUnless(isSame == True)
+            
+            if repr(job_name)=="'job1 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
+                self.failUnless(isSame == True)
+
+            if repr(job_name)=="'job2'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+                if self.path_management==WorkflowTest.FILE_TRANSFER:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file2.client_path,	WorkflowTest.wf_examples.lo_out_model_file2)
+                if self.path_management==WorkflowTest.LOCAL_PATH:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file2,	WorkflowTest.wf_examples.lo_out_model_file2)
+                    self.failUnless(isSame == True)
+                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr2)
+                    self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout2)
+                self.failUnless(isSame == True)
+                
+                
+            if repr(job_name)=="'job3'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout3)
+                self.failUnless(isSame == True)
+                if self.path_management==WorkflowTest.LOCAL_PATH:
+                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr3)
+                    self.failUnless(isSame == True)
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file3,	WorkflowTest.wf_examples.lo_out_model_file3)
+                    self.failUnless(isSame == True)
+                if self.path_management==WorkflowTest.FILE_TRANSFER:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file3.client_path,	WorkflowTest.wf_examples.lo_out_model_file3)
+                    self.failUnless(isSame == True)
+             
+            if repr(job_name)=="'job4'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout4)
+                self.failUnless(isSame == True)
+                if self.path_management==WorkflowTest.LOCAL_PATH:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file4,	WorkflowTest.wf_examples.lo_out_model_file4)
+                    self.failUnless(isSame == True)
+                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr4)
+                    self.failUnless(isSame == True)    
+                if self.path_management==WorkflowTest.FILE_TRANSFER:
+                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file4.client_path,	WorkflowTest.wf_examples.lo_out_model_file4)
+                    self.failUnless(isSame == True)
+
+            if repr(job_name)=="'job3 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
+                #print "Verify "+repr(job_name)+" \n"
+                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
+                self.failUnless(isSame == True)
 
 class SpecialCommandTest(WorkflowTest):
 
@@ -849,7 +989,9 @@ if __name__ == '__main__':
     sys.stdout.write("login:")
     login = sys.stdin.readline()
     login = login.rstrip()
-    password = getpass.getpass()
+    password = sys.stdin.readline()
+    password = password.rstrip()
+    #password = getpass.getpass()
   sys.stdout.write("Login => " + repr(login) + "\n")
   sys.stdout.write("---------------------------------\n")
   
