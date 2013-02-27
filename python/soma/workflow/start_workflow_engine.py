@@ -29,7 +29,7 @@ if __name__=="__main__":
   import soma.workflow.connection 
   import soma.workflow.configuration
   from soma.workflow.errors import EngineError
-
+  from soma.workflow.database_server import WorkflowDatabaseServer
 
   ###### WorkflowEngine pyro object
   class ConfiguredWorkflowEngine(Pyro.core.SynchronizedObjBase, 
@@ -83,30 +83,8 @@ if __name__=="__main__":
                                                          queue_limits,
                                                          drmaa_implementation)
       pass
-    
-  
-  ###### main server program
-  def main(resource_id, engine_name, log = ""):
-    
-    config = Configuration.load_from_file(resource_id)
 
-    (engine_log_dir,
-    engine_log_format,
-    engine_log_level) = config.get_engine_log_info()
-    if engine_log_dir:
-      logfilepath = os.path.join(os.path.abspath(engine_log_dir),  
-                                 "log_" + engine_name + log)
-      logging.basicConfig(
-           filename=logfilepath,
-           format=engine_log_format,
-           level=eval("logging." + engine_log_level))
-      logger = logging.getLogger('engine')
-      logger.info(" ")
-      logger.info("****************************************************")
-      logger.info("****************************************************")
-   
-    ###########################
-    # Looking for the database_server
+  def get_database_server_proxy(config, logger):
     try:
       Pyro.core.initClient()
       locator = Pyro.naming.NameServerLocator()
@@ -138,27 +116,56 @@ if __name__=="__main__":
 	                "The database server might not be running. "
                         "Run the following command on %s to start the server: \n"
                         "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
+    return database_server
 
-    #Pyro.config.PYRO_MULTITHREADED = 0
-    Pyro.core.initServer()
-    daemon = Pyro.core.Daemon()
+    
+  
+  ###### main server program
+  def main(resource_id, engine_name, log = ""):
+    
+    config = Configuration.load_from_file(resource_id)
 
+    (engine_log_dir,
+    engine_log_format,
+    engine_log_level) = config.get_engine_log_info()
+    if engine_log_dir:
+      logfilepath = os.path.join(os.path.abspath(engine_log_dir),  
+                                 "log_" + engine_name + log)
+      logging.basicConfig(
+           filename=logfilepath,
+           format=engine_log_format,
+           level=eval("logging." + engine_log_level))
+      logger = logging.getLogger('engine')
+      logger.info(" ")
+      logger.info("****************************************************")
+      logger.info("****************************************************")
+ 
     if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
       sch = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
                                     config.get_parallel_job_config(),
                                     os.path.expanduser("~"),
                                     configured_native_spec=config.get_native_specification())
+      database_server = get_database_server_proxy(config, logger)
+
     elif config.get_scheduler_type() == soma.workflow.configuration.LOCAL_SCHEDULER:
       from soma.workflow.scheduler import ConfiguredLocalScheduler
       local_scheduler_cfg_file_path = soma.workflow.configuration.LocalSchedulerCfg.search_config_path()
       if local_scheduler_cfg_file_path:
         local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg.load_from_file(local_scheduler_cfg_file_path)
       else:
-      	local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()
-      
+      	local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()      
       sch = ConfiguredLocalScheduler(local_scheduler_config)
-      
+      database_server = get_database_server_proxy(config, logger)
 
+    elif config.get_scheduler_type() == soma.workflow.configuration.MPI_SCHEDULER:
+      sch = None 
+      database_server = WorkflowDatabaseServer(config.get_database_file(),
+                                               config.get_transfered_file_dir())
+
+
+    #Pyro.config.PYRO_MULTITHREADED = 0
+    Pyro.core.initServer()
+    daemon = Pyro.core.Daemon()
 
     workflow_engine = ConfiguredWorkflowEngine(database_server, 
                                                sch,

@@ -38,8 +38,10 @@ MODES = [LIGHT_MODE,
 
 LOCAL_SCHEDULER = 'local_basic'
 DRMAA_SCHEDULER = 'drmaa'
+MPI_SCHEDULER = 'mpi'
 SCHEDULER_TYPES = [LOCAL_SCHEDULER,
-                   DRMAA_SCHEDULER]
+                   DRMAA_SCHEDULER,
+                   MPI_SCHEDULER]
 
 # configuration variables ------------------------------------------------------
 

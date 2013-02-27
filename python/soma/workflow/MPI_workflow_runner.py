@@ -408,7 +408,9 @@ if __name__ == '__main__':
         try:
             config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
 
-            # TODO test if Scheduler MPI           
+            if config.get_scheduler_type() != soma.workflow.configuration.MPI_SCHEDULER:
+                raise Exception("The resource id %s is not configured to use a MPI scheduler. "
+                                "Configure a resource with SCHEDULER_TYPE = mpi." %(resource_id))
  
             logger.info(" ")
             logger.info(" ")
