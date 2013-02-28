@@ -227,7 +227,7 @@ class WorkflowController(object):
 
   def submit_job(self, job, queue=None):
     '''
-    **DEPRECATED since version 2.4:** Use submit_workflow instead.
+    **deprecated since version 2.4:** Use submit_workflow instead.
 
     Submits a job which is not part of a workflow.
     Returns a job identifier.
@@ -586,7 +586,7 @@ class WorkflowController(object):
 
   def kill_job(self, job_id ):
     '''
-    **DEPRECATED since version 2.4:** Use stop_workflow instead.
+    **deprecated since version 2.4:** Use stop_workflow instead.
 
     Kills a running job. The job will not be deleted from the system (the job
     identifier remains valid).
@@ -601,7 +601,7 @@ class WorkflowController(object):
 
   def restart_job(self, job_id):
     '''
-    **DEPRECATED since version 2.4:** Use restart_workflow instead.
+    **deprecated since version 2.4:** Use restart_workflow instead.
 
     Restarts a job which status is constants.FAILED or constants.WARNING.
 
@@ -617,7 +617,7 @@ class WorkflowController(object):
 
   def delete_job(self, job_id, force=True):
     '''
-    **DEPRECATED since version 2.4:** Use delete_workflow instead.
+    **deprecated since version 2.4:** Use delete_workflow instead.
 
     Deletes a job which is not part of a workflow.
     The job_id will become invalid and can not be used anymore.
