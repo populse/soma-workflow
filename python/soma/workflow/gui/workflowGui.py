@@ -822,7 +822,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     if file_path:
       try:
-        Controller.serialize_workflow(file_path, self.model.current_workflow())
+        Controller.serialize_workflow(file_path, self.model.current_workflow().server_workflow)
       except SerializationError, e:
         QtGui.QMessageBox.warning(self, "Error", "%s: %s" %(type(e),e))
         
