@@ -460,8 +460,7 @@ class Configuration(observer.Observable):
       self._mode = LIGHT_MODE
       return self._mode
     
-    if not self._config_parser.has_option(self._resource_id, CFG_SUBMITTING_MACHINES) and \
-       self._scheduler_type == MPI_SCHEDULER: 
+    if not self._config_parser.has_option(self._resource_id, CFG_SUBMITTING_MACHINES):
        self._mode = LOCAL_MODE
        return self._mode
  
