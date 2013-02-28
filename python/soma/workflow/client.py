@@ -227,6 +227,8 @@ class WorkflowController(object):
 
   def submit_job(self, job, queue=None):
     '''
+    **DEPRECATED since version 2.4:** Use submit_workflow instead.
+
     Submits a job which is not part of a workflow.
     Returns a job identifier.
 
@@ -247,11 +249,10 @@ class WorkflowController(object):
 
     Raises *JobError* if the job is not correct.
     '''
+    print "The method submit_job is deprecated since version 2.4. Use submit_workflow instead."
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
                               "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
-
-
 
     job_id = self._engine_proxy.submit_job(job, queue)
     return job_id
@@ -361,7 +362,7 @@ class WorkflowController(object):
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
     wf_status = self._engine_proxy.workflow_elements_status(workflow_id)
-     # special processing for transfer status:
+    # special processing for transfer status:
     new_transfer_status = []
     for engine_path, client_path, client_paths, status, transfer_type in wf_status[1]:
       progression = self._transfer_progression(status,
@@ -585,17 +586,23 @@ class WorkflowController(object):
 
   def kill_job(self, job_id ):
     '''
+    **DEPRECATED since version 2.4:** Use stop_workflow instead.
+
     Kills a running job. The job will not be deleted from the system (the job
     identifier remains valid).
     Use the restart_job method to restart the job.
 
     Raises *UnknownObjectError* if the job_id is not valid
     '''
+    print "The method kill_job is deprecated since version 2.4. Use stop_workflow instead."
+
     self._engine_proxy.kill_job(job_id)
 
 
   def restart_job(self, job_id):
     '''
+    **DEPRECATED since version 2.4:** Use restart_workflow instead.
+
     Restarts a job which status is constants.FAILED or constants.WARNING.
 
     * job_id *job identifier*
@@ -604,11 +611,14 @@ class WorkflowController(object):
 
     Raises *UnknownObjectError* if the job_id is not valid
     '''
+    print "The method restart_job is deprecated since version 2.4. Use submit_workflow instead."
     self._engine_proxy.restart_job(job_id)
 
 
   def delete_job(self, job_id, force=True):
     '''
+    **DEPRECATED since version 2.4:** Use delete_workflow instead.
+
     Deletes a job which is not part of a workflow.
     The job_id will become invalid and can not be used anymore.
     The job is killed if it is running.
@@ -620,6 +630,7 @@ class WorkflowController(object):
       if some jobs are possibly still running on the computing resource despite
       the workflow doesn't exist.
     '''
+    print "The method delete_job is deprecated since version 2.4. Use delete_workflow instead."
 
     return self._engine_proxy.delete_job(job_id, force)
 
