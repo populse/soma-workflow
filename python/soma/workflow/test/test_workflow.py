@@ -817,6 +817,127 @@ class MultipleTest(WorkflowTest):
     
     status = self.wf_ctrl.workflow_status(self.wf_id)
 
+    fail_jobs=Helper.list_failed_jobs(self.wf_id, WorkflowTest.wf_ctrl)
+    
+    num_list_fail_jobs=len(fail_jobs)
+    print "num_list_fail_jobs=" + repr(num_list_fail_jobs)
+    for fail_job_id in fail_jobs:
+        print "fail job id :" +repr(fail_job_id)+"\n"
+    
+
+                                             
+    (jobs_info, 
+    transfers_info, 
+    workflow_status, 
+    workflow_queue) = WorkflowTest.wf_ctrl.workflow_elements_status(self.wf_id)
+    print "len(jobs_info)=" + repr(len(jobs_info)) + "\n"
+                                             
+                                             
+    # TODO: check the stdout and stderrr
+    for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
+        print "job_id="         +repr(job_id)+"\n"
+        job_list=self.wf_ctrl.jobs([job_id])
+        #print 'len(job_list)='+repr(len(job_list))+"\n"
+        job_name, job_command, job_submission_date=job_list[job_id]
+        
+        print "name="			+repr(job_name)+"\n"
+        print "command="        +repr(job_command)+"\n"
+        print "submission="     +repr(job_submission_date)+"\n"
+        print "tmp_status="     +repr(tmp_status)+"\n"
+        print "exit_info="		+repr(exit_info)+"\n"
+        print "dates="			+repr(dates)+"\n"
+        
+        
+        ##To check job standard out 
+        if repr(job_name)=="'job1'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1)
+            self.failUnless(isSame == True)
+
+            if self.path_management==WorkflowTest.LOCAL_PATH:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.lo_file11)
+                self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.lo_file12)
+                self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
+                self.failUnless(isSame == True)
+            if self.path_management==WorkflowTest.FILE_TRANSFER:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.tr_file11.client_path)
+                self.failUnless(isSame == True)    
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.tr_file12.client_path)
+                self.failUnless(isSame == True)
+                #For unknown reason, it raise some errors
+                #http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running 
+                #isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
+                #self.failUnless(isSame == True)
+        
+        if repr(job_name)=="'job1 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
+            self.failUnless(isSame == True)
+
+        if repr(job_name)=="'job2'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+            if self.path_management==WorkflowTest.FILE_TRANSFER:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file2.client_path,	WorkflowTest.wf_examples.lo_out_model_file2)
+            if self.path_management==WorkflowTest.LOCAL_PATH:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file2,	WorkflowTest.wf_examples.lo_out_model_file2)
+                self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr2)
+                self.failUnless(isSame == True)
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout2)
+            self.failUnless(isSame == True)
+            
+            
+        if repr(job_name)=="'job3'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout3)
+            self.failUnless(isSame == True)
+            if self.path_management==WorkflowTest.LOCAL_PATH:
+                isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr3)
+                self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file3,	WorkflowTest.wf_examples.lo_out_model_file3)
+                self.failUnless(isSame == True)
+            if self.path_management==WorkflowTest.FILE_TRANSFER:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file3.client_path,	WorkflowTest.wf_examples.lo_out_model_file3)
+                self.failUnless(isSame == True)
+         
+        if repr(job_name)=="'job4'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout4)
+            self.failUnless(isSame == True)
+            if self.path_management==WorkflowTest.LOCAL_PATH:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file4,	WorkflowTest.wf_examples.lo_out_model_file4)
+                self.failUnless(isSame == True)
+                isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr4)
+                self.failUnless(isSame == True)    
+            if self.path_management==WorkflowTest.FILE_TRANSFER:
+                isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file4.client_path,	WorkflowTest.wf_examples.lo_out_model_file4)
+                self.failUnless(isSame == True)
+
+        if repr(job_name)=="'job3 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
+            #print "Verify "+repr(job_name)+" \n"
+            job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
+            job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
+            self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
+            isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
+            self.failUnless(isSame == True)
 
     self.assert_(status == constants.WORKFLOW_DONE)
     self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
@@ -824,117 +945,6 @@ class MultipleTest(WorkflowTest):
     self.assert_(len(Helper.list_failed_jobs(self.wf_id, 
                                              WorkflowTest.wf_ctrl,
                                              include_aborted_jobs=True)) == 6)
-                                             
-    (jobs_info, 
-    transfers_info, 
-    workflow_status, 
-    workflow_queue) = WorkflowTest.wf_ctrl.workflow_elements_status(self.wf_id)
-                                             
-                                             
-    # TODO: check the stdout and stderrr
-    for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
-        job_list=self.wf_ctrl.jobs([job_id])
-        if len(job_list)>0:
-            #print 'len(job_list)='+repr(len(job_list))+"\n"
-            job_name, job_command, job_submission_date=job_list[job_id]
-            #print "name="			+repr(job_name)+"\n"
-            #print "command="		+repr(job_command)+"\n"
-            #print "submission="	+repr(job_submission_date)+"\n"
-            #print "tmp_status="	+repr(tmp_status)+"\n"
-            #print "exit_info="		+repr(exit_info)+"\n"
-            #print "dates="			+repr(dates)+"\n"
-            
-            
-            ##To check job standard out 
-            if repr(job_name)=="'job1'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1)
-                self.failUnless(isSame == True)
-
-                if self.path_management==WorkflowTest.LOCAL_PATH:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.lo_file11)
-                    self.failUnless(isSame == True)    
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.lo_file11)
-                    self.failUnless(isSame == True)
-                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
-                    self.failUnless(isSame == True)
-                if self.path_management==WorkflowTest.FILE_TRANSFER:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file11,	WorkflowTest.wf_examples.tr_file11.client_path)
-                    self.failUnless(isSame == True)    
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_out_model_file12,	WorkflowTest.wf_examples.tr_file12.client_path)
-                    self.failUnless(isSame == True)
-                    #For unknown reason, it raise some errors
-                    #http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running 
-                    #isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr1)
-                    #self.failUnless(isSame == True)
-            
-            if repr(job_name)=="'job1 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
-                self.failUnless(isSame == True)
-
-            if repr(job_name)=="'job2'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-                if self.path_management==WorkflowTest.FILE_TRANSFER:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file2.client_path,	WorkflowTest.wf_examples.lo_out_model_file2)
-                if self.path_management==WorkflowTest.LOCAL_PATH:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file2,	WorkflowTest.wf_examples.lo_out_model_file2)
-                    self.failUnless(isSame == True)
-                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr2)
-                    self.failUnless(isSame == True)
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout2)
-                self.failUnless(isSame == True)
-                
-                
-            if repr(job_name)=="'job3'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout3)
-                self.failUnless(isSame == True)
-                if self.path_management==WorkflowTest.LOCAL_PATH:
-                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr3)
-                    self.failUnless(isSame == True)
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file3,	WorkflowTest.wf_examples.lo_out_model_file3)
-                    self.failUnless(isSame == True)
-                if self.path_management==WorkflowTest.FILE_TRANSFER:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file3.client_path,	WorkflowTest.wf_examples.lo_out_model_file3)
-                    self.failUnless(isSame == True)
-             
-            if repr(job_name)=="'job4'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout4)
-                self.failUnless(isSame == True)
-                if self.path_management==WorkflowTest.LOCAL_PATH:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.lo_file4,	WorkflowTest.wf_examples.lo_out_model_file4)
-                    self.failUnless(isSame == True)
-                    isSame,	msg	= identicalFiles(job_stderr_file,WorkflowTest.wf_examples.lo_stderr4)
-                    self.failUnless(isSame == True)    
-                if self.path_management==WorkflowTest.FILE_TRANSFER:
-                    isSame,	msg	= identicalFiles(WorkflowTest.wf_examples.tr_file4.client_path,	WorkflowTest.wf_examples.lo_out_model_file4)
-                    self.failUnless(isSame == True)
-
-            if repr(job_name)=="'job3 with exception'" and exit_info[0]==constants.FINISHED_REGULARLY:
-                #print "Verify "+repr(job_name)+" \n"
-                job_stdout_file="/tmp/job_soma_out_log_"+repr(job_id)
-                job_stderr_file="/tmp/job_soma_outerr_log_"+repr(job_id)
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,job_stdout_file,job_stderr_file)
-                isSame,	msg	= identicalFiles(job_stdout_file,WorkflowTest.wf_examples.lo_stdout1_exception_model)
-                self.failUnless(isSame == True)
 
 class SpecialCommandTest(WorkflowTest):
 
