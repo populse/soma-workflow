@@ -43,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'soma-workflow'
-copyright = u'2011, Soizic Laguitton'
+copyright = u'2011 CEA, Neurospin, France, CATI, France'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

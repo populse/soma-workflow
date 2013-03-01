@@ -12,8 +12,24 @@ Soma-workflow: A unified and simple interface to parallel computing resource
   ..
     .. warning:: Documentation under construction.
 
+Soma-workflow release logs and communication can be found at the project `main page. <http://brainvisa.info/soma-workflow>`_
 
+Contents
+========
 
+.. toctree::
+   :maxdepth: 1
+
+   concepts.txt
+   gui.txt
+   examples.txt
+   MPI_workflow_runner.txt
+   errors_troubleshooting.txt
+   status_list.txt
+   workflow_creation.txt
+   client_API.txt
+   install_config.txt
+ 
 Main Features
 =============
 
@@ -76,22 +92,7 @@ Main Features
     path name matchings.
 
 
-Contents
-========
-
-.. toctree::
-   :maxdepth: 1
-
-   concepts.txt
-   gui.txt
-   examples.txt
-   MPI_workflow_runner.txt
-   errors_troubleshooting.txt
-   status_list.txt
-   workflow_creation.txt
-   client_API.txt
-   install_config.txt
-   
+  
    
    
    
@@ -111,23 +112,5 @@ Contents
   :Release: |release|
   :Date: |today|
 
-
-About
-=====
-
-Soma-workflow release logs and communication can be found at the project `main page. <http://brainvisa.info/soma-workflow>`_
-
-Funded by `CATI <http://cati-neuroimaging.com>`_.
-
-.. image:: images/logo_cati_couleur_100.* 
-  :scale: 40
-
-
-Funded by `HiPiP <http://hipip.eu>`_ an `ITEA2 <http://www.itea2.org/>`_ project. 
-
-.. image:: images/hipip.* 
-  :scale: 40 
-
-.. image:: images/itea2.* 
 
 
