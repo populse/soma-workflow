@@ -85,6 +85,7 @@ Contents
    concepts.txt
    gui.txt
    examples.txt
+   MPI_workflow_runner.txt
    errors_troubleshooting.txt
    status_list.txt
    workflow_creation.txt

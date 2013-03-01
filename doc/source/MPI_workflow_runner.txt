@@ -1,0 +1,147 @@
+.. _mpi_workflow_runner:
+
+====================================
+MPI workflow runner ---**beta**---
+====================================
+
+The MPI workflow runner is a second way of executing workflows using a cluster:
+  * high throughput mode (using DRMAA for example: 1 job = 1 cluster job
+  * low throughput mode with the MPI workflow runner: 1 workflow = 1 cluster job
+
+
+
+.. image:: images/sw_high_throughput.png
+  :scale: 60
+
+
+.. image:: images/sw_low_throughput.png
+  :scale: 60
+
+This mode makes it possible:
+  * to run workflows on cluster with limited number of job per user.
+  * to run workflows on cluster where it is not possible to run a server process.
+  * to run workflows if you only have a simple MPI installation.
+  * to remove the time interval between jobs execution which is due to the submission of each job to the cluster management system.
+
+
+Requirements:
+=============
+
+* Python *version 2.5 or more*
+* `MPI4py <https://code.google.com/p/mpi4py>`_.  
+
+Installation:
+=============
+
+This mode use pure Python code, you do not need to compile anything: See `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for installation. 
+
+Configuration:
+==============
+
+Create a new section in which the scheduler type is set to "mpi": :: 
+
+  SCHEDULER_TYPE = mpi
+
+Required items:
+
+  * DATABASE_FILE
+  * TRANSFERED_FILES_DIR
+
+Example: ::
+
+  [Titan_MPI]
+
+  DATABASE_FILE        = path_mpi_runner_config/soma_workflow.db
+  TRANSFERED_FILES_DIR = path_mpi_runner_config/transfered_files
+  SCHEDULER_TYPE       = mpi
+ 
+  # optional logging
+  SERVER_LOG_FILE   = path/logs/log_server
+  SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  SERVER_LOG_LEVEL  = ERROR
+  ENGINE_LOG_DIR    = path/logs/
+  ENGINE_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+  ENGINE_LOG_LEVEL  = ERROR
+
+
+If you want to monitor the workflow execution from a remote machine, add the following to soma-workflow configuration file on that machine:
+
+::
+
+  [Titan_MPI]
+  # remote access information
+  CLUSTER_ADDRESS     = titan.mylab.fr 
+  SUBMITTING_MACHINES = titan0
+  
+  # optional
+  LOGIN = my_login_on_titan
+
+
+MPI_workflow_runner options:
+============================
+
+:: 
+
+  $ python -m soma.workflow.MPI_workflow_runner --help
+  Usage: MPI_workflow_runner.py [options]
+  
+  Options:
+    -h, --help            show this help message and exit
+    --workflow=WORKFLOW_FILE
+                          The workflow to run.
+    -r WF_ID_TO_RESTART, --restart=WF_ID_TO_RESTART
+                          The workflow id to restart
+    --nb_attempt_per_job=NB_ATTEMPT_PER_JOB
+                          A job can be restarted several time if it fails. This
+                          option specify the number of attempt per job. By
+                          default, the jobs are not restarted.
+  
+
+
+
+Example using PBS:
+==================
+
+Example of run_workflow.sh: ::
+
+  #!/bin/bash
+  #PBS -N my_workflow
+  #PBS -j oe
+  #PBS -l walltime=10:00:00
+  #PBS -l nodes=3:ppn=8
+  #PBS -q long
+  
+  time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --workflow $HOME/my_workflow_file
+
+Then use the command: ::
+
+  $ qsub run_workflow.sh
+
+You will get an id for the MPI job you have submitted.
+If 112108 is the id, use the following command line to stop the workflow:
+
+  $ qdel 112108
+
+Let say that the soma-workflow id of the workflow is 520, here is a script example to restart the workflow: ::
+
+  #!/bin/bash
+  #PBS -N my_workflow
+  #PBS -j oe
+  #PBS -l walltime=10:00:00
+  #PBS -l nodes=3:ppn=8
+  #PBS -q long
+  
+  time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --restart 520
+
+Use "qsub" to submit the workflow and "qdel" to stop it.
+
+
+Current limitations:
+====================
+
+* The workflow must contain job using only one CPU
+* It is safer to run only one MPI workflow runner at the same time
+* As in the following example, some workflow configuration might result of a waste of CPU time.
+
+.. image:: images/sw_low_throughput_wasted_cpus.png
+  :scale: 60 
