@@ -64,17 +64,8 @@ With the same interfaces (API and GUI), Soma-workflow enables the interaction wi
 of computing resources:
 
   * multiple core machine
-  * cluster or grid via `DRMAA <http://www.drmaa.org/>`_  (unified interface for DRMS)
-  * cluster or grid via an other interface
-
-Soma-workflow uses only very basic parallel resource functionalities. If 
-you do not wish to use DRMAA, an interaction with a new computing resource can 
-be added implementing four Python methods:
-
-  * job submission 
-  * job status request 
-  * job termination information request 
-  * kill job
+  * cluster via `DRMAA <http://www.drmaa.org/>`_  (unified interface for DRMS)
+  * **New in version 2.4:** cluster via MPI (beta version), c.f. :ref:`mpi_workflow_runner`
 
 Note that Soma-workflow is not a resource manager it has to interact with the 
 system managing the computing resource (**DRMS**: Distributed Resource 

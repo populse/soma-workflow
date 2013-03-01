@@ -223,8 +223,8 @@ man_pages = [
 # Bibliographic Dublin Core info.
 epub_title = u'soma-workflow'
 epub_author = u'Soizic Laguitton'
-epub_publisher = u'Soizic Laguitton'
-epub_copyright = u'2011, Soizic Laguitton'
+epub_publisher = u'2011 CEA, Neurospin, France, CATI, France'
+epub_copyright = u'2011, '
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

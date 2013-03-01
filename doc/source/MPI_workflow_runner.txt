@@ -5,7 +5,7 @@ MPI workflow runner ---**beta**---
 ====================================
 
 The MPI workflow runner is a second way of executing workflows using a cluster:
-  * high throughput mode (using DRMAA for example: 1 job = 1 cluster job
+  * high throughput mode (using DRMAA for example): 1 job = 1 cluster job
   * low throughput mode with the MPI workflow runner: 1 workflow = 1 cluster job
 
 
@@ -18,34 +18,35 @@ The MPI workflow runner is a second way of executing workflows using a cluster:
   :scale: 60
 
 This mode makes it possible:
-  * to run workflows on cluster with limited number of job per user.
-  * to run workflows on cluster where it is not possible to run a server process.
+  * to run workflows on clusters with limited number of job per user.
+  * to run workflows on clusters where it is not possible to run a server process.
   * to run workflows if you only have a simple MPI installation.
   * to remove the time interval between jobs execution which is due to the submission of each job to the cluster management system.
+
+This mode is for advenced users who know how to use a cluster. In this mode the workflow control (submission, stop and resart) via the python API is disabled. The DRMS commands such as *qsub* and *qdel* for PBS for example, must be used instead. However, the monitoring tools (GUI and Python API) remains the same. 
 
 
 Requirements:
 =============
 
 * Python *version 2.5 or more*
-* `MPI4py <https://code.google.com/p/mpi4py>`_.  
+* `MPI4py <https://code.google.com/p/mpi4py>`_  
 
 Installation:
 =============
 
-This mode use pure Python code, you do not need to compile anything: See `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for installation. 
+This mode use pure Python code, you do not need to compile anything: c.f. `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for installation. 
 
 Configuration:
 ==============
-
-Create a new section in which the scheduler type is set to "mpi": :: 
-
-  SCHEDULER_TYPE = mpi
 
 Required items:
 
   * DATABASE_FILE
   * TRANSFERED_FILES_DIR
+  * SCHEDULER_TYPE
+
+.. note:: **SCHEDULER_TYPE must be set to "mpi"**
 
 Example: ::
 
@@ -64,7 +65,7 @@ Example: ::
   ENGINE_LOG_LEVEL  = ERROR
 
 
-If you want to monitor the workflow execution from a remote machine, add the following to soma-workflow configuration file on that machine:
+Optionally, to monitor the workflow execution from a remote machine, the following lines can be used to configure soma-workflow on that machine:
 
 ::
 
@@ -102,7 +103,7 @@ MPI_workflow_runner options:
 Example using PBS:
 ==================
 
-Example of run_workflow.sh: ::
+Create a submission script for PBS (example *run_workflow.sh*): ::
 
   #!/bin/bash
   #PBS -N my_workflow
@@ -113,16 +114,19 @@ Example of run_workflow.sh: ::
   
   time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --workflow $HOME/my_workflow_file
 
-Then use the command: ::
+In the example, the workflow will run on 8 cores of 3 nodes (that is 8*3 cpus). It will be submitted to the "long" queue, and will last at most 10 hours.
+
+Use the following command to submit the script to the cluster, and thus start the workflow execution: ::
 
   $ qsub run_workflow.sh
 
-You will get an id for the MPI job you have submitted.
-If 112108 is the id, use the following command line to stop the workflow:
+You will get an cluster id for the MPI job you have submitted (112108 for example).
+Use the following command line to kill the MPI job and thus stop workflow execution: ::
 
   $ qdel 112108
 
-Let say that the soma-workflow id of the workflow is 520, here is a script example to restart the workflow: ::
+Each workflow has an id in Soma-workflow. This id is displayed in the GUI or can be recovered using the Python API (example 520).
+Use the following submission script to restart the workflow: ::
 
   #!/bin/bash
   #PBS -N my_workflow
@@ -133,15 +137,15 @@ Let say that the soma-workflow id of the workflow is 520, here is a script examp
   
   time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --restart 520
 
-Use "qsub" to submit the workflow and "qdel" to stop it.
+As before, use "qsub" to submit the workflow and possibly "qdel" to stop it.
 
 
 Current limitations:
 ====================
 
-* The workflow must contain job using only one CPU
+* The workflow must contain jobs using only one CPU
 * It is safer to run only one MPI workflow runner at the same time
-* As in the following example, some workflow configuration might result of a waste of CPU time.
+* As in the following example, some workflows might result of a waste of CPU time.
 
 .. image:: images/sw_low_throughput_wasted_cpus.png
   :scale: 60 
