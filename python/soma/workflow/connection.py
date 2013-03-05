@@ -26,6 +26,8 @@ import os
 import select
 import SocketServer
 
+
+
 from soma.workflow.errors import ConnectionError
 
 
@@ -96,6 +98,21 @@ class RemoteConnection( object ):
 
     line = stdout.readline()
     stdout_content = line
+
+    #look for the first key word:
+    while stdout.tell() != BufferedFile.SEEK_END: #I cannot read SEEK_END in sever
+        if line.strip():
+            if line.split()[0] != pyro_objet_name:
+                line = stdout.readline()
+                stdout_content = stdout_content + "\n" + line
+            else:
+                break
+        elif not line.strip():
+            line = stdout.readline()
+
+
+
+
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
       stdout_content = stdout_content + "\n" + line
