@@ -25,8 +25,6 @@ import getpass
 import os
 import select
 import SocketServer
-import sys
-from paramiko.file import BufferedFile
 
 from soma.workflow.errors import ConnectionError
 
@@ -70,8 +68,6 @@ class RemoteConnection( object ):
     if not login:
       raise ConnectionError("Remote connection requires a login")
    
-   
-    
     def searchAvailablePort():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
       s.bind(('localhost',0)) #try to bind to the port 0 so that the system 
@@ -100,20 +96,6 @@ class RemoteConnection( object ):
 
     line = stdout.readline()
     stdout_content = line
-
-#look for the first key word:
-    while stdout.tell() != BufferedFile.SEEK_END:
-        if line.strip():
-            if line.split()[0] != pyro_objet_name:
-                line = stdout.readline()
-                stdout_content = stdout_content + "\n" + line
-            else:
-                break
-        elif not line.strip():
-            line = stdout.readline()
-
-    
-
     while line and line.split()[0] != pyro_objet_name:
       line = stdout.readline()
       stdout_content = stdout_content + "\n" + line
