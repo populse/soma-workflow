@@ -27,7 +27,6 @@ import select
 import SocketServer
 
 
-
 from soma.workflow.errors import ConnectionError
 
 
@@ -62,7 +61,8 @@ class RemoteConnection( object ):
     '''
    
     # required in the remote connection mode
-    import paramiko 
+    import paramiko
+    from paramiko.file import BufferedFile 
     import Pyro.core
     from Pyro.errors import ConnectionClosedError
     
