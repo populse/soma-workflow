@@ -154,10 +154,10 @@ class Drmaa(Scheduler):
         self._drmaa.setCommand(jobTemplateId, "echo", [])
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_output_path", 
-                                "[%s]:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")))
+                                "%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")))
         self._drmaa.setAttribute(jobTemplateId, 
                                 "drmaa_error_path", 
-                                "[%s]:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")))
+                                "%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")))
         self._drmaa.runJob(jobTemplateId)
       except DrmaaError, e:
         self.logger.critical("%s" %e)
@@ -222,13 +222,18 @@ class Drmaa(Scheduler):
     stdin = job.plain_stdin()
 
     try:
+      
       drmaaJobId = self._drmaa.allocateJobTemplate()
-
-      self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
  
+      self._drmaa.setCommand(drmaaJobId, command[0], command[1:])
+      self.logger.info("drmaaJobId="+repr(drmaaJobId)+" command[0]="+repr(command[0])+" command[1:]="+repr(command[1:]))
+      self.logger.info("hostname and stdout_file= [%s]:%s" %(self.hostname, stdout_file))
+
       self._drmaa.setAttribute(drmaaJobId, 
-                              "drmaa_output_path", 
-                              "[%s]:%s" %(self.hostname, stdout_file))
+                             "drmaa_output_path", 
+                             "%s:%s" %(self.hostname, stdout_file))
+
+     
  
       if job.join_stderrout:
         self._drmaa.setAttribute(drmaaJobId,
@@ -238,14 +243,18 @@ class Drmaa(Scheduler):
         if stderr_file:
           self._drmaa.setAttribute(drmaaJobId, 
                                   "drmaa_error_path", 
-                                  "[%s]:%s" %(self.hostname, stderr_file))
+                                  "%s:%s" %(self.hostname, stderr_file))
       
       if job.stdin:
         #self.logger.debug("stdin: " + repr(stdin))
+        #self._drmaa.setAttribute(drmaaJobId, 
+        #                        "drmaa_input_path", 
+        #                        "%s:%s" %(self.hostname, stdin))
+        self.logger.debug("stdin: " + repr(stdin))
         self._drmaa.setAttribute(drmaaJobId, 
                                 "drmaa_input_path", 
-                                "[%s]:%s" %(self.hostname, stdin))
-        
+                                "%s" %(stdin))        
+
       working_directory = job.plain_working_directory()
       if working_directory:
         self._drmaa.setAttribute(drmaaJobId, "drmaa_wd", working_directory)
