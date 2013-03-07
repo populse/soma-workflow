@@ -1,0 +1,66 @@
+#! /usr/bin/env python
+
+'''
+@author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
+@organization: U{IFR 49<http://www.ifr49.org>}
+
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
+
+
+import sys
+import optparse
+
+#try:
+#  import sip
+#except ImportError, e:
+#  pass
+#else:
+#  sip.setapi('QVariant', 2)
+#  sip.setapi('QString', 2)
+
+from soma.workflow.gui.workflowGui import ApplicationModel, MainWindow, SomaWorkflowWidget, QtCore, QtGui
+
+parser = optparse.OptionParser()
+
+parser.add_option('-u', '--user', help="User for logging in to server")
+parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
+                  action='store_true', help="Try to connect directly, " \
+                    "withou displaying connection dialog.")
+parser.add_option('-r', '--computing-resource', dest='computing_resource', 
+                  help='computing resource identifier')
+
+options, args = parser.parse_args(sys.argv)
+
+if __name__=="__main__":
+  
+  app = QtGui.QApplication(sys.argv)
+  
+  #QtCore.pyqtRemoveInputHook()
+
+  model = ApplicationModel()
+
+  i = 1
+
+  if i == 1:
+  
+    sw_main_window = MainWindow(model, 
+                                options.user, 
+                                options.auto_connect,
+                                options.computing_resource)
+    
+    sw_main_window.show()
+
+  elif i == 2:
+    sw_widget = SomaWorkflowWidget(model, 
+                                  options.user, 
+                                  options.auto_connect,
+                                  options.computing_resource)
+    sw_widget.show()
+  
+
+  app.exec_()
+    

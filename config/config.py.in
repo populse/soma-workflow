@@ -1,0 +1,2 @@
+fullVersion = '@soma-workflow_VERSION@'
+shortVersion = '@soma-workflow_VERSION_MAJOR@.@soma-workflow_VERSION_MINOR@'

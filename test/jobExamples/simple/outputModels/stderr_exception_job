@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/neurospin/tmp/Soizic/jobFiles//sl225510/exceptionJob_92.py", line 2, in <module>
+    raise Exception("Paf Boum Boum Bada Boum !!!")
+Exception: Paf Boum Boum Bada Boum !!!
