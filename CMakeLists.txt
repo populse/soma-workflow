@@ -32,4 +32,8 @@ else()
   endif()
 endif()
 
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py" @ONLY )
 
+install ( FILES "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py"
+                   DESTINATION "python/soma/workflow"
+                  )
