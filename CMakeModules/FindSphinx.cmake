@@ -10,9 +10,12 @@ if( SPHINX_VERSION )
   # Sphinx is already found, do nothing
   set(SPHINX_FOUND TRUE)
 else()
+  
   find_program( SPHINXBUILD_EXECUTABLE
     NAMES sphinx-build
     DOC "Path to sphinx-build executable" )
+  
+  # message ("SPHINXBUILD_EXECUTABLE=${SPHINXBUILD_EXECUTABLE}")
 
   find_package( python REQUIRED )
 
