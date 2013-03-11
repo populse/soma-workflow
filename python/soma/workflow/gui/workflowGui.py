@@ -38,6 +38,8 @@ try:
 except ImportError, e:
   QT_BACKEND = None
 
+#QT_BACKEND=None
+
 if QT_BACKEND == None:
   try:
     from PySide import QtGui, QtCore

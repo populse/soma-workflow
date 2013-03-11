@@ -40,7 +40,7 @@ if( NOT LIBDRMAA_FOUND )
 #  message ( "LIBDRMAA NOT FOUND" )
 #  set( LIBDRMAA_LIBRARIES drmaa )
 else()
-  message ( "LIBDRMAA FOUND" )
+  message ( "LIBDRMAA FOUND:${LIBDRMAA_LIBRARIES}" )
   add_subdirectory( src/drmaaJobs )
   if( SIP_FOUND )
     add_subdirectory( src/sip )
@@ -49,8 +49,8 @@ else()
   endif()
 endif()
 
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py" @ONLY )
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_CURRENT_SOURCE_DIR}/python/soma/workflow/version.py" @ONLY )
 
-install ( FILES "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py"
+install ( FILES "${CMAKE_CURRENT_SOURCE_DIR}/python/soma/workflow/version.py"
                    DESTINATION "python/soma/workflow"
                   )
