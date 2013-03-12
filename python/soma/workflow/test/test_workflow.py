@@ -819,10 +819,10 @@ class MultipleTest(WorkflowTest):
 
     fail_jobs=Helper.list_failed_jobs(self.wf_id, WorkflowTest.wf_ctrl)
     
-    num_list_fail_jobs=len(fail_jobs)
-    print "num_list_fail_jobs=" + repr(num_list_fail_jobs)
-    for fail_job_id in fail_jobs:
-        print "fail job id :" +repr(fail_job_id)+"\n"
+#    num_list_fail_jobs=len(fail_jobs)
+#    print "num_list_fail_jobs=" + repr(num_list_fail_jobs)
+#    for fail_job_id in fail_jobs:
+#        print "fail job id :" +repr(fail_job_id)+"\n"
     
 
                                              
@@ -830,22 +830,22 @@ class MultipleTest(WorkflowTest):
     transfers_info, 
     workflow_status, 
     workflow_queue) = WorkflowTest.wf_ctrl.workflow_elements_status(self.wf_id)
-    print "len(jobs_info)=" + repr(len(jobs_info)) + "\n"
+#    print "len(jobs_info)=" + repr(len(jobs_info)) + "\n"
                                              
                                              
     # TODO: check the stdout and stderrr
     for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
-        print "job_id="         +repr(job_id)+"\n"
+#        print "job_id="         +repr(job_id)+"\n"
         job_list=self.wf_ctrl.jobs([job_id])
         #print 'len(job_list)='+repr(len(job_list))+"\n"
         job_name, job_command, job_submission_date=job_list[job_id]
         
-        print "name="			+repr(job_name)+"\n"
-        print "command="        +repr(job_command)+"\n"
-        print "submission="     +repr(job_submission_date)+"\n"
-        print "tmp_status="     +repr(tmp_status)+"\n"
-        print "exit_info="		+repr(exit_info)+"\n"
-        print "dates="			+repr(dates)+"\n"
+#        print "name="			+repr(job_name)+"\n"
+#        print "command="        +repr(job_command)+"\n"
+#        print "submission="     +repr(job_submission_date)+"\n"
+#        print "tmp_status="     +repr(tmp_status)+"\n"
+#        print "exit_info="		+repr(exit_info)+"\n"
+#        print "dates="			+repr(dates)+"\n"
         
         
         ##To check job standard out 
