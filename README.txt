@@ -49,15 +49,20 @@ Documentation
   .. _Soma-workflow: http://www.brainvisa.info/soma-workflow
 
 
+  Four main steps should be finished before using soma-workflow, Installation (Client Side), Configuration File (Client Side), Installation (Sever Side), and Configuration File (Server Side)
+
+
 Installation (Client Side)
 ------------
 
-  Qt version 4.6.2 or more, PyQt version 4.7.2 or more or PySide version 1.1.1 or
+  Qt version 4.6.2 or more, PyQt version 4.7.2 or more or
   more are required if you want to use the graphical interface. 
 
   To provide you quickly with a functional application, your own multiple core 
   machine can be used directly and without any configuration to distribute 
   computation, no matter the installation mode chosen.
+
+  A small problem with version.py
 
   **(Recommended) Only configurate your environment variables without installation**
 
@@ -69,28 +74,6 @@ Installation (Client Side)
         export PATH=$SOMAWF_PATH/bin:$PATH
         export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
 
-  **(Recommended) With setup.py only for my account in a local directory:**
-
-    1: Download the latest tarball and expand it.
-
-    2: Make all diretories for your path, for example here is ~/mylocal.
-
-    In terminal:
-
-      $ mkdir ~/mylocal
-
-    3: Edit the file "~/.bashrc" to add these lines:
-    
-        SOMAWF_PATH=~/mylocal
-        export PATH=$SOMAWF_PATH/bin:$PATH
-        export PYTHONPATH=$SOMAWF_PATH/lib/python2.7/site-packages/:$PYTHONPATH
-    
-    Attention: the version of python2.7 in PYTHONPATH should be same with python which you are using. For example, when your python version is 2.6, you should use export PYTHONPATH=$SOMAWF_PATH/lib/python2.6/site-packages/:$PYTHONPATH
-
-    4: Install Soma-workflow in the local directory ~/mylocal
-
-      $ sudo python setup.py install --prefix ~/mylocal
-   
   **(Easy, but not recommended) With setup.py for all users in the default folder:**
 
     1: Download the latest tarball and expand it.
@@ -100,37 +83,88 @@ Installation (Client Side)
       $ sudo python setup.py install 
 
 
-  **With easy_install:**
 
-    
-    This command will just install Soma-workflow::
-
-      $ easy_install --prefix ~/.local "soma-workflow"
-
-    To enable plotting in the GUI, this command will install matplotlib as well::
-
-      $ easy_install --prefix ~/.local "soma-workflow[plotting]"
-
-    To install the client interface to a remote computing resource, this command 
-    will install Soma-workflow, Pyro and Paramiko ::
-
-      $ easy_install --prefix ~/.local "soma-workflow[client]"
-
-    To install the client application with plotting enabled, this command 
-    will install Soma-workflow, Pyro, Paramiko and matplotlib::
-
-      $ easy_install --prefix ~/.local "soma-workflow[client,plotting]"
-
-
-Configuration (Client Side)
+Configuration File (Client Side)
 ------------
 
-  Make a configure file on the client side as the below format:
+  Make a configure file for the remote server (~/.soma-workflow.cfg) on the client side as the below format:
 
-    [Cluster_Name]
+    [Cluster_Name_userid]
 
-    CLUSTER_ADDRESS     = ip address or domain
-    SUBMITTING_MACHINES = name
+    CLUSTER_ADDRESS     = ip_address_or_domain
+    SUBMITTING_MACHINES = ip_address_or_domain
 
     QUEUES = long short
     LOGIN = userid
+
+   Replace userid as the login id in remote server.
+
+
+Configuration File (Server Side)
+------------
+       
+  1: Make a configure file for the remote server (~/.soma-workflow.cfg) on the server side as the below format:
+   
+	[Cluster_Name_userid]
+	DATABASE_FILE  = /home/userid/soma-workflow/soma_workflow.db
+	TRANSFERED_FILES_DIR = /home/userid/soma-workflow/transfered-files/
+	NAME_SERVER_HOST  = ip_address_or_domain
+	SERVER_NAME = soma_workflow_database_userid
+
+	SERVER_LOG_FILE   = /home/userid/soma-workflow/logs/log_server
+	SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
+	SERVER_LOG_LEVEL  = INFO
+	ENGINE_LOG_DIR  = /home/userid/soma-workflow/logs
+	ENGINE_LOG_FORMAT = %(asctime)s => %(module)s line %(lineno)s: %(message)s              %(threadName)s
+	ENGINE_LOG_LEVEL  = INFO
+
+	MAX_JOB_IN_QUEUE = {15} short{15} long{10}
+
+   Replace userid as the login id in remote server. Make the below directories :
+
+	$ mkdir /home/userid/soma-workflow
+	$ mkdir /home/userid/soma-workflow/logs
+	$ mkdir /home/userid/soma-workflow/transfered-files
+
+Installation (Server Side)
+------------
+  
+  Requirements:
+
+  Python version >= 2.7.3 and < 3.0
+  Drmaa version >= 1.0.13
+  cmake version >= 2.6
+  sip version >= 4.13
+
+  First of all, we use ssh connection to connect your remote server (cluster).
+
+  **(Recommended) Only configurate your environment variables without installation**
+
+    1: Use ssh to connect your remote server: 
+       
+       $ ssh userid@servername
+
+    2: Download the latest tarball and expand it, for example in ~/soma-workflow.
+
+    3: Run these command lines:
+       
+       $ cd ~/soma-workflow
+       $ mkdir build
+       $ rm -rf * && cmake -DCMAKE_INSTALL_PREFIX=${PWD}/.. .. && make && make install 
+
+    4: Edit the file "~/.bashrc" to add these lines:
+
+        SOMAWF_PATH=~/soma-workflow
+        export PATH=$SOMAWF_PATH/bin:$PATH
+        export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
+    
+    5: Disconnect ($ exit) from your remote server and reconnect ($ ssh userid@servername) your remote server in order to run ~/.bashrc
+
+    6: Run background soma-workflow in server with terminal mode: 
+
+       $ python -m soma.workflow.start_database_server DSV_cluster_sl231636
+    
+    Using keyboard: ctrl+z
+    
+       $ bg 
+
