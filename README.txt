@@ -175,7 +175,7 @@ Installation (Server Side)
        $ bg 
 
 
-At the end, we have finished four main steps. We close all terminals and open a new terminal to run "$ soma_workflow_gui". 
+At the end, we have finished four main steps. In the client side, we close all terminals and open a new terminal to run "$ soma_workflow_gui". 
 You can now use soma_workflow_gui for paraelle computing. An example is shown in 
 http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/examples.html
 
