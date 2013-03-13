@@ -47,11 +47,9 @@ Documentation
   An extensive documentation_ is available, with ready to use examples_.
 
   .. _Soma-workflow: http://www.brainvisa.info/soma-workflow
-  .. _examples: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/examples.html
-  .. _documentation: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/index.html
 
 
-Installation
+Installation (Client Side)
 ------------
 
   Qt version 4.6.2 or more, PyQt version 4.7.2 or more or PySide version 1.1.1 or
@@ -61,39 +59,50 @@ Installation
   machine can be used directly and without any configuration to distribute 
   computation, no matter the installation mode chosen.
 
-  We recommend to install Soma-workflow in a local directory (no special rights required & easy clean up at any time removing the local directory)
+  **(Recommended) Only configurate your environment variables without installation**
 
-    1. Create a local directory such as *~/.local/lib/python2.6/site-packages* and create the bin directory: *~/.local/bin*
+    1: Download the latest tarball and expand it, for example in ~/soma-workflow.
 
-    2. Setup the environment variables with the commands::
+    2: Edit the file "~/.bashrc" to add these lines:
 
-        $ export PYTHONPATH=$HOME/.local/lib/python2.6/site-packages:$PYTHONPATH
+        SOMAWF_PATH=~/soma-workflow
+        export PATH=$SOMAWF_PATH/bin:$PATH
+        export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
 
-        $ export PATH=$HOME/.local/bin:$PATH
+  **(Recommended) With setup.py only for my account in a local directory:**
 
-      You can copy these lines in your ~/.bashrc for an automatic setup of the variables at login.
+    1: Download the latest tarball and expand it.
 
-    3. Install Soma-workflow using setup.py or easy_install.
+    2: Make all diretories for your path, for example here is ~/mylocal.
 
+    In terminal:
 
-  **With setup.py:**
+      $ mkdir ~/mylocal
 
-    Download the latest tarball and expand it.
+    3: Edit the file "~/.bashrc" to add these lines:
+    
+        SOMAWF_PATH=~/mylocal
+        export PATH=$SOMAWF_PATH/bin:$PATH
+        export PYTHONPATH=$SOMAWF_PATH/lib/python2.7/site-packages/:$PYTHONPATH
+    
+    Attention: the version of python2.7 in PYTHONPATH should be same with python which you are using. For example, when your python version is 2.6, you should use export PYTHONPATH=$SOMAWF_PATH/lib/python2.6/site-packages/:$PYTHONPATH
 
-    Install Soma-workflow in the ~/.local directory::
+    4: Install Soma-workflow in the local directory ~/mylocal
 
-      $ python setup.py install --user
+      $ sudo python setup.py install --prefix ~/mylocal
+   
+  **(Easy, but not recommended) With setup.py for all users in the default folder:**
 
-    If you chose a different name for you local directory (ex: ~/mylocal) use instead the following command::
+    1: Download the latest tarball and expand it.
 
-      $ python setup.py install --prefix ~/mylocal
+    2: Install Soma-workflow in the /usr/local/lib and /usr/local/bin directory::
 
-    Installation on the system with administrator rights::
+      $ sudo python setup.py install 
 
-        $ python setup.py install
 
   **With easy_install:**
 
+    
     This command will just install Soma-workflow::
 
       $ easy_install --prefix ~/.local "soma-workflow"
@@ -113,5 +122,15 @@ Installation
       $ easy_install --prefix ~/.local "soma-workflow[client,plotting]"
 
 
+Configuration (Client Side)
+------------
 
+  Make a configure file on the client side as the below format:
 
+    [Cluster_Name]
+
+    CLUSTER_ADDRESS     = ip address or domain
+    SUBMITTING_MACHINES = name
+
+    QUEUES = long short
+    LOGIN = userid
