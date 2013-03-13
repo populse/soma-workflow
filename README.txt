@@ -66,7 +66,10 @@ Installation (Client Side)
 
   **(Recommended) Only configurate your environment variables without installation**
 
-    1: Download the latest tarball and expand it, for example in ~/soma-workflow.
+    1: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it in ~/  as : 
+
+     $ cd ~
+     $ git clone git@github.com:neurospin/soma-workflow.git
 
     2: Edit the file "~/.bashrc" to add these lines:
 
@@ -144,7 +147,10 @@ Installation (Server Side)
        
        $ ssh userid@servername
 
-    2: Download the latest tarball and expand it, for example in ~/soma-workflow.
+    2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it in ~/  as :
+
+     $ cd ~
+     $ git clone git@github.com:neurospin/soma-workflow.git
 
     3: Run these command lines:
        
@@ -167,4 +173,11 @@ Installation (Server Side)
     Using keyboard: ctrl+z
     
        $ bg 
+
+
+At the end, we have finished four main steps. We close all terminals and open a new terminal to run "$ soma_workflow_gui". 
+You can now use soma_workflow_gui for paraelle computing. An example is shown in 
+http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/examples.html
+
+
 
