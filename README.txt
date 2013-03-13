@@ -169,7 +169,7 @@ Installation (Server Side)
 
     6: Run background soma-workflow in server with terminal mode: 
 
-       $ python -m soma.workflow.start_database_server DSV_cluster_sl231636
+       $ python -m soma.workflow.start_database_server Cluster_Name_userid
     
     Using keyboard: ctrl+z
     
