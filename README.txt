@@ -156,6 +156,7 @@ Installation (Server Side)
        
        $ cd ~/soma-workflow
        $ mkdir build
+       $ cd build
        $ rm -rf * && cmake -DCMAKE_INSTALL_PREFIX=${PWD}/.. .. && make && make install 
 
     4: Edit the file "~/.bashrc" to add these lines:
