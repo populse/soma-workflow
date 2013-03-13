@@ -203,7 +203,6 @@ macro( BRAINVISA_ADD_SIP_PYTHON_MODULE _moduleName _modulePath _mainSipFile )
     list( REMOVE_AT _SIP_SOURCES "${result}" )
   endif()
   
-  
   # Build install rules for sip files
   BRAINVISA_COPY_FILES( ${PROJECT_NAME}-dev
     ${_mainSipFile} ${_SIP_SOURCES}
@@ -221,6 +220,7 @@ macro( BRAINVISA_ADD_SIP_PYTHON_MODULE _moduleName _modulePath _mainSipFile )
     endif( ${_i} LESS ${_sipSplitGeneratedCode} )
   endforeach( _i RANGE 0 ${_sipSplitGeneratedCode} )
 
+ 
   # Build include options according to _SIP_INCLUDE
   set( _sipIncludeOptions )
   set( _sipDeps )
@@ -240,8 +240,9 @@ macro( BRAINVISA_ADD_SIP_PYTHON_MODULE _moduleName _modulePath _mainSipFile )
     string( REPLACE " " ";" _sipFlags "${PYQT4_SIP_FLAGS}" )
   endif()
   set( _sipFlags ${SIP_FLAGS} ${_sipFlags} )
-  if( $SIP4MAKE_EXECUTABLE STREQUAL $SIP_EXECUTABLE )
-    # use regular sip
+
+  if( ${SIP4MAKE_EXECUTABLE} STREQUAL ${SIP_EXECUTABLE} )
+   # use regular sip
     add_custom_command(
       OUTPUT ${_sipOutputFiles}
       # Sip can generate less files than requested. The touch
@@ -261,7 +262,7 @@ macro( BRAINVISA_ADD_SIP_PYTHON_MODULE _moduleName _modulePath _mainSipFile )
       DEPENDS ${_sipDeps}
     )
   else()
-    # use bv_sip4make, taking care of creating the expected number of files
+   # use bv_sip4make, taking care of creating the expected number of files
     add_custom_command(
       OUTPUT ${_sipOutputFiles}
       COMMAND "${SIP4MAKE_EXECUTABLE}"
