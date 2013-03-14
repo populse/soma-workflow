@@ -62,7 +62,6 @@ Installation (Client Side)
   machine can be used directly and without any configuration to distribute 
   computation, no matter the installation mode chosen.
 
-  A small problem with version.py
 
   **(Recommended) Only configurate your environment variables without installation**
 
@@ -147,10 +146,10 @@ Installation (Server Side)
        
        $ ssh userid@servername
 
-    2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it in ~/  as :
+    2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it as :
 
-     $ cd ~
-     $ git clone git@github.com:neurospin/soma-workflow.git
+       $ cd ~
+       $ git clone git@github.com:neurospin/soma-workflow.git
 
     3: Run these command lines:
        
