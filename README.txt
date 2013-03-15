@@ -163,6 +163,8 @@ Installation (Server Side)
         SOMAWF_PATH=~/soma-workflow
         export PATH=$SOMAWF_PATH/bin:$PATH
         export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
+	export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:$LD_LIBRARY_PATH
+
     
     5: Disconnect ($ exit) from your remote server and reconnect ($ ssh userid@servername) your remote server in order to run ~/.bashrc
 
