@@ -17,7 +17,7 @@ import sys
 path2somawf = os.path.join(os.getenv("PWD"),"python")
 sys.path.append(path2somawf)
 
-import soma.workflow.configuration.AddLineDefintions2BashrcFile as AddLineDefintions2BashrcFile
+import soma.workflow.configuration
 
 
 lines2add = [
@@ -36,7 +36,7 @@ lines2add = [
             "export DRMAA_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so"
              ]
 
-AddLineDefintions2BashrcFile(lines2add)
+configuration.AddLineDefintions2BashrcFile(lines2add)
 
 
 

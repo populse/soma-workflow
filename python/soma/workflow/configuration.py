@@ -950,6 +950,7 @@ def AddLineDefintions2BashrcFile(lines2add,path2bashrc=""):
     """
     import os
     import sys
+    
     if path2bashrc=="" :
         
         path2bashrc = os.path.join(os.getenv("HOME"),".bashrc")
