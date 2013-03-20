@@ -13,6 +13,7 @@ from __future__ import with_statement
 
 import os
 import sys
+import pexpect
 
 
 path2somawf = os.getenv("PWD")
@@ -20,7 +21,6 @@ path2somawfpy = os.path.join(path2somawf,"python")
 sys.path.append(path2somawfpy)
 
 import soma.workflow.configuration as configuration
-
 
 
 lines2add = [
@@ -44,8 +44,16 @@ if socket.gethostname()=="gabriel.intra.cea.fr":
 
 configuration.AddLineDefintions2BashrcFile(lines2add)
 
+for line2add in lines2add:
+    os.system(line2add)
 
+lines2cmd = [
+             'rm -rf build',
+             'mkdir build'
+             ]
 
+for line2cmd in lines2cmd:
+    os.system(line2cmd)
 
 
 
