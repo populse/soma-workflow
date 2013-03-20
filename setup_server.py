@@ -16,6 +16,10 @@ start to check the requirement on the server side
 import sys
 print sys.version_info
 
+import socket
+if socket.gethostname()=="gabriel.intra.cea.fr":
+    echo "hihi gabriel="+socket.gethostname()
+
 req_version = (2,7)
 cur_version = sys.version_info
 
@@ -26,6 +30,9 @@ if cur_version < req_version or cur_version >= (3,0):
 '''
 end to check the requirement on the server side
 '''
+
+
+
 
 import os
 import sys
