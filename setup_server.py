@@ -134,6 +134,14 @@ AddLineDefintions2BashrcFile(lines2add)
 for line2add in lines2add:
     os.system(line2add)
 
+
+userid="ed203246"
+ip_address_or_domain=socket.gethostname()
+resource_id="%s@%s"%(userid,ip_address_or_domain)
+
+SetupConfigurationFileOnServer(userid,ip_address_or_domain)
+
+
 lines2cmd = [
              "rm -rf %s/build && \
              mkdir %s/build && \
@@ -141,15 +149,10 @@ lines2cmd = [
              cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
              make && \
              make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
-             "mkdir ~/.soma-workflow && mkdir ~/.soma-workflow/transfered-files && mkdir ~/.soma-workflow/logs "
+             "mkdir ~/.soma-workflow && mkdir ~/.soma-workflow/transfered-files && mkdir ~/.soma-workflow/logs ",
+             "python -m soma.workflow.start_database_server %s && bg"%(resource_id)
              ]
 
 for line2cmd in lines2cmd:
     os.system(line2cmd)
-
-
-userid="ed203246"
-ip_address_or_domain=socket.gethostname()
-
-SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 
