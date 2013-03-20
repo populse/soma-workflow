@@ -86,9 +86,10 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
         if sline_idx >= 2: # skip the first line since it is the header
             sline = info_queue_line.strip()
             ssline = sline.split()
-            if re.match("^[a-zA-Z]", ssline[0]):
-                #print repr(ssline)
-                info_queue.append(ssline[0])
+            if len(ssline)>=1 :
+                if re.match("^[a-zA-Z]", ssline[0]):
+                    #print repr(ssline)
+                    info_queue.append(ssline[0])
         sline_idx+=1
     
     print "info_queue="+repr(info_queue)
