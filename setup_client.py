@@ -13,8 +13,10 @@ from __future__ import with_statement
 import os
 import sys
 
-path2somawf = os.path.join(os.getenv("PWD"),"python")
-sys.path.append(path2somawf)
+path2somawf = os.path.dirname(os.path.realpath(__file__))
+path2somawfpy = os.path.join(path2somawf,"python")
+sys.path.append(path2somawfpy)
+
 
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
 
@@ -162,14 +164,17 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
 
 
 lines2add = [
-             "SOMAWF_PATH=%s/github/soma-workflow"%(os.getenv("HOME")),
+             "SOMAWF_PATH=%s"%(path2somawf),
              'export PATH=$SOMAWF_PATH/bin:$PATH',
              'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
              'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
              'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/']
 
-# AddLineDefintions2BashrcFile(lines2add)
+AddLineDefintions2BashrcFile(lines2add)
 
+for line2add in lines2add:
+    os.system(line2add)
+    
 
 userid='ed203246'
 ip_address_or_domain='gabriel.intra.cea.fr'

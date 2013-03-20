@@ -151,11 +151,10 @@ lines2cmd = [
              make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
-            "mkdir ~/.soma-workflow/logs"
+            "mkdir ~/.soma-workflow/logs",
+            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
              ]
 
 for line2cmd in lines2cmd:
     os.system(line2cmd)
 
-#run in the background
-os.spawnl(os.P_NOWAIT, "python -m soma.workflow.start_database_server %s && bg"%(resource_id))
