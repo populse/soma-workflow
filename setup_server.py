@@ -18,7 +18,7 @@ print sys.version_info
 
 import socket
 if socket.gethostname()=="gabriel.intra.cea.fr":
-    echo "hihi gabriel="+socket.gethostname()
+    print "hihi gabriel="+socket.gethostname()
 
 req_version = (2,7)
 cur_version = sys.version_info
