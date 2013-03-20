@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-
 '''
 @author: Jinpeng LI
 @contact: mr.li.jinpeng@gmail.com
@@ -13,15 +12,70 @@
 '''
 start to check the requirement on the server side
 '''
+import os
 import sys
-print sys.version_info
-
 import socket
-if socket.gethostname()=="gabriel.intra.cea.fr":
-    print "hihi gabriel="+socket.gethostname()
+import subprocess
 
+
+path2somawf = os.path.dirname(os.path.realpath(__file__))
+path2somawfpy = os.path.join(path2somawf,"python")
+path2somawf_setup_server = os.path.realpath(__file__)
+sys.path.append(path2somawfpy)
+
+
+def SetupServerEnvVar(path2somawf):
+    '''
+    Configurate the environment variable configuration
+    '''
+    envlines2add = [
+                "SOMAWF_PATH=%s"%(path2somawf),
+                'export PATH=$SOMAWF_PATH/bin:$PATH',
+                'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
+                'export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:${LD_LIBRARY_PATH}'
+                'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
+                'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/'
+                 ]
+    
+    import socket
+    if socket.gethostname()=="gabriel.intra.cea.fr":
+        envlines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:$PYTHONPATH")
+        envlines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7/site-packages:$PYTHONPATH")
+        envlines2add.append("export PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin:$PATH")
+        envlines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib:$LD_LIBRARY_PATH")
+        envlines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/:$LD_LIBRARY_PATH")
+        envlines2add.append("export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib/:$LD_LIBRARY_PATH")
+        envlines2add.append("export DRMAA_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so")
+    
+
+    for envline2add in envlines2add:
+        os.system(envline2add)
+    
+    return envlines2add
+
+
+envlines2add=SetupServerEnvVar(path2somawf)
+
+
+'''
+Start to check the requirement on the server side
+'''
 req_version = (2,7)
 cur_version = sys.version_info
+
+if cur_version < req_version 
+and socket.gethostname()=="gabriel.intra.cea.fr" 
+and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin"):
+    '''
+    Use new version of python to setup since we have defined some enviroment in SetupServerEnvVar for gabriel.intra.cea.fr
+    '''
+    print "Use nested python to install"
+    info_out=subprocess.check_output(['python', path2somawf_setup_server])
+    info_out=info_out.split('\n')
+    for line_info_out in info_out:
+        print line_info_out.strip()
+    sys.exit(0)
+    
 
 if cur_version < req_version or cur_version >= (3,0):
     print "This program requires a python version >= 2.7 and please update your python %s \
@@ -32,19 +86,9 @@ end to check the requirement on the server side
 '''
 
 
-
-
-import os
-import sys
-import subprocess
-
-
-path2somawf = os.path.dirname(os.path.realpath(__file__))
-path2somawfpy = os.path.join(path2somawf,"python")
-sys.path.append(path2somawfpy)
-
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
 import soma.workflow.configuration as configuration
+
 
 def GetQueueNamesOnPBSTORQUEServer():
     import re
@@ -128,30 +172,8 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     WriteOutConfiguration(config_parser,config_file_path)
 
 
-lines2add = [
-            "SOMAWF_PATH=%s"%(path2somawf),
-            'export PATH=$SOMAWF_PATH/bin:$PATH',
-            'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
-            'export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:${LD_LIBRARY_PATH}'
-            'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
-            'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/'
-             ]
 
-import socket
-if socket.gethostname()=="gabriel.intra.cea.fr":
-    lines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:$PYTHONPATH")
-    lines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7/site-packages:$PYTHONPATH")
-    lines2add.append("export PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin:$PATH")
-    lines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib:$LD_LIBRARY_PATH")
-    lines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/:$LD_LIBRARY_PATH")
-    lines2add.append("export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib/:$LD_LIBRARY_PATH")
-    lines2add.append("export DRMAA_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so")
-
-AddLineDefintions2BashrcFile(lines2add)
-
-for line2add in lines2add:
-    os.system(line2add)
-
+AddLineDefintions2BashrcFile(envlines2add)
 
 userid="ed203246"
 ip_address_or_domain=socket.gethostname()
