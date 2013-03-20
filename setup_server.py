@@ -10,16 +10,24 @@
 '''
 
 
-# start to check require libary info
+'''
+start to check the requirement
+'''
 import sys
 print sys.version_info
 
+req_version = (2,7)
+cur_version = sys.version_info
 
-
+if cur_version < req_version:
+    print "This program require a python version >= 2.7 and please update your python."
+    sys.exit(0)
+'''
+end to check the requirement
+'''
 
 import os
 import sys
-import pexpect
 import subprocess
 
 
