@@ -13,10 +13,6 @@ from __future__ import with_statement
 
 import os
 import sys
-import socket
-
-print "hostname="+socket.gethostname()
-
 
 
 path2somawf = os.getenv("PWD")
@@ -26,14 +22,17 @@ sys.path.append(path2somawfpy)
 import soma.workflow.configuration as configuration
 
 
+
 lines2add = [
             "SOMAWF_PATH=%s"%(path2somawf),
             'export PATH=$SOMAWF_PATH/bin:$PATH',
             'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
+            'export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:${LD_LIBRARY_PATH}'
             'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
             'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/'
              ]
 
+import socket
 if socket.gethostname()=="gabriel.intra.cea.fr":
     lines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:$PYTHONPATH")
     lines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7/site-packages:$PYTHONPATH")
