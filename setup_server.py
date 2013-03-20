@@ -149,7 +149,9 @@ lines2cmd = [
              cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
              make && \
              make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
-             "mkdir ~/.soma-workflow && mkdir ~/.soma-workflow/transfered-files && mkdir ~/.soma-workflow/logs ",
+            "mkdir ~/.soma-workflow",
+            "mkdir ~/.soma-workflow/transfered-files",
+            "mkdir ~/.soma-workflow/logs",
              "python -m soma.workflow.start_database_server %s && bg"%(resource_id)
              ]
 
