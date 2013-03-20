@@ -11,7 +11,7 @@
 
 
 '''
-start to check the requirement
+start to check the requirement on the server side
 '''
 import sys
 print sys.version_info
@@ -19,11 +19,12 @@ print sys.version_info
 req_version = (2,7)
 cur_version = sys.version_info
 
-if cur_version < req_version:
-    print "This program require a python version >= 2.7 and please update your python."
+if cur_version < req_version or cur_version >= (3,0):
+    print "This program requires a python version >= 2.7 and please update your python %s \
+    to latest version of python2."%(repr(cur_version))
     sys.exit(0)
 '''
-end to check the requirement
+end to check the requirement on the server side
 '''
 
 import os
