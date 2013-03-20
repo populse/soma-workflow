@@ -15,13 +15,13 @@ import os
 import sys
 import pexpect
 
-print os.path.dirname(os.path.realpath(__file__))
 
-path2somawf = os.getenv("PWD")
+path2somawf = os.path.dirname(os.path.realpath(__file__))
 path2somawfpy = os.path.join(path2somawf,"python")
 sys.path.append(path2somawfpy)
 
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
+import soma.workflow.configuration as configuration
 
 
 def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
