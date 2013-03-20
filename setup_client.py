@@ -13,77 +13,12 @@ from __future__ import with_statement
 import os
 import sys
 
+path2somawf = os.path.join(os.getenv("PWD"),"python")
+sys.path.append(path2somawf)
 
-def AddLineDefintions2BashrcFile(lines2add,path2bashrc=""):
-    """Add line defintions to the ~/.bashrc file 
-    
-    Removing the lines2add which are already exsting in the ~/.bashrc
-    Adding the lines2add at the end of ~/.bashrc
-    
-    Args:
-        lines2add (string):  a list of line definitions. Line defintion like export PATH=~/mylocal/bin:${PATH}
-        path2bashrc (string, optional): path to the ./bashrc file. It could be another path. Default paht is "~/.bashrc"
+import soma.workflow.configuration.AddLineDefintions2BashrcFile as AddLineDefintions2BashrcFile
 
-    Raises:
-       IOError, ValueError
-       
-    Example:
-        lines2add = ["SOMAWF_PATH=%s/soma-workflow"%(os.getenv("HOME")),
-        'export PATH=$SOMAWF_PATH/bin:$PATH',
-        'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
-        'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
-        'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/']
-        >>> print AddVariables2BashrcFile(lines2add, "~/.bashrc")
-    """
-    import os
-    import sys
-    if path2bashrc=="" :
-        
-        path2bashrc = os.path.join(os.getenv("HOME"),".bashrc")
-        
-    lines2rm = []
-    content=[]
 
-    try:
-        with open(path2bashrc) as f:
-            content = f.readlines()
-    except IOError as e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "%s does not exist, the system will create the new file"% (path2bashrc)
-    except ValueError:
-        print "Could not convert data to an integer."
-    except:
-        print "Unexpected error:", sys.exc_info()[0]
-        raise
-    
-    
-    for i in range(len(content)):
-        content[i]=content[i].strip()
-
-    #try to find the duplicated paths and remove them
-    for line2add in lines2add:
-        isfound= any(line2add.strip()==cline.strip() for cline in content)
-        while isfound:
-            content.remove(line2add.strip())
-            isfound= any(line2add.strip()==cline.strip() for cline in content)
-
-    for line2add in lines2add:
-        content.append(line2add)
-
-    try:
-        with open(path2bashrc,'w') as f:
-            for cline in content:
-                f.write(cline+"\n")
-    except IOError as e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "The system cannot write the file %s. Please make sure it can be wrote. "% (path2bashrc)
-        raise e
-    except ValueError:
-        print "Could not convert data to an integer."
-        raise ValueError
-    except:
-        print "Unexpected error:", sys.exc_info()[0]
-        raise
 
 
 def GetQueueNamesOnPBSTORQUE(userid,ip_address_or_domain,userpw=''):
@@ -204,8 +139,7 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
     from ConfigParser import SafeConfigParser
     
 
-    path2somawf = os.path.join(os.getenv("PWD"),"python")
-    sys.path.append(path2somawf)
+    
     import soma.workflow.configuration as configuration
 
 
