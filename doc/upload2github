@@ -26,4 +26,6 @@ git add .
 git commit -a -m "update documents"
 
 cd ../../
- 
+
+
+echo "You can now visit the soma-workflow page at http://neurospin.github.com/soma-workflow/" 
