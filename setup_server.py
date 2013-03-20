@@ -158,4 +158,4 @@ for line2cmd in lines2cmd:
     os.system(line2cmd)
 
 #run in the background
-os.spawnl(os.P_DETACH, "python -m soma.workflow.start_database_server %s && bg"%(resource_id))
+os.spawnl(os.P_NOWAIT, "python -m soma.workflow.start_database_server %s && bg"%(resource_id))
