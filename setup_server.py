@@ -17,7 +17,7 @@ import sys
 path2somawf = os.path.join(os.getenv("PWD"),"python")
 sys.path.append(path2somawf)
 
-import soma.workflow.configuration
+import soma.workflow.configuration as configuration
 
 
 lines2add = [
