@@ -16,7 +16,7 @@ import sys
 path2somawf = os.path.join(os.getenv("PWD"),"python")
 sys.path.append(path2somawf)
 
-import soma.workflow.configuration.AddLineDefintions2BashrcFile as AddLineDefintions2BashrcFile
+from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
 
 
 
@@ -101,20 +101,7 @@ def ConfiguratePaser(config_parser,resource_id,ip_address_or_domain,info_queue,u
     config_parser.set(resource_id,configuration.OCFG_LOGIN,userid)
     return config_parser
 
-def WriteOutConfiguration(config_parser,config_path):
-    try:
-        with open(config_path,'w') as cfgfile:
-            config_parser.write(cfgfile)
-    except IOError as e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "The system cannot write the file %s. Please make sure that it can be written. "% (config_path)
-        raise e
-    except ValueError:
-        print "Could not convert data to an integer.%s" % (config_path)
-        raise ValueError
-    except:
-        print "Unexpected error:", sys.exc_info()[0]
-        raise
+
 
 def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
     """To setup the configuration file on the client part

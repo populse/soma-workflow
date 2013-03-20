@@ -15,12 +15,66 @@ import os
 import sys
 import pexpect
 
+print os.path.dirname(os.path.realpath(__file__))
 
 path2somawf = os.getenv("PWD")
 path2somawfpy = os.path.join(path2somawf,"python")
 sys.path.append(path2somawfpy)
 
-import soma.workflow.configuration as configuration
+from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
+
+
+def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
+    """To setup the configuration file on the client part
+     
+    Args:
+       userid (str):  user name on the server side
+       ip_address_or_domain (str): the ip address or the domain of the server
+
+    Raises:
+       IOError, ValueError
+
+    It will create the configuration at $HOME/.soma-workflow.cfg
+
+    """
+    #ouput the configuration file 
+    import sys
+    import os
+    from ConfigParser import SafeConfigParser
+
+    config_file_path = configuration.Configuration.search_config_path()
+    resource_id="%s@%s"%(userid,ip_address_or_domain)
+    home_dir = configuration.Configuration.get_home_dir() 
+    config_path = os.path.join(home_dir, ".soma-workflow.cfg")
+    install_prefix=os.path.join(home_dir,".soma-workflow")
+    
+    print "config_file_path="+config_file_path
+    print "resource_id="+resource_id
+    print "home_dir="+home_dir
+    print "config_path="+config_path
+    print "install_prefix="+install_prefix
+    
+#    config_parser = SafeConfigParser()
+#    config_parser.add_section(resource_id)
+#    
+#    config_parser.set(resource_id,configuration.CFG_DATABASE_FILE,          os.path.join(install_prefix,"soma_workflow.db"))
+#    config_parser.set(resource_id,configuration.CFG_TRANSFERED_FILES_DIR,   os.path.join(install_prefix,"transfered-files"))
+#    config_parser.set(resource_id,configuration.CFG_NAME_SERVER_HOST,       ip_address_or_domain)
+#    config_parser.set(resource_id,configuration.CFG_SERVER_NAME,            "soma_workflow_database_"+userid)
+#    
+#     
+#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FILE,       os.path.join(install_prefix,"logs","log_server"))
+#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FORMAT,     "%(asctime)s => line %(lineno)s: %(message)s")
+#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_LEVEL,      "ERROR")
+#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_DIR,        os.path.join(install_prefix,"logs"))
+#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_FORMAT,     "%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s")
+#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
+#    
+#    config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      "{15} run32{15} Global_long{10}")
+#    
+#    WriteOutConfiguration(config_parser,config_file_path)
+
+
 
 
 lines2add = [
@@ -42,22 +96,27 @@ if socket.gethostname()=="gabriel.intra.cea.fr":
     lines2add.append("export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib/:$LD_LIBRARY_PATH")
     lines2add.append("export DRMAA_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so")
 
-configuration.AddLineDefintions2BashrcFile(lines2add)
+AddLineDefintions2BashrcFile(lines2add)
 
 for line2add in lines2add:
     os.system(line2add)
 
 lines2cmd = [
-             "rm -rf build && \
-             mkdir build && \
-             cd build && \
+             "rm -rf %s/build && \
+             mkdir %s/build && \
+             cd %s/build && \
              cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
              make && \
-             make install"%(path2somawf,path2somawf)
+             make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
+             "mkdir ~/.soma-workflow && mkdir ~/.soma-workflow/transfered-files && mkdir ~/.soma-workflow/logs "
              ]
 
 for line2cmd in lines2cmd:
     os.system(line2cmd)
 
 
+userid="ed203246"
+ip_address_or_domain=socket.gethostname()
+
+SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 

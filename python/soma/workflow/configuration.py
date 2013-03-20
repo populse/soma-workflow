@@ -998,3 +998,18 @@ def AddLineDefintions2BashrcFile(lines2add,path2bashrc=""):
     except:
         print "Unexpected error:", sys.exc_info()[0]
         raise
+
+def WriteOutConfiguration(config_parser,config_path):
+    try:
+        with open(config_path,'w') as cfgfile:
+            config_parser.write(cfgfile)
+    except IOError as e:
+        print "I/O error({0}): {1}".format(e.errno, e.strerror)
+        print "The system cannot write the file %s. Please make sure that it can be written. "% (config_path)
+        raise e
+    except ValueError:
+        print "Could not convert data to an integer.%s" % (config_path)
+        raise ValueError
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+        raise
