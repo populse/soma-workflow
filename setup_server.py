@@ -14,8 +14,9 @@ from __future__ import with_statement
 import os
 import sys
 
-path2somawf = os.path.join(os.getenv("PWD"),"python")
-sys.path.append(path2somawf)
+path2somawf = os.getenv("PWD")
+path2somawfpy = os.path.join(path2somawf,"python")
+sys.path.append(path2somawfpy)
 
 import soma.workflow.configuration as configuration
 
