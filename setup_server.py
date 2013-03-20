@@ -10,13 +10,12 @@
 '''
 
 
-
 # start to check require libary info
 import sys
 print sys.version_info
 
 
-from __future__ import with_statement
+
 
 import os
 import sys
