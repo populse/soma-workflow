@@ -9,6 +9,13 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+
+
+# start to check require libary info
+import sys
+print sys.version_info
+
+
 from __future__ import with_statement
 
 import os
@@ -104,10 +111,6 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      str_info_q)
     
     WriteOutConfiguration(config_parser,config_file_path)
-    
-    
-    
-
 
 
 lines2add = [
