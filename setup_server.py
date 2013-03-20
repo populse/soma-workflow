@@ -48,31 +48,31 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_path = os.path.join(home_dir, ".soma-workflow.cfg")
     install_prefix=os.path.join(home_dir,".soma-workflow")
     
-    print "config_file_path="+config_file_path
-    print "resource_id="+resource_id
-    print "home_dir="+home_dir
-    print "config_path="+config_path
-    print "install_prefix="+install_prefix
+#    print "config_file_path="+config_file_path
+#    print "resource_id="+resource_id
+#    print "home_dir="+home_dir
+#    print "config_path="+config_path
+#    print "install_prefix="+install_prefix
     
-#    config_parser = SafeConfigParser()
-#    config_parser.add_section(resource_id)
-#    
-#    config_parser.set(resource_id,configuration.CFG_DATABASE_FILE,          os.path.join(install_prefix,"soma_workflow.db"))
-#    config_parser.set(resource_id,configuration.CFG_TRANSFERED_FILES_DIR,   os.path.join(install_prefix,"transfered-files"))
-#    config_parser.set(resource_id,configuration.CFG_NAME_SERVER_HOST,       ip_address_or_domain)
-#    config_parser.set(resource_id,configuration.CFG_SERVER_NAME,            "soma_workflow_database_"+userid)
-#    
-#     
-#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FILE,       os.path.join(install_prefix,"logs","log_server"))
-#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FORMAT,     "%(asctime)s => line %(lineno)s: %(message)s")
-#    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_LEVEL,      "ERROR")
-#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_DIR,        os.path.join(install_prefix,"logs"))
-#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_FORMAT,     "%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s")
-#    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
-#    
-#    config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      "{15} run32{15} Global_long{10}")
-#    
-#    WriteOutConfiguration(config_parser,config_file_path)
+    config_parser = SafeConfigParser()
+    config_parser.add_section(resource_id)
+    
+    config_parser.set(resource_id,configuration.CFG_DATABASE_FILE,          os.path.join(install_prefix,"soma_workflow.db"))
+    config_parser.set(resource_id,configuration.CFG_TRANSFERED_FILES_DIR,   os.path.join(install_prefix,"transfered-files"))
+    config_parser.set(resource_id,configuration.CFG_NAME_SERVER_HOST,       ip_address_or_domain)
+    config_parser.set(resource_id,configuration.CFG_SERVER_NAME,            "soma_workflow_database_"+userid)
+    
+     
+    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FILE,       os.path.join(install_prefix,"logs","log_server"))
+    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_FORMAT,     "%(asctime)s => line %(lineno)s: %(message)s")
+    config_parser.set(resource_id,configuration.OCFG_SERVER_LOG_LEVEL,      "ERROR")
+    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_DIR,        os.path.join(install_prefix,"logs"))
+    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_FORMAT,     "%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s")
+    config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
+    
+    config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      "{15} run32{15} Global_long{10}")
+    
+    WriteOutConfiguration(config_parser,config_file_path)
 
 
 
