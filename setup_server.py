@@ -13,6 +13,9 @@ from __future__ import with_statement
 
 import os
 import sys
+import socket
+
+print "hostname="+socket.gethostname()
 
 path2somawf = os.getenv("PWD")
 path2somawfpy = os.path.join(path2somawf,"python")
