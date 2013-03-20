@@ -72,10 +72,27 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
     
     
+    import re
+    
+    info_queue =[]
+    
     info_queue_out=subprocess.check_output(['qstat', '-Q'])
-    print "info_queue_out="+repr(info_queue_out)
     
+    info_queue_lines=info_queue_out.split('\n')
+    print "info_queue_lines="+repr(info_queue_lines)
     
+    sline_idx=0
+    for info_queue_line in info_queue_lines:
+        if sline_idx >= 2: # skip the first line since it is the header
+            sline = info_queue_line.strip()
+            ssline = sline.split()
+            if re.match("^[a-zA-Z]", ssline[0]):
+                #print repr(ssline)
+                info_queue.append(ssline[0])
+        sline_idx+=1
+    
+    print "info_queue="+repr(info_queue)
+        
     config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      "{15} run32{15} Global_long{10}")
     
     WriteOutConfiguration(config_parser,config_file_path)
