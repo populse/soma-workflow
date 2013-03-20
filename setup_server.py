@@ -14,6 +14,7 @@ from __future__ import with_statement
 import os
 import sys
 import pexpect
+import subprocess
 
 
 path2somawf = os.path.dirname(os.path.realpath(__file__))
@@ -70,10 +71,17 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_FORMAT,     "%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s")
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
     
+    
+    info_queue_out=subprocess.check_output(['qstat', '-Q'])
+    print "info_queue_out="repr(info_queue_out)
+    
+    
     config_parser.set(resource_id,configuration.OCFG_MAX_JOB_IN_QUEUE,      "{15} run32{15} Global_long{10}")
     
     WriteOutConfiguration(config_parser,config_file_path)
-
+    
+    
+    
 
 
 
