@@ -49,7 +49,9 @@ for line2add in lines2add:
 
 lines2cmd = [
              'rm -rf build',
-             'mkdir build'
+             'mkdir build',
+             'cd build',
+             'echo hello > log.txt'
              ]
 
 for line2cmd in lines2cmd:
