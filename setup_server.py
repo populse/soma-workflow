@@ -48,10 +48,12 @@ for line2add in lines2add:
     os.system(line2add)
 
 lines2cmd = [
-             'rm -rf build && \
+             "rm -rf build && \
              mkdir build && \
              cd build && \
-             echo hello > log.txt'
+             cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
+             make && \
+             make install"%(path2somawf,path2somawf)
              ]
 
 for line2cmd in lines2cmd:
