@@ -86,7 +86,13 @@ if cur_version < req_version or cur_version >= (3,0):
 end to check the requirement on the server side
 '''
 
-print "hello, this is new version of python"
+print "Hello, this is new version of python"
+os.system("echo ${PATH}")
+os.system("echo ${PYTHONPATH}")
+os.system("echo ${LD_LIBRARY_PATH}")
+os.system("echo ${SOMA_WORKFLOW_EXAMPLES}")
+os.system("echo ${SOMA_WORKFLOW_EXAMPLES_OUT}")
+os.system("echo ${DRMAA_LIBRARY_PATH}")
 sys.exit(0)
 
 
