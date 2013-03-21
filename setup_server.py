@@ -49,14 +49,13 @@ def SetupServerEnvVar(path2somawf):
     '''
     Configurate the environment variable configuration
     '''
-    envlines2add = [
-                "SOMAWF_PATH=%s"%(path2somawf),
-                'export PATH=$SOMAWF_PATH/bin:$PATH',
-                'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
-                'export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:${LD_LIBRARY_PATH}'
-                'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
-                'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/'
-                 ]
+    envlines2add = [ ]
+    
+    envlines2add.append(AddPathToEnvVar("PATH",                         os.path.join(path2somawf,"bin")))
+    envlines2add.append(AddPathToEnvVar("PYTHONPATH",                   os.path.join(path2somawf,"python")))
+    envlines2add.append(AddPathToEnvVar("LD_LIBRARY_PATH",              os.path.join(path2somawf,"lib")))
+    envlines2add.append(AddPathToEnvVar("SOMA_WORKFLOW_EXAMPLES",       os.path.join(path2somawf,"test","jobExamples")))
+    envlines2add.append(AddPathToEnvVar("SOMA_WORKFLOW_EXAMPLES_OUT",   os.path.join(path2somawf,"test","jobExamples_out")))
     
     import socket
     if socket.gethostname()=="gabriel.intra.cea.fr":
@@ -209,6 +208,7 @@ lines2cmd = [
              cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
              make && \
              make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
+            "rm -rf ~/.soma-workflow",
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
             "mkdir ~/.soma-workflow/logs",
