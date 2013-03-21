@@ -195,6 +195,8 @@ resource_id="%s@%s"%(userid,ip_address_or_domain)
 SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 
 lines2cmd = [
+             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
+            | grep -v grep | awk '{print $2}')"%(resource_id),
              "rm -rf %s/build && \
              mkdir %s/build && \
              cd %s/build && \
@@ -205,8 +207,6 @@ lines2cmd = [
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
             "mkdir ~/.soma-workflow/logs",
-            "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
-            | grep -v grep | awk '{print $2}')"%(resource_id),
             "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
              ]
 
