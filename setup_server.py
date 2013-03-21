@@ -57,6 +57,8 @@ def SetupServerEnvVar(path2somawf):
 envlines2add=SetupServerEnvVar(path2somawf)
 
 print "Hello, this is old version of python"
+os.environ['PYTHONPATH'] = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:%s"%(os.environ.get('PYTHONPATH'))
+
 os.system("echo PATH=${PATH}")
 os.system("echo PYTHONPATH=${PYTHONPATH}")
 os.system("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
