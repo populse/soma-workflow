@@ -57,14 +57,16 @@ def SetupServerEnvVar(path2somawf):
 envlines2add=SetupServerEnvVar(path2somawf)
 
 print "Hello, this is old version of python"
-os.environ['PYTHONPATH'] = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:%s"%(os.environ.get('PYTHONPATH'))
-
 os.system("echo PATH=${PATH}")
 os.system("echo PYTHONPATH=${PYTHONPATH}")
 os.system("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
 os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
+
+
+os.environ['PYTHONPATH'] = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:%s"%(os.environ.get('PYTHONPATH'))
+
 
 
 '''
