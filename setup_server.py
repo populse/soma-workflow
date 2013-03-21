@@ -73,9 +73,6 @@ def SetupServerEnvVar(path2somawf):
 
 envlines2add=SetupServerEnvVar(path2somawf)
 
-for envline2add in envlines2add:
-    print envline2add
-
 
 '''
 Start to check the requirement on the server side
@@ -106,14 +103,6 @@ if cur_version < req_version or cur_version >= (3,0):
 end to check the requirement on the server side
 '''
 
-print "Hello, this is new version of python"
-os.system("echo PATH=${PATH}")
-os.system("echo PYTHONPATH=${PYTHONPATH}")
-os.system("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
-os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
-os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
-os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
-sys.exit(0)
 
 
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
