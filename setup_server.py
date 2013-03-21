@@ -86,6 +86,9 @@ if cur_version < req_version or cur_version >= (3,0):
 end to check the requirement on the server side
 '''
 
+print "hello, this is new version of python"
+sys.exit(0)
+
 
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
 import soma.workflow.configuration as configuration
