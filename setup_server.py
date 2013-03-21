@@ -63,9 +63,9 @@ Start to check the requirement on the server side
 req_version = (2,7)
 cur_version = sys.version_info
 
-if cur_version < req_version 
+if (cur_version < req_version 
 and socket.gethostname()=="gabriel.intra.cea.fr" 
-and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin"):
+and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin")):
     '''
     The default python in gabriel is too old to soma-workflow
     Use new version of python to setup since we have defined some enviroment in SetupServerEnvVar for gabriel.intra.cea.fr
