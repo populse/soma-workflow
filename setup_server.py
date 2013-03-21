@@ -24,7 +24,7 @@ path2somawf_setup_server = os.path.realpath(__file__)
 sys.path.append(path2somawfpy)
 
 def AddPathToEnvVar(KeyPath,NewPath):
-    os.environ[KeyPath] = "%s%s%s"%("NewPath",os.pathsep,os.environ.get(KeyPath))
+    os.environ[KeyPath] = "%s%s%s"%(NewPath,os.pathsep,os.environ.get(KeyPath))
 
 def SetupServerEnvVar(path2somawf):
     '''
