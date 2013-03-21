@@ -67,6 +67,7 @@ if cur_version < req_version
 and socket.gethostname()=="gabriel.intra.cea.fr" 
 and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin"):
     '''
+    The default python in gabriel is too old to soma-workflow
     Use new version of python to setup since we have defined some enviroment in SetupServerEnvVar for gabriel.intra.cea.fr
     '''
     print "Use nested python to install"
@@ -172,12 +173,13 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     WriteOutConfiguration(config_parser,config_file_path)
 
 
-
 AddLineDefintions2BashrcFile(envlines2add)
 
-userid="ed203246"
+import getpass
+userid=getpass.getuser()
 ip_address_or_domain=socket.gethostname()
 resource_id="%s@%s"%(userid,ip_address_or_domain)
+
 
 SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 
@@ -194,6 +196,7 @@ lines2cmd = [
             "mkdir ~/.soma-workflow/logs",
             "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
              ]
+
 
 for line2cmd in lines2cmd:
     os.system(line2cmd)
