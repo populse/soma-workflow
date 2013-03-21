@@ -71,7 +71,7 @@ and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin")):
     Use new version of python to setup since we have defined some enviroment in SetupServerEnvVar for gabriel.intra.cea.fr
     '''
     print "Use nested python to install"
-    info_out=subprocess.check_output(['python', path2somawf_setup_server])
+    info_out=subprocess.call(['python', path2somawf_setup_server],stdout = subprocess.PIPE)
     info_out=info_out.split('\n')
     for line_info_out in info_out:
         print line_info_out.strip()
