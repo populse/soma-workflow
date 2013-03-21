@@ -56,6 +56,14 @@ def SetupServerEnvVar(path2somawf):
 
 envlines2add=SetupServerEnvVar(path2somawf)
 
+print "Hello, this is old version of python"
+os.system("echo ${PATH}")
+os.system("echo ${PYTHONPATH}")
+os.system("echo ${LD_LIBRARY_PATH}")
+os.system("echo ${SOMA_WORKFLOW_EXAMPLES}")
+os.system("echo ${SOMA_WORKFLOW_EXAMPLES_OUT}")
+os.system("echo ${DRMAA_LIBRARY_PATH}")
+
 
 '''
 Start to check the requirement on the server side
