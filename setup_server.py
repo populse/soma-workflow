@@ -66,7 +66,8 @@ os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
 os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
 
-AddPathToEnvVar("PYTHONPATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7")
+os.environ["DRMAA_LIBRARY_PATH"]="/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so"
+AddPathToEnvVar("DRMAA_LIBRARY_PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7")
 
 
 print "Hello, this is new version of python"
