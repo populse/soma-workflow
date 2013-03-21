@@ -72,7 +72,6 @@ def SetupServerEnvVar(path2somawf):
 
 envlines2add=SetupServerEnvVar(path2somawf)
 
-
 '''
 Start to check the requirement on the server side
 '''
@@ -88,9 +87,6 @@ and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin")):
     '''
     print "Use nested python to install"
     os.system("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin/python '%s'"%(path2somawf_setup_server))
-#    info_out=info_out.split('\n')
-#    for line_info_out in info_out:
-#        print line_info_out.strip()
     sys.exit(0)
     
 
@@ -101,7 +97,6 @@ if cur_version < req_version or cur_version >= (3,0):
 '''
 end to check the requirement on the server side
 '''
-
 
 
 from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
@@ -197,9 +192,7 @@ userid=getpass.getuser()
 ip_address_or_domain=socket.gethostname()
 resource_id="%s@%s"%(userid,ip_address_or_domain)
 
-
 SetupConfigurationFileOnServer(userid,ip_address_or_domain)
-
 
 lines2cmd = [
              "rm -rf %s/build && \
@@ -212,6 +205,8 @@ lines2cmd = [
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
             "mkdir ~/.soma-workflow/logs",
+            "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
+            | grep -v grep | awk '{print $2}')"%(resource_id),
             "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
              ]
 
