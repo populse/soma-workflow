@@ -23,6 +23,8 @@ path2somawfpy = os.path.join(path2somawf,"python")
 path2somawf_setup_server = os.path.realpath(__file__)
 sys.path.append(path2somawfpy)
 
+def AddPathToEnvVar(KeyPath,NewPath):
+    os.environ[KeyPath] = "%s%s%s"%("NewPath",os.pathsep,os.environ.get(KeyPath))
 
 def SetupServerEnvVar(path2somawf):
     '''
@@ -64,8 +66,8 @@ os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
 os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
 
+AddPathToEnvVar("PYTHONPATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7")
 
-os.environ['PYTHONPATH'] = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:%s"%(os.environ.get('PYTHONPATH'))
 
 print "Hello, this is new version of python"
 os.system("echo PATH=${PATH}")
