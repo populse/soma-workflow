@@ -23,25 +23,27 @@ path2somawfpy = os.path.join(path2somawf,"python")
 path2somawf_setup_server = os.path.realpath(__file__)
 sys.path.append(path2somawfpy)
 
+def SetPathToEnvVar(KeyPath,NewPath):
+    os.environ[KeyPath] = NewPath
+    res = ""
+    if platform.system()=='Windows':
+        res = "set %s=%s"%(KeyPath,NewPath)
+    else:
+        res = "export %s=%s"%(KeyPath,NewPath)
+    return res
+        
 def AddPathToEnvVar(KeyPath,NewPath):
     os.environ[KeyPath] = "%s%s%s"%(NewPath,os.pathsep,os.environ.get(KeyPath))
     res = ""
     
     if platform.system()=='Windows':
-        res = "set %s=%s"%(KeyPath,os.environ[KeyPath])
+        res = "set %s=%s%s%%%s%%"%(KeyPath,NewPath,os.pathsep,KeyPath)
     else:
-        res = "export %s=%s"%(KeyPath,os.environ[KeyPath])
+        res = "export %s=%s%s${%s}"%(KeyPath,NewPath,os.pathsep,KeyPath)
         
     return res
         
-def SetPathToEnvVar(KeyPath,NewPath):
-    os.environ[KeyPath] = NewPath
-    res = ""
-    
-    if platform.system()=='Windows':
-        res = "set %s=%s"%(KeyPath,os.environ[KeyPath])
-    else:
-        res = "export %s=%s"%(KeyPath,os.environ[KeyPath])
+
 
 def SetupServerEnvVar(path2somawf):
     '''
