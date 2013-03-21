@@ -16,7 +16,7 @@ import os
 import sys
 import socket
 import subprocess
-
+import platform
 
 path2somawf = os.path.dirname(os.path.realpath(__file__))
 path2somawfpy = os.path.join(path2somawf,"python")
@@ -25,6 +25,23 @@ sys.path.append(path2somawfpy)
 
 def AddPathToEnvVar(KeyPath,NewPath):
     os.environ[KeyPath] = "%s%s%s"%(NewPath,os.pathsep,os.environ.get(KeyPath))
+    res = ""
+    
+    if platform.system()=='Windows':
+        res = "set %s=%s"%(KeyPath,os.environ[KeyPath])
+    else:
+        res = "export %s=%s"%(KeyPath,os.environ[KeyPath])
+        
+    return res
+        
+def SetPathToEnvVar(KeyPath,NewPath):
+    os.environ[KeyPath] = NewPath
+    res = ""
+    
+    if platform.system()=='Windows':
+        res = "set %s=%s"%(KeyPath,os.environ[KeyPath])
+    else:
+        res = "export %s=%s"%(KeyPath,os.environ[KeyPath])
 
 def SetupServerEnvVar(path2somawf):
     '''
@@ -41,42 +58,29 @@ def SetupServerEnvVar(path2somawf):
     
     import socket
     if socket.gethostname()=="gabriel.intra.cea.fr":
-        envlines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7:$PYTHONPATH")
-        envlines2add.append("export PYTHONPATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7/site-packages:$PYTHONPATH")
-        envlines2add.append("export PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin:$PATH")
-        envlines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib:$LD_LIBRARY_PATH")
-        envlines2add.append("export LD_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/:$LD_LIBRARY_PATH")
-        envlines2add.append("export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib/:$LD_LIBRARY_PATH")
-        envlines2add.append("export DRMAA_LIBRARY_PATH=/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so")
-    
-
-    for envline2add in envlines2add:
-        os.system(envline2add)
+        envlines2add.append(AddPathToEnvVar("PYTHONPATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7"))
+        envlines2add.append(AddPathToEnvVar("PYTHONPATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7/site-packages"))
+        envlines2add.append(AddPathToEnvVar("PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin"))
+        envlines2add.append(AddPathToEnvVar("LD_LIBRARY_PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib"))
+        envlines2add.append(AddPathToEnvVar("LD_LIBRARY_PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib"))
+        envlines2add.append(AddPathToEnvVar("LD_LIBRARY_PATH","/usr/lib64/openmpi/lib"))
+        envlines2add.append(AddPathToEnvVar("DRMAA_LIBRARY_PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so"))
     
     return envlines2add
 
 
 envlines2add=SetupServerEnvVar(path2somawf)
 
-print "Hello, this is old version of python"
-os.system("echo PATH=${PATH}")
-os.system("echo PYTHONPATH=${PYTHONPATH}")
-os.system("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
-os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
-os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
-os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
-
-os.environ["DRMAA_LIBRARY_PATH"]="/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so"
-AddPathToEnvVar("DRMAA_LIBRARY_PATH","/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/lib/python2.7")
-
-
 print "Hello, this is new version of python"
+
 os.system("echo PATH=${PATH}")
 os.system("echo PYTHONPATH=${PYTHONPATH}")
 os.system("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES=${SOMA_WORKFLOW_EXAMPLES}")
 os.system("echo SOMA_WORKFLOW_EXAMPLES_OUT=${SOMA_WORKFLOW_EXAMPLES_OUT}")
 os.system("echo DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
+
+
 sys.exit(0)
 
 '''
