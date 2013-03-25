@@ -55,57 +55,28 @@ Documentation
 Installation (Server Side)
 ------------
   
-  Requirements:
+  Requirements on your server:
 
   Python version >= 2.7.3 and < 3.0
-  Drmaa version >= 1.0.13
+  Drmaa version >= 1.0.13 and <2.0
   cmake version >= 2.6
   sip version >= 4.13
 
   We first use ssh connection to connect your remote server (cluster) and then run the **setup_server.py**: 
 
-  1: We assume that your account on the server is **userid** and the server ip address or server domain is **servername**. Use ssh to connect your remote server:
+  1: We assume that your account on the server is **userid** and the server ip address or server domain is **serveradd**. Use ssh to connect your remote server:
 
-     $ ssh userid@servername
-  
+    $ ssh userid@serveradd
 
+  2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it as :
 
-  **(Recommended) Only configurate your environment variables without installation**
+    $ cd ~
+    $ git clone git@github.com:neurospin/soma-workflow.git soma-workflow
 
-    1: Use ssh to connect your remote server: 
+  3: Run the python script **setup_server.py**
        
-       $ ssh userid@servername
-
-    2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it as :
-
-       $ cd ~
-       $ git clone git@github.com:neurospin/soma-workflow.git
-
-    3: Run these command lines:
-       
-       $ cd ~/soma-workflow
-       $ mkdir build
-       $ cd build
-       $ rm -rf * && cmake -DCMAKE_INSTALL_PREFIX=${PWD}/.. .. && make && make install 
-
-    4: Edit the file "~/.bashrc" to add these lines:
-
-        SOMAWF_PATH=~/soma-workflow
-        export PATH=$SOMAWF_PATH/bin:$PATH
-        export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
-	export LD_LIBRARY_PATH=$SOMAWF_PATH/lib:$LD_LIBRARY_PATH
-
-    
-    5: Disconnect ($ exit) from your remote server and reconnect ($ ssh userid@servername) your remote server in order to run ~/.bashrc
-
-    6: Run background soma-workflow in server with terminal mode: 
-
-       $ python -m soma.workflow.start_database_server Cluster_Name_userid
-    
-    Using keyboard: ctrl+z
-    
-       $ bg 
-
+    $ cd ~/soma-workflow
+    $ python setup_server.py
 
 Installation (Client Side)
 ------------
