@@ -55,14 +55,14 @@ Documentation
 Installation (Server Side)
 ------------
   
-  Requirements on your server:
+  Soma-workflow depends on some softwares which are required to be installed beforehand:
 
-  Python version >= 2.7.3 and < 3.0
-  Drmaa version >= 1.0.13 and <2.0
-  cmake version >= 2.6
-  sip version >= 4.13
+*Python version >= 2.7.3 and < 3.0
+*Drmaa version >= 1.0.13 and <2.0
+*cmake version >= 2.6
+*sip version >= 4.13
 
-  We first use ssh connection to connect your remote server (cluster) and then run the **setup_server.py**: 
+  After the above softwares have been installed on the server, we first use ssh connection to connect your remote server (cluster) and then run the **setup_server.py**: 
 
   1: We assume that your account on the server is **userid** and the server ip address or server domain is **serveradd**. Use ssh to connect your remote server:
 
@@ -80,6 +80,8 @@ Installation (Server Side)
   4: At the end, you may need to go back to client side using:
    
     $ exit
+
+  Now, a server named like **userid@serveradd** has been created on your server using the DRMAA system. In the next section, we will setup client side using similar operations.
 
 Installation (Client Side)
 ------------
