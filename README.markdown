@@ -53,7 +53,7 @@ After the above softwares have been installed on the server, we first use ssh co
 
     $ git clone git@github.com:neurospin/soma-workflow.git ~/soma-workflow
 
-  3: Run the python script **setup_server.py**
+  3: Run the python script **setup_server.py** and **~/soma-workflow**
        
     $ cd ~/soma-workflow
     $ python setup_server.py
