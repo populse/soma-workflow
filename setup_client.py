@@ -183,7 +183,8 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
 
 
     config_file_path = configuration.Configuration.search_config_path()
-    resource_id="%s@%s"%(userid,ip_address_or_domain)
+    hostname=GetHostNameOnPBSTORQUE(userid,ip_address_or_domain,userpw)
+    resource_id="%s@%s"%(userid,hostname)
     #print "resource_id="+resource_id
     
     
@@ -194,7 +195,7 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
         config_parser = SafeConfigParser()
         home_dir = configuration.Configuration.get_home_dir() 
         config_path = os.path.join(home_dir, ".soma-workflow.cfg")
-        hostname=GetHostNameOnPBSTORQUE(userid,ip_address_or_domain,userpw)
+        
         config_parser=ConfiguratePaser(config_parser,resource_id,hostname,info_queue,userid)
         WriteOutConfiguration(config_parser,config_path)
 
@@ -209,7 +210,6 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
             pass
         else:
             info_queue=GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain,userpw)
-            hostname=GetHostNameOnPBSTORQUE(userid,ip_address_or_domain,userpw)
             config_parser=ConfiguratePaser(config_parser,resource_id,hostname,info_queue,userid)
             WriteOutConfiguration(config_parser,config_file_path)
 
@@ -272,14 +272,14 @@ if args.p and args.p!="":
 SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw)
 
 
-if args.i and args.i!='':
-    install_swf_path_server=args.i
-    print "Start to copy soma-workflow file to the server path=%s."%(args.i)
-    sshcommand="scp -rC '%s' %s@%s:'%s'"%(path2somawf, userid,ip_address_or_domain,install_swf_path_server)
-    os.system(sshcommand)
-    install_swf_path_server_setup=os.path.join(install_swf_path_server,"setup_server.py")
-    sshcommand="python '%s'"%(install_swf_path_server_setup)
-    print 'ssh command='+sshcommand
-    SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw, False)
+#if args.i and args.i!='':
+#    install_swf_path_server=args.i
+#    print "Start to copy soma-workflow file to the server path=%s."%(args.i)
+#    sshcommand="scp -rC '%s' %s@%s:'%s'"%(path2somawf, userid,ip_address_or_domain,install_swf_path_server)
+#    os.system(sshcommand)
+#    install_swf_path_server_setup=os.path.join(install_swf_path_server,"setup_server.py")
+#    sshcommand="python '%s'"%(install_swf_path_server_setup)
+#    print 'ssh command='+sshcommand
+#    SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw, False)
 
-
+print "Configuration Done ! Close terminal and then start terminal to use $ soma_workflow_gui"
