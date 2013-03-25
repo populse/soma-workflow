@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <stddef.h>
 #include <unistd.h>
-#include <soma/workflow/drmaa/drmaa.h>
+#include "drmaa/drmaa.h"
 #include <map>
 #include <list>
 #include <string>

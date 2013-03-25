@@ -38,6 +38,8 @@ try:
 except ImportError, e:
   QT_BACKEND = None
 
+#QT_BACKEND=None
+
 if QT_BACKEND == None:
   try:
     from PySide import QtGui, QtCore
@@ -2947,7 +2949,7 @@ class ApplicationModel(QtCore.QObject):
 
     self.tmp_stderrout_dir = os.path.join(home_dir, ".soma-workflow")
     if not os.path.isdir(self.tmp_stderrout_dir):
-      	os.mkdir(self.tmp_stderrout_dir)
+      	os.makedir(self.tmp_stderrout_dir)
 
     if resource_pool != None:
       self.resource_pool = resource_pool
