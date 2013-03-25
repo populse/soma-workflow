@@ -68,10 +68,9 @@ Installation (Server Side)
 
     $ ssh userid@serveradd
 
-  2: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it as :
+  2: Download the latest tarball and expand it, for example in **~/soma-workflow**. We can also use git to download it as :
 
-    $ cd ~
-    $ git clone git@github.com:neurospin/soma-workflow.git soma-workflow
+    $ git clone git@github.com:neurospin/soma-workflow.git **~/soma-workflow**
 
   3: Run the python script **setup_server.py**
        
