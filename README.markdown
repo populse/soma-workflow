@@ -78,6 +78,10 @@ Installation (Server Side)
     $ cd ~/soma-workflow
     $ python setup_server.py
 
+  4: At the end, you may need to go back to client side using:
+   
+    $ exit
+
 Installation (Client Side)
 ------------
 
