@@ -8,7 +8,6 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
 '''
 start to check the requirement on the server side
 '''
@@ -22,6 +21,7 @@ path2somawf = os.path.dirname(os.path.realpath(__file__))
 path2somawfpy = os.path.join(path2somawf,"python")
 path2somawf_setup_server = os.path.realpath(__file__)
 sys.path.append(path2somawfpy)
+
 
 def SetPathToEnvVar(KeyPath,NewPath):
     os.environ[KeyPath] = NewPath
@@ -54,8 +54,8 @@ def SetupServerEnvVar(path2somawf):
     envlines2add.append(AddPathToEnvVar("PATH",                         os.path.join(path2somawf,"bin")))
     envlines2add.append(AddPathToEnvVar("PYTHONPATH",                   os.path.join(path2somawf,"python")))
     envlines2add.append(AddPathToEnvVar("LD_LIBRARY_PATH",              os.path.join(path2somawf,"lib")))
-    envlines2add.append(AddPathToEnvVar("SOMA_WORKFLOW_EXAMPLES",       os.path.join(path2somawf,"test","jobExamples")))
-    envlines2add.append(AddPathToEnvVar("SOMA_WORKFLOW_EXAMPLES_OUT",   os.path.join(path2somawf,"test","jobExamples_out")))
+    envlines2add.append(SetPathToEnvVar("SOMA_WORKFLOW_EXAMPLES",       os.path.join(path2somawf,"test","jobExamples")))
+    envlines2add.append(SetPathToEnvVar("SOMA_WORKFLOW_EXAMPLES_OUT",   os.path.join(path2somawf,"test","jobExamples_out")))
     
     import socket
     if socket.gethostname()=="gabriel.intra.cea.fr":
@@ -170,8 +170,7 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_DIR,        os.path.join(install_prefix,"logs"))
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_FORMAT,     "%(asctime)s => %(module)s line %(lineno)s: %(message)s                 %(threadName)s")
     config_parser.set(resource_id,configuration.OCFG_ENGINE_LOG_LEVEL,      "ERROR")
-    
-    
+
     info_queue=GetQueueNamesOnPBSTORQUEServer()
     
     str_info_q="{15} "
@@ -196,13 +195,19 @@ SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 
 lines2cmd = [
              "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
-            | grep -v grep | awk '{print $2}')"%(resource_id),
-             "rm -rf %s/build && \
-             mkdir %s/build && \
-             cd %s/build && \
-             cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s && \
-             make && \
-             make install "%(path2somawf,path2somawf,path2somawf,path2somawf,path2somawf),
+| grep -v grep | awk '{print $2}')"%(resource_id),
+             "echo hello1 >> ~/log.txt",
+             "rm -rf %s/build >> ~/log.txt"%(path2somawf),
+             "echo hello2 >> ~/log.txt",
+             "mkdir %s/build >> ~/log.txt"%(path2somawf),
+             "echo hello3 >> ~/log.txt",
+             "cd %s/build && cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s >> ~/log.txt"%(path2somawf, path2somawf,path2somawf),
+             "cd %s/build && cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s >> ~/log.txt"%(path2somawf, path2somawf,path2somawf),
+             "echo hello4 >> ~/log.txt",
+             "cd %s/build && make >> ~/log.txt"%(path2somawf),
+             "echo hello5 >> ~/log.txt",
+             "cd %s/build && make install >> ~/log.txt"%(path2somawf),
+             "echo hello6 >> ~/log.txt",
             "rm -rf ~/.soma-workflow",
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
@@ -212,5 +217,6 @@ lines2cmd = [
 
 
 for line2cmd in lines2cmd:
+    os.system("echo '%s'>> ~/log.txt"%(line2cmd))
     os.system(line2cmd)
 
