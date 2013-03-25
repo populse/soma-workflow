@@ -21,10 +21,8 @@ Soma-workflow is directly operational on any multiple core machine.
 **Transparent remote access to computing resources:** 
 When the computing resource is remote, Soma-workflow can be used as a client-server application. The communication with a remote computing resource is done transparently for the user through a ssh port forwarding tunnel. The client/server architecture enables the user to close the client application at any time. The workflows and jobs execution are not stopped. The user can open a client at any time to check the status of his work.
 
-  **File transfer and file path mapping tools:** 
-    If the user's machine and the remote computing resource do not have a shared 
-    file system, Soma-workflow provides tools to handle file transfers and/or 
-    path name matchings.
+**File transfer and file path mapping tools:** 
+If the user's machine and the remote computing resource do not have a shared file system, Soma-workflow provides tools to handle file transfers and/or path name matchings.
 
 Documentation
 -------------
