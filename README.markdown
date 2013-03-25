@@ -27,14 +27,10 @@ If the user's machine and the remote computing resource do not have a shared fil
 Documentation
 -------------
 
-  Visit Soma-workflow_ main page!
-
-  An extensive documentation_ is available, with ready to use examples_.
-
-  .. _Soma-workflow: http://www.brainvisa.info/soma-workflow
+Visit Soma-workflow on http://neurospin.github.com/soma-workflow
 
 
-  Four main steps should be finished before using soma-workflow, Installation (Client Side), Configuration File (Client Side), Installation (Sever Side), and Configuration File (Server Side)
+Four main steps should be finished before using soma-workflow, Installation (Client Side), Configuration File (Client Side), Installation (Sever Side), and Configuration File (Server Side)
 
 
 Installation (Server Side)
