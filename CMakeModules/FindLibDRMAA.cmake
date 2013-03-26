@@ -13,6 +13,9 @@ ELSE()
     SET(LIBDRMAA_LIBRARIES ${DRMAA_LIBRARY_PATH})
   endif()  
 
+  message ("DRMAA_LIBRARY_PATH=${DRMAA_LIBRARY_PATH}")
+
+
   if(NOT LIBDRMAA_LIBRARIES)
     file( GLOB LIBDRMAA_LIBRARIES /usr/lib/libdrmaa.so.?.? )
   endif()

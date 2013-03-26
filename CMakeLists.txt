@@ -37,7 +37,7 @@ include (share_func.cmake)
 #set ( CMAKE_INSTALL_PREFIX ${PROJECT_BINARY_DIR})
 
 if( NOT LIBDRMAA_FOUND )
-#  message ( "LIBDRMAA NOT FOUND" )
+  message ( "LIBDRMAA NOT FOUND" )
 #  set( LIBDRMAA_LIBRARIES drmaa )
 else()
   message ( "LIBDRMAA FOUND:${LIBDRMAA_LIBRARIES}" )
