@@ -146,8 +146,13 @@ def SetupConfigurationFileOnServer(userid,ip_address_or_domain):
     config_file_path = configuration.Configuration.search_config_path()
     resource_id="%s@%s"%(userid,ip_address_or_domain)
     home_dir = configuration.Configuration.get_home_dir() 
+    
+    
     config_path = os.path.join(home_dir, ".soma-workflow.cfg")
     install_prefix=os.path.join(home_dir,".soma-workflow")
+    
+    if not config_file_path:
+        config_file_path=config_path
     
 #    print "config_file_path="+config_file_path
 #    print "resource_id="+resource_id
