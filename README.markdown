@@ -30,8 +30,7 @@ Documentation
 Visit Soma-workflow on http://neurospin.github.com/soma-workflow
 
 
-Four main steps should be finished before using soma-workflow, Installation (Client Side), Configuration File (Client Side), Installation (Sever Side), and Configuration File (Server Side)
-
+In the next section, we need the installation on the **server** side and the **client** side:
 
 Installation (Server Side)
 ------------
