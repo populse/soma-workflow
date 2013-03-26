@@ -27,10 +27,10 @@ cur_version = sys.version_info
 
 if cur_version < req_version or cur_version >= (3,0):
     print "This program requires a python version >= 2.7 and please update your python %s \
-    to latest version of python2."%(repr(cur_version))
+to latest version of python2."%(repr(cur_version))
     sys.exit(0)
 '''
-end to check the requirement on the server side
+End to check the requirement on the server side
 '''
 
 def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True):
@@ -54,11 +54,11 @@ def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True
         stdin, stdout, stderr = client.exec_command(sshcommand)
     except paramiko.AuthenticationException, e:
         print "The authentification failed. %s. Please check your user and password. \
-        You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
+You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
         raise
     except Exception, e:
         print "Can not use ssh to log on the remote machine. Please Make sure your network is connected %s.\
-             You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
+You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
         raise 
     
     if wait_output:
@@ -226,7 +226,9 @@ AddLineDefintions2BashrcFile(lines2add)
 
 print "Enviroment variable configuration is done."
 
-print "Start to configuration file on client side:"
+
+print "Start to configuration file on client side."
+
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-u", help="User name on the server using ssh connection")
@@ -238,21 +240,24 @@ parser.add_argument("-i", help="If you need install soma-workflow on the remote 
 
 args = parser.parse_args()
 
-
-
-if not args.u or args.u == '':
-    print "Please give the user name on the server:"
-    args.u=sys.stdin.readline()
-    args.u=args.u.strip()
-    if not args.u or args.u == '':
-        sys.exit(0)
-
 if not args.s or args.s == '':
     print "Please give the ip address or the domain of the server:"
     args.s=sys.stdin.readline()
     args.s=args.s.strip()
     if not args.s or args.s == '':
         sys.exit(0)
+
+if not args.u or args.u == '':
+    print "Please give the user name on the server:"
+    args.u=sys.stdin.readline()
+    args.u=args.u.strip()
+    print "Password on the server using ssh connection.\
+If you want to use 'id_rsa.pub' in $HOME/.ssh, just leave it empty."
+    import getpass
+    args.p = getpass.getpass()
+    if not args.u or args.u == '':
+        sys.exit(0)
+
 
 #if not args.i or args.i=='':
 #    print "If you want to install soma-workflow on the server, \
@@ -271,7 +276,6 @@ if args.p and args.p!="":
 
 SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw)
 
-
 #if args.i and args.i!='':
 #    install_swf_path_server=args.i
 #    print "Start to copy soma-workflow file to the server path=%s."%(args.i)
@@ -282,4 +286,5 @@ SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw)
 #    print 'ssh command='+sshcommand
 #    SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw, False)
 
-print "Configuration Done ! Close terminal and then start terminal to use $ soma_workflow_gui"
+print "Configuration Done! "
+print "Restart terminal to use $ soma_workflow_gui"

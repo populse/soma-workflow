@@ -53,7 +53,7 @@ After the above softwares have been installed on the server, we first use ssh co
 
     $ git clone git@github.com:neurospin/soma-workflow.git ~/soma-workflow
 
-  3: Run the python script **setup_server.py** and **~/soma-workflow**
+  3: Run the python script **setup_server.py** in **~/soma-workflow**
        
     $ cd ~/soma-workflow
     $ python setup_server.py
@@ -67,12 +67,13 @@ After the above softwares have been installed on the server, we first use ssh co
 Installation (Client Side)
 ------------
 
-  Qt version 4.6.2 or more, PyQt version 4.7.2 or more or
-  more are required if you want to use the graphical interface and optionally matplotlib version 0.99.
+Before install soma-workflow, soma softwares are required: 
 
-  To provide you quickly with a functional application, your own multiple core 
-  machine can be used directly and without any configuration to distribute 
-  computation, no matter the installation mode chosen.
+* Python version >= 2.7.3 and < 3.0
+* Qt version 4.6.2 or more, PyQt version 4.7.2 or more or more are required if you want to use the graphical interface 
+* matplotlib version 0.99.
+
+To provide you quickly with a functional application, your own multiple core machine can be used directly and without any configuration to distribute computation, no matter the installation mode chosen.
 
 
   **(Recommended) Only configurate your environment variables without installation**
