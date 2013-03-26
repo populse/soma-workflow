@@ -201,18 +201,11 @@ SetupConfigurationFileOnServer(userid,ip_address_or_domain)
 lines2cmd = [
              "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
 | grep -v grep | awk '{print $2}')"%(resource_id),
-             "echo hello1 >> ~/log.txt",
-             "rm -rf %s/build >> ~/log.txt"%(path2somawf),
-             "echo hello2 >> ~/log.txt",
-             "mkdir %s/build >> ~/log.txt"%(path2somawf),
-             "echo hello3 >> ~/log.txt",
-             "cd %s/build && cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s >> ~/log.txt"%(path2somawf, path2somawf,path2somawf),
-             "cd %s/build && cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s >> ~/log.txt"%(path2somawf, path2somawf,path2somawf),
-             "echo hello4 >> ~/log.txt",
-             "cd %s/build && make >> ~/log.txt"%(path2somawf),
-             "echo hello5 >> ~/log.txt",
-             "cd %s/build && make install >> ~/log.txt"%(path2somawf),
-             "echo hello6 >> ~/log.txt",
+             "rm -rf %s/build"%(path2somawf),
+             "mkdir %s/build"%(path2somawf),
+             "cd %s/build && cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s "%(path2somawf, path2somawf,path2somawf),
+             "cd %s/build && make "%(path2somawf),
+             "cd %s/build && make install "%(path2somawf),
             "rm -rf ~/.soma-workflow",
             "mkdir ~/.soma-workflow",
             "mkdir ~/.soma-workflow/transfered-files",
@@ -222,6 +215,6 @@ lines2cmd = [
 
 
 for line2cmd in lines2cmd:
-    os.system("echo '%s'>> ~/log.txt"%(line2cmd))
+    os.system("echo '%s' "%(line2cmd))
     os.system(line2cmd)
 
