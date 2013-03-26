@@ -53,16 +53,16 @@ After the above softwares have been installed on the server, we first use ssh co
 
     $ git clone git@github.com:neurospin/soma-workflow.git ~/soma-workflow
 
-  3: Run the python script **setup_server.py** in **~/soma-workflow**
+3: Run the python script **setup_server.py** in **~/soma-workflow**
        
     $ cd ~/soma-workflow
     $ python setup_server.py
 
-  4: At the end, you may need to go back to client side using:
+4: At the end, you may need to go back to client side using:
    
     $ exit
 
-  Now, a server named like **userid@serveradd** has been created on your server using the DRMAA system. In the next section, we will setup client side using similar operations.
+Now, a server named like **userid@serveradd** has been created on your server using the DRMAA system. In the next section, we will setup client side using similar operations.
 
 Installation (Client Side)
 ------------
@@ -75,76 +75,23 @@ Before install soma-workflow, soma softwares are required:
 
 To provide you quickly with a functional application, your own multiple core machine can be used directly and without any configuration to distribute computation, no matter the installation mode chosen.
 
+1: Download the latest tarball and expand it, for example in **~/soma-workflow**. We can also use git to download it as:
 
-  **(Recommended) Only configurate your environment variables without installation**
+    $ git clone git@github.com:neurospin/soma-workflow.git ~/soma-workflow
 
-    1: Download the latest tarball and expand it, for example in ~/soma-workflow. We can also use git to download it in ~/  as : 
+2: Run the python script **setup_client.py** in **~/soma-workflow**
 
-     $ cd ~
-     $ git clone git@github.com:neurospin/soma-workflow.git
+    $ cd ~/soma-workflow
+    $ python setup_client.py
 
-    2: Edit the file "~/.bashrc" to add these lines:
+3: At the end, you should restart your terminal:
+    
+    $ exit 
 
-        SOMAWF_PATH=~/soma-workflow
-        export PATH=$SOMAWF_PATH/bin:$PATH
-        export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH
+Open a new terminal to enter:
 
-  **(Easy, but not recommended) With setup.py for all users in the default folder:**
+    $ soma_workflow_gui
 
-    1: Download the latest tarball and expand it.
-
-    2: Install Soma-workflow in the /usr/local/lib and /usr/local/bin directory::
-
-      $ sudo python setup.py install 
-
-
-
-Configuration File (Client Side)
-------------
-
-  Make a configure file for the remote server (~/.soma-workflow.cfg) on the client side as the below format:
-
-    [Cluster_Name_userid]
-
-    CLUSTER_ADDRESS     = ip_address_or_domain
-    SUBMITTING_MACHINES = ip_address_or_domain
-
-    QUEUES = long short
-    LOGIN = userid
-
-   Replace userid as the login id in remote server.
-
-
-Configuration File (Server Side)
-------------
-       
-  1: Make a configure file for the remote server (~/.soma-workflow.cfg) on the server side as the below format:
-   
-	[Cluster_Name_userid]
-	DATABASE_FILE  = /home/userid/soma-workflow/soma_workflow.db
-	TRANSFERED_FILES_DIR = /home/userid/soma-workflow/transfered-files/
-	NAME_SERVER_HOST  = ip_address_or_domain
-	SERVER_NAME = soma_workflow_database_userid
-
-	SERVER_LOG_FILE   = /home/userid/soma-workflow/logs/log_server
-	SERVER_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
-	SERVER_LOG_LEVEL  = INFO
-	ENGINE_LOG_DIR  = /home/userid/soma-workflow/logs
-	ENGINE_LOG_FORMAT = %(asctime)s => %(module)s line %(lineno)s: %(message)s              %(threadName)s
-	ENGINE_LOG_LEVEL  = INFO
-
-	MAX_JOB_IN_QUEUE = {15} short{15} long{10}
-
-   Replace userid as the login id in remote server. Make the below directories :
-
-	$ mkdir /home/userid/soma-workflow
-	$ mkdir /home/userid/soma-workflow/logs
-	$ mkdir /home/userid/soma-workflow/transfered-files
-
-
-At the end, we have finished four main steps. In the client side, we close all terminals and open a new terminal to run "$ soma_workflow_gui". 
-You can now use soma_workflow_gui for paraelle computing. An example is shown in 
-http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/examples.html
-
+Now, you can see the soma-workflow graphical interface to control your cluster. 
 
 
