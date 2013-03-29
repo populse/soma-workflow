@@ -92,6 +92,72 @@ class Scheduler(object):
     raise Exception("Scheduler is an abstract class!")
 
 
+class DrmaaCTypes(Scheduler):
+      '''
+      Scheduling using a Drmaa session. 
+      Contains possible patch depending on the DRMAA impementation. 
+      '''
+      import drmaa
+      # DRMAA session. DrmaaJobs
+      _drmaa = None
+      # string
+      _drmaa_implementation = None
+      # DRMAA doesn't provide an unified way of submitting
+      # parallel jobs. The value of parallel_job_submission is cluster dependant. 
+      # The keys are:
+      #      -Drmaa job template attributes 
+      #      -parallel configuration name as defined in soma.workflow.constants
+      # dict
+      parallel_job_submission_info = None
+      
+      logger = None
+      
+      _configured_native_spec = None
+
+      def __init__(self, 
+                   drmaa_implementation, 
+                   parallel_job_submission_info, 
+                   tmp_file_path=None, 
+                   configured_native_spec=None):
+
+
+        self.logger = logging.getLogger('ljp.drmaajs')
+    
+        self._drmaa=drmaa.Session()
+        
+        self._drmaa.initialize()
+
+        self.hostname = socket.gethostname()
+    
+        self._drmaa_implementation = drmaa_implementation
+    
+        self.parallel_job_submission_info = parallel_job_submission_info
+    
+        self._configured_native_spec = configured_native_spec 
+    
+        self.logger.debug("Parallel job submission info: %s", 
+                          repr(parallel_job_submission_info))
+        
+        # patch for the PBS-torque DRMAA implementation
+        if self._drmaa_implementation == "PBS":
+              if tmp_file_path == None:
+                    self.tmp_file_path = os.path.abspath("/tmp")
+              else:
+                    self.tmp_file_path = os.path.abspath(tmp_file_path)
+              
+              '''
+              Create a job to test
+              '''
+              jobTemplateId = self._drmaa.createJobTemplate()
+              jobTemplateId.remoteCommand='echo'
+              jobTemplateId.args = []
+              jobTemplateId.outputPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o"))
+              jobTemplateId.errorPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e"))
+              
+              self._drmaa.runJob(jobTemplateId)
+          
+
+
 class Drmaa(Scheduler):
   '''
   Scheduling using a Drmaa session. 
