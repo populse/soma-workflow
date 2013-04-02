@@ -97,7 +97,7 @@ class DrmaaCTypes(Scheduler):
       Scheduling using a Drmaa session. 
       Contains possible patch depending on the DRMAA impementation. 
       '''
-      import drmaa
+      
       # DRMAA session. DrmaaJobs
       _drmaa = None
       # string
@@ -114,19 +114,63 @@ class DrmaaCTypes(Scheduler):
       
       _configured_native_spec = None
 
+      tmp_file_path = None
+
+      def submit_simple_test_job(self, outstr,out_o_file,out_e_file,tmp_file_path=None):
+        # patch for the PBS-torque DRMAA implementation
+        if self._drmaa_implementation == "PBS":
+              if tmp_file_path == None:
+                    self.tmp_file_path = os.path.abspath("tmp")
+              else:
+                    self.tmp_file_path = os.path.abspath(tmp_file_path)
+
+
+               
+              '''
+              Create a job to test
+              '''
+              jobTemplateId = self._drmaa.createJobTemplate()
+              jobTemplateId.remoteCommand='echo'
+              jobTemplateId.args = ["%s"%(outstr)]
+              jobTemplateId.outputPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_o_file)))
+              jobTemplateId.errorPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_e_file)))
+
+
+              print "jobTemplateId="+repr(jobTemplateId)
+              print "jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand)
+              print "jobTemplateId.args="+repr(jobTemplateId.args)
+              print "jobTemplateId.outputPath="+repr(jobTemplateId.outputPath)
+              print "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath)
+
+              self._drmaa.runJob(jobTemplateId)
+
+
+      def wake(self):
+        '''
+        Creates a fresh Drmaa session.
+        '''
+        import drmaa
+
+        self.is_sleeping = False
+
+        self._drmaa=drmaa.Session()
+
+        self._drmaa.initialize()
+
+
+      
       def __init__(self, 
                    drmaa_implementation, 
                    parallel_job_submission_info, 
                    tmp_file_path=None, 
                    configured_native_spec=None):
 
+        import drmaa
 
         self.logger = logging.getLogger('ljp.drmaajs')
-    
-        self._drmaa=drmaa.Session()
         
-        self._drmaa.initialize()
-
+        self.wake()
+ 
         self.hostname = socket.gethostname()
     
         self._drmaa_implementation = drmaa_implementation
@@ -138,25 +182,48 @@ class DrmaaCTypes(Scheduler):
         self.logger.debug("Parallel job submission info: %s", 
                           repr(parallel_job_submission_info))
         
-        # patch for the PBS-torque DRMAA implementation
+        self.submit_simple_test_job('hello jinpeng','soma-workflow-empty-job-patch-torque.o','soma-workflow-empty-job-patch-torque.e',tmp_file_path)
+     
+      def clean(self):
         if self._drmaa_implementation == "PBS":
-              if tmp_file_path == None:
-                    self.tmp_file_path = os.path.abspath("/tmp")
-              else:
-                    self.tmp_file_path = os.path.abspath(tmp_file_path)
-              
-              '''
-              Create a job to test
-              '''
-              jobTemplateId = self._drmaa.createJobTemplate()
-              jobTemplateId.remoteCommand='echo'
-              jobTemplateId.args = []
-              jobTemplateId.outputPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o"))
-              jobTemplateId.errorPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e"))
-              
-              self._drmaa.runJob(jobTemplateId)
-          
+          tmp_out = os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")
+          tmp_err = os.path.join(self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")
+        if os.path.isfile(tmp_out):
+          os.remove(tmp_out)
+        if os.path.isfile(tmp_err):
+          os.remove(tmp_err) 
 
+
+      def close_drmaa_session(self):
+        if self._drmaa:
+          self._drmaa.exit()
+          self._drmaa=None
+
+      def __del__(self):
+        self.clean()
+        self.close_drmaa_session()      
+ 
+      def sleep(self):
+        '''
+        Some Drmaa sessions expire if they idle too long.  
+        '''
+        self.close_drmaa_session()
+        self.is_sleeping = True
+       
+
+      def wake(self):
+        '''
+        Creates a fresh Drmaa session.
+        '''
+        import drmaa
+
+        self.is_sleeping = False
+
+        self._drmaa=drmaa.Session()
+
+        self._drmaa.initialize()
+
+      
 
 class Drmaa(Scheduler):
   '''
