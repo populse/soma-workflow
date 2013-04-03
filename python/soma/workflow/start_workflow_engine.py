@@ -141,7 +141,7 @@ if __name__=="__main__":
       logger.info("****************************************************")
  
     if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
-      sch = soma.workflow.scheduler.Drmaa(config.get_drmaa_implementation(), 
+      sch = soma.workflow.scheduler.DrmaaCTypes(config.get_drmaa_implementation(), 
                                     config.get_parallel_job_config(),
                                     os.path.expanduser("~"),
                                     configured_native_spec=config.get_native_specification())
