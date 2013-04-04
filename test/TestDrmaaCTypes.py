@@ -164,10 +164,10 @@ class DrmaaCTypesTest(unittest.TestCase):
           i=i-1
         
         exit_status, exit_value, term_sig, str_rusage=sch.get_job_exit_info(jobid)
-#        print "exit_status="+repr(exit_status)
-#        print "exit_value="+repr(exit_value)
-#        print "term_sig="+repr(term_sig)
-#        print "str_rusage="+repr(str_rusage)
+        print "exit_status="+repr(exit_status)
+        print "exit_value="+repr(exit_value)
+        print "term_sig="+repr(term_sig)
+        print "str_rusage="+repr(str_rusage)
 
         self.checkoutput(sch)
  

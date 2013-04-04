@@ -403,16 +403,36 @@ class DrmaaCTypes(Scheduler):
       def get_job_exit_info(self, scheduler_job_id):
         if self.is_sleeping: self.wake()
 
-        
+        res_resourceUsage=[]
+        res_status = constants.EXIT_UNDETERMINED
+        res_exitValue = 0
+        res_termSignal = ""        
+
+ 
         jid_out, exit_value, signaled, term_sig, coredumped, aborted,exit_status,resource_usage=self._drmaa.wait(scheduler_job_id, self._drmaa.TIMEOUT_WAIT_FOREVER)
-        #print "jid_out="+repr(jid_out)
-        #print "exit_value="+repr(exit_value)
-        #print "signaled="+repr(signaled)
-        #print "term_sig="+repr(term_sig)
-        #print "coredumped="+repr(coredumped)
-        #print "aborted="+repr(aborted)
-        #print "exit_status="+repr(exit_status)
-        #print "resource_usage="+repr(resource_usage)
+        
+        print "jid_out="+repr(jid_out)
+        print "exit_value="+repr(exit_value)
+        print "signaled="+repr(signaled)
+        print "term_sig="+repr(term_sig)
+        print "coredumped="+repr(coredumped)
+        print "aborted="+repr(aborted)
+        print "exit_status="+repr(exit_status)
+        print "resource_usage="+repr(resource_usage)
+
+        if aborted == 1:
+          res_status=constants.EXIT_ABORTED
+        else:
+          if exit_value == 1:
+            res_status=constants.FINISHED_REGULARLY
+            res_exitValue=exit_status
+          else :
+            if signaled == 1:
+              res_status=constants.FINISHED_TERM_SIG
+              res_termSignal=term_sig
+            else:
+              res_status=constants.FINISHED_UNCLEAR_CONDITIONS
+        
 
         #JobInfo(jid_out.value, bool(exited), bool(signaled),
         #               term_signal.value, bool(coredumped),
@@ -421,11 +441,11 @@ class DrmaaCTypes(Scheduler):
 
         #exit_status, exit_value, term_sig, resource_usage = self._drmaa.wait(scheduler_job_id, 0)
     
-        str_rusage = ''
+        res_resourceUsage = ''
         for k,v in resource_usage.iteritems():
-          str_rusage = str_rusage+ k + '=' + v + ' '
+          res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
     
-        return (exit_status, exit_value, term_sig, str_rusage)
+        return (res_status,res_exitValue , res_termSignal, res_resourceUsage)
 
 class Drmaa(Scheduler):
   '''
