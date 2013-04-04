@@ -27,7 +27,7 @@ import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
 from soma.workflow.configuration import LocalSchedulerCfg
 from drmaa.errors import *
-import drmaa.const.JobControlAction as JobControlAction
+from drmaa.const import JobControlAction
 
 try:
   from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
