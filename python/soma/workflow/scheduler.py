@@ -27,6 +27,7 @@ import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
 from soma.workflow.configuration import LocalSchedulerCfg
 from drmaa.errors import *
+import drmaa.const.JobControlAction as JobControlAction
 
 try:
   from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
@@ -391,6 +392,14 @@ class DrmaaCTypes(Scheduler):
      
         return drmaaSubmittedJobId      
 
+      def kill_job(self, scheduler_job_id):
+        if self.is_sleeping: self.wake()
+        try:
+          self._drmaa.control(scheduler_job_id, JobControlAction.TERMINATE)
+        except DrmaaException, e:
+          self.logger.critical("%s" %e)
+          raise e
+
       def get_job_status(self, scheduler_job_id):
         if self.is_sleeping: self.wake()
         try:
@@ -408,43 +417,40 @@ class DrmaaCTypes(Scheduler):
         res_exitValue = 0
         res_termSignal = ""        
 
- 
-        jid_out, exit_value, signaled, term_sig, coredumped, aborted,exit_status,resource_usage=self._drmaa.wait(scheduler_job_id, self._drmaa.TIMEOUT_WAIT_FOREVER)
-        
-        print "jid_out="+repr(jid_out)
-        print "exit_value="+repr(exit_value)
-        print "signaled="+repr(signaled)
-        print "term_sig="+repr(term_sig)
-        print "coredumped="+repr(coredumped)
-        print "aborted="+repr(aborted)
-        print "exit_status="+repr(exit_status)
-        print "resource_usage="+repr(resource_usage)
+        try: 
+          jid_out, exit_value, signaled, term_sig, coredumped, aborted,exit_status,resource_usage=self._drmaa.wait(scheduler_job_id, self._drmaa.TIMEOUT_WAIT_FOREVER)
+          print "jid_out="+repr(jid_out)
+          print "exit_value="+repr(exit_value)
+          print "signaled="+repr(signaled)
+          print "term_sig="+repr(term_sig)
+          print "coredumped="+repr(coredumped)
+          print "aborted="+repr(aborted)
+          print "exit_status="+repr(exit_status)
+          print "resource_usage="+repr(resource_usage)
+  
+          if aborted == 1:
+            res_status=constants.EXIT_ABORTED
+          else:
+            if exit_value == 1:
+              res_status=constants.FINISHED_REGULARLY
+              res_exitValue=exit_status
+            else :
+              if signaled == 1:
+                res_status=constants.FINISHED_TERM_SIG
+                res_termSignal=term_sig
+              else:
+                res_status=constants.FINISHED_UNCLEAR_CONDITIONS
+  
 
-        if aborted == 1:
-          res_status=constants.EXIT_ABORTED
-        else:
-          if exit_value == 1:
-            res_status=constants.FINISHED_REGULARLY
-            res_exitValue=exit_status
-          else :
-            if signaled == 1:
-              res_status=constants.FINISHED_TERM_SIG
-              res_termSignal=term_sig
-            else:
-              res_status=constants.FINISHED_UNCLEAR_CONDITIONS
-        
-
-        #JobInfo(jid_out.value, bool(exited), bool(signaled),
-        #               term_signal.value, bool(coredumped),
-        #               bool(aborted), int(exit_status.value), res_usage)
+          res_resourceUsage = ''
+          for k,v in resource_usage.iteritems():
+            res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
 
 
-        #exit_status, exit_value, term_sig, resource_usage = self._drmaa.wait(scheduler_job_id, 0)
-    
-        res_resourceUsage = ''
-        for k,v in resource_usage.iteritems():
-          res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
-    
+        except ExitTimeoutException:
+          res_status = constants.EXIT_UNDETERMINED
+
+  
         return (res_status,res_exitValue , res_termSignal, res_resourceUsage)
 
 class Drmaa(Scheduler):
