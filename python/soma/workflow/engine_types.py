@@ -598,11 +598,13 @@ class EngineWorkflow(Workflow):
     '''
 
     self.logger = logging.getLogger('engine.EngineWorkflow') 
+    self.logger.debug("self.jobs="+repr(self.jobs))
     to_run = []
     to_abort = set([])
     done = []
     running = []
     for client_job in self.jobs:
+      self.logger.debug("client_job="+repr(client_job))
       job = self.job_mapping[client_job]
       if job.is_done(): 
         done.append(job)
@@ -648,7 +650,7 @@ class EngineWorkflow(Workflow):
     ended_jobs = {}
     for job in to_abort:
       if job.job_id and job.status != constants.FAILED:
-        #self.self.logger.debug("  ---- Failure: job to abort " + job.name)
+        self.logger.debug("  ---- Failure: job to abort " + job.name)
         assert(job.status == constants.NOT_SUBMITTED)
         ended_jobs[job.job_id] = job
         job.status = constants.FAILED

@@ -300,12 +300,13 @@ class DrmaaCTypes(Scheduler):
           for command_el in job_command:
             command_el = command_el.replace('"', '\\\"')
             command.append("\"" + command_el + "\"")
-          #self.logger.debug("PBS case, new command:" + repr(command))
+          self.logger.debug("PBS case, new command:" + repr(command))
         else:
           command = job_command
      
         self.logger.debug("command: " + repr(command))
-        
+        self.logger.debug("job.name=" + repr(job.name))        
+
         stdout_file = job.plain_stdout()
         stderr_file = job.plain_stderr()
         stdin = job.plain_stdin()
@@ -415,18 +416,20 @@ class DrmaaCTypes(Scheduler):
         res_resourceUsage=[]
         res_status = constants.EXIT_UNDETERMINED
         res_exitValue = 0
-        res_termSignal = ""        
+        res_termSignal = None        
 
-        try: 
-          jid_out, exit_value, signaled, term_sig, coredumped, aborted,exit_status,resource_usage=self._drmaa.wait(scheduler_job_id, self._drmaa.TIMEOUT_WAIT_FOREVER)
-          print "jid_out="+repr(jid_out)
-          print "exit_value="+repr(exit_value)
-          print "signaled="+repr(signaled)
-          print "term_sig="+repr(term_sig)
-          print "coredumped="+repr(coredumped)
-          print "aborted="+repr(aborted)
-          print "exit_status="+repr(exit_status)
-          print "resource_usage="+repr(resource_usage)
+        try:
+          self.logger.debug("  ==> Start to find info of job %s"%(scheduler_job_id)) 
+          jid_out, exit_value, signaled, term_sig, coredumped, aborted,exit_status,resource_usage=self._drmaa.wait(scheduler_job_id, self._drmaa.TIMEOUT_NO_WAIT)
+          
+          self.logger.debug("  ==> jid_out="+repr(jid_out))
+          self.logger.debug("  ==> exit_value="+repr(exit_value))
+          self.logger.debug("  ==> signaled="+repr(signaled))
+          self.logger.debug("  ==> term_sig="+repr(term_sig))
+          self.logger.debug("  ==> coredumped="+repr(coredumped))
+          self.logger.debug("  ==> aborted="+repr(aborted))
+          self.logger.debug("  ==> exit_status="+repr(exit_status))
+          self.logger.debug("  ==> resource_usage="+repr(resource_usage))
   
           if aborted == 1:
             res_status=constants.EXIT_ABORTED
@@ -449,6 +452,7 @@ class DrmaaCTypes(Scheduler):
 
         except ExitTimeoutException:
           res_status = constants.EXIT_UNDETERMINED
+          self.logger.debug("  ==> self._drmaa.wait time out")
 
   
         return (res_status,res_exitValue , res_termSignal, res_resourceUsage)

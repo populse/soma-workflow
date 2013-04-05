@@ -124,7 +124,7 @@ class WorkflowEngineLoop(object):
                queue_limits={}):
     
     self.logger = logging.getLogger('engine.WorkflowEngineLoop')
-
+    
     self._jobs = {} 
     self._workflows = {}
     
@@ -258,14 +258,22 @@ class WorkflowEngineLoop(object):
               stderr_file.write("Error while requesting the job status %s: %s \nWarning: the job may still be running.\n" %(type(e),e))
               stderr_file.close()
               drms_error_jobs[job.job_id] = job
-            #self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
+            self.logger.debug("job " + repr(job.job_id) + " : " + job.status)
             if job.status == constants.DONE or job.status == constants.FAILED:
-              #self.logger.debug("End of job %s, drmaaJobId = %s", 
-              #                  job.job_id, job.drmaa_id)
+              self.logger.debug("End of job %s, drmaaJobId = %s, status= %s", 
+                                job.job_id, job.drmaa_id, repr(job.status))
               (job.exit_status, 
               job.exit_value, 
               job.terminating_signal, 
               job.str_rusage) = self._scheduler.get_job_exit_info(job.drmaa_id)
+              
+              self.logger.debug("  after get_job_exit_info ")             
+              self.logger.debug("  => exit_status " + repr(job.exit_status))
+              self.logger.debug("  => exit_value " + repr(job.exit_value))
+              self.logger.debug("  => signal " + repr(job.terminating_signal))  
+              self.logger.debug("  => rusage "+repr(job.str_rusage))             
+
+  
               if job.workflow_id != -1: 
                 wf_to_inspect.add(job.workflow_id)
               if job.status == constants.DONE:
@@ -275,9 +283,9 @@ class WorkflowEngineLoop(object):
                                                   constants.FILES_ON_CR)
                      
               ended_jobs[job.job_id] = job
-              #self.logger.debug("  => exit_status " + repr(job.exit_status))
-              #self.logger.debug("  => exit_value " + repr(job.exit_value))
-              #self.logger.debug("  => signal " + repr(job.terminating_signal))
+              self.logger.debug("  => exit_status " + repr(job.exit_status))
+              self.logger.debug("  => exit_value " + repr(job.exit_value))
+              self.logger.debug("  => signal " + repr(job.terminating_signal))
 
 
         # --- 3. Get back transfered status ----------------------------------
@@ -292,11 +300,12 @@ class WorkflowEngineLoop(object):
             wf_to_inspect.add(wf_id)
 
         # --- 4. Inspect workflows -------------------------------------------
-        #self.logger.debug("wf_to_inspect " + repr(wf_to_inspect))
+        self.logger.debug("wf_to_inspect " + repr(wf_to_inspect))
         for wf_id in wf_to_inspect:
           (to_run, 
           aborted_jobs, 
           status) = self._workflows[wf_id].find_out_jobs_to_process()
+          self.logger.debug("to_run=" + repr(to_run)+" aborted_jobs="+repr(aborted_jobs))
           self._workflows[wf_id].status = status
           self.logger.debug("NEW status wf " + repr(wf_id) + " " + repr(status))
           #jobs_to_run.extend(to_run)
@@ -305,8 +314,11 @@ class WorkflowEngineLoop(object):
             self._pend_for_submission(job)
 
         # --- 5. Check if pending jobs can now be submitted ------------------
+        self.logger.debug("Check pending jobs")
         jobs_to_run = self._get_pending_job_to_submit()
-
+        self.logger.debug("jobs_to_run="+repr(jobs_to_run))
+        self.logger.debug("len(jobs_to_run)="+repr(len(jobs_to_run)))
+     
         # --- 6. Submit jobs -------------------------------------------------
         drmaa_id_for_db_up = {}
         for job in jobs_to_run:
@@ -337,7 +349,7 @@ class WorkflowEngineLoop(object):
         # --- 7. Update the workflow and jobs status to the database_server -
         ended_job_ids = []
         ended_wf_ids = []
-        #self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
+        self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
         job_status_for_db_up = {}
         for job_id, job in itertools.chain(self._jobs.iteritems(),
                                           wf_jobs.iteritems()):
@@ -349,7 +361,7 @@ class WorkflowEngineLoop(object):
              (job.status == constants.DONE or \
               job.status == constants.FAILED):
               ended_job_ids.append(job_id)
-          #self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
+          self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
        
         if job_status_for_db_up:
           self._database_server.set_jobs_status(job_status_for_db_up)
@@ -362,7 +374,7 @@ class WorkflowEngineLoop(object):
           if workflow.status == constants.WORKFLOW_DONE:
             ended_wf_ids.append(wf_id)
           self.logger.debug("wf " + repr(wf_id) + " " + repr(workflow.status))
-        #self.logger.debug("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ")
+        self.logger.debug("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ")
         
         for job_id in ended_job_ids: del self._jobs[job_id]
         for wf_id in ended_wf_ids: del self._workflows[wf_id]
