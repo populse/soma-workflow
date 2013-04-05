@@ -112,14 +112,14 @@ class WorkflowController(object):
     self.scheduler_config = None
 
     mode = self.config.get_mode()
-    #print  mode + " mode"
+    print  mode + " mode"
 
     self._resource_id = resource_id
     
     
-
     # LOCAL MODE
     if mode == configuration.LOCAL_MODE:
+      
       self._connection = connection.LocalConnection(resource_id, "")
       self._engine_proxy = self._connection.get_workflow_engine()
       self.engine_config_proxy = self._connection.get_configuration()
