@@ -192,32 +192,35 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", help="resource id")
 
+args = parser.parse_args()
 if not args.r or args.r == '':
     print "Please enter resource id with -r resource_id"
     sys.exit(0)
 
 resource_id=args.r
 
-#import getpass
-#userid=getpass.getuser()
-#ip_address_or_domain=socket.gethostname()
-#resource_id="%s@%s"%(userid,ip_address_or_domain)
+print resource_id
 
-SetupConfigurationFileOnServer(userid,ip_address_or_domain,resource_id)
- 
-lines2cmd = [
-             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
-| grep -v grep | awk '{print $2}')"%(resource_id),
-            "rm ~/.soma-workflow/*.db",
-            "rm -rf ~/.soma-workflow/transfered-files/*",
-            "rm -rf ~/.soma-workflow/logs/*",
-            "mkdir ~/.soma-workflow/transfered-files",
-            "mkdir ~/.soma-workflow/logs",
-            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
-             ]
-
-
-for line2cmd in lines2cmd:
-    os.system("echo '%s' "%(line2cmd))
-    os.system(line2cmd)
+##import getpass
+##userid=getpass.getuser()
+##ip_address_or_domain=socket.gethostname()
+##resource_id="%s@%s"%(userid,ip_address_or_domain)
+#
+#SetupConfigurationFileOnServer(userid,ip_address_or_domain,resource_id)
+# 
+#lines2cmd = [
+#             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
+#| grep -v grep | awk '{print $2}')"%(resource_id),
+#            "rm ~/.soma-workflow/*.db",
+#            "rm -rf ~/.soma-workflow/transfered-files/*",
+#            "rm -rf ~/.soma-workflow/logs/*",
+#            "mkdir ~/.soma-workflow/transfered-files",
+#            "mkdir ~/.soma-workflow/logs",
+#            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
+#             ]
+#
+#
+#for line2cmd in lines2cmd:
+#    os.system("echo '%s' "%(line2cmd))
+#    os.system(line2cmd)
 
