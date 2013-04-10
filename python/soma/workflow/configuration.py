@@ -303,7 +303,7 @@ class Configuration(observer.Observable):
 
     config = None
     home_dir = Configuration.get_home_dir() 
-
+    
     if resource_id == None or resource_id == socket.gethostname() :
       
       #scheduler local on the local machine

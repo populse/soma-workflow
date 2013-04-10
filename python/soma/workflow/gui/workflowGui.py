@@ -163,6 +163,12 @@ if QT_BACKEND == PYQT:
   
   Ui_WorkflowEngineConfigController = uic.loadUiType(os.path.join(os.path.dirname( __file__ ),
                                                           'engine_controller_widget.ui' ))[0]
+                                                          
+  Ui_ServerManagement = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                              'ServerManagement.ui' ))[0]
+                        
+  Ui_NewServer = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                              'ServerNewDlg.ui' ))[0]
 
 else:
   from soma.workflow.gui.ui_job_info import Ui_JobInfo
@@ -180,6 +186,8 @@ else:
   from soma.workflow.gui.ui_search_widget import Ui_SearchWidget
   from soma.workflow.gui.ui_local_scheduler_cfg_ctrl import Ui_LocalSchedulerConfigController
   from soma.workflow.gui.ui_workflow_engine_cfg_ctrl import Ui_WorkflowEngineConfigController
+  # from soma.workflow.gui.ui_server_management import Ui_ServerManagement
+  # from soma.workflow.gui.ui_new_server import Ui_NewServer
 
 
 
@@ -591,7 +599,90 @@ class WorkflowEngineConfigController(QtGui.QWidget):
     else:
       self.engine_config.change_queue_limits(queue_name, limit)
   
+
+class NewServerDialog(QtGui.QDialog):
+  
+  ui = None
+  
+  def __init__(self,    parent=None):
+      super(NewServerDialog, self).__init__(parent=parent)
+      self.ui = Ui_NewServer()
+      self.ui.setupUi(self)
+      self.ui.lineEdit_login.textChanged.connect(self.UpdateResName)
+      self.ui.lineEdit_cluster_add.textChanged.connect(self.UpdateResName)
+
+  @QtCore.Slot()
+  def UpdateResName(self):
+      
+      strLogin=self.ui.lineEdit_login.displayText()
+      strLogin=unicode(strLogin).encode('utf-8')
+      
+      strAdd=self.ui.lineEdit_cluster_add.displayText()
+      strAdd=unicode(strAdd).encode('utf-8')
+      
+      ResName=strLogin+"@"+strAdd
+      self.ui.lineEdit_ResName.setText(ResName)
+
+class ServerManagementDialog(QtGui.QDialog):
     
+  login_list    = ""
+  resource_list  = []
+  login_list = {}
+  config_file_path = None
+  add_widget = None
+
+  def __init__(self,    parent=None):
+
+    super(ServerManagementDialog, self).__init__(parent=parent)
+
+    self.ui = Ui_ServerManagement()
+    self.ui.setupUi(self)
+    
+    try:
+      self.config_file_path = configuration.Configuration.search_config_path()
+      self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
+      self.login_list = configuration.Configuration.get_logins(self.config_file_path)
+    except ConfigurationError, e:
+      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      self.close()
+    
+    self.ui.combo_resources.addItems(self.resource_list)
+    self.ui.combo_resources.setEnabled(True)
+    self.ui.btn_add_server.clicked.connect(self.add_server)
+
+    self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
+    self.update_login()
+
+  def update_login(self):
+    resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
+    login = self.login_list[resource_id]
+    if login != None:
+      self.ui.lineEdit_login.setText(login)
+    else:
+      self.ui.lineEdit_login.clear()
+    
+    while self.ui.combo_queues.count()  >   0:
+        self.ui.combo_queues.removeItem(0)
+        
+    config  =   None
+    
+    if self.config_file_path != None:
+        config=configuration.Configuration.load_from_file(resource_id,self.config_file_path)
+    self.ui.lineEdit_cluster_add.clear()
+
+
+    if config != None:
+        queues=config.get_queues()
+        cluster_address=config.get_cluster_address()
+        
+        self.ui.combo_queues.addItems(queues)
+        self.ui.lineEdit_cluster_add.setText(cluster_address)
+
+  def add_server(self):
+    self.add_widget = NewServerDialog(self)
+    self.add_widget.show()
+
+      
 class ConnectionDialog(QtGui.QDialog):
 
   def __init__(self, 
@@ -613,10 +704,12 @@ class ConnectionDialog(QtGui.QDialog):
     if resource_id != None:
       index = resource_list.index(resource_id)
       self.ui.combo_resources.setCurrentIndex(index)
+      
 
     self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
     self.update_login()
 
+  @QtCore.Slot()
   def update_login(self):
     resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
     login = self.login_list[resource_id]
@@ -1486,6 +1579,8 @@ class MainWindow(QtGui.QMainWindow):
 
   sw_widget = None
   
+  server_widget = None
+  
   def __init__(self, 
                model, 
                user=None, 
@@ -1493,6 +1588,7 @@ class MainWindow(QtGui.QMainWindow):
                computing_resource=None,
                parent=None, 
                flags=0):
+    
     super(MainWindow, self).__init__(parent)
     
     self.ui = Ui_MainWindow()
@@ -1511,12 +1607,17 @@ class MainWindow(QtGui.QMainWindow):
 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
 
+    self.server_widget = ServerManagementDialog(self)
+    self.server_widget.show()
+    
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
                                         auto_connect,
                                         computing_resource,
                                         self,
                                         flags)
+    
+    
 
     if True:
       self.mini_widget = SomaWorkflowMiniWidget(self.model,

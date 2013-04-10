@@ -29,7 +29,7 @@ parser = optparse.OptionParser()
 parser.add_option('-u', '--user', help="User for logging in to server")
 parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
                   action='store_true', help="Try to connect directly, " \
-                    "withou displaying connection dialog.")
+                    "without displaying connection dialog.")
 parser.add_option('-r', '--computing-resource', dest='computing_resource', 
                   help='computing resource identifier')
 
