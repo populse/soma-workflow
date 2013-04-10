@@ -82,7 +82,18 @@ and os.path.exists("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin")):
     Use new version of python to setup since we have defined some enviroment in SetupServerEnvVar for gabriel.intra.cea.fr
     '''
     print "Use nested python to install"
-    os.system("/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin/python '%s'"%(path2somawf_setup_server))
+
+    strcmd="/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/bin/python '%s'"%(path2somawf_setup_server)
+
+    i=1
+    while i < len(sys.argv):
+      # print sys.argv[i]
+      strcmd=strcmd+" %s"%(sys.argv[i])
+      i=i+1
+
+    #print strcmd
+
+    os.system(strcmd)
     sys.exit(0)
     
 
@@ -149,7 +160,7 @@ def SetupConfigurationFileOnServer(userid,  ip_address_or_domain,   resource_id=
     install_prefix=os.path.join(home_dir,".soma-workflow")
     
     if config_file_path==None:
-        config_file_path=config_path
+        config_file_path=os.path.join(home_dir,".soma-workflow.cfg")
     
 #    print "config_file_path="+config_file_path
 #    print "resource_id="+resource_id
@@ -185,7 +196,7 @@ def SetupConfigurationFileOnServer(userid,  ip_address_or_domain,   resource_id=
     WriteOutConfiguration(config_parser,config_file_path)
 
 
-# AddLineDefintions2BashrcFile(envlines2add)
+AddLineDefintions2BashrcFile(envlines2add)
 
 
 import argparse
@@ -199,28 +210,28 @@ if not args.r or args.r == '':
 
 resource_id=args.r
 
-print resource_id
 
-##import getpass
-##userid=getpass.getuser()
-##ip_address_or_domain=socket.gethostname()
-##resource_id="%s@%s"%(userid,ip_address_or_domain)
-#
-#SetupConfigurationFileOnServer(userid,ip_address_or_domain,resource_id)
-# 
-#lines2cmd = [
-#             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
-#| grep -v grep | awk '{print $2}')"%(resource_id),
-#            "rm ~/.soma-workflow/*.db",
-#            "rm -rf ~/.soma-workflow/transfered-files/*",
-#            "rm -rf ~/.soma-workflow/logs/*",
-#            "mkdir ~/.soma-workflow/transfered-files",
-#            "mkdir ~/.soma-workflow/logs",
-#            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
-#             ]
-#
-#
-#for line2cmd in lines2cmd:
-#    os.system("echo '%s' "%(line2cmd))
-#    os.system(line2cmd)
+import getpass
+userid=getpass.getuser()
+ip_address_or_domain=socket.gethostname()
+#resource_id="%s@%s"%(userid,ip_address_or_domain)
+
+SetupConfigurationFileOnServer(userid,ip_address_or_domain,resource_id)
+
+ 
+lines2cmd = [
+             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server %s' \
+| grep -v grep | awk '{print $2}')"%(resource_id),
+            "rm ~/.soma-workflow/*.db",
+            "rm -rf ~/.soma-workflow/transfered-files/*",
+            "rm -rf ~/.soma-workflow/logs/*",
+            "mkdir ~/.soma-workflow/transfered-files",
+            "mkdir ~/.soma-workflow/logs",
+            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
+             ]
+
+
+for line2cmd in lines2cmd:
+    os.system("echo '%s' "%(line2cmd))
+    os.system(line2cmd)
 
