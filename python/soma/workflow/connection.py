@@ -549,3 +549,45 @@ class Tunnel(threading.Thread):
       print 'Tunnel Error. %s: %s' %(type(e), e)
       
       
+def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True,sshport=22):
+    if(wait_output==True):
+        tag='----xxxx=====start to exec=====xxxxx----'
+        sshcommand="echo %s && %s"%(tag,sshcommand)
+    
+    stdin   = []
+    stdout  = []
+    stderr  = []
+    
+    std_out_lines = []
+    
+    import paramiko
+    
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy()) 
+        client.load_system_host_keys()
+        client.connect(hostname=ip_address_or_domain, port=sshport, username=userid, password=userpw)
+        stdin, stdout, stderr = client.exec_command(sshcommand)
+    except paramiko.AuthenticationException, e:
+        print "The authentification failed. %s. Please check your user and password. \
+You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
+        raise
+    except Exception, e:
+        print "Can not use ssh to log on the remote machine. Please Make sure your network is connected %s.\
+You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_address_or_domain)
+        raise 
+    
+    if wait_output:
+        sline=stdout.readline()
+        while sline and sline!=tag+'\n':
+            sline=stdout.readline()
+    
+        sline=stdout.readline()
+        while sline:
+            std_out_lines.append(sline.strip())
+            sline=stdout.readline()
+            
+    
+    client.close()
+    
+    return std_out_lines

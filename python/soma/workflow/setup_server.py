@@ -45,7 +45,7 @@ def AddPathToEnvVar(KeyPath,NewPath):
         
 
 
-def SetupServerEnvVar(path2somawf):
+def SetupServerEnvVar(path2somawfpy):
     '''
     Configurate the environment variable configuration
     '''

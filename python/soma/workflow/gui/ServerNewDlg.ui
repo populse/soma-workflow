@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>485</width>
-    <height>252</height>
+    <width>488</width>
+    <height>324</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,18 +22,18 @@
      <x>20</x>
      <y>0</y>
      <width>451</width>
-     <height>161</height>
+     <height>191</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="5" column="0">
+    <item row="6" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
        <string>RSA key password:</string>
       </property>
      </widget>
     </item>
-    <item row="3" column="2">
+    <item row="4" column="2">
      <widget class="QLineEdit" name="lineEdit_PW">
       <property name="echoMode">
        <enum>QLineEdit::Password</enum>
@@ -46,11 +46,11 @@
     <item row="2" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Login:</string>
+       <string>SSH Login:</string>
       </property>
      </widget>
     </item>
-    <item row="5" column="2">
+    <item row="6" column="2">
      <widget class="QLineEdit" name="lineEdit_RSAKeyPW">
       <property name="echoMode">
        <enum>QLineEdit::Password</enum>
@@ -67,10 +67,24 @@
     <item row="1" column="2">
      <widget class="QLineEdit" name="lineEdit_cluster_add"/>
     </item>
-    <item row="3" column="0">
+    <item row="4" column="0">
      <widget class="QLabel" name="label_2">
       <property name="text">
        <string>Password:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>SSH Port:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="2">
+     <widget class="QLineEdit" name="lineEdit_Port">
+      <property name="text">
+       <string>22</string>
       </property>
      </widget>
     </item>
@@ -80,14 +94,14 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>200</y>
+     <y>270</y>
      <width>471</width>
      <height>41</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="1" column="0">
-     <widget class="QPushButton" name="pushButton_2">
+     <widget class="QPushButton" name="pushButton_Install">
       <property name="text">
        <string>Install</string>
       </property>
@@ -106,7 +120,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>170</y>
+     <y>200</y>
      <width>124</width>
      <height>27</height>
     </rect>
@@ -119,13 +133,47 @@
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>170</y>
+     <y>200</y>
      <width>321</width>
      <height>27</height>
     </rect>
    </property>
   </widget>
+  <widget class="QLineEdit" name="lineEdit_InstallPath">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>230</y>
+     <width>321</width>
+     <height>27</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>230</y>
+     <width>124</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Installation Path:</string>
+   </property>
+  </widget>
  </widget>
+ <tabstops>
+  <tabstop>lineEdit_cluster_add</tabstop>
+  <tabstop>lineEdit_login</tabstop>
+  <tabstop>lineEdit_Port</tabstop>
+  <tabstop>lineEdit_PW</tabstop>
+  <tabstop>lineEdit_RSAKeyPW</tabstop>
+  <tabstop>lineEdit_ResName</tabstop>
+  <tabstop>lineEdit_InstallPath</tabstop>
+  <tabstop>pushButton_Install</tabstop>
+  <tabstop>pushButton_3</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
