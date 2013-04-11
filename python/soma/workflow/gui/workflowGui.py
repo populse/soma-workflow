@@ -608,20 +608,79 @@ class NewServerDialog(QtGui.QDialog):
       super(NewServerDialog, self).__init__(parent=parent)
       self.ui = Ui_NewServer()
       self.ui.setupUi(self)
-      self.ui.lineEdit_login.textChanged.connect(self.UpdateResName)
+      self.ui.lineEdit_login.textChanged.connect(self.EventLoginTextChanged)
       self.ui.lineEdit_cluster_add.textChanged.connect(self.UpdateResName)
+      
+      self.ui.pushButton_Install.clicked.connect(self.InstallServer)
+      
+#      from soma.workflow.setup_client2server import GetHomeDirOnServer
+#      
+#      GetHomeDirOnServer()
 
   @QtCore.Slot()
-  def UpdateResName(self):
+  def EventLoginTextChanged(self):
+       self.UpdateResName()
+       self.UpdateInstallationPath()
       
-      strLogin=self.ui.lineEdit_login.displayText()
+  @QtCore.Slot()
+  def UpdateResName(self):
+
+      strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
       
-      strAdd=self.ui.lineEdit_cluster_add.displayText()
+      strAdd=self.ui.lineEdit_cluster_add.text()
       strAdd=unicode(strAdd).encode('utf-8')
       
       ResName=strLogin+"@"+strAdd
       self.ui.lineEdit_ResName.setText(ResName)
+      
+      
+      
+      
+  @QtCore.Slot()
+  def UpdateInstallationPath(self):
+      strLogin=self.ui.lineEdit_login.text()
+      strLogin=unicode(strLogin).encode('utf-8')
+      self.ui.lineEdit_InstallPath.setText("/home/"+strLogin+"/.soma-workflow")
+
+  @QtCore.Slot()
+  def InstallServer(self):
+      from soma.workflow.setup_client2server import InstallSomaWF2Server
+      
+      strLogin=self.ui.lineEdit_login.text()
+      strLogin=unicode(strLogin).encode('utf-8')
+      
+      strPort=self.ui.lineEdit_Port.text()
+      strPort=unicode(strPort).encode('utf-8')
+      intPort=int(strPort)
+      
+      strAdd=self.ui.lineEdit_cluster_add.text()
+      strAdd=unicode(strAdd).encode('utf-8')
+      
+      ResName=self.ui.lineEdit_ResName.text()
+      ResName=unicode(ResName).encode('utf-8')
+      
+      strPW=self.ui.lineEdit_PW.text()
+      strPW=unicode(strPW).encode('utf-8')
+      
+      strPWRSA=self.ui.lineEdit_RSAKeyPW.text()
+      strPWRSA=unicode(strPWRSA).encode('utf-8')
+      
+      strInstallPath=self.ui.lineEdit_InstallPath.text()
+      strInstallPath=unicode(strInstallPath).encode('utf-8')
+      
+      print "strLogin="+strLogin
+      print "strAdd="+strAdd
+      print "ResName="+ResName
+      print "strPW="+strPW
+      print "strPWRSA="+strPWRSA
+      print "intPort="+repr(intPort)
+      print "strInstallPath="+strInstallPath
+      
+      InstallSomaWF2Server(strInstallPath, strLogin,strAdd,userpw=strPW,sshport=intPort)
+      
+
+      
 
 class ServerManagementDialog(QtGui.QDialog):
     
@@ -675,8 +734,10 @@ class ServerManagementDialog(QtGui.QDialog):
         queues=config.get_queues()
         cluster_address=config.get_cluster_address()
         
-        self.ui.combo_queues.addItems(queues)
-        self.ui.lineEdit_cluster_add.setText(cluster_address)
+        if queues!=None:
+            self.ui.combo_queues.addItems(queues)
+        if cluster_address!=None:
+            self.ui.lineEdit_cluster_add.setText(cluster_address)
 
   def add_server(self):
     self.add_widget = NewServerDialog(self)
