@@ -14,6 +14,139 @@ from __future__ import with_statement
 import os
 import sys
 from soma.workflow.connection import SSHExecCmd
+import soma.workflow.configuration as configuration
+from soma.workflow.configuration import WriteOutConfiguration
+
+
+def GetHostNameOnPBSTORQUE(userid,ip_address_or_domain,userpw=''):
+    """To get a list of queue names on torque pbs
+     
+    Args:
+       userid (str):  user name on the server side
+       ip_address_or_domain (str): the ip address or the domain of the server
+       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+
+    Returns:
+       str.  hostname
+       
+    Raises:
+       paramiko.AuthenticationException 
+
+
+    """
+    sshcommand = "hostname"
+
+    outlines=SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw)
+    
+    return outlines[0]
+
+def GetQueueNamesOnPBSTORQUE(userid,ip_address_or_domain,userpw=''):
+    """To get a list of queue names on torque pbs
+     
+    Args:
+       userid (str):  user name on the server side
+       ip_address_or_domain (str): the ip address or the domain of the server
+       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+
+    Returns:
+       list of str.  queue names
+       
+    Raises:
+       paramiko.AuthenticationException 
+
+
+    """
+    sshcommand = "qstat -Q"
+
+    info_queue = []
+
+    outlines=SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw)
+
+    import re
+    sline_idx=0
+    
+    for sline in outlines:
+        
+        if sline_idx >= 2: # skip the first line since it is the header
+            sline = sline.strip()
+            ssline = sline.split()
+            if re.match("^[a-zA-Z]", ssline[0]):
+                info_queue.append(ssline[0])
+        
+        sline_idx += 1
+
+
+    #print repr(info_queue)
+
+    return info_queue
+
+def ConfiguratePaser(config_parser,resource_id,ip_address_or_domain,info_queue,userid):
+    import soma.workflow.configuration as configuration
+    
+    oneline_queues=''
+    for one_q in info_queue:
+        oneline_queues=oneline_queues+one_q+" "
+                    
+    config_parser.add_section(resource_id)
+    config_parser.set(resource_id,configuration.CFG_CLUSTER_ADDRESS,ip_address_or_domain)
+    config_parser.set(resource_id,configuration.CFG_SUBMITTING_MACHINES,ip_address_or_domain)
+    config_parser.set(resource_id,configuration.OCFG_QUEUES,oneline_queues)
+    config_parser.set(resource_id,configuration.OCFG_LOGIN,userid)
+    return config_parser
+
+
+def SetupConfigurationFileOnClient(resource_id,userid,ip_address_or_domain,userpw=""):
+    """To setup the configuration file on the client part
+     
+    Args:
+       userid (str):  user name on the server side
+       ip_address_or_domain (str): the ip address or the domain of the server
+       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+
+    Raises:
+       IOError, ValueError
+
+    It will search the configuration file on the client.
+    If it exists, it will keep the original configuration,
+    if not, it will create the new configuration at $HOME/.soma-workflow.cfg
+
+    """
+    #ouput the configuration file 
+    import sys
+    import os
+    import ConfigParser
+    from ConfigParser import SafeConfigParser
+
+
+    config_file_path = configuration.Configuration.search_config_path()
+    hostname=GetHostNameOnPBSTORQUE(userid,ip_address_or_domain,userpw)
+    #resource_id="%s@%s"%(userid,hostname)
+    #print "resource_id="+resource_id
+    
+    
+    if config_file_path == None:
+        print "No configuration file on the client"
+        
+        info_queue=GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain,userpw)
+        config_parser = SafeConfigParser()
+        home_dir = configuration.Configuration.get_home_dir() 
+        config_file_path = os.path.join(home_dir, ".soma-workflow.cfg")
+        
+        config_parser=ConfiguratePaser(config_parser,resource_id,hostname,info_queue,userid)
+        WriteOutConfiguration(config_parser,config_file_path)
+
+    else :
+        print "Configuration file is found at: "+config_file_path
+        config_parser = SafeConfigParser()
+        config_parser.read(config_file_path)
+        list_sections=config_parser.sections()
+
+        if any( sec ==  resource_id for sec in list_sections):
+            pass
+        else:
+            info_queue=GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain,userpw)
+            config_parser=ConfiguratePaser(config_parser,resource_id,ip_address_or_domain,info_queue,userid)
+            WriteOutConfiguration(config_parser,config_file_path)
 
 
 def CopySomaWF2Server(install_swf_path_server,userid,ip_address_or_domain,userpw='',sshport=22):
@@ -36,18 +169,34 @@ def CopySomaWF2Server(install_swf_path_server,userid,ip_address_or_domain,userpw
     sshcommand="scp -rC '%s' %s@%s:'%s'"%(path2drmaa, userid,ip_address_or_domain,install_swf_path_server_drmaa)
     print "sshcommand="+sshcommand
     os.system(sshcommand)
+    
+    SSHExecCmd("echo >> '%s'"%(os.path.join(install_swf_path_server_soma_workflow,"__init__.py")), userid,ip_address_or_domain,userpw,sshport=sshport)
 
 
-def InstallSomaWF2Server(install_swf_path_server,userid,ip_address_or_domain,userpw='',sshport=22):
+def InstallSomaWF2Server(install_swf_path_server,ResName,userid,ip_address_or_domain,userpw='',sshport=22):
     
     CopySomaWF2Server(install_swf_path_server,userid,ip_address_or_domain,userpw,sshport)
     
-    script2install=os.path.join(install_swf_path_server,"soma","workflow","python","setup_server.py")
+    script2install=os.path.join(install_swf_path_server,"python","soma","workflow","setup_server.py")
     
-#    std_out_lines=SSHExecCmd("python '%s'"%(script2install),userid,ip_address_or_domain,userpw,sshport=sshport)
+    command="python '%s' -r %s "%(script2install, ResName )
+    print "ssh command="+command
+    
+    SSHExecCmd(command,userid,ip_address_or_domain,userpw,wait_output=False,sshport=sshport)
+    
+    SetupConfigurationFileOnClient(ResName, userid,ip_address_or_domain,userpw)
+    
+    
+    
+#    std_out_lines,std_err_lines=SSHExecCmd(command,userid,ip_address_or_domain,userpw,wait_output=True,sshport=sshport,isNeedErr=True)
 #    
+#    print "======std out:====="
 #    for line in std_out_lines:
 #        print line  
+#    print "======std errors:====="
+#    for line in std_err_lines:
+#        print line  
+#    print "======end====="
 
 
 

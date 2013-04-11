@@ -66,7 +66,7 @@ def SetupServerEnvVar(path2somawfpy):
     return envlines2add
 
 
-envlines2add=SetupServerEnvVar(path2somawf)
+envlines2add=SetupServerEnvVar(path2somawfpy)
 
 '''
 Start to check the requirement on the server side

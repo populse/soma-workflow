@@ -61,6 +61,8 @@ OCFG_QUEUES = 'QUEUES'
 
 OCFG_LOGIN = 'LOGIN'
 
+OCFG_SSHPort = 'SSHPort'
+
 #OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
 #in the queue for one user. The engine won't submit more than N job at once. The 
 #also wait for the job to leave the queue before submitting new jobs.

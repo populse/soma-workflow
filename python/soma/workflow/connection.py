@@ -549,7 +549,7 @@ class Tunnel(threading.Thread):
       print 'Tunnel Error. %s: %s' %(type(e), e)
       
       
-def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True,sshport=22):
+def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True,sshport=22,isNeedErr=False):
     if(wait_output==True):
         tag='----xxxx=====start to exec=====xxxxx----'
         sshcommand="echo %s && %s"%(tag,sshcommand)
@@ -559,6 +559,7 @@ def SSHExecCmd(sshcommand,userid,ip_address_or_domain,userpw='',wait_output=True
     stderr  = []
     
     std_out_lines = []
+    std_err_lines = []
     
     import paramiko
     
@@ -586,8 +587,17 @@ You can test the connection in terminal or command: ssh %s@%s" %(e,userid,ip_add
         while sline:
             std_out_lines.append(sline.strip())
             sline=stdout.readline()
+        
+        if isNeedErr:
+            sline=stderr.readline()
+            while sline:
+                std_err_lines.append(sline.strip())
+                sline=stderr.readline()
             
     
     client.close()
     
-    return std_out_lines
+    if isNeedErr:
+        return (std_out_lines, std_err_lines)
+    else:
+        return std_out_lines

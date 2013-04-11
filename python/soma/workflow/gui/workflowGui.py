@@ -677,7 +677,7 @@ class NewServerDialog(QtGui.QDialog):
       print "intPort="+repr(intPort)
       print "strInstallPath="+strInstallPath
       
-      InstallSomaWF2Server(strInstallPath, strLogin,strAdd,userpw=strPW,sshport=intPort)
+      InstallSomaWF2Server(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort)
       
 
       
