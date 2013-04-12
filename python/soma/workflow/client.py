@@ -109,6 +109,9 @@ class WorkflowController(object):
     else:
       self.config = config
 
+    if password == '':
+        password =None
+    
     self.scheduler_config = None
 
     mode = self.config.get_mode()
@@ -133,7 +136,7 @@ class WorkflowController(object):
       sub_machine = submitting_machines[random.randint(0,
                                                     len(submitting_machines)-1)]
       cluster_address = self.config.get_cluster_address()
-      #print 'cluster address: ' + cluster_address + ' submission machine: ' + sub_machine
+      print 'cluster address: ' + cluster_address + ' submission machine: ' + sub_machine
       self._connection = connection.RemoteConnection(login,
                                                     password,
                                                     cluster_address,

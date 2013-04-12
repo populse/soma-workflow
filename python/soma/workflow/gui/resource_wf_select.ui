@@ -261,6 +261,11 @@
     <string>Delete all workflows</string>
    </property>
   </action>
+  <action name="actionServer_Management">
+   <property name="text">
+    <string>Server Management</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

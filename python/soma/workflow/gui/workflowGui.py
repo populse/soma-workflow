@@ -170,6 +170,9 @@ if QT_BACKEND == PYQT:
   Ui_NewServer = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
                                                               'ServerNewDlg.ui' ))[0]
 
+  Ui_RequirePW = uic.loadUiType(os.path.join( os.path.dirname( __file__ ),
+                                                              'RequirePW.ui' ))[0]
+
 else:
   from soma.workflow.gui.ui_job_info import Ui_JobInfo
   from soma.workflow.gui.ui_graph_widget import Ui_GraphWidget
@@ -188,6 +191,8 @@ else:
   from soma.workflow.gui.ui_workflow_engine_cfg_ctrl import Ui_WorkflowEngineConfigController
   # from soma.workflow.gui.ui_server_management import Ui_ServerManagement
   # from soma.workflow.gui.ui_new_server import Ui_NewServer
+  # Ui_RequirePW
+  
 
 
 
@@ -600,9 +605,33 @@ class WorkflowEngineConfigController(QtGui.QWidget):
       self.engine_config.change_queue_limits(queue_name, limit)
   
 
+class RequirePWDialog(QtGui.QDialog):
+  
+  ui = None
+  is_install = False
+  strPW = None
+  strRSAPW = None
+  
+  def __init__(self,    parent=None):
+      super(RequirePWDialog, self).__init__(parent=parent)
+      self.ui = Ui_RequirePW()
+      self.ui.setupUi(self)
+      self.ui.pushButton_ok.clicked.connect(self.EventOK)
+  
+  def EventOK(self):
+      self.strPW=self.ui.lineEdit_PW.text()
+      self.strPW=unicode(self.strPW).encode('utf-8')
+      
+      self.strRSAPW=self.ui.lineEdit_RSAPW.text()
+      self.strRSAPW=unicode(self.strRSAPW).encode('utf-8')
+      
+      self.close()
+      pass
+
 class NewServerDialog(QtGui.QDialog):
   
   ui = None
+  is_install = False
   
   def __init__(self,    parent=None):
       super(NewServerDialog, self).__init__(parent=parent)
@@ -610,21 +639,18 @@ class NewServerDialog(QtGui.QDialog):
       self.ui.setupUi(self)
       self.ui.lineEdit_login.textChanged.connect(self.EventLoginTextChanged)
       self.ui.lineEdit_cluster_add.textChanged.connect(self.UpdateResName)
-      
+
       self.ui.pushButton_Install.clicked.connect(self.InstallServer)
-      
+      self.ui.pushButton_Connect.clicked.connect(self.SetupServerNoInstallation)
 #      from soma.workflow.setup_client2server import GetHomeDirOnServer
-#      
 #      GetHomeDirOnServer()
 
-  @QtCore.Slot()
   def EventLoginTextChanged(self):
        self.UpdateResName()
        self.UpdateInstallationPath()
-      
-  @QtCore.Slot()
-  def UpdateResName(self):
 
+
+  def UpdateResName(self):
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
       
@@ -633,19 +659,16 @@ class NewServerDialog(QtGui.QDialog):
       
       ResName=strLogin+"@"+strAdd
       self.ui.lineEdit_ResName.setText(ResName)
-      
-      
-      
-      
-  @QtCore.Slot()
+
+
   def UpdateInstallationPath(self):
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
       self.ui.lineEdit_InstallPath.setText("/home/"+strLogin+"/.soma-workflow")
 
-  @QtCore.Slot()
+
   def InstallServer(self):
-      from soma.workflow.setup_client2server import InstallSomaWF2Server
+      from soma.workflow.setup_client2server import InstallSomaWF2Server, CheckIfSomaWFonServer
       
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
@@ -669,17 +692,81 @@ class NewServerDialog(QtGui.QDialog):
       strInstallPath=self.ui.lineEdit_InstallPath.text()
       strInstallPath=unicode(strInstallPath).encode('utf-8')
       
-      print "strLogin="+strLogin
-      print "strAdd="+strAdd
-      print "ResName="+ResName
-      print "strPW="+strPW
-      print "strPWRSA="+strPWRSA
-      print "intPort="+repr(intPort)
-      print "strInstallPath="+strInstallPath
+      if CheckIfSomaWFonServer(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort) == True:
+          reply = QtGui.QMessageBox.question(self, 'Message',
+          "Soma-workflow is running on your server. Are you sure to remove it and install it ?", 
+          QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+          
+          if reply ==QtGui.QMessageBox.No:
+              return 
+          
       
-      InstallSomaWF2Server(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort)
+#      print "strLogin="+strLogin
+#      print "strAdd="+strAdd
+#      print "ResName="+ResName
+#      print "strPW="+strPW
+#      print "strPWRSA="+strPWRSA
+#      print "intPort="+repr(intPort)
+#      print "strInstallPath="+strInstallPath
       
-
+      try:
+          InstallSomaWF2Server(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort)
+      except:
+          QtGui.QMessageBox.critical(self, "Oops...", "Oops...Fail to install soma-workflow. Please check the message in the terminal")
+          self.is_install = False
+      else:
+          self.is_install = True
+          QtGui.QMessageBox.information(self, "Information", "Succeed to install soma-workflow on %s"%(strInstallPath))
+          self.close()
+          
+ 
+  def SetupServerNoInstallation(self):
+      
+      from soma.workflow.setup_client2server import SetupSomaWF2Server
+      
+      strLogin=self.ui.lineEdit_login.text()
+      strLogin=unicode(strLogin).encode('utf-8')
+      
+      strPort=self.ui.lineEdit_Port.text()
+      strPort=unicode(strPort).encode('utf-8')
+      intPort=int(strPort)
+      
+      strAdd=self.ui.lineEdit_cluster_add.text()
+      strAdd=unicode(strAdd).encode('utf-8')
+      
+      ResName=self.ui.lineEdit_ResName.text()
+      ResName=unicode(ResName).encode('utf-8')
+      
+      strPW=self.ui.lineEdit_PW.text()
+      strPW=unicode(strPW).encode('utf-8')
+      
+      strPWRSA=self.ui.lineEdit_RSAKeyPW.text()
+      strPWRSA=unicode(strPWRSA).encode('utf-8')
+      
+      strInstallPath=self.ui.lineEdit_InstallPath.text()
+      strInstallPath=unicode(strInstallPath).encode('utf-8')
+      
+#      print "strLogin="+strLogin
+#      print "strAdd="+strAdd
+#      print "ResName="+ResName
+#      print "strPW="+strPW
+#      print "strPWRSA="+strPWRSA
+#      print "intPort="+repr(intPort)
+#      print "strInstallPath="+strInstallPath
+      
+      try:
+          SetupSomaWF2Server(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort)
+      except Exception as e:
+          QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s"%(e))
+          self.is_install = False
+      except:
+          QtGui.QMessageBox.critical(self, "Oops...", "Oops...some unexpected errors..check terminal")
+          self.is_install = False
+      else:
+          self.is_install = True
+          QtGui.QMessageBox.information(self, "Information", "Succeed to connect soma-workflow")
+          self.close()
+      
       
 
 class ServerManagementDialog(QtGui.QDialog):
@@ -691,12 +778,22 @@ class ServerManagementDialog(QtGui.QDialog):
   add_widget = None
 
   def __init__(self,    parent=None):
-
+      
     super(ServerManagementDialog, self).__init__(parent=parent)
 
     self.ui = Ui_ServerManagement()
     self.ui.setupUi(self)
-    
+    self.ui.btn_add_server.clicked.connect(self.add_server)
+    self.ui.btn_remove_server.clicked.connect(self.remove_server)
+    self.ui.btn_rm_serveronclient.clicked.connect(self.remove_server_on_client)
+
+    self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
+
+    self.UpdateInterface()
+
+  @QtCore.Slot()
+  def UpdateInterface(self):
+      
     try:
       self.config_file_path = configuration.Configuration.search_config_path()
       self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
@@ -705,45 +802,97 @@ class ServerManagementDialog(QtGui.QDialog):
       QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
       self.close()
     
+    self.ui.combo_resources.clear()
     self.ui.combo_resources.addItems(self.resource_list)
     self.ui.combo_resources.setEnabled(True)
-    self.ui.btn_add_server.clicked.connect(self.add_server)
 
-    self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
     self.update_login()
 
+  @QtCore.Slot()
   def update_login(self):
     resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
-    login = self.login_list[resource_id]
+    if resource_id == '' or resource_id == None :
+        return
+    
+    login= None
+    if self.login_list.has_key(resource_id):
+        login = self.login_list[resource_id]
+        
     if login != None:
       self.ui.lineEdit_login.setText(login)
     else:
       self.ui.lineEdit_login.clear()
     
-    while self.ui.combo_queues.count()  >   0:
-        self.ui.combo_queues.removeItem(0)
-        
+    self.ui.combo_queues.clear()
+    self.ui.lineEdit_InstallPath.clear()
+
     config  =   None
     
     if self.config_file_path != None:
         config=configuration.Configuration.load_from_file(resource_id,self.config_file_path)
+        
+        
     self.ui.lineEdit_cluster_add.clear()
-
+    
+    
 
     if config != None:
         queues=config.get_queues()
         cluster_address=config.get_cluster_address()
+        installpath=config.get_res_install_path()
         
         if queues!=None:
             self.ui.combo_queues.addItems(queues)
         if cluster_address!=None:
             self.ui.lineEdit_cluster_add.setText(cluster_address)
+        if installpath!=None:
+            self.ui.lineEdit_InstallPath.setText(installpath)
 
+  @QtCore.Slot()
   def add_server(self):
     self.add_widget = NewServerDialog(self)
-    self.add_widget.show()
+    self.add_widget.exec_()
+    self.UpdateInterface()
 
+  @QtCore.Slot()
+  def remove_server(self):
+    from soma.workflow.setup_client2server import RemoveSomaWF2Server
+    
+    reply = QtGui.QMessageBox.question(self, 'Message',
+          "Are you sure to remove soma-workflow on your server ? "
+          "(Please make sure you are **NOT** connecting to the server that is going to be removed)", 
+          QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+    
+    if reply ==QtGui.QMessageBox.No:
+              return 
+    
+    resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
+    
+    
+    if self.config_file_path != None:
+        config=configuration.Configuration.load_from_file(resource_id,self.config_file_path)
+        sshport=config.get_ssh_port()
+        installpath=config.get_res_install_path()
+        login = self.login_list[resource_id]
+        cluster_add = config.get_cluster_address()
+        
+        getPWDlg=RequirePWDialog(self)
+        RemoveSomaWF2Server(installpath,resource_id,login,cluster_add,getPWDlg.strPW,int(sshport))
+    
+    self.UpdateInterface()
+    
+    QtGui.QMessageBox.Information(self,"Information","Finish to remove soma-workflow on the cluster.")
+  
+  @QtCore.Slot()
+  def remove_server_on_client(self):
+      from soma.workflow.setup_client2server import RemoveResNameOnConfigureFile
       
+      resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
+      if resource_id != None:
+          RemoveResNameOnConfigureFile(resource_id)
+      
+      self.UpdateInterface()
+
 class ConnectionDialog(QtGui.QDialog):
 
   def __init__(self, 
@@ -765,7 +914,6 @@ class ConnectionDialog(QtGui.QDialog):
     if resource_id != None:
       index = resource_list.index(resource_id)
       self.ui.combo_resources.setCurrentIndex(index)
-      
 
     self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
     self.update_login()
@@ -796,6 +944,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
   workflow_info_widget = None
   
+  
+
+  
   def __init__(self, 
                model, 
                user=None, 
@@ -803,6 +954,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                computing_resource=None,
                parent=None, 
                flags=0):
+    
     super(SomaWorkflowWidget, self).__init__(parent)
 
     self.ui = Ui_ResourceWfSelect()
@@ -821,13 +973,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.connect(self.model, QtCore.SIGNAL('connection_closed_error'), self.reconnectAfterConnectionClosed)
     self.connect(self.model, QtCore.SIGNAL('global_workflow_state_changed()'), self.update_workflow_status_icons)
 
-    try:
-      self.config_file_path = configuration.Configuration.search_config_path()
-      self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
-      self.login_list = configuration.Configuration.get_logins(self.config_file_path)
-    except ConfigurationError, e:
-      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
-      self.close()
+    self.UpdateLocalparameters()
   
     self.ui.combo_resources.addItems(self.resource_list)
     
@@ -850,6 +996,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.ui.action_save.triggered.connect(self.saveWorkflow)
     self.ui.action_restart.triggered.connect(self.restart_workflow)
     self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
+    self.ui.actionServer_Management.triggered.connect(self.openServerManagement)
     
     self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(self.workflowSelectionChanged)
     self.ui.combo_resources.currentIndexChanged.connect(self.resourceSelectionChanged)
@@ -879,7 +1026,15 @@ class SomaWorkflowWidget(QtGui.QWidget):
     if self.model.current_resource_id != None:
       self.currentConnectionChanged()
 
-    
+  def UpdateLocalparameters(self):
+      
+    try:
+      self.config_file_path = configuration.Configuration.search_config_path()
+      self.resource_list = configuration.Configuration.get_configured_resources(self.config_file_path)
+      self.login_list = configuration.Configuration.get_logins(self.config_file_path)
+    except ConfigurationError, e:
+      QtGui.QMessageBox.critical(self, "Configuration problem", "%s" %(e))
+      self.close()
 
   def closeEvent(self, event):
     self.emit(QtCore.SIGNAL("closing()"))
@@ -949,8 +1104,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     self.connect_to_controller(resource_id, login, password, rsa_key_pass)
     #pass
-    
-    
+
+  @QtCore.Slot()
+  def openServerManagement(self):
+    self.server_widget = ServerManagementDialog(self)
+    self.server_widget.exec_()
+    #pass
+        
   @QtCore.Slot()
   def openWorkflow(self):
     file_path = QtGui.QFileDialog.getOpenFileName(self, "Open a workflow")
@@ -1259,6 +1419,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
     '''
     returns a tuple (resource_id, connection)
     '''
+      
+    self.UpdateLocalparameters()
+    
     connection_invalid = True
     try_again = True
     while connection_invalid or try_again: 
@@ -1628,9 +1791,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
     self.model.delete_connection(resource_id)
     return False
 
-    
-
-
 
 class MainWindow(QtGui.QMainWindow):
 
@@ -1668,8 +1828,8 @@ class MainWindow(QtGui.QMainWindow):
 
     self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
 
-    self.server_widget = ServerManagementDialog(self)
-    self.server_widget.show()
+    
+    
     
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
@@ -1769,7 +1929,9 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.tool_bar.addSeparator()
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_transfer_infiles)
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_transfer_outfiles)
+    self.ui.tool_bar.addAction(self.sw_widget.ui.actionServer_Management)
     self.ui.tool_bar.addSeparator()
+    
     
     self.showMaximized()
 

@@ -62,6 +62,7 @@ OCFG_QUEUES = 'QUEUES'
 OCFG_LOGIN = 'LOGIN'
 
 OCFG_SSHPort = 'SSHPort'
+OCFG_INSTALLPATH = 'INSTALLPATH'
 
 #OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
 #in the queue for one user. The engine won't submit more than N job at once. The 
@@ -159,6 +160,10 @@ class Configuration(observer.Observable):
   _login = None
 
   _native_specification = None
+  
+  _sshport = 22
+  
+  _res_install_path = None
 
   parallel_job_config = None
 
@@ -180,7 +185,9 @@ class Configuration(observer.Observable):
                queue_limits=None,
                drmaa_implementation=None,
                login=None,
-               native_specification=None                
+               native_specification=None,
+               sshport=22,
+               res_install_path=None
                ):
     '''
     * resource_id *string*
@@ -235,6 +242,12 @@ class Configuration(observer.Observable):
       Native specification applied to every jobs submitted to the resource 
       unless a different value is specified in the Job attribute 
       native_specification.
+      
+    * sshport *int*
+      ssh port to remote machine.
+    
+    * res_install_path *string*
+      soma-workflow installation path on the resource server
     '''
 
     super(Configuration, self).__init__()
@@ -264,6 +277,9 @@ class Configuration(observer.Observable):
     self._drmaa_implementation = drmaa_implementation
     self.parallel_job_config = None
     self.path_translation = None
+    
+    self._sshport = sshport
+    self._res_install_path =res_install_path
 
 
   @staticmethod
@@ -344,7 +360,7 @@ class Configuration(observer.Observable):
       config_parser = ConfigParser.ConfigParser()
       config_parser.read(config_path)
       if not config_parser.has_section(resource_id):
-        raise ConfigurationError("Can not find section " + resource_id + " "
+        raise ConfigurationError("Can not find section " + repr(resource_id) + " "
                                 "in configuration file: " + config_path)
 
       scheduler_type = None
@@ -369,8 +385,40 @@ class Configuration(observer.Observable):
       return config
 
 
+  
   def get_scheduler_type(self):
     return self._scheduler_type
+
+  def get_res_install_path(self):
+    if self._config_parser == None or self._res_install_path: 
+      return self._res_install_path
+
+    if not self._config_parser.has_option(self._resource_id,
+                                          OCFG_INSTALLPATH):
+      raise ConfigurationError("Can not find the configuration item %s for the "
+                               "resource %s, in the configuration file %s." %
+                               (OCFG_INSTALLPATH,
+                                self._resource_id,
+                                self._config_path))
+    self._res_install_path = self._config_parser.get(self._resource_id, OCFG_INSTALLPATH)
+                        
+    return self._res_install_path
+
+  def get_ssh_port(self):
+        if self._config_parser == None or self._sshport: 
+          return self._sshport
+    
+        if not self._config_parser.has_option(self._resource_id,
+                                              OCFG_SSHPort):
+          raise ConfigurationError("Can not find the configuration item %s for the "
+                                   "resource %s, in the configuration file %s." %
+                                   (OCFG_SSHPort,
+                                    self._resource_id,
+                                    self._config_path))
+        self._sshport = self._config_parser.get(self._resource_id, OCFG_SSHPort)
+                            
+        return self._sshport
+
 
   def get_submitting_machines(self):
     if self._config_parser == None or self._submitting_machines: 

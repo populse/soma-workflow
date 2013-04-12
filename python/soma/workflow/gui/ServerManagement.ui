@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>501</width>
-    <height>325</height>
+    <width>506</width>
+    <height>329</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,7 +43,7 @@
     <item row="0" column="0">
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>Ressource:</string>
+       <string>Server:</string>
       </property>
      </widget>
     </item>
@@ -88,21 +88,28 @@
      <x>20</x>
      <y>250</y>
      <width>471</width>
-     <height>61</height>
+     <height>62</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout_2">
-    <item row="1" column="0">
+    <item row="2" column="0">
      <widget class="QPushButton" name="btn_add_server">
       <property name="text">
        <string>Add Server</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="2">
-     <widget class="QPushButton" name="pushButton_3">
+    <item row="2" column="2">
+     <widget class="QPushButton" name="btn_remove_server">
       <property name="text">
        <string>Remove Server</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="3">
+     <widget class="QPushButton" name="btn_rm_serveronclient">
+      <property name="text">
+       <string>Remove Server Only on Client</string>
       </property>
      </widget>
     </item>

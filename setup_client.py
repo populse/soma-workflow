@@ -176,7 +176,6 @@ def SetupConfigurationFileOnClient(userid,ip_address_or_domain,userpw=""):
     import ConfigParser
     from ConfigParser import SafeConfigParser
     
-
     
     import soma.workflow.configuration as configuration
 
