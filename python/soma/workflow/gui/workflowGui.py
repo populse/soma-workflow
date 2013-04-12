@@ -2975,7 +2975,8 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
     else:
       parent_item = parent.internalPointer()
       if row < len(parent_item.children):
-        return self.createIndex(row, column, self.workflow.items[parent_item.children[row]])
+        if parent_item.children[row] < len(self.workflow.items):
+            return self.createIndex(row, column, self.workflow.items[parent_item.children[row]])
       
     return QtCore.QModelIndex()
     
