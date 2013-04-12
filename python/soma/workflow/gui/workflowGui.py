@@ -766,8 +766,8 @@ class NewServerDialog(QtGui.QDialog):
           self.is_install = True
           QtGui.QMessageBox.information(self, "Information", "Succeed to connect soma-workflow")
           self.close()
-      
-      
+
+
 
 class ServerManagementDialog(QtGui.QDialog):
     
@@ -881,7 +881,7 @@ class ServerManagementDialog(QtGui.QDialog):
     
     self.UpdateInterface()
     
-    QtGui.QMessageBox.Information(self,"Information","Finish to remove soma-workflow on the cluster.")
+    QtGui.QMessageBox.information(self,"Information","Finish to remove soma-workflow on the cluster.")
   
   @QtCore.Slot()
   def remove_server_on_client(self):
@@ -3273,7 +3273,7 @@ class ApplicationModel(QtCore.QObject):
 
     self.tmp_stderrout_dir = os.path.join(home_dir, ".soma-workflow")
     if not os.path.isdir(self.tmp_stderrout_dir):
-      	os.makedir(self.tmp_stderrout_dir)
+      	os.makedirs(self.tmp_stderrout_dir)
 
     if resource_pool != None:
       self.resource_pool = resource_pool

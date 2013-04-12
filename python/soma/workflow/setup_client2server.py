@@ -2,8 +2,10 @@
 
 '''
 @author: Jinpeng LI
-@contact: mr.li.jinpeng@gmail.com
-@organization: CEA, I2BM, Neurospin, Gif-sur-Yvette, France
+@contact: mr.li.jinpeng@gmail.coms
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
+@organization: U{IFR 49<http://www.ifr49.org>}
 
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
