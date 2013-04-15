@@ -7,7 +7,7 @@
 /PyName=DrmaaError/
 {
 %TypeHeaderCode
-  #include "drmaajobs.h"
+  #include <soma/workflow/drmaajobs.h>
 %End
 %RaiseCode
         const char *detail = sipExceptionRef.what();
@@ -22,7 +22,7 @@
 class DrmaaJobs {
 
 %TypeHeaderCode
- #include "drmaajobs.h"
+ #include <soma/workflow/drmaajobs.h>
 %End
 
 public:
