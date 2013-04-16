@@ -283,9 +283,9 @@ class WorkflowEngineLoop(object):
                                                   constants.FILES_ON_CR)
                      
               ended_jobs[job.job_id] = job
-              #self.logger.debug("  => exit_status " + repr(job.exit_status))
-              #self.logger.debug("  => exit_value " + repr(job.exit_value))
-              #self.logger.debug("  => signal " + repr(job.terminating_signal))
+              self.logger.debug("  => exit_status " + repr(job.exit_status))
+              self.logger.debug("  => exit_value " + repr(job.exit_value))
+              self.logger.debug("  => signal " + repr(job.terminating_signal))
 
 
         # --- 3. Get back transfered status ----------------------------------
