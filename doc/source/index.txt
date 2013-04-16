@@ -1,0 +1,116 @@
+.. soma-workflow documentation master file, created by
+   sphinx-quickstart on Fri Jan 28 10:45:12 2011.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+
+
+
+Soma-workflow: A unified and simple interface to parallel computing resource
+=============================================================================
+
+  ..
+    .. warning:: Documentation under construction.
+
+Soma-workflow release logs and communication can be found at the project `main page. <http://brainvisa.info/soma-workflow>`_
+
+Contents
+========
+
+.. toctree::
+   :maxdepth: 1
+
+   concepts.txt
+   gui.txt
+   examples.txt
+   MPI_workflow_runner.txt
+   errors_troubleshooting.txt
+   status_list.txt
+   workflow_creation.txt
+   client_API.txt
+   install_config.txt
+ 
+Main Features
+=============
+
+  **Unified interface to multiple computing resources:** 
+    Submission of jobs or workflows with an unique interface to various 
+    parallel resources: multiple core machines or clusters which can be 
+    managed by various systems (such as Grid Engine, Condor, Torque/PBS, LSF..)
+
+  ..
+    .. image:: images/soma_workflow_general.*
+      :scale: 40
+
+
+  **Workflow management:**
+    Soma-workflow provides the possibility to submit a set of tasks (called jobs) 
+    with execution dependencies without dealing with individual task submission.
+
+
+    .. figure:: images/workflow_example.*
+      :scale: 50
+    
+      *Workflow example*
+
+  **Python API and Graphical User Interface:**
+    The Python API was designed to be easily used by non expert user, but also
+    complete to meet external software needs: submission, control and monitoring 
+    of jobs and workflows. The GUI provides an easy and quick way of monitoring 
+    workflows on various computing resources. The workflows can also be 
+    submitted and controlled using the GUI.
+
+    .. figure:: images/API_overview.*
+      :scale: 50 
+
+      *Overview of Soma-workflow python API*
+
+    .. figure:: images/gui_overview.*
+      :scale: 50 
+
+      *Overview of Soma-workflow graphical interface*
+
+
+
+    
+
+  **Quick start on multiple core machines:**
+    Soma-workflow is directly operational on any multiple core machine. 
+    
+  **Transparent remote access to computing resources:** 
+    When the computing resource is remote, Soma-workflow can be used as a   
+    client-server application. The communication with a remote computing 
+    resource is done transparently for the user through a ssh port forwarding 
+    tunnel. The client/server architecture enables the user to close the client 
+    application at any time. The workflows and jobs execution are not stopped. 
+    The user can open a client at any time to check the status of his 
+    work.
+
+  **File transfer and file path mapping tools:** 
+    If the user's machine and the remote computing resource do not have a shared 
+    file system, Soma-workflow provides tools to handle file transfers and/or 
+    path name matchings.
+
+
+  
+   
+   
+   
+   
+   
+
+..
+  light_mode_config.txt
+  client_install_config.txt
+  server_install_config.txt
+  * :ref:`genindex`
+  * :ref:`modindex`
+
+* :ref:`search`
+
+..
+  :Release: |release|
+  :Date: |today|
+
+
+
