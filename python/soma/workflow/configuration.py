@@ -395,12 +395,9 @@ class Configuration(observer.Observable):
 
     if not self._config_parser.has_option(self._resource_id,
                                           OCFG_INSTALLPATH):
-      raise ConfigurationError("Can not find the configuration item %s for the "
-                               "resource %s, in the configuration file %s." %
-                               (OCFG_INSTALLPATH,
-                                self._resource_id,
-                                self._config_path))
-    self._res_install_path = self._config_parser.get(self._resource_id, OCFG_INSTALLPATH)
+      self._res_install_path = None
+    else:
+      self._res_install_path = self._config_parser.get(self._resource_id, OCFG_INSTALLPATH)
                         
     return self._res_install_path
 
@@ -408,15 +405,12 @@ class Configuration(observer.Observable):
         if self._config_parser == None or self._sshport: 
           return self._sshport
     
-        if not self._config_parser.has_option(self._resource_id,
+        if self._config_parser.has_option(self._resource_id,
                                               OCFG_SSHPort):
-          raise ConfigurationError("Can not find the configuration item %s for the "
-                                   "resource %s, in the configuration file %s." %
-                                   (OCFG_SSHPort,
-                                    self._resource_id,
-                                    self._config_path))
-        self._sshport = self._config_parser.get(self._resource_id, OCFG_SSHPort)
-                            
+          self._sshport = self._config_parser.get(self._resource_id, OCFG_SSHPort)
+        else:
+          self._sshport = "22"
+                   
         return self._sshport
 
 

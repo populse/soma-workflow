@@ -28,8 +28,8 @@ if __name__=="__main__":
   import soma.workflow.scheduler
   import soma.workflow.connection 
   import soma.workflow.configuration
-  from soma.workflow.errors import EngineError
-  from soma.workflow.database_server import WorkflowDatabaseServer
+
+
 
   ###### WorkflowEngine pyro object
   class ConfiguredWorkflowEngine(Pyro.core.SynchronizedObjBase, 

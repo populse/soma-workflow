@@ -30,17 +30,18 @@ import os
 # containing the full path to the drmaa library
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
+DRMMA_LIB_FOUND=True
+
 if _drmaa_lib_env_name in os.environ:
     libpath = os.environ[_drmaa_lib_env_name]
 else:
     libpath = find_library('drmaa')
 
 if libpath is None:
-    errmsg = ' '.join(('could not find drmaa library.',
-                       'Please specify its full',
-                       'path using the environment variable',
-                       _drmaa_lib_env_name))
-    raise RuntimeError(errmsg)
+
+    DRMMA_LIB_FOUND=False
+
+ 
 
 _lib = CDLL(libpath, mode=RTLD_GLOBAL)
 
