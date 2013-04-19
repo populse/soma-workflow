@@ -23,7 +23,7 @@
 
 from ctypes import *
 from ctypes.util import find_library
-from drmaa.errors import error_check, error_buffer
+from somadrmaa.errors import error_check, error_buffer
 import os
 
 # the name of the OS environment variable optionally

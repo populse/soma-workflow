@@ -100,7 +100,7 @@ class DrmaaCTypesTest(unittest.TestCase):
 
 #    def test_ctype_drmaa_session(self):
 #        import drmaa
-#        self._drmaa=drmaa.Session()
+#        self._drmaa=somadrmaa.Session()
 #        self._drmaa.initialize()
 #        self._drmaa.exit()
 #

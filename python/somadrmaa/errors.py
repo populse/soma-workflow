@@ -22,7 +22,7 @@
 """drmaa errors"""
 
 from ctypes import create_string_buffer
-from drmaa.const import ERROR_STRING_BUFFER
+from somadrmaa.const import ERROR_STRING_BUFFER
 
 class DrmaaException(Exception):
     """A common ancestor to all DRMAA Error classes."""

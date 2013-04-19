@@ -47,8 +47,8 @@ if not ( libpath is None ) :
     DRMMA_LIB_FOUND=True
 
 if DRMMA_LIB_FOUND==True:
-    from drmaa.errors import *
-    from drmaa.const import JobControlAction
+    from somadrmaa.errors import *
+    from somadrmaa.const import JobControlAction
 
 
 try:
@@ -144,7 +144,7 @@ if DRMMA_LIB_FOUND==True:
         is_sleeping = False
   
         def submit_simple_test_job(self, outstr,out_o_file,out_e_file):
-          import drmaa
+          import somadrmaa
           # patch for the PBS-torque DRMAA implementation
           if self._drmaa_implementation == "PBS":
         
@@ -175,7 +175,7 @@ if DRMMA_LIB_FOUND==True:
           '''
           Creates a fresh Drmaa session.
           '''
-          import drmaa
+          import somadrmaa
   
           self.is_sleeping = False
   
@@ -191,7 +191,7 @@ if DRMMA_LIB_FOUND==True:
                      tmp_file_path=None, 
                      configured_native_spec=None):
   
-          import drmaa
+          import somadrmaa
   
           self.logger = logging.getLogger('ljp.drmaajs')
           
@@ -248,12 +248,12 @@ if DRMMA_LIB_FOUND==True:
           '''
           Creates a fresh Drmaa session.
           '''
-          import drmaa
+          import somadrmaa
   
           self.is_sleeping = False
           
           if not self._drmaa:
-            self._drmaa=drmaa.Session()
+            self._drmaa=somadrmaa.Session()
             self._drmaa.initialize()
   
         def _setDrmaaParallelJob(self, 

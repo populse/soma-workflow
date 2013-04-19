@@ -22,9 +22,9 @@
 """internal helpers"""
 
 import ctypes as _ct
-from drmaa.wrappers import *
-from drmaa.errors import error_buffer
-import drmaa.const as const
+from somadrmaa.wrappers import *
+from somadrmaa.errors import error_buffer
+import somadrmaa.const as const
 
 _BUFLEN=const.ATTR_BUFFER
 

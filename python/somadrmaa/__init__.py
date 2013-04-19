@@ -36,11 +36,11 @@ except ImportError: # pre 2.6 behaviour
 
 __version__ = "$Revision$"[11:-2]
 
-import drmaa.const as _c
-from drmaa.const import JobState, JobControlAction, JobSubmissionState
-import drmaa.wrappers as _w
-import drmaa.helpers as _h
-from drmaa.errors import (AlreadyActiveSessionException,
+import somadrmaa.const as _c
+from somadrmaa.const import JobState, JobControlAction, JobSubmissionState
+import somadrmaa.wrappers as _w
+import somadrmaa.helpers as _h
+from somadrmaa.errors import (AlreadyActiveSessionException,
                           AuthorizationException,
                           ConflictingAttributeValuesException,
                           DefaultContactStringException,

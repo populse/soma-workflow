@@ -202,7 +202,7 @@ def CopySomaWF2Server(install_swf_path_server,userid,ip_address_or_domain,userpw
     print std_out_lines
     
     path2somawf = os.path.dirname(os.path.realpath(__file__))
-    path2drmaa = os.path.join(path2somawf,"..","..","drmaa")
+    path2drmaa = os.path.join(path2somawf,"..","..","somadrmaa")
     
     sshcommand="scp -rC '%s' %s@%s:'%s'"%(path2somawf, userid,ip_address_or_domain,install_swf_path_server_soma_workflow)
     print "sshcommand="+sshcommand
