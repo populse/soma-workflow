@@ -32,7 +32,7 @@ Visit Soma-workflow on http://neurospin.github.com/soma-workflow
 Installation
 ------------
 
-Before install soma-workflow, soma softwares are required: 
+Before install soma-workflow, some softwares are required: 
 
 * Python version >= 2.7.3 and < 3.0
 * Qt version 4.6.2 or more, PyQt version 4.7.2 or more or more are required if you want to use the graphical interface 
