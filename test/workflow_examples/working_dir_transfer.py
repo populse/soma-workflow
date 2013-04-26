@@ -8,10 +8,10 @@ import os
 my_working_directory = "/tmp/my_working_directory"
 if not os.path.isdir(my_working_directory):
   os.mkdir(my_working_directory)
-f = open("/tmp/my_working_directory/myfile1", "wb")
+f = open(my_working_directory+"/myfile1", "wb")
 f.write("Content of my file1 \n")
 f.close()
-f = open("/tmp/my_working_directory/myfile2", "wb")
+f = open(my_working_directory+"/myfile2", "wb")
 f.write("Content of my file2 \n")
 f.close()
 
