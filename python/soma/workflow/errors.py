@@ -79,3 +79,9 @@ class SerializationError(Exception):
   pass
 
 
+class NoDrmaaLibError(Exception):
+  '''
+  Raised if no drmaa libary is found
+  '''
+  pass
+

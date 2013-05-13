@@ -668,7 +668,7 @@ class NewServerDialog(QtGui.QDialog):
 
 
   def InstallServer(self):
-      from soma.workflow.setup_client2server import InstallSomaWF2Server, CheckIfSomaWFonServer
+      from soma.workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
       
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
@@ -692,7 +692,7 @@ class NewServerDialog(QtGui.QDialog):
       strInstallPath=self.ui.lineEdit_InstallPath.text()
       strInstallPath=unicode(strInstallPath).encode('utf-8')
       
-      if CheckIfSomaWFonServer(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort) == True:
+      if check_if_somawfdb_on_server(ResName, strLogin,strAdd,userpw=strPW,sshport=intPort) :
           reply = QtGui.QMessageBox.question(self, 'Message',
           "Soma-workflow is running on your server. Are you sure to remove it and install it ?", 
           QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -756,7 +756,7 @@ class NewServerDialog(QtGui.QDialog):
       
       try:
           SetupSomaWF2Server(strInstallPath, ResName, strLogin,strAdd,userpw=strPW,sshport=intPort)
-      except Exception as e:
+      except Exception, e:
           QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s"%(e))
           self.is_install = False
       except:
@@ -1191,6 +1191,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         ui.lineedit_wf_name.setText("")
       else:
         ui.lineedit_wf_name.setText(self.model.current_workflow().server_workflow.name)
+        
       ui.dateTimeEdit_expiration.setDateTime(datetime.now() + timedelta(days=5))
       
       
@@ -3320,16 +3321,20 @@ class ApplicationModel(QtCore.QObject):
   def threaded_update(self):
     if self.update_thread != None:
           # flush running update
-      self.update_thread.wait(10000)
+      if not self.update_thread.isFinished():
+        return # still updating, we will do it again later
     self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=None)
     self.update_thread.start(QtCore.QThread.LowPriority)
-  
+
   @QtCore.Slot()
   def wait_for_thread(self):
     if self.update_thread != None:
       if self.update_thread.isRunning():
-        self.update_thread.wait(10000)
-  
+        if not self.update_thread.wait(10000):
+          self.update_thread.terminate()
+          self.update_thread.wait()
+      self.update_thread = None
+
 
   def update(self):
     with self._lock:

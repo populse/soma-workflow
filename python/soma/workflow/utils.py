@@ -12,6 +12,51 @@
 import copy
 from soma.workflow.client import Workflow, Group, Job
 
+def DetectFindLib(env_name, libname):
+    '''Try to find libname using ctype
+    
+    '''
+    import ctypes
+    from ctypes.util import find_library
+    from ctypes import CDLL
+    from ctypes import cdll
+    import os
+    import glob
+    
+    libpath=None
+    IS_LIB_FOUND=True
+    _lib = None
+
+    if env_name in os.environ:
+        libpath = os.environ[env_name]
+    else:
+        libpath = find_library(libname)
+    
+    libsoname="lib"+libname+".so"
+    if "LD_LIBRARY_PATH" in os.environ:
+        ld_lib_paths=os.environ["LD_LIBRARY_PATH"]
+        ld_lib_paths=ld_lib_paths.split(os.pathsep)
+        for ld_lib_path in ld_lib_paths:
+            files=glob.glob(os.path.join(ld_lib_path,libsoname))
+            if(len(files)>=1):
+                libpath=files[0]
+                break
+
+
+    if libpath is None:
+#         try:
+#             soname="lib"+libname+".so"
+#             _lib=cdll.LoadLibrary(soname,mode=ctypes.RTLD_GLOBAL)
+#         except OSError, e:
+#             IS_LIB_FOUND=False
+#         except:
+#             IS_LIB_FOUND=False
+        IS_LIB_FOUND=False
+    else :
+        _lib = CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
+        
+    return (IS_LIB_FOUND,_lib)
+
 
 def process_group(group, to_remove, name):
   new_group = []

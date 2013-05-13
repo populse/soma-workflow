@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import with_statement # allow python 2.5 to work
 
 '''
 @author: Soizic Laguitton
@@ -1005,7 +1006,7 @@ def AddLineDefintions2BashrcFile(lines2add,path2bashrc=""):
     try:
         with open(path2bashrc) as f:
             content = f.readlines()
-    except IOError as e:
+    except IOError, e:
         print "I/O error({0}): {1}".format(e.errno, e.strerror)
         print "%s does not exist, the system will create the new file"% (path2bashrc)
     except ValueError:
@@ -1032,7 +1033,7 @@ def AddLineDefintions2BashrcFile(lines2add,path2bashrc=""):
         with open(path2bashrc,'w') as f:
             for cline in content:
                 f.write(cline+"\n")
-    except IOError as e:
+    except IOError, e:
         print "I/O error({0}): {1}".format(e.errno, e.strerror)
         print "The system cannot write the file %s. Please make sure it can be wrote. "% (path2bashrc)
         raise e
@@ -1047,7 +1048,7 @@ def WriteOutConfiguration(config_parser,config_path):
     try:
         with open(config_path,'w') as cfgfile:
             config_parser.write(cfgfile)
-    except IOError as e:
+    except IOError, e:
         print "I/O error({0}): {1}".format(e.errno, e.strerror)
         print "The system cannot write the file %s. Please make sure that it can be written. "% (config_path)
         raise e

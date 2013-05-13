@@ -261,7 +261,13 @@ Server creation
 
 2. Start a Pyro name server with the command pyro-ns -m 
 
-4. Run the command python -m soma.workflow.start_database_server "Titan". The command will:
+4. Run the command:
+
+  ::
+
+    python -m soma.workflow.start_database_server "Titan"
+
+  The command will:
 
   * start the database server
   * create the SQLite database if the database file does not exist 

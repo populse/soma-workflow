@@ -24,26 +24,14 @@
 from ctypes import *
 from ctypes.util import find_library
 from somadrmaa.errors import error_check, error_buffer
+from soma.workflow.utils import DetectFindLib
 import os
 
-# the name of the OS environment variable optionally
-# containing the full path to the drmaa library
+
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
-DRMMA_LIB_FOUND=True
+(DRMMA_LIB_FOUND,_lib)=DetectFindLib(_drmaa_lib_env_name,'drmaa')
 
-if _drmaa_lib_env_name in os.environ:
-    libpath = os.environ[_drmaa_lib_env_name]
-else:
-    libpath = find_library('drmaa')
-
-if libpath is None:
-
-    DRMMA_LIB_FOUND=False
-
- 
-
-_lib = CDLL(libpath, mode=RTLD_GLOBAL)
 
 STRING = c_char_p
 size_t = c_ulong
@@ -56,8 +44,10 @@ drmaa_exit = _lib.drmaa_exit
 drmaa_exit.restype = error_check
 drmaa_exit.argtypes = [STRING, size_t]
 
+
 def init(contact=None):
     return _lib.drmaa_init(contact, error_buffer, sizeof(error_buffer))
+
 
 _lib.drmaa_exit.argtypes = [c_char_p, c_size_t]
 _lib.drmaa_init.restype = error_check

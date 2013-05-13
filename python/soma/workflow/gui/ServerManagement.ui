@@ -109,7 +109,7 @@
     <item row="2" column="3">
      <widget class="QPushButton" name="btn_rm_serveronclient">
       <property name="text">
-       <string>Remove Server Only on Client</string>
+       <string>Remove Server on Client</string>
       </property>
      </widget>
     </item>

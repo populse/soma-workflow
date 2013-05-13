@@ -26,27 +26,13 @@ import socket
 import soma.workflow.constants as constants
 from soma.workflow.errors import DRMError
 from soma.workflow.configuration import LocalSchedulerCfg
-from ctypes.util import find_library
+from soma.workflow.utils import DetectFindLib
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
-DRMMA_LIB_FOUND=False
+(DRMAA_LIB_FOUND,_lib)=DetectFindLib(_drmaa_lib_env_name,'drmaa')
 
-libpath = None
-
-if _drmaa_lib_env_name in os.environ:
-    libpath = os.environ[_drmaa_lib_env_name]
-else:
-    try:
-      from ctypes.util import find_library
-      libpath = find_library('drmaa')
-    except ImportError:
-      pass
-
-if not ( libpath is None ) :
-    DRMMA_LIB_FOUND=True
-
-if DRMMA_LIB_FOUND==True:
+if DRMAA_LIB_FOUND==True:
     from somadrmaa.errors import *
     from somadrmaa.const import JobControlAction
 
@@ -115,7 +101,7 @@ class Scheduler(object):
     '''
     raise Exception("Scheduler is an abstract class!")
 
-if DRMMA_LIB_FOUND==True:
+if DRMAA_LIB_FOUND==True:
 
   class DrmaaCTypes(Scheduler):
         '''

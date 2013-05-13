@@ -28,6 +28,7 @@ if __name__=="__main__":
   import soma.workflow.scheduler
   import soma.workflow.connection 
   import soma.workflow.configuration
+  from soma.workflow.errors import NoDrmaaLibError, EngineError
 
 
 
@@ -141,6 +142,10 @@ if __name__=="__main__":
       logger.info("****************************************************")
  
     if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
+        
+      if not soma.workflow.scheduler.DRMAA_LIB_FOUND:
+          raise NoDrmaaLibError
+          
       sch = soma.workflow.scheduler.DrmaaCTypes(config.get_drmaa_implementation(), 
                                     config.get_parallel_job_config(),
                                     os.path.expanduser("~"),

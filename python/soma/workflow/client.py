@@ -136,7 +136,7 @@ class WorkflowController(object):
       sub_machine = submitting_machines[random.randint(0,
                                                     len(submitting_machines)-1)]
       cluster_address = self.config.get_cluster_address()
-      print 'cluster address: ' + cluster_address + ' submission machine: ' + sub_machine
+      print 'cluster address: ' + cluster_address + ', submission machine: ' + sub_machine
       self._connection = connection.RemoteConnection(login,
                                                     password,
                                                     cluster_address,
@@ -217,7 +217,6 @@ class WorkflowController(object):
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
                               "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
-
 
     #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
 
