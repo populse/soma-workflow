@@ -2,13 +2,6 @@
 Soma-workflow is a unified and simple interface to parallel computing
 resources. It aims at making easier the use of parallel resources by
 non expert users and software.
-
-Installation:
-=============
-In Ubuntu:
-$ sudo apt-get install python-qt4, python-matplotlib, python-paramiko, pyro
-Go to soma-workflow directory
-$ sudo python setup.py install
 """
 import ez_setup
 ez_setup.use_setuptools()
