@@ -1,10 +1,10 @@
-
+=============
 Soma-workflow
 =============
 
 
 Main Features
--------------
+=============
 
   **Unified interface to multiple computing resources:** 
     Submission of jobs or workflows with an unique interface to various 
@@ -40,19 +40,23 @@ Main Features
     path name matchings.
 
 Documentation
--------------
+=============
 
-  Visit Soma-workflow_ main page!
+  Visit Soma-workflow (http://www.brainvisa.info/soma-workflow) main page!
 
-  An extensive documentation_ is available, with ready to use examples_.
+  An extensive documentation (http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/index.html) is available, 
+  with ready to use examples (http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/examples.html).
 
-  .. _Soma-workflow: http://www.brainvisa.info/soma-workflow
-  .. _examples: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/examples.html
-  .. _documentation: http://www.brainvisa.info/doc/soma-workflow-2.2/sphinx/index.html
+
+Download
+========
+
+  Soma-workflow is available on pypi to download: https://pypi.python.org/pypi/soma-workflow.
+
 
 
 Installation
-------------
+=============
 
   Qt version 4.6.2 or more, PyQt version 4.7.2 or more or PySide version 1.1.1 or
   more are required if you want to use the graphical interface. 
@@ -61,57 +65,46 @@ Installation
   machine can be used directly and without any configuration to distribute 
   computation, no matter the installation mode chosen.
 
-  We recommend to install Soma-workflow in a local directory (no special rights required & easy clean up at any time removing the local directory)
 
-    1. Create a local directory such as *~/.local/lib/python2.6/site-packages* and create the bin directory: *~/.local/bin*
+  **Full installation in Ubuntu:**
+  
+  Installation required packages,
+  python-qt4 (graphical interface), 
+  python-matplotlib (option), 
+  python-paramiko (option: required to connect server), 
+  pyro (option: required to connect server) :
+      
+      $ sudo apt-get update
 
-    2. Setup the environment variables with the commands::
+      $ sudo apt-get install python-qt4 python-matplotlib python-paramiko pyro
 
-        $ export PYTHONPATH=$HOME/.local/lib/python2.6/site-packages:$PYTHONPATH
+  Download soma-workflow and go to soma-workflow directory:
+      
+      $ sudo python setup.py install
 
-        $ export PATH=$HOME/.local/bin:$PATH
+  Try soma-workflow in terminal with:
+      
+      $ soma_workflow_gui
 
-      You can copy these lines in your ~/.bashrc for an automatic setup of the variables at login.
+  **Manually Installation (for all other systems)**
 
-    3. Install Soma-workflow using setup.py or easy_install.
+  Download and install those packages: 
+     python-qt4 (graphical interface), 
+     python-matplotlib (option), 
+     python-paramiko (required to connect server), 
+     pyro (required to connect server)   
+  
+  1. Download soma-workflow into soma-workflow-path
 
+  2. Set PYTHONPATH contains soma-workflow-path/python, and PATH contains soma-workflow-path/bin
 
-  **With setup.py:**
+    2.1: For example, in Linux, add lines in ~/.bashrc
+        
+         $ export PYTHONPATH=soma-workflow-path/python:$PYTHONPATH
 
-    Download the latest tarball and expand it.
+         $ export PATH=soma-workflow-path/bin:$PATH
 
-    Install Soma-workflow in the ~/.local directory::
+  3. Try soma-workflow in terminal with:
 
-      $ python setup.py install --user
-
-    If you chose a different name for you local directory (ex: ~/mylocal) use instead the following command::
-
-      $ python setup.py install --prefix ~/mylocal
-
-    Installation on the system with administrator rights::
-
-        $ python setup.py install
-
-  **With easy_install:**
-
-    This command will just install Soma-workflow::
-
-      $ easy_install --prefix ~/.local "soma-workflow"
-
-    To enable plotting in the GUI, this command will install matplotlib as well::
-
-      $ easy_install --prefix ~/.local "soma-workflow[plotting]"
-
-    To install the client interface to a remote computing resource, this command 
-    will install Soma-workflow, Pyro and Paramiko ::
-
-      $ easy_install --prefix ~/.local "soma-workflow[client]"
-
-    To install the client application with plotting enabled, this command 
-    will install Soma-workflow, Pyro, Paramiko and matplotlib::
-
-      $ easy_install --prefix ~/.local "soma-workflow[client,plotting]"
-
-
-
+    $ soma_workflow_gui 
 

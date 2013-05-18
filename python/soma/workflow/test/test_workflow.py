@@ -977,7 +977,7 @@ if __name__ == '__main__':
   sys.stdout.write("----- soma-workflow tests: WORKFLOW -------------\n")
 
   config_file_path = Configuration.search_config_path()
-  sys.stdout.write("Configuration file: " + config_file_path)
+  sys.stdout.write("Configuration file: " + repr(config_file_path))
   resource_ids = Configuration.get_configured_resources(config_file_path)
   
   # Resource
