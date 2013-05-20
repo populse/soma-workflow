@@ -108,3 +108,25 @@ Installation
 
     $ soma_workflow_gui 
 
+  **Windows (tested on Vista 64 bit for local mode)**
+
+  1. Go to http://www.python.org/download/ to download and install python Windows Installer according to your windows version, for example in C:\Python27.
+
+  2. Set environment variable PATH that contains python directory (see http://docs.python.org/2/using/windows.html), for example in C:\Python27.
+
+  3. Download and install PyQt4 for python27 in http://www.riverbankcomputing.com/software/pyqt/download
+ 
+  4. Go to https://pypi.python.org/pypi/soma-workflow to download soma-workflow and extract it into a directory, for example, C:\soma-workflow.
+
+  5. In command line mode (start -> cmd), run:
+
+     a. cd C:\soma-workflow
+
+     b. python setup.py soma-workflow install
+
+  6. Run soma_workflow_gui
+
+     a. cd C:\Python27\Scripts
+
+     b. python soma_workflow_gui
+
