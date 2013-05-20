@@ -100,7 +100,7 @@ Installation
 
      a. cd C:\soma-workflow
 
-     b. python setup.py soma-workflow install
+     b. python setup.py install
 
   6) Run soma_workflow_gui
 
