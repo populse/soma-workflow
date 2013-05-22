@@ -1,0 +1,24 @@
+#! /usr/bin/env python
+
+'''
+@author: Soizic Laguitton
+
+@organization: I2BM, Neurospin, Gif-sur-Yvette, France
+@organization: CATI, France
+@organization: U{IFR 49<http://www.ifr49.org>}
+
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+'''
+
+import sys
+
+from soma.workflow.client import Helper, WorkflowController
+
+if __name__ == '__main__':
+    
+    if len(sys.argv) != 2:
+        raise Exception("The program takes exactly 1 parameter: the computing resource id.")
+
+    wfc = WorkflowController(sys.argv[1])
+
+    Helper.delete_all_workflows(wfc)

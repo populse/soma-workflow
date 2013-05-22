@@ -1,0 +1,41 @@
+.. _workflow-creation-api:
+
+=====================
+Workflow creation API
+=====================
+
+The workflows are created using the soma.workflow.client API. This page presents 
+the documentation of the Workflow, Job, FileTransfer and SharedResourcePath 
+classes. 
+
+.. seealso:: :ref:`examples` for a quick start.
+
+Workflow
+========
+
+.. autoclass:: client.Workflow(object)
+
+Group
+=====
+
+.. autoclass:: client.Group(object)
+
+
+Job
+===
+
+.. autoclass:: client.Job(object)
+
+
+FileTransfer
+============
+
+.. autoclass:: client.FileTransfer(object)
+
+
+.. _shared-resource-path-api:
+
+SharedResourcePath
+====================
+
+.. autoclass:: client.SharedResourcePath(object)

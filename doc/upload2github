@@ -1,0 +1,31 @@
+#!bin/bash
+
+rm -rf ./build
+
+mkdir ./build
+git clone git@github.com:neurospin/soma-workflow.git ./build/html
+
+cd ./build/html/
+git branch gh-pages
+git checkout gh-pages
+
+
+git symbolic-ref HEAD refs/heads/gh-pages
+rm .git/index
+git clean -fdx
+git pull origin gh-pages
+
+
+cd ../../
+
+make html
+
+cd ./build/html/
+
+git add .
+git commit -a -m "update documents"
+
+cd ../../
+
+
+echo "You can now visit the soma-workflow page at http://neurospin.github.com/soma-workflow/" 

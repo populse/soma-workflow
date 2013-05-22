@@ -1,0 +1,19 @@
+2****************job2**************
+2 1****************job1**************
+2 1 1 Ingredients
+2 1 3     * 1 1/2 cups all-purpose flour
+2 1 5     * 1 teaspoon salt
+2 1 7     * 1 1/4 cups milk
+2 1 9     * 3 tablespoons butter, melted
+2 1 11 Directions
+2 1 13    1. In a large bowl, sift together the flour, baking powder, salt and sugar. Make a well in the center and pour in the milk, egg and melted butter; mix until smooth.
+2 1 15 
+2 1 
+2 1 job1 out1: stdin comment:
+2 1 job1 in1
+2 1******************************************************
+2 
+2  # lines:16 2 
+2 job2: stdin comment:
+2 job1 in1
+2******************************************************
