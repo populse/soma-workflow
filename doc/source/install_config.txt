@@ -22,10 +22,7 @@ See `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for install
 Client-server application: Client
 =================================
 
-This page describes the installation and configuration of the Soma-workflow
-client. The installation of a Soma-workflow client supposes that at least one 
-Soma-workflow database servers is installed on a remote or a local computing 
-resources (see :ref:`server`).
+This page describes the installation and configuration of the Soma-workflow client. 
 
 
 Requirements
@@ -40,19 +37,17 @@ Requirements
 Installation
 ------------
 
-1. Download: `soma-workflow 2.2 <ftp://ftp.cea.fr/pub/dsv/anatomist/binary/soma-workflow-2.2.tar.bz2>`_
+1. Download: `soma-workflow <https://pypi.python.org/pypi/soma-workflow>`_
 
 2. Installation:
 
       :: 
 
-        $ python setup.py build
-
-        $ python setup.py install --prefix my_directory
-        or 
         $ sudo python setup.py install
-
-3. Create a configuration file (see :ref:`client_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable or put it in the /etc/ directory.
+        or
+        $ python setup.py install --prefix my_directory
+         
+       
 
 Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
 
@@ -66,13 +61,12 @@ Start the GUI with the command *soma_workflow_gui* and/or import the soma.workfl
 
 .. _client_configuration:
 
-Configuration
--------------
+Configuration (Created automatically)
+-------------------------------------
 
-The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax.
+The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. The configuration file is located in "$HOME/.soma-workflow.cfg". This file will be created automatically once a server has been established (see :ref:`server_management`).
 
-There is one section for each computing resource (that is for each Soma-workflow
-database server). 
+There is one section for each computing resource (that is for each Soma-workflow database server). 
 
 Only four items are required:
  
@@ -157,7 +151,6 @@ Here is the list of the server dependencies:
   Torque/PBS, LSF..
 * A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C 
 * Python *version 2.5 or more*
-* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
 * `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
 * `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
@@ -173,113 +166,43 @@ The implementations of DRMAA tested successfully with Soma-workflow:
   ===================  ==========================
 
 
-.. _sip_drmaa:
+.. _server_management:
 
-Installation to use with DRMAA
-------------------------------
+Server installation using "Server Management"
+---------------------------------------------
 
-The use of Soma-workflow with DRMAA requires the generation of a SIP Python 
-binding for the DRMAA C library. This section describes a way to compile and 
-install this binding together with Soma-workflow:
+In the menu of soma-workflow, we can see a button called, Server Management.
+See the menu of the below figure, we can find a "Server Management" button 
 
-1. Download bv_maker (a CMake customization of the `BrainVISA project <http://brainvisa.info>`_)
-    
-    ..
-         svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/development/brainvisa-cmake/branches/1.0 /tmp/brainvisa-cmake
-        cd /tmp/brainvisa-cmake
-        cmake -DCMAKE_INSTALL_PREFIX=. .
-        make install
+.. image:: images/ServerManagementMenu.*
+  :scale: 100
 
+Opening "Server Management" button, and then we can see three buttons, called: 
+Add Server, Remove Server, Remove Server on Client, as shown in 
+the below figure. Since the configuration is needed for both sides (client and server), "Remove Server" means that remove the installation on the server and client (BE CAREFULL: it will lose all your soma-workflow data on your server and client, $HOME/.soma-workflow and $HOME/.soma-workflow.cfg). "Remove Server on Client" means that it will remove all the data only on client side, while the server side is still running as usual.
 
-  ::
-    
-    svn --username brainvisa --password Soma2009 export https://bioproj.extra.cea.fr/neurosvn/brainvisa/source_views/brainvisa-cmake /tmp/brainvisa-cmake
-    cd /tmp/brainvisa-cmake
-    cmake -DCMAKE_INSTALL_PREFIX=. latest_release
-    make install
+.. image:: images/ServerManagement.*
+  :scale: 100
 
-2. Create the file: $HOME/.brainvisa/bv_maker.cfg with the content: 
+Opening "Add Server" button, we can see a window as shown below:
 
-  ::
+.. image:: images/ServerManagementAddServer.*
+  :scale: 100
 
-    [source <source_directory>]
-      + soma-workflow latest_release
+Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See "http://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login". Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)
 
-    [build <build_directory>]
-      soma-workflow latest_release <source_directory>
+Since the configuration is needed for both sides (client and server),
+the first button, called "Install on Server and Client", is used for configuring both sides. Since many clients can connect to one server, "Setup Client without Installation on Server" is used for configurating only client side.
 
-  replacing <source_directory> and <build_directory> by the paths you choose
-  for Soma-workflow. For example:
-
-  ::
-
-    [source $HOME/soma-workflow/source]
-      + soma-workflow latest_release
-
-    [build $HOME/soma-workflow/build]
-      soma-workflow latest_release $HOME/soma-workflow/source
-
-  Note that you can also replace "latest_release" to obtain another version: for 
-  example: "2.1.0" or trunk" for the version in development or "bug_fix" 
-  for the bug fixes of the latest release.
-
-
-3. Download Soma-workflow sources (use username "brainvisa" and password "Soma2009" if needed), configure and build with CMake and make:
-
-  ::
-
-    /tmp/brainvisa-cmake/bin/bv_maker sources 
-
-    /tmp/brainvisa-cmake/bin/bv_maker configure
-
-    /tmp/brainvisa-cmake/bin/bv_maker build
-
-4. You can remove the temporary directory
-
-  ::
-    
-    rm -rf /tmp/brainvisa-cmake
-
-5. Set the environment variables:
-  
-  ::
-
-    . <build_directory>/bin/bv_env.sh <build_directory>
-
-  
- 
-.. _server_installation:
-
-Server creation
----------------
-
-1. Install the Soma-workflow python modules and generate the SIP Python binding for the DRMAA C library if needed. (see :ref:`sip_drmaa`)
-
-2. Choose a resource identifier for the computing resource, ex: "Titan"
-
-3. Create a configuration file (see :ref:`server_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
-
-2. Start a Pyro name server with the command pyro-ns -m 
-
-4. Run the command:
-
-  ::
-
-    python -m soma.workflow.start_database_server "Titan"
-
-  The command will:
-
-  * start the database server
-  * create the SQLite database if the database file does not exist 
-  * register the database server to the Pyro name server
+Since soma-workflow is based on the DRMAA on the server side, to make sure that your LD_LIBRARY_PATH contains libdrmaa.so or export DRMAA_LIBRARY_PATH to the absolute path of libdrmaa.so on your server.
 
 
 .. _server_configuration:
 
-Server configuration
---------------------
+Server configuration (Created automatically)
+--------------------------------------------
 
-This section defines the required and optional configuration items. 
+This section defines the required and optional configuration items. This file can be found on the both side of client and server with the path "$HOME/.soma-workflow.cfg".
 
 The configuration file syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. All the configuration items are defined in one section. The name of 
 the section is the resource identifier (ex: "Titan").
@@ -447,7 +370,6 @@ The requirements are thus:
   Torque/PBS, LSF..
 * A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
 * Python *version 2.5 or more*
-* `SIP <http://wiki.python.org/moin/SIP>`_ *version 4.10 or more*
 * SQLite *version 3 or more*
 * For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 
@@ -459,11 +381,10 @@ Installation
 ------------
 
 
-1. Install the Soma-workflow python modules and generate the SIP Python binding for the DRMAA C library if needed. (see :ref:`sip_drmaa`)
 
-2. Choose a resource identifier for the computing resource, ex: "Local Titan"
+1. Choose a resource identifier for the computing resource, ex: "Local Titan"
 
-3. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
+2. Create a configuration file (see :ref:`light_mode_configuration`) at the location $HOME/.soma-workflow.cfg. You can also choose your own path for the configuration file and set the "SOMA_WORKFLOW_CONFIG" environment variable with this path or put it in the /etc/ directory.  
 
 Start the GUI with the command *soma_workflow_gui* and/or import the soma.workflow.client module to use the Python API.
 

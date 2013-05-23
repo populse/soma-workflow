@@ -123,13 +123,8 @@ Good Practices on a cluster
       can intercalate their own jobs and because of the system delay, it can take 
       more time to get all the jobs running. 
 
-**Run one database server by user.**
-  Since the sqlite database server is a bottleneck for now, you are advised to 
-  run one database server by user. In the future versions, the idea will be to 
-  keep one database server by user, however the server will not need to be 
-  started manually, but be started and killed automatically by Soma-workflow 
-  when required. 
-
+**One database per user.**
+  The soma-workflow will start one database when the user connects to the server.
 
 Good Practices in general
 =========================
