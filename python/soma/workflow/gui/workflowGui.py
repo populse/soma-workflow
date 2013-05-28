@@ -11,8 +11,6 @@ from __future__ import with_statement
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
-
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
@@ -3323,7 +3321,10 @@ class ApplicationModel(QtCore.QObject):
           # flush running update
       if not self.update_thread.isFinished():
         return # still updating, we will do it again later
-    self.update_thread = ApplicationModel.UpdateThread(application_model=self, parent=None)
+    if self.update_thread == None:
+        self.update_thread = ApplicationModel.UpdateThread(
+                            application_model=self,
+                            parent=None)
     self.update_thread.start(QtCore.QThread.LowPriority)
 
   @QtCore.Slot()
@@ -3348,10 +3349,10 @@ class ApplicationModel(QtCore.QObject):
               #begining = datetime.now()
 
               #wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
-              wf_complete_status = self.connection_timeout(WorkflowController.workflow_elements_status, 
-                                                           args=(self.current_connection, self.current_wf_id), 
-                                                           timeout_duration=self._timeout_duration[self.current_resource_id])
-
+              wf_complete_status = self.connection_timeout(
+                                WorkflowController.workflow_elements_status, 
+                                args=(self.current_connection, self.current_wf_id), 
+                                timeout_duration=self._timeout_duration[self.current_resource_id])
               wf_status = wf_complete_status[2]
               #end = datetime.now() - begining
               #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
@@ -3412,9 +3413,9 @@ class ApplicationModel(QtCore.QObject):
     using the args, kwargs and return the given default value if the
     timeout_duration is exceeded.
     """
-    class InterruptableThread(threading.Thread):
+    class InterruptableThread(QtCore.QThread):
       def __init__(self):
-        threading.Thread.__init__(self)
+        super(InterruptableThread, self).__init__(parent = None)
         self.result = default
         self.exception = None
       def run(self):
@@ -3424,8 +3425,9 @@ class ApplicationModel(QtCore.QObject):
           self.exception = e
     it = InterruptableThread()
     it.start()
-    it.join(timeout_duration)
-    if it.isAlive():
+    it.wait(msecs=timeout_duration*1000)
+    if it.isRunning():
+      it.terminate()
       raise ConnectionClosedError("Connection time out")
     else:
       if it.exception != None:
