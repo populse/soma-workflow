@@ -129,48 +129,7 @@ if DRMAA_LIB_FOUND==True:
   
         is_sleeping = False
   
-        def submit_simple_test_job(self, outstr,out_o_file,out_e_file):
-          import somadrmaa
-          # patch for the PBS-torque DRMAA implementation
-          if self._drmaa_implementation == "PBS":
-        
-                 
-                '''
-                Create a job to test
-                '''
-                jobTemplateId = self._drmaa.createJobTemplate()
-                jobTemplateId.remoteCommand='echo'
-                jobTemplateId.args = ["%s"%(outstr)]
-                jobTemplateId.outputPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_o_file)))
-                jobTemplateId.errorPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_e_file)))
-  
-  
-                #print "jobTemplateId="+repr(jobTemplateId)
-                #print "jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand)
-                #print "jobTemplateId.args="+repr(jobTemplateId.args)
-                #print "jobTemplateId.outputPath="+repr(jobTemplateId.outputPath)
-                #print "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath)
-  
-                jobid=self._drmaa.runJob(jobTemplateId)
-                #print "jobid="+jobid
-                retval = self._drmaa.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER) 
-                #print "retval="+repr(retval)
-                self._drmaa.deleteJobTemplate(jobTemplateId) 
-  
-        def wake(self):
-          '''
-          Creates a fresh Drmaa session.
-          '''
-          import somadrmaa
-  
-          self.is_sleeping = False
-  
-          self._drmaa=drmaa.Session()
-  
-          self._drmaa.initialize()
-  
-  
-        
+          
         def __init__(self, 
                      drmaa_implementation, 
                      parallel_job_submission_info, 
@@ -241,7 +200,35 @@ if DRMAA_LIB_FOUND==True:
           if not self._drmaa:
             self._drmaa=somadrmaa.Session()
             self._drmaa.initialize()
+ 
+        def submit_simple_test_job(self, outstr,out_o_file,out_e_file):
+          import somadrmaa
+          # patch for the PBS-torque DRMAA implementation
+          if self._drmaa_implementation == "PBS":
+        
+                '''
+                Create a job to test
+                '''
+                jobTemplateId = self._drmaa.createJobTemplate()
+                jobTemplateId.remoteCommand='echo'
+                jobTemplateId.args = ["%s"%(outstr)]
+                jobTemplateId.outputPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_o_file)))
+                jobTemplateId.errorPath="%s:%s" %(self.hostname, os.path.join(self.tmp_file_path, "%s"%(out_e_file)))
+    
+                #print "jobTemplateId="+repr(jobTemplateId)
+                #print "jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand)
+                #print "jobTemplateId.args="+repr(jobTemplateId.args)
+                #print "jobTemplateId.outputPath="+repr(jobTemplateId.outputPath)
+                #print "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath)
   
+                jobid=self._drmaa.runJob(jobTemplateId)
+                #print "jobid="+jobid
+                retval = self._drmaa.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER) 
+                #print "retval="+repr(retval)
+                self._drmaa.deleteJobTemplate(jobTemplateId) 
+ 
+
+ 
         def _setDrmaaParallelJob(self, 
                                  drmaa_job_template_id, 
                                  configuration_name, 
@@ -303,7 +290,11 @@ if DRMAA_LIB_FOUND==True:
           # patch for the PBS-torque DRMAA implementation
           command = []
           job_command = job.plain_command()
-          if self._drmaa_implementation == "PBS":
+
+          ## This is only for the old drmaa version
+          ## Now it is not necessary anymore
+          #if self._drmaa_implementation == "PBS":
+          if False:
             if job_command[0] == 'python':
               job_command[0] = sys.executable
             for command_el in job_command:
@@ -312,6 +303,7 @@ if DRMAA_LIB_FOUND==True:
             self.logger.debug("PBS case, new command:" + repr(command))
           else:
             command = job_command
+
        
           self.logger.debug("command: " + repr(command))
           self.logger.debug("job.name=" + repr(job.name))        
@@ -320,13 +312,10 @@ if DRMAA_LIB_FOUND==True:
           stderr_file = job.plain_stderr()
           stdin = job.plain_stdin()
        
-          try:
-            
-            
+          try: 
             jobTemplateId = self._drmaa.createJobTemplate()
             jobTemplateId.remoteCommand=command[0]
             jobTemplateId.args = command[1:]
-  
   
             self.logger.info("jobTemplateId="+repr(jobTemplateId)+" command[0]="+repr(command[0])+" command[1:]="+repr(command[1:]))
             self.logger.info("hostname and stdout_file= [%s]:%s" %(self.hostname, stdout_file))

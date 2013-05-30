@@ -3408,7 +3408,12 @@ class ApplicationModel(QtCore.QObject):
             self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
 
 
-  def connection_timeout(self, func, args=(), kwargs={}, timeout_duration=30, default=None):
+  def connection_timeout(self, 
+                         func, 
+                         args=(), 
+                         kwargs={}, 
+                         timeout_duration=30, 
+                         default=None):
     """This function will spawn a thread and run the given function
     using the args, kwargs and return the given default value if the
     timeout_duration is exceeded.
