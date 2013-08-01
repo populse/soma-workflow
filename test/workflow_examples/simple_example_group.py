@@ -1,4 +1,4 @@
-from soma.workflow.client import Job, Workflow, Group, WorkflowController
+from soma_workflow.client import Job, Workflow, Group, WorkflowController
 
 jobs = []
 dependencies = []

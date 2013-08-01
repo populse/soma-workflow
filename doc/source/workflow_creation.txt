@@ -4,7 +4,7 @@
 Workflow creation API
 =====================
 
-The workflows are created using the soma.workflow.client API. This page presents 
+The workflows are created using the soma_workflow.client API. This page presents 
 the documentation of the Workflow, Job, FileTransfer and SharedResourcePath 
 classes. 
 

@@ -24,37 +24,37 @@ if __name__=="__main__":
   import Pyro.core
   from Pyro.errors import PyroError, NamingError, ProtocolError
   
-  import soma.workflow.engine
-  import soma.workflow.scheduler
-  import soma.workflow.connection 
-  import soma.workflow.configuration
-  from soma.workflow.errors import NoDrmaaLibError, EngineError
+  import soma_workflow.engine
+  import soma_workflow.scheduler
+  import soma_workflow.connection 
+  import soma_workflow.configuration
+  from soma_workflow.errors import NoDrmaaLibError, EngineError
 
 
 
   ###### WorkflowEngine pyro object
   class ConfiguredWorkflowEngine(Pyro.core.SynchronizedObjBase, 
-                       soma.workflow.engine.ConfiguredWorkflowEngine):
+                       soma_workflow.engine.ConfiguredWorkflowEngine):
     def __init__(self, database_server, scheduler, config):
       Pyro.core.SynchronizedObjBase.__init__(self)
-      soma.workflow.engine.ConfiguredWorkflowEngine.__init__(self, 
+      soma_workflow.engine.ConfiguredWorkflowEngine.__init__(self, 
                                                    database_server, 
                                                    scheduler,
                                                    config)
     pass
     
   class ConnectionChecker(Pyro.core.ObjBase, 
-                          soma.workflow.connection.ConnectionChecker):
+                          soma_workflow.connection.ConnectionChecker):
     def __init__(self, interval=1, control_interval=3):
       Pyro.core.ObjBase.__init__(self)
-      soma.workflow.connection.ConnectionChecker.__init__(self, 
+      soma_workflow.connection.ConnectionChecker.__init__(self, 
                                                           interval, 
                                                           control_interval)
     pass
 
 
   class Configuration(Pyro.core.ObjBase, 
-                      soma.workflow.configuration.Configuration):
+                      soma_workflow.configuration.Configuration):
 
     def __init__( self,
                   resource_id,
@@ -70,7 +70,7 @@ if __name__=="__main__":
                   queue_limits=None,
                   drmaa_implementation=None):
       Pyro.core.ObjBase.__init__(self)
-      soma.workflow.configuration.Configuration.__init__(self,
+      soma_workflow.configuration.Configuration.__init__(self,
                                                          resource_id,
                                                          mode,
                                                          scheduler_type,
@@ -106,7 +106,7 @@ if __name__=="__main__":
       raise EngineError("%s %s \n"   
                         "Could not find soma-workflow database server. "
                         "Run the following command on %s to start the server: \n"
-                        "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
+                        "python -m soma_workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
 
     database_server = Pyro.core.getProxyForURI(uri)
 	
@@ -116,7 +116,7 @@ if __name__=="__main__":
       raise EngineError("%s %s \n"
 	                "The database server might not be running. "
                         "Run the following command on %s to start the server: \n"
-                        "python -m soma.workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
+                        "python -m soma_workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
     return database_server
 
     
@@ -141,28 +141,28 @@ if __name__=="__main__":
       logger.info("****************************************************")
       logger.info("****************************************************")
  
-    if config.get_scheduler_type() == soma.workflow.configuration.DRMAA_SCHEDULER:
+    if config.get_scheduler_type() == soma_workflow.configuration.DRMAA_SCHEDULER:
         
-      if not soma.workflow.scheduler.DRMAA_LIB_FOUND:
+      if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
           raise NoDrmaaLibError
           
-      sch = soma.workflow.scheduler.DrmaaCTypes(config.get_drmaa_implementation(), 
+      sch = soma_workflow.scheduler.DrmaaCTypes(config.get_drmaa_implementation(), 
                                     config.get_parallel_job_config(),
                                     os.path.expanduser("~"),
                                     configured_native_spec=config.get_native_specification())
       database_server = get_database_server_proxy(config, logger)
 
-    elif config.get_scheduler_type() == soma.workflow.configuration.LOCAL_SCHEDULER:
-      from soma.workflow.scheduler import ConfiguredLocalScheduler
-      local_scheduler_cfg_file_path = soma.workflow.configuration.LocalSchedulerCfg.search_config_path()
+    elif config.get_scheduler_type() == soma_workflow.configuration.LOCAL_SCHEDULER:
+      from soma_workflow.scheduler import ConfiguredLocalScheduler
+      local_scheduler_cfg_file_path = soma_workflow.configuration.LocalSchedulerCfg.search_config_path()
       if local_scheduler_cfg_file_path:
-        local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg.load_from_file(local_scheduler_cfg_file_path)
+        local_scheduler_config = soma_workflow.configuration.LocalSchedulerCfg.load_from_file(local_scheduler_cfg_file_path)
       else:
-      	local_scheduler_config = soma.workflow.configuration.LocalSchedulerCfg()      
+      	local_scheduler_config = soma_workflow.configuration.LocalSchedulerCfg()      
       sch = ConfiguredLocalScheduler(local_scheduler_config)
       database_server = get_database_server_proxy(config, logger)
 
-    elif config.get_scheduler_type() == soma.workflow.configuration.MPI_SCHEDULER:
+    elif config.get_scheduler_type() == soma_workflow.configuration.MPI_SCHEDULER:
       sch = None 
       database_server = WorkflowDatabaseServer(config.get_database_file(),
                                                config.get_transfered_file_dir())

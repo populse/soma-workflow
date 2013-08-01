@@ -152,90 +152,90 @@ File Transfer status
 
 
 
-.. |no_status| image:: ../../python/soma/workflow/gui/icon/no_status.png
+.. |no_status| image:: ../../python/soma_workflow/gui/icon/no_status.png
                :height: 100 px
                :width: 100 px
                :scale: 30 
 
-.. |undeter|   image:: ../../python/soma/workflow/gui/icon/undetermined.png
+.. |undeter|   image:: ../../python/soma_workflow/gui/icon/undetermined.png
                :height: 100 px
                :width: 100 px
                :scale: 30 
 
-.. |queued|    image:: ../../python/soma/workflow/gui/icon/queued.png
+.. |queued|    image:: ../../python/soma_workflow/gui/icon/queued.png
                :height: 100 px
                :width: 100 px
                :scale: 30 
 
-.. |running|   image:: ../../python/soma/workflow/gui/icon/running.png
+.. |running|   image:: ../../python/soma_workflow/gui/icon/running.png
                :height: 100 px
                :width: 100 px
                :scale: 30 
 
-.. |success|   image:: ../../python/soma/workflow/gui/icon/success.png
+.. |success|   image:: ../../python/soma_workflow/gui/icon/success.png
                :height: 100 px
                :width: 100 px
                :scale: 30 
 
-.. |kd_pending| image:: ../../python/soma/workflow/gui/icon/kill_delete_pending.png
+.. |kd_pending| image:: ../../python/soma_workflow/gui/icon/kill_delete_pending.png
                     :height: 100 px
                     :width: 100 px
                     :scale: 30 
 
-.. |warning| image:: ../../python/soma/workflow/gui/icon/warning.png
+.. |warning| image:: ../../python/soma_workflow/gui/icon/warning.png
             :height: 100 px
             :width: 100 px
             :scale: 30 
 
-.. |failed| image:: ../../python/soma/workflow/gui/icon/failed.png
+.. |failed| image:: ../../python/soma_workflow/gui/icon/failed.png
             :height: 100 px
             :width: 100 px
             :scale: 30 
 
-.. |pending| image:: ../../python/soma/workflow/gui/icon/pending.png
+.. |pending| image:: ../../python/soma_workflow/gui/icon/pending.png
             :height: 100 px
             :width: 100 px
             :scale: 30 
 
 
-.. |done| image:: ../../python/soma/workflow/gui/icon/done.png
+.. |done| image:: ../../python/soma_workflow/gui/icon/done.png
             :height: 100 px
             :width: 100 px
             :scale: 30 
             
 
-.. |tr_dont_exist| image:: ../../python/soma/workflow/gui/icon/transfer_files_dont_exist.png
+.. |tr_dont_exist| image:: ../../python/soma_workflow/gui/icon/transfer_files_dont_exist.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30 
 
-.. |tr_on_c| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_client.png
+.. |tr_on_c| image:: ../../python/soma_workflow/gui/icon/transfer_files_on_client.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
 
-.. |tr_on_both| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_both.png
+.. |tr_on_both| image:: ../../python/soma_workflow/gui/icon/transfer_files_on_both.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
 
 
-.. |tr_on_cr| image:: ../../python/soma/workflow/gui/icon/transfer_files_on_cr.png
+.. |tr_on_cr| image:: ../../python/soma_workflow/gui/icon/transfer_files_on_cr.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
 
-.. |tr_cr_to_c| image:: ../../python/soma/workflow/gui/icon/transfering_from_cr_to_client.png
+.. |tr_cr_to_c| image:: ../../python/soma_workflow/gui/icon/transfering_from_cr_to_client.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
 
-.. |tr_c_to_cr| image:: ../../python/soma/workflow/gui/icon/transfering_from_client_to_cr.png
+.. |tr_c_to_cr| image:: ../../python/soma_workflow/gui/icon/transfering_from_client_to_cr.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
 
-.. |under_edition| image:: ../../python/soma/workflow/gui/icon/files_under_edition.png
+.. |under_edition| image:: ../../python/soma_workflow/gui/icon/files_under_edition.png
                   :height: 100 px
                   :width: 100 px
                   :scale: 30

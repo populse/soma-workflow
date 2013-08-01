@@ -1,4 +1,4 @@
-from soma.workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
+from soma_workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
 
 # SharedResourcePath creation for the input file.
 # The input file is read direclty in the data directory located on the

@@ -83,7 +83,7 @@ MPI_workflow_runner options:
 
 :: 
 
-  $ python -m soma.workflow.MPI_workflow_runner --help
+  $ python -m soma_workflow.MPI_workflow_runner --help
   Usage: MPI_workflow_runner.py [options]
   
   Options:
@@ -112,7 +112,7 @@ Create a submission script for PBS (example *run_workflow.sh*): ::
   #PBS -l nodes=3:ppn=8
   #PBS -q long
   
-  time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --workflow $HOME/my_workflow_file
+  time mpirun python -m soma_workflow.MPI_workflow_runner Titan_MPI --workflow $HOME/my_workflow_file
 
 In the example, the workflow will run on 8 cores of 3 nodes (that is 8*3 cpus). It will be submitted to the "long" queue, and will last at most 10 hours.
 
@@ -135,7 +135,7 @@ Use the following submission script to restart the workflow: ::
   #PBS -l nodes=3:ppn=8
   #PBS -q long
   
-  time mpirun python -m soma.workflow.MPI_workflow_runner Titan_MPI --restart 520
+  time mpirun python -m soma_workflow.MPI_workflow_runner Titan_MPI --restart 520
 
 As before, use "qsub" to submit the workflow and possibly "qdel" to stop it.
 

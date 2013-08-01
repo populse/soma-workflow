@@ -15,10 +15,10 @@ from __future__ import with_statement
 
 import os
 import sys
-from soma.workflow.connection import SSHExecCmd, check_if_somawfdb_on_server
-import soma.workflow.configuration as configuration
-from soma.workflow.configuration import WriteOutConfiguration
-from soma.workflow.client import Job, Workflow, WorkflowController
+from soma_workflow.connection import SSHExecCmd, check_if_somawfdb_on_server
+import soma_workflow.configuration as configuration
+from soma_workflow.configuration import WriteOutConfiguration
+from soma_workflow.client import Job, Workflow, WorkflowController
 
 
 def GetHostNameOnPBSTORQUE(userid, ip_address_or_domain, userpw=''):
@@ -84,7 +84,7 @@ def GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain, userpw=''):
 
 
 def ConfiguratePaser(config_parser, resource_id, ip_address_or_domain, info_queue, userid, installpath, sshport):
-    import soma.workflow.configuration as configuration
+    import soma_workflow.configuration as configuration
 
     oneline_queues = ''
     for one_q in info_queue:
@@ -210,7 +210,7 @@ def CopySomaWF2Server(install_swf_path_server,
                       userpw='', sshport=22):
     install_swf_path_server = os.path.join(install_swf_path_server, "python")
     install_swf_path_server_soma_workflow = os.path.join(
-        install_swf_path_server, "soma")
+        install_swf_path_server, "./")
     install_swf_path_server_drmaa = os.path.join(install_swf_path_server)
 
     std_out_lines = SSHExecCmd(
@@ -223,7 +223,7 @@ def CopySomaWF2Server(install_swf_path_server,
     print std_out_lines
 
     path2somawf = os.path.dirname(os.path.realpath(__file__))
-    path2drmaa = os.path.join(path2somawf, "..", "..", "somadrmaa")
+    path2drmaa = os.path.join(path2somawf, "..", "somadrmaa")
 
     sshcommand = "scp -rC '%s' %s@%s:'%s'" % (path2somawf,
                                               userid,
@@ -279,7 +279,7 @@ def InstallSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or
                       userid, ip_address_or_domain, userpw, sshport)
 
     script2install = os.path.join(
-        install_swf_path_server, "python", "soma", "workflow", "setup_server.py")
+        install_swf_path_server, "python", "soma_workflow", "setup_server.py")
 
     command = "python '%s' -r %s " % (script2install, ResName)
     print "ssh command="+command
@@ -322,7 +322,7 @@ def RemoveSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_
     # clean_script_server=os.path.join(install_swf_path_server,"python","soma","workflow","clean_server.py")
 
     clean_script_server = install_swf_path_server + \
-        "/python/soma/workflow/clean_server.py"
+        "/python/soma_workflow/clean_server.py"
     command = "python '%s' -r %s " % (clean_script_server, ResName)
     print command
     SSHExecCmd(command, userid, ip_address_or_domain,

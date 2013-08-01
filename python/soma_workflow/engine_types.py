@@ -22,9 +22,9 @@ import types
 import os
 import logging
 
-from soma.workflow.errors import JobError, WorkflowError
-import soma.workflow.constants as constants
-from soma.workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, Group
+from soma_workflow.errors import JobError, WorkflowError
+import soma_workflow.constants as constants
+from soma_workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, Group
 
 
 class EngineJob(Job):

@@ -1,6 +1,6 @@
 // Define the SIP wrapper to the jobs library.
 
-%Module soma.workflow.somadrmaajobssip 0
+%Module soma_workflow.somadrmaajobssip 0
 
 
 %Exception DrmaaError(SIP_Exception)

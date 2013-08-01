@@ -1,4 +1,4 @@
-from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
+from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
 
 import getpass
 

@@ -16,11 +16,11 @@ import os
 import getpass
 import sys
 
-from soma.workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow, WorkflowController, Helper
-from soma.workflow.configuration import Configuration
-from soma.workflow.errors import ConfigurationError, UnknownObjectError
-from soma.workflow.utils import checkFiles, identicalFiles
-import soma.workflow.constants as constants
+from soma_workflow.client import Job, SharedResourcePath, FileTransfer, Group, Workflow, WorkflowController, Helper
+from soma_workflow.configuration import Configuration
+from soma_workflow.errors import ConfigurationError, UnknownObjectError
+from soma_workflow.utils import checkFiles, identicalFiles
+import soma_workflow.constants as constants
 
 
 #-----------------------------------------------------------------------------

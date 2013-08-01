@@ -24,7 +24,7 @@ cp LICENSE ./$PACKNAME
 cp ez_setup.py ./$PACKNAME
 cp setup.py  ./$PACKNAME
 
-VERSIONPATH=./$PACKNAME/python/soma/workflow
+VERSIONPATH=./$PACKNAME/python/soma_workflow
 
 echo fullVersion = \'$FULLVERSION\' > $VERSIONPATH/version.py
 echo shortVersion = \'$SHORTVERSION\' >> $VERSIONPATH/version.py

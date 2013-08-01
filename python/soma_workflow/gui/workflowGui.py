@@ -63,13 +63,13 @@ elif QT_BACKEND == PYSIDE:
   from PySide import QtUiTools
 
 
-from soma.workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
-from soma.workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
-import soma.workflow.constants as  constants
-import soma.workflow.configuration as configuration
-from soma.workflow.test.test_workflow import WorkflowExamples
-from soma.workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
-import soma.workflow.version as version
+from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
+from soma_workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
+import soma_workflow.constants as  constants
+import soma_workflow.configuration as configuration
+from soma_workflow.test.test_workflow import WorkflowExamples
+from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
+import soma_workflow.version as version
 
 
 MATPLOTLIB = True
@@ -172,23 +172,23 @@ if QT_BACKEND == PYQT:
                                                               'RequirePW.ui' ))[0]
 
 else:
-  from soma.workflow.gui.ui_job_info import Ui_JobInfo
-  from soma.workflow.gui.ui_graph_widget import Ui_GraphWidget
-  from soma.workflow.gui.ui_plot_widget import Ui_PlotWidget
-  from soma.workflow.gui.ui_transfer_info import Ui_TransferInfo
-  from soma.workflow.gui.ui_group_info import Ui_GroupInfo
-  from soma.workflow.gui.ui_connection_dlg import Ui_ConnectionDlg
-  from soma.workflow.gui.ui_workflow_example_dlg import Ui_WorkflowExampleDlg
-  from soma.workflow.gui.ui_submission_dlg import Ui_SubmissionDlg
-  from soma.workflow.gui.ui_resource_wf_select import Ui_ResourceWfSelect
-  from soma.workflow.gui.ui_main_window import Ui_MainWindow
-  from soma.workflow.gui.ui_wf_status_name_date import Ui_WStatusNameDate
-  from soma.workflow.gui.ui_sw_mini_widget import Ui_SWMiniWidget
-  from soma.workflow.gui.ui_search_widget import Ui_SearchWidget
-  from soma.workflow.gui.ui_local_scheduler_cfg_ctrl import Ui_LocalSchedulerConfigController
-  from soma.workflow.gui.ui_workflow_engine_cfg_ctrl import Ui_WorkflowEngineConfigController
-  # from soma.workflow.gui.ui_server_management import Ui_ServerManagement
-  # from soma.workflow.gui.ui_new_server import Ui_NewServer
+  from soma_workflow.gui.ui_job_info import Ui_JobInfo
+  from soma_workflow.gui.ui_graph_widget import Ui_GraphWidget
+  from soma_workflow.gui.ui_plot_widget import Ui_PlotWidget
+  from soma_workflow.gui.ui_transfer_info import Ui_TransferInfo
+  from soma_workflow.gui.ui_group_info import Ui_GroupInfo
+  from soma_workflow.gui.ui_connection_dlg import Ui_ConnectionDlg
+  from soma_workflow.gui.ui_workflow_example_dlg import Ui_WorkflowExampleDlg
+  from soma_workflow.gui.ui_submission_dlg import Ui_SubmissionDlg
+  from soma_workflow.gui.ui_resource_wf_select import Ui_ResourceWfSelect
+  from soma_workflow.gui.ui_main_window import Ui_MainWindow
+  from soma_workflow.gui.ui_wf_status_name_date import Ui_WStatusNameDate
+  from soma_workflow.gui.ui_sw_mini_widget import Ui_SWMiniWidget
+  from soma_workflow.gui.ui_search_widget import Ui_SearchWidget
+  from soma_workflow.gui.ui_local_scheduler_cfg_ctrl import Ui_LocalSchedulerConfigController
+  from soma_workflow.gui.ui_workflow_engine_cfg_ctrl import Ui_WorkflowEngineConfigController
+  # from soma_workflow.gui.ui_server_management import Ui_ServerManagement
+  # from soma_workflow.gui.ui_new_server import Ui_NewServer
   # Ui_RequirePW
   
 
@@ -381,7 +381,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
   #SomaWorkflowWidget
   sw_widget = None
 
-  #soma.workflow.gui.WorkflowGui.ApplicationModel
+  #soma_workflow.gui.WorkflowGui.ApplicationModel
   model = None
 
   action_show_more_less = None
@@ -640,7 +640,7 @@ class NewServerDialog(QtGui.QDialog):
 
       self.ui.pushButton_Install.clicked.connect(self.InstallServer)
       self.ui.pushButton_Connect.clicked.connect(self.SetupServerNoInstallation)
-#      from soma.workflow.setup_client2server import GetHomeDirOnServer
+#      from soma_workflow.setup_client2server import GetHomeDirOnServer
 #      GetHomeDirOnServer()
 
   def EventLoginTextChanged(self):
@@ -666,7 +666,7 @@ class NewServerDialog(QtGui.QDialog):
 
 
   def InstallServer(self):
-      from soma.workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
+      from soma_workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
       
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
@@ -720,7 +720,7 @@ class NewServerDialog(QtGui.QDialog):
  
   def SetupServerNoInstallation(self):
       
-      from soma.workflow.setup_client2server import SetupSomaWF2Server
+      from soma_workflow.setup_client2server import SetupSomaWF2Server
       
       strLogin=self.ui.lineEdit_login.text()
       strLogin=unicode(strLogin).encode('utf-8')
@@ -854,7 +854,7 @@ class ServerManagementDialog(QtGui.QDialog):
 
   @QtCore.Slot()
   def remove_server(self):
-    from soma.workflow.setup_client2server import RemoveSomaWF2Server
+    from soma_workflow.setup_client2server import RemoveSomaWF2Server
     
     reply = QtGui.QMessageBox.question(self, 'Message',
           "Are you sure to remove soma-workflow on your server ? "
@@ -883,7 +883,7 @@ class ServerManagementDialog(QtGui.QDialog):
   
   @QtCore.Slot()
   def remove_server_on_client(self):
-      from soma.workflow.setup_client2server import RemoveResNameOnConfigureFile
+      from soma_workflow.setup_client2server import RemoveResNameOnConfigureFile
       
       resource_id = unicode(self.ui.combo_resources.currentText()).encode('utf-8')
       if resource_id != None:
@@ -3152,11 +3152,11 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
 
 class ComputingResourcePool(object):
   '''
-  Holds the instances of soma.workflow.client.WorkflowController associated 
+  Holds the instances of soma_workflow.client.WorkflowController associated 
   to a unique resource id.
   '''
 
-  # dictonary: resource id -> soma.workflow.client.WorkflowController
+  # dictonary: resource id -> soma_workflow.client.WorkflowController
   _connections = None
 
   # dictionary: resource id -> lock
@@ -3566,7 +3566,7 @@ class ApplicationModel(QtCore.QObject):
                    workflow_status,
                    workflow=None):
     '''
-    Build a GuiWorkflow from a soma.workflow.client.Worklfow and 
+    Build a GuiWorkflow from a soma_workflow.client.Worklfow and 
     use it as the current workflow. 
     '''
     with self._lock:

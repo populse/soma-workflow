@@ -10,7 +10,7 @@
 
 
 import copy
-from soma.workflow.client import Workflow, Group, Job
+from soma_workflow.client import Workflow, Group, Job
 
 def DetectFindLib(env_name, libname):
     '''Try to find libname using ctype

@@ -113,17 +113,17 @@ jobs inside. Among the displayed jobs, some ended with success, one is running,
 one is in the submission queue, and some are waiting to be submitted (no icon).
 
 
-.. |group_failed| image:: ../../python/soma/workflow/gui/icon/group_failed.png
+.. |group_failed| image:: ../../python/soma_workflow/gui/icon/group_failed.png
                :height: 100 px
                :width: 100 px
                :scale: 20 
 
-.. |group_running| image:: ../../python/soma/workflow/gui/icon/group_running.png
+.. |group_running| image:: ../../python/soma_workflow/gui/icon/group_running.png
                :height: 100 px
                :width: 100 px
                :scale: 20 
 
-.. |group_done|    image:: ../../python/soma/workflow/gui/icon/group_done.png
+.. |group_done|    image:: ../../python/soma_workflow/gui/icon/group_done.png
                :height: 100 px
                :width: 100 px
                :scale: 20 

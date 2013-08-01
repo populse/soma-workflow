@@ -34,5 +34,5 @@ sudo apt-get update
 sudo apt-get install python-qt4 python-matplotlib python-paramiko pyro
 sudo python setup.py install
 
-cd $TMPNAMEPATH/python/soma/workflow/test
+cd $TMPNAMEPATH/python/soma_workflow/test
 cat $TMPNAMEPATH/test/PlatformTest/testlocal.stdin |  python test_workflow.py

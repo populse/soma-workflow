@@ -1,4 +1,4 @@
-from soma.workflow.client import Job, Workflow, WorkflowController
+from soma_workflow.client import Job, Workflow, WorkflowController
 
 job_1 = Job(command=["sleep", "60"], name="job 1")
 job_2 = Job(command=["sleep", "60"], name="job 2")

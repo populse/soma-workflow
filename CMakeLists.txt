@@ -34,29 +34,27 @@ find_program( PYUIC "pyside-uic" )
 
 if( PYUIC )
   message( "run BRAINVISA_PYUIC" )
-  BRAINVISA_PYUIC( JobInfo.ui ui_job_info.py python/soma/workflow/gui )
-  BRAINVISA_PYUIC( graphWidget.ui ui_graph_widget.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( PlotWidget.ui ui_plot_widget.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( TransferInfo.ui ui_transfer_info.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( GroupInfo.ui ui_group_info.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( connection_dlg.ui ui_connection_dlg.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( workflowExampleDlg.ui ui_workflow_example_dlg.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( submissionDlg.ui ui_submission_dlg.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( resource_wf_select.ui ui_resource_wf_select.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( main_window.ui ui_main_window.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( wf_status_name_date.ui ui_wf_status_name_date.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( sw_mini.ui ui_sw_mini_widget.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( search_widget.ui ui_search_widget.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( local_scheduler_widget.ui ui_local_scheduler_cfg_ctrl.py python/soma/workflow/gui ) 
-  BRAINVISA_PYUIC( engine_controller_widget.ui ui_workflow_engine_cfg_ctrl.py python/soma/workflow/gui ) 
+  BRAINVISA_PYUIC( JobInfo.ui ui_job_info.py python/soma_workflow/gui )
+  BRAINVISA_PYUIC( graphWidget.ui ui_graph_widget.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( PlotWidget.ui ui_plot_widget.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( TransferInfo.ui ui_transfer_info.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( GroupInfo.ui ui_group_info.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( connection_dlg.ui ui_connection_dlg.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( workflowExampleDlg.ui ui_workflow_example_dlg.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( submissionDlg.ui ui_submission_dlg.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( resource_wf_select.ui ui_resource_wf_select.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( main_window.ui ui_main_window.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( wf_status_name_date.ui ui_wf_status_name_date.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( sw_mini.ui ui_sw_mini_widget.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( search_widget.ui ui_search_widget.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( local_scheduler_widget.ui ui_local_scheduler_cfg_ctrl.py python/soma_workflow/gui ) 
+  BRAINVISA_PYUIC( engine_controller_widget.ui ui_workflow_engine_cfg_ctrl.py python/soma_workflow/gui ) 
 endif()
 
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py" @ONLY )
-BRAINVISA_INSTALL( FILES "${CMAKE_BINARY_DIR}/python/soma/workflow/version.py"
-                   DESTINATION "python/soma/workflow"
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/config/config.py.in" "${CMAKE_BINARY_DIR}/python/soma_workflow/version.py" @ONLY )
+BRAINVISA_INSTALL( FILES "${CMAKE_BINARY_DIR}/python/soma_workflow/version.py"
+                   DESTINATION "python/soma_workflow"
                    COMPONENT ${PROJECT_NAME} )
-
-
 
 find_package( Sphinx )
 

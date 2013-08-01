@@ -23,7 +23,7 @@ import tarfile
 
 from mpi4py import MPI
 
-from soma.workflow import scheduler, constants
+from soma_workflow import scheduler, constants
 
 
 def slave_loop(communicator, 
@@ -383,10 +383,10 @@ if __name__ == '__main__':
 
     if rank == 0:
 
-        from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
-        from soma.workflow.database_server import WorkflowDatabaseServer
-        from soma.workflow.client import Helper
-        import soma.workflow.configuration
+        from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
+        from soma_workflow.database_server import WorkflowDatabaseServer
+        from soma_workflow.client import Helper
+        import soma_workflow.configuration
                
         logger = logging.getLogger('testMPI')
         logger.setLevel(logging.DEBUG)
@@ -406,9 +406,9 @@ if __name__ == '__main__':
         resource_id = args[1]
         
         try:
-            config = soma.workflow.configuration.Configuration.load_from_file(resource_id)
+            config = soma_workflow.configuration.Configuration.load_from_file(resource_id)
 
-            if config.get_scheduler_type() != soma.workflow.configuration.MPI_SCHEDULER:
+            if config.get_scheduler_type() != soma_workflow.configuration.MPI_SCHEDULER:
                 raise Exception("The resource id %s is not configured to use a MPI scheduler. "
                                 "Configure a resource with SCHEDULER_TYPE = mpi." %(resource_id))
  

@@ -28,12 +28,12 @@ import atexit
 #import cProfile
 #import traceback
 
-from soma.workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer
-import soma.workflow.constants as constants
-from soma.workflow.client import WorkflowController
-from soma.workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
-from soma.workflow.transfer import RemoteFileController
-from soma.workflow.configuration import Configuration
+from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer
+import soma_workflow.constants as constants
+from soma_workflow.client import WorkflowController
+from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
+from soma_workflow.transfer import RemoteFileController
+from soma_workflow.configuration import Configuration
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -92,7 +92,7 @@ class WorkflowEngineLoop(object):
    
   _scheduler = None
   # database server proxy
-  # soma.workflow.database_server
+  # soma_workflow.database_server
   _database_server = None
   # user_id
   _user_id = None
@@ -478,7 +478,7 @@ class WorkflowEngineLoop(object):
 
   def add_workflow(self, client_workflow, expiration_date, name, queue):
     '''
-    @type client_workflow: soma.workflow.client.Workflow
+    @type client_workflow: soma_workflow.client.Workflow
     @type expiration_date: datetime.datetime
     @type name: str
     @type queue: str
@@ -617,7 +617,7 @@ class WorkflowEngine(RemoteFileController):
   '''
   '''
   # database server
-  # soma.workflow.database_server.WorkflowDatabaseServer
+  # soma_workflow.database_server.WorkflowDatabaseServer
   _database_server = None
   # WorkflowEngineLoop
   engine_loop = None
@@ -633,7 +633,7 @@ class WorkflowEngine(RemoteFileController):
                 queue_limits={}):
     ''' 
     @type  database_server:
-           L{soma.workflow.database_server.WorkflowDatabaseServer}
+           L{soma_workflow.database_server.WorkflowDatabaseServer}
     @type  engine_loop: L{WorkflowEngineLoop}
     '''
     
@@ -666,7 +666,7 @@ class WorkflowEngine(RemoteFileController):
   def register_transfer(self, 
                         file_transfer): 
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     engine_transfer = EngineTransfer(file_transfer)
     engine_transfer = self._database_server.add_transfer(engine_transfer, 
@@ -707,7 +707,7 @@ class WorkflowEngine(RemoteFileController):
 
   def delete_transfer(self, engine_path):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
 
     self._database_server.remove_transfer(engine_path, self._user_id)
@@ -731,7 +731,7 @@ class WorkflowEngine(RemoteFileController):
     '''
     Submits a job to the system. 
     
-    @type  job: L{soma.workflow.client.Job}
+    @type  job: L{soma_workflow.client.Job}
     @param job: job informations 
     '''
     engine_job = self.engine_loop.add_job(job, queue)
@@ -741,7 +741,7 @@ class WorkflowEngine(RemoteFileController):
 
   def delete_job( self, job_id, force=True ):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     status = self._database_server.get_job_status(job_id,
                                                   self._user_id)[0]
@@ -760,7 +760,7 @@ class WorkflowEngine(RemoteFileController):
   
   def submit_workflow(self, workflow, expiration_date, name, queue):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     if not expiration_date:
       expiration_date = datetime.now() + timedelta(days=7)
@@ -772,7 +772,7 @@ class WorkflowEngine(RemoteFileController):
   
   def delete_workflow(self, workflow_id, force=True):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     
     status = self._database_server.get_workflow_status(workflow_id, 
@@ -818,7 +818,7 @@ class WorkflowEngine(RemoteFileController):
 
   def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     ''' 
     if new_expiration_date < datetime.now(): 
       return False
@@ -832,7 +832,7 @@ class WorkflowEngine(RemoteFileController):
 
   def restart_workflow(self, workflow_id, queue):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     (status, last_status_update) = self._database_server.get_workflow_status(workflow_id, self._user_id)
     
@@ -850,35 +850,35 @@ class WorkflowEngine(RemoteFileController):
 
   def jobs(self, job_ids=None):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     return self._database_server.get_jobs(self._user_id, job_ids)
     
 
   def transfers(self, transfer_ids=None):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     return self._database_server.get_transfers(self._user_id, transfer_ids)
   
   
   def workflows(self, workflow_ids=None):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     return self._database_server.get_workflows(self._user_id, workflow_ids)
   
 
   def workflow(self, wf_id):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     return self._database_server.get_engine_workflow(wf_id, self._user_id)
 
   
   def job_status(self, job_id):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     (status, 
     last_status_update) = self._database_server.get_job_status(job_id,
@@ -893,7 +893,7 @@ class WorkflowEngine(RemoteFileController):
   
   def workflow_status(self, wf_id):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     (status, 
      last_status_update) = self._database_server.get_workflow_status(wf_id,                                                              
@@ -909,7 +909,7 @@ class WorkflowEngine(RemoteFileController):
   
   def workflow_elements_status(self, wf_id, groupe = None):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     (status, 
      last_status_update) = self._database_server.get_workflow_status(wf_id,
@@ -926,7 +926,7 @@ class WorkflowEngine(RemoteFileController):
         
   def transfer_status(self, engine_path):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     transfer_status = self._database_server.get_transfer_status(engine_path,
                                                                 self._user_id)  
@@ -935,7 +935,7 @@ class WorkflowEngine(RemoteFileController):
 
   def job_termination_status(self, job_id ):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     
     job_exit_info= self._database_server.get_job_exit_info(job_id, self._user_id)
@@ -953,7 +953,7 @@ class WorkflowEngine(RemoteFileController):
   
   def wait_job( self, job_ids, timeout = -1):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''    
     self.logger.debug("        waiting...")
     
@@ -983,7 +983,7 @@ class WorkflowEngine(RemoteFileController):
  
   def restart_job( self, job_id ):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
 
     (status, 
@@ -999,7 +999,7 @@ class WorkflowEngine(RemoteFileController):
 
   def kill_job( self, job_id ):
     '''
-    Implementation of soma.workflow.client.WorkflowController API
+    Implementation of soma_workflow.client.WorkflowController API
     '''
     
     (status,

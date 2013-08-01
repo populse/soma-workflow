@@ -13,8 +13,8 @@ Created on Mon May 13 10:48:02 2013
 """
 
 if __name__=="__main__":
-    import soma.workflow.scheduler
-    if soma.workflow.scheduler.DRMAA_LIB_FOUND:
+    import soma_workflow.scheduler
+    if soma_workflow.scheduler.DRMAA_LIB_FOUND:
         print "True"
     else:
         print "False"

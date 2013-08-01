@@ -12,5 +12,5 @@ target_link_libraries( somadrmaajobssip "${PYTHON_LIBRARY}" somadrmaajobs )
 set_property( TARGET somadrmaajobssip PROPERTY SKIP_BUILD_RPATH TRUE )
 
 BRAINVISA_INSTALL( TARGETS somadrmaajobssip 
-                   DESTINATION python/soma/workflow
+                   DESTINATION python/soma_workflow
                    COMPONENT ${PROJECT_NAME} )

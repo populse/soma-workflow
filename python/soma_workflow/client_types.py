@@ -15,7 +15,7 @@
 # Imports
 #-------------------------------------------------------------------------------
 
-import soma.workflow.constants as constants
+import soma_workflow.constants as constants
 
 #-------------------------------------------------------------------------------
 # Classes and functions

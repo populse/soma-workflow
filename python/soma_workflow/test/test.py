@@ -12,9 +12,9 @@ import sys
 from datetime import datetime
 from datetime import timedelta
 
-import soma.workflow.constants as constants
-from soma.workflow.client import WorkflowController, Job, FileTransfer
-import soma.workflow.configuration as configuration
+import soma_workflow.constants as constants
+from soma_workflow.client import WorkflowController, Job, FileTransfer
+import soma_workflow.configuration as configuration
 
 def checkFiles(files, filesModels, tolerance = 0):
   index = 0

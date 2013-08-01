@@ -22,16 +22,16 @@ import Pyro.naming
 import Pyro.core
 from Pyro.errors import PyroError, NamingError, ProtocolError
 
-import soma.workflow.engine
-import soma.workflow.scheduler
-import soma.workflow.connection
-from soma.workflow.errors import EngineError
-from soma.workflow.database_server import WorkflowDatabaseServer
-from soma.workflow.engine_types import Job, EngineJob
+import soma_workflow.engine
+import soma_workflow.scheduler
+import soma_workflow.connection
+from soma_workflow.errors import EngineError
+from soma_workflow.database_server import WorkflowDatabaseServer
+from soma_workflow.engine_types import Job, EngineJob
 
 
 class Configuration(Pyro.core.ObjBase,
-                    soma.workflow.configuration.Configuration):
+                    soma_workflow.configuration.Configuration):
 
   def __init__( self,
                 resource_id,
@@ -47,7 +47,7 @@ class Configuration(Pyro.core.ObjBase,
                 queue_limits=None,
                 drmaa_implementation=None):
     Pyro.core.ObjBase.__init__(self)
-    soma.workflow.configuration.Configuration.__init__(self,
+    soma_workflow.configuration.Configuration.__init__(self,
                                                        resource_id,
                                                        mode,
                                                        scheduler_type,
@@ -112,7 +112,7 @@ class DrmaaCTypesTest(unittest.TestCase):
 #        #print "config.get_parallel_job_config()="+repr(config.get_parallel_job_config())
 #        #print "config.get_native_specification()="+repr(config.get_native_specification())
 #
-#        sch = soma.workflow.scheduler.DrmaaCTypes('PBS',
+#        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
 #                                    config.get_parallel_job_config(),
 #                                    os.path.expanduser("~"),
 #                                    configured_native_spec=config.get_native_specification())
@@ -126,7 +126,7 @@ class DrmaaCTypesTest(unittest.TestCase):
 #        #print "config.get_parallel_job_config()="+repr(config.get_parallel_job_config())
 #        #print "config.get_native_specification()="+repr(config.get_native_specification())
 #
-#        sch = soma.workflow.scheduler.DrmaaCTypes('PBS',
+#        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
 #                                    config.get_parallel_job_config(),
 #                                    os.path.expanduser("~"),
 #                                    configured_native_spec=config.get_native_specification())
@@ -142,7 +142,7 @@ class DrmaaCTypesTest(unittest.TestCase):
     def test_DrmaaCTypesSubAJob(self):
         config = Configuration.load_from_file(self.resource_id)
 
-        sch = soma.workflow.scheduler.DrmaaCTypes('PBS',
+        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
                                     config.get_parallel_job_config(),
                                     os.path.expanduser("~"),
                                     configured_native_spec=config.get_native_specification())

@@ -1,8 +1,8 @@
 import os
 import sys
 
-from soma.workflow.test import test_workflow
-from soma.workflow.client import Helper
+from soma_workflow.test import test_workflow
+from soma_workflow.client import Helper
 
 if __name__ == '__main__':
 

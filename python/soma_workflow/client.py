@@ -31,11 +31,11 @@ if sys.version_info[:2] >= (2, 6):
 #import cProfile
 #import traceback
 
-import soma.workflow.connection as connection
-from soma.workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
-import soma.workflow.constants as constants
-import soma.workflow.configuration as configuration
-from soma.workflow.errors import TransferError, SerializationError, SomaWorkflowError
+import soma_workflow.connection as connection
+from soma_workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
+import soma_workflow.constants as constants
+import soma_workflow.configuration as configuration
+from soma_workflow.errors import TransferError, SerializationError, SomaWorkflowError
 
 
 #-------------------------------------------------------------------------------
@@ -43,11 +43,11 @@ from soma.workflow.errors import TransferError, SerializationError, SomaWorkflow
 #-------------------------------------------------------------------------------
 
 # imports required by the users of soma-workflow API (do not remove):
-from soma.workflow.client_types import Job
-from soma.workflow.client_types import Workflow
-from soma.workflow.client_types import Group
-from soma.workflow.client_types import FileTransfer
-from soma.workflow.client_types import SharedResourcePath
+from soma_workflow.client_types import Job
+from soma_workflow.client_types import Workflow
+from soma_workflow.client_types import Group
+from soma_workflow.client_types import FileTransfer
+from soma_workflow.client_types import SharedResourcePath
 
 
 class WorkflowController(object):
@@ -216,7 +216,7 @@ class WorkflowController(object):
 
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                              "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
+                              "Use soma_workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
 
     #cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow, expiration_date, name, queue)", globals(), locals(), "/home/soizic/profile/profile_submit_workflow")
 
@@ -254,7 +254,7 @@ class WorkflowController(object):
     print "The method submit_job is deprecated since version 2.4. Use submit_workflow instead."
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                              "Use soma.workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
+                              "Use soma_workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.") 
 
     job_id = self._engine_proxy.submit_job(job, queue)
     return job_id
@@ -505,7 +505,7 @@ class WorkflowController(object):
     '''
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                              "Use soma.workflow.MPI_workflow_runner to restart a workflow using the MPI scheduler.") 
+                              "Use soma_workflow.MPI_workflow_runner to restart a workflow using the MPI scheduler.") 
 
     return self._engine_proxy.restart_workflow(workflow_id, queue)
 
@@ -548,7 +548,7 @@ class WorkflowController(object):
     '''
     if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
       raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                              "Kill the soma.workflow.MPI_workflow_runner job to stop the workflow.") 
+                              "Kill the soma_workflow.MPI_workflow_runner job to stop the workflow.") 
 
 
     return self._engine_proxy.stop_workflow(workflow_id)
@@ -914,14 +914,14 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
   Using serveral client process simultaneously (thus several database server
   with the same database file) can cause error (notably database locked problems)
 
-  * config: *soma.workflow.configuration.Configuration*
+  * config: *soma_workflow.configuration.Configuration*
 
   * returns: *WorkflowEngine*
   '''
   import logging
 
-  from soma.workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
-  from soma.workflow.database_server import WorkflowDatabaseServer
+  from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
+  from soma_workflow.database_server import WorkflowDatabaseServer
 
   (engine_log_dir,
   engine_log_format,
@@ -942,14 +942,14 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
                                            config.get_transfered_file_dir())
 
   if config.get_scheduler_type() == configuration.DRMAA_SCHEDULER:
-    from soma.workflow.scheduler import Drmaa
+    from soma_workflow.scheduler import Drmaa
     #print "scheduler type: drmaa"
     scheduler = Drmaa(config.get_drmaa_implementation(),
                       config.get_parallel_job_config(),
                       configured_native_spec=config.get_native_specification())
 
   elif config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-    from soma.workflow.scheduler import ConfiguredLocalScheduler
+    from soma_workflow.scheduler import ConfiguredLocalScheduler
     if local_scheduler_config == None:
       local_scheduler_config = LocalSchedulerCfg()
     #print "scheduler type: basic, number of cpu: " + repr(local_scheduler_config.get_proc_nb())
@@ -1194,7 +1194,7 @@ class Helper(object):
                                  "The workflow file may have been created "
                                  "using Python >= 2.6 using the JSON format.\n"
                                  "Use the converter: \n"
-                                 "soma.workflow.client.Helper.convert_wf_file_for_p2_5 "
+                                 "soma_workflow.client.Helper.convert_wf_file_for_p2_5 "
                                  " " %(type(e), e))
       try:
         file.close()

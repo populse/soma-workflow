@@ -27,9 +27,9 @@ from datetime import timedelta
 from datetime import datetime
 import socket
 
-import soma.workflow.constants as constants
-from soma.workflow.client import FileTransfer
-from soma.workflow.errors import UnknownObjectError, DatabaseError
+import soma_workflow.constants as constants
+from soma_workflow.client import FileTransfer
+from soma_workflow.errors import UnknownObjectError, DatabaseError
 
 
 #-----------------------------------------------------------------------------

@@ -24,7 +24,7 @@
 from ctypes import *
 from ctypes.util import find_library
 from somadrmaa.errors import error_check, error_buffer
-from soma.workflow.utils import DetectFindLib
+from soma_workflow.utils import DetectFindLib
 import os
 
 

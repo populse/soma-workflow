@@ -22,16 +22,16 @@ if __name__ == '__main__':
   import Pyro.core
   from Pyro.errors import PyroError, NamingError
   
-  import soma.workflow.database_server
-  from soma.workflow.configuration import Configuration
+  import soma_workflow.database_server
+  from soma_workflow.configuration import Configuration
   
   class WorkflowDatabaseServer(Pyro.core.ObjBase, 
-                               soma.workflow.database_server.WorkflowDatabaseServer):
+                               soma_workflow.database_server.WorkflowDatabaseServer):
     def __init__(self, 
                  database_file, 
                  tmp_file_dir_path):
       Pyro.core.ObjBase.__init__(self)
-      soma.workflow.database_server.WorkflowDatabaseServer.__init__(self, 
+      soma_workflow.database_server.WorkflowDatabaseServer.__init__(self, 
                                                            database_file, 
                                                            tmp_file_dir_path)
     pass

@@ -33,7 +33,7 @@ Basic example
 
 ::
 
-  from soma.workflow.client import Job, Workflow, Helper
+  from soma_workflow.client import Job, Workflow, Helper
 
 
   # create the workflow:
@@ -82,7 +82,7 @@ purpose. Groups do not have any impact on the execution of workflows.
 
 ::
 
-  from soma.workflow.client import Job, Workflow, Group, Helper
+  from soma_workflow.client import Job, Workflow, Group, Helper
 
 
   # create the workflow:
@@ -143,7 +143,7 @@ script instead of saving the workflow into a file:
 
 ::
   
-  from soma.workflow.client import WorkflowController
+  from soma_workflow.client import WorkflowController
 
   # workflow creation as described in the examples
   # no need to save the workflow into a file
@@ -181,7 +181,7 @@ with any content. It will stand for an input file to transfer.
 
 ::
 
-  from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
+  from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
 
   # FileTransfer creation for input files
   myfile = FileTransfer(is_input=True,
@@ -254,7 +254,7 @@ The workflow contains 2 jobs which will modify the working directory.
 
 ::
 
-  from soma.workflow.client import Job, Workflow, WorkflowController, FileTransfer
+  from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
 
   # Creation of the FileTransfer object to transfer the working directory
   my_working_directory = FileTransfer(is_input=True,
@@ -339,7 +339,7 @@ Run the script to create and submit the workflow:
 
 :: 
 
-  from soma.workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
+  from soma_workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
 
   # SharedResourcePath creation for the input file.
   # The input file is read direclty in the data directory located on the

@@ -29,7 +29,7 @@ while i < len(sys.argv):
   i=i+1
  
 lines2cmd = [
-             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server' | grep '%s' \
+             "kill $(ps -ef | grep 'python -m soma_workflow.start_database_server' | grep '%s' \
 | grep -v grep | awk '{print $2}')"%(resName),
             "rm ~/.soma-workflow.cfg"
              ]

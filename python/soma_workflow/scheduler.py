@@ -23,10 +23,10 @@ import atexit
 import os.path
 import socket
 
-import soma.workflow.constants as constants
-from soma.workflow.errors import DRMError
-from soma.workflow.configuration import LocalSchedulerCfg
-from soma.workflow.utils import DetectFindLib
+import soma_workflow.constants as constants
+from soma_workflow.errors import DRMError
+from soma_workflow.configuration import LocalSchedulerCfg
+from soma_workflow.utils import DetectFindLib
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
@@ -38,7 +38,7 @@ if DRMAA_LIB_FOUND==True:
 
 
 try:
-  from soma.workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
+  from soma_workflow.somadrmaajobssip import DrmaaJobs, DrmaaError
   DRMAA_READY = True
 except ImportError:
   class DrmaaError(Exception): pass 
@@ -117,7 +117,7 @@ if DRMAA_LIB_FOUND==True:
         # parallel jobs. The value of parallel_job_submission is cluster dependant. 
         # The keys are:
         #      -Drmaa job template attributes 
-        #      -parallel configuration name as defined in soma.workflow.constants
+        #      -parallel configuration name as defined in soma_workflow.constants
         # dict
         parallel_job_submission_info = None
         
@@ -242,7 +242,7 @@ if DRMAA_LIB_FOUND==True:
           @param drmaa_job_template_id: id of drmaa job template
           @type  parallel_job_info: tuple (string, int)
           @param parallel_job_info: (configuration_name, max_node_num)
-          configuration_name: type of parallel job as defined in soma.workflow.constants 
+          configuration_name: type of parallel job as defined in soma_workflow.constants 
           (eg MPI, OpenMP...)
           max_node_num: maximum node number the job requests (on a unique machine or 
           separated machine depending on the parallel configuration)
@@ -280,7 +280,7 @@ if DRMAA_LIB_FOUND==True:
      
         def job_submission(self, job):
           '''
-          @type  job: soma.workflow.client.Job
+          @type  job: soma_workflow.client.Job
           @param job: job to be submitted
           @rtype: string
           @return: drmaa job id 
@@ -472,7 +472,7 @@ class Drmaa(Scheduler):
   # parallel jobs. The value of parallel_job_submission is cluster dependant. 
   # The keys are:
   #  -Drmaa job template attributes 
-  #  -parallel configuration name as defined in soma.workflow.constants
+  #  -parallel configuration name as defined in soma_workflow.constants
   # dict
   parallel_job_submission_info = None
   
@@ -490,7 +490,7 @@ class Drmaa(Scheduler):
 
     if not DRMAA_READY:
       raise DRMError("ImportError, could not load the sip binding module for Drmaa: "
-                     "soma.workflow.somadrmaajobssip" ) 
+                     "soma_workflow.somadrmaajobssip" ) 
     self._drmaa = DrmaaJobs()
     try:
       self._drmaa.initSession()
@@ -560,7 +560,7 @@ class Drmaa(Scheduler):
 
   def job_submission(self, job):
     '''
-    @type  job: soma.workflow.client.Job
+    @type  job: soma_workflow.client.Job
     @param job: job to be submitted
     @rtype: string
     @return: drmaa job id 
@@ -705,7 +705,7 @@ class Drmaa(Scheduler):
     @param drmaa_job_template_id: id of drmaa job template
     @type  parallel_job_info: tuple (string, int)
     @param parallel_job_info: (configuration_name, max_node_num)
-    configuration_name: type of parallel job as defined in soma.workflow.constants 
+    configuration_name: type of parallel job as defined in soma_workflow.constants 
     (eg MPI, OpenMP...)
     max_node_num: maximum node number the job requests (on a unique machine or 
     separated machine depending on the parallel configuration)
@@ -756,7 +756,7 @@ class LocalScheduler(Scheduler):
 
   * _queue *list of scheduler jobs ids*
   
-  * _jobs *dictionary job_id -> soma.workflow.engine_types.EngineJob*
+  * _jobs *dictionary job_id -> soma_workflow.engine_types.EngineJob*
   
   * _processes *dictionary job_id -> subprocess.Popen*
 

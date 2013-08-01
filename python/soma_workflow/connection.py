@@ -27,7 +27,7 @@ import select
 import SocketServer
 
 
-from soma.workflow.errors import ConnectionError
+from soma_workflow.errors import ConnectionError
 
 
 
@@ -137,7 +137,7 @@ def check_if_soma_wf_cr_on_server(
                             ip_address_or_domain,
                             userpw='',
                             sshport=22):
-    command = "python -c 'import soma.workflow.check_requirement'"
+    command = "python -c 'import soma_workflow.check_requirement'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
         command, 
         userid, 
@@ -157,7 +157,7 @@ def check_if_ctype_drmaa_on_server(
                             ip_address_or_domain,
                             userpw='',
                             sshport=22):
-    command = "python -m 'soma.workflow.check_requirement.drmaa'"
+    command = "python -m 'soma_workflow.check_requirement.drmaa'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
         command, 
         userid, 
@@ -180,7 +180,7 @@ def check_if_somawf_on_server(
                             ip_address_or_domain,
                             userpw='',
                             sshport=22):
-    command = "python -c 'import soma.workflow'"
+    command = "python -c 'import soma_workflow'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
         command, 
         userid, 
@@ -202,7 +202,7 @@ def check_if_somawfdb_on_server(
                             userpw='',
                             sshport=22):
 
-    command = "ps -ef | grep 'python -m soma.workflow.start_database_server'"\
+    command = "ps -ef | grep 'python -m soma_workflow.start_database_server'"\
     " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
     std_out_lines = SSHExecCmd(
@@ -287,7 +287,7 @@ class RemoteConnection(object):
                                         cluster_address, 
                                         password):
             raise ConnectionError("Cannot find "\
-                "soma.workflow.check_requirement on %s ."\
+                "soma_workflow.check_requirement on %s ."\
                 "Please update your soma-workflow on %s."\
                                   % (cluster_address,cluster_address))
                                   
@@ -307,7 +307,7 @@ class RemoteConnection(object):
                                             login, 
                                             cluster_address, 
                                             password):
-           command = "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
+           command = "python -m soma_workflow.start_database_server %s & bg"%(resource_id)
            SSHExecCmd(
               command,
               login,
@@ -320,7 +320,7 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        command = "python -m soma.workflow.start_workflow_engine"\
+        command = "python -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, pyro_objet_name, log)
         
         print "start engine command: "\
@@ -492,15 +492,15 @@ class LocalConnection(object):
 
         # run the workflow engine process and get back the
         # workflow_engine and ConnectionChecker URIs
-        # command = "python -m cProfile -o /home/soizic/profile/profile /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma/workflow/start_workflow_engine.py %s %s %s" %(
+        # command = "python -m cProfile -o /home/soizic/profile/profile /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma_workflow/start_workflow_engine.py %s %s %s" %(
                                          # resource_id,
                                          # pyro_objet_name,
                                          # log)
-        command = "python -m soma.workflow.start_workflow_engine %s %s %s" % (
+        command = "python -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
             pyro_objet_name,
             log)
-        # command = "rpdb2 -p Soizic -d /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma/workflow/start_workflow_engine.py %s %s %s" %(
+        # command = "rpdb2 -p Soizic -d /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma_workflow/start_workflow_engine.py %s %s %s" %(
                                          # resource_id,
                                          # pyro_objet_name,
                                          # log)

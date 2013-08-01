@@ -109,8 +109,8 @@ end to check the requirement on the server side
 '''
 
 
-from soma.workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
-import soma.workflow.configuration as configuration
+from soma_workflow.configuration import AddLineDefintions2BashrcFile,WriteOutConfiguration
+import soma_workflow.configuration as configuration
 
 
 def GetQueueNamesOnPBSTORQUEServer():
@@ -223,14 +223,14 @@ SetupConfigurationFileOnServer(userid,ip_address_or_domain,resource_id)
 
  
 lines2cmd = [
-             "kill $(ps -ef | grep 'python -m soma.workflow.start_database_server' | grep '%s' \
+             "kill $(ps -ef | grep 'python -m soma_workflow.start_database_server' | grep '%s' \
 | grep -v grep | awk '{print $2}')"%(userid),
             "rm ~/.soma-workflow/*.db",
             "rm -rf ~/.soma-workflow/transfered-files/*",
             "rm -rf ~/.soma-workflow/logs/*",
             "mkdir ~/.soma-workflow/transfered-files",
             "mkdir ~/.soma-workflow/logs",
-            "python -m soma.workflow.start_database_server %s & bg"%(resource_id)
+            "python -m soma_workflow.start_database_server %s & bg"%(resource_id)
              ]
 
 

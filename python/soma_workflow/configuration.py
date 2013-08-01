@@ -22,8 +22,8 @@ import sys
 import socket
 import ConfigParser
 
-from soma.workflow.errors import ConfigurationError
-import soma.workflow.observer as observer
+from soma_workflow.errors import ConfigurationError
+import soma_workflow.observer as observer
 
 
 #-----------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 
 import sys
 
-from soma.workflow.client import Helper, WorkflowController
+from soma_workflow.client import Helper, WorkflowController
 
 if __name__ == '__main__':
     
