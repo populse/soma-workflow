@@ -19,7 +19,7 @@ mkdir $SOMA_WORKFLOW_EXAMPLES_OUT
 cd $TMPNAMEPATH
 
 
-if [ $count -eq 1 ]
+if [ $isfrompypi -eq 1 ]
 then
   wget https://pypi.python.org/packages/source/s/soma-workflow/${FILENAME}.tar.gz
   tar -xvf $FILENAME.tar.gz
