@@ -1,6 +1,6 @@
 #! bin/sh
 
-FILENAME=soma-workflow-2.5a
+FILENAME=soma-workflow-2.5.1b
 TMPNAMEPATH=/tmp/platformtest
 isfrompypi=1
 
@@ -8,7 +8,7 @@ isfrompypi=1
 rm -rf $TMPNAMEPATH
 mkdir $TMPNAMEPATH
 
-rsync -a -u --exclude=".svn" ../../ $TMPNAMEPATH
+rsync -a -u --exclude=".svn" --exclude=".git" ../../ $TMPNAMEPATH
 
 export SWFPATH=$TMPNAMEPATH
 export SOMA_WORKFLOW_EXAMPLES=$SWFPATH/test/jobExamples
