@@ -98,13 +98,13 @@ Installation
 
   5) In command line mode (start -> cmd), run:
 
-     a. cd C:\soma-workflow
+     a. cd C:\\soma-workflow
 
      b. python setup.py install
 
   6) Run soma_workflow_gui
 
-     a. cd C:\Python27\Scripts
+     a. cd C:\\Python27\\Scripts
 
      b. python soma_workflow_gui
     

@@ -1,7 +1,7 @@
-#! bin/sh
+#!/bin/shell
 
 PACKNAME=pack-soma-workflow
-FULLVERSION=2.5.0
+FULLVERSION=2.5.1
 SHORTVERSION=2.5
 
 
@@ -11,8 +11,8 @@ mkdir ./$PACKNAME
 mkdir ./$PACKNAME/bin
 mkdir ./$PACKNAME/python
 
-rsync -a -u --exclude=".svn" ./python ./$PACKNAME
-rsync -a -u --exclude=".svn" ./bin ./$PACKNAME
+rsync -a -u --exclude=".svn" --exclude=".git" ./python ./$PACKNAME
+rsync -a -u --exclude=".svn" --exclude=".git" ./bin ./$PACKNAME
 
 find -name "*.pyc" | xargs rm > /dev/null 2>&1
 find -name "*.pyo" | xargs rm > /dev/null 2>&1
