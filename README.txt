@@ -7,7 +7,7 @@ Main Features
 =============
 
   **Unified interface to multiple computing resources:** 
-    Submission of jobs or workflows with an unique interface to various 
+    Submission of jobs or workflows with a unique interface to various 
     parallel resources: multiple core machines or clusters which can be 
     managed by various systems (such as Grid Engine, Condor, Torque/PBS, LSF..)
 
