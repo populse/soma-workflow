@@ -29,6 +29,7 @@ if __name__=="__main__":
   import soma_workflow.connection 
   import soma_workflow.configuration
   from soma_workflow.errors import NoDrmaaLibError, EngineError
+  from soma.workflow.database_server import WorkflowDatabaseServer
 
 
 
@@ -123,7 +124,7 @@ if __name__=="__main__":
   
   ###### main server program
   def main(resource_id, engine_name, log = ""):
-    
+
     config = Configuration.load_from_file(resource_id)
 
     (engine_log_dir,
