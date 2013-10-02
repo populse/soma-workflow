@@ -29,7 +29,7 @@ if __name__=="__main__":
   import soma_workflow.connection 
   import soma_workflow.configuration
   from soma_workflow.errors import NoDrmaaLibError, EngineError
-  from soma.workflow.database_server import WorkflowDatabaseServer
+  from soma_workflow.database_server import WorkflowDatabaseServer
 
 
 
