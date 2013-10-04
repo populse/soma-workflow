@@ -1813,8 +1813,9 @@ class MainWindow(QtGui.QMainWindow):
     
     self.ui = Ui_MainWindow()
     self.ui.setupUi(self)
-    
-    self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
+
+    self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__),
+                                          "icon/soma_workflow_icon.png")))
 
     self.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
     self.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
@@ -1822,14 +1823,13 @@ class MainWindow(QtGui.QMainWindow):
     self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
 
     self.setWindowTitle("soma-workflow")
-    
+
     self.model = model
 
-    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
-
-    
-    
-    
+    self.connect(self.model,
+                 QtCore.SIGNAL('current_connection_changed()'),
+                 self.currentConnectionChanged)
+ 
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
                                         auto_connect,
@@ -1930,14 +1930,78 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_transfer_outfiles)
     self.ui.tool_bar.addAction(self.sw_widget.ui.actionServer_Management)
     self.ui.tool_bar.addSeparator()
-    
-    
+
     self.showMaximized()
 
-     
+  def canExit(self):
+      print "canExit"
+      print repr(self.model.__class__.__name__)
+      print repr(self.model.resource_pool.resource_ids())
+      for res_id in self.model.resource_pool.resource_ids():
+          print self.model.list_workflow_status(res_id)
+          for workflow_id in self.model.workflows(res_id):
+              print "workflow_id=", (workflow_id)
+              wf_elements_status = self.model.current_connection.workflow_elements_status(workflow_id)
+              print repr(wf_elements_status)
+              for transfer_info in wf_elements_status[1]:
+                  status = transfer_info[1][0]
+                  print "=============================="
+                  print status
+                  if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
+                     status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
+                      reply = QtGui.QMessageBox.question(
+                          None,
+                          'Warning!!',
+                          'Files are transfering, Do you want to close it?',
+                          QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                      if reply == QtGui.QMessageBox.Yes:
+                          return True
+                      else:
+                          return False
+      return True
+
+#([(1451, u'not_submitted', None, (None, None, None, None), (None, None, None, None))], 
+#[('/volatile/laure/.soma-workflow/transfered_files/laure_1/copy_of_myfile_2919', ('do not exist', (100, 100))),
+#('/volatile/laure/.soma-workflow/transfered_files/laure_1/myfile_2920', ('transfering client->cr', (2147483648, 2147483648)))], 
+#u'worklflow_not_started', None)
+
+#              elements_status[]
+
+#    transfer_info = None
+#    wf_elements_status = wf_ctrl.workflow_elements_status(workflow_id)
+#
+#    to_transfer = []
+#    for transfer_info in wf_elements_status[1]:
+#      status = transfer_info[1][0]
+#      if status == constants.FILES_ON_CR:
+#        engine_path = transfer_info[0]
+#        to_transfer.append(engine_path)
+#      if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+#        engine_path = transfer_info[0]
+#        to_transfer.append(engine_path)
+#        
+#      # print repr(self.model.list_workflow_status())
+#      return True
+#
+#(
+#[(1448, u'not_submitted', None, (None, None, None, None), (None, None, None, None))],
+#[('/volatile/laure/.soma-workflow/transfered_files/laure_1/myfile_2907',
+#  ('transfering client->cr', (2147483648, 2147483648))), ('/volatile/laure/.soma-workflow/transfered_files/laure_1/copy_of_myfile_2908', ('do not exist', (100, 100)))], 
+#u'worklflow_not_started',
+#None
+#)
+
   @QtCore.Slot()
   def currentConnectionChanged(self):
     self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
+
+  @QtCore.Slot()
+  def closeEvent(self, event):
+        # do stuff
+        if self.canExit():
+            event.accept() # let the window close
+        else:
+            event.ignore()
       
       
 class WorkflowInfoWidget(QtGui.QWidget):
@@ -3457,7 +3521,8 @@ class ApplicationModel(QtCore.QObject):
   def workflows(self, resource_id):
     result = {}
     for wf_id in self._workflows[resource_id].keys():
-      result[wf_id] = (self._workflow_names[resource_id][wf_id], self._expiration_dates[resource_id][wf_id])
+      result[wf_id] = (self._workflow_names[resource_id][wf_id],
+                        self._expiration_dates[resource_id][wf_id])
     return result
 
   def add_connection(self, resource_id, connection):
