@@ -1934,62 +1934,33 @@ class MainWindow(QtGui.QMainWindow):
     self.showMaximized()
 
   def canExit(self):
-      print "canExit"
-      print repr(self.model.__class__.__name__)
-      print repr(self.model.resource_pool.resource_ids())
+      # print "canExit"
+      # print repr(self.model.__class__.__name__)
+      # print repr(self.model.resource_pool.resource_ids())
       for res_id in self.model.resource_pool.resource_ids():
-          print self.model.list_workflow_status(res_id)
+          # print self.model.list_workflow_status(res_id)
           for workflow_id in self.model.workflows(res_id):
-              print "workflow_id=", (workflow_id)
+              # print "workflow_id=", (workflow_id)
               wf_elements_status = self.model.current_connection.workflow_elements_status(workflow_id)
-              print repr(wf_elements_status)
+              # print repr(wf_elements_status)
               for transfer_info in wf_elements_status[1]:
                   status = transfer_info[1][0]
-                  print "=============================="
-                  print status
+                  # print "=============================="
+                  # print status
                   if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
                      status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
                       reply = QtGui.QMessageBox.question(
                           None,
                           'Warning!!',
-                          'Files are transfering, Do you want to close it?',
+                          "Files are transfering, "\
+                          "If you close it, the workflow will be broken."\
+                          "Do you want to close it?",
                           QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                       if reply == QtGui.QMessageBox.Yes:
                           return True
                       else:
                           return False
       return True
-
-#([(1451, u'not_submitted', None, (None, None, None, None), (None, None, None, None))], 
-#[('/volatile/laure/.soma-workflow/transfered_files/laure_1/copy_of_myfile_2919', ('do not exist', (100, 100))),
-#('/volatile/laure/.soma-workflow/transfered_files/laure_1/myfile_2920', ('transfering client->cr', (2147483648, 2147483648)))], 
-#u'worklflow_not_started', None)
-
-#              elements_status[]
-
-#    transfer_info = None
-#    wf_elements_status = wf_ctrl.workflow_elements_status(workflow_id)
-#
-#    to_transfer = []
-#    for transfer_info in wf_elements_status[1]:
-#      status = transfer_info[1][0]
-#      if status == constants.FILES_ON_CR:
-#        engine_path = transfer_info[0]
-#        to_transfer.append(engine_path)
-#      if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
-#        engine_path = transfer_info[0]
-#        to_transfer.append(engine_path)
-#        
-#      # print repr(self.model.list_workflow_status())
-#      return True
-#
-#(
-#[(1448, u'not_submitted', None, (None, None, None, None), (None, None, None, None))],
-#[('/volatile/laure/.soma-workflow/transfered_files/laure_1/myfile_2907',
-#  ('transfering client->cr', (2147483648, 2147483648))), ('/volatile/laure/.soma-workflow/transfered_files/laure_1/copy_of_myfile_2908', ('do not exist', (100, 100)))], 
-#u'worklflow_not_started',
-#None
-#)
 
   @QtCore.Slot()
   def currentConnectionChanged(self):
