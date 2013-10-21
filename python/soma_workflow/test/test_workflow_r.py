@@ -27,7 +27,11 @@ from soma_workflow.errors import ConfigurationError
 #from soma_workflow.utils import checkFiles
 from soma_workflow.utils import identicalFiles
 import soma_workflow.constants as constants
-from soma_workflow.test.workflow_examples import WorkflowExamples
+
+from soma_workflow.test.workflow_local import WorkflowExamplesLocal
+from soma_workflow.test.workflow_shared import WorkflowExamplesShared
+#from soma_workflow.test.workflow_shared_transfer import WorkflowExamplesSharedTransfer
+from soma_workflow.test.workflow_transfer import WorkflowExamplesTransfer
 
 from soma_workflow.test.utils import select_resources
 from soma_workflow.test.utils import select_configuration
@@ -64,17 +68,12 @@ class WorkflowTest(unittest.TestCase):
 
     def setUp(self):
         if WorkflowTest.path_management == WorkflowTest.LOCAL_PATH:
-            WorkflowTest.wf_examples = WorkflowExamples(
-                with_transfers=False,
-                with_shared_resource_path=False)
+            workflow_examples = WorkflowExamplesLocal()
         elif WorkflowTest.path_management == WorkflowTest.FILE_TRANSFER:
-            WorkflowTest.wf_examples = WorkflowExamples(
-                with_transfers=True,
-                with_shared_resource_path=False)
+            workflow_examples = WorkflowExamplesTransfer()
         elif WorkflowTest.path_management == WorkflowTest.SHARED_RESOURCE_PATH:
-            WorkflowTest.wf_examples = WorkflowExamples(
-                with_transfers=False,
-                with_shared_resource_path=True)
+            workflow_examples = WorkflowExamplesShared()
+        WorkflowTest.wf_examples = workflow_examples
         #raise Exception("WorkflowTest is an abstract class.")
 
     def tearDown(self):
