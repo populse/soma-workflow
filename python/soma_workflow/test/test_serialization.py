@@ -1,56 +1,60 @@
 import os
 import sys
 
-from soma_workflow.test import test_workflow
+from soma_workflow.test import workflow_local
+from soma_workflow.test import workflow_shared
+from soma_workflow.test import workflow_transfer
 from soma_workflow.client import Helper
 
 if __name__ == '__main__':
 
-  directory = "/tmp/"
-  
-  simple_wf_examples = test_workflow.WorkflowExamples(
-                                             with_transfers=False,
-                                             with_shared_resource_path=False)
-  tr_wf_examples = test_workflow.WorkflowExamples(
-                                             with_transfers=True,
-                                             with_shared_resource_path=False)
-  srp_wf_examples = test_workflow.WorkflowExamples(
-                                             with_transfers=False,
-                                             with_shared_resource_path=True)
-  workflows = []
-  workflows.append(("multiple", simple_wf_examples.multiple_simple_example()))
-  workflows.append(("special_command", simple_wf_examples.special_command()))
-  workflows.append(("mutiple_transfer", tr_wf_examples.multiple_simple_example()))
-  workflows.append(("special_command_transfer", tr_wf_examples.special_command()))
-  workflows.append(("special_transfer", tr_wf_examples.special_transfer()))
-  workflows.append(("mutiple_crp", srp_wf_examples.multiple_simple_example()))
-  workflows.append(("special_command_crp", srp_wf_examples.special_command()))
-    
-  ret_value = 0
+    directory = "/tmp/"
 
-  for workflow_name, workflow in workflows:
-    print "--------------------------------------------------------------"
-    print workflow_name
+    simple_wf_examples = workflow_local.WorkflowExamplesLocal()
+    tr_wf_examples = workflow_transfer.WorkflowExamplesTransfer()
+    srp_wf_examples = workflow_shared.WorkflowExamplesShared()
+    workflows = []
+    workflows.append(("multiple", simple_wf_examples.example_multiple()))
+    workflows.append(("special_command",
+                      simple_wf_examples.example_special_command()))
 
-    file_path = os.path.join(directory, "json_" + workflow_name + ".wf")
-    Helper.serialize(file_path, workflow)      
+    workflows.append(("mutiple_transfer", tr_wf_examples.example_multiple()))
+    workflows.append(("special_command_transfer",
+                      tr_wf_examples.example_special_command()))
+    workflows.append(("special_transfer",
+                      tr_wf_examples.example_special_transfer()))
 
-    new_workflow = Helper.unserialize(file_path)
+    workflows.append(("mutiple_srp", srp_wf_examples.example_multiple()))
+    workflows.append(("special_command_srp",
+                      srp_wf_examples.example_special_command()))
 
-    if not new_workflow.attributs_equal(workflow):
-      print "FAILED !!"
-      ret_value = 1
+    failed_workflows = []
+
+    for workflow_name, workflow in workflows:
+        print "--------------------------------------------------------------"
+        print workflow_name
+
+        file_path = os.path.join(directory, "json_" + workflow_name + ".wf")
+        Helper.serialize(file_path, workflow)
+
+        new_workflow = Helper.unserialize(file_path)
+
+        if not new_workflow.attributs_equal(workflow):
+            print "FAILED !!"
+            failed_workflows.append(workflow_name)
+        else:
+            print "OK"
+
+        try:
+            os.remove(file_path)
+        except IOError:
+            pass
+
+    if len(failed_workflows) == 0:
+        print "\nWorkflow serialization successful"
     else:
-      print "OK"
-    
-    try:
-      os.remove(file_path)
-    except IOError:
-      pass  
+        print "Failed tests :"
+        for failed_workflow in failed_workflows:
+            print "*", failed_workflow
 
-  if ret_value == 0:
-    print "\nAll test ran with success."
-  else:
-    print "\nOne or several tests failed."
-
-  sys.exit(ret_value)
+    sys.exit(0)
