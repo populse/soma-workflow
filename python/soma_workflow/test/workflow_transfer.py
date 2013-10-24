@@ -28,6 +28,8 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.tr_file = {}
         self.tr_script = {}
         self.tr_stdin = {}
+        self.lo_stdout = {}
+        self.lo_out_model_file = {}
 
         complete_path = os.path.join(self.examples_dir, "complete")
 
@@ -67,6 +69,10 @@ class WorkflowExamplesTransfer(WorkflowExamples):
             [os.path.join(self.output_dir, "example.img"),
              os.path.join(self.output_dir, "example.hdr")])
 
+        self.lo_stdout1_exception_model = os.path.join(
+            self.examples_dir,
+            "simple/outputModels/stdout_exception_job")
+
         for i in range(1, 5):
             self.tr_script[i] = FileTransfer(
                 True, os.path.join(complete_path, "job" + str(i) + ".py"),
@@ -74,11 +80,16 @@ class WorkflowExamplesTransfer(WorkflowExamples):
             self.tr_stdin[i] = FileTransfer(
                 True, os.path.join(complete_path, "stdin" + str(i)),
                 168, "stdin" + str(i))
+            self.lo_stdout[i] = os.path.join(complete_path,
+                                             "outputModels/stdoutjob" + str(i))
 
         for i in [11, 12, 2, 3, 4]:
             self.tr_file[i] = FileTransfer(
                 False, os.path.join(self.output_dir, "file" + str(i)),
                 168, "file" + str(i))
+            self.lo_out_model_file[i] = os.path.join(
+                complete_path,
+                "outputModels/file" + str(i))
 
     def job1(self, option=None):
         time_to_wait = 2
