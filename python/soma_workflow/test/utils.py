@@ -8,25 +8,9 @@ Created on Thu Oct 17 14:17:27 2013
 # Imports
 #-----------------------------------------------------------------------------
 
-#import unittest
-#import os
-#import getpass
 import sys
-
-#from soma_workflow.client import Job
-#from soma_workflow.client import SharedResourcePath
-#from soma_workflow.client import FileTransfer
-#from soma_workflow.client import Group
-#from soma_workflow.client import Workflow
-#from soma_workflow.client import WorkflowController
-#from soma_workflow.client import Helper
-from soma_workflow.configuration import Configuration
-#from soma_workflow.errors import ConfigurationError
-#from soma_workflow.errors import UnknownObjectError
-#from soma_workflow.utils import checkFiles
-#from soma_workflow.utils import identicalFiles
-#import soma_workflow.constants as constants
-#from soma_workflow.test.test_workflow_examples import WorkflowExamples
+import os
+from contextlib import contextmanager
 
 
 #-----------------------------------------------------------------------------
@@ -46,11 +30,9 @@ def select_resources(resource_ids):
     return resource_id
 
 
-def select_configuration(resource_id, config_file_path):
+def get_user_id(config):
     login = None
     password = None
-    config = Configuration.load_from_file(resource_id, config_file_path)
-
     if config.get_mode() == 'remote':
         sys.stdout.write("This is a remote connection\n")
         sys.stdout.write("login:")
@@ -61,12 +43,10 @@ def select_configuration(resource_id, config_file_path):
         password = password.rstrip()
         #password = getpass.getpass()
         sys.stdout.write("Login => " + repr(login) + "\n")
-        sys.stdout.write("---------------------------------\n")
     return (login, password)
 
 
 def select_workflow_type(wf_types):
-    wf_types = ["multiple", "special command"]
     sys.stdout.write("Workflow example to test: \n")
     sys.stdout.write("all -> all \n")
     for i in range(0, len(wf_types)):
@@ -139,3 +119,18 @@ def select_test_type(test_types):
                 "  => " + repr(test_types[int(test_type_index)]) + "\n")
     sys.stdout.write("---------------------------------\n")
     return selected_test_type
+
+
+@contextmanager
+def suppress_stdout(debug=False):
+    '''Suppress momentarily the stdout'''
+    if debug:
+        yield
+    else:
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            sys.stdout = devnull
+            try:
+                yield
+            finally:
+                sys.stdout = old_stdout
