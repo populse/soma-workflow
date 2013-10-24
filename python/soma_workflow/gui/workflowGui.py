@@ -67,7 +67,11 @@ from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePa
 from soma_workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma_workflow.constants as  constants
 import soma_workflow.configuration as configuration
-from soma_workflow.test.test_workflow import WorkflowExamples
+from soma_workflow.test.workflow_examples import WorkflowExamples
+from soma_workflow.test.workflow_local import WorkflowExamplesLocal
+from soma_workflow.test.workflow_shared import WorkflowExamplesShared
+from soma_workflow.test.workflow_shared_transfer import WorkflowExamplesSharedTransfer
+from soma_workflow.test.workflow_transfer import WorkflowExamplesTransfer
 from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma_workflow.version as version
 
@@ -1157,8 +1161,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
         file_path = file_path[0]
       if file_path:
         try:
-          wf_examples = WorkflowExamples(with_file_transfer,
-                                  with_shared_resource_path)
+            if with_file_transfer and not with_shared_resource_path:
+                wf_examples = WorkflowExamplesTransfer()
+            elif with_file_transfer and with_shared_resource_path:
+                wf_examples = WorkflowExamplesSharedTransfer()
+            elif not with_file_transfer and with_shared_resource_path:
+                wf_examples = WorkflowExamplesShared()
+            else:
+                wf_examples = WorkflowExamplesLocal()
         except ConfigurationError, e:
           QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
         else:
