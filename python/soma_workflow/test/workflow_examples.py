@@ -9,36 +9,14 @@ Created on Mon Oct 21 14:05:37 2013
 """
 
 import os
+import inspect
 from abc import abstractmethod
 from soma_workflow.client import Group
 from soma_workflow.client import Workflow
 from soma_workflow.errors import ConfigurationError
 
 
-
-
-
 class WorkflowExamples(object):
-
-    @staticmethod
-    def get_workflow_example_list():
-        return (
-            ["simple",
-             "multiple",
-             "with exception 1",
-             "with exception 2",
-             "command check test",
-             "special transfers",
-             "hundred of jobs",
-             "ten jobs",
-             "fake pipelineT1",
-             "serial",
-             "hundred with dependencies",
-             "thousands",
-             "thousands with dependencies",
-             "native specification for PBS",
-             "wrong native specification for PBS"]
-        )
 
     def __init__(self):
         '''
@@ -72,39 +50,28 @@ class WorkflowExamples(object):
                                      self.examples_dir,
                                      self.output_dir))
 
+    @staticmethod
+    def get_workflow_example_list():
+        example_names = []
+        for example_func in dir(WorkflowExamples):
+            prefix = "example_"
+            if len(example_func) < len(prefix):
+                continue
+            if example_func[0: len(prefix)] == prefix:
+                example_names.append(example_func)
+        return example_names
+
     def get_workflow_example(self, example_index):
-        workflow = None
-        if example_index == 0:
-            workflow = self.simple_example()
-        elif example_index == 1:
-            workflow = self.multiple_simple_example()
-        elif example_index == 2:
-            workflow = self.simple_example_with_exception1()
-        elif example_index == 3:
-            workflow = self.simple_example_with_exception2()
-        elif example_index == 4:
-            workflow = self.special_command()
-        elif example_index == 5:
-            workflow = self.special_transfer()
-        elif example_index == 6:
-            workflow = self.n_jobs(100)
-        elif example_index == 7:
-            workflow = self.n_jobs(10)
-        elif example_index == 8:
-            workflow = self.fake_pipelineT1()
-        elif example_index == 9:
-            workflow = self.serial_jobs()
-        elif example_index == 10:
-            workflow = self.n_jobs_with_dependencies(500)
-        elif example_index == 11:
-            workflow = self.n_jobs(12000)
-        elif example_index == 12:
-            workflow = self.n_jobs_with_dependencies(2000)
-        elif example_index == 13:
-            workflow = self.native_spec_pbs()
-        elif example_index == 14:
-            workflow = self.wrong_native_spec_pbs()
-        return workflow
+        return self.get_workflows()[example_index]
+
+    def get_workflows(self):
+        workflows = []
+        example_funcs = WorkflowExamples.get_workflow_example_list()
+        for example_func in example_funcs:
+            get_example_func = getattr(self, example_func)
+            workflow = get_example_func()
+            workflows.append(workflow)
+        return workflows
 
     @abstractmethod
     def job1(self):
@@ -146,29 +113,29 @@ class WorkflowExamples(object):
     def job3_exception(self):
         pass
 
-    def special_transfer(self):
+    def example_special_transfer(self):
        # jobs
         test_dir_contents = self.job_test_dir_contents()
         test_multi_file_format = self.job_test_multi_file_format()
         # building the workflow
         jobs = [test_dir_contents, test_multi_file_format]
         dependencies = []
-
-        workflow = Workflow(jobs, dependencies)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, name=function_name)
         return workflow
 
-    def special_command(self):
+    def example_special_command(self):
         # jobs
         test_command_job = self.job_test_command_1()
         # building the workflow
         jobs = [test_command_job]
 
         dependencies = []
-
-        workflow = Workflow(jobs, dependencies)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, name=function_name)
         return workflow
 
-    def simple_example(self):
+    def example_simple(self):
         # jobs
         job1 = self.job1()
         job2 = self.job2()
@@ -185,10 +152,14 @@ class WorkflowExamples(object):
         group_1 = Group(name='group_1', elements=[job2, job3])
         group_2 = Group(name='group_2', elements=[job1, group_1])
 
-        workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[group_2, job4],
+                            name=function_name)
         return workflow
 
-    def wrong_native_spec_pbs(self):
+    def example_wrong_native_spec_pbs(self):
        # jobs
         job1 = self.job1(option="-l walltime=5:00:00, pmem=16gb")
         job2 = self.job1(option="-l walltime=5:00:0")
@@ -200,7 +171,7 @@ class WorkflowExamples(object):
                             name="jobs with wrong native spec for pbs")
         return workflow
 
-    def native_spec_pbs(self):
+    def example_native_spec_pbs(self):
        # jobs
         job1 = self.job1(option="-l walltime=5:00:00,pmem=16gb")
         job2 = self.job1(option="-l walltime=5:00:0")
@@ -212,7 +183,7 @@ class WorkflowExamples(object):
                             name="jobs with native spec for pbs")
         return workflow
 
-    def simple_example_with_exception1(self):
+    def example_simple_exception1(self):
         # jobs
         job1 = self.job1_exception()
         job2 = self.job2()
@@ -228,10 +199,14 @@ class WorkflowExamples(object):
         group_1 = Group(name='group_1', elements=[job2, job3])
         group_2 = Group(name='group_2', elements=[job1, group_1])
 
-        workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[group_2, job4],
+                            name=function_name)
         return workflow
 
-    def simple_example_with_exception2(self):
+    def example_simple_exception2(self):
         # jobs
         job1 = self.job1()
         job2 = self.job2()
@@ -247,13 +222,17 @@ class WorkflowExamples(object):
         group_1 = Group(name='group_1', elements=[job2, job3])
         group_2 = Group(name='group_2', elements=[job1, group_1])
 
-        workflow = Workflow(jobs, dependencies, root_group=[group_2, job4])
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[group_2, job4],
+                            name=function_name)
         return workflow
 
-    def multiple_simple_example(self):
-        workflow1 = self.simple_example()
-        workflow2 = self.simple_example_with_exception1()
-        workflow3 = self.simple_example_with_exception2()
+    def example_multiple(self):
+        workflow1 = self.example_simple()
+        workflow2 = self.example_simple_exception1()
+        workflow3 = self.example_simple_exception2()
 
         jobs = workflow1.jobs
         jobs.extend(workflow2.jobs)
@@ -269,22 +248,25 @@ class WorkflowExamples(object):
         group3 = Group(name="simple with exception in Job3",
                        elements=workflow3.root_group)
 
-        workflow = Workflow(jobs, dependencies,
-                            root_group=[group1, group2, group3])
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[group1, group2, group3],
+                            name=function_name)
         return workflow
 
-    def n_jobs(self, nb=300, time=60):
+    def example_n_jobs(self, nb=300, time=60):
         jobs = []
         for i in range(0, nb):
             job = self.job_sleep(time)
             jobs.append(job)
 
         dependencies = []
-
-        workflow = Workflow(jobs, dependencies)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, name=function_name)
         return workflow
 
-    def n_jobs_with_dependencies(self, nb=500, time=60):
+    def example_n_jobs_with_dependencies(self, nb=500, time=60):
         dependencies = []
         jobs = []
         intermed_job1 = self.job_sleep(2)
@@ -318,10 +300,11 @@ class WorkflowExamples(object):
         group3 = Group(name="Group 3", elements=elem_group3)
 
         root_group = [group1, intermed_job1, group2, intermed_job2, group3]
-        workflow = Workflow(jobs, dependencies, root_group)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, root_group, name=function_name)
         return workflow
 
-    def serial_jobs(self, nb=5):
+    def example_serial_jobs(self, nb=5):
         jobs = []
         dependencies = []
         previous_job = self.job_sleep(60)
@@ -332,15 +315,16 @@ class WorkflowExamples(object):
             dependencies.append((previous_job, job))
             previous_job = job
 
-        workflow = Workflow(jobs, dependencies)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, name=function_name)
         return workflow
 
-    def fake_pipelineT1(self):
+    def example_fake_pipelineT1(self):
         jobs = []
         dependencies = []
         root_group = []
         for i in range(0, 100):
-            job1 = self.job_sleep(60)
+            job1 = self.job_sleep(10)
             job1.name = "Brain extraction"
             jobs.append(job1)
 
@@ -354,13 +338,13 @@ class WorkflowExamples(object):
             job13.name = "test 3"
             jobs.append(job13)
 
-            job2 = self.job_sleep(120)
+            job2 = self.job_sleep(20)
             job2.name = "Gray/white segmentation"
             jobs.append(job2)
-            job3 = self.job_sleep(400)
+            job3 = self.job_sleep(60)
             job3.name = "Left hemisphere sulci recognition"
             jobs.append(job3)
-            job4 = self.job_sleep(400)
+            job4 = self.job_sleep(60)
             job4.name = "Right hemisphere sulci recognition"
             jobs.append(job4)
 
@@ -379,5 +363,10 @@ class WorkflowExamples(object):
                 elements=[job1, job11, job12, job13, job2, group_sulci])
 
             root_group.append(group_subject)
-        workflow = Workflow(jobs, dependencies, root_group)
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs, dependencies, root_group, name=function_name)
         return workflow
+
+
+if __name__ == "__main__":
+    print WorkflowExamples.get_workflow_example_list()
