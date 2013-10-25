@@ -307,10 +307,10 @@ class WorkflowExamples(object):
     def example_serial_jobs(self, nb=5):
         jobs = []
         dependencies = []
-        previous_job = self.job_sleep(60)
+        previous_job = self.job_sleep(10)
         jobs.append(previous_job)
         for i in range(0, nb):
-            job = self.job_sleep(60)
+            job = self.job_sleep(10)
             jobs.append(job)
             dependencies.append((previous_job, job))
             previous_job = job
@@ -324,7 +324,7 @@ class WorkflowExamples(object):
         dependencies = []
         root_group = []
         for i in range(0, 100):
-            job1 = self.job_sleep(10)
+            job1 = self.job_sleep(5)
             job1.name = "Brain extraction"
             jobs.append(job1)
 
@@ -338,13 +338,13 @@ class WorkflowExamples(object):
             job13.name = "test 3"
             jobs.append(job13)
 
-            job2 = self.job_sleep(20)
+            job2 = self.job_sleep(10)
             job2.name = "Gray/white segmentation"
             jobs.append(job2)
-            job3 = self.job_sleep(60)
+            job3 = self.job_sleep(10)
             job3.name = "Left hemisphere sulci recognition"
             jobs.append(job3)
-            job4 = self.job_sleep(60)
+            job4 = self.job_sleep(10)
             job4.name = "Right hemisphere sulci recognition"
             jobs.append(job4)
 

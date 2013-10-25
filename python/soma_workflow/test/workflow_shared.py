@@ -7,6 +7,7 @@ Created on Fri Oct 18 13:38:06 2013
 @author: laure
 """
 
+import os
 from soma_workflow.client import Job
 from soma_workflow.client import SharedResourcePath
 from soma_workflow.test.workflow_examples import WorkflowExamples
@@ -20,9 +21,12 @@ class WorkflowExamplesShared(WorkflowExamples):
         '''
         super(WorkflowExamplesShared, self).__init__()
 
+        complete_path = os.path.join(self.examples_dir, "complete")
+
         self.sh_file = {}
         self.sh_script = {}
         self.sh_stdin = {}
+        self.lo_stdout = {}
 
         # Shared resource path
         self.sh_file[0] = SharedResourcePath("complete/file0",
@@ -48,6 +52,9 @@ class WorkflowExamplesShared(WorkflowExamples):
                                              "example", "output_dir", 168)
         self.sh_img_out_file = SharedResourcePath("example.img", "example",
                                                   "output_dir", 168)
+        self.lo_stdout1_exception_model = os.path.join(
+            self.examples_dir,
+            "simple/outputModels/stdout_exception_job")
 
         for i in range(1, 5):
             self.sh_script[i] = SharedResourcePath(
@@ -56,6 +63,8 @@ class WorkflowExamplesShared(WorkflowExamples):
             self.sh_stdin[i] = SharedResourcePath(
                 "complete/stdin" + str(i),
                 "example", "job_dir", 168)
+            self.lo_stdout[i] = os.path.join(complete_path,
+                                             "outputModels/stdoutjob" + str(i))
 
         for i in [11, 12, 2, 3, 4]:
             self.sh_file[i] = SharedResourcePath("file" + str(i), "example",

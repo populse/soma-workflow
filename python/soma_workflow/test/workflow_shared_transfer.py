@@ -31,8 +31,13 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
         self.sh_stdin = {}
         self.tr_file = {}
         self.tr_script = {}
+        self.lo_stdout = {}
 
         complete_path = os.path.join(self.examples_dir, "complete")
+
+        self.lo_stdout1_exception_model = os.path.join(
+            self.examples_dir,
+            "simple/outputModels/stdout_exception_job")
 
         # Shared resource path
         self.sh_file[0] = SharedResourcePath("complete/file0",
@@ -73,6 +78,9 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
              os.path.join(self.output_dir, "example.hdr")])
 
         for i in range(1, 5):
+            self.lo_stdout[i] = os.path.join(complete_path,
+                                             "outputModels/stdoutjob" + str(i))
+
             # Shared resource path
             self.sh_script[i] = SharedResourcePath(
                 "complete/job" + str(i) + ".py",
