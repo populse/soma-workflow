@@ -6,12 +6,17 @@ Created on Mon Oct 28 15:06:18 2013
 """
 import sys
 from soma_workflow.test.job_examples.jobs_test import JobsTest
+from soma_workflow.configuration import LIGHT_MODE
+from soma_workflow.configuration import LOCAL_MODE
+from soma_workflow.configuration import REMOTE_MODE
 
 
 class EndedJobWithTransfer(JobsTest):
     '''
     Submission of a job with transfer
     '''
+    allowed_resources = [LIGHT_MODE, LOCAL_MODE, REMOTE_MODE]
+
     def setUp(self):
         self.my_jobs = []
         self.my_transfers = []

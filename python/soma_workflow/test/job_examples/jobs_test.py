@@ -7,8 +7,8 @@
 
 import unittest
 import time
-import os
-import getpass
+#import os
+#import getpass
 import sys
 from datetime import datetime
 from datetime import timedelta
@@ -17,7 +17,7 @@ from abc import abstractmethod
 import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration
-from soma_workflow.test.utils import check_files
+#from soma_workflow.test.utils import check_files
 from soma_workflow.test.job_examples.job_examples import JobExamples
 from soma_workflow.test.examples.utils import get_user_id
 from soma_workflow.test.examples.utils import suppress_stdout
@@ -53,57 +53,57 @@ class JobsTest(unittest.TestCase):
         remaining_jobs = frozenset(JobsTest.wf_ctrl.jobs().keys())
         self.failUnless(len(remaining_jobs.intersection(self.my_jobs)) == 0)
 
-#    def test_jobs(self):
-#        res = set(JobsTest.wf_ctrl.jobs().keys())
-#        self.failUnless(res.issuperset(self.my_jobs))
-#
-#    def test_wait(self):
-#        JobsTest.wf_ctrl.wait_job(self.my_jobs)
-#        for jid in self.my_jobs:
-#            status = JobsTest.wf_ctrl.job_status(jid)
-#            self.failUnless(status == constants.DONE or
-#                            status == constants.FAILED,
-#                            'Job %s status after wait: %s' % (jid, status))
-#
-#    def test_wait2(self):
-#        start_time = datetime.now()
-#        interval = 5
-#        JobsTest.wf_ctrl.wait_job(self.my_jobs, interval)
-#        delta = datetime.now() - start_time
-#        if delta < timedelta(seconds=interval):
-#            for jid in self.my_jobs:
-#                status = JobsTest.wf_ctrl.job_status(jid)
-#                self.failUnless(status == constants.DONE or
-#                                status == constants.FAILED,
-#                                'Job %s status after wait: %s' %
-#                                (self.my_jobs[0], status))
-#        else:
-#            self.failUnless(abs(delta - timedelta(seconds=interval)) <
-#                            timedelta(seconds=1))
-#
-#    def test_restart(self):
-#        jobid = self.my_jobs[len(self.my_jobs) - 1]
-#        JobsTest.wf_ctrl.kill_job(jobid)
-#        JobsTest.wf_ctrl.restart_job(jobid)
-#        status = JobsTest.wf_ctrl.job_status(jobid)
-#        self.failUnless(not status == constants.USER_ON_HOLD and
-#                        not status == constants.USER_SYSTEM_ON_HOLD and
-#                        not status == constants.USER_SUSPENDED and
-#                        not status == constants.USER_SYSTEM_SUSPENDED,
-#                        'Job status after restart: %s' % status)
-#
-#    def test_kill(self):
-#        jobid = self.my_jobs[0]
-#        time.sleep(2)
-#        JobsTest.wf_ctrl.kill_job(jobid)
-#        job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
-#        exit_status = job_termination_status[0]
-#        status = JobsTest.wf_ctrl.job_status(jobid)
-#        self.failUnless(status == constants.FAILED or status == constants.DONE,
-#                        'Job status after kill: %s' % status)
-#        self.failUnless(exit_status == constants.USER_KILLED or
-#                        exit_status == constants.FINISHED_REGULARLY,
-#                        'Job exit status after kill: %s' % exit_status)
+    def test_jobs(self):
+        res = set(JobsTest.wf_ctrl.jobs().keys())
+        self.failUnless(res.issuperset(self.my_jobs))
+
+    def test_wait(self):
+        JobsTest.wf_ctrl.wait_job(self.my_jobs)
+        for jid in self.my_jobs:
+            status = JobsTest.wf_ctrl.job_status(jid)
+            self.failUnless(status == constants.DONE or
+                            status == constants.FAILED,
+                            'Job %s status after wait: %s' % (jid, status))
+
+    def test_wait2(self):
+        start_time = datetime.now()
+        interval = 5
+        JobsTest.wf_ctrl.wait_job(self.my_jobs, interval)
+        delta = datetime.now() - start_time
+        if delta < timedelta(seconds=interval):
+            for jid in self.my_jobs:
+                status = JobsTest.wf_ctrl.job_status(jid)
+                self.failUnless(status == constants.DONE or
+                                status == constants.FAILED,
+                                'Job %s status after wait: %s' %
+                                (self.my_jobs[0], status))
+        else:
+            self.failUnless(abs(delta - timedelta(seconds=interval)) <
+                            timedelta(seconds=1))
+
+    def test_restart(self):
+        jobid = self.my_jobs[len(self.my_jobs) - 1]
+        JobsTest.wf_ctrl.kill_job(jobid)
+        JobsTest.wf_ctrl.restart_job(jobid)
+        status = JobsTest.wf_ctrl.job_status(jobid)
+        self.failUnless(not status == constants.USER_ON_HOLD and
+                        not status == constants.USER_SYSTEM_ON_HOLD and
+                        not status == constants.USER_SUSPENDED and
+                        not status == constants.USER_SYSTEM_SUSPENDED,
+                        'Job status after restart: %s' % status)
+
+    def test_kill(self):
+        jobid = self.my_jobs[0]
+        time.sleep(2)
+        JobsTest.wf_ctrl.kill_job(jobid)
+        job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
+        exit_status = job_termination_status[0]
+        status = JobsTest.wf_ctrl.job_status(jobid)
+        self.failUnless(status == constants.FAILED or status == constants.DONE,
+                        'Job status after kill: %s' % status)
+        self.failUnless(exit_status == constants.USER_KILLED or
+                        exit_status == constants.FINISHED_REGULARLY,
+                        'Job exit status after kill: %s' % exit_status)
 
     @abstractmethod
     def test_result(self):
@@ -122,6 +122,9 @@ class JobsTest(unittest.TestCase):
             print "============ Resource :", resource_id, "==================="
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
+            if config.get_mode() not in cls.allowed_resources:
+                print 'No tests available for this resource'
+                continue
             (login, password) = get_user_id(resource_id, config)
 
 #            with suppress_stdout(debug):

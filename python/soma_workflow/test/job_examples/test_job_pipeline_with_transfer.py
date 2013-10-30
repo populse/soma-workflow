@@ -10,12 +10,17 @@ import sys
 import soma_workflow.constants as constants
 from soma_workflow.test.utils import check_files
 from soma_workflow.test.job_examples.jobs_test import JobsTest
+from soma_workflow.configuration import LIGHT_MODE
+from soma_workflow.configuration import LOCAL_MODE
+from soma_workflow.configuration import REMOTE_MODE
 
 
 class JobPipelineWithTransfer(JobsTest):
     '''
     Submission of a job pipeline with transfer
     '''
+    allowed_resources = [LIGHT_MODE, LOCAL_MODE, REMOTE_MODE]
+
     def setUp(self):
         self.my_jobs = []
         self.my_transfers = []

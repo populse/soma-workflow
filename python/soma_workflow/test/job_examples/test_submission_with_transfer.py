@@ -10,16 +10,21 @@ import sys
 import soma_workflow.constants as constants
 from soma_workflow.test.utils import check_files
 from soma_workflow.test.job_examples.jobs_test import JobsTest
+from soma_workflow.configuration import LIGHT_MODE
+from soma_workflow.configuration import LOCAL_MODE
+from soma_workflow.configuration import REMOTE_MODE
 
 
 class SubmissionWithTransfer(JobsTest):
     '''
     Submission of a job with transfer
     '''
+    allowed_resources = [LIGHT_MODE, LOCAL_MODE, REMOTE_MODE]
+
     def setUp(self):
         self.my_jobs = []
         self.my_transfers = []
-        info = JobsTest.job_examples.submitJob1()
+        info = JobsTest.job_examples.submit_job1()
         self.my_jobs.append(info[0])
         self.output_files = info[1]
         self.client_files = []
