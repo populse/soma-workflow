@@ -4,6 +4,21 @@ from __future__ import with_statement
 Created on Fri Oct 25 09:33:40 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of job exception:
+* Workflow constitued of 4 jobs : job1, job2, job4,
+                                  job3 with exception
+* Dependencies : job2, job3 depend on job1
+                 job4 depends on job2, job3
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : job1, job2 succeed
+                         job3 fails
+                         job4 is aborted
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper

@@ -4,6 +4,18 @@ from __future__ import with_statement
 Created on Fri Oct 25 09:41:31 2013
 
 @author: laure
+
+Workflow test of multiple jobs:
+* Workflow constitued of n jobs : You can change the value n with nb
+* Each job is a sleep command : you can change the time with time_sleep
+* No dependencies
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : All jobs succeed
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper
@@ -15,7 +27,6 @@ from soma_workflow.test.examples.workflow_test import WorkflowTest
 
 
 class NJobsTest(WorkflowTest):
-
     allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
                       (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
                       (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
@@ -23,7 +34,10 @@ class NJobsTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = NJobsTest.wf_examples.example_n_jobs(nb=20, time=1)
+        nb = 20
+        time_sleep = 1
+
+        workflow = NJobsTest.wf_examples.example_n_jobs(nb=nb, time=time_sleep)
         self.wf_id = NJobsTest.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)

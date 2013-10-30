@@ -4,6 +4,17 @@ from __future__ import with_statement
 Created on Fri Oct 25 14:03:52 2013
 
 @author: laure
+
+Workflow test of multiple examples:
+* Test constitued of 3 workflows : cf test_exception1, test_exception2
+                                   and test_simple
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : for each workflow, cf corresponding test
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper

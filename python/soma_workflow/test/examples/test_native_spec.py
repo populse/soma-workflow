@@ -4,6 +4,20 @@ from __future__ import with_statement
 Created on Fri Oct 25 09:24:10 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of native spec of the PBS:
+* Workflow constitued of 3 jobs : job1, with walltime and pmem options
+                                  job2, with walltime option
+                                  job3, no options
+* Dependencies : no dependencies
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : All jobs succeed
+* The jobs are also successful in local and light mode, because the PBS
+    native specs are ignored in those modes
 """
 
 from soma_workflow.client import Helper

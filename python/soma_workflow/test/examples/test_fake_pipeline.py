@@ -4,6 +4,24 @@ from __future__ import with_statement
 Created on Fri Oct 25 13:51:00 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of a fake pipeline of operations:
+* Workflow constitued of 100 groups of 7 jobs each :
+    Brain extraction(1), test1(11), test2(12), test3(13),
+    Gray/white segmentation(2), Left hemisphere sulci recognition(3),
+    Right hemisphere sulci recognition(4)
+* Dependencies : job11 depends on job1
+                 job12 depends on job11
+                 job13 depends on job12
+                 job2 depends on job13
+                 job3, job4 depend on job2
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : All jobs succeed
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper

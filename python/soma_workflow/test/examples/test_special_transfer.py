@@ -4,6 +4,16 @@ from __future__ import with_statement
 Created on Thu Oct 24 16:23:43 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of file transfer:
+* Workflow constitued of 2 jobs : A job testing the contents of a directory
+                                  A job testing multi file format
+* Dependencies : no dependencies
+* Allowed configurations : Remote mode - File Transfer
+                           Remote mode - File Transfer and SRP
+* Expected comportment : All jobs succeed
+* As this test concerns file transfer, it only works with a file transfer
+    path management
 """
 
 from soma_workflow.client import Helper

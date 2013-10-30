@@ -4,6 +4,17 @@ from __future__ import with_statement
 Created on Fri Oct 25 13:51:00 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of a pipeline of jobs:
+* Workflow constitued of (n+1) jobs : You can change the value n with nb
+* Dependencies : The (i+1)th job depends on the (i)th job
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : All jobs succeed
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper
@@ -23,7 +34,9 @@ class SerialJobs(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = SerialJobs.wf_examples.example_serial_jobs()
+        nb = 5
+
+        workflow = SerialJobs.wf_examples.example_serial_jobs(nb=nb)
         self.wf_id = SerialJobs.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)

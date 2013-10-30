@@ -4,6 +4,17 @@ from __future__ import with_statement
 Created on Thu Oct 24 17:15:01 2013
 
 @author: laure.hugo@cea.fr
+
+Workflow test of one job with a command:
+* Workflow constitued of 1 job
+* Dependencies : no dependencies
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
+                           Remote mode - File Transfer and SRP
+* Expected comportment : The job succeeds
+* Outcome independant of the configuration
 """
 
 from soma_workflow.client import Helper
