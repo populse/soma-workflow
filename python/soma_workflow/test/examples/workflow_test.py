@@ -1,5 +1,4 @@
 from __future__ import with_statement
-
 '''
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
@@ -66,7 +65,6 @@ class WorkflowTest(unittest.TestCase):
 
     @classmethod
     def run_test(cls, debug=False):
-
         sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
 
         config_file_path = Configuration.search_config_path()

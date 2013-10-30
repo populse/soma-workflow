@@ -6,7 +6,7 @@ Created on Fri Oct 25 17:09:13 2013
 """
 
 
-def identicalFiles(filepath1, filepath2):
+def identical_files(filepath1, filepath2):
     file1 = open(filepath1)
     file2 = open(filepath2)
     lineNb = 1
@@ -31,11 +31,11 @@ def identicalFiles(filepath1, filepath2):
         return (True, None)
 
 
-def checkFiles(files, filesModels, tolerance=0):
+def check_files(files, files_models, tolerance=0):
     index = 0
     for file in files:
         t = tolerance
-        (identical, msg) = identicalFiles(file, filesModels[index])
+        (identical, msg) = identical_files(file, files_models[index])
         if not identical:
             if t <= 0:
                 return (identical, msg)

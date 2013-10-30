@@ -19,23 +19,6 @@ from soma_workflow.errors import ConfigurationError
 class WorkflowExamples(object):
 
     def __init__(self):
-        '''
-        @type with_transfers: boolean
-        @type with_shared_resource_path: boolean
-
-        if with_transfer and not with_shared_resource_path:
-            The input and ouput files are temporary files on the computing
-            resource and these files can be transfered from and to the
-            computing resource using soma workflow API
-
-        if with_shared_resource_path and not with_transfers:
-            The files are read and written on the computing resource.
-
-        if with_shared_resource_path and with_transfer:
-            The files are read from data located on the computing resource but
-            the output will be written in temporary files and transfered to the
-            computing resource.
-        '''
         # Define example directories
         import soma_workflow
         self.examples_dir = os.path.join(soma_workflow.__path__[0],
@@ -114,7 +97,7 @@ class WorkflowExamples(object):
         pass
 
     def example_special_transfer(self):
-       # jobs
+        # jobs
         test_dir_contents = self.job_test_dir_contents()
         test_multi_file_format = self.job_test_multi_file_format()
         # building the workflow
