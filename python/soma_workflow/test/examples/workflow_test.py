@@ -57,7 +57,6 @@ class WorkflowTest(unittest.TestCase):
 
     def tearDown(self):
         if self.wf_id:
-            print 'Class : ', self.__class__
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
 
     def test_result(self):
@@ -72,7 +71,15 @@ class WorkflowTest(unittest.TestCase):
         resource_ids = Configuration.get_configured_resources(config_file_path)
 
         for resource_id in resource_ids:
-            print "============ Resource :", resource_id, "==================="
+            sys.stdout.write("============ Resource : " + resource_id +
+                             " =================== \n")
+            sys.stdout.write("Do you want to test the resource "
+                             "%s (Y/n) ? " % resource_id)
+            test_resource = sys.stdin.readline()
+            if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
+                # Skip the resource
+                sys.stdout.write('Resource %s is not tested \n' % resource_id)
+                continue
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
             (login, password) = get_user_id(resource_id, config)
@@ -88,13 +95,14 @@ class WorkflowTest(unittest.TestCase):
                 if config.get_mode() != configuration[0]:
                     allowed_config.remove(configuration)
             if len(allowed_config) == 0:
-                print "No tests available for the resource %s" % resource_id
+                sys.stdout.write("No tests available for the resource %s \n"
+                                 % resource_id)
 
             for configuration in allowed_config:
                 (mode, file_system) = configuration
-                print "\n-----------------------------------------------------"
-                print "Mode :", mode
-                print "File system :", file_system
+                sys.stdout.write("\n---------------------------------------\n")
+                sys.stdout.write("Mode : " + mode + '\n')
+                sys.stdout.write("File system : " + file_system + '\n')
                 cls.setup_path_management(file_system)
 
                 suite_list = []

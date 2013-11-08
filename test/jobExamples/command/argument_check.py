@@ -1,6 +1,6 @@
 import sys
-cmpt = 0
-print "nb of arguments: " + repr(len(sys.argv))
-for arg in sys.argv:
-    print repr(cmpt) + " => " + repr(arg)
-    cmpt = cmpt + 1
+import os
+
+print "nb of arguments (without script filename): " + repr(len(sys.argv)-1)
+for cmpt, arg in enumerate(sys.argv[1:]):
+    print repr(cmpt) + " => " + arg

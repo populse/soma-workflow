@@ -76,5 +76,5 @@ class LocalSubmission(JobsTest):
 
 
 if __name__ == '__main__':
-    LocalSubmission.run_test(debug=True)
+    LocalSubmission.run_test(debug=False)
     sys.exit(0)

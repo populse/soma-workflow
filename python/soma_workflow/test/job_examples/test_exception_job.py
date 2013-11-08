@@ -34,7 +34,7 @@ class ExceptionJobTest(JobsTest):
             if os.path.isfile(file):
                 os.remove(file)
 
-    def test_result(self):
+    def test_aresult(self):
         jobid = self.my_jobs[0]
         JobsTest.wf_ctrl.wait_job(self.my_jobs)
         status = JobsTest.wf_ctrl.job_status(jobid)

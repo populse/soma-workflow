@@ -23,17 +23,17 @@ input_path = os.path.abspath(input_path)
 output_path = sys.argv[2]
 output_path = os.path.abspath(output_path)
 
-sys.stdout.write("in file path: " + repr(input_path) + "\n")
-sys.stdout.write("out file path: " + repr(output_path) + "\n")
-sys.stdout.write(" \n")
-
 input_path_hdr = os.path.splitext(input_path)[0] + ".hdr"
 if os.path.isfile(input_path_hdr):
-    sys.stdout.write("Ok, the file " + input_path_hdr + " exists. \n")
+    sys.stdout.write("Ok, the file .hdr exists. \n")
 else:
-    sys.stdout.write("The file " + input_path_hdr + " doesn't exist!! \n")
+    sys.stdout.write("in file path: " + repr(input_path) + "\n")
+    sys.stdout.write("out file path: " + repr(output_path) + "\n")
+    sys.stdout.write(" \n")
+    sys.stdout.write("The file " + input_path_hdr + " doesn't exist!!\n")
     sys.exit()
 
 output_path_hdr = os.path.splitext(output_path)[0] + ".hdr"
 shutil.copyfile(input_path, output_path)
 shutil.copyfile(input_path_hdr, output_path_hdr)
+sys.stdout.write("Copying .img and .hdr to output_path\n")

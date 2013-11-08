@@ -57,6 +57,12 @@ class WorkflowExamplesLocal(WorkflowExamples):
         self.lo_stdout1_exception_model = os.path.join(
             self.examples_dir,
             "simple/outputModels/stdout_exception_job")
+        self.lo_stderr1_exception_model = os.path.join(
+            self.examples_dir,
+            "simple/outputModels/stderr_exception_job")
+        self.lo_stdout_command_model = os.path.join(
+            self.examples_dir,
+            "command/stdout_special_command")
 
         for i in range(1, 5):
             # Local path
@@ -121,8 +127,6 @@ class WorkflowExamplesLocal(WorkflowExamples):
 
     def job_test_command_1(self):
         test_command = Job(["python", self.lo_cmd_check_script,
-                            [self.lo_script[1], self.lo_script[2],
-                             self.lo_script[3]],
                             "[13.5, 14.5, 15.0]", '[13.5, 14.5, 15.0]',
                             "['un', 'deux', 'trois']",
                             '["un", "deux", "trois"]'],

@@ -29,6 +29,7 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.tr_script = {}
         self.tr_stdin = {}
         self.lo_stdout = {}
+        self.lo_stderr = {}
         self.lo_out_model_file = {}
 
         complete_path = os.path.join(self.examples_dir, "complete")
@@ -69,9 +70,23 @@ class WorkflowExamplesTransfer(WorkflowExamples):
             [os.path.join(self.output_dir, "example.img"),
              os.path.join(self.output_dir, "example.hdr")])
 
+        self.tr_dir_contents_stdout = os.path.join(
+            self.examples_dir,
+            "special_transfers/tr_dir_contents_stdout")
+
         self.lo_stdout1_exception_model = os.path.join(
             self.examples_dir,
             "simple/outputModels/stdout_exception_job")
+        self.lo_stderr1_exception_model = os.path.join(
+            self.examples_dir,
+            "simple/outputModels/stderr_exception_job")
+        self.lo_in_dir = self.examples_dir
+        self.lo_mff_stdout = os.path.join(
+            self.examples_dir,
+            'special_transfers/multiple_file_format_stdout')
+        self.lo_stdout_command_model = os.path.join(
+            self.examples_dir,
+            "command/stdout_special_command")
 
         for i in range(1, 5):
             self.tr_script[i] = FileTransfer(
@@ -82,6 +97,8 @@ class WorkflowExamplesTransfer(WorkflowExamples):
                 168, "stdin" + str(i))
             self.lo_stdout[i] = os.path.join(complete_path,
                                              "outputModels/stdoutjob" + str(i))
+            self.lo_stderr[i] = os.path.join(complete_path,
+                                             "outputModels/stderrjob" + str(i))
 
         for i in [11, 12, 2, 3, 4]:
             self.tr_file[i] = FileTransfer(
@@ -144,8 +161,6 @@ class WorkflowExamplesTransfer(WorkflowExamples):
     def job_test_command_1(self):
         test_command = Job(["python",
                             self.tr_cmd_check_script,
-                            [self.tr_script[1], self.tr_script[2],
-                             self.tr_script[3]],
                             "[13.5, 14.5, 15.0]", '[13.5, 14.5, 15.0]',
                             "['un', 'deux', 'trois']",
                             '["un", "deux", "trois"]'],

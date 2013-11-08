@@ -177,5 +177,5 @@ class JobPipelineWithTransfer(JobsTest):
 
 
 if __name__ == '__main__':
-    JobPipelineWithTransfer.run_test(debug=True)
+    JobPipelineWithTransfer.run_test(debug=False)
     sys.exit(0)

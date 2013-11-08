@@ -263,29 +263,30 @@ class JobExamples(object):
         return (job_id, [file11, file12], None)
 
     def mpi_job_submission(self, node_num):
-        # compilation
-        source_tr = self.wf_ctrl.register_transfer(
-            FileTransfer(True,
-                         os.path.join(self.examples_dir,
-                                      "mpi", "simple_mpi.c"),
-                         self.tr_timeout))
+        #compilation
+        source_tr = self.wf_ctrl.register_transfer(FileTransfer(
+            True,
+            self.examples_dir + "mpi/simple_mpi.c",
+            self.tr_timeout))
+
         self.wf_ctrl.transfer_files(source_tr.engine_path)
-        object_tr = self.wf_ctrl.register_transfer(
-            FileTransfer(False,
-                         os.path.join(self.output_dir, "simple_mpi.o"),
-                         self.tr_timeout))
-        #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
-        #/opt/mpich/gnu/bin/
-        mpibin = self.wf_ctrl.config.load_from_file(
+
+        object_tr = self.wf_ctrl.register_transfer(FileTransfer(
+            False,
+            self.output_dir + "simple_mpi.o",
+            self.tr_timeout))
+            #/volatile/laguitton/sge6-2u5/mpich/mpich-1.2.7/bin/
+            #/opt/mpich/gnu/bin/
+
+        mpibin = self.wf_ctrl.config._config_parser.get(
             self.wf_ctrl._resource_id,
             configuration.OCFG_PARALLEL_ENV_MPI_BIN)
-        print "mpibin = " + repr(mpibin)
+        print "mpibin = " + mpibin
+
         print "source_tr.engine_path = " + source_tr.engine_path
         print "object_tr.engine_path = " + object_tr.engine_path
         compil1job_id = self.wf_ctrl.submit_job(Job(
-            command=[mpibin + "/mpicc",
-                     "-c", source_tr,
-                     "-o", object_tr],
+            command=[mpibin+"/mpicc", "-c", source_tr, "-o", object_tr],
             referenced_input_files=[source_tr],
             referenced_output_files=[object_tr],
             join_stderrout=False,
@@ -294,16 +295,14 @@ class JobExamples(object):
 
         self.wf_ctrl.wait_job([compil1job_id])
 
-        bin_tr = self.wf_ctrl.register_transfer(
-            FileTransfer(True,
-                         os.path.join(self.output_dir, "simple_mpi"),
-                         self.tr_timeout))
+        bin_tr = self.wf_ctrl.register_transfer(FileTransfer(
+            True,
+            self.output_dir + "simple_mpi",
+            self.tr_timeout))
         print "bin_tr.engine_path= " + bin_tr.engine_path
 
         compil2job_id = self.wf_ctrl.submit_job(Job(
-            command=[mpibin + "/mpicc",
-                     "-o", bin_tr,
-                     object_tr],
+            command=[mpibin + "/mpicc", "-o", bin_tr, object_tr],
             referenced_input_files=[object_tr],
             referenced_output_files=[bin_tr],
             join_stderrout=False,
@@ -314,11 +313,10 @@ class JobExamples(object):
         self.wf_ctrl.delete_transfer(object_tr.engine_path)
 
         # mpi job submission
-        script = self.wf_ctrl.register_transfer(
-            FileTransfer(True,
-                         os.path.join(self.examples_dir,
-                                      "mpi", "simple_mpi.sh"),
-                         self.tr_timeout))
+        script = self.wf_ctrl.register_transfer(FileTransfer(
+            True,
+            self.examples_dir + "mpi/simple_mpi.sh",
+            self.tr_timeout))
 
         self.wf_ctrl.transfer_files(script.engine_path)
 
@@ -328,8 +326,7 @@ class JobExamples(object):
             join_stderrout=False,
             disposal_timeout=self.jobs_timeout,
             name="parallel job mpi",
-            parallel_job_info=(configuration.OCFG_PARALLEL_PC_MPI,
-                               node_num)))
+            parallel_job_info=(configuration.OCFG_PARALLEL_PC_MPI, node_num)))
 
         self.wf_ctrl.delete_job(compil1job_id)
         self.wf_ctrl.delete_job(compil2job_id)

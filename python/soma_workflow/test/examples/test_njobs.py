@@ -16,6 +16,9 @@ Workflow test of multiple jobs:
                            Remote mode - File Transfer and SRP
 * Expected comportment : All jobs succeed
 * Outcome independant of the configuration
+* Tests : final status of the workflow
+          number of failed jobs (excluding aborted)
+          number of failed jobs (including aborted)
 """
 
 from soma_workflow.client import Helper
@@ -53,11 +56,22 @@ class NJobsTest(WorkflowTest):
             Helper.transfer_output_files(self.wf_id, NJobsTest.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
-        self.assertTrue(status == constants.WORKFLOW_DONE)
-        self.assertTrue(len(Helper.list_failed_jobs(
-                        self.wf_id,
-                        NJobsTest.wf_ctrl,
-                        include_aborted_jobs=True)) == 0)
+        self.assertTrue(status == constants.WORKFLOW_DONE,
+                        "workflow status : %s. Expected : %s" %
+                        (status, constants.WORKFLOW_DONE))
+        nb_failed_jobs = len(Helper.list_failed_jobs(
+            self.wf_id,
+            NJobsTest.wf_ctrl))
+        self.assertTrue(nb_failed_jobs == 0,
+                        "nb failed jobs : %i. Expected : %i" %
+                        (nb_failed_jobs, 0))
+        nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
+            self.wf_id,
+            NJobsTest.wf_ctrl,
+            include_aborted_jobs=True))
+        self.assertTrue(nb_failed_aborted_jobs == 0,
+                        "nb failed jobs including aborted : %i. Expected : %i"
+                        % (nb_failed_aborted_jobs, 0))
 
 
 if __name__ == '__main__':

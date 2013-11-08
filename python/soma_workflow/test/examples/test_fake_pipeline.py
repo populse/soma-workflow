@@ -22,6 +22,9 @@ Workflow test of a fake pipeline of operations:
                            Remote mode - File Transfer and SRP
 * Expected comportment : All jobs succeed
 * Outcome independant of the configuration
+* Tests : final status of the workflow
+          number of failed jobs (excluding aborted)
+          number of failed jobs (including aborted)
 """
 
 from soma_workflow.client import Helper

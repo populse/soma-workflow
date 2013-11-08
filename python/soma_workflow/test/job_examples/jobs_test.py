@@ -120,6 +120,13 @@ class JobsTest(unittest.TestCase):
 
         for resource_id in resource_ids:
             print "============ Resource :", resource_id, "==================="
+            print "Do you want to test the resource %s (Y/n) ?" % resource_id
+            test_resource = sys.stdin.readline()
+            if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
+                # Skip the resource
+                print 'Resource %s is not tested' % resource_id
+                continue
+
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
             if config.get_mode() not in cls.allowed_resources:
@@ -146,10 +153,10 @@ class JobsTest(unittest.TestCase):
 #                print "Mode :", mode
 #                print "File system :", file_system
 #                cls.setup_path_management(file_system)
-
-            JobsTest.setup_connection(resource_id,
-                                      login,
-                                      password)
+            with suppress_stdout(debug):
+                JobsTest.setup_connection(resource_id,
+                                          login,
+                                          password)
 
             suite_list = []
             list_tests = []

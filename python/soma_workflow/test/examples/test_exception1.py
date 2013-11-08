@@ -18,14 +18,20 @@ Workflow test of job exception:
 * Expected comportment : job1 fails
                          job2, job3, job4 are aborted
 * Outcome independant of the configuration
+* Tests : final status of the workflow
+          number of failed jobs (excluding aborted)
+          number of failed jobs (including aborted)
+          job stdout and stderr
+          job output
 """
+import tempfile
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.test.utils import identicalFiles
+from soma_workflow.utils import identicalFiles
 
 from soma_workflow.test.examples.workflow_test import WorkflowTest
 
@@ -43,25 +49,32 @@ class Exception1Test(WorkflowTest):
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
-        if self.path_management == Exception1Test.FILE_TRANSFER or \
-                self.path_management == Exception1Test.SHARED_TRANSFER:
+        if self.path_management == WorkflowTest.FILE_TRANSFER or \
+                self.path_management == WorkflowTest.SHARED_TRANSFER:
             Helper.transfer_input_files(self.wf_id, Exception1Test.wf_ctrl)
         # Wait for the workflow to finish
         Helper.wait_workflow(self.wf_id, Exception1Test.wf_ctrl)
         # Transfer output files if file transfer
-        if self.path_management == Exception1Test.FILE_TRANSFER or \
-                self.path_management == Exception1Test.SHARED_TRANSFER:
+        if self.path_management == WorkflowTest.FILE_TRANSFER or \
+                self.path_management == WorkflowTest.SHARED_TRANSFER:
             Helper.transfer_output_files(self.wf_id, Exception1Test.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
-        self.assertTrue(status == constants.WORKFLOW_DONE)
-        self.assertTrue(len(Helper.list_failed_jobs(
-                        self.wf_id,
-                        Exception1Test.wf_ctrl)) == 1)
-        self.assertTrue(len(Helper.list_failed_jobs(
-                        self.wf_id,
-                        Exception1Test.wf_ctrl,
-                        include_aborted_jobs=True)) == 4)
+        self.assertTrue(status == constants.WORKFLOW_DONE,
+                        "workflow status : %s. Expected : %s" %
+                        (status, constants.WORKFLOW_DONE))
+        nb_failed_jobs = len(Helper.list_failed_jobs(self.wf_id,
+                                                     Exception1Test.wf_ctrl))
+        self.assertTrue(nb_failed_jobs == 1,
+                        "nb failed jobs : %i. Expected : %i" %
+                        (nb_failed_jobs, 1))
+        nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
+            self.wf_id,
+            Exception1Test.wf_ctrl,
+            include_aborted_jobs=True))
+        self.assertTrue(nb_failed_aborted_jobs == 4,
+                        "nb failed jobs including aborted : %i. Expected : %i"
+                        % (nb_failed_aborted_jobs, 4))
 
         (jobs_info, transfers_info, workflow_status, workflow_queue) = \
             Exception1Test.wf_ctrl.workflow_elements_status(self.wf_id)
@@ -71,39 +84,37 @@ class Exception1Test(WorkflowTest):
             job_name, job_command, job_submission_date = job_list[job_id]
 
             if exit_info[0] == constants.FINISHED_REGULARLY:
-                # To check job standard out
-                job_stdout_file = "/tmp/job_soma_out_log_" + repr(job_id)
-                job_stderr_file = "/tmp/job_soma_outerr_log_" + repr(job_id)
+                # To check job standard out and standard err
+                job_stdout_file = tempfile.NamedTemporaryFile(
+                    prefix="job_soma_out_log_",
+                    suffix=repr(job_id))
+                job_stdout_file = job_stdout_file.name
+                job_stderr_file = tempfile.NamedTemporaryFile(
+                    prefix="job_soma_outerr_log_",
+                    suffix=repr(job_id))
+                job_stderr_file = job_stderr_file.name
                 self.wf_ctrl.retrieve_job_stdouterr(job_id,
                                                     job_stdout_file,
                                                     job_stderr_file)
 
-                if job_name in ['job2', 'job3', 'job4']:
-                    job_nb = int(job_name[3])
-                    isSame, msg = identicalFiles(
-                        job_stdout_file,
-                        Exception1Test.wf_examples.lo_stdout[job_nb])
-                    self.assertTrue(isSame)
-                    if self.path_management == Exception1Test.LOCAL_PATH:
-                        isSame, msg = identicalFiles(
-                            Exception1Test.wf_examples.lo_out_model_file[job_nb],
-                            Exception1Test.wf_examples.lo_file[job_nb])
-                        self.assertTrue(isSame)
-                        isSame, msg = identicalFiles(
-                            job_stderr_file,
-                            Exception1Test.wf_examples.lo_stderr[job_nb])
-                        self.assertTrue(isSame)
-                    if self.path_management == Exception1Test.FILE_TRANSFER:
-                        isSame, msg = identicalFiles(
-                            Exception1Test.wf_examples.lo_out_model_file[job_nb],
-                            Exception1Test.wf_examples.tr_file[job_nb].client_path)
-                        self.assertTrue(isSame)
-
                 if job_name == 'job1 with exception':
+                    #Test stdout
+                    with open(job_stdout_file) as f:
+                        lines = f.readlines()
+                    for line in lines:
+                        print line
                     isSame, msg = identicalFiles(
                         job_stdout_file,
                         Exception1Test.wf_examples.lo_stdout1_exception_model)
-                    self.assertTrue(isSame)
+                    self.assertTrue(isSame, msg)
+                    # Test the last line of stderr
+                    with open(job_stderr_file) as f:
+                        lines = f.readlines()
+                    expected_error = 'Exception: Paf Boum Boum Bada Boum !!!\n'
+                    isSame = (lines[-1] == expected_error)
+                    self.assertTrue(isSame,
+                                    "Job exception : %s. Expected : %s" %
+                                    (lines[-1], expected_error))
 
 
 if __name__ == '__main__':

@@ -18,6 +18,9 @@ Workflow test of native spec of the PBS:
 * Expected comportment : All jobs succeed
 * The jobs are also successful in local and light mode, because the PBS
     native specs are ignored in those modes
+* Tests : final status of the workflow
+          number of failed jobs (excluding aborted)
+          number of failed jobs (including aborted)
 """
 
 from soma_workflow.client import Helper
@@ -53,15 +56,22 @@ class NativeSpecPbsTest(WorkflowTest):
             Helper.transfer_output_files(self.wf_id, NativeSpecPbsTest.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
-        self.assertTrue(status == constants.WORKFLOW_DONE)
-        print "len failed jobs: ", len(Helper.list_failed_jobs(
-                                       self.wf_id,
-                                       NativeSpecPbsTest.wf_ctrl,
-                                       include_aborted_jobs=True))
-        self.assertTrue(len(Helper.list_failed_jobs(
-                        self.wf_id,
-                        NativeSpecPbsTest.wf_ctrl,
-                        include_aborted_jobs=True)) == 0)
+        self.assertTrue(status == constants.WORKFLOW_DONE,
+                        "workflow status : %s. Expected : %s" %
+                        (status, constants.WORKFLOW_DONE))
+        nb_failed_jobs = len(Helper.list_failed_jobs(
+            self.wf_id,
+            NativeSpecPbsTest.wf_ctrl))
+        self.assertTrue(nb_failed_jobs == 0,
+                        "nb failed jobs : %i. Expected : %i" %
+                        (nb_failed_jobs, 0))
+        nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
+            self.wf_id,
+            NativeSpecPbsTest.wf_ctrl,
+            include_aborted_jobs=True))
+        self.assertTrue(nb_failed_aborted_jobs == 0,
+                        "nb failed jobs including aborted : %i. Expected : %i"
+                        % (nb_failed_aborted_jobs, 0))
 
 
 if __name__ == '__main__':

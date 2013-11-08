@@ -11,6 +11,7 @@ Created on Thu Oct 17 14:17:27 2013
 import sys
 import os
 from contextlib import contextmanager
+import stat
 
 
 #-----------------------------------------------------------------------------
@@ -70,6 +71,23 @@ def suppress_stdout(debug=False):
                 yield
             finally:
                 sys.stdout = old_stdout
+
+
+def contents(path_seq, dir_contents):
+    for path in path_seq:
+        s = os.stat(path)
+        if stat.S_ISDIR(s.st_mode) and os.path.basename(path) != ".svn":
+            dir_contents.append(
+                "directory " + repr(os.path.basename(path)) + "\n")
+            full_path_list = []
+            for element in os.listdir(path):
+                full_path_list.append(os.path.join(path, element))
+            dir_contents = contents(full_path_list, dir_contents)
+        else:
+            if os.path.basename(path) != ".svn":
+                dir_contents.append(
+                    "file " + repr(os.path.basename(path)) + "\n")
+    return dir_contents
 
 
 if __name__ == "__main__":
