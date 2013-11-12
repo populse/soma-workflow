@@ -84,9 +84,9 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.lo_mff_stdout = os.path.join(
             self.examples_dir,
             'special_transfers/multiple_file_format_stdout')
-        self.lo_stdout_command_model = os.path.join(
+        self.remote_stdout_command_model = os.path.join(
             self.examples_dir,
-            "command/stdout_special_command")
+            "command/remote_stdout_special_command")
 
         for i in range(1, 5):
             self.tr_script[i] = FileTransfer(

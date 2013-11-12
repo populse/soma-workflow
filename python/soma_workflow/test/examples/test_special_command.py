@@ -19,10 +19,11 @@ Workflow test of one job with a command:
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
           job stdout and stderr
-          #TODO: Test warning !
+          submission warning when single quote comand
 """
 import tempfile
 import os
+import warnings
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -44,11 +45,20 @@ class SpecialCommandTest(WorkflowTest):
                       ]
 
     def test_result(self):
-        workflow = self.wf_examples.example_special_command()
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            workflow = self.wf_examples.example_special_command()
+            # Verify some things
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert ("contains single quote. It could fail using DRMAA" in
+                    str(w[-1].message))
+
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
-
         # Transfer input files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
@@ -98,18 +108,22 @@ class SpecialCommandTest(WorkflowTest):
                 self.wf_ctrl.retrieve_job_stdouterr(job_id,
                                                     job_stdout_file,
                                                     job_stderr_file)
-                if job_name == 'test_command_1':
-                    # Test job stdout
-                    if self.path_management == self.LOCAL_PATH or \
-                            self.path_management == self.SHARED_RESOURCE_PATH:
-                        isSame, msg = identicalFiles(
-                            job_stdout_file,
-                            self.wf_examples.lo_stdout_command_model)
-                        self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
+                # Test job stdout
+                if self.path_management == self.LOCAL_PATH:
+                    isSame, msg = identicalFiles(
+                        job_stdout_file,
+                        self.wf_examples.lo_stdout_command_model)
+                    self.assertTrue(isSame, msg)
+                else:
+                    isSame, msg = identicalFiles(
+                        job_stdout_file,
+                        self.wf_examples.remote_stdout_command_model)
+                    self.assertTrue(isSame, msg)
+                # Test no stderr
+                self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                "job stderr not empty : cf %s" %
+                                job_stderr_file)
+
 
 if __name__ == '__main__':
     SpecialCommandTest.run_test(debug=True)

@@ -59,9 +59,9 @@ class WorkflowExamplesShared(WorkflowExamples):
         self.lo_stderr1_exception_model = os.path.join(
             self.examples_dir,
             "simple/outputModels/stderr_exception_job")
-        self.lo_stdout_command_model = os.path.join(
+        self.remote_stdout_command_model = os.path.join(
             self.examples_dir,
-            "command/stdout_special_command")
+            "command/remote_stdout_special_command")
 
         for i in range(1, 5):
             self.sh_script[i] = SharedResourcePath(
