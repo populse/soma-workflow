@@ -36,18 +36,18 @@ class SpecialTransferTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = SpecialTransferTest.wf_examples.example_special_transfer()
-        self.wf_id = SpecialTransferTest.wf_ctrl.submit_workflow(
+        workflow = self.wf_examples.example_special_transfer()
+        self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
 
         # Transfer input files
-        Helper.transfer_input_files(self.wf_id, SpecialTransferTest.wf_ctrl)
+        Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
         # Wait for the worklow to finish
-        Helper.wait_workflow(self.wf_id, SpecialTransferTest.wf_ctrl)
+        Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         status = self.wf_ctrl.workflow_status(self.wf_id)
         # Transfer output files
-        Helper.transfer_output_files(self.wf_id, SpecialTransferTest.wf_ctrl)
+        Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -55,20 +55,20 @@ class SpecialTransferTest(WorkflowTest):
                         (status, constants.WORKFLOW_DONE))
         nb_failed_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            SpecialTransferTest.wf_ctrl))
+            self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 0,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 0))
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            SpecialTransferTest.wf_ctrl,
+            self.wf_ctrl,
             include_aborted_jobs=True))
         self.assertTrue(nb_failed_aborted_jobs == 0,
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 0))
 
         (jobs_info, transfers_info, workflow_status, workflow_queue) = \
-            SpecialTransferTest.wf_ctrl.workflow_elements_status(self.wf_id)
+            self.wf_ctrl.workflow_elements_status(self.wf_id)
 
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -94,7 +94,7 @@ class SpecialTransferTest(WorkflowTest):
                     # Test job standard out
                     with open(job_stdout_file, 'r+') as f:
                         dir_contents = f.readlines()
-                    dir_path_in = SpecialTransferTest.wf_examples.lo_in_dir
+                    dir_path_in = self.wf_examples.lo_in_dir
                     full_path_list = []
                     for element in os.listdir(dir_path_in):
                         full_path_list.append(os.path.join(dir_path_in,
@@ -111,7 +111,7 @@ class SpecialTransferTest(WorkflowTest):
                     # Test job standard out
                     isSame, msg = identicalFiles(
                         job_stdout_file,
-                        SpecialTransferTest.wf_examples.lo_mff_stdout)
+                        self.wf_examples.lo_mff_stdout)
                     self.assertTrue(isSame, msg)
                     # Test no stderr
                     self.assertTrue(os.stat(job_stderr_file).st_size == 0,

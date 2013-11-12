@@ -15,9 +15,14 @@ Workflow test of one job with a command:
                            Remote mode - File Transfer and SRP
 * Expected comportment : The job succeeds
 * Outcome independant of the configuration
+* Tests : final status of the workflow
+          number of failed jobs (excluding aborted)
+          number of failed jobs (including aborted)
+          job stdout and stderr
+          #TODO: Test warning !
 """
 import tempfile
-import sys
+import os
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -34,22 +39,22 @@ class SpecialCommandTest(WorkflowTest):
     allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
                       (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
                       (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
+                      (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
                       ]
 
     def test_result(self):
-        workflow = SpecialCommandTest.wf_examples.example_special_command()
-        self.wf_id = SpecialCommandTest.wf_ctrl.submit_workflow(
+        workflow = self.wf_examples.example_special_command()
+        self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
 
         # Transfer input files if file transfer
-        if self.path_management == SpecialCommandTest.FILE_TRANSFER or \
-                self.path_management == SpecialCommandTest.SHARED_TRANSFER:
-            Helper.transfer_input_files(self.wf_id, SpecialCommandTest.wf_ctrl)
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
         # Wait for the worklow to finish
-        Helper.wait_workflow(self.wf_id, SpecialCommandTest.wf_ctrl)
+        Helper.wait_workflow(self.wf_id, self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -60,21 +65,21 @@ class SpecialCommandTest(WorkflowTest):
 
         nb_failed_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            SpecialCommandTest.wf_ctrl))
+            self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 0,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 0))
 
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            SpecialCommandTest.wf_ctrl,
+            self.wf_ctrl,
             include_aborted_jobs=True))
         self.assertTrue(nb_failed_aborted_jobs == 0,
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 0))
         # TODO: check the stdout
         (jobs_info, transfers_info, workflow_status, workflow_queue) = \
-            SpecialCommandTest.wf_ctrl.workflow_elements_status(self.wf_id)
+            self.wf_ctrl.workflow_elements_status(self.wf_id)
 
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -95,11 +100,16 @@ class SpecialCommandTest(WorkflowTest):
                                                     job_stderr_file)
                 if job_name == 'test_command_1':
                     # Test job stdout
-                    isSame, msg = identicalFiles(
-                        job_stdout_file,
-                        SpecialCommandTest.wf_examples.lo_stdout_command_model)
-                    self.assertTrue(isSame, msg)
-
+                    if self.path_management == self.LOCAL_PATH or \
+                            self.path_management == self.SHARED_RESOURCE_PATH:
+                        isSame, msg = identicalFiles(
+                            job_stdout_file,
+                            self.wf_examples.lo_stdout_command_model)
+                        self.assertTrue(isSame, msg)
+                    # Test no stderr
+                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                    "job stderr not empty : cf %s" %
+                                    job_stderr_file)
 
 if __name__ == '__main__':
     SpecialCommandTest.run_test(debug=True)

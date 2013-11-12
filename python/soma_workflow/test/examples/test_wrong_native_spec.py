@@ -43,22 +43,22 @@ class WrongNativeSpecPbsTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = WrongNativeSpecPbsTest.wf_examples.example_wrong_native_spec_pbs()
-        self.wf_id = WrongNativeSpecPbsTest.wf_ctrl.submit_workflow(
+        workflow = self.wf_examples.example_wrong_native_spec_pbs()
+        self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
-        if self.path_management == WrongNativeSpecPbsTest.FILE_TRANSFER or \
-                self.path_management == WrongNativeSpecPbsTest.SHARED_TRANSFER:
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
             Helper.transfer_input_files(self.wf_id,
-                                        WrongNativeSpecPbsTest.wf_ctrl)
+                                        self.wf_ctrl)
         # Wait for the workflow to finish
-        Helper.wait_workflow(self.wf_id, WrongNativeSpecPbsTest.wf_ctrl)
+        Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         # Transfer output files if file transfer
-        if self.path_management == WrongNativeSpecPbsTest.FILE_TRANSFER or \
-                self.path_management == WrongNativeSpecPbsTest.SHARED_TRANSFER:
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
             Helper.transfer_output_files(self.wf_id,
-                                         WrongNativeSpecPbsTest.wf_ctrl)
+                                         self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -66,15 +66,15 @@ class WrongNativeSpecPbsTest(WorkflowTest):
                         (status, constants.WORKFLOW_DONE))
         nb_failed_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            WrongNativeSpecPbsTest.wf_ctrl))
+            self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 0,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 0))
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            WrongNativeSpecPbsTest.wf_ctrl,
+            self.wf_ctrl,
             include_aborted_jobs=True))
-        if self.path_management == WrongNativeSpecPbsTest.LOCAL_PATH:
+        if self.path_management == self.LOCAL_PATH:
             self.assertTrue(nb_failed_aborted_jobs == 0,
                             "nb failed jobs including aborted : %i. "
                             "Expected : %i" % (nb_failed_aborted_jobs, 0))

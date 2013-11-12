@@ -15,6 +15,8 @@
 # Imports
 #-------------------------------------------------------------------------------
 
+import warnings
+import types
 import soma_workflow.constants as constants
 
 #-------------------------------------------------------------------------------
@@ -193,7 +195,12 @@ class Job(object):
     self.priority = priority
     self.native_specification = native_specification
 
-  
+    for command_elem in self.command:
+      if type(command_elem) in types.StringTypes:
+        if "'" in command_elem:
+          warnings.warn("%s contains single quote. It could fail using DRMAA"
+                         % command_elem, UserWarning)
+
   def _attributs_equal(self, el_list, other_el_list):
     if not len(el_list) == len(other_el_list):
       return False

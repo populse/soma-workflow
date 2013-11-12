@@ -19,7 +19,10 @@ Workflow test of multiple jobs:
 * Tests : final status of the workflow
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
+          job stdout and stderr
 """
+import os
+import tempfile
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -40,20 +43,20 @@ class NJobsTest(WorkflowTest):
         nb = 20
         time_sleep = 1
 
-        workflow = NJobsTest.wf_examples.example_n_jobs(nb=nb, time=time_sleep)
-        self.wf_id = NJobsTest.wf_ctrl.submit_workflow(
+        workflow = self.wf_examples.example_n_jobs(nb=nb, time=time_sleep)
+        self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
-        if self.path_management == NJobsTest.FILE_TRANSFER or \
-                self.path_management == NJobsTest.SHARED_TRANSFER:
-            Helper.transfer_input_files(self.wf_id, NJobsTest.wf_ctrl)
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
         # Wait for the workflow to finish
-        Helper.wait_workflow(self.wf_id, NJobsTest.wf_ctrl)
+        Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         # Transfer output files if file transfer
-        if self.path_management == NJobsTest.FILE_TRANSFER or \
-                self.path_management == NJobsTest.SHARED_TRANSFER:
-            Helper.transfer_output_files(self.wf_id, NJobsTest.wf_ctrl)
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -61,17 +64,46 @@ class NJobsTest(WorkflowTest):
                         (status, constants.WORKFLOW_DONE))
         nb_failed_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            NJobsTest.wf_ctrl))
+            self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 0,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 0))
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            NJobsTest.wf_ctrl,
+            self.wf_ctrl,
             include_aborted_jobs=True))
         self.assertTrue(nb_failed_aborted_jobs == 0,
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 0))
+
+        (jobs_info, transfers_info, workflow_status, workflow_queue) = \
+            self.wf_ctrl.workflow_elements_status(self.wf_id)
+
+        for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
+            job_list = self.wf_ctrl.jobs([job_id])
+            job_name, job_command, job_submission_date = job_list[job_id]
+
+            if exit_info[0] == constants.FINISHED_REGULARLY:
+                # To check job standard out and standard err
+                job_stdout_file = tempfile.NamedTemporaryFile(
+                    prefix="job_soma_out_log_",
+                    suffix=repr(job_id))
+                job_stdout_file = job_stdout_file.name
+                job_stderr_file = tempfile.NamedTemporaryFile(
+                    prefix="job_soma_outerr_log_",
+                    suffix=repr(job_id))
+                job_stderr_file = job_stderr_file.name
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                    job_stdout_file,
+                                                    job_stderr_file)
+                # Test stdout
+                self.assertTrue(os.stat(job_stdout_file).st_size == 0,
+                                "job stdout not empty : cf %s" %
+                                job_stdout_file)
+                # Test no stderr
+                self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                "job stderr not empty : cf %s" %
+                                job_stderr_file)
 
 
 if __name__ == '__main__':

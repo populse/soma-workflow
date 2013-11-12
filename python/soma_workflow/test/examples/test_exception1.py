@@ -22,7 +22,6 @@ Workflow test of job exception:
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
           job stdout and stderr
-          job output
 """
 import tempfile
 
@@ -44,40 +43,40 @@ class Exception1Test(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = Exception1Test.wf_examples.example_simple_exception1()
-        self.wf_id = Exception1Test.wf_ctrl.submit_workflow(
+        workflow = self.wf_examples.example_simple_exception1()
+        self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
-        if self.path_management == WorkflowTest.FILE_TRANSFER or \
-                self.path_management == WorkflowTest.SHARED_TRANSFER:
-            Helper.transfer_input_files(self.wf_id, Exception1Test.wf_ctrl)
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
         # Wait for the workflow to finish
-        Helper.wait_workflow(self.wf_id, Exception1Test.wf_ctrl)
+        Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         # Transfer output files if file transfer
-        if self.path_management == WorkflowTest.FILE_TRANSFER or \
-                self.path_management == WorkflowTest.SHARED_TRANSFER:
-            Helper.transfer_output_files(self.wf_id, Exception1Test.wf_ctrl)
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
                         "workflow status : %s. Expected : %s" %
                         (status, constants.WORKFLOW_DONE))
         nb_failed_jobs = len(Helper.list_failed_jobs(self.wf_id,
-                                                     Exception1Test.wf_ctrl))
+                                                     self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 1,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 1))
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
-            Exception1Test.wf_ctrl,
+            self.wf_ctrl,
             include_aborted_jobs=True))
         self.assertTrue(nb_failed_aborted_jobs == 4,
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 4))
 
         (jobs_info, transfers_info, workflow_status, workflow_queue) = \
-            Exception1Test.wf_ctrl.workflow_elements_status(self.wf_id)
+            self.wf_ctrl.workflow_elements_status(self.wf_id)
 
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -99,13 +98,9 @@ class Exception1Test(WorkflowTest):
 
                 if job_name == 'job1 with exception':
                     #Test stdout
-                    with open(job_stdout_file) as f:
-                        lines = f.readlines()
-                    for line in lines:
-                        print line
                     isSame, msg = identicalFiles(
                         job_stdout_file,
-                        Exception1Test.wf_examples.lo_stdout1_exception_model)
+                        self.wf_examples.lo_stdout1_exception_model)
                     self.assertTrue(isSame, msg)
                     # Test the last line of stderr
                     with open(job_stderr_file) as f:
