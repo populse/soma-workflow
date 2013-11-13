@@ -4,13 +4,16 @@ from __future__ import with_statement
 """
 Created on Fri Oct 18 13:38:06 2013
 
-@author: laure
+@author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
 import os
 from soma_workflow.client import Job
 from soma_workflow.client import SharedResourcePath
-from soma_workflow.test.workflow_examples import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamples
 
 
 class WorkflowExamplesShared(WorkflowExamples):
@@ -21,47 +24,47 @@ class WorkflowExamplesShared(WorkflowExamples):
         '''
         super(WorkflowExamplesShared, self).__init__()
 
-        complete_path = os.path.join(self.examples_dir, "complete")
+        self.complete_path = os.path.join(self.examples_dir, "complete")
 
         self.sh_file = {}
         self.sh_script = {}
         self.sh_stdin = {}
         self.lo_stdout = {}
-        self.lo_stderr = {}
+#        self.lo_stderr = {}
 
         # Shared resource path
         self.sh_file[0] = SharedResourcePath("complete/file0",
                                              "example", "job_dir", 168)
-        self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
-        self.sh_img_file = SharedResourcePath("special_transfers/example.img",
-                                              "example", "job_dir", 168)
+#        self.sh_in_dir = SharedResourcePath("", "example", "job_dir", 168)
+#        self.sh_img_file = SharedResourcePath("special_transfers/example.img",
+#                                              "example", "job_dir", 168)
         self.sh_exceptionJobScript = SharedResourcePath(
-            "simple/exceptionJob.py", "example",
+            "complete/exceptionJob.py", "example",
             "job_dir", 168)
-        self.sh_sleep_script = SharedResourcePath("simple/sleep_job.py",
+        self.sh_sleep_script = SharedResourcePath("complete/sleep_job.py",
                                                   "example", "job_dir", 168)
         self.sh_cmd_check_script = SharedResourcePath(
-            "command/argument_check.py", "example",
+            "complete/special_command.py", "example",
             "job_dir", 168)
-        self.sh_dir_contents_script = SharedResourcePath(
-            "special_transfers/dir_contents.py", "example",
-            "job_dir", 168)
-        self.sh_mff_script = SharedResourcePath(
-            "special_transfers/multiple_file_format.py",
-            "example", "job_dir", 168)
-        self.sh_out_dir = SharedResourcePath("transfered_dir",
-                                             "example", "output_dir", 168)
-        self.sh_img_out_file = SharedResourcePath("example.img", "example",
-                                                  "output_dir", 168)
-        self.lo_stdout1_exception_model = os.path.join(
+#        self.sh_dir_contents_script = SharedResourcePath(
+#            "special_transfers/dir_contents.py", "example",
+#            "job_dir", 168)
+#        self.sh_mff_script = SharedResourcePath(
+#            "special_transfers/multiple_file_format.py",
+#            "example", "job_dir", 168)
+#        self.sh_out_dir = SharedResourcePath("transfered_dir",
+#                                             "example", "output_dir", 168)
+#        self.sh_img_out_file = SharedResourcePath("example.img", "example",
+#                                                  "output_dir", 168)
+        self.lo_stdout_exception_model = os.path.join(
             self.examples_dir,
-            "simple/outputModels/stdout_exception_job")
-        self.lo_stderr1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stderr_exception_job")
-        self.remote_stdout_command_model = os.path.join(
-            self.examples_dir,
-            "command/remote_stdout_special_command")
+            "complete/output_models/stdout_exception_job")
+#        self.lo_stderr1_exception_model = os.path.join(
+#            self.examples_dir,
+#            "simple/outputModels/stderr_exception_job")
+#        self.lo_stdout_command_remote = os.path.join(
+#            self.examples_dir,
+#            "command/stdout_remote_special_command")
 
         for i in range(1, 5):
             self.sh_script[i] = SharedResourcePath(
@@ -70,11 +73,11 @@ class WorkflowExamplesShared(WorkflowExamples):
             self.sh_stdin[i] = SharedResourcePath(
                 "complete/stdin" + str(i),
                 "example", "job_dir", 168)
-            self.lo_stdout[i] = os.path.join(complete_path,
-                                             "outputModels/stdoutjob" + str(i))
-            self.lo_stderr[i] = os.path.join(complete_path,
-                                             "outputModels/stderrjob" + str(i))
-
+            self.lo_stdout[i] = os.path.join(
+                self.complete_path, "output_models/stdout_job" + str(i))
+#            self.lo_stderr[i] = os.path.join(complete_path,
+#                                             "outputModels/stderrjob" + str(i))
+#
         for i in [11, 12, 2, 3, 4]:
             self.sh_file[i] = SharedResourcePath("file" + str(i), "example",
                                                  "output_dir", 168)

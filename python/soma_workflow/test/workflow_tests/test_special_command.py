@@ -1,64 +1,89 @@
 from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 24 16:23:43 2013
+Created on Thu Oct 24 17:15:01 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
-Workflow test of file transfer:
-* Workflow constitued of 2 jobs : A job testing the contents of a directory
-                                  A job testing multi file format
+Workflow test of one job with a command:
+* Workflow constitued of 1 job
 * Dependencies : no dependencies
-* Allowed configurations : Remote mode - File Transfer
+* Allowed configurations : Light mode - Local path
+                           Local mode - Local path
+                           Remote mode - File Transfer
+                           Remote mode - Shared Resource Path (SRP)
                            Remote mode - File Transfer and SRP
-* Expected comportment : All jobs succeed
-* As this test concerns file transfer, it only works with a file transfer
-    path management
+* Expected comportment : The job succeeds
+* Outcome independant of the configuration
 * Tests : final status of the workflow
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
           job stdout and stderr
+          submission warning when single quote comand
 """
 import tempfile
 import os
+import warnings
 
 from soma_workflow.client import Helper
+from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
+from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.test.examples.workflow_test import WorkflowTest
-from soma_workflow.test.examples.utils import contents
 from soma_workflow.utils import identicalFiles
 
+from soma_workflow.test.workflow_tests import WorkflowTest
 
-class SpecialTransferTest(WorkflowTest):
 
-    allowed_config = [(REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+class SpecialCommandTest(WorkflowTest):
+
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+                      (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
+                      ]
 
     def test_result(self):
-        workflow = self.wf_examples.example_special_transfer()
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            workflow = self.wf_examples.example_special_command()
+            # Verify some things
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert ("contains single quote. It could fail using DRMAA" in
+                    str(w[-1].message))
+
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
-
-        # Transfer input files
-        Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
+        # Transfer input files if file transfer
+        if self.path_management == self.FILE_TRANSFER or \
+                self.path_management == self.SHARED_TRANSFER:
+            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
         # Wait for the worklow to finish
         Helper.wait_workflow(self.wf_id, self.wf_ctrl)
-        status = self.wf_ctrl.workflow_status(self.wf_id)
-        # Transfer output files
-        Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
                         "workflow status : %s. Expected : %s" %
                         (status, constants.WORKFLOW_DONE))
+        # TODO : sometimes raises an error
+        # because status = "workflow_in_progress"
+
         nb_failed_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
             self.wf_ctrl))
         self.assertTrue(nb_failed_jobs == 0,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 0))
+
         nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
             self.wf_id,
             self.wf_ctrl,
@@ -73,7 +98,6 @@ class SpecialTransferTest(WorkflowTest):
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
             job_name, job_command, job_submission_date = job_list[job_id]
-            print job_name
 
             if exit_info[0] == constants.FINISHED_REGULARLY:
                 # To check job standard out and standard err
@@ -81,43 +105,29 @@ class SpecialTransferTest(WorkflowTest):
                     prefix="job_soma_out_log_",
                     suffix=repr(job_id))
                 job_stdout_file = job_stdout_file.name
-                print 'job_stdout_file :', job_stdout_file
                 job_stderr_file = tempfile.NamedTemporaryFile(
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id))
                 job_stderr_file = job_stderr_file.name
-                print 'job_stderr_file :', job_stderr_file
                 self.wf_ctrl.retrieve_job_stdouterr(job_id,
                                                     job_stdout_file,
                                                     job_stderr_file)
-                if job_name == 'dir_contents':
-                    # Test job standard out
-                    with open(job_stdout_file, 'r+') as f:
-                        dir_contents = f.readlines()
-                    dir_path_in = self.wf_examples.lo_in_dir
-                    full_path_list = []
-                    for element in os.listdir(dir_path_in):
-                        full_path_list.append(os.path.join(dir_path_in,
-                                                           element))
-                    dir_contents_model = contents(full_path_list, [])
-                    self.assertTrue(
-                        sorted(dir_contents) == sorted(dir_contents_model))
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
-
-                if job_name == 'multi file format test':
-                    # Test job standard out
+                # Test job stdout
+                if self.path_management == self.LOCAL_PATH:
                     isSame, msg = identicalFiles(
                         job_stdout_file,
-                        self.wf_examples.lo_mff_stdout)
+                        self.wf_examples.lo_stdout_command_local)
                     self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
+                else:
+                    isSame, msg = identicalFiles(
+                        job_stdout_file,
+                        self.wf_examples.lo_stdout_command_remote)
+                    self.assertTrue(isSame, msg)
+                # Test no stderr
+                self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                "job stderr not empty : cf %s" %
+                                job_stderr_file)
 
 
 if __name__ == '__main__':
-    SpecialTransferTest.run_test(debug=True)
+    SpecialCommandTest.run_test(debug=False)

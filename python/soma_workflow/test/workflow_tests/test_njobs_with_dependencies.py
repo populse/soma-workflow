@@ -1,64 +1,74 @@
 from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 25 09:24:10 2013
+Created on Fri Oct 25 13:51:00 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
-Workflow test of native spec of the PBS:
-* Workflow constitued of 3 jobs : job1, with walltime and pmem options
-                                  job2, with walltime option
-                                  job3, no options
-* Dependencies : no dependencies
+Workflow test of multiple jobs with dependencies:
+* Workflow constitued of (3*n+2) jobs : 3 groups of n jobs, and 2 other jobs
+                                        You can change the value n via nb
+* Each job is a sleep command : you can change the sleep time via time_sleep
+* Dependencies : job1 depends on Group1
+                 Group2 depends on job1
+                 job2 depends on Group2
+                 Group3 depends on job3
 * Allowed configurations : Light mode - Local path
                            Local mode - Local path
                            Remote mode - File Transfer
                            Remote mode - Shared Resource Path (SRP)
                            Remote mode - File Transfer and SRP
 * Expected comportment : All jobs succeed
-* The jobs are also successful in local and light mode, because the PBS
-    native specs are ignored in those modes
+* Outcome independant of the configuration
 * Tests : final status of the workflow
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
           job stdout and stderr
-          job output
 """
-import tempfile
 import os
+import tempfile
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.test.examples.workflow_test import WorkflowTest
-from soma_workflow.utils import identicalFiles
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
-class NativeSpecPbsTest(WorkflowTest):
-
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+class NJobsWithDependenciesTest(WorkflowTest):
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
+                      ]
 
     def test_result(self):
-        workflow = self.wf_examples.example_native_spec_pbs()
+        nb = 10
+        time_sleep = 5
+
+        workflow = self.wf_examples.example_n_jobs_with_dependencies(
+            nb=nb, time=time_sleep)
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
-            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
+            Helper.transfer_input_files(self.wf_id,
+                                        self.wf_ctrl)
         # Wait for the workflow to finish
         Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         # Transfer output files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
-            Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
+            Helper.transfer_output_files(self.wf_id,
+                                         self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -99,34 +109,14 @@ class NativeSpecPbsTest(WorkflowTest):
                                                     job_stdout_file,
                                                     job_stderr_file)
                 # Test stdout
-                isSame, msg = identicalFiles(
-                    job_stdout_file,
-                    self.wf_examples.lo_stdout[1])
-                self.assertTrue(isSame, msg)
+                self.assertTrue(os.stat(job_stdout_file).st_size == 0,
+                                "job stdout not empty : cf %s" %
+                                job_stdout_file)
                 # Test no stderr
                 self.assertTrue(os.stat(job_stderr_file).st_size == 0,
                                 "job stderr not empty : cf %s" %
                                 job_stderr_file)
-                # Test output files
-                if self.path_management == self.LOCAL_PATH:
-                    isSame, msg = identicalFiles(
-                        self.wf_examples.lo_out_model_file[11],
-                        self.wf_examples.lo_file[11])
-                    self.assertTrue(isSame, msg)
-                    isSame, msg = identicalFiles(
-                        self.wf_examples.lo_out_model_file[12],
-                        self.wf_examples.lo_file[12])
-                    self.assertTrue(isSame, msg)
-                if self.path_management == self.FILE_TRANSFER or \
-                        self.path_management == self.SHARED_TRANSFER:
-                    isSame, msg = identicalFiles(
-                        self.wf_examples.lo_out_model_file[11],
-                        self.wf_examples.tr_file[11].client_path)
-                    self.assertTrue(isSame, msg)
-                    isSame, msg = identicalFiles(
-                        self.wf_examples.lo_out_model_file[12],
-                        self.wf_examples.tr_file[12].client_path)
-                    self.assertTrue(isSame, msg)
+
 
 if __name__ == '__main__':
-    NativeSpecPbsTest.run_test(debug=False)
+    NJobsWithDependenciesTest.run_test(debug=False)

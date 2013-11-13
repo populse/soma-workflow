@@ -1,14 +1,16 @@
 from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 25 09:41:31 2013
+Created on Fri Oct 25 13:51:00 2013
 
-@author: laure
+@author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
-Workflow test of multiple jobs:
-* Workflow constitued of n jobs : You can change the value n with nb
-* Each job is a sleep command : you can change the time with time_sleep
-* No dependencies
+Workflow test of a pipeline of jobs:
+* Workflow constitued of (n+1) jobs : You can change the value n with nb
+* Dependencies : The (i+1)th job depends on the (i)th job
 * Allowed configurations : Light mode - Local path
                            Local mode - Local path
                            Remote mode - File Transfer
@@ -29,34 +31,38 @@ from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.test.examples.workflow_test import WorkflowTest
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
-class NJobsTest(WorkflowTest):
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+class SerialJobsTest(WorkflowTest):
+
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
+                      ]
 
     def test_result(self):
-        nb = 20
-        time_sleep = 1
+        nb = 5
 
-        workflow = self.wf_examples.example_n_jobs(nb=nb, time=time_sleep)
+        workflow = self.wf_examples.example_serial_jobs(nb=nb)
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
         # Transfer input files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
-            Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
+            Helper.transfer_input_files(self.wf_id,
+                                        self.wf_ctrl)
         # Wait for the workflow to finish
         Helper.wait_workflow(self.wf_id, self.wf_ctrl)
         # Transfer output files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
-            Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
+            Helper.transfer_output_files(self.wf_id,
+                                         self.wf_ctrl)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
         self.assertTrue(status == constants.WORKFLOW_DONE,
@@ -107,4 +113,4 @@ class NJobsTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    NJobsTest.run_test(debug=False)
+    SerialJobsTest.run_test(debug=False)

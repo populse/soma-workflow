@@ -67,11 +67,11 @@ from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePa
 from soma_workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma_workflow.constants as  constants
 import soma_workflow.configuration as configuration
-from soma_workflow.test.workflow_examples import WorkflowExamples
-from soma_workflow.test.workflow_local import WorkflowExamplesLocal
-from soma_workflow.test.workflow_shared import WorkflowExamplesShared
-from soma_workflow.test.workflow_shared_transfer import WorkflowExamplesSharedTransfer
-from soma_workflow.test.workflow_transfer import WorkflowExamplesTransfer
+from soma_workflow.test.workflow_tests import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
+from soma_workflow.test.workflow_tests import WorkflowExamplesShared
+from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
+from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma_workflow.version as version
 

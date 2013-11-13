@@ -3,7 +3,10 @@ from __future__ import with_statement
 """
 Created on Fri Oct 25 14:03:52 2013
 
-@author: laure
+@author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
 Workflow test of multiple examples:
 * Test constitued of 3 workflows : cf test_exception1, test_exception2
@@ -30,16 +33,18 @@ from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
 from soma_workflow.utils import identicalFiles
-from soma_workflow.test.examples.workflow_test import WorkflowTest
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
 class MultipleTest(WorkflowTest):
 
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
+                      ]
 
     def test_result(self):
         workflow = self.wf_examples.example_multiple()
@@ -161,7 +166,7 @@ class MultipleTest(WorkflowTest):
                     # Test stdout
                     isSame, msg = identicalFiles(
                         job_stdout_file,
-                        self.wf_examples.lo_stdout1_exception_model)
+                        self.wf_examples.lo_stdout_exception_model)
                     self.assertTrue(isSame)
                     # Test stderr
                     with open(job_stderr_file) as f:

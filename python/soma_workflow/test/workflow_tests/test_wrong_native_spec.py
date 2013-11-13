@@ -4,6 +4,9 @@ from __future__ import with_statement
 Created on Fri Oct 25 09:19:23 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
 Workflow test of a wrong native spec of the PBS:
 
@@ -31,16 +34,18 @@ from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.test.examples.workflow_test import WorkflowTest
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
 class WrongNativeSpecPbsTest(WorkflowTest):
 
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
+                      ]
 
     def test_result(self):
         workflow = self.wf_examples.example_wrong_native_spec_pbs()

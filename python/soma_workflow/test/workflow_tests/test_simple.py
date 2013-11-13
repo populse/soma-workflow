@@ -4,6 +4,9 @@ from __future__ import with_statement
 Created on Thu Oct 24 17:34:55 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
 Workflow test of simple jobs:
 * Workflow constitued of 4 jobs : job1, job2, job3, job4
@@ -32,16 +35,18 @@ from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
 from soma_workflow.utils import identicalFiles
 
-from soma_workflow.test.examples.workflow_test import WorkflowTest
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
 class SimpleTest(WorkflowTest):
 
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
+                      ]
 
     def test_result(self):
         workflow = self.wf_examples.example_simple()
@@ -117,10 +122,6 @@ class SimpleTest(WorkflowTest):
                             self.wf_examples.lo_out_model_file[12],
                             self.wf_examples.lo_file[12])
                         self.assertTrue(isSame, msg)
-                        isSame, msg = identicalFiles(
-                            job_stderr_file,
-                            self.wf_examples.lo_stderr[1])
-                        self.assertTrue(isSame, msg)
                     if self.path_management == self.FILE_TRANSFER or \
                             self.path_management == self.SHARED_TRANSFER:
                         isSame, msg = identicalFiles(
@@ -152,10 +153,6 @@ class SimpleTest(WorkflowTest):
                         isSame, msg = identicalFiles(
                             self.wf_examples.lo_out_model_file[job_nb],
                             self.wf_examples.lo_file[job_nb])
-                        self.assertTrue(isSame, msg)
-                        isSame, msg = identicalFiles(
-                            job_stderr_file,
-                            self.wf_examples.lo_stderr[job_nb])
                         self.assertTrue(isSame, msg)
                     if self.path_management == self.FILE_TRANSFER or \
                             self.path_management == self.SHARED_TRANSFER:

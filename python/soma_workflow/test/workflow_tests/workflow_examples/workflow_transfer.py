@@ -5,13 +5,16 @@ from __future__ import with_statement
 Created on Fri Oct 18 13:58:31 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
 import os
 
 from soma_workflow.client import Job
 from soma_workflow.client import FileTransfer
-from soma_workflow.test.workflow_examples import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamples
 
 
 class WorkflowExamplesTransfer(WorkflowExamples):
@@ -24,43 +27,61 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         '''
         super(WorkflowExamplesTransfer, self).__init__()
 
-        # Initialize the dictionaries
+#        # Initialize the dictionaries
         self.tr_file = {}
         self.tr_script = {}
         self.tr_stdin = {}
         self.lo_stdout = {}
-        self.lo_stderr = {}
+#        self.lo_stderr = {}
         self.lo_out_model_file = {}
 
-        complete_path = os.path.join(self.examples_dir, "complete")
-
-        self.tr_file[0] = FileTransfer(True,
-                                       os.path.join(complete_path, "file0"),
-                                       168, "file0")
+        self.lo_in_dir = self.examples_dir
         self.tr_in_dir = FileTransfer(True, self.examples_dir, 168, "in_dir")
-        self.tr_img_file = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/dir_contents.py"),
-            128, "img_file",
-            [os.path.join(self.examples_dir, "special_transfers/example.img"),
-             os.path.join(self.examples_dir, "special_transfers/example.hdr")])
+
+        # Complete path
+        self.complete_path = os.path.join(self.examples_dir, "complete")
+        self.tr_file[0] = FileTransfer(
+            True, os.path.join(self.complete_path, "file0"),
+            168, "file0")
         self.tr_exceptionJobScript = FileTransfer(
-            True, os.path.join(self.examples_dir, "simple/exceptionJob.py"),
+            True, os.path.join(self.complete_path, "exception_job.py"),
             168, "exception_job")
         self.tr_sleep_script = FileTransfer(
-            True, os.path.join(self.examples_dir, "simple/sleep_job.py"),
+            True, os.path.join(self.complete_path, "sleep_job.py"),
             168, "sleep_job")
         self.tr_cmd_check_script = FileTransfer(
-            True, os.path.join(self.examples_dir, "command/argument_check.py"),
+            True, os.path.join(self.complete_path, "special_command.py"),
             168, "cmd_check")
+
+        # Models path
+        self.models_path = os.path.join(self.complete_path, "output_models")
+        self.lo_stdout_exception_model = os.path.join(
+            self.models_path, "stdout_exception_job")
+#        self.lo_stderr_exception_model = os.path.join(
+#            self.models_path, "stderr_exception_job")
+        self.lo_stdout_command_remote = os.path.join(
+            self.models_path, "stdout_remote_special_command")
+
+        # Special path
+        self.special_path = os.path.join(self.examples_dir,
+                                         "special_transfers")
+        self.tr_img_file = FileTransfer(
+            True, os.path.join(self.special_path, "dir_contents.py"),
+            128, "img_file",
+            [os.path.join(self.special_path, "example.img"),
+             os.path.join(self.special_path, "example.hdr")])
         self.tr_dir_contents_script = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/dir_contents.py"),
+            True, os.path.join(self.special_path, "dir_contents.py"),
             168, "dir_contents")
         self.tr_mff_script = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/multiple_file_format.py"),
+            True, os.path.join(self.special_path, "multiple_file_format.py"),
             168, "mdd_script")
+#        self.tr_dir_contents_stdout = os.path.join(
+#            self.special_path, "stdout_tr_dir_contents")
+        self.lo_mff_stdout = os.path.join(
+            self.special_path, 'stdout_multiple_file_format')
+
+        # Output path
         self.tr_out_dir = FileTransfer(
             False, os.path.join(self.output_dir, "transfered_dir"),
             168, "out_dir")
@@ -69,44 +90,25 @@ class WorkflowExamplesTransfer(WorkflowExamples):
             168, "img_out",
             [os.path.join(self.output_dir, "example.img"),
              os.path.join(self.output_dir, "example.hdr")])
-
-        self.tr_dir_contents_stdout = os.path.join(
-            self.examples_dir,
-            "special_transfers/tr_dir_contents_stdout")
-
-        self.lo_stdout1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stdout_exception_job")
-        self.lo_stderr1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stderr_exception_job")
-        self.lo_in_dir = self.examples_dir
-        self.lo_mff_stdout = os.path.join(
-            self.examples_dir,
-            'special_transfers/multiple_file_format_stdout')
-        self.remote_stdout_command_model = os.path.join(
-            self.examples_dir,
-            "command/remote_stdout_special_command")
-
+#
         for i in range(1, 5):
             self.tr_script[i] = FileTransfer(
-                True, os.path.join(complete_path, "job" + str(i) + ".py"),
+                True, os.path.join(self.complete_path, "job" + str(i) + ".py"),
                 168, "job" + str(i) + "_py")
             self.tr_stdin[i] = FileTransfer(
-                True, os.path.join(complete_path, "stdin" + str(i)),
+                True, os.path.join(self.complete_path, "stdin" + str(i)),
                 168, "stdin" + str(i))
-            self.lo_stdout[i] = os.path.join(complete_path,
-                                             "outputModels/stdoutjob" + str(i))
-            self.lo_stderr[i] = os.path.join(complete_path,
-                                             "outputModels/stderrjob" + str(i))
-
+            self.lo_stdout[i] = os.path.join(self.models_path,
+                                             "stdout_job" + str(i))
+##            self.lo_stderr[i] = os.path.join(self.models_path,
+##                                             "stderrjob" + str(i))
+#
         for i in [11, 12, 2, 3, 4]:
             self.tr_file[i] = FileTransfer(
                 False, os.path.join(self.output_dir, "file" + str(i)),
                 168, "file" + str(i))
             self.lo_out_model_file[i] = os.path.join(
-                complete_path,
-                "outputModels/file" + str(i))
+                self.models_path, "file" + str(i))
 
     def job1(self, option=None):
         time_to_wait = 2

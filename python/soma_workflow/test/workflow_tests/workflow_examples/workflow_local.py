@@ -5,6 +5,9 @@ from __future__ import with_statement
 Created on Fri Oct 18 12:19:20 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 #-----------------------------------------------------------------------------
 # Imports
@@ -13,7 +16,7 @@ Created on Fri Oct 18 12:19:20 2013
 import os
 
 from soma_workflow.client import Job
-from soma_workflow.test.workflow_examples import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamples
 
 
 #-----------------------------------------------------------------------------
@@ -25,61 +28,64 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def __init__(self):
         super(WorkflowExamplesLocal, self).__init__()
 
-        # Initialize the dictionaries
+#        # Initialize the dictionaries
         self.lo_file = {}
         self.lo_script = {}
         self.lo_stdin = {}
         self.lo_stdout = {}
-        self.lo_stderr = {}
+#        self.lo_stderr = {}
         self.lo_out_model_file = {}
-
-        complete_path = os.path.join(self.examples_dir, "complete")
-
-        # Local path
-        self.lo_file[0] = os.path.join(complete_path, "file0")
-        self.lo_in_dir = self.examples_dir
-        self.lo_img_file = os.path.join(self.examples_dir,
-                                        "special_transfers/example.img")
-        self.lo_exceptionJobScript = os.path.join(self.examples_dir,
-                                                  "simple/exceptionJob.py")
-        self.lo_sleep_script = os.path.join(self.examples_dir,
-                                            "simple/sleep_job.py")
-        self.lo_cmd_check_script = os.path.join(self.examples_dir,
-                                                "command/argument_check.py")
-        self.lo_dir_contents_script = os.path.join(
-            self.examples_dir,
-            "special_transfers/dir_contents.py")
-        self.lo_mff_script = os.path.join(
-            self.examples_dir,
-            "special_transfers/multiple_file_format.py")
-        self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
-        self.lo_img_out_file = os.path.join(self.output_dir, "example.img")
-        self.lo_stdout1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stdout_exception_job")
-        self.lo_stderr1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stderr_exception_job")
-        self.lo_stdout_command_model = os.path.join(
-            self.examples_dir,
-            "command/local_stdout_special_command")
-
+#
+#        self.lo_in_dir = self.examples_dir
+#
+#        # Complete path
+        self.complete_path = os.path.join(self.examples_dir, "complete")
+        self.lo_file[0] = os.path.join(self.complete_path, "file0")
+        self.lo_exceptionJobScript = os.path.join(self.complete_path,
+                                                  "exception_job.py")
+        self.lo_sleep_script = os.path.join(self.complete_path,
+                                            "sleep_job.py")
+        self.lo_cmd_check_script = os.path.join(self.complete_path,
+                                                "special_command.py")
+#
+#        # Models path
+        self.models_path = os.path.join(self.complete_path, "output_models")
+        self.lo_stdout_exception_model = os.path.join(
+            self.models_path, "stdout_exception_job")
+#        self.lo_stderr_exception_model = os.path.join(
+#            self.models_path, "stderr_exception_job")
+        self.lo_stdout_command_local = os.path.join(
+            self.models_path, "stdout_local_special_command")
+#
+#        # Special path
+#        self.special_path = os.path.join(self.examples_dir,
+#                                         "special_transfers")
+#        self.lo_img_file = os.path.join(self.special_path,
+#                                        "example.img")
+#        self.lo_dir_contents_script = os.path.join(self.special_path,
+#                                                   "dir_contents.py")
+#        self.lo_mff_script = os.path.join(self.special_path,
+#                                          "multiple_file_format.py")
+#
+#        # Output path
+#        self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
+#        self.lo_img_out_file = os.path.join(self.output_dir, "example.img")
+#
         for i in range(1, 5):
             # Local path
-            self.lo_script[i] = os.path.join(complete_path,
+            self.lo_script[i] = os.path.join(self.complete_path,
                                              "job" + str(i) + ".py")
-            self.lo_stdin[i] = os.path.join(complete_path, "stdin" + str(i))
-            self.lo_stdout[i] = os.path.join(complete_path,
-                                             "outputModels/stdoutjob" + str(i))
-            self.lo_stderr[i] = os.path.join(complete_path,
-                                             "outputModels/stderrjob" + str(i))
-
+            self.lo_stdin[i] = os.path.join(self.complete_path,
+                                            "stdin" + str(i))
+            self.lo_stdout[i] = os.path.join(self.models_path,
+                                             "stdout_job" + str(i))
+##            self.lo_stderr[i] = os.path.join(self.models_path,
+##                                             "stderr_job" + str(i))
         for i in [11, 12, 2, 3, 4]:
             # Local path
             self.lo_file[i] = os.path.join(self.output_dir, "file" + str(i))
-            self.lo_out_model_file[i] = os.path.join(
-                complete_path,
-                "outputModels/file" + str(i))
+            self.lo_out_model_file[i] = os.path.join(self.models_path,
+                                                     "file" + str(i))
 
     def job1(self, option=None):
         time_to_wait = 2

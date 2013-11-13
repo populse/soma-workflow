@@ -4,7 +4,10 @@ from __future__ import with_statement
 """
 Created on Fri Oct 18 14:58:43 2013
 
-@author: laure
+@author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
 import os
@@ -12,7 +15,7 @@ import os
 from soma_workflow.client import Job
 from soma_workflow.client import SharedResourcePath
 from soma_workflow.client import FileTransfer
-from soma_workflow.test.workflow_examples import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamples
 
 
 class WorkflowExamplesSharedTransfer(WorkflowExamples):

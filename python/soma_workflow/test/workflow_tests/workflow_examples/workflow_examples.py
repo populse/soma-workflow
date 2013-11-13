@@ -6,6 +6,9 @@ Created on Mon Oct 21 14:05:37 2013
 
 @author: jinpeng.li@cea.fr
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
 import os

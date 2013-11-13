@@ -1,5 +1,6 @@
 from __future__ import with_statement
 '''
+@author: laure.hugo@cea.fr
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
@@ -10,13 +11,13 @@ import sys
 
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration
-from soma_workflow.test.examples.utils import get_user_id
-from soma_workflow.test.examples.utils import suppress_stdout
+from soma_workflow.test.workflow_tests.utils import get_user_id
+from soma_workflow.test.workflow_tests.utils import suppress_stdout
 
-from soma_workflow.test.workflow_local import WorkflowExamplesLocal
-from soma_workflow.test.workflow_shared import WorkflowExamplesShared
-from soma_workflow.test.workflow_shared_transfer import WorkflowExamplesSharedTransfer
-from soma_workflow.test.workflow_transfer import WorkflowExamplesTransfer
+from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
+from soma_workflow.test.workflow_tests import WorkflowExamplesShared
+from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
+from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 
 
 class WorkflowTest(unittest.TestCase):

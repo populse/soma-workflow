@@ -1,13 +1,16 @@
 from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 25 09:33:40 2013
+Created on Fri Oct 25 09:28:55 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
 Workflow test of job exception:
-* Workflow constitued of 4 jobs : job1, job2, job4,
-                                  job3 with exception
+* Workflow constitued of 4 jobs : job1 with exception,
+                                  job2, job3, job4
 * Dependencies : job2, job3 depend on job1
                  job4 depends on job2, job3
 * Allowed configurations : Light mode - Local path
@@ -15,18 +18,15 @@ Workflow test of job exception:
                            Remote mode - File Transfer
                            Remote mode - Shared Resource Path (SRP)
                            Remote mode - File Transfer and SRP
-* Expected comportment : job1, job2 succeed
-                         job3 fails
-                         job4 is aborted
+* Expected comportment : job1 fails
+                         job2, job3, job4 are aborted
 * Outcome independant of the configuration
 * Tests : final status of the workflow
           number of failed jobs (excluding aborted)
           number of failed jobs (including aborted)
           job stdout and stderr
-          job output
 """
 import tempfile
-import os
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -34,19 +34,21 @@ from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
 from soma_workflow.utils import identicalFiles
-from soma_workflow.test.examples.workflow_test import WorkflowTest
+
+from soma_workflow.test.workflow_tests import WorkflowTest
 
 
-class Exception2Test(WorkflowTest):
-
-    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+class Exception1Test(WorkflowTest):
+    allowed_config = [
+#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
+#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
+                      ]
 
     def test_result(self):
-        workflow = self.wf_examples.example_simple_exception2()
+        workflow = self.wf_examples.example_simple_exception1()
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
@@ -74,9 +76,9 @@ class Exception2Test(WorkflowTest):
             self.wf_id,
             self.wf_ctrl,
             include_aborted_jobs=True))
-        self.assertTrue(nb_failed_aborted_jobs == 2,
+        self.assertTrue(nb_failed_aborted_jobs == 4,
                         "nb failed jobs including aborted : %i. Expected : %i"
-                        % (nb_failed_aborted_jobs, 2))
+                        % (nb_failed_aborted_jobs, 4))
 
         (jobs_info, transfers_info, workflow_status, workflow_queue) = \
             self.wf_ctrl.workflow_elements_status(self.wf_id)
@@ -98,65 +100,12 @@ class Exception2Test(WorkflowTest):
                 self.wf_ctrl.retrieve_job_stdouterr(job_id,
                                                     job_stdout_file,
                                                     job_stderr_file)
-                if job_name == 'job1':
-                    # Test stdout
-                    isSame, msg = identicalFiles(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout[1])
-                    self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
-                    # Test output files
-                    if self.path_management == self.LOCAL_PATH:
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[11],
-                            self.wf_examples.lo_file[11])
-                        self.assertTrue(isSame, msg)
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[12],
-                            self.wf_examples.lo_file[12])
-                        self.assertTrue(isSame, msg)
-                    if self.path_management == self.FILE_TRANSFER or \
-                            self.path_management == self.SHARED_TRANSFER:
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[11],
-                            self.wf_examples.tr_file[11].client_path)
-                        self.assertTrue(isSame, msg)
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[12],
-                            self.wf_examples.tr_file[12].client_path)
-                        self.assertTrue(isSame, msg)
 
-                if job_name == 'job2':
-                    # Test stdout
+                if job_name == 'job1 with exception':
+                    #Test stdout
                     isSame, msg = identicalFiles(
                         job_stdout_file,
-                        self.wf_examples.lo_stdout[2])
-                    self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
-                    # Test output files
-                    if self.path_management == self.LOCAL_PATH:
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[2],
-                            self.wf_examples.lo_file[2])
-                        self.assertTrue(isSame, msg)
-                    if self.path_management == self.FILE_TRANSFER or \
-                            self.path_management == self.SHARED_TRANSFER:
-                        isSame, msg = identicalFiles(
-                            self.wf_examples.lo_out_model_file[2],
-                            self.wf_examples.tr_file[2].client_path)
-                        self.assertTrue(isSame, msg)
-
-                if job_name == 'job3 with exception':
-                    # Test stdout
-                    isSame, msg = identicalFiles(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout1_exception_model)
+                        self.wf_examples.lo_stdout_exception_model)
                     self.assertTrue(isSame, msg)
                     # Test the last line of stderr
                     with open(job_stderr_file) as f:
@@ -169,4 +118,4 @@ class Exception2Test(WorkflowTest):
 
 
 if __name__ == '__main__':
-    Exception2Test.run_test(debug=False)
+    Exception1Test.run_test(debug=False)
