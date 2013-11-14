@@ -29,15 +29,14 @@ from soma_workflow.client import Helper
 from soma_workflow.configuration import REMOTE_MODE
 import soma_workflow.constants as constants
 from soma_workflow.test.workflow_tests import WorkflowTest
-from soma_workflow.test.workflow_tests.utils import contents
-from soma_workflow.utils import identicalFiles
+from soma_workflow.test.utils import list_contents
+from soma_workflow.test.utils import identical_files
 
 
 class SpecialTransferTest(WorkflowTest):
 
     allowed_config = [(REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         workflow = self.wf_examples.example_special_transfer()
@@ -103,7 +102,7 @@ class SpecialTransferTest(WorkflowTest):
                     for element in os.listdir(dir_path_in):
                         full_path_list.append(os.path.join(dir_path_in,
                                                            element))
-                    dir_contents_model = contents(full_path_list, [])
+                    dir_contents_model = list_contents(full_path_list, [])
                     self.assertTrue(
                         sorted(dir_contents) == sorted(dir_contents_model))
                     # Test no stderr
@@ -113,7 +112,7 @@ class SpecialTransferTest(WorkflowTest):
 
                 if job_name == 'multi file format test':
                     # Test job standard out
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         job_stdout_file,
                         self.wf_examples.lo_mff_stdout)
                     self.assertTrue(isSame, msg)

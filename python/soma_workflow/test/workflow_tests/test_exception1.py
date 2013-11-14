@@ -33,19 +33,17 @@ from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
-from soma_workflow.utils import identicalFiles
+from soma_workflow.test.utils import identical_files
 
 from soma_workflow.test.workflow_tests import WorkflowTest
 
 
 class Exception1Test(WorkflowTest):
-    allowed_config = [
-#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         workflow = self.wf_examples.example_simple_exception1()
@@ -103,7 +101,7 @@ class Exception1Test(WorkflowTest):
 
                 if job_name == 'job1 with exception':
                     #Test stdout
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         job_stdout_file,
                         self.wf_examples.lo_stdout_exception_model)
                     self.assertTrue(isSame, msg)

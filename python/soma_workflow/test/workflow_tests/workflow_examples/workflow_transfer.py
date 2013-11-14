@@ -32,7 +32,6 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.tr_script = {}
         self.tr_stdin = {}
         self.lo_stdout = {}
-#        self.lo_stderr = {}
         self.lo_out_model_file = {}
 
         self.lo_in_dir = self.examples_dir
@@ -57,8 +56,6 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.models_path = os.path.join(self.complete_path, "output_models")
         self.lo_stdout_exception_model = os.path.join(
             self.models_path, "stdout_exception_job")
-#        self.lo_stderr_exception_model = os.path.join(
-#            self.models_path, "stderr_exception_job")
         self.lo_stdout_command_remote = os.path.join(
             self.models_path, "stdout_remote_special_command")
 
@@ -76,8 +73,6 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         self.tr_mff_script = FileTransfer(
             True, os.path.join(self.special_path, "multiple_file_format.py"),
             168, "mdd_script")
-#        self.tr_dir_contents_stdout = os.path.join(
-#            self.special_path, "stdout_tr_dir_contents")
         self.lo_mff_stdout = os.path.join(
             self.special_path, 'stdout_multiple_file_format')
 
@@ -100,9 +95,7 @@ class WorkflowExamplesTransfer(WorkflowExamples):
                 168, "stdin" + str(i))
             self.lo_stdout[i] = os.path.join(self.models_path,
                                              "stdout_job" + str(i))
-##            self.lo_stderr[i] = os.path.join(self.models_path,
-##                                             "stderrjob" + str(i))
-#
+
         for i in [11, 12, 2, 3, 4]:
             self.tr_file[i] = FileTransfer(
                 False, os.path.join(self.output_dir, "file" + str(i)),

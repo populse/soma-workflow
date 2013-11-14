@@ -11,8 +11,8 @@ import sys
 
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration
-from soma_workflow.test.workflow_tests.utils import get_user_id
-from soma_workflow.test.workflow_tests.utils import suppress_stdout
+from soma_workflow.test.utils import get_user_id
+from soma_workflow.test.utils import suppress_stdout
 
 from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests import WorkflowExamplesShared

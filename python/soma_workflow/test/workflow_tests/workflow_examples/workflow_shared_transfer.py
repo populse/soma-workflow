@@ -28,61 +28,65 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
         '''
         super(WorkflowExamplesSharedTransfer, self).__init__()
 
-        # Initialize the dictionaries
+#        # Initialize the dictionaries
         self.sh_file = {}
         self.sh_script = {}
         self.sh_stdin = {}
         self.tr_file = {}
         self.tr_script = {}
         self.lo_stdout = {}
-        self.lo_stderr = {}
+#        self.lo_stderr = {}
         self.lo_out_model_file = {}
 
-        complete_path = os.path.join(self.examples_dir, "complete")
-
-        self.lo_stdout1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stdout_exception_job")
-        self.lo_stderr1_exception_model = os.path.join(
-            self.examples_dir,
-            "simple/outputModels/stderr_exception_job")
         self.lo_in_dir = self.examples_dir
-        self.lo_mff_stdout = os.path.join(
-            self.examples_dir,
-            'special_transfers/multiple_file_format_stdout')
-        self.remote_stdout_command_model = os.path.join(
-            self.examples_dir,
-            "command/remote_stdout_special_command")
-
-        # Shared resource path
-        self.sh_file[0] = SharedResourcePath("complete/file0",
-                                             "example", "job_dir", 168)
-        self.sh_exceptionJobScript = SharedResourcePath(
-            "simple/exceptionJob.py", "example",
-            "job_dir", 168)
-
-        # Transfers
         self.tr_in_dir = FileTransfer(True, self.examples_dir, 168, "in_dir")
-        self.tr_img_file = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/dir_contents.py"),
-            128, "img_file",
-            [os.path.join(self.examples_dir, "special_transfers/example.img"),
-             os.path.join(self.examples_dir, "special_transfers/example.hdr")])
+
+        # Complete
+        self.complete_path = os.path.join(self.examples_dir, "complete")
+        self.sh_file[0] = SharedResourcePath(
+            os.path.join("complete", "file0"),
+            "example", "job_dir", 168)
+        self.sh_exceptionJobScript = SharedResourcePath(
+            os.path.join("complete", "exception_job.py"),
+            "example", "job_dir", 168)
         self.tr_sleep_script = FileTransfer(
-            True, os.path.join(self.examples_dir, "simple/sleep_job.py"),
+            True, os.path.join(self.complete_path, "sleep_job.py"),
             168, "sleep_job")
         self.tr_cmd_check_script = FileTransfer(
-            True, os.path.join(self.examples_dir, "command/argument_check.py"),
+            True, os.path.join(self.complete_path, "special_command.py"),
             168, "cmd_check")
+
+        # Output models
+        self.models_path = os.path.join(self.complete_path, "output_models")
+        self.lo_stdout_exception_model = os.path.join(
+            self.models_path,
+            "stdout_exception_job")
+        self.lo_stdout_command_remote = os.path.join(
+            self.models_path,
+            "stdout_remote_special_command")
+
+        # Special transfer
+        self.special_path = os.path.join(self.examples_dir,
+                                         "special_transfers")
+        self.tr_img_file = FileTransfer(
+            True, os.path.join(self.special_path,
+                               "dir_contents.py"),
+            128, "img_file",
+            [os.path.join(self.special_path, "example.img"),
+             os.path.join(self.special_path, "example.hdr")])
         self.tr_dir_contents_script = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/dir_contents.py"),
+            True, os.path.join(self.special_path,
+                               "dir_contents.py"),
             168, "dir_contents")
         self.tr_mff_script = FileTransfer(
-            True, os.path.join(self.examples_dir,
-                               "special_transfers/multiple_file_format.py"),
+            True, os.path.join(self.special_path,
+                               "multiple_file_format.py"),
             168, "mdd_script")
+        self.lo_mff_stdout = os.path.join(
+            self.special_path,
+            'stdout_multiple_file_format')
+
+        # Output dir
         self.tr_out_dir = FileTransfer(
             False, os.path.join(self.output_dir, "transfered_dir"),
             168, "out_dir")
@@ -93,34 +97,24 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
              os.path.join(self.output_dir, "example.hdr")])
 
         for i in range(1, 5):
-            self.lo_stdout[i] = os.path.join(complete_path,
-                                             "outputModels/stdoutjob" + str(i))
-            self.lo_stderr[i] = os.path.join(complete_path,
-                                             "outputModels/stderrjob" + str(i))
-
-            # Shared resource path
+            self.lo_stdout[i] = os.path.join(self.models_path,
+                                             "stdout_job" + str(i))
             self.sh_script[i] = SharedResourcePath(
-                "complete/job" + str(i) + ".py",
+                os.path.join("complete", "job" + str(i) + ".py"),
                 "example", "job_dir", 168)
             self.sh_stdin[i] = SharedResourcePath(
-                "complete/stdin" + str(i),
+                os.path.join("complete", "stdin" + str(i)),
                 "example", "job_dir", 168)
-
-            # Transfers
             self.tr_script[i] = FileTransfer(
-                True, os.path.join(complete_path, "job" + str(i) + ".py"),
+                True, os.path.join(self.complete_path, "job" + str(i) + ".py"),
                 168, "job" + str(i) + "_py")
 
         for i in [11, 12, 2, 3, 4]:
             self.lo_out_model_file[i] = os.path.join(
-                complete_path,
-                "outputModels/file" + str(i))
-
-            # Shared resource path
+                self.models_path,
+                "file" + str(i))
             self.sh_file[i] = SharedResourcePath("file" + str(i), "example",
                                                  "output_dir", 168)
-
-            # Transfers
             self.tr_file[i] = FileTransfer(
                 False, os.path.join(self.output_dir, "file" + str(i)),
                 168, "file" + str(i))

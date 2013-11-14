@@ -9,7 +9,7 @@ Created on Fri Oct 25 13:51:00 2013
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 
 Workflow test of a pipeline of jobs:
-* Workflow constitued of (n+1) jobs : You can change the value n with nb
+* Workflow constitued of (n+1) jobs : You can change the value n via nb
 * Dependencies : The (i+1)th job depends on the (i)th job
 * Allowed configurations : Light mode - Local path
                            Local mode - Local path
@@ -36,13 +36,11 @@ from soma_workflow.test.workflow_tests import WorkflowTest
 
 class SerialJobsTest(WorkflowTest):
 
-    allowed_config = [
-#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         nb = 5

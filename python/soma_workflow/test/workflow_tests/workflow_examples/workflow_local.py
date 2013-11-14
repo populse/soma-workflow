@@ -33,12 +33,9 @@ class WorkflowExamplesLocal(WorkflowExamples):
         self.lo_script = {}
         self.lo_stdin = {}
         self.lo_stdout = {}
-#        self.lo_stderr = {}
         self.lo_out_model_file = {}
-#
-#        self.lo_in_dir = self.examples_dir
-#
-#        # Complete path
+
+        # Complete path
         self.complete_path = os.path.join(self.examples_dir, "complete")
         self.lo_file[0] = os.path.join(self.complete_path, "file0")
         self.lo_exceptionJobScript = os.path.join(self.complete_path,
@@ -47,42 +44,23 @@ class WorkflowExamplesLocal(WorkflowExamples):
                                             "sleep_job.py")
         self.lo_cmd_check_script = os.path.join(self.complete_path,
                                                 "special_command.py")
-#
-#        # Models path
+
+        # Models path
         self.models_path = os.path.join(self.complete_path, "output_models")
         self.lo_stdout_exception_model = os.path.join(
             self.models_path, "stdout_exception_job")
-#        self.lo_stderr_exception_model = os.path.join(
-#            self.models_path, "stderr_exception_job")
         self.lo_stdout_command_local = os.path.join(
             self.models_path, "stdout_local_special_command")
-#
-#        # Special path
-#        self.special_path = os.path.join(self.examples_dir,
-#                                         "special_transfers")
-#        self.lo_img_file = os.path.join(self.special_path,
-#                                        "example.img")
-#        self.lo_dir_contents_script = os.path.join(self.special_path,
-#                                                   "dir_contents.py")
-#        self.lo_mff_script = os.path.join(self.special_path,
-#                                          "multiple_file_format.py")
-#
-#        # Output path
-#        self.lo_out_dir = os.path.join(self.output_dir, "transfered_dir")
-#        self.lo_img_out_file = os.path.join(self.output_dir, "example.img")
-#
+
         for i in range(1, 5):
-            # Local path
             self.lo_script[i] = os.path.join(self.complete_path,
                                              "job" + str(i) + ".py")
             self.lo_stdin[i] = os.path.join(self.complete_path,
                                             "stdin" + str(i))
             self.lo_stdout[i] = os.path.join(self.models_path,
                                              "stdout_job" + str(i))
-##            self.lo_stderr[i] = os.path.join(self.models_path,
-##                                             "stderr_job" + str(i))
+
         for i in [11, 12, 2, 3, 4]:
-            # Local path
             self.lo_file[i] = os.path.join(self.output_dir, "file" + str(i))
             self.lo_out_model_file[i] = os.path.join(self.models_path,
                                                      "file" + str(i))

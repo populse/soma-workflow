@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
+@author: laure.hugo@cea.fr
 @author: Soizic Laguitton
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
@@ -18,12 +19,12 @@ import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration
 #from soma_workflow.test.utils import check_files
-from soma_workflow.test.job_examples.job_examples import JobExamples
-from soma_workflow.test.examples.utils import get_user_id
-from soma_workflow.test.examples.utils import suppress_stdout
+from soma_workflow.test.job_tests.job_examples import JobExamples
+from soma_workflow.test.utils import get_user_id
+from soma_workflow.test.utils import suppress_stdout
 
 
-class JobsTest(unittest.TestCase):
+class JobTests(unittest.TestCase):
     '''
     Abstract class for soma_workflow job and transfer common tests.
     '''
@@ -49,18 +50,18 @@ class JobsTest(unittest.TestCase):
 
     def tearDown(self):
         for jid in self.my_jobs:
-            JobsTest.wf_ctrl.delete_job(jid)
-        remaining_jobs = frozenset(JobsTest.wf_ctrl.jobs().keys())
+            self.wf_ctrl.delete_job(jid)
+        remaining_jobs = frozenset(self.wf_ctrl.jobs().keys())
         self.failUnless(len(remaining_jobs.intersection(self.my_jobs)) == 0)
 
     def test_jobs(self):
-        res = set(JobsTest.wf_ctrl.jobs().keys())
+        res = set(self.wf_ctrl.jobs().keys())
         self.failUnless(res.issuperset(self.my_jobs))
 
     def test_wait(self):
-        JobsTest.wf_ctrl.wait_job(self.my_jobs)
+        self.wf_ctrl.wait_job(self.my_jobs)
         for jid in self.my_jobs:
-            status = JobsTest.wf_ctrl.job_status(jid)
+            status = self.wf_ctrl.job_status(jid)
             self.failUnless(status == constants.DONE or
                             status == constants.FAILED,
                             'Job %s status after wait: %s' % (jid, status))
@@ -68,11 +69,11 @@ class JobsTest(unittest.TestCase):
     def test_wait2(self):
         start_time = datetime.now()
         interval = 5
-        JobsTest.wf_ctrl.wait_job(self.my_jobs, interval)
+        self.wf_ctrl.wait_job(self.my_jobs, interval)
         delta = datetime.now() - start_time
         if delta < timedelta(seconds=interval):
             for jid in self.my_jobs:
-                status = JobsTest.wf_ctrl.job_status(jid)
+                status = self.wf_ctrl.job_status(jid)
                 self.failUnless(status == constants.DONE or
                                 status == constants.FAILED,
                                 'Job %s status after wait: %s' %
@@ -83,9 +84,9 @@ class JobsTest(unittest.TestCase):
 
     def test_restart(self):
         jobid = self.my_jobs[len(self.my_jobs) - 1]
-        JobsTest.wf_ctrl.kill_job(jobid)
-        JobsTest.wf_ctrl.restart_job(jobid)
-        status = JobsTest.wf_ctrl.job_status(jobid)
+        self.wf_ctrl.kill_job(jobid)
+        self.wf_ctrl.restart_job(jobid)
+        status = self.wf_ctrl.job_status(jobid)
         self.failUnless(not status == constants.USER_ON_HOLD and
                         not status == constants.USER_SYSTEM_ON_HOLD and
                         not status == constants.USER_SUSPENDED and
@@ -95,10 +96,10 @@ class JobsTest(unittest.TestCase):
     def test_kill(self):
         jobid = self.my_jobs[0]
         time.sleep(2)
-        JobsTest.wf_ctrl.kill_job(jobid)
-        job_termination_status = JobsTest.wf_ctrl.job_termination_status(jobid)
+        self.wf_ctrl.kill_job(jobid)
+        job_termination_status = self.wf_ctrl.job_termination_status(jobid)
         exit_status = job_termination_status[0]
-        status = JobsTest.wf_ctrl.job_status(jobid)
+        status = self.wf_ctrl.job_status(jobid)
         self.failUnless(status == constants.FAILED or status == constants.DONE,
                         'Job status after kill: %s' % status)
         self.failUnless(exit_status == constants.USER_KILLED or
@@ -119,18 +120,19 @@ class JobsTest(unittest.TestCase):
         resource_ids = Configuration.get_configured_resources(config_file_path)
 
         for resource_id in resource_ids:
-            print "============ Resource :", resource_id, "==================="
-            print "Do you want to test the resource %s (Y/n) ?" % resource_id
+            sys.stdout.write("===== Resource : " + resource_id + " ====== \n")
+            sys.stdout.write("Do you want to test the resource %s (Y/n) ?" %
+                             resource_id)
             test_resource = sys.stdin.readline()
             if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
                 # Skip the resource
-                print 'Resource %s is not tested' % resource_id
+                sys.stdout.write('Resource %s is not tested \n' % resource_id)
                 continue
 
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
             if config.get_mode() not in cls.allowed_resources:
-                print 'No tests available for this resource'
+                sys.stdout.write('No tests available for this resource \n')
                 continue
             (login, password) = get_user_id(resource_id, config)
 
@@ -145,16 +147,17 @@ class JobsTest(unittest.TestCase):
 #                if config.get_mode() != configuration[0]:
 #                    allowed_config.remove(configuration)
 #            if len(allowed_config) == 0:
-#                print "No tests available for the resource %s" % resource_id
+#                sys.stdout.write("No tests available for the resource %s \n" %
+#                                  resource_id)
 
 #            for configuration in allowed_config:
 #                (mode, file_system) = configuration
-#                print "\n----------------------------------------------------"
-#                print "Mode :", mode
-#                print "File system :", file_system
+#                sys.stdout.write("\n--------------------------------------\n")
+#                sys.stdout.write("Mode : " + mode + \n")
+#                sys.stdout.write("File system : " + file_system + \n")
 #                cls.setup_path_management(file_system)
             with suppress_stdout(debug):
-                JobsTest.setup_connection(resource_id,
+                JobTests.setup_connection(resource_id,
                                           login,
                                           password)
 

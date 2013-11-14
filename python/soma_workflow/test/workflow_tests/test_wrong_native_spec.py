@@ -39,13 +39,11 @@ from soma_workflow.test.workflow_tests import WorkflowTest
 
 class WrongNativeSpecPbsTest(WorkflowTest):
 
-    allowed_config = [
-#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         workflow = self.wf_examples.example_wrong_native_spec_pbs()

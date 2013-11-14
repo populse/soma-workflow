@@ -3,8 +3,12 @@
 Created on Mon Oct 28 11:29:54 2013
 
 @author: laure.hugo@cea.fr
+@author: Soizic Laguitton
+@organization: U{IFR 49<http://www.ifr49.org>}
+@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 import os
+import sys
 
 from soma_workflow.errors import ConfigurationError
 from soma_workflow.client import Job, FileTransfer
@@ -45,37 +49,34 @@ class JobExamples(object):
         self.jobs_timeout = jobs_timeout
         self.python = python
 
-        self.complete_dir = os.path.join(self.examples_dir, "complete")
-        self.simple_dir = os.path.join(self.examples_dir, "simple")
-        self.complete_models_dir = os.path.join(self.complete_dir,
-                                                "outputModels")
-        self.simple_models_dir = os.path.join(self.simple_dir,
-                                              "outputModels")
+        self.complete_path = os.path.join(self.examples_dir, "complete")
+        self.models_path = os.path.join(self.complete_path,
+                                        "output_models")
         self.job1_output_file_models = [
-            os.path.join(self.complete_models_dir, "file11"),
-            os.path.join(self.complete_models_dir, "file12")]
+            os.path.join(self.models_path, "file11"),
+            os.path.join(self.models_path, "file12")]
         self.job2_output_file_models = [
-            os.path.join(self.complete_models_dir, "file2")]
+            os.path.join(self.models_path, "file2")]
         self.job3_output_file_models = [
-            os.path.join(self.complete_models_dir, "file3")]
+            os.path.join(self.models_path, "file3")]
         self.job4_output_file_models = [
-            os.path.join(self.complete_models_dir, "file4")]
+            os.path.join(self.models_path, "file4")]
 
         self.job1_stdouterr_models = [
-            os.path.join(self.complete_models_dir, "stdoutjob1"),
-            os.path.join(self.complete_models_dir, "stderrjob1")]
+            os.path.join(self.models_path, "stdout_job1"),
+            os.path.join(self.models_path, "stderr_job1")]
         self.job2_stdouterr_models = [
-            os.path.join(self.complete_models_dir, "stdoutjob2"),
-            os.path.join(self.complete_models_dir, "stderrjob2")]
+            os.path.join(self.models_path, "stdout_job2"),
+            os.path.join(self.models_path, "stderr_job2")]
         self.job3_stdouterr_models = [
-            os.path.join(self.complete_models_dir, "stdoutjob3"),
-            os.path.join(self.complete_models_dir, "stderrjob3")]
+            os.path.join(self.models_path, "stdout_job3"),
+            os.path.join(self.models_path, "stderr_job3")]
         self.job4_stdouterr_models = [
-            os.path.join(self.complete_models_dir, "stdoutjob4"),
-            os.path.join(self.complete_models_dir, "stderrjob4")]
+            os.path.join(self.models_path, "stdout_job4"),
+            os.path.join(self.models_path, "stderr_job4")]
         self.exceptionjobstdouterr = [
-            os.path.join(self.simple_models_dir, "stdout_exception_job"),
-            os.path.join(self.simple_models_dir, "stderr_exception_job")]
+            os.path.join(self.models_path, "stdout_exception_job"),
+            os.path.join(self.models_path, "stderr_exception_job")]
 
     def set_new_connection(self, wf_ctrl):
         '''
@@ -94,20 +95,20 @@ class JobExamples(object):
                          disposal_timeout=self.tr_timeout))
         self.file0_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "file0"),
+                         os.path.join(self.complete_path, "file0"),
                          self.tr_timeout))
         script1_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "job1.py"),
+                         os.path.join(self.complete_path, "job1.py"),
                          self.tr_timeout))
         stdin1_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "stdin1"),
+                         os.path.join(self.complete_path, "stdin1"),
                          self.tr_timeout))
         self.wf_ctrl.transfer_files(self.file0_tr.engine_path)
         self.wf_ctrl.transfer_files(script1_tr.engine_path)
         self.wf_ctrl.transfer_files(stdin1_tr.engine_path)
-        print "files transfered "
+        sys.stdout.write("files transfered \n")
         job1_id = self.wf_ctrl.submit_job(Job(
             command=[self.python, script1_tr, self.file0_tr,
                      self.file11_tr, self.file12_tr, repr(time)],
@@ -131,11 +132,11 @@ class JobExamples(object):
                          self.tr_timeout))
         script2_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "job2.py"),
+                         os.path.join(self.complete_path, "job2.py"),
                          self.tr_timeout))
         stdin2_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "stdin2"),
+                         os.path.join(self.complete_path, "stdin2"),
                          self.tr_timeout))
         self.wf_ctrl.transfer_files(script2_tr.engine_path)
         self.wf_ctrl.transfer_files(stdin2_tr.engine_path)
@@ -159,11 +160,11 @@ class JobExamples(object):
                          self.tr_timeout))
         script3_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "job3.py"),
+                         os.path.join(self.complete_path, "job3.py"),
                          self.tr_timeout))
         stdin3_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "stdin3"),
+                         os.path.join(self.complete_path, "stdin3"),
                          self.tr_timeout))
         self.wf_ctrl.transfer_files(script3_tr.engine_path)
         self.wf_ctrl.transfer_files(stdin3_tr.engine_path)
@@ -187,11 +188,11 @@ class JobExamples(object):
                          self.tr_timeout))
         script4_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "job4.py"),
+                         os.path.join(self.complete_path, "job4.py"),
                          self.tr_timeout))
         stdin4_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.complete_dir, "stdin4"),
+                         os.path.join(self.complete_path, "stdin4"),
                          self.tr_timeout))
         self.wf_ctrl.transfer_files(script4_tr.engine_path)
         self.wf_ctrl.transfer_files(stdin4_tr.engine_path)
@@ -211,7 +212,7 @@ class JobExamples(object):
     def submit_exception_job(self):
         script_tr = self.wf_ctrl.register_transfer(
             FileTransfer(True,
-                         os.path.join(self.simple_dir, "exceptionJob.py"),
+                         os.path.join(self.complete_path, "exception_job.py"),
                          self.tr_timeout))
         self.wf_ctrl.transfer_files(script_tr.engine_path)
         job_id = self.wf_ctrl.submit_job(Job(
@@ -234,10 +235,10 @@ class JobExamples(object):
         file12 = os.path.join(self.output_dir, "file12")
         job_id = self.wf_ctrl.submit_job(Job(
             command=[self.python,
-                     os.path.join(self.complete_dir, "job1.py"),
-                     os.path.join(self.complete_dir, "file0"),
+                     os.path.join(self.complete_path, "job1.py"),
+                     os.path.join(self.complete_path, "file0"),
                      file11, file12, "2"],
-            stdin=os.path.join(self.complete_dir, "stdin1"),
+            stdin=os.path.join(self.complete_path, "stdin1"),
             join_stderrout=False,
             disposal_timeout=self.jobs_timeout,
             name="job1 local custom submission",
@@ -252,10 +253,10 @@ class JobExamples(object):
         file12 = os.path.join(self.output_dir, "file12")
         job_id = self.wf_ctrl.submit_job(Job(
             command=[self.python,
-                     os.path.join(self.complete_dir, "job1.py"),
-                     os.path.join(self.complete_dir, "file0"),
+                     os.path.join(self.complete_path, "job1.py"),
+                     os.path.join(self.complete_path, "file0"),
                      file11, file12, "2"],
-            stdin=os.path.join(self.complete_dir, "stdin1"),
+            stdin=os.path.join(self.complete_path, "stdin1"),
             join_stderrout=False,
             disposal_timeout=self.jobs_timeout,
             name="job1 local submission"))
@@ -281,10 +282,12 @@ class JobExamples(object):
         mpibin = self.wf_ctrl.config._config_parser.get(
             self.wf_ctrl._resource_id,
             configuration.OCFG_PARALLEL_ENV_MPI_BIN)
-        print "mpibin = " + mpibin
+        sys.stdout.write("mpibin = " + mpibin + '\n')
 
-        print "source_tr.engine_path = " + source_tr.engine_path
-        print "object_tr.engine_path = " + object_tr.engine_path
+        sys.stdout.write("source_tr.engine_path = " +
+                         source_tr.engine_path + "\n")
+        sys.stdout.write("object_tr.engine_path = " +
+                         object_tr.engine_path + "\n")
         compil1job_id = self.wf_ctrl.submit_job(Job(
             command=[mpibin+"/mpicc", "-c", source_tr, "-o", object_tr],
             referenced_input_files=[source_tr],
@@ -299,7 +302,7 @@ class JobExamples(object):
             True,
             self.output_dir + "simple_mpi",
             self.tr_timeout))
-        print "bin_tr.engine_path= " + bin_tr.engine_path
+        sys.stdout.write("bin_tr.engine_path= " + bin_tr.engine_path + "\n")
 
         compil2job_id = self.wf_ctrl.submit_job(Job(
             command=[mpibin + "/mpicc", "-o", bin_tr, object_tr],

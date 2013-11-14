@@ -36,18 +36,16 @@ from soma_workflow.configuration import REMOTE_MODE
 from soma_workflow.configuration import LOCAL_MODE
 import soma_workflow.constants as constants
 from soma_workflow.test.workflow_tests import WorkflowTest
-from soma_workflow.utils import identicalFiles
+from soma_workflow.test.utils import identical_files
 
 
 class NativeSpecPbsTest(WorkflowTest):
 
-    allowed_config = [
-#                      (LIGHT_MODE, WorkflowTest.LOCAL_PATH),
-#                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
-#                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
+    allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+                      (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
+                      (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         workflow = self.wf_examples.example_native_spec_pbs()
@@ -104,7 +102,7 @@ class NativeSpecPbsTest(WorkflowTest):
                                                     job_stdout_file,
                                                     job_stderr_file)
                 # Test stdout
-                isSame, msg = identicalFiles(
+                isSame, msg = identical_files(
                     job_stdout_file,
                     self.wf_examples.lo_stdout[1])
                 self.assertTrue(isSame, msg)
@@ -114,21 +112,21 @@ class NativeSpecPbsTest(WorkflowTest):
                                 job_stderr_file)
                 # Test output files
                 if self.path_management == self.LOCAL_PATH:
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         self.wf_examples.lo_out_model_file[11],
                         self.wf_examples.lo_file[11])
                     self.assertTrue(isSame, msg)
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         self.wf_examples.lo_out_model_file[12],
                         self.wf_examples.lo_file[12])
                     self.assertTrue(isSame, msg)
                 if self.path_management == self.FILE_TRANSFER or \
                         self.path_management == self.SHARED_TRANSFER:
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         self.wf_examples.lo_out_model_file[11],
                         self.wf_examples.tr_file[11].client_path)
                     self.assertTrue(isSame, msg)
-                    isSame, msg = identicalFiles(
+                    isSame, msg = identical_files(
                         self.wf_examples.lo_out_model_file[12],
                         self.wf_examples.tr_file[12].client_path)
                     self.assertTrue(isSame, msg)

@@ -46,9 +46,8 @@ class FakePipelineTest(WorkflowTest):
     allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
                       (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
                       (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
-#                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER),
-                      ]
+                      (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
+                      (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
         workflow = self.wf_examples.example_fake_pipelineT1()
