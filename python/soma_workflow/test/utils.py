@@ -100,16 +100,16 @@ def identical_files(filepath1, filepath2):
     lineNb = 1
     line1 = file1.readline()
     line2 = file2.readline()
-    identical = line1 == line2
+    identical = (line1 == line2)
 
     while identical and line1:
         line1 = file1.readline()
         line2 = file2.readline()
         lineNb = lineNb + 1
-        identical = line1 == line2
+        identical = (line1 == line2)
 
     if identical:
-        identical = line1 == line2
+        identical = (line1 == line2)
     if not identical:
         return (
             (False, "%s and %s are different. line %d: \n file1: %s file2:%s" %
@@ -120,8 +120,7 @@ def identical_files(filepath1, filepath2):
 
 
 def check_files(files, files_models, tolerance=0):
-    index = 0
-    for file in files:
+    for (index, file) in enumerate(files):
         t = tolerance
         (identical, msg) = identical_files(file, files_models[index])
         if not identical:
@@ -129,8 +128,7 @@ def check_files(files, files_models, tolerance=0):
                 return (identical, msg)
             else:
                 t = t - 1
-                print "\n checkFiles: " + msg
-        index = index + 1
+                sys.stdout.write("\n check_files: " + msg + "\n")
     return (True, None)
 
 

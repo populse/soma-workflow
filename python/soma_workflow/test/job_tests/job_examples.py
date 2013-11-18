@@ -52,27 +52,35 @@ class JobExamples(object):
         self.complete_path = os.path.join(self.examples_dir, "complete")
         self.models_path = os.path.join(self.complete_path,
                                         "output_models")
-        self.job1_output_file_models = [
-            os.path.join(self.models_path, "file11"),
-            os.path.join(self.models_path, "file12")]
-        self.job2_output_file_models = [
-            os.path.join(self.models_path, "file2")]
-        self.job3_output_file_models = [
-            os.path.join(self.models_path, "file3")]
-        self.job4_output_file_models = [
-            os.path.join(self.models_path, "file4")]
 
+        self.output_models = {}
+        for i in [11, 12, 2, 3, 4]:
+            self.output_models[i] = os.path.join(self.models_path,
+                                                      "file" + str(i))
+        self.job1_output_file_models = [
+            self.output_models[11], self.output_models[12]]
+        self.job2_output_file_models = [
+            self.output_models[2]]
+        self.job3_output_file_models = [
+            self.output_models[3]]
+        self.job4_output_file_models = [
+            self.output_models[4]]
+
+        self.stdout_models = {}
+        for i in range(1,5):
+            self.stdout_models[i] = os.path.join(self.models_path,
+                                                 "stdout_job" + str(i))
         self.job1_stdouterr_models = [
-            os.path.join(self.models_path, "stdout_job1"),
+            self.stdout_models[1],
             os.path.join(self.models_path, "stderr_job1")]
         self.job2_stdouterr_models = [
-            os.path.join(self.models_path, "stdout_job2"),
+            self.stdout_models[2],
             os.path.join(self.models_path, "stderr_job2")]
         self.job3_stdouterr_models = [
-            os.path.join(self.models_path, "stdout_job3"),
+            self.stdout_models[3],
             os.path.join(self.models_path, "stderr_job3")]
         self.job4_stdouterr_models = [
-            os.path.join(self.models_path, "stdout_job4"),
+            self.stdout_models[4],
             os.path.join(self.models_path, "stderr_job4")]
         self.exceptionjobstdouterr = [
             os.path.join(self.models_path, "stdout_exception_job"),
@@ -264,6 +272,9 @@ class JobExamples(object):
         return (job_id, [file11, file12], None)
 
     def mpi_job_submission(self, node_num):
+        '''
+        BROKEN
+        '''
         #compilation
         source_tr = self.wf_ctrl.register_transfer(FileTransfer(
             True,

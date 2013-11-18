@@ -64,7 +64,8 @@ class JobTests(unittest.TestCase):
             status = self.wf_ctrl.job_status(jid)
             self.failUnless(status == constants.DONE or
                             status == constants.FAILED,
-                            'Job %s status after wait: %s' % (jid, status))
+                            'Job %s status after wait: %s. Expected %s or %s' %
+                            (jid, status, constants.DONE, constants.FAILED))
 
     def test_wait2(self):
         start_time = datetime.now()
@@ -76,8 +77,10 @@ class JobTests(unittest.TestCase):
                 status = self.wf_ctrl.job_status(jid)
                 self.failUnless(status == constants.DONE or
                                 status == constants.FAILED,
-                                'Job %s status after wait: %s' %
-                                (self.my_jobs[0], status))
+                                'Job %s status after wait: %s.'
+                                'Expected %s or %s' %
+                                (self.my_jobs[0], status, constants.DONE,
+                                 constants.FAILED))
         else:
             self.failUnless(abs(delta - timedelta(seconds=interval)) <
                             timedelta(seconds=1))
@@ -101,10 +104,13 @@ class JobTests(unittest.TestCase):
         exit_status = job_termination_status[0]
         status = self.wf_ctrl.job_status(jobid)
         self.failUnless(status == constants.FAILED or status == constants.DONE,
-                        'Job status after kill: %s' % status)
+                        'Job status after kill: %s. Expected %s or %s' %
+                        (status, constants.FAILED, constants.DONE))
         self.failUnless(exit_status == constants.USER_KILLED or
                         exit_status == constants.FINISHED_REGULARLY,
-                        'Job exit status after kill: %s' % exit_status)
+                        'Job exit status after kill: %s. Expected %s or %s' %
+                        (exit_status, constants.USER_KILLED,
+                         constants.FINISHED_REGULARLY))
 
     @abstractmethod
     def test_result(self):

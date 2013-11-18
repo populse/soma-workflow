@@ -12,7 +12,7 @@ import os
 import sys
 
 import soma_workflow.constants as constants
-from soma_workflow.test.utils import check_files
+from soma_workflow.test.utils import identical_files
 from soma_workflow.test.job_tests.job_tests import JobTests
 from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import LOCAL_MODE
@@ -42,30 +42,42 @@ class ExceptionJobTest(JobTests):
         jobid = self.my_jobs[0]
         self.wf_ctrl.wait_job(self.my_jobs)
         status = self.wf_ctrl.job_status(jobid)
-        self.failUnless(status == constants.DONE or constants.FAILED,
-                        'Job %s status after wait: %s' % (jobid, status))
+        # Test end of workflow
+        self.failUnless(status == constants.DONE or constants.DONE,
+                        'Job %s status after wait: %s, instead of %s or %s' %
+                        (jobid, status, constants.DONE, constants.DONE))
         job_termination_status = self.wf_ctrl.job_termination_status(jobid)
         exit_status = job_termination_status[0]
         self.failUnless(exit_status == constants.FINISHED_REGULARLY,
-                        'Job %s exit status: %s' % (jobid, exit_status))
+                        'Job %s exit status: %s, instead of %s' %
+                        (jobid, exit_status, constants.FINISHED_REGULARLY))
         exit_value = job_termination_status[1]
         self.failUnless(exit_value == 1,
-                        'Job exit value: %d' % exit_value)
+                        'Job %s exit value: %d, instead of %i' %
+                        (jobid, exit_value, 1))
         # checking stdout and stderr
         client_stdout = os.path.join(self.job_examples.output_dir,
                                      "stdout_exception_job")
         client_stderr = os.path.join(self.job_examples.output_dir,
                                      "stderr_exception_job")
         self.wf_ctrl.retrieve_job_stdouterr(jobid, client_stdout,
-                                                client_stderr)
+                                            client_stderr)
         self.client_files.append(client_stdout)
         self.client_files.append(client_stderr)
 
-        (identical, msg) = check_files(
-            self.client_files,
-            self.job_examples.exceptionjobstdouterr, 1)
+        #Test stdout
+        (identical, msg) = identical_files(
+            client_stdout,
+            self.job_examples.exceptionjobstdouterr[0])
         self.failUnless(identical, msg)
-
+        # Test the last line of stderr
+        with open(client_stderr) as f:
+            lines = f.readlines()
+        expected_error = 'Exception: Paf Boum Boum Bada Boum !!!\n'
+        isSame = (lines[-1] == expected_error)
+        self.assertTrue(isSame,
+                        "Job exception : %s. Expected : %s" %
+                        (lines[-1], expected_error))
 
 if __name__ == '__main__':
     ExceptionJobTest.run_test(debug=True)

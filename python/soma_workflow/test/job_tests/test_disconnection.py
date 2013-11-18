@@ -41,17 +41,18 @@ class DisconnectionTest(JobTests):
         self.wf_ctrl.wait_job(self.my_jobs)
         status = self.wf_ctrl.job_status(self.my_jobs[0])
         self.failUnless(status == constants.DONE,
-                        'Job %s status after wait: %s' %
-                        (self.my_jobs[0], status))
+                        'Job %s status after wait: %s. Expected %s' %
+                        (self.my_jobs[0], status, constants.DONE))
         job_termination_status = self.wf_ctrl.job_termination_status(
             self.my_jobs[0])
         exit_status = job_termination_status[0]
         self.failUnless(exit_status == constants.FINISHED_REGULARLY,
-                        'Job %s exit status: %s' %
-                        (self.my_jobs[0], exit_status))
+                        'Job %s exit status: %s. Expected %s' %
+                        (self.my_jobs[0], exit_status,
+                         constants.FINISHED_REGULARLY))
         exit_value = job_termination_status[1]
         self.failUnless(exit_value == 0,
-                        'Job exit value: %d' % exit_value)
+                        'Job exit value: %d. Expected %d' % exit_value, 0)
 
         # Job2 & 3
         info2 = self.job_examples.submit_job2(time=60)
