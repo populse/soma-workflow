@@ -1,2 +1,2 @@
-fullVersion = '2.5.0'
-shortVersion = '2.5'
+fullVersion = '2.6.0'
+shortVersion = '2.6'
