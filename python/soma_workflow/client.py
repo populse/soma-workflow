@@ -944,9 +944,10 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
   if config.get_scheduler_type() == configuration.DRMAA_SCHEDULER:
     from soma_workflow.scheduler import Drmaa
     #print "scheduler type: drmaa"
-    scheduler = Drmaa(config.get_drmaa_implementation(),
-                      config.get_parallel_job_config(),
-                      configured_native_spec=config.get_native_specification())
+    scheduler = DrmaaCTypes(config.get_drmaa_implementation(),
+                            config.get_parallel_job_config(),
+                            configured_native_spec\
+                            =config.get_native_specification())
 
   elif config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
     from soma_workflow.scheduler import ConfiguredLocalScheduler
