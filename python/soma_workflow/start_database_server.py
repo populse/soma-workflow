@@ -24,6 +24,7 @@ if __name__ == '__main__':
   
   import soma_workflow.database_server
   from soma_workflow.configuration import Configuration
+  from soma_workflow.utils import make_dirs
   
   class WorkflowDatabaseServer(Pyro.core.ObjBase, 
                                soma_workflow.database_server.WorkflowDatabaseServer):
@@ -47,6 +48,19 @@ if __name__ == '__main__':
   print "Ressource: " + ressource_id
 
   config = Configuration.load_from_file(ressource_id)
+
+  ###### Create directories ############################################
+  log_file_path, _, _ = config.get_engine_log_info()
+  log_server_path, _, _ = config.get_server_log_info()
+  transfered_file_dir = config.get_transfered_file_dir()
+  if config._database_file is not None:
+      make_dirs(config._database_file, is_file_path=True)
+  if transfered_file_dir is not None:
+      make_dirs(config._transfered_file_dir, is_file_path=False)
+  if log_file_path is not None:
+      make_dirs(log_file_path, is_file_path=False)
+  if log_server_path is not None:
+      make_dirs(log_server_path, is_file_path=True)
 
   (server_log_file,
    server_log_format,
