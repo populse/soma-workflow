@@ -34,7 +34,6 @@ from soma_workflow.client import WorkflowController
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
-from soma_workflow.utils import make_dirs
 
 #-----------------------------------------------------------------------------
 # Globals and constants

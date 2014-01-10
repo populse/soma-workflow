@@ -24,7 +24,6 @@ if __name__ == '__main__':
   
   import soma_workflow.database_server
   from soma_workflow.configuration import Configuration
-  from soma_workflow.utils import make_dirs
   
   class WorkflowDatabaseServer(Pyro.core.ObjBase, 
                                soma_workflow.database_server.WorkflowDatabaseServer):

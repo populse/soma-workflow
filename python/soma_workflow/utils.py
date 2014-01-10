@@ -264,18 +264,3 @@ def identicalFiles(filepath1, filepath2):
   else:
     return (True, None)
 
-
-def make_dirs(anypath, is_file_path=False):
-    '''
-    Example
-    -------
-    from soma_workflow.utils import make_dirs
-    make_dirs("/tmp/test", is_file_path=True)
-    make_dirs("/tmp/test", is_file_path=False)
-    '''
-    if is_file_path:
-        dir_path = os.path.dirname(anypath)
-    else:
-        dir_path = anypath
-    if not os.path.isdir(dir_path):
-      	os.makedirs(dir_path)
