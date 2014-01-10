@@ -127,6 +127,8 @@ if __name__=="__main__":
   def main(resource_id, engine_name, log = ""):
 
     config = Configuration.load_from_file(resource_id)
+    config.mk_config_dirs()
+
     (engine_log_dir,
     engine_log_format,
     engine_log_level) = config.get_engine_log_info()

@@ -24,6 +24,7 @@ import ConfigParser
 
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
+from soma_workflow.utils import make_dirs
 
 
 #-----------------------------------------------------------------------------
@@ -778,6 +779,19 @@ class Configuration(observer.Observable):
     else:
       return (None, None, None)
 
+  def mk_config_dirs(self):
+      ###### Create directories ############################################
+      log_file_path, _, _ = self.get_engine_log_info()
+      log_server_path, _, _ = self.get_server_log_info()
+      transfered_file_dir = self.get_transfered_file_dir()
+      if self._database_file is not None:
+          make_dirs(self._database_file, is_file_path=True)
+      if transfered_file_dir is not None:
+          make_dirs(self._transfered_file_dir, is_file_path=False)
+      if log_file_path is not None:
+          make_dirs(log_file_path, is_file_path=False)
+      if log_server_path is not None:
+          make_dirs(log_server_path, is_file_path=True)
 
   def save_to_file(self, config_path=None):
     pass 
