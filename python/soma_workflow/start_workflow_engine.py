@@ -137,7 +137,7 @@ if __name__=="__main__":
     if log_file_path is not None:
         make_dirs(log_file_path, is_file_path=False)
     if log_server_path is not None:
-        make_dirs(log_server_path, is_file_path=False)
+        make_dirs(log_server_path, is_file_path=True)
 
     (engine_log_dir,
     engine_log_format,
