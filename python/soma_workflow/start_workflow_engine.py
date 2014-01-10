@@ -130,9 +130,10 @@ if __name__=="__main__":
     ###### Create directories ############################################
     log_file_path, _, _ = config.get_engine_log_info()
     log_server_path, _, _ = config.get_server_log_info()
+    transfered_file_dir = config.get_transfered_file_dir()
     if config._database_file is not None:
         make_dirs(config._database_file, is_file_path=True)
-    if config._transfered_file_dir is not None:
+    if transfered_file_dir is not None:
         make_dirs(config._transfered_file_dir, is_file_path=False)
     if log_file_path is not None:
         make_dirs(log_file_path, is_file_path=False)
