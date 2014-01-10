@@ -1112,14 +1112,6 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
     '''
     * config *configuration.Configuration*
     '''
-    ###### Create directories ############################################
-    log_file_path, _, _ = config.get_engine_log_info()
-    log_server_path, _, _ = config.get_server_log_info()
-    make_dirs(config._database_file, is_file_path=True)
-    make_dirs(config._transfered_file_dir, is_file_path=False)
-    make_dirs(log_file_path, is_file_path=False)
-    make_dirs(log_server_path, is_file_path=False)
-
     super(ConfiguredWorkflowEngine, self).__init__(
                                database_server,
                                scheduler,

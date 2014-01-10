@@ -30,6 +30,7 @@ if __name__=="__main__":
   import soma_workflow.configuration
   from soma_workflow.errors import NoDrmaaLibError, EngineError
   from soma_workflow.database_server import WorkflowDatabaseServer
+  from soma_workflow.utils import make_dirs
 
 
 
@@ -126,6 +127,13 @@ if __name__=="__main__":
   def main(resource_id, engine_name, log = ""):
 
     config = Configuration.load_from_file(resource_id)
+    ###### Create directories ############################################
+    log_file_path, _, _ = config.get_engine_log_info()
+    log_server_path, _, _ = config.get_server_log_info()
+    make_dirs(config._database_file, is_file_path=True)
+    make_dirs(config._transfered_file_dir, is_file_path=False)
+    make_dirs(log_file_path, is_file_path=False)
+    make_dirs(log_server_path, is_file_path=False)
 
     (engine_log_dir,
     engine_log_format,
