@@ -34,6 +34,7 @@ from soma_workflow.client import WorkflowController
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
+from soma_workflow.utils import make_dirs
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -648,7 +649,7 @@ class WorkflowEngine(RemoteFileController):
       raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
     
     self._user_id = self._database_server.register_user(user_login)
-    self.logger.debug("user_id : " + repr(self._user_id))
+    self.logger.debug("user_id : " + repr(self._user_id))       
 
     self.engine_loop = WorkflowEngineLoop(database_server,
                                            scheduler,
@@ -1111,6 +1112,14 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
     '''
     * config *configuration.Configuration*
     '''
+    ###### Create directories ############################################
+    log_file_path, _, _ = config.get_engine_log_info()
+    log_server_path, _, _ = config.get_server_log_info()
+    make_dirs(config._database_file, is_file_path=True)
+    make_dirs(config._transfered_file_dir, is_file_path=False)
+    make_dirs(log_file_path, is_file_path=False)
+    make_dirs(log_server_path, is_file_path=False)
+
     super(ConfiguredWorkflowEngine, self).__init__(
                                database_server,
                                scheduler,
