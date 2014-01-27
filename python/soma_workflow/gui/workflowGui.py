@@ -1553,7 +1553,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     if force:
       self.model.delete_workflow()
-      self.updateWorkflowList()
       if not deleled_properly and \
          self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
          QtGui.QMessageBox.warning(self, 
@@ -1563,6 +1562,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                    "resource. \n In case of long jobs, please "
                                    "inspect the active jobs (running or in the "
                                    "queue) using the DRMS interface.")
+    self.refreshWorkflowList()
 
   @QtCore.Slot()
   def delete_workflow(self):

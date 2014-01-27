@@ -648,7 +648,7 @@ class WorkflowEngine(RemoteFileController):
       raise EngineError("Couldn't identify user %s: %s \n" %(type(e), e))
     
     self._user_id = self._database_server.register_user(user_login)
-    self.logger.debug("user_id : " + repr(self._user_id))       
+    self.logger.debug("user_id : " + repr(self._user_id))
 
     self.engine_loop = WorkflowEngineLoop(database_server,
                                            scheduler,

@@ -144,7 +144,7 @@ if __name__=="__main__":
       logger.info("****************************************************")
  
     if config.get_scheduler_type() == soma_workflow.configuration.DRMAA_SCHEDULER:
-
+        
       if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
           raise NoDrmaaLibError
           
