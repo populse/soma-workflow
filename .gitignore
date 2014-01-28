@@ -1,0 +1,14 @@
+# Compiled source #
+###################
+*.o
+*.so
+*.pyc
+
+# Logs and databases #
+######################
+*.log
+*~
+
+# Folders #
+###########
+build/
