@@ -2,8 +2,6 @@ cmake_minimum_required( VERSION 2.6 )
 find_package( brainvisa-cmake REQUIRED )
 BRAINVISA_PROJECT()
 
-find_package( SIP )
-
 BRAINVISA_COPY_PYTHON_DIRECTORY( "${CMAKE_CURRENT_SOURCE_DIR}/python"
                                  ${PROJECT_NAME} )
 
@@ -19,21 +17,12 @@ BRAINVISA_DEPENDENCY( RUN RECOMMENDS libqt4-designer RUN ">= 4.6" )
 find_package( LibDRMAA QUIET )
 if( NOT LIBDRMAA_FOUND )
   set( LIBDRMAA_LIBRARIES drmaa )
-else()
-  # Since new version of soma-workflwo uses ctype, we don't need sip
-  # add_subdirectory( src/drmaaJobs )
-  if( SIP_FOUND )
-    # add_subdirectory( src/sip )
-  else()
-    message( "WARNING: python wrapping of drmaajobs not built because sip has not been found" )
-  endif()
 endif()
 
 # PySide-compatible .ui -> .py generation
 find_program( PYUIC "pyside-uic" )
 
 if( PYUIC )
-  message( "run BRAINVISA_PYUIC" )
   BRAINVISA_PYUIC( JobInfo.ui ui_job_info.py python/soma_workflow/gui )
   BRAINVISA_PYUIC( graphWidget.ui ui_graph_widget.py python/soma_workflow/gui ) 
   BRAINVISA_PYUIC( PlotWidget.ui ui_plot_widget.py python/soma_workflow/gui ) 

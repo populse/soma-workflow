@@ -126,6 +126,7 @@ if __name__=="__main__":
   def main(resource_id, engine_name, log = ""):
 
     config = Configuration.load_from_file(resource_id)
+    config.mk_config_dirs()
 
     (engine_log_dir,
     engine_log_format,
@@ -143,7 +144,7 @@ if __name__=="__main__":
       logger.info("****************************************************")
  
     if config.get_scheduler_type() == soma_workflow.configuration.DRMAA_SCHEDULER:
-        
+
       if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
           raise NoDrmaaLibError
           

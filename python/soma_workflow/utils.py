@@ -10,6 +10,7 @@
 
 
 import copy
+import os
 from soma_workflow.client import Workflow, Group, Job
 
 def DetectFindLib(env_name, libname):
@@ -262,3 +263,4 @@ def identicalFiles(filepath1, filepath2):
     return (False, "%s and %s are different. line %d: \n file1: %s file2:%s" %(filepath1, filepath2, lineNb, line1, line2))
   else:
     return (True, None)
+

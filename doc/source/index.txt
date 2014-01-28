@@ -29,7 +29,12 @@ Contents
    workflow_creation.txt
    client_API.txt
    install_config.txt
- 
+
+Licence
+=======
+
+  Soma-Workflow is free software, and is distributed under the `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.html>`_ licence, which is similar to the BSD licence (with precisions for the french law).
+
 Main Features
 =============
 

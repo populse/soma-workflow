@@ -44,8 +44,8 @@ Documentation
 
   Visit Soma-workflow (http://www.brainvisa.info/soma-workflow) main page!
 
-  An extensive documentation (http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/index.html) is available, 
-  with ready to use examples (http://www.brainvisa.info/doc/soma-workflow-2.4/sphinx/examples.html).
+  An extensive documentation (http://www.brainvisa.info/doc/soma-workflow-2.6/sphinx/index.html) is available, 
+  with ready to use examples (http://www.brainvisa.info/doc/soma-workflow-2.6/sphinx/examples.html).
 
 
 Download

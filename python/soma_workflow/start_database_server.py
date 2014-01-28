@@ -47,6 +47,7 @@ if __name__ == '__main__':
   print "Ressource: " + ressource_id
 
   config = Configuration.load_from_file(ressource_id)
+  config.mk_config_dirs()
 
   (server_log_file,
    server_log_format,
