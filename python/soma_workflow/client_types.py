@@ -16,6 +16,7 @@
 #-------------------------------------------------------------------------------
 
 import soma_workflow.constants as constants
+import datetime
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -85,6 +86,9 @@ class Job(object):
   **priority**: *int*
     Job priority: 0 = low priority. If several Jobs are ready to run at the 
     same time the jobs with higher priority will be submitted first.
+
+  **walltime**: *datetime.timedelta or None*
+    Job walltime: None = use the queue default.
 
   **native_specification**: *string*
     Some specific option/function of the computing resource you want to use 
@@ -170,6 +174,7 @@ class Job(object):
                 working_directory=None,
                 parallel_job_info=None,
                 priority=0,
+                walltime=None,
                 native_specification=None,
                 user_storage=None):
     if not name:
@@ -190,9 +195,23 @@ class Job(object):
     self.stderr_file = stderr_file
     self.working_directory = working_directory
     self.parallel_job_info = parallel_job_info
+    self.walltime = walltime
     self.priority = priority
     self.native_specification = native_specification
 
+  @property
+  def walltime(self):
+      '''Job requested walltime'''
+      return self._walltime
+
+  @walltime.setter
+  def walltime(self, walltime):
+      '''walltime setter'''
+      # Check that passed value is None or a datetime.timedelta
+      if (walltime is None) or (isinstance(walltime, datetime.timedelta)):
+          self._walltime = walltime
+      else:
+          raise ValueError('''walltime must be None or a datetime.timedelta''')
   
   def _attributs_equal(self, el_list, other_el_list):
     if not len(el_list) == len(other_el_list):
@@ -330,6 +349,7 @@ class Job(object):
                  "native_specification",
                  "parallel_job_info",
                  "disposal_timeout",
+                 "walltime"
                 ]
   
     for attr_name in attributs:
