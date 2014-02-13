@@ -98,7 +98,7 @@ if DRMAA_LIB_FOUND==True:
   class DrmaaCTypes(Scheduler):
         '''
         Scheduling using a Drmaa session.
-        Contains possible patch depending on the DRMAA impementation.
+        Contains possible patch depending on the DRMAA implementation.
         '''
 
         # DRMAA session. DrmaaJobs
@@ -334,6 +334,28 @@ if DRMAA_LIB_FOUND==True:
             if working_directory:
               jobTemplateId.workingDirectory=working_directory
 
+            # Job limits
+            if job.walltime is not None:
+                # Convert to h, m, s
+                S = job.walltime.total_second()
+                h, rem = divmod(S, 3600)
+                m, rem = divmod(rem, 60)
+                s = rem
+                wct_limit_fmt = "{h:02}:{m:02}:{s:02}"
+                wct_limit = wct_limit_fmt.format(h=int(h),
+                                                 m=int(m),
+                                                 s=int(s))
+                jobTemplateId.hardWallclockTimeLimit = wct_limit
+                msg_fmt = "Setting walltime limit to {wct_limit} for job  \
+                {job_id}"
+                msg = msg_fmt.format(wct_limit=wct_limit,
+                                     job_id=job_id)
+                self.logger.info(msg)
+            else:
+                msg_fmt = "Using default walltime limit for job {job_id}"
+                msg= msg_fmt.format(job_id=job.id)
+                self.logger.info(msg)
+
             self.logger.debug("JOB NATIVE_SPEC " + repr(job.native_specification))
             self.logger.debug("CONFIGURED NATIVE SPEC " + repr(self._configured_native_spec))
             native_spec = None
@@ -366,9 +388,9 @@ if DRMAA_LIB_FOUND==True:
                 #job_env.append(var_name+"="+os.environ[var_name])
                 job_env.append((var_name,os.environ[var_name]))
               jobTemplateId.jobEnvironment=dict(job_env)
-  
+
             self.logger.debug("before submit command: " + repr(command))
-            self.logger.debug("before submit job.name=" + repr(job.name)) 
+            self.logger.debug("before submit job.name=" + repr(job.name))
             drmaaSubmittedJobId=self._drmaa.runJob(jobTemplateId)
             self._drmaa.deleteJobTemplate(jobTemplateId)
 
