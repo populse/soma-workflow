@@ -67,7 +67,11 @@ from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePa
 from soma_workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma_workflow.constants as  constants
 import soma_workflow.configuration as configuration
-from soma_workflow.test.test_workflow import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamples
+from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
+from soma_workflow.test.workflow_tests import WorkflowExamplesShared
+from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
+from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma_workflow.version as version
 
@@ -1157,8 +1161,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
         file_path = file_path[0]
       if file_path:
         try:
-          wf_examples = WorkflowExamples(with_file_transfer,
-                                  with_shared_resource_path)
+            if with_file_transfer and not with_shared_resource_path:
+                wf_examples = WorkflowExamplesTransfer()
+            elif with_file_transfer and with_shared_resource_path:
+                wf_examples = WorkflowExamplesSharedTransfer()
+            elif not with_file_transfer and with_shared_resource_path:
+                wf_examples = WorkflowExamplesShared()
+            else:
+                wf_examples = WorkflowExamplesLocal()
         except ConfigurationError, e:
           QtGui.QMessageBox.warning(self, "Error", "%s" %(e))
         else:
@@ -1543,7 +1553,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     if force:
       self.model.delete_workflow()
-      self.updateWorkflowList()
       if not deleled_properly and \
          self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
          QtGui.QMessageBox.warning(self, 
@@ -1553,6 +1562,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                    "resource. \n In case of long jobs, please "
                                    "inspect the active jobs (running or in the "
                                    "queue) using the DRMS interface.")
+    self.refreshWorkflowList()
 
   @QtCore.Slot()
   def delete_workflow(self):
@@ -1813,8 +1823,9 @@ class MainWindow(QtGui.QMainWindow):
     
     self.ui = Ui_MainWindow()
     self.ui.setupUi(self)
-    
-    self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icon/soma_workflow_icon.png")))
+
+    self.setWindowIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__),
+                                          "icon/soma_workflow_icon.png")))
 
     self.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
     self.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
@@ -1822,14 +1833,13 @@ class MainWindow(QtGui.QMainWindow):
     self.tabifyDockWidget(self.ui.dock_graph, self.ui.dock_plot)
 
     self.setWindowTitle("soma-workflow")
-    
+
     self.model = model
 
-    self.connect(self.model, QtCore.SIGNAL('current_connection_changed()'), self.currentConnectionChanged)
-
-    
-    
-    
+    self.connect(self.model,
+                 QtCore.SIGNAL('current_connection_changed()'),
+                 self.currentConnectionChanged)
+ 
     self.sw_widget = SomaWorkflowWidget(self.model,
                                         user,
                                         auto_connect,
@@ -1930,14 +1940,49 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.tool_bar.addAction(self.sw_widget.ui.action_transfer_outfiles)
     self.ui.tool_bar.addAction(self.sw_widget.ui.actionServer_Management)
     self.ui.tool_bar.addSeparator()
-    
-    
+
     self.showMaximized()
 
-     
+  def canExit(self):
+      # print "canExit"
+      # print repr(self.model.__class__.__name__)
+      # print repr(self.model.resource_pool.resource_ids())
+      for res_id in self.model.resource_pool.resource_ids():
+          # print self.model.list_workflow_status(res_id)
+          for workflow_id in self.model.workflows(res_id):
+              # print "workflow_id=", (workflow_id)
+              wf_elements_status = self.model.current_connection.workflow_elements_status(workflow_id)
+              # print repr(wf_elements_status)
+              for transfer_info in wf_elements_status[1]:
+                  status = transfer_info[1][0]
+                  # print "=============================="
+                  # print status
+                  if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
+                     status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
+                      reply = QtGui.QMessageBox.question(
+                          None,
+                          'Warning!!',
+                          "Files are transfering, "\
+                          "If you close it, the workflow will be broken."\
+                          "Do you want to close it?",
+                          QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                      if reply == QtGui.QMessageBox.Yes:
+                          return True
+                      else:
+                          return False
+      return True
+
   @QtCore.Slot()
   def currentConnectionChanged(self):
     self.setWindowTitle("soma-workflow - " + self.model.current_resource_id)
+
+  @QtCore.Slot()
+  def closeEvent(self, event):
+        # do stuff
+        if self.canExit():
+            event.accept() # let the window close
+        else:
+            event.ignore()
       
       
 class WorkflowInfoWidget(QtGui.QWidget):
@@ -3457,7 +3502,8 @@ class ApplicationModel(QtCore.QObject):
   def workflows(self, resource_id):
     result = {}
     for wf_id in self._workflows[resource_id].keys():
-      result[wf_id] = (self._workflow_names[resource_id][wf_id], self._expiration_dates[resource_id][wf_id])
+      result[wf_id] = (self._workflow_names[resource_id][wf_id],
+                        self._expiration_dates[resource_id][wf_id])
     return result
 
   def add_connection(self, resource_id, connection):

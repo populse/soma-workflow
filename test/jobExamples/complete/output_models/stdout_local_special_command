@@ -1,0 +1,5 @@
+nb of arguments (without script filename): 4
+0 => [13.5, 14.5, 15.0]
+1 => [13.5, 14.5, 15.0]
+2 => ['un', 'deux', 'trois']
+3 => ["un", "deux", "trois"]

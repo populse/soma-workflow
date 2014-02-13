@@ -366,8 +366,9 @@ if DRMAA_LIB_FOUND==True:
                 #job_env.append(var_name+"="+os.environ[var_name])
                 job_env.append((var_name,os.environ[var_name]))
               jobTemplateId.jobEnvironment=dict(job_env)
-
-
+  
+            self.logger.debug("before submit command: " + repr(command))
+            self.logger.debug("before submit job.name=" + repr(job.name)) 
             drmaaSubmittedJobId=self._drmaa.runJob(jobTemplateId)
             self._drmaa.deleteJobTemplate(jobTemplateId)
 

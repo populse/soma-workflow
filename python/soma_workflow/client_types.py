@@ -15,6 +15,8 @@
 # Imports
 #-------------------------------------------------------------------------------
 
+import warnings
+import types
 import soma_workflow.constants as constants
 import datetime
 
@@ -863,17 +865,17 @@ class FileTransfer(object):
                 ]
     for attr_name in attributs:
       transfer_dict[attr_name] = getattr(self, attr_name)
-
+  
     return transfer_dict
-
+  
   @classmethod
   def from_dict(cls, d):
-    transfer = cls(is_input=True,
+    transfer = cls(is_input=True, 
                    client_path="foo")
     for key, value in d.iteritems():
       setattr(transfer, key, value)
     return transfer
-
+  
 
 
 
@@ -942,9 +944,9 @@ class SharedResourcePath(object):
                   ]
     for attr_name in attributs:
       srp_dict[attr_name] = getattr(self, attr_name)
-
+  
     return srp_dict
-
+  
   @classmethod
   def from_dict(cls, d):
     shared_res_path = cls(relative_path="toto",
