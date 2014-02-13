@@ -268,6 +268,7 @@ class Job(object):
                  "native_specification",
                  "parallel_job_info",
                  "disposal_timeout",
+                 "walltime"
                  ]
     for attr_name in attributs:
       attr = getattr(self, attr_name)
