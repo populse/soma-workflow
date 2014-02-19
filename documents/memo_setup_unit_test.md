@@ -1,7 +1,7 @@
 Unit Tests
 ----------
 
-If you add a new feature to soma_workflow, please run all the workflow unit tests. All unit tests have been put in:
+If a new feature has been added to soma_workflow, please run all the workflow unit tests. All unit tests have been put in:
 
 ```
 soma-workflow/python/soma_workflow/test/workflow_tests
