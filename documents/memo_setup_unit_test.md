@@ -41,5 +41,5 @@ And then you can run a unit test for example:
 
 ```
 $ cd soma-workflow/python/soma_workflow/test/workflow_tests
-$ python test_multiple.py
+$ python test_njobs_with_dependencies.py
 ```
