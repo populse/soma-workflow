@@ -37,7 +37,7 @@ max_job_in_queue = {15} Exception{15} Global_short{15} Global_long{15}
 PATH_TRANSLATION_FILES = example{/home/jl123456/swf_translation}
 ```
 
-And then you can run a unit test for example:
+And then you can run a unit test on local pc, for example:
 
 ```
 $ cd soma-workflow/python/soma_workflow/test/workflow_tests
