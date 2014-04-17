@@ -1,31 +1,24 @@
-#!bin/bash
+#!/bin/sh -e
 
+# clean build directory
 rm -rf ./build
-
 mkdir ./build
-git clone git@github.com:neurospin/soma-workflow.git ./build/html
 
-cd ./build/html/
-git branch gh-pages
-git checkout gh-pages
+# clone the repo into a dir called build/html
+git clone --branch gh-pages --no-checkout git@github.com:neurospin/soma-workflow.git ./build/html
 
-
-git symbolic-ref HEAD refs/heads/gh-pages
-rm .git/index
-git clean -fdx
-git pull origin gh-pages
-
-
-cd ../../
-
+# create sphinx documentation in clear directory
 make html
 
+# add configaration file to enable _<dir>
 cd ./build/html/
+touch .nojekyll
 
+# commit changes
 git add .
-git commit -a -m "update documents"
+git commit -a -m "Automatic update of soma-workflow documentation"
 
-cd ../../
+# send commit to github server
+git push origin gh-pages
 
-
-echo "You can now visit the soma-workflow page at http://neurospin.github.com/soma-workflow/" 
+echo "You can now visit the soma-workflow page at http://neurospin.github.io/soma-workflow/" 
