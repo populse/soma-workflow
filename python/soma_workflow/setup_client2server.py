@@ -1,255 +1,448 @@
 #! /usr/bin/env python
 
-'''
+"""
 @author: Jinpeng LI
 @contact: mr.li.jinpeng@gmail.coms
 @organization: I2BM, Neurospin, Gif-sur-Yvette, France
 @organization: CATI, France
 @organization: U{IFR 49<http://www.ifr49.org>}
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-'''
-
+@license: U{CeCILL version 2<http://www.cecill.info/licences/
+Licence_CeCILL_V2-en.html>}
+"""
 
 from __future__ import with_statement
 
+# System import
 import os
+import re
 import sys
+import logging
+from ConfigParser import SafeConfigParser
+
+# Soma Workflow import
 from soma_workflow.connection import SSHExecCmd, check_if_somawfdb_on_server
 import soma_workflow.configuration as configuration
 from soma_workflow.configuration import WriteOutConfiguration
 from soma_workflow.client import Job, Workflow, WorkflowController
 
 
-def GetHostNameOnPBSTORQUE(userid, ip_address_or_domain, userpw=''):
-    """To get a list of queue names on torque pbs
+#############################################################################
+#                    Server Information Tools
+#############################################################################
 
-    Args:
-       userid (str):  user name on the server side
-       ip_address_or_domain (str): the ip address or the domain of the server
-       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+def GetHostNameOnPBSTORQUE(userid,
+                           ip_address_or_domain,
+                           userpw=None):
+    """ Return the host name
 
-    Returns:
-       str.  hostname
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    userpw: str
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw = ""
 
-    Raises:
-       paramiko.AuthenticationException
+    Returns
+    -------
+    hostname: str
+        the hostname
 
-
+    .. note::
+        Raises paramiko.AuthenticationException when the authetification
+        fails.
     """
-    sshcommand = "hostname"
-
-    outlines = SSHExecCmd(sshcommand, userid, ip_address_or_domain, userpw)
-
-    return outlines[0]
+    return SSHExecCmd("hostname", userid, ip_address_or_domain, userpw)[0]
 
 
-def GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain, userpw=''):
-    """To get a list of queue names on torque pbs
+def GetQueueNamesOnPBSTORQUE(userid,
+                             ip_address_or_domain,
+                             userpw=None):
+    """ Return a list of queue names on torque pbs
 
-    Args:
-       userid (str):  user name on the server side
-       ip_address_or_domain (str): the ip address or the domain of the server
-       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    userpw: str
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw = ""
 
-    Returns:
-       list of str.  queue names
+    Returns
+    -------
+    info_queue: list of str
+        the list of queue names on torque pbs
 
-    Raises:
-       paramiko.AuthenticationException
-
-
+    .. note::
+        Raises paramiko.AuthenticationException when the authetification
+        fails.
     """
-    sshcommand = "qstat -Q"
+    std_out_lines = SSHExecCmd("qstat -Q", userid, ip_address_or_domain,
+                               userpw)
 
     info_queue = []
+    # Skip the first line since it is the header
+    for line in std_out_lines[2:]:
+        queue_item = line.split()[0]
+        # Check if the queue item start with an upper or lower character
+        if re.match("^[a-zA-Z]", queue_item):
+            info_queue.append(queue_item)
 
-    outlines = SSHExecCmd(sshcommand, userid, ip_address_or_domain, userpw)
-
-    import re
-    sline_idx = 0
-
-    for sline in outlines:
-
-        if sline_idx >= 2:  # skip the first line since it is the header
-            sline = sline.strip()
-            ssline = sline.split()
-            if re.match("^[a-zA-Z]", ssline[0]):
-                info_queue.append(ssline[0])
-
-        sline_idx += 1
-
-    # print repr(info_queue)
     return info_queue
 
 
-def ConfiguratePaser(config_parser, resource_id, ip_address_or_domain, info_queue, userid, installpath, sshport):
-    import soma_workflow.configuration as configuration
+#############################################################################
+#                      Client Configuration Tools
+#############################################################################
 
-    oneline_queues = ''
-    for one_q in info_queue:
-        oneline_queues = oneline_queues+one_q+" "
+def SetupConfigurationFileOnClient(configuration_item_name,
+                                   userid,
+                                   ip_address_or_domain,
+                                   userpw=None,
+                                   install_swf_path_server=None,
+                                   sshport=22):
+    """ Setup the configuration file on the client part
 
-    config_parser.add_section(resource_id)
-    config_parser.set(
-        resource_id, configuration.CFG_CLUSTER_ADDRESS, ip_address_or_domain)
-    config_parser.set(
-        resource_id, configuration.CFG_SUBMITTING_MACHINES, ip_address_or_domain)
-    config_parser.set(resource_id, configuration.OCFG_QUEUES, oneline_queues)
-    config_parser.set(resource_id, configuration.OCFG_LOGIN, userid)
+    The procedure:
+    * search the configuration file on the client.
+    * if it exists, keep the original configuration,
+    * if not, create the new configuration at $HOME/.soma-workflow.cfg
 
-    if sshport == None:
-        sshport = 22
-    config_parser.set(resource_id, configuration.OCFG_SSHPort, str(sshport))
-    config_parser.set(resource_id, configuration.OCFG_INSTALLPATH, installpath)
+    Parameters
+    ----------
+    configuration_item_name: str
+        the name of the configuration item (ex. "Gabriel")
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    userpw: str (optional)
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    install_swf_path_server: str (optional)
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
 
-    return config_parser
+    .. note::
+        Raises IOError, ValueError when the procedure fails.
+    """
+    # Search the configuration file on the client
+    config_file_path = configuration.Configuration.search_config_path()
 
-
-def RemoveResNameOnConfigureFile(resName, config_file_path=None):
-    import sys
-    import os
-    import ConfigParser
-    from ConfigParser import SafeConfigParser
-
+    # If configuration file not found
     if config_file_path == None:
-        config_file_path = configuration.Configuration.search_config_path()
 
-    if config_file_path == None:
-        return
+        # Generate configuration file path
+        home_dir = configuration.Configuration.get_home_dir()
+        config_file_path = os.path.join(home_dir, ".soma-workflow.cfg")
+        logging.info("No configuration file on the client, "
+                     "we create a new one at {0}".format(config_file_path))
 
+        # Generate client config
+        config_parser = ConfiguratePaser(configuration_item_name, userid,
+            ip_address_or_domain, userpw, install_swf_path_server, sshport)
+        WriteOutConfiguration(config_parser, config_file_path)
+
+    # If the configuration already exists
+    else:
+        logging.info("Configuration file is found at: {0}".format(
+            config_file_path))
+
+        # First read the configuration file
+        config_parser = read_configuration_file(config_file_path)
+
+        # Then check if configuration item is already created
+        sections = config_parser.sections()
+        if not configuration_item_name in sections:
+            # Add client config
+            config_parser = ConfiguratePaser(configuration_item_name, userid,
+                ip_address_or_domain, userpw, install_swf_path_server,
+                sshport, config_parser)
+            WriteOutConfiguration(config_parser, config_file_path)
+
+
+def read_configuration_file(config_file_path):
+    """ Read a configuration file
+
+    Parameters
+    ----------
+    config_file_path: str
+        the path to the configuration file we want to load
+
+    Returns
+    -------
+    config_parser: SafeConfigParser
+        the configuration object
+
+    .. note::
+        Raises IOError if the procedure fails.
+    """
     config_parser = SafeConfigParser()
     try:
         config_parser.read(config_file_path)
     except:
-        strmsg = "Cannot open %s \n" % (config_file_path)
-        sys.stderr.write(strmsg)
-        raise Exception(strmsg)
+        strmsg = "Cannot open {0} \n".format(config_file_path)
+        raise IOError(strmsg)
+    return config_parser
 
-    config_parser.remove_section(resName)
 
-    WriteOutConfiguration(config_parser, config_file_path)
+def ConfiguratePaser(configuration_item_name,
+                     userid,
+                     ip_address_or_domain,
+                     userpw=None,
+                     installpath=None,
+                     sshport=None,
+                     config_parser=None):
+    """ Create or update the configuration file based on the input
+    secifications.
+
+    Parameters
+    ----------
+    configuration_item_name: str
+        the name of the configuration item
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    userpw: str
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    installpath: str
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
+    config_parser: SafeConfigParser (optional)
+        default None, an empty config parser is created
+        otherwise, the config parser is updatd with the new item
+
+    Returns
+    -------
+    config_parser: SafeConfigParser
+        the configuration item
+    """
+
+    # Create config generator
+    if not config_parser:
+        config_parser = SafeConfigParser()
+
+    # Get server info
+    hostname = GetHostNameOnPBSTORQUE(userid, ip_address_or_domain,
+                                      userpw)
+    info_queue = GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain,
+                                          userpw)
+
+    # Add section
+    config_parser.add_section(configuration_item_name)
+
+    # Fill section
+    config_parser.set(configuration_item_name,
+                      configuration.CFG_CLUSTER_ADDRESS,
+                      hostname)
+    config_parser.set(configuration_item_name,
+                      configuration.CFG_SUBMITTING_MACHINES,
+                      hostname)
+    config_parser.set(configuration_item_name,
+                      configuration.OCFG_QUEUES,
+                      " ".join(info_queue))
+    config_parser.set(configuration_item_name,
+                      configuration.OCFG_LOGIN,
+                      userid)
+    config_parser.set(configuration_item_name,
+                      configuration.OCFG_SSHPort,
+                      str(sshport or 22))
+    if installpath:
+        config_parser.set(configuration_item_name,
+                          configuration.OCFG_INSTALLPATH,
+                          installpath)
 
     return config_parser
 
 
-def SetupConfigurationFileOnClient(resource_id,
-                                   userid,
-                                   ip_address_or_domain, userpw=None,
-                                   install_swf_path_server=None,
-                                   sshport=22):
-    """To setup the configuration file on the client part
+def RemoveResNameOnConfigureFile(section_to_remove,
+                                 config_file_path=None):
+    """ Remove a section from a configuration file
 
-    Args:
-       userid (str):  user name on the server side
-       ip_address_or_domain (str): the ip address or the domain of the server
-       userpw: user password to login the server using ssh. If you want to use "id_rsa.pub", just leave userpw = ""
+    Parameters
+    ----------
+    section_to_remove: str
+        the name of the section we want to remove from the configuration
+        file
+    config_file_path: str
+        the path to the configuration file we want to update
+        If None, try to find the path to the soma workflow configuration file
 
-    Raises:
-       IOError, ValueError
+    Returns
+    -------
+    status: int
+        0 no configuration file found
+        1 file updated
 
-    It will search the configuration file on the client.
-    If it exists, it will keep the original configuration,
-    if not, it will create the new configuration at $HOME/.soma-workflow.cfg
-
+    .. note::
+        Raises IOError if the procedure fails.
     """
+    # First find the configuration file if not specified
+    if config_file_path is None:
+        config_file_path = configuration.Configuration.search_config_path()
 
-    # ouput the configuration file
-    import sys
-    import os
-    import ConfigParser
-    from ConfigParser import SafeConfigParser
+    # If no configuration file found exit with 0 status
+    if config_file_path is None:
+        return 0
 
-    config_file_path = configuration.Configuration.search_config_path()
-    hostname = GetHostNameOnPBSTORQUE(userid, ip_address_or_domain, userpw)
-    # resource_id="%s@%s"%(userid,hostname)
-    # print "resource_id="+resource_id
+    # Read the configuration file
+    config_parser = read_configuration_file(config_file_path)
 
-    if config_file_path == None:
+    # Remove the section
+    config_parser.remove_section(section_to_remove)
 
-        home_dir = configuration.Configuration.get_home_dir()
-        config_file_path = os.path.join(home_dir, ".soma-workflow.cfg")
+    # Write the resulting configuration
+    WriteOutConfiguration(config_parser, config_file_path)
 
-        print "No configuration file on the client, we create a new one at %s" % (config_file_path)
-
-        info_queue = GetQueueNamesOnPBSTORQUE(
-            userid, ip_address_or_domain, userpw)
-        config_parser = SafeConfigParser()
-
-        config_parser = ConfiguratePaser(config_parser,
-                                         resource_id,
-                                         hostname,
-                                         info_queue,
-                                         userid,
-                                         install_swf_path_server,
-                                         sshport)
-        WriteOutConfiguration(config_parser, config_file_path)
-
-    else:
-        print "Configuration file is found at: "+config_file_path
-        config_parser = SafeConfigParser()
-        config_parser.read(config_file_path)
-        list_sections = config_parser.sections()
-
-        if any(sec == resource_id for sec in list_sections):
-            pass
-        else:
-            info_queue = GetQueueNamesOnPBSTORQUE(
-                userid, ip_address_or_domain, userpw)
-            config_parser = ConfiguratePaser(config_parser,
-                                             resource_id,
-                                             ip_address_or_domain,
-                                             info_queue, userid,
-                                             install_swf_path_server, sshport)
-            WriteOutConfiguration(config_parser, config_file_path)
+    return 1
 
 
-def CopySomaWF2Server(install_swf_path_server,
-                      userid,
-                      ip_address_or_domain,
-                      userpw='', sshport=22):
-    install_swf_path_server = os.path.join(install_swf_path_server, "python")
-    install_swf_path_server_soma_workflow = os.path.join(
-        install_swf_path_server, "./")
-    install_swf_path_server_drmaa = os.path.join(install_swf_path_server)
+#############################################################################
+#                      Server Installation Tools
+#############################################################################
 
+def InstallSomaWF2Server(userid,
+                         ip_address_or_domain,
+                         configuration_item_name,
+                         userpw=None,
+                         install_swf_path_server=None,
+                         sshport=22):
+    """ Procedure to install the client somaworklow install on the server
+    side.
+
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    configuration_item_name: str
+        the name of the configuration item (ex. "Gabriel")
+    userpw: str (optional)
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    install_swf_path_server: str (optional)
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
+    """
+    # Frist make a copy of the local install to the server
+    install_swf_path_server = CopySomaWF2Server(
+        userid, ip_address_or_domain, userpw, install_swf_path_server,
+        sshport)
+
+    # Set environ
+    script2install = os.path.join(install_swf_path_server, "soma_workflow",
+                                  "setup_server.py")
+    command = "python '{0}' -r {1} ".format(script2install,
+                                            configuration_item_name)
+    logging.info("ssh command = {0}".format(command))
+
+    (std_out_lines, std_err_lines) = SSHExecCmd(command, userid,
+         ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
+         sshport=sshport)
+    if len(std_err_lines) > 0:
+        logging.error("Enable to configure the server: {0}".format(
+                      std_err_lines))
+
+    # Create a update the configuration file on the client side
+    SetupConfigurationFileOnClient(configuration_item_name, userid,
+                                   ip_address_or_domain,
+                                   userpw, install_swf_path_server, sshport)
+
+    # submit a workflow for test
+    SimpleJobExample(configuration_item_name, userid, userpw)
+
+
+def CopySomaWF2Server(userid,
+                     ip_address_or_domain,
+                     userpw=None,
+                     install_swf_path_server=None,
+                     sshport=22):
+    """ Copy the soma workflow source from the client to the server.
+    Force to have the same version on both side.
+
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    userpw: str
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    install_swf_path_server: str
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
+
+    Returns
+    -------
+    install_swf_path_server: str
+        the location where the soma workflow project has been copied
+    """
+    # Generate install path
+    install_swf_path_server = (install_swf_path_server or
+                               os.path.expanduser("~"))
+    install_swf_path_server = os.path.join(install_swf_path_server,
+                                         "soma_workflow_auto_remote_install")
+    # Create install directory if necessary
     std_out_lines = SSHExecCmd(
-        "mkdir -p '%s'" % (install_swf_path_server_drmaa),
+        "mkdir -p '{0}'".format(install_swf_path_server),
         userid, ip_address_or_domain, userpw, sshport=sshport)
-    print std_out_lines
-    std_out_lines = SSHExecCmd(
-        "mkdir -p '%s'" % (install_swf_path_server_soma_workflow),
-        userid, ip_address_or_domain, userpw, sshport=sshport)
-    print std_out_lines
+    logging.info("Install soma workflow on server attempt to create server "
+                 "project directory. Command return {0}".format(std_out_lines))
 
+    # Get client project paths
     path2somawf = os.path.dirname(os.path.realpath(__file__))
-    path2drmaa = os.path.join(path2somawf, "..", "somadrmaa")
+    path2drmaa = os.path.join(path2somawf, os.pardir, "somadrmaa")
 
-    sshcommand = "scp -rC '%s' %s@%s:'%s'" % (path2somawf,
-                                              userid,
-                                              ip_address_or_domain,
-                                              install_swf_path_server_soma_workflow)
-    print "sshcommand="+sshcommand
+    # Sync soma workflow to server
+    sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
+                  "{1}@{2}:'{3}'").format(path2somawf, userid,
+                  ip_address_or_domain, install_swf_path_server)
+    logging.info("Attempt to copy soma workflow: sshcommand = "
+                 " {0}".format(sshcommand))
     os.system(sshcommand)
 
-    sshcommand = "scp -rC '%s' %s@%s:'%s'" % (path2drmaa,
-                                              userid,
-                                              ip_address_or_domain,
-                                              install_swf_path_server_drmaa)
-    print "sshcommand="+sshcommand
+    # Sync drmaa patching to server
+    sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
+                  "{1}@{2}:'{3}'").format(path2drmaa, userid,
+                  ip_address_or_domain, install_swf_path_server)
+    logging.info("Attempt to copy drmaa patching: sshcommand = "
+                 " {0}".format(sshcommand))
     os.system(sshcommand)
 
-    SSHExecCmd("echo >> '%s'" % (os.path.join(
-        install_swf_path_server_soma_workflow,
-        "__init__.py")),
-        userid,
-        ip_address_or_domain,
-        userpw,
-        sshport=sshport)
+    return install_swf_path_server
 
 
-def SimpleJobExample(resName, login, password):
+def SimpleJobExample(configuration_item_name, userid, userpw=None):
+    """ Dummy workflow to test the install
 
+    Parameters
+    ----------
+    configuration_item_name: str
+        the name of the configuration item (ex. "Gabriel")
+    userid: str
+        user name on the server side
+    userpw: str (optional)
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    """
     job_1 = Job(command=["sleep", "5"], name="job 1")
     job_2 = Job(command=["sleep", "5"], name="job 2")
     job_3 = Job(command=["sleep", "5"], name="job 3")
@@ -264,36 +457,11 @@ def SimpleJobExample(resName, login, password):
     workflow = Workflow(jobs=jobs,
                         dependencies=dependencies)
 
-    controller = WorkflowController(resName, login, password)
+    controller = WorkflowController(configuration_item_name, userid, userpw)
 
     controller.submit_workflow(workflow=workflow,
                                name="TestConnectionExample")
 
-
-
-
-
-def InstallSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_domain, userpw='', sshport=22):
-
-    CopySomaWF2Server(install_swf_path_server,
-                      userid, ip_address_or_domain, userpw, sshport)
-
-    script2install = os.path.join(
-        install_swf_path_server, "python", "soma_workflow", "setup_server.py")
-
-    command = "python '%s' -r %s " % (script2install, ResName)
-    print "ssh command="+command
-
-    SSHExecCmd(command, userid, ip_address_or_domain,
-               userpw, wait_output=False, sshport=sshport)
-
-    SetupConfigurationFileOnClient(
-        ResName, userid, ip_address_or_domain, userpw, install_swf_path_server, sshport)
-
-    os.system("sleep 5")
-
-    # submit a workflow for test
-    SimpleJobExample(ResName, userid, userpw)
 
 
 def SetupSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_domain, userpw='', sshport=22):
@@ -337,3 +505,7 @@ def RemoveSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_
     RemoveResNameOnConfigureFile(ResName)
 
     pass
+
+
+if __name__ == "__main__":
+    InstallSomaWF2Server("ag239446", "gabriel", "Gabriel")
