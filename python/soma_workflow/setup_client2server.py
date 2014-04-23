@@ -463,48 +463,87 @@ def SimpleJobExample(configuration_item_name, userid, userpw=None):
                                name="TestConnectionExample")
 
 
+def SetupSomaWF2Server(userid,
+                       ip_address_or_domain,
+                       configuration_item_name,
+                       userpw=None,
+                       install_swf_path_server=None,
+                       sshport=22):
+    """ Procedure to setup somaworklow on the server side.
 
-def SetupSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_domain, userpw='', sshport=22):
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    configuration_item_name: str
+        the name of the configuration item (ex. "Gabriel")
+    userpw: str (optional)
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    install_swf_path_server: str (optional)
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
+    """
+    # Check if swf intalled on the server side
+    if check_if_somawfdb_on_server(configuration_item_name, userid,
+                                   ip_address_or_domain, userpw, sshport):
+        msg = ("Cannot find the soma-workflow on the server. "
+               "Please first install soma-workflow")
+        raise ImportError(msg)
 
-    if check_if_somawfdb_on_server(ResName, userid, ip_address_or_domain, userpw, sshport):
-        msg = "Cannot find the soma-workflow on the server. Please first install soma-workflow"
-        sys.stderr.write(msg)
-        raise Exception(msg)
-
-    SetupConfigurationFileOnClient(
-        ResName, userid, ip_address_or_domain, userpw, install_swf_path_server, sshport)
+    # Create a update the configuration file on the client side
+    SetupConfigurationFileOnClient(configuration_item_name, userid,
+                                   ip_address_or_domain,
+                                   userpw, install_swf_path_server, sshport)
 
     # submit a workflow for test
-    SimpleJobExample(ResName, userid, userpw)
+    SimpleJobExample(configuration_item_name, userid, userpw)
 
 
-def RemoveSomaWF2Server(install_swf_path_server, ResName, userid, ip_address_or_domain, userpw='', sshport=22):
+def RemoveSomaWF2Server(userid,
+                        ip_address_or_domain,
+                        configuration_item_name,
+                        userpw=None,
+                        install_swf_path_server=None,
+                        sshport=22):
+    """ Procedure to remove somaworklow on the server side.
 
-#    print "install_swf_path_server="+install_swf_path_server
-#    print "ResName="+ResName
-#    print "userid="+userid
-#    print "ip_address_or_domain="+ip_address_or_domain
-#    print "userpw="+userpw
-#    print "sshport="+repr(sshport)
-
-    # clean_script_server=os.path.join(install_swf_path_server,"python","soma","workflow","clean_server.py")
-
-    clean_script_server = install_swf_path_server + \
-        "/python/soma_workflow/clean_server.py"
-    command = "python '%s' -r %s " % (clean_script_server, ResName)
-    print command
+    Parameters
+    ----------
+    userid: str
+        user name on the server side
+    ip_address_or_domain: str
+        the ip address or the domain of the server
+    configuration_item_name: str
+        the name of the configuration item (ex. "Gabriel")
+    userpw: str (optional)
+        user password to login the server using ssh.
+        If you want to use "id_rsa.pub", just leave userpw to None
+        To copy the public key on the server use ssh-copy-id -i name@server.
+    install_swf_path_server: str (optional)
+        soma workflow source path on server
+    sshport: int (optional)
+        the ssh port
+    """
+    # Execute the clean script on the server side
+    clean_script_server = os.path.join(install_swf_path_server,
+                                       "soma_workflow", "clean_server.py")
+    command = "python '{0}' -r {1}".format(clean_script_server,
+                                           configuration_item_name)
     SSHExecCmd(command, userid, ip_address_or_domain,
                userpw, wait_output=False, sshport=sshport)
-    os.system("sleep 5")
 
-    command = "rm -rf '%s'" % (install_swf_path_server)
-    print command
+    # Remove the source files on the server
+    command = "rm -rf '{0}'".format(install_swf_path_server)
     SSHExecCmd(command, userid, ip_address_or_domain,
                userpw, wait_output=False, sshport=sshport)
 
-    RemoveResNameOnConfigureFile(ResName)
-
-    pass
+    # remove the configuration on the client
+    RemoveResNameOnConfigureFile(configuration_item_name)
 
 
 if __name__ == "__main__":

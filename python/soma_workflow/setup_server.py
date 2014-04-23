@@ -21,7 +21,6 @@ import re
 import getpass
 import socket
 import subprocess
-import platform
 import shutil
 from ConfigParser import SafeConfigParser
 
@@ -42,26 +41,44 @@ req_version = (2, 7)
 #               Environement variables to export
 #############################################################################
 
-def SetPathToEnvVar(KeyPath, NewPath):
-    os.environ[KeyPath] = NewPath
-    res = ""
-    if platform.system() == 'Windows':
-        res = "set %s=%s" % (KeyPath, NewPath)
-    else:
-        res = "export %s=%s" % (KeyPath, NewPath)
-    return res
+def SetPathToEnvVar(env_var_name, path):
+    """ Set an environment variable
+
+    Parameters
+    ----------
+    env_var_name: str
+        the name of the environment variable
+    path: str
+        path to the resource
+
+    Returns
+    -------
+    export: str
+        the export directive
+    """
+    os.environ[env_var_name] = path
+    return "export {0}={1}".format(env_var_name, path)
 
 
-def AddPathToEnvVar(KeyPath, NewPath):
-    os.environ[KeyPath] = "%s%s%s" % (NewPath, os.pathsep, os.environ.get(KeyPath))
-    res = ""
+def AddPathToEnvVar(env_var_name, path):
+    """ Add an environment variable
 
-    if platform.system() == 'Windows':
-        res = "set %s=%s%s%%%s%%" % (KeyPath, NewPath, os.pathsep, KeyPath)
-    else:
-        res = "export %s=%s%s${%s}" % (KeyPath, NewPath, os.pathsep, KeyPath)
+    Parameters
+    ----------
+    env_var_name: str
+        the name of the environment variable
+    path: str
+        path to the resource
 
-    return res
+    Returns
+    -------
+    export: str
+        the export directive
+    """
+    os.environ[env_var_name] = "{0}{1}{2}".format(env_var_name, os.pathsep,
+                                                  os.environ.get(path))
+    return "export %s=%s%s${%s}" % (env_var_name, path, os.pathsep,
+                                    env_var_name)
 
 
 def SetupServerEnvVar(path2somawf):
@@ -111,7 +128,15 @@ def SetupServerEnvVar(path2somawf):
 #############################################################################
 
 def ensure_is_dir(d, clear_dir=False):
-    """ If the directory doesn't exist, use os.makedirs """
+    """ If the directory doesn't exist, use os.makedirs
+
+    Parameters
+    ----------
+    d: str
+        the directory we want to create
+    clear_dir: bool (optional)
+        if True clean the directory if it exists
+    """
     if not os.path.exists(d):
         os.makedirs(d)
     elif clear_dir:
