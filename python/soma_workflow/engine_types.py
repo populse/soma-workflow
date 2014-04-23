@@ -21,10 +21,13 @@ module required in the engine module.
 import types
 import os
 import logging
+import tempfile
+import weakref
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
-from soma_workflow.client import Job, FileTransfer, Workflow, SharedResourcePath, Group
+from soma_workflow.client import Job, BarrierJob, SpecialPath, FileTransfer, \
+  Workflow, SharedResourcePath, TemporaryPath, Group
 
 
 class EngineJob(Job):
@@ -91,7 +94,7 @@ class EngineJob(Job):
                                     client_job.parallel_job_info,
                                     client_job.priority,
                                     client_job.native_specification)
-    
+
     self.job_id = -1
 
     self.drmaa_id = None
@@ -110,16 +113,20 @@ class EngineJob(Job):
     else:
       self.transfer_mapping = transfer_mapping
     self.srp_mapping = {}
+    if isinstance(client_job, BarrierJob):
+      self.is_barrier = True
+    else:
+      self.is_barrier = False
 
     self._map(parallel_job_submission_info)
 
-    
+
   def _map(self, parallel_job_submission_info):
     '''
     Fill the transfer_mapping and srp_mapping attributes.
     + check the types of the Job arguments.
     '''
-    if not self.command:
+    if not self.command and not self.is_barrier:
       raise JobError("The command attribute is the only required "
                      "attribute of Job.")
 
@@ -134,7 +141,9 @@ class EngineJob(Job):
 
 
     if self.stdin:
-      if isinstance(self.stdin, FileTransfer):
+      if isinstance(self.stdin, SharedResourcePath):
+        self.srp_mapping[self.stdin] = self._translate(self.stdin)
+      elif isinstance(self.stdin, SpecialPath):
         if not self.stdin in self.referenced_input_files:
           self.referenced_input_files.append(self.stdin)
         #if not self.stdin in self.transfer_mapping:
@@ -152,7 +161,10 @@ class EngineJob(Job):
         self.stdin = os.path.abspath(self.stdin)
 
     if self.working_directory:
-      if isinstance(self.working_directory, FileTransfer):
+      if isinstance(self.working_directory, SharedResourcePath):
+        self.srp_mapping[self.working_directory] = \
+          self._translate(self.working_directory)
+      elif isinstance(self.working_directory, SpecialPath):
         if not self.working_directory in self.referenced_input_files:
           self.referenced_input_files.append(self.working_directory)
         if not self.working_directory in self.referenced_output_files:
@@ -173,7 +185,9 @@ class EngineJob(Job):
         self.working_directory = os.path.abspath(self.working_directory)
 
     if self.stdout_file:
-      if isinstance(self.stdout_file, FileTransfer):
+      if isinstance(self.stdout_file, SharedResourcePath):
+        self.srp_mapping[self.stdout_file] = self._translate(self.stdout_file)
+      elif isinstance(self.stdout_file, SpecialPath):
         if not self.stdout_file in self.referenced_output_files:
           self.referenced_output_files.append(self.stdout_file)
         #if not self.stdout_file in self.transfer_mapping:
@@ -191,7 +205,9 @@ class EngineJob(Job):
         self.stdout_file = os.path.abspath(self.stdout_file)
 
     if self.stderr_file:
-      if isinstance(self.stderr_file, FileTransfer):
+      if isinstance(self.stderr_file, SharedResourcePath):
+        self.srp_mapping[self.stderr_file] = self._translate(self.stderr_file)
+      elif isinstance(self.stderr_file, SpecialPath):
         if not self.stderr_file in self.referenced_output_files:
           self.referenced_output_files.append(self.stderr_file)
         #if not self.stderr_file in self.transfer_mapping:
@@ -207,33 +223,41 @@ class EngineJob(Job):
         if not type(self.stderr_file) in types.StringTypes:
           raise JobError("Wrong stderr_file type: %s" %(repr(self.stderr_file))) 
         self.stderr_file = os.path.abspath(self.stderr_file)
-    
+
 
     # transfer_mapping from referenced_input_files and referenced_output_files
     # + type checking
     for ft in self.referenced_input_files:
-      if not isinstance(ft, FileTransfer):
+      if not isinstance(ft, SpecialPath):
         raise JobError("%s: Wrong type in referenced_input_files. "
-                       " FileTransfer object required." %(repr(ft)))
-      elif isinstance(ft, EngineTransfer) and \
-          ft not in self.transfer_mapping:
-        # TBI check that the transfer exist in the database 
-        self.transfer_mapping[ft] = ft
+                       " SpecialPath object required." %(repr(ft)))
       elif ft not in self.transfer_mapping:
-        eft = EngineTransfer(ft)
-        self.transfer_mapping[ft] = eft
-   
+        if isinstance(ft, EngineTransfer) \
+            or isinstance(ft, EngineTemporaryPath):
+          # TBI check that the transfer exist in the database
+          self.transfer_mapping[ft] = ft
+        else:
+          if isinstance(ft, FileTransfer):
+            eft = EngineTransfer(ft)
+          elif isinstance(ft, TemporaryPath):
+            eft = get_EngineTemporaryPath(ft)
+          self.transfer_mapping[ft] = eft
+
     for ft in self.referenced_output_files:
-      if not isinstance(ft, FileTransfer):
+      if not isinstance(ft, SpecialPath):
         raise JobError("%s: Wrong type in referenced_output_files. "
-                       " FileTransfer object required." %(repr(ft)))
-      elif isinstance(ft, EngineTransfer) and \
-          ft not in self.transfer_mapping:
-        # TBI check that the transfer exist in the database 
-        self.transfer_mapping[ft] = ft
+                       " SpecialPath object required." %(repr(ft)))
       elif ft not in self.transfer_mapping:
-        eft = EngineTransfer(ft)
-        self.transfer_mapping[ft] = eft
+        if isinstance(ft, EngineTransfer) \
+            or isinstance(ft, EngineTemporaryPath):
+          # TBI check that the transfer exist in the database
+          self.transfer_mapping[ft] = ft
+        else:
+          if isinstance(ft, FileTransfer):
+            eft = EngineTransfer(ft)
+          elif isinstance(ft, TemporaryPath):
+            eft = get_EngineTemporaryPath(ft)
+          self.transfer_mapping[ft] = eft
 
     # filling the srp_mapping exploring the command, stdin, stdout_file, 
     #stderr_file, workflow_directory 
@@ -241,17 +265,17 @@ class EngineJob(Job):
     for command_el in self.command:
       if isinstance(command_el, SharedResourcePath):
         self.srp_mapping[command_el] = self._translate(command_el)
-      elif isinstance(command_el, FileTransfer):
+      elif isinstance(command_el, SpecialPath):
         if not command_el in self.transfer_mapping:
-          raise JobError("The FileTransfer objets used in the "
+          raise JobError("The SpecialPath objets used in the "
                          "command must be declared in the Job "
                          "attributes: referenced_input_files "
                          "and referenced_output_files.")
 
       elif isinstance(command_el, tuple) and \
-           isinstance(command_el[0], FileTransfer):
+           isinstance(command_el[0], SpecialPath):
         if not command_el[0] in self.transfer_mapping:
-          raise JobError("The FileTransfer objets used in the "
+          raise JobError("The SpecialPath objets used in the "
                          "command must be declared in the Job "
                          "attributes: referenced_input_files "
                          "and referenced_output_files.")
@@ -260,16 +284,16 @@ class EngineJob(Job):
         for list_el in command_el:
           if isinstance(list_el, SharedResourcePath):
             self.srp_mapping[list_el] = self._translate(list_el) 
-          elif isinstance(list_el, FileTransfer):
+          elif isinstance(list_el, SpecialPath):
             if not list_el in self.transfer_mapping:
-              raise JobError("The FileTransfer objets used in the "
+              raise JobError("The SpecialPath objets used in the "
                              "command must be declared in the Job "
                              "attributes: referenced_input_files "
                              "and referenced_output_files.")
           elif isinstance(list_el, tuple) and \
-              isinstance(list_el[0], FileTransfer):
+              isinstance(list_el[0], SpecialPath):
             if not list_el[0] in self.transfer_mapping:
-              raise JobError("The FileTransfer objets used in the "
+              raise JobError("The SpecialPath objets used in the "
                              "command must be declared in the Job "
                              "attributes: referenced_input_files "
                              "and referenced_output_files.")
@@ -279,8 +303,7 @@ class EngineJob(Job):
       else:
         if not type(command_el) in types.StringTypes:
           raise JobError("Wrong command element type: %s" %(repr(command_el)))
-      
- 
+
 
   def _translate(self, srp):
     '''
@@ -292,7 +315,7 @@ class EngineJob(Job):
       raise JobError("Could not submit workflows or jobs with shared resource "
                      "path: no translation found in the configuration file.")
     if not srp.namespace in self.path_translation.keys():
-      raise JobError("Could not translate shared resource path. The "               
+      raise JobError("Could not translate shared resource path. The "
                      "namespace %s is not configured." %(srp.namespace))
     if not srp.uuid in self.path_translation[srp.namespace]:
       raise JobError("Could not translate shared resource path. The uuid %s "
@@ -313,12 +336,13 @@ class EngineJob(Job):
     for command_el in self.command:
       if isinstance(command_el, SharedResourcePath):
         plain_command.append(self.srp_mapping[command_el])
-      elif isinstance(command_el, FileTransfer):
-        plain_command_el = self.transfer_mapping[command_el].engine_path
+      elif isinstance(command_el, SpecialPath):
+        plain_command_el = self.transfer_mapping[command_el].get_engine_path()
         plain_command.append(plain_command_el)
       elif isinstance(command_el, tuple) and \
-           isinstance(command_el[0], FileTransfer):
-        plain_command_el = self.transfer_mapping[command_el[0]].engine_path
+           isinstance(command_el[0], SpecialPath):
+        plain_command_el \
+          = self.transfer_mapping[command_el[0]].get_engine_path()
         plain_command_el = os.path.join(plain_command_el, command_el[1])
         plain_command.append(plain_command_el)
       elif isinstance(command_el, list):
@@ -326,12 +350,12 @@ class EngineJob(Job):
         for list_el in command_el:
           if isinstance(list_el, SharedResourcePath):
             new_list.append(self.srp_mapping[list_el])
-          elif isinstance(list_el, FileTransfer):
-            new_list_el = self.transfer_mapping[list_el].engine_path
+          elif isinstance(list_el, SpecialPath):
+            new_list_el = self.transfer_mapping[list_el].get_engine_path()
             new_list.append(new_list_el)
           elif isinstance(list_el, tuple) and \
-              isinstance(list_el[0], FileTransfer):
-            new_list_el = self.transfer_mapping[list_el[0]].engine_path
+              isinstance(list_el[0], SpecialPath):
+            new_list_el = self.transfer_mapping[list_el[0]].get_engine_path()
             new_list_el = os.path.join(new_list_el, list_el[1])
             new_list.append(new_list_el)
           else:
@@ -343,12 +367,15 @@ class EngineJob(Job):
         assert(type(command_el) in types.StringTypes)
         plain_command.append(command_el)
     return plain_command
-    
+
+
   def plain_stdin(self):
     if self.stdin and isinstance(self.stdin, FileTransfer):
       return self.transfer_mapping[self.stdin].engine_path
     if self.stdin and isinstance(self.stdin, SharedResourcePath):
       return self.srp_mapping[self.stdin]
+    if self.stdin and isinstance(self.stdin, SpecialPath):
+      return self.transfer_mapping[self.stdin].get_engine_path()
     return self.stdin
 
   def plain_stdout(self):
@@ -356,6 +383,8 @@ class EngineJob(Job):
       return self.transfer_mapping[self.stdout_file].engine_path
     if self.stdout_file and isinstance(self.stdout_file, SharedResourcePath):
       return self.srp_mapping[self.stdout_file]
+    if self.stdout_file and isinstance(self.stdout_file, SpecialPath):
+      return self.transfer_mapping[self.stdout_file].get_engine_path()
     return self.stdout_file
 
   def plain_stderr(self):
@@ -363,6 +392,8 @@ class EngineJob(Job):
       return self.transfer_mapping[self.stderr_file].engine_path
     if self.stderr_file and isinstance(self.stderr_file, SharedResourcePath):
       return self.srp_mapping[self.stderr_file]
+    if self.stderr_file and isinstance(self.stderr_file, SpecialPath):
+      return self.transfer_mapping[self.stderr_file].get_engine_path()
     return self.stderr_file
 
   def plain_working_directory(self):
@@ -372,6 +403,9 @@ class EngineJob(Job):
     if self.working_directory and \
        isinstance(self.working_directory, SharedResourcePath):
       return self.srp_mapping[self.working_directory]
+    if self.working_directory and \
+       isinstance(self.working_directory, SpecialPath):
+      return self.transfer_mapping[self.working_directory].get_engine_path()
     return self.working_directory
 
 
@@ -525,7 +559,7 @@ class EngineWorkflow(Workflow):
                           transfer_mapping=self.transfer_mapping)
         self.transfer_mapping.update(ejob.transfer_mapping)
         self.job_mapping[dependency[1]]=ejob
-      
+
     # groups
     groups = self.groups 
     for group in self.groups:
@@ -559,7 +593,7 @@ class EngineWorkflow(Workflow):
         raise WorkflowError("%s: Wrong type in the workflow root_group."
                             " Objects of type Job or Group are required." %
                             (repr(elem)))
-    
+
 
   def find_out_independant_jobs(self):
     independant_jobs = []
@@ -606,9 +640,9 @@ class EngineWorkflow(Workflow):
     for client_job in self.jobs:
       self.logger.debug("client_job="+repr(client_job))
       job = self.job_mapping[client_job]
-      if job.is_done(): 
+      if job.is_done():
         done.append(job)
-      elif job.is_running(): 
+      elif job.is_running():
         running.append(job)
       elif job.status == constants.NOT_SUBMITTED:
         job_to_run = True
@@ -758,7 +792,7 @@ class EngineWorkflow(Workflow):
         undone_jobs.append(job)
         job.queue = self.queue
         jobs_queue_changed.append(job.job_id)
-        
+
     database_server.set_submission_information(sub_info_to_resert, None)
     database_server.set_jobs_status(new_status)
     database_server.set_queue(self.queue, jobs_queue_changed, self.wf_id)
@@ -787,18 +821,18 @@ class EngineWorkflow(Workflow):
 
         if job_to_run: 
           to_run.append(job)
-  
+
     if to_run:
       status = constants.WORKFLOW_IN_PROGRESS
     else:
       status = constants.WORKFLOW_DONE
-     
-    return (to_run, status)    
+
+    return (to_run, status)
 
 
 
 class EngineTransfer(FileTransfer):
-  
+
   engine_path = None
 
   status = None
@@ -808,8 +842,9 @@ class EngineTransfer(FileTransfer):
   workflow_id = None
 
   def __init__(self, client_file_transfer):
- 
-    exist_on_client = client_file_transfer.initial_status == constants.FILES_ON_CLIENT
+
+    exist_on_client = \
+      client_file_transfer.initial_status == constants.FILES_ON_CLIENT
     super(EngineTransfer, self).__init__( exist_on_client,
                                           client_file_transfer.client_path,
                                           client_file_transfer.disposal_timeout,
@@ -827,4 +862,73 @@ class EngineTransfer(FileTransfer):
             self.status == constants.FILES_ON_CLIENT_AND_CR or \
             self.status == constants.TRANSFERING_FROM_CR_TO_CLIENT
     return exist
- 
+
+  def get_engine_path(self):
+    return self.engine_path
+
+  def get_id(self):
+    return self.engine_path
+
+
+class EngineTemporaryPath(TemporaryPath):
+
+  engine_path = None
+
+  disposal_timeout = None
+
+  workflow_id = None
+
+  temp_path_id = None
+
+  suffix = None
+
+  # temporary_directory should be set according to configuration.
+  # It will be set by engine.ConfiguredWorkflowEngine, which has access to
+  # the config.
+  temporary_directory = None
+
+  def __init__(self, client_temporary_path):
+    super(EngineTemporaryPath, self).__init__(
+      is_directory=client_temporary_path.is_directory,
+      disposal_timeout=client_temporary_path.disposal_timeout,
+      name=client_temporary_path.name,
+      suffix=client_temporary_path.suffix)
+    self.status = constants.FILES_DO_NOT_EXIST
+
+  def files_exist_on_server(self):
+    exist = self.status == constants.FILES_ON_CR
+    return exist
+
+  def mktemp(self):
+    dir = self.temporary_directory
+    if self.is_directory:
+      path = tempfile.mkdtemp(dir=dir, suffix=self.suffix)
+    else:
+      tmp = tempfile.mkstemp(dir=dir, suffix=self.suffix)
+      path = tmp[1]
+      os.close(tmp[0]) # should we close the fd ?
+    self.engine_path = path
+    self.status = constants.FILES_ON_CR
+
+  def get_engine_path(self):
+    if self.engine_path is None:
+      self.mktemp()
+    return self.engine_path
+
+  def get_id(self):
+    return self.temp_path_id
+
+
+_engine_temp_paths = weakref.WeakKeyDictionary()
+
+def get_EngineTemporaryPath(client_temporary_path):
+  '''
+  Create an EngineTemporaryPath from a client TemporaryPath, or return an existing one if it has already been created.
+  '''
+  global _engine_temp_paths
+  etp = _engine_temp_paths.get(client_temporary_path)
+  if etp is None:
+    etp = EngineTemporaryPath(client_temporary_path)
+    _engine_temp_paths[client_temporary_path] = etp
+  return etp
+

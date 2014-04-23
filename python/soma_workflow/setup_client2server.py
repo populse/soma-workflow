@@ -16,7 +16,6 @@ from __future__ import with_statement
 # System import
 import os
 import re
-import sys
 import logging
 from ConfigParser import SafeConfigParser
 

@@ -85,6 +85,7 @@ OCFG_SERVER_LOG_FORMAT = 'SERVER_LOG_FORMAT'
 OCFG_ENGINE_LOG_DIR = 'ENGINE_LOG_DIR'
 OCFG_ENGINE_LOG_LEVEL = 'ENGINE_LOG_LEVEL'
 OCFG_ENGINE_LOG_FORMAT = 'ENGINE_LOG_FORMAT'
+OCFG_SHARED_TEMPORARY_DIR = 'SHARED_TEMPORARY_DIR'
 
 #Shared resource path translation files 
 #specify the translation files (if any) associated to a namespace
@@ -165,6 +166,8 @@ class Configuration(observer.Observable):
   _sshport = 22
   
   _res_install_path = None
+
+  _shared_temporary_dir = None
 
   parallel_job_config = None
 
@@ -488,7 +491,7 @@ class Configuration(observer.Observable):
     for r_id in config_parser.sections():
       resource_ids.append(r_id)
       if config_parser.has_option(r_id, OCFG_LOGIN):
-        logins[r_id] = config_parser.get(r_id, OCFG_LOGIN)
+        logins[r_id] = os.path.expandvars(config_parser.get(r_id, OCFG_LOGIN))
       else:
         logins[r_id] = None
     logins[socket.gethostname()] = None
@@ -569,6 +572,24 @@ class Configuration(observer.Observable):
     return self._transfered_file_dir
 
 
+  def get_shared_temporary_directory(self):
+    '''config for a directory where temporary files can be generated and used from every node of the resource'''
+    if self._shared_temporary_dir:
+      return self._shared_temporary_dir
+
+    if self._config_parser is None or \
+        not self._config_parser.has_option(self._resource_id,
+                                           OCFG_SHARED_TEMPORARY_DIR):
+       return None
+    self._shared_temporary_dir = self._config_parser.get(self._resource_id,
+      OCFG_SHARED_TEMPORARY_DIR)
+    if not self._shared_temporary_dir:
+      # fallback to transfered files dir
+      self._shared_temporary_dir = self.get_transfered_file_dir()
+    self._shared_temporary_dir = os.path.expandvars(self._shared_temporary_dir)
+    return self._shared_temporary_dir
+
+
   def get_parallel_job_config(self):
     if self._config_parser == None or self.parallel_job_config != None:
       return self.parallel_job_config
@@ -601,8 +622,9 @@ class Configuration(observer.Observable):
     if self._config_parser != None and \
        self._config_parser.has_option(self._resource_id, 
                                       OCFG_DRMAA_IMPLEMENTATION):
-      self._login = self._config_parser.get(self._resource_id,                    
-                                            OCFG_LOGIN)
+      self._login = os.path.expandvars( 
+                      self._config_parser.get(self._resource_id,                    
+                                              OCFG_LOGIN) )
     return self._login
 
   def get_native_specification(self):

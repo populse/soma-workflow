@@ -25,7 +25,7 @@ import socket
 
 import soma_workflow.constants as constants
 from soma_workflow.errors import DRMError
-from soma_workflow.configuration import LocalSchedulerCfg
+from soma_workflow.configuration import LocalSchedulerCfg, Configuration
 from soma_workflow.utils import DetectFindLib
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
@@ -120,6 +120,7 @@ if DRMAA_LIB_FOUND==True:
         tmp_file_path = None
   
         is_sleeping = False
+        FAKE_JOB = -167
   
           
         def __init__(self, 
@@ -281,6 +282,12 @@ if DRMAA_LIB_FOUND==True:
           if self.is_sleeping: self.wake()
           # patch for the PBS-torque DRMAA implementation
           command = []
+          if job.is_barrier:
+            # barrier jobs don't actually go through DRMAA.
+            self.logger.debug('job_submission, DRMAA - barrier job.')
+            job.status = constants.DONE
+            return self.FAKE_JOB
+
           job_command = job.plain_command()
 
           ## This is only for the old drmaa version
@@ -296,15 +303,15 @@ if DRMAA_LIB_FOUND==True:
           else:
             command = job_command
 
-       
+
           self.logger.debug("command: " + repr(command))
-          self.logger.debug("job.name=" + repr(job.name))        
-  
+          self.logger.debug("job.name=" + repr(job.name))
+
           stdout_file = job.plain_stdout()
           stderr_file = job.plain_stderr()
           stdin = job.plain_stdin()
-       
-          try: 
+
+          try:
             jobTemplateId = self._drmaa.createJobTemplate()
             jobTemplateId.remoteCommand=command[0]
             jobTemplateId.args = command[1:]
@@ -382,28 +389,41 @@ if DRMAA_LIB_FOUND==True:
             self.logger.error("Error in job submission: %s" %(e))
             raise DRMError("Job submission error: %s" %(e))
        
-          return drmaaSubmittedJobId      
+          return drmaaSubmittedJobId
   
         def kill_job(self, scheduler_job_id):
           if self.is_sleeping: self.wake()
+          if scheduler_job_id == self.FAKE_JOB:
+            return # barriers are not run, thus cannot be killed.
           try:
             self._drmaa.control(scheduler_job_id, JobControlAction.TERMINATE)
           except DrmaaException, e:
             self.logger.critical("%s" %e)
             raise e
-  
+
         def get_job_status(self, scheduler_job_id):
           if self.is_sleeping: self.wake()
+          if scheduler_job_id == self.FAKE_JOB:
+            # a barrier job is done as soon as it is started.
+            return constants.DONE
           try:
             status = self._drmaa.jobStatus(scheduler_job_id)
           except DrmaaException, e:
             self.logger.error("%s" %(e))
             raise DRMError("%s" %(e))
           return status
-  
+
         def get_job_exit_info(self, scheduler_job_id):
           if self.is_sleeping: self.wake()
   
+          if scheduler_job_id == self.FAKE_JOB:
+            res_resourceUsage = ''
+            res_status = constants.FINISHED_REGULARLY
+            res_exitValue = 0
+            res_termSignal = None
+            return (res_status, res_exitValue, res_termSignal,
+              res_resourceUsage)
+
           res_resourceUsage=[]
           res_status = constants.EXIT_UNDETERMINED
           res_exitValue = 0
@@ -444,8 +464,20 @@ if DRMAA_LIB_FOUND==True:
           except ExitTimeoutException:
             res_status = constants.EXIT_UNDETERMINED
             self.logger.debug("  ==> self._drmaa.wait time out")
-  
+
+          # DRMAA may leave files in ~/.drmaa
+          self.cleanup_drmaa_files(scheduler_job_id)
+
           return (res_status,res_exitValue , res_termSignal, res_resourceUsage)
+
+        def cleanup_drmaa_files(self, scheduler_job_id):
+          filename = os.path.join(Configuration.get_home_dir(),
+            '.drmaa', str(scheduler_job_id))
+          startfile = '%s.started' % filename
+          endfile = '%s.exitcode' % filename
+          for f in (startfile, endfile):
+            if os.path.exists(f):
+              os.unlink(f)
 else:
 
   class DrmaaCTypes(Scheduler):pass
@@ -570,16 +602,25 @@ class LocalScheduler(Scheduler):
       job_id = self._queue.pop(0)
       job = self._jobs[job_id]
       #print "new job " + repr(job.job_id)
-      process = LocalScheduler.create_process(job)
-      if process == None:
-        self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
-                                   None,
-                                   None,
-                                   None)
-        self._status[job.job_id] = constants.FAILED
+      if job.is_barrier:
+        # barrier jobs are not actually run using Popen:
+        # they succeed immediately.
+        self._exit_info[job.job_id] = (constants.FINISHED_REGULARLY,
+                                  0,
+                                  None,
+                                  None)
+        self._status[job.job_id] = constants.DONE
       else:
-        self._processes[job.job_id] = process
-        self._status[job.job_id] = constants.RUNNING
+        process = LocalScheduler.create_process(job)
+        if process == None:
+          self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
+                                    None,
+                                    None,
+                                    None)
+          self._status[job.job_id] = constants.FAILED
+        else:
+          self._processes[job.job_id] = process
+          self._status[job.job_id] = constants.RUNNING
 
 
   @staticmethod
@@ -679,7 +720,7 @@ class LocalScheduler(Scheduler):
     '''
     if not scheduler_job_id in self._status:
       raise LocalSchedulerError("Unknown job.")
-   
+
     status = self._status[scheduler_job_id]
     return status
 

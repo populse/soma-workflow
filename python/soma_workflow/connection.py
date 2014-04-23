@@ -74,14 +74,13 @@ def SSHExecCmd(sshcommand,
         tag = '----xxxx=====start to exec=====xxxxx----'
         sshcommand = "echo %s && %s" % (tag, sshcommand)
 
-    
-    is_limit_stdout = False
-    is_limit_stderr = False
+    #is_limit_stdout = False
+    #is_limit_stderr = False
 
-    if num_line_stdout != -1:
-        is_limit_stdout = True
-    if num_line_stderr != -1:
-        is_limit_stderr = True
+    #if num_line_stdout != -1:
+    #    is_limit_stdout = True
+    #if num_line_stderr != -1:
+    #    is_limit_stderr = True
 
     stdin = []
     stdout = []
@@ -137,21 +136,24 @@ def check_if_soma_wf_cr_on_server(
                             ip_address_or_domain,
                             userpw='',
                             sshport=22):
+    """ Check if the check_requirement module exists
+    """
     command = "python -c 'import soma_workflow.check_requirement'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
-        command, 
-        userid, 
-        ip_address_or_domain, 
-        userpw, 
-        wait_output=True, 
+        command,
+        userid,
+        ip_address_or_domain,
+        userpw,
+        wait_output=True,
         isNeedErr=True,
         sshport=sshport)
 
     if len(std_err_lines) > 0:
         return False
-    
+
     return True
-    
+
+
 def check_if_ctype_drmaa_on_server(
                             userid,
                             ip_address_or_domain,
@@ -159,41 +161,45 @@ def check_if_ctype_drmaa_on_server(
                             sshport=22):
     command = "python -m 'soma_workflow.check_requirement.drmaa'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
-        command, 
-        userid, 
-        ip_address_or_domain, 
-        userpw, 
-        wait_output=True, 
+        command,
+        userid,
+        ip_address_or_domain,
+        userpw,
+        wait_output=True,
         isNeedErr=True,
         sshport=sshport)
 
     # print repr(std_out_lines)
-    
+
     if len(std_out_lines) == 1:
         if std_out_lines[0] == "True":
             return True
-    
+
     return False
-    
+
+
 def check_if_somawf_on_server(
                             userid,
                             ip_address_or_domain,
                             userpw='',
                             sshport=22):
+    """ Check if the soma_workflow module exists
+    """
     command = "python -c 'import soma_workflow'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
-        command, 
-        userid, 
-        ip_address_or_domain, 
-        userpw, 
-        wait_output=True, 
+        command,
+        userid,
+        ip_address_or_domain,
+        userpw,
+        wait_output=True,
         isNeedErr=True,
         sshport=sshport)
 
     if len(std_err_lines) > 0:
         return False
-    
+
     return True
+
 
 def check_if_somawfdb_on_server(
                             ResName,
@@ -206,11 +212,11 @@ def check_if_somawfdb_on_server(
     " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
     std_out_lines = SSHExecCmd(
-        command, 
-        userid, 
-        ip_address_or_domain, 
-        userpw, 
-        wait_output=True, 
+        command,
+        userid,
+        ip_address_or_domain,
+        userpw,
+        wait_output=True,
         sshport=sshport)
 
     if len(std_out_lines) == 0:
@@ -238,8 +244,8 @@ class RemoteConnection(object):
     '''
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
-    The communication between the client and the computing resource is done with
-    Pyro inside a ssh port forwarding tunnel.
+    The communication between the client and the computing resource is done
+    with Pyro inside a ssh port forwarding tunnel.
     '''
 
     def __init__(self,
@@ -256,57 +262,43 @@ class RemoteConnection(object):
         @type  password: string
         @param password: associted password
         @type  submitting_machine: string
-        @param submitting_machine: address of a submitting machine of the computing
-                                   resource.
+        @param submitting_machine: address of a submitting machine of the
+        computing resource.
         '''
 
         # required in the remote connection mode
         import paramiko
-        from paramiko.file import BufferedFile
+        #from paramiko.file import BufferedFile
         import Pyro.core
-        from Pyro.errors import ConnectionClosedError
+        #from Pyro.errors import ConnectionClosedError
 
         if not login:
             raise ConnectionError("Remote connection requires a login")
-        
 
         pyro_objet_name = "workflow_engine_" + login
 
-        if not check_if_somawf_on_server(
-                                        login, 
-                                        cluster_address, 
-                                        password):
-            raise ConnectionError("Cannot find soma-workflow on %s ."\
-                                  "Please verify if your PYTHONPATH "\
+        if not check_if_somawf_on_server(login, cluster_address, password):
+            raise ConnectionError("Cannot find soma-workflow on %s ."
+                                  "Please verify if your PYTHONPATH "
                                   "includes the soma-workflow."\
                                   % (cluster_address))
 
-       
-        if not check_if_soma_wf_cr_on_server(
-                                        login, 
-                                        cluster_address, 
-                                        password):
+        if not check_if_soma_wf_cr_on_server(login, cluster_address, password):
             raise ConnectionError("Cannot find "\
                 "soma_workflow.check_requirement on %s ."\
                 "Please update your soma-workflow on %s."\
-                                  % (cluster_address,cluster_address))
-                                  
-        if not check_if_ctype_drmaa_on_server(
-                                        login, 
-                                        cluster_address, 
-                                        password):
+                                  % (cluster_address, cluster_address))
+
+        if not check_if_ctype_drmaa_on_server(login, cluster_address,
+                                              password):
             raise ConnectionError("Cannot find "\
                 "drmaa libary on %s ."\
                 "Please verify your drmaa libary on %s. "\
                 "Or setup up enviroment variable DRMAA_LIBRARY_PATH."\
-                                  % (cluster_address,cluster_address))
-                                  
-                                                
-        if not check_if_somawfdb_on_server(
-                                            resource_id, 
-                                            login, 
-                                            cluster_address, 
-                                            password):
+                                  % (cluster_address, cluster_address))
+
+        if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
+                                           password):
            command = "python -m soma_workflow.start_database_server %s & bg"%(resource_id)
            SSHExecCmd(
               command,
@@ -314,15 +306,15 @@ class RemoteConnection(object):
               cluster_address,
               userpw=password,
               wait_output=False)
- 
-         
+
+
 
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
         command = "python -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, pyro_objet_name, log)
-        
+
         print "start engine command: "\
               "ssh %s@%s %s" % (login, cluster_address, command)
 
@@ -334,8 +326,8 @@ class RemoteConnection(object):
             wait_output=True,
             sshport=22,
             num_line_stdout=3)
-        
-        
+
+
         # print "std_out_lines="+repr(std_out_lines)
 
         workflow_engine_uri = None
@@ -475,7 +467,7 @@ class LocalConnection(object):
 
     '''
     Local version of the connection.
-    The worjkflow engine process is created using subprocess.
+    The workflow engine process is created using subprocess.
     '''
 
     def __init__(self,
@@ -698,8 +690,8 @@ class Tunnel(threading.Thread):
                                      (self.chain_host, self.chain_port))
 
             print 'Connected!  Tunnel open %r -> %r -> %r' % (
-            self.request.getpeername(), 
-            self.__chan.getpeername(), 
+            self.request.getpeername(),
+            self.__chan.getpeername(),
             (self.chain_host, self.chain_port))
 
         def handle(self):

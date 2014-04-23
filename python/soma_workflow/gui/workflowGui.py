@@ -63,7 +63,7 @@ elif QT_BACKEND == PYSIDE:
   from PySide import QtUiTools
 
 
-from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, Job, WorkflowController, Helper
+from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, TemporaryPath, Job, WorkflowController, Helper
 from soma_workflow.engine_types import EngineWorkflow, EngineJob, EngineTransfer
 import soma_workflow.constants as  constants
 import soma_workflow.configuration as configuration
@@ -1055,7 +1055,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                             resource_id, 
                             login=None, 
                             password=None, 
-                            rsa_key_pass=None):      
+                            rsa_key_pass=None):
 
     if self.model.resource_pool.resource_exist(resource_id):
       self.model.set_current_connection(resource_id)
@@ -1941,7 +1941,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.tool_bar.addAction(self.sw_widget.ui.actionServer_Management)
     self.ui.tool_bar.addSeparator()
 
-    self.showMaximized()
+    #self.showMaximized()
 
   def canExit(self):
       # print "canExit"
@@ -2593,14 +2593,24 @@ class TransferInfoWidget(QtGui.QTabWidget):
   def dataChanged(self):
     
     setLabelFromString(self.ui.transfer_name, self.transfer_item.name)
-    setLabelFromString(self.ui.transfer_status, self.transfer_item.transfer_status)
-    setLabelFromString(self.ui.client_path, self.transfer_item.data.client_path)
-    setLabelFromString(self.ui.cr_path, self.transfer_item.engine_path)
-    
-    if self.transfer_item.data.client_paths:
-      self.ui.client_paths.insertItems(0, self.transfer_item.data.client_paths)
-    else:
+    setLabelFromString(self.ui.transfer_status,
+      self.transfer_item.transfer_status)
+    if isinstance(self.transfer_item.data, FileTransfer):
+      setLabelFromString(self.ui.client_path,
+        self.transfer_item.data.client_path)
+      if self.transfer_item.data.client_paths:
+        self.ui.client_paths.insertItems(0,
+          self.transfer_item.data.client_paths)
+      else:
+        self.ui.client_paths.clear()
+    elif isinstance(self.transfer_item.data, TemporaryPath):
+      if self.transfer_item.data.is_directory:
+        setLabelFromString(self.ui.client_path, '<temporary directory>')
+      else:
+        setLabelFromString(self.ui.client_path, '<temporary file>')
       self.ui.client_paths.clear()
+    setLabelFromString(self.ui.cr_path, self.transfer_item.engine_path)
+
     
 
 class GroupInfoWidget(QtGui.QWidget):
@@ -3883,20 +3893,23 @@ class GuiWorkflow(object):
           ids[ft].append(item_id)
           row = ref_in.index(ft)
           if isinstance(workflow, EngineWorkflow):
+            engine_id = workflow.transfer_mapping[ft].get_id()
             engine_path = workflow.transfer_mapping[ft].engine_path
           else:
+            engine_id = None
             engine_path = None
           gui_transfer = GuiInputTransfer(it_id=item_id, 
                                           parent=ids[job], 
                                           row=row, 
                                           data=ft,
                                           name=ft.name,
-                                          engine_path=engine_path)
+                                          engine_path=engine_path,
+                                          engine_id=engine_id)
           self.items[item_id] = gui_transfer
-          if gui_transfer.engine_path in self.server_file_transfers.keys():
-            self.server_file_transfers[gui_transfer.engine_path].append(item_id)
+          if gui_transfer.engine_id in self.server_file_transfers.keys():
+            self.server_file_transfers[gui_transfer.engine_id].append(item_id)
           else:
-            self.server_file_transfers[gui_transfer.engine_path] = [item_id]
+            self.server_file_transfers[gui_transfer.engine_id] = [item_id]
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
         if ft in ref_out: #
@@ -3905,21 +3918,24 @@ class GuiWorkflow(object):
           ids[ft].append(item_id)
           row = len(ref_in)+ref_out.index(ft)
           if isinstance(workflow, EngineWorkflow):
+            engine_id = workflow.transfer_mapping[ft].get_id()
             engine_path = workflow.transfer_mapping[ft].engine_path
           else:
+            engine_id = None
             engine_path = None
           gui_ft = GuiOutputTransfer(it_id=item_id, 
                                      parent=ids[job], 
                                      row=row, 
                                      data=ft,
                                      name=ft.name,
-                                     engine_path=engine_path)
+                                     engine_path=engine_path,
+                                     engine_id=engine_id)
           self.items[item_id] = gui_ft
-          if gui_ft.engine_path in self.server_file_transfers.keys():
-            self.server_file_transfers[gui_ft.engine_path].append(item_id)
+          if gui_ft.engine_id in self.server_file_transfers.keys():
+            self.server_file_transfers[gui_ft.engine_id].append(item_id)
           else:
-            self.server_file_transfers[gui_ft.engine_path] = [item_id]
-          
+            self.server_file_transfers[gui_ft.engine_id] = [item_id]
+
           self.items[ids[job]].children[row]=item_id
           #print repr(job.name) + " " + repr(self.items[ids[job]].children)
 
@@ -3964,11 +3980,19 @@ class GuiWorkflow(object):
     
     #updating file transfer
     for transfer_info in wf_status[1]:
-      engine_file_path, complete_status = transfer_info 
+      engine_file_path, complete_status = transfer_info
       for item_id in self.server_file_transfers[engine_file_path]:
         item = self.items[item_id]
         data_changed = item.updateState(complete_status) or data_changed
-    
+
+    # updating temp files
+    for temp_info in wf_status[4]:
+      temp_path_id, engine_file_path, status = temp_info
+      complete_status = (status, None)
+      for item_id in self.server_file_transfers[temp_path_id]:
+        item = self.items[item_id]
+        data_changed = item.updateState(complete_status) or data_changed
+
     #end = datetime.now() - begining
     #print " <== end updating transfers" + repr(self.wf_id) + " : " + repr(end.seconds) + " " + repr(data_changed)
     
@@ -4190,6 +4214,8 @@ class GuiJob(GuiWorkflowItem):
         cmd_seq.append("<FileTransfer " + command_el.client_path + " >")
       elif isinstance(command_el, SharedResourcePath):
         cmd_seq.append("<SharedResourcePath " + command_el.namespace + " " + command_el.uuid + " " +  command_el.relative_path + " >")
+      elif isinstance(command_el, TemporaryPath):
+        cmd_seq.append("<TemporaryPath " + command_el.name + " >")
       elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
         cmd_seq.append(unicode(command_el).encode('utf-8'))
       else:
@@ -4268,7 +4294,8 @@ class GuiTransfer(GuiWorkflowItem):
                data=None,
                children_nb=0,
                name="no name",
-               engine_path=None):
+               engine_path=None,
+               engine_id=None):
     super(GuiTransfer, self).__init__(it_id, parent, row, data, children_nb)
     
     self.transfer_status = " "
@@ -4280,6 +4307,7 @@ class GuiTransfer(GuiWorkflowItem):
     self.transfer_type = None
     self.name = name
     self.engine_path = engine_path
+    self.engine_id = engine_id
 
   
   def updateState(self, transfer_status_info):
@@ -4326,18 +4354,20 @@ class GuiInputTransfer(GuiTransfer):
                data=None,
                children_nb=0,
                name="no name",
-               engine_path=None):
+               engine_path=None,
+               engine_id=None):
     super(GuiInputTransfer, self).__init__(it_id, 
                                            parent, 
                                            row, 
                                            data, 
                                            children_nb, 
                                            name, 
-                                           engine_path)
-    
-    
+                                           engine_path,
+                                           engine_id)
+
+
 class GuiOutputTransfer(GuiTransfer):
-  
+
   def __init__(self,
                it_id, 
                parent=-1, 
@@ -4345,13 +4375,15 @@ class GuiOutputTransfer(GuiTransfer):
                data=None,
                children_nb=0,
                name="no name",
-               engine_path=None):
+               engine_path=None,
+               engine_id=None):
     super(GuiOutputTransfer, self).__init__(it_id, 
                                             parent, 
                                             row, 
                                             data, 
                                             children_nb, 
                                             name,
-                                            engine_path)
+                                            engine_path,
+                                            engine_id)
   
 

@@ -44,10 +44,13 @@ from soma_workflow.errors import TransferError, SerializationError, SomaWorkflow
 
 # imports required by the users of soma-workflow API (do not remove):
 from soma_workflow.client_types import Job
+from soma_workflow.client_types import BarrierJob
 from soma_workflow.client_types import Workflow
 from soma_workflow.client_types import Group
 from soma_workflow.client_types import FileTransfer
 from soma_workflow.client_types import SharedResourcePath
+from soma_workflow.client_types import TemporaryPath
+from soma_workflow.client_types import SpecialPath
 
 
 class WorkflowController(object):
@@ -115,7 +118,7 @@ class WorkflowController(object):
     self.scheduler_config = None
 
     mode = self.config.get_mode()
-    print  mode + " mode"
+    # print  mode + " mode"
 
     self._resource_id = resource_id
     
@@ -375,7 +378,7 @@ class WorkflowController(object):
 
       new_transfer_status.append((engine_path, (status, progression)))
 
-    new_wf_status = (wf_status[0], new_transfer_status, wf_status[2], wf_status[3])
+    new_wf_status = (wf_status[0], new_transfer_status, wf_status[2], wf_status[3], wf_status[4])
     return new_wf_status
 
 
@@ -992,7 +995,8 @@ class Helper(object):
     (jobs_info, 
     transfers_info, 
     workflow_status, 
-    workflow_queue) = wf_ctrl.workflow_elements_status(workflow_id)
+    workflow_queue,
+    transfers_temp_info) = wf_ctrl.workflow_elements_status(workflow_id)
     failed_job_ids = []
     for (job_id, status, queue, exit_info, dates) in jobs_info:
       if(status == constants.DONE and exit_info[1] != 0) or \

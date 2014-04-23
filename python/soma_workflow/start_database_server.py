@@ -29,11 +29,13 @@ if __name__ == '__main__':
                                soma_workflow.database_server.WorkflowDatabaseServer):
     def __init__(self, 
                  database_file, 
-                 tmp_file_dir_path):
+                 tmp_file_dir_path,
+                 shared_tmp_dir=None):
       Pyro.core.ObjBase.__init__(self)
       soma_workflow.database_server.WorkflowDatabaseServer.__init__(self, 
                                                            database_file, 
-                                                           tmp_file_dir_path)
+                                                           tmp_file_dir_path,
+                                                           shared_tmp_dir)
     pass
 
     def test(self):
@@ -64,15 +66,52 @@ if __name__ == '__main__':
   # Pyro server creation 
   Pyro.core.initServer()
   daemon = Pyro.core.Daemon()
-  # locate the NS 
+  # locate the NS
   locator = Pyro.naming.NameServerLocator()
   print 'searching for Name Server...'
-  name_server_host = config.get_name_server_host()
-  if name_server_host == 'None':
-    ns = locator.getNS()
-  else: 
-    ns = locator.getNS(host=name_server_host )
-  daemon.useNameServer(ns)
+
+  try:
+    name_server_host = config.get_name_server_host()
+    if name_server_host == 'None':
+      ns = locator.getNS()
+    else:
+      ns = locator.getNS(host=name_server_host )
+    daemon.useNameServer(ns)
+  except:
+    # try to run the nameserver first
+    import subprocess
+    print 'not found. Starting a new Name Server...'
+    # WARNING: users may not have permission to run pyro-nsd because the pid
+    # file is writen in /var/run/pyro-nsd.pid or something. In this case an
+    # additional argument --pidfile=/tmp/pyro-nsd.pid may be required
+    retcode = subprocess.call(['pyro-nsd', 'start'])
+    if retcode != 0:
+      raise EngineError("Could not find nor start the Pyro name server.")
+    print 'searching again the Name Server...'
+    name_server_host = config.get_name_server_host()
+    try:
+      if name_server_host == 'None':
+        ns = locator.getNS()
+      else:
+        ns = locator.getNS(host=name_server_host )
+      daemon.useNameServer(ns)
+    except:
+      # still not worked, try a custom pidfile with pyro-nsd
+      print 'not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...'
+      retcode = subprocess.call(['pyro-nsd', 'start',
+        '--pidfile=/tmp/pyro-nsd.pid'])
+      if retcode != 0:
+        raise EngineError("Could not find nor start the Pyro name server.")
+      print 'searching again the Name Server...'
+      name_server_host = config.get_name_server_host()
+      try:
+        if name_server_host == 'None':
+          ns = locator.getNS()
+        else:
+          ns = locator.getNS(host=name_server_host )
+        daemon.useNameServer(ns)
+      except:
+        raise EngineError("Could not find nor start the Pyro name server.")
 
   # connect a new object implementation (first unregister previous one)
   server_name = config.get_server_name()
@@ -83,7 +122,8 @@ if __name__ == '__main__':
 
   # connect new object implementation
   server = WorkflowDatabaseServer(config.get_database_file(), 
-                                  config.get_transfered_file_dir())
+                                  config.get_transfered_file_dir(),
+                                  config.get_shared_temporary_directory())
   daemon.connect(server, server_name)
   print "port = " + repr(daemon.port)
   

@@ -59,7 +59,7 @@ def slave_loop(communicator,
     while True:
         ended_jobs_info = {} # job_id -> (job_status, job_exit_status)
         t = None
-        if len(commands) < max_nb_jobs:    
+        if len(commands) < max_nb_jobs:
             communicator.send(dest=0,
                              tag=MPIScheduler.JOB_REQUEST)
 
@@ -76,11 +76,14 @@ def slave_loop(communicator,
                 for j in job_list:
                     #process = scheduler.LocalScheduler.create_process(j)
                     separator = " "
-                    command = ""
-                    for command_el in j.plain_command():
-                        command = command + "\'" + command_el + "\' "
+                    if not j.command: # barrier job
+                        command = None
+                    else:
+                        command = ""
+                        for command_el in j.plain_command():
+                            command = command + "\'" + command_el + "\' "
                     #command = separator.join(j.plain_command())
-                    logger.debug("Slave " + repr(rank) + " RUNS JOB" + repr(j.job_id) + " " + command)
+                    logger.debug("Slave " + repr(rank) + " RUNS JOB" + repr(j.job_id) + " " + str(command))
                     commands[j.job_id] = command
             elif t == MPIScheduler.NO_JOB:
                 communicator.recv(source=0, tag=t)
@@ -102,8 +105,12 @@ def slave_loop(communicator,
                 raise Exception('Unknown tag')
         for job_id, command in commands.iteritems():
             if command == None:
-                ended_jobs_info[job_id] = (constants.FAILED,
-                                           (constants.EXIT_ABORTED, None, 
+                #ended_jobs_info[job_id] = (constants.FAILED,
+                                           #(constants.EXIT_ABORTED, None, 
+                                            #None, None))
+                # normally a barrier job
+                ended_jobs_info[job_id] = (constants.DONE,
+                                           (constants.FINISHED_REGULARLY, None,
                                             None, None))
             else:
 

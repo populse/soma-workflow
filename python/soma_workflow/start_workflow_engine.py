@@ -93,10 +93,37 @@ if __name__=="__main__":
       name_server_host = config.get_name_server_host() 
       if name_server_host == 'None':
         ns = locator.getNS()
-      else: 
-        ns = locator.getNS(host=name_server_host)
-    except Exception, e:
-      raise EngineError("Could not find the Pyro name server.")
+      else:
+        ns = locator.getNS(host=name_server_host )
+    except:
+      # try to run the nameserver first
+      import subprocess
+      # WARNING: users may not have permission to run pyro-nsd because the pid
+      # file is writen in /var/run/pyro-nsd.pid or something. In this case an
+      # additional argument --pidfile=/tmp/pyro-nsd.pid may be required
+      retcode = subprocess.call(['pyro-nsd', 'start'])
+      if retcode != 0:
+        raise EngineError("Could not find nor start the Pyro name server.")
+      name_server_host = config.get_name_server_host()
+      try:
+        if name_server_host == 'None':
+          ns = locator.getNS()
+        else:
+          ns = locator.getNS(host=name_server_host )
+      except:
+        # still not worked, try a custom pidfile with pyro-nsd
+        retcode = subprocess.call(['pyro-nsd', 'start',
+          '--pidfile=/tmp/pyro-nsd.pid'])
+        if retcode != 0:
+          raise EngineError("Could not find nor start the Pyro name server.")
+        name_server_host = config.get_name_server_host()
+        try:
+          if name_server_host == 'None':
+            ns = locator.getNS()
+          else:
+            ns = locator.getNS(host=name_server_host )
+        except:
+          raise EngineError("Could not find nor start the Pyro name server.")
 
     server_name = config.get_server_name()
 
@@ -142,6 +169,8 @@ if __name__=="__main__":
       logger.info(" ")
       logger.info("****************************************************")
       logger.info("****************************************************")
+    else:
+      logger = None
  
     if config.get_scheduler_type() == soma_workflow.configuration.DRMAA_SCHEDULER:
         

@@ -28,7 +28,7 @@ import atexit
 #import cProfile
 #import traceback
 
-from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer
+from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer
 import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
@@ -278,10 +278,16 @@ class WorkflowEngineLoop(object):
                 wf_to_inspect.add(job.workflow_id)
               if job.status == constants.DONE:
                 for ft in job.referenced_output_files:
-                  engine_path = job.transfer_mapping[ft].engine_path
-                  self._database_server.set_transfer_status(engine_path, 
-                                                  constants.FILES_ON_CR)
-                     
+                  if isinstance(ft, FileTransfer):
+                    engine_path = job.transfer_mapping[ft].engine_path
+                    self._database_server.set_transfer_status(engine_path,
+                                                    constants.FILES_ON_CR)
+                  else:
+                    # TemporaryPath
+                    temp_path_id = job.transfer_mapping[ft].temp_path_id
+                    self._database_server.set_temporary_status(temp_path_id,
+                                                    constants.FILES_ON_CR)
+
               ended_jobs[job.job_id] = job
               self.logger.debug("  => exit_status " + repr(job.exit_status))
               self.logger.debug("  => exit_value " + repr(job.exit_value))
@@ -322,25 +328,25 @@ class WorkflowEngineLoop(object):
         # --- 6. Submit jobs -------------------------------------------------
         drmaa_id_for_db_up = {}
         for job in jobs_to_run:
-          try:
-            job.drmaa_id = self._scheduler.job_submission(job)
-          except DRMError, e:
-            #Resubmission ?
-            #if job.queue in self._pending_queues:
-            #  self._pending_queues[job.queue].insert(0, job)
-            #else:
-            #  self._pending_queues[job.queue] = [job]
-            #job.status = constants.SUBMISSION_PENDING
-            self.logger.debug("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
-            job.status = constants.FAILED
-            job.exit_status = constants.EXIT_ABORTED
-            stderr_file = open(job.stderr_file, "wa")
-            stderr_file.write("Error while submitting the job %s: %s\n" %(type(e),e))
-            stderr_file.close()
-            drms_error_jobs[job.job_id] = job
-          else:
-            drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-            job.status = constants.UNDETERMINED     
+            try:
+              job.drmaa_id = self._scheduler.job_submission(job)
+            except DRMError, e:
+              #Resubmission ?
+              #if job.queue in self._pending_queues:
+              #  self._pending_queues[job.queue].insert(0, job)
+              #else:
+              #  self._pending_queues[job.queue] = [job]
+              #job.status = constants.SUBMISSION_PENDING
+              self.logger.debug("job %s !!!ERROR!!! %s: %s" %(repr(job.command), type(e), e))
+              job.status = constants.FAILED
+              job.exit_status = constants.EXIT_ABORTED
+              stderr_file = open(job.stderr_file, "wa")
+              stderr_file.write("Error while submitting the job %s: %s\n" %(type(e),e))
+              stderr_file.close()
+              drms_error_jobs[job.job_id] = job
+            else:
+              drmaa_id_for_db_up[job.job_id] = job.drmaa_id
+              job.status = constants.UNDETERMINED
 
         if drmaa_id_for_db_up:
           self._database_server.set_submission_information(drmaa_id_for_db_up,
@@ -358,9 +364,9 @@ class WorkflowEngineLoop(object):
                                     (job.status == constants.DONE or \
                                     job.status == constants.FAILED)
           if job_id in self._jobs and \
-             (job.status == constants.DONE or \
-              job.status == constants.FAILED):
-              ended_job_ids.append(job_id)
+              (job.status == constants.DONE or \
+                job.status == constants.FAILED):
+            ended_job_ids.append(job_id)
           self.logger.debug("job " + repr(job_id) + " " + repr(job.status))
        
         if job_status_for_db_up:
@@ -375,7 +381,7 @@ class WorkflowEngineLoop(object):
             ended_wf_ids.append(wf_id)
           self.logger.debug("wf " + repr(wf_id) + " " + repr(workflow.status))
         self.logger.debug("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ")
-        
+
         for job_id in ended_job_ids: del self._jobs[job_id]
         for wf_id in ended_wf_ids: del self._workflows[wf_id]
 
@@ -512,7 +518,8 @@ class WorkflowEngineLoop(object):
                          (repr(job.stderr_file), type(e), e))
 
     for transfer in engine_workflow.transfer_mapping.itervalues():
-      if transfer.client_paths and not os.path.isdir(transfer.engine_path):
+      if hasattr(transfer, 'client_paths') and transfer.client_paths \
+          and not os.path.isdir(transfer.engine_path):
         try:
           os.mkdir(transfer.engine_path) 
         except Exception, e:
@@ -919,7 +926,7 @@ class WorkflowEngine(RemoteFileController):
     if status and \
        not status == constants.WORKFLOW_DONE and \
        _out_to_date(last_status_update):
-      wf_status = (wf_status[0], wf_status[1], constants.WARNING, wf_status[3])
+      wf_status = (wf_status[0], wf_status[1], constants.WARNING, wf_status[3], wf_status[4])
     
     return wf_status
         
@@ -1122,6 +1129,9 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
     self.config.addObserver(self,
                             "update_from_config",
                             [Configuration.QUEUE_LIMITS_CHANGED])
+    # set temp path in EngineTemporaryPath
+    EngineTemporaryPath.temporary_directory \
+      = config.get_shared_temporary_directory()
 
   def update_from_config(self, observable, event, msg):
     if event == Configuration.QUEUE_LIMITS_CHANGED:
