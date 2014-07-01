@@ -30,9 +30,14 @@ from soma_workflow.utils import DetectFindLib
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
-(DRMAA_LIB_FOUND,_lib)=DetectFindLib(_drmaa_lib_env_name,'drmaa')
+try:
+    (DRMAA_LIB_FOUND,_lib) = DetectFindLib(_drmaa_lib_env_name,'drmaa')
+except:
+    # an exception occurs when drmaa lib is detected but cannot be loaded
+    # because of a failed dependency (torque, grid engine etc)
+    DRMAA_LIB_FOUND = False
 
-if DRMAA_LIB_FOUND==True:
+if DRMAA_LIB_FOUND == True:
     from somadrmaa.errors import *
     from somadrmaa.const import JobControlAction
 
