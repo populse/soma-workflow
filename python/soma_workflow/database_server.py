@@ -30,13 +30,12 @@ import socket
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
+from soma_workflow.info import DB_VERSION
 
 
 #-----------------------------------------------------------------------------
 # Globals and constants
 #-----------------------------------------------------------------------------
-
-DB_VERSION = '1.1'
 
 strtime_format = '%Y-%m-%d %H:%M:%S'
 file_separator = ', '

@@ -1,2 +1,5 @@
-fullVersion = '2.6.0'
-shortVersion = '2.6'
+
+from soma_workflow import info
+
+fullVersion = info.__version__
+shortVersion = '%d.%d' % (info.version_major, info.version_minor)
