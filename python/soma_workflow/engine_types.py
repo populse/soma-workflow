@@ -338,7 +338,6 @@ class EngineJob(Job):
         plain_command.append(self.srp_mapping[command_el])
       elif isinstance(command_el, SpecialPath):
         if isinstance(command_el, FileTransfer):
-            command_el].get_engine_main_path())
           plain_command_el = self.transfer_mapping[
             command_el].get_engine_main_path()
         else:
