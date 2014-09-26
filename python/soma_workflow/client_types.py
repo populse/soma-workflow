@@ -963,6 +963,11 @@ class FileTransfer(SpecialPath):
     Name of the FileTransfer which will be displayed in the GUI.
     Default: client_path + "transfer"
 
+  When a file is transfered via a FileTransfer, the Job it is used in has to be
+  built using the FileTransfer object in place of the file name in the command
+  list. The FileTransfer object has also to be on the referenced_input_files
+  or referenced_output_files lists in Job constructor.
+
   .. note::
     Use client_paths if the transfer involves several associated files and/or
     directories. Examples:
@@ -973,7 +978,30 @@ class FileTransfer(SpecialPath):
         In this case, set client_path to one the files (ex: .img) and
         client_paths contains all the files (ex: .img and .hdr files)
 
-     In other cases (1 file or 1 directory) the client_paths must be set to None.
+    In other cases (1 file or 1 directory) the client_paths must be set to
+    None.
+
+    When client_paths is not None, the server-side handling of paths is
+    different: the server directory is used istead of files. This has slight
+    consequences on the behaviour of the workflow:
+
+    * in soma-workflow 2.6 and earlier, the commandline will be using the
+      directory instead of a file name, which is often not what you expect.
+    * in soma-workflow 2.7 and later, the commandline will be using the
+      main file name (client_path) translated to the server location. This is
+      more probably what is expected.
+    * in any case it is possible to specify the commandline path using a
+      tuple as commandline argument:
+      ::
+
+        myfile = FileTransfer(is_input=True, client_path='/home/bubu/plof.nii',
+            client_paths=['/home/bubu/plof.nii', '/home/bubu/plof.nii.minf'])
+        # job1 will work with SWF >= 2.7, not in 2.6
+        job1 = Job(command=['AimsFileInfo', myfile],
+            referenced_input_files=[myfile])
+        # job2 will use <engine_path>/plof.nii as input
+        job2 = Job(command=['AimsFileInfo', (myfile, 'plof.nii')],
+            referenced_input_files=[myfile]))
   '''
 
   # string
@@ -998,6 +1026,21 @@ class FileTransfer(SpecialPath):
                 name = None,
                 client_paths = None,
                 ):
+    '''
+    Parameters
+    ----------
+    is_input: bool
+        specifies if the files have to be transferred from the client before
+        job execution, or back to the client after execution.
+    client_path: string
+        main file name
+    disposal_timeout: int (optional)
+        default: 168
+    name: string (optional)
+        name displayed in the GUI
+    client_paths: list (optional)
+        when several files are involved
+    '''
     super(FileTransfer, self).__init__()
     if name:
       ft_name = name
