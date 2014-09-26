@@ -255,7 +255,6 @@ class Job(object):
                  "native_specification",
                  "parallel_job_info",
                  "disposal_timeout",
-                 "is_directory",
                  ]
     for attr_name in attributs:
       attr = getattr(self, attr_name)
@@ -351,7 +350,6 @@ class Job(object):
                  "native_specification",
                  "parallel_job_info",
                  "disposal_timeout",
-                 "is_directory",
                 ]
   
     for attr_name in attributs:
@@ -692,7 +690,7 @@ class Workflow(object):
     serialized_jobs = d["serialized_jobs"]
     job_from_ids = {}
     for job_id, job_d in serialized_jobs.iteritems():
-      job = Job.from_dict(job_d, tr_from_ids, srp_from_ids)
+      job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
       job_from_ids[int(job_id)] = job
     jobs = job_from_ids.values()
   
