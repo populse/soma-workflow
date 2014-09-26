@@ -337,7 +337,12 @@ class EngineJob(Job):
       if isinstance(command_el, SharedResourcePath):
         plain_command.append(self.srp_mapping[command_el])
       elif isinstance(command_el, SpecialPath):
-        plain_command_el = self.transfer_mapping[command_el].get_engine_path()
+        if isinstance(command_el, FileTransfer):
+            command_el].get_engine_main_path())
+          plain_command_el = self.transfer_mapping[
+            command_el].get_engine_main_path()
+        else:
+          plain_command_el = self.transfer_mapping[command_el].get_engine_path()
         plain_command.append(plain_command_el)
       elif isinstance(command_el, tuple) and \
            isinstance(command_el[0], SpecialPath):
@@ -351,7 +356,11 @@ class EngineJob(Job):
           if isinstance(list_el, SharedResourcePath):
             new_list.append(self.srp_mapping[list_el])
           elif isinstance(list_el, SpecialPath):
-            new_list_el = self.transfer_mapping[list_el].get_engine_path()
+            if isinstance(command_el, FileTransfer):
+              new_list_el = self.transfer_mapping[
+                list_el].get_engine_main_path()
+            else:
+              new_list_el = self.transfer_mapping[list_el].get_engine_path()
             new_list.append(new_list_el)
           elif isinstance(list_el, tuple) and \
               isinstance(list_el[0], SpecialPath):
@@ -865,6 +874,14 @@ class EngineTransfer(FileTransfer):
 
   def get_engine_path(self):
     return self.engine_path
+
+  def get_engine_main_path(self):
+    ''' main file (translated client_path) name '''
+    if self.client_paths:
+      return os.path.join(self.get_engine_path(),
+        os.path.basename(self.client_path))
+    else:
+      return self.get_engine_path()
 
   def get_id(self):
     return self.engine_path
