@@ -174,7 +174,7 @@ class Job(object):
                 priority=0,
                 native_specification=None,
                 user_storage=None):
-    if not name:
+    if not name and len(command) != 0:
       self.name = command[0]
     else:
       self.name = name
@@ -547,11 +547,13 @@ class Workflow(object):
           if isinstance(element, Group):
             to_explore.append(element)
     else:
-      self.root_group = self.jobs
+      #self.root_group = self.jobs
       self.groups = []
 
     # replace groups in deps
     self.__convert_group_dependencies()
+    if not root_group:
+      self.root_group = self.jobs
 
   def attributs_equal(self, other):
     if not isinstance(other, self.__class__):
@@ -634,15 +636,23 @@ class Workflow(object):
     wf_dict["serialized_groups"] = ser_groups
   
     ser_jobs = {}
+    ser_barriers = {}
     transfer_ids = {} # FileTransfer -> id
     shared_res_path_ids = {} #SharedResourcePath -> id
     temporary_ids = {} # TemporaryPath -> id
     for job, job_id in job_ids.iteritems():
-      ser_jobs[str(job_id)] = job.to_dict(id_generator,
-                                          transfer_ids,
-                                          shared_res_path_ids, 
-                                          temporary_ids)
+      if isinstance(job, BarrierJob):
+        ser_barriers[str(job_id)] = job.to_dict(id_generator,
+                                                transfer_ids,
+                                                shared_res_path_ids,
+                                                temporary_ids)
+      else:
+        ser_jobs[str(job_id)] = job.to_dict(id_generator,
+                                            transfer_ids,
+                                            shared_res_path_ids,
+                                            temporary_ids)
     wf_dict["serialized_jobs"] = ser_jobs
+    wf_dict["serialized_barriers"] = ser_barriers
   
     ser_transfers = {}
     for file_transfer, transfer_id in transfer_ids.iteritems():
@@ -692,8 +702,15 @@ class Workflow(object):
     for job_id, job_d in serialized_jobs.iteritems():
       job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
       job_from_ids[int(job_id)] = job
+
+    #barrier jobs
+    serialized_jobs = d["serialized_barriers"]
+    for job_id, job_d in serialized_jobs.iteritems():
+      job = BarrierJob.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
+      job_from_ids[int(job_id)] = job
+
     jobs = job_from_ids.values()
-  
+
     #groups
     serialized_groups = d["serialized_groups"]
     group_from_ids = {}
