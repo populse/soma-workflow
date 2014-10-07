@@ -355,7 +355,7 @@ class Job(object):
     for attr_name in attributs:
       job_dict[attr_name] = getattr(self, attr_name)
   
-    # command, referenced_input_files, referenced_output_files   
+    # command, referenced_input_files, referenced_output_files
     # stdin, stdout_file, stderr_file and working_directory
     # can contain FileTransfer et SharedResourcePath.
    
@@ -433,7 +433,7 @@ class BarrierJob(Job):
       Job1              Job4
             \        /
       Job2 -- Barrier -- Job5
-            /        \\
+            /        \
       Job3             Job6
 
     needs 6 (2*N).
@@ -455,6 +455,84 @@ class BarrierJob(Job):
       referenced_input_files=referenced_input_files,
       referenced_output_files=referenced_output_files,
       name=name)
+
+  @classmethod
+  def from_dict(cls,
+                d,
+                tr_from_ids,
+                srp_from_ids,
+                tmp_from_ids):
+    '''
+     * d *dictionary*
+     * tr_from_id *id -> FileTransfer*
+     * srp_from_id *id -> SharedResourcePath*
+     * tmp_from_ids *id -> TemporaryPath*
+    '''
+    job = cls()
+    for key, value in d.iteritems():
+      setattr(job, key, value)
+
+    if job.referenced_input_files:
+      ref_in_files = list_from_serializable(job.referenced_input_files,
+                                          tr_from_ids,
+                                          srp_from_ids,
+                                          tmp_from_ids)
+      job.referenced_input_files = ref_in_files
+
+    if job.referenced_output_files:
+      ref_out_files = list_from_serializable(job.referenced_output_files,
+                                           tr_from_ids,
+                                           srp_from_ids,
+                                           tmp_from_ids)
+      job.referenced_output_files = ref_out_files
+
+    return job
+
+  def to_dict(self,
+              id_generator,
+              transfer_ids,
+              shared_res_path_id,
+              tmp_ids):
+    '''
+    * id_generator *IdGenerator*
+    * transfer_ids *dict: client.FileTransfer -> int*
+        This dictonary will be modified.
+    * shared_res_path_id *dict: client.SharedResourcePath -> int*
+        This dictonary will be modified.
+    * tmp_ids *dict: client.TemporaryPath -> int*
+    '''
+    job_dict = {}
+
+    attributs = [
+                 "name",
+                 "disposal_timeout",
+                ]
+
+    for attr_name in attributs:
+      job_dict[attr_name] = getattr(self, attr_name)
+
+    # referenced_input_files, referenced_output_files
+    # stdin, stdout_file, stderr_file and working_directory
+    # can contain FileTransfer et SharedResourcePath.
+
+
+    if self.referenced_input_files:
+      ser_ref_in_files = list_to_serializable(self.referenced_input_files,
+                                              id_generator,
+                                              transfer_ids,
+                                              shared_res_path_id,
+                                              tmp_ids)
+      job_dict['referenced_input_files'] = ser_ref_in_files
+
+    if self.referenced_output_files:
+      ser_ref_out_files = list_to_serializable(self.referenced_output_files,
+                                               id_generator,
+                                               transfer_ids,
+                                               shared_res_path_id,
+                                               tmp_ids)
+      job_dict['referenced_output_files'] = ser_ref_out_files
+
+    return job_dict
 
 
 class Workflow(object):
@@ -665,7 +743,7 @@ class Workflow(object):
     wf_dict["serialized_shared_res_paths"] = ser_srp
 
     ser_tmp = {}
-    for tmpf, tmp_id in shared_res_path_ids.iteritems():
+    for tmpf, tmp_id in temporary_ids.iteritems():
       ser_tmp[str(tmp_id)] = tmpf.to_dict()
     wf_dict["serialized_temporary_paths"] = ser_tmp
 
