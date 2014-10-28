@@ -17,6 +17,7 @@ from abc import abstractmethod
 from soma_workflow.client import Group
 from soma_workflow.client import Workflow
 from soma_workflow.errors import ConfigurationError
+import tempfile
 
 
 class WorkflowExamples(object):
@@ -24,10 +25,17 @@ class WorkflowExamples(object):
     def __init__(self):
         # Define example directories
         import soma_workflow
-        self.examples_dir = os.path.join(soma_workflow.__path__[0],
+        module_file = soma_workflow.__file__
+        if module_file.endswith('.pyc') or module_file.endswith('.pyo'):
+            module_file = module_file[: -1]
+        module_file = os.path.realpath(module_file)
+        module_path = os.path.dirname(module_file)
+        self.examples_dir = os.path.join(module_path,
                                          "..", "..", "test", "jobExamples")
-        self.output_dir = os.path.join(soma_workflow.__path__[0],
-                                       "..", "..", "test", "out")
+        tmp = tempfile.mkstemp('', prefix='swf_test_')
+        os.close(tmp[0])
+        os.unlink(tmp[1])
+        self.output_dir = tmp[1]
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
         if (not os.path.isdir(self.examples_dir) or

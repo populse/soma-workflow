@@ -25,6 +25,7 @@ Workflow test of a pipeline of jobs:
 """
 import os
 import tempfile
+import sys
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -80,8 +81,8 @@ class SerialJobsTest(WorkflowTest):
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 0))
 
-        (jobs_info, transfers_info, workflow_status, workflow_queue) = \
-            self.wf_ctrl.workflow_elements_status(self.wf_id)
+        (jobs_info, transfers_info, workflow_status, workflow_queue,
+            tmp_files) = self.wf_ctrl.workflow_elements_status(self.wf_id)
 
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -111,4 +112,4 @@ class SerialJobsTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    SerialJobsTest.run_test(debug=False)
+    SerialJobsTest.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))

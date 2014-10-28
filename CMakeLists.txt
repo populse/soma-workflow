@@ -1,6 +1,7 @@
 cmake_minimum_required( VERSION 2.6 )
 find_package( brainvisa-cmake REQUIRED )
 BRAINVISA_PROJECT()
+enable_testing()
 
 BRAINVISA_COPY_PYTHON_DIRECTORY( "${CMAKE_CURRENT_SOURCE_DIR}/python"
                                  ${PROJECT_NAME} )
@@ -44,5 +45,18 @@ find_package( Sphinx )
 
 BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
   "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}/sphinx" )
+
+add_test(soma-workflow-exception1 "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_exception1)
+add_test(soma-workflow-exception2 "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_exception2)
+add_test(soma-workflow-fake_pipeline "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_fake_pipeline)
+add_test(soma-workflow-multiple "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_multiple)
+add_test(soma-workflow-native_spec "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_native_spec)
+add_test(soma-workflow-njobs "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_njobs)
+add_test(soma-workflow-njobs_with_dependencies "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_njobs_with_dependencies)
+add_test(soma-workflow-serial_jobs "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_serial_jobs)
+add_test(soma-workflow-simple "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_simple)
+add_test(soma-workflow-special_command "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_special_command)
+add_test(soma-workflow-special_transfer "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_special_transfer)
+add_test(soma-workflow-wrong_native_spec "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_wrong_native_spec)
 
 BRAINVISA_CREATE_CMAKE_CONFIG_FILES()

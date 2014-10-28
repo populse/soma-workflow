@@ -8,9 +8,11 @@ from __future__ import with_statement
 
 import unittest
 import sys
+import os
+import shutil
 
 from soma_workflow.client import WorkflowController
-from soma_workflow.configuration import Configuration
+from soma_workflow.configuration import Configuration, LIGHT_MODE
 from soma_workflow.test.utils import get_user_id
 from soma_workflow.test.utils import suppress_stdout
 
@@ -59,12 +61,14 @@ class WorkflowTest(unittest.TestCase):
     def tearDown(self):
         if self.wf_id:
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
+        if os.path.isdir(self.wf_examples.output_dir):
+            shutil.rmtree(self.wf_examples.output_dir)
 
     def test_result(self):
         pass
 
     @classmethod
-    def run_test(cls, debug=False):
+    def run_test(cls, debug=False, interactive=False):
         sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
 
         config_file_path = Configuration.search_config_path()
@@ -74,15 +78,21 @@ class WorkflowTest(unittest.TestCase):
         for resource_id in resource_ids:
             sys.stdout.write("============ Resource : " + resource_id +
                              " =================== \n")
-            sys.stdout.write("Do you want to test the resource "
-                             "%s (Y/n) ? " % resource_id)
-            test_resource = sys.stdin.readline()
-            if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
-                # Skip the resource
-                sys.stdout.write('Resource %s is not tested \n' % resource_id)
-                continue
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
+            if not interactive and config.get_mode() != LIGHT_MODE:
+                sys.stdout.write('Resource %s is not tested in '
+                    'non-interactive mode\n' % resource_id)
+                continue # skip login/password ask
+            if interactive:
+                sys.stdout.write("Do you want to test the resource "
+                                "%s (Y/n) ? " % resource_id)
+                test_resource = sys.stdin.readline()
+                if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
+                    # Skip the resource
+                    sys.stdout.write('Resource %s is not tested \n' \
+                        % resource_id)
+                    continue
             (login, password) = get_user_id(resource_id, config)
 
             with suppress_stdout(debug):
@@ -122,3 +132,12 @@ class WorkflowTest(unittest.TestCase):
                     unittest.TextTestRunner(verbosity=2).run(alltests)
 
         sys.exit(0)
+
+    @staticmethod
+    def parse_args(argv):
+        kwargs = {}
+        if len(argv) > 1:
+            if '--interactive' in argv[1:]:
+                kwargs['interactive'] = True
+        return kwargs
+

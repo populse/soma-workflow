@@ -30,6 +30,7 @@ Workflow test of job exception:
 """
 import tempfile
 import os
+import sys
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -81,8 +82,8 @@ class Exception2Test(WorkflowTest):
                         "nb failed jobs including aborted : %i. Expected : %i"
                         % (nb_failed_aborted_jobs, 2))
 
-        (jobs_info, transfers_info, workflow_status, workflow_queue) = \
-            self.wf_ctrl.workflow_elements_status(self.wf_id)
+        (jobs_info, transfers_info, workflow_status, workflow_queue,
+            tmp_files) = self.wf_ctrl.workflow_elements_status(self.wf_id)
 
         for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -172,4 +173,4 @@ class Exception2Test(WorkflowTest):
 
 
 if __name__ == '__main__':
-    Exception2Test.run_test(debug=False)
+    Exception2Test.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))

@@ -29,6 +29,7 @@ Workflow test of a wrong native spec of the PBS:
           number of failed jobs (including aborted)
 """
 
+import sys
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
 from soma_workflow.configuration import REMOTE_MODE
@@ -88,4 +89,5 @@ class WrongNativeSpecPbsTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    WrongNativeSpecPbsTest.run_test(debug=False)
+    WrongNativeSpecPbsTest.run_test(debug=False,
+                                    **WorkflowTest.parse_args(sys.argv))

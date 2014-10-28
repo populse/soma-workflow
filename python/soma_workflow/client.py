@@ -360,9 +360,15 @@ class WorkflowController(object):
 
     * workflow_id *workflow identifier*
 
-    * returns: tuple (sequence of tuple (job_id, status, queue, exit_info, 
-      (submission_date, execution_date, ending_date)), sequence of tuple
-      (transfer_id, (status, progression_info)), workflow_status, workflow_queue)
+    * returns: tuple:
+        * sequence of tuple
+            (job_id, status, queue, exit_info,
+                (submission_date, execution_date, ending_date)),
+        * sequence of tuple
+            (transfer_id, (status, progression_info)),
+        * workflow_status,
+        * workflow_queue,
+        * sequence of tuple (temp_path_id, engine_path, status)
 
     Raises *UnknownObjectError* if the workflow_id is not valid
     '''
