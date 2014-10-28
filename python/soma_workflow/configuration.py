@@ -318,6 +318,20 @@ class Configuration(observer.Observable):
   def load_from_file(cls,
                      resource_id=None,
                      config_file_path=None):
+    '''
+    Load config from a file, and return it
+
+    Parameters
+    ----------
+    resource_id: string
+        computing resource identifier to get specific config for
+    config_file_path: string or file object
+        filename or file object for config to be read.
+
+    Returns
+    -------
+    Configuration object
+    '''
 
     if config_file_path:
       config_path = config_file_path
@@ -346,7 +360,10 @@ class Configuration(observer.Observable):
 
       if config_path != None:
         config_parser = ConfigParser.ConfigParser()
-        config_parser.read(config_path)
+        if hasattr(config_path, 'readLine'):
+          config_parser.readfp(config_path)
+        else:
+          config_parser.read(config_path)
         if config_parser.has_section(resource_id):
           config._config_parser = config_parser
           config._config_path = config_path
@@ -914,6 +931,18 @@ class LocalSchedulerCfg(observer.Observable):
   @classmethod
   def load_from_file(cls,
                      config_file_path=None):
+    '''
+    Load LocalSchedulerCfg and return it
+
+    Parameters
+    ----------
+    config_file_path: string or file object
+        filename or file object to read config from
+
+    Returns
+    -------
+    LocalSchedulerCfg object
+    '''
 
     hostname = socket.gethostname()
     if config_file_path:
@@ -922,11 +951,15 @@ class LocalSchedulerCfg(observer.Observable):
       config_path = Configuration.search_config_path()
 
     config_parser = ConfigParser.ConfigParser()
-    config_parser.read(config_path)
+    if hasattr(config_path, 'readLine'):
+      config_parser.readfp(config_path)
+    else:
+      config_parser.read(config_path)
 
     if not config_parser.has_section(hostname):
       raise ConfigurationError("Wrong config file format. Can not find "
-                               "section " + hostname + " in configuration " + "file: " + config_path)
+                               "section " + hostname + " in configuration "
+                               "file: " + config_path)
 
     proc_nb = None
     interval = None
