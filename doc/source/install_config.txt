@@ -467,6 +467,6 @@ Configuration file example: ::
   **SCHEDULER_INTERVAL**
     Polling interval for the scheduler
 
-  **SOMA_WORKFLOW_DIR**
+  **SOMA_WORKFLOW_DIR** (new in 2.7)
     Directory which will contain soma_workflow files (typically, the SQlite
     database, and file transfers).
