@@ -349,6 +349,7 @@ class Configuration(observer.Observable):
       mode = LIGHT_MODE
       scheduler_type = LOCAL_SCHEDULER
 
+      swf_dir = os.path.join(home_dir, ".soma-workflow")
       if config_path is not None:
         config_parser = ConfigParser.ConfigParser()
         if hasattr(config_path, 'readline'):
@@ -358,8 +359,6 @@ class Configuration(observer.Observable):
         if config_parser.has_section(resource_id) \
             and config_parser.has_option(resource_id, OCFG_SWF_DIR):
           swf_dir = config_parser.get(resource_id, OCFG_SWF_DIR)
-        else:
-          swf_dir = os.path.join(home_dir, ".soma-workflow")
 
       database_file = os.path.join(swf_dir, "soma_workflow-%s.db" % DB_VERSION)
       transfered_file_dir = os.path.join(swf_dir, "transfered_files")
