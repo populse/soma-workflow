@@ -121,6 +121,7 @@ OCFG_NATIVE_SPECIFICATION = 'NATIVE_SPECIFICATION'
 
 OCFG_SCDL_CPU_NB = "CPU_NB"
 OCFG_SCDL_INTERVAL = "SCHEDULER_INTERVAL"
+OCFG_SWF_DIR = "SOMA_WORKFLOW_DIR"
 
 
 
@@ -347,10 +348,21 @@ class Configuration(observer.Observable):
       resource_id = socket.gethostname()
       mode = LIGHT_MODE
       scheduler_type = LOCAL_SCHEDULER
-      database_file = os.path.join(home_dir,
-          ".soma-workflow/soma_workflow-%s.db" % DB_VERSION)
-      transfered_file_dir = os.path.join(home_dir,
-          ".soma-workflow/transfered_files")
+
+      if config_path is not None:
+        config_parser = ConfigParser.ConfigParser()
+        if hasattr(config_path, 'readline'):
+          config_parser.readfp(config_path)
+        else:
+          config_parser.read(config_path)
+        if config_parser.has_section(resource_id) \
+            and config_parser.has_option(resource_id, OCFG_SWF_DIR):
+          swf_dir = config_parser.get(resource_id, OCFG_SWF_DIR)
+        else:
+          swf_dir = os.path.join(home_dir, ".soma-workflow")
+
+      database_file = os.path.join(swf_dir, "soma_workflow-%s.db" % DB_VERSION)
+      transfered_file_dir = os.path.join(swf_dir, "transfered_files")
 
       config = cls(resource_id=resource_id,
                    mode=mode,
@@ -358,15 +370,9 @@ class Configuration(observer.Observable):
                    database_file=database_file,
                    transfered_file_dir=transfered_file_dir)
 
-      if config_path != None:
-        config_parser = ConfigParser.ConfigParser()
-        if hasattr(config_path, 'readLine'):
-          config_parser.readfp(config_path)
-        else:
-          config_parser.read(config_path)
-        if config_parser.has_section(resource_id):
-          config._config_parser = config_parser
-          config._config_path = config_path
+      if config_path is not None and config_parser.has_section(resource_id):
+        config._config_parser = config_parser
+        config._config_path = config_path
 
       if not os.path.isdir(os.path.join(home_dir, ".soma-workflow")):
         os.mkdir(os.path.join(home_dir, ".soma-workflow"))
@@ -383,7 +389,10 @@ class Configuration(observer.Observable):
                                  + ": the soma-workflow "
                                  "configuration file could not be found.")
       config_parser = ConfigParser.ConfigParser()
-      config_parser.read(config_path)
+      if hasattr(config_path, 'readline'):
+        config_parser.readfp(config_path)
+      else:
+        config_parser.read(config_path)
       if not config_parser.has_section(resource_id):
         raise ConfigurationError("Can not find section " + repr(resource_id) + " "
                                 "in configuration file: " + config_path)
@@ -529,7 +538,8 @@ class Configuration(observer.Observable):
       self._mode = LIGHT_MODE
       return self._mode
 
-    if not self._config_parser.has_option(self._resource_id, CFG_SUBMITTING_MACHINES):
+    if not self._config_parser.has_option(self._resource_id,
+                                          CFG_SUBMITTING_MACHINES):
        self._mode = LOCAL_MODE
        return self._mode
 
@@ -549,7 +559,8 @@ class Configuration(observer.Observable):
     if self._config_parser == None or self._cluster_address:
       return self._cluster_address
 
-    if not self._config_parser.has_option(self._resource_id, CFG_CLUSTER_ADDRESS):
+    if not self._config_parser.has_option(self._resource_id,
+                                          CFG_CLUSTER_ADDRESS):
       raise ConfigurationError("Can not find the configuration item %s for the "
                                "resource %s, in the configuration file %s." %
                                (CFG_CLUSTER_ADDRESS,
@@ -951,7 +962,7 @@ class LocalSchedulerCfg(observer.Observable):
       config_path = Configuration.search_config_path()
 
     config_parser = ConfigParser.ConfigParser()
-    if hasattr(config_path, 'readLine'):
+    if hasattr(config_path, 'readline'):
       config_parser.readfp(config_path)
     else:
       config_parser.read(config_path)
