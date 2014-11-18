@@ -140,7 +140,19 @@ class WorkflowEngineLoop(object):
 
     self._pending_queues = {} 
 
-    self._running = False
+    # The running flag is set to True at the beginning, not in start_loop(),
+    # to overcome race conditions which may occur in this situation:
+    # * intantiate a WorkflowEngineThread (wet)
+    # * wet.start() it -> a thread is created for it
+    # * wet.stop() it immediately. _running is set to False
+    # * the thread may execute later, effectively starting the loop. But
+    #   stop() has already been called, and nobody can know about it, so the
+    #   loop starts, and never stops.
+    #
+    # Note: this is not an ideal solution either:
+    # calling start_loop(), then stop_loop(), then start_loop() again
+    # will not restart the loop unless _running has manually be reset to True.
+    self._running = True
 
     try:
       userLogin = getpass.getuser()
@@ -165,7 +177,10 @@ class WorkflowEngineLoop(object):
     Start the workflow engine loop. The loop will run until stop() is called.
     '''
     #one_wf_processed = False
-    self._running = True
+    # Modif: don't set the running flag here, because the loop may be already
+    # stopped from another thread (typically the main thread) when we
+    # get here (typically in a secondary thread)
+    #self._running = True
     drms_error_jobs = {}
     idle_cmpt = 0
     while True:
@@ -391,7 +406,8 @@ class WorkflowEngineLoop(object):
 
     
   def stop_loop(self):
-    self._running = False
+    with self._lock:
+        self._running = False
 
   def set_queue_limits(self, queue_limits):
     with self._lock:
