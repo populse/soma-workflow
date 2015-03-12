@@ -31,6 +31,7 @@ SPHINX_MIN_VERSION = '1.0'
 
 # Main setup parameters
 NAME = 'soma-workflow'
+PROJECT = 'soma'
 ORGANISATION = "CEA"
 MAINTAINER = "CEA"
 MAINTAINER_EMAIL = ""
