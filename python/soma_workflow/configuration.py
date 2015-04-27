@@ -575,13 +575,15 @@ class Configuration(observer.Observable):
       return self._database_file
 
     if not self._config_parser.has_option(self._resource_id, CFG_DATABASE_FILE):
-      raise ConfigurationError("Can not find the configuration item %s "
-                                "for the resource %s, in the configuration " "file %s." %
-                                (CFG_DATABASE_FILE,
-                                  self._resource_id,
-                                  self._config_path))
-    self._database_file = self._config_parser.get(self._resource_id,
-                                                  CFG_DATABASE_FILE)
+      swf_dir = os.path.join(self.get_home_dir(), ".soma-workflow")
+      if self._config_parser.has_section(self._resource_id) \
+          and self._config_parser.has_option(self._resource_id, OCFG_SWF_DIR):
+        swf_dir = self._config_parser.get(self._resource_id, OCFG_SWF_DIR)
+      self._database_file = os.path.join(
+        swf_dir, "soma_workflow-%s.db" % DB_VERSION)
+    else:
+      self._database_file = self._config_parser.get(self._resource_id,
+                                                    CFG_DATABASE_FILE)
     self._database_file = os.path.expandvars(self._database_file)
     return self._database_file
 
