@@ -3405,9 +3405,9 @@ class ApplicationModel(QtCore.QObject):
 
               #wf_complete_status = self.current_connection.workflow_elements_status(self.current_wf_id)
               wf_complete_status = self.connection_timeout(
-                                WorkflowController.workflow_elements_status, 
-                                args=(self.current_connection, self.current_wf_id), 
-                                timeout_duration=self._timeout_duration[self.current_resource_id])
+                WorkflowController.workflow_elements_status,
+                args=(self.current_connection, self.current_wf_id),
+                timeout_duration=self._timeout_duration[self.current_resource_id])
               wf_status = wf_complete_status[2]
               #end = datetime.now() - begining
               #print " <== end communication" + repr(self.wf_id) + " : " + repr(end.seconds)
@@ -3473,9 +3473,9 @@ class ApplicationModel(QtCore.QObject):
     using the args, kwargs and return the given default value if the
     timeout_duration is exceeded.
     """
-    class InterruptableThread(QtCore.QThread):
+    class InterruptibleThread(QtCore.QThread):
       def __init__(self):
-        super(InterruptableThread, self).__init__(parent = None)
+        super(InterruptibleThread, self).__init__(parent = None)
         self.result = default
         self.exception = None
       def run(self):
@@ -3483,7 +3483,7 @@ class ApplicationModel(QtCore.QObject):
           self.result = func(*args, **kwargs)
         except Exception, e:
           self.exception = e
-    it = InterruptableThread()
+    it = InterruptibleThread()
     it.start()
     it.wait(msecs=timeout_duration*1000)
     if it.isRunning():

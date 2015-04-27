@@ -237,10 +237,6 @@ Configuration file example: ::
 Configuration items required on the server side:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  **DATABASE_FILE**
-    Path of the SQLite database file. The file will be created the first time
-    the database server will be started.
-
   **TRANSFERED_FILES_DIR**
     Path of the directory where the transfered files will be copied. The
     directory must be empty and will be managed entirely by Soma-workflow.
@@ -259,6 +255,15 @@ Configuration items required on the server side:
 
 Configuration items optional on the server side:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  **DATABASE_FILE**
+    Path of the SQLite database file. The file will be created the first time
+    the database server will be started.
+
+    This option was mandatory up to soma-workflow-2.6, and is optional since
+    2.7. Additionally in 2.7, the database version number will be appended to
+    the database file name, to avoid mixing several incompatible databases when
+    switching between different soma-workflow versions.
 
   **MAX_JOB_IN_QUEUE**
     Maximum number of job in each queue. If a queue does not appear here,
@@ -440,10 +445,6 @@ Configuration file example: ::
     This item can be set up with any value, however it must be defined to use
     soma_workflow in the light mode.
 
-  **DATABASE_FILE**
-    Path of the SQLite database file. The file will be created the first time
-    the application is launch.
-
   **TRANSFERED_FILE_DIR**
     Path of the directory where the transfered files will be copied. The
     directory must be empty and will be managed entirely by Soma-workflow.
@@ -460,6 +461,15 @@ Configuration file example: ::
   :ref:`server_configuration` for a full list of the items and their description.
 
   In addition, a few more optional configuration items are available:
+
+  **DATABASE_FILE**
+    Path of the SQLite database file. The file will be created the first time
+    the application is launch.
+
+    This option was mandatory up to soma-workflow-2.6, and is optional since
+    2.7. Additionally in 2.7, the database version number will be appended to
+    the database file name, to avoid mixing several incompatible databases when
+    switching between different soma-workflow versions.
 
   **CPU_NB**
     Maximum number of CPU cores to be used
