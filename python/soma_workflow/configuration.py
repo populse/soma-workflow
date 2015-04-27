@@ -582,8 +582,13 @@ class Configuration(observer.Observable):
       self._database_file = os.path.join(
         swf_dir, "soma_workflow-%s.db" % DB_VERSION)
     else:
-      self._database_file = self._config_parser.get(self._resource_id,
-                                                    CFG_DATABASE_FILE)
+      database_file = self._config_parser.get(self._resource_id,
+                                              CFG_DATABASE_FILE)
+      # append db version before extension ("soma_workflow-<version>.db")
+      db_file_parts = database_file.split('.')
+      self._database_file = '.'.join(db_file_parts[:-1]) + '-%s' % DB_VERSION
+      if len(db_file_parts) >= 2:
+        self._database_file += '.' + db_file_parts[-1]
     self._database_file = os.path.expandvars(self._database_file)
     return self._database_file
 
