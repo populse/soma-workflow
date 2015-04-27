@@ -13,24 +13,26 @@ classes.
 Workflow
 ========
 
-.. autoclass:: client.Workflow(object)
+.. autoclass:: client.Workflow
 
 Group
 =====
 
-.. autoclass:: client.Group(object)
+.. autoclass:: client.Group
 
 
 Job
 ===
 
-.. autoclass:: client.Job(object)
+.. autoclass:: client.Job
+
+.. autoclass:: client.BarrierJob
 
 
 FileTransfer
 ============
 
-.. autoclass:: client.FileTransfer(object)
+.. autoclass:: client.FileTransfer
 
 
 .. _shared-resource-path-api:
@@ -38,4 +40,4 @@ FileTransfer
 SharedResourcePath
 ====================
 
-.. autoclass:: client.SharedResourcePath(object)
+.. autoclass:: client.SharedResourcePath

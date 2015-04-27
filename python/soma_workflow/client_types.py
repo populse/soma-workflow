@@ -433,7 +433,7 @@ class BarrierJob(Job):
       Job1              Job4
             \        /
       Job2 -- Barrier -- Job5
-            /        \
+            /        \\
       Job3             Job6
 
     needs 6 (2*N).
