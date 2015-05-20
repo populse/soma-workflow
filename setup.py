@@ -3,55 +3,36 @@ Soma-workflow is a unified and simple interface to parallel computing
 resources. It aims at making easier the use of parallel resources by
 non expert users and software.
 """
+import os
 import ez_setup
 ez_setup.use_setuptools()
-from setuptools import setup
+from setuptools import setup, find_packages
 import os.path as op
 commands = [op.join('bin', 'soma_delete_all_workflows'),
             op.join('bin', 'soma_stop_workflow'),
             op.join('bin', 'soma_workflow_gui'),
             op.join('bin', 'soma_restart_workflow'),
             op.join('bin', 'soma_submit_workflow'), ]
+
+python_dir = os.path.join(os.path.dirname(__file__), "python")
+release_info = {}
+execfile(os.path.join(python_dir, "soma_workflow", "info.py"), release_info)
+            
 setup(
-    name="soma-workflow",
-    description=__doc__,
-    long_description=file('README.txt', 'r').read(),
-    license='CeCILL v2',
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Console',
-        ' Environment :: X11 Applications ',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'Intended Audience :: Education',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Utilities',
-        'Topic :: Software Development :: Libraries',
-        'Topic :: System :: Distributed Computing',
-    ],
-    author='Please check authors at http://www.brainvisa.info/soma-workflow',
-    author_email='jinpeng.li@cea.fr',
-    version='development version',
-    url='http://www.brainvisa.info/soma-workflow',
+    name=release_info["NAME"],
+    description=release_info["DESCRIPTION"],
+    long_description=release_info["LONG_DESCRIPTION"],
+    license=release_info["LICENSE"],
+    classifiers=release_info["CLASSIFIERS"],
+    author=release_info["AUTHOR"],
+    author_email=release_info["AUTHOR_EMAIL"],
+    version=release_info["__version__"],
+    url=release_info["URL"],
     package_dir={'': 'python'},
-    packages=['somadrmaa',
-              'soma_workflow',
-              'soma_workflow.gui',
-              'soma_workflow.test',
-              'soma_workflow.check_requirement',
-              'soma_workflow.test.job_tests',
-              'soma_workflow.test.workflow_tests',
-              'soma_workflow.test.workflow_tests.workflow_examples',],
-    include_package_data=True,
+    packages=find_packages(python_dir),
     package_data={'soma_workflow.gui': ['*ui', 'icon/*png']},
+    platforms=release_info["PLATFORMS"],
+    extras_require=release_info["EXTRA_REQUIRES"],
+    install_requires=release_info["REQUIRES"],
     scripts=commands,
-    platforms=['Linux', 'MacOS X', 'Windows'],
-    # requires=['PyQt', ],
-    extras_require={
-        'plotting': ['matplotlib'],
-        'client': ['Pyro', 'paramiko'],
-    },
 )
