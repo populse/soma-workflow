@@ -749,9 +749,8 @@ class LocalScheduler(Scheduler):
         Job id for the scheduling system (DRMAA for example)
     '''
     # TBI Errors
-    
+
     with self._lock:
-      #print "kill job " + repr(scheduler_job_id)
       if scheduler_job_id in self._processes:
         #print "    => kill the process "
         process = self._processes[scheduler_job_id]
@@ -768,6 +767,9 @@ class LocalScheduler(Scheduler):
             os.wait()
         else:
           process.kill()
+          # wait for actual termination, to avoid process writing files after
+          # we return from here.
+          process.communicate()
 
         del self._processes[scheduler_job_id]
         self._status[scheduler_job_id] = constants.FAILED
