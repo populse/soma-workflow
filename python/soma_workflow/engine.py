@@ -391,7 +391,11 @@ class WorkflowEngineLoop(object):
           self._database_server.set_jobs_exit_info(ended_jobs)
 
         for wf_id, workflow in self._workflows.iteritems():
-          self._database_server.set_workflow_status(wf_id, workflow.status)
+          force = False
+          if wf_id in wf_to_kill + wf_to_delete:
+            force = True
+          self._database_server.set_workflow_status(wf_id, workflow.status,
+                                                    force=force)
           if workflow.status == constants.WORKFLOW_DONE:
             ended_wf_ids.append(wf_id)
           self.logger.debug("wf " + repr(wf_id) + " " + repr(workflow.status))
@@ -585,9 +589,10 @@ class WorkflowEngineLoop(object):
     for job_id, job in wf.registered_jobs.iteritems():
       if self._stop_job(job_id, job):
         ended_jobs[job_id] = job
-    self._database_server.set_workflow_status(wf_id, 
-                                              constants.WORKFLOW_DONE, 
-                                              force = True)
+    #self._database_server.set_workflow_status(wf_id,
+                                              #constants.WORKFLOW_DONE,
+                                              #force = True)
+    wf.status = constants.WORKFLOW_DONE
     return ended_jobs
 
 
