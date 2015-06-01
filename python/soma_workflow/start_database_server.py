@@ -17,6 +17,7 @@ if __name__ == '__main__':
  
   import sys
   import logging
+  import time
 
   import Pyro.naming
   import Pyro.core
