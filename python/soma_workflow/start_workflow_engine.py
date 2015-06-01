@@ -89,77 +89,57 @@ if __name__=="__main__":
 
   def get_database_server_proxy(config, logger):
     try:
+      name_server_host = config.get_name_server_host() 
+      server_name = config.get_server_name()
+
       Pyro.core.initClient()
       locator = Pyro.naming.NameServerLocator()
-      name_server_host = config.get_name_server_host() 
       if name_server_host == 'None':
         ns = locator.getNS()
       else:
         ns = locator.getNS(host=name_server_host )
-    except:
-      # try to run the nameserver first
-      import subprocess
-      # WARNING: users may not have permission to run pyro-nsd because the pid
-      # file is writen in /var/run/pyro-nsd.pid or something. In this case an
-      # additional argument --pidfile=/tmp/pyro-nsd.pid may be required
-      retcode = subprocess.call(['pyro-nsd', 'start'])
-      if retcode != 0:
-        raise EngineError("Could not find nor start the Pyro name server.")
-      timeout = 15
-      start_time = time.time()
-      started = False
-      while not started and time.time() - start_time < timeout:
-        name_server_host = config.get_name_server_host()
-        try:
-          if name_server_host == 'None':
-            ns = locator.getNS()
-          else:
-            ns = locator.getNS(host=name_server_host )
-          started = True
-        except:
-          started = False
-          time.sleep(1.)
-      if not started:
-        # still not worked, try a custom pidfile with pyro-nsd
-        retcode = subprocess.call(['pyro-nsd', 'start',
-          '--pidfile=/tmp/pyro-nsd.pid'])
-        if retcode != 0:
-          raise EngineError("Could not find nor start the Pyro name server.")
-        start_time = time.time()
-        while not started and time.time() - start_time < timeout:
-          name_server_host = config.get_name_server_host()
-          try:
-            if name_server_host == 'None':
-              ns = locator.getNS()
-            else:
-              ns = locator.getNS(host=name_server_host )
-            started = True
-          except:
-            started = False
-            time.sleep(1.)
-      if not started:
-        raise EngineError("Could not find nor start the Pyro name server.")
 
-    server_name = config.get_server_name()
-
-    try:
       uri = ns.resolve(server_name)
       logger.info('Server URI:'+ repr(uri))
-    except NamingError,e:
-      raise EngineError("%s %s \n"   
-                        "Could not find soma-workflow database server. "
-                        "Run the following command on %s to start the server: \n"
-                        "python -m soma_workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
 
-    database_server = Pyro.core.getProxyForURI(uri)
-	
-    try:
-      database_server.test()
-    except ProtocolError,e:
-      raise EngineError("%s %s \n"
-	                "The database server might not be running. "
-                        "Run the following command on %s to start the server: \n"
-                        "python -m soma_workflow.start_database_server %s" %(type(e), e, name_server_host, resource_id))
+    except:
+      # First try to launch the database server
+      import subprocess
+      logger.info('Trying to start database server:' + resource_id)
+      subprocess.Popen( [ sys.executable, 
+                          '-m', 'soma_workflow.start_database_server', 
+                          resource_id ] )
+
+    timeout = 15
+    start_time = time.time()
+    started = False
+    while not started and time.time() - start_time < timeout:
+    	
+      try:
+        if name_server_host == 'None':
+          ns = locator.getNS()
+        else:
+          ns = locator.getNS(host=name_server_host )
+
+        uri = ns.resolve(server_name)
+        logger.info('Server URI:'+ repr(uri))
+
+        database_server = Pyro.core.getProxyForURI(uri)
+  
+        started = database_server.test()
+
+      except:
+        logger.info('Database server:' + resource_id + ' was not started. Waiting 1 sec...')
+        time.sleep(1)
+
+    if not started:
+        raise EngineError("The database server might not be running. "
+                          "Run the following command on %s to start the server: \n"
+                          "python -m soma_workflow.start_database_server %s" %(name_server_host, resource_id))
+    else:
+      # enter the server loop.
+      logger.info('Database server object ready for URI:' + repr(uri))
+
     return database_server
 
     
