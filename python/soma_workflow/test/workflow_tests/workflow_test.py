@@ -64,9 +64,6 @@ class WorkflowTest(unittest.TestCase):
         if os.path.isdir(self.wf_examples.output_dir):
             shutil.rmtree(self.wf_examples.output_dir)
 
-    def test_result(self):
-        pass
-
     @classmethod
     def run_test(cls, debug=False, interactive=False):
         sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
@@ -129,9 +126,10 @@ class WorkflowTest(unittest.TestCase):
                                                      list_tests)))
                 alltests = unittest.TestSuite(suite_list)
                 with suppress_stdout(debug):
-                    unittest.TextTestRunner(verbosity=2).run(alltests)
+                    res = unittest.TextTestRunner(verbosity=2).run(alltests)
 
-        sys.exit(0)
+                if len(res.errors) != 0 or len(res.failures) != 0:
+                    sys.exit(1)
 
     @staticmethod
     def parse_args(argv):
