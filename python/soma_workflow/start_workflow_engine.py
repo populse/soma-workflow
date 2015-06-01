@@ -30,6 +30,7 @@ if __name__=="__main__":
   import soma_workflow.configuration
   from soma_workflow.errors import NoDrmaaLibError, EngineError
   from soma_workflow.database_server import WorkflowDatabaseServer
+  import time
 
 
 
@@ -104,26 +105,40 @@ if __name__=="__main__":
       retcode = subprocess.call(['pyro-nsd', 'start'])
       if retcode != 0:
         raise EngineError("Could not find nor start the Pyro name server.")
-      name_server_host = config.get_name_server_host()
-      try:
-        if name_server_host == 'None':
-          ns = locator.getNS()
-        else:
-          ns = locator.getNS(host=name_server_host )
-      except:
-        # still not worked, try a custom pidfile with pyro-nsd
-        retcode = subprocess.call(['pyro-nsd', 'start',
-          '--pidfile=/tmp/pyro-nsd.pid'])
-        if retcode != 0:
-          raise EngineError("Could not find nor start the Pyro name server.")
+      timeout = 15
+      start_time = time.time()
+      started = False
+      while not started and time.time() - start_time < timeout:
         name_server_host = config.get_name_server_host()
         try:
           if name_server_host == 'None':
             ns = locator.getNS()
           else:
             ns = locator.getNS(host=name_server_host )
+          started = True
         except:
+          started = False
+          time.sleep(1.)
+      if not started:
+        # still not worked, try a custom pidfile with pyro-nsd
+        retcode = subprocess.call(['pyro-nsd', 'start',
+          '--pidfile=/tmp/pyro-nsd.pid'])
+        if retcode != 0:
           raise EngineError("Could not find nor start the Pyro name server.")
+        start_time = time.time()
+        while not started and time.time() - start_time < timeout:
+          name_server_host = config.get_name_server_host()
+          try:
+            if name_server_host == 'None':
+              ns = locator.getNS()
+            else:
+              ns = locator.getNS(host=name_server_host )
+            started = True
+          except:
+            started = False
+            time.sleep(1.)
+      if not started:
+        raise EngineError("Could not find nor start the Pyro name server.")
 
     server_name = config.get_server_name()
 

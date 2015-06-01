@@ -125,7 +125,7 @@ if __name__ == '__main__':
           started = True
         except:
           started = False
-        time.sleep(1.)
+          time.sleep(1.)
     if not started:
       raise EngineError("Could not find nor start the Pyro name server.")
 
