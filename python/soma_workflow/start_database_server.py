@@ -24,7 +24,8 @@ if __name__ == '__main__':
   
   import soma_workflow.database_server
   from soma_workflow.configuration import Configuration
-  
+  from soma_workflow.errors import EngineError
+
   class WorkflowDatabaseServer(Pyro.core.ObjBase, 
                                soma_workflow.database_server.WorkflowDatabaseServer):
     def __init__(self, 
@@ -88,21 +89,10 @@ if __name__ == '__main__':
     if retcode != 0:
       raise EngineError("Could not find nor start the Pyro name server.")
     print 'searching again the Name Server...'
-    name_server_host = config.get_name_server_host()
-    try:
-      if name_server_host == 'None':
-        ns = locator.getNS()
-      else:
-        ns = locator.getNS(host=name_server_host )
-      daemon.useNameServer(ns)
-    except:
-      # still not worked, try a custom pidfile with pyro-nsd
-      print 'not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...'
-      retcode = subprocess.call(['pyro-nsd', 'start',
-        '--pidfile=/tmp/pyro-nsd.pid'])
-      if retcode != 0:
-        raise EngineError("Could not find nor start the Pyro name server.")
-      print 'searching again the Name Server...'
+    timeout = 15
+    start_time = time.time()
+    started = False
+    while not started and time.time() - start_time < timeout:
       name_server_host = config.get_name_server_host()
       try:
         if name_server_host == 'None':
@@ -110,8 +100,33 @@ if __name__ == '__main__':
         else:
           ns = locator.getNS(host=name_server_host )
         daemon.useNameServer(ns)
+        started = True
       except:
+        started = False
+        time.sleep(1.)
+    if not started:
+      # still not worked, try a custom pidfile with pyro-nsd
+      print 'not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...'
+      retcode = subprocess.call(['pyro-nsd', 'start',
+        '--pidfile=/tmp/pyro-nsd.pid'])
+      if retcode != 0:
         raise EngineError("Could not find nor start the Pyro name server.")
+      print 'searching again the Name Server...'
+      start_time = time.time()
+      while not started and time.time() - start_time < timeout:
+        name_server_host = config.get_name_server_host()
+        try:
+          if name_server_host == 'None':
+            ns = locator.getNS()
+          else:
+            ns = locator.getNS(host=name_server_host )
+          daemon.useNameServer(ns)
+          started = True
+        except:
+          started = False
+        time.sleep(1.)
+    if not started:
+      raise EngineError("Could not find nor start the Pyro name server.")
 
   # connect a new object implementation (first unregister previous one)
   server_name = config.get_server_name()
