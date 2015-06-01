@@ -675,13 +675,20 @@ class LocalScheduler(Scheduler):
     working_directory = engine_job.plain_working_directory()
     
     try:
+      if sys.platform == 'win32':
+        kwargs = {}
+      else:
+        # set process group/session, to allow killing children processes
+        # as well. see
+        # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
+        kwargs = {'preexec_fn': os.setsid}
       process = subprocess.Popen( command,
                                   stdin=stdin_file,
                                   stdout=stdout_file,
                                   stderr=stderr_file,
-                                  cwd=working_directory)
+                                  cwd=working_directory,
+                                  **kwargs)
 
-    
     except Exception, e:
       if stderr:
         stderr_file = open(stderr, "wb")
@@ -766,7 +773,14 @@ class LocalScheduler(Scheduler):
             os.kill(process.pid, signal.SIGKILL)
             os.wait()
         else:
-          process.kill()
+          if sys.platform == 'win32':
+            process.kill()
+          else:
+            # kill process group, to kill children processes as well
+            # see
+            # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
+            os.killpg(process.pid, signal.SIGKILL)
+
           # wait for actual termination, to avoid process writing files after
           # we return from here.
           process.communicate()
