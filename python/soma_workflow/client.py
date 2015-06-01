@@ -595,6 +595,21 @@ class WorkflowController(object):
     '''
     self._engine_proxy.wait_job(job_ids, timeout)
 
+  def wait_workflow( self, workflow_id, timeout = -1):
+    '''
+    Waits for the specified workflow to finish.
+
+    * workflow_id *workflow identifier*
+        Jobs to wait for.
+
+    * timeout *int*
+        The call to wait_job exits before timeout seconds.
+        A negative value means that the method will wait indefinetely.
+
+    Raises *UnknownObjectError* if the job_id is not valid
+    '''
+    self._engine_proxy.wait_workflow(workflow_id, timeout)
+
   def kill_job(self, job_id ):
     '''
     **deprecated since version 2.4:** Use stop_workflow instead.
@@ -1046,13 +1061,7 @@ class Helper(object):
     * wf_ctrl *client.WorkflowController*
     '''
 
-    element_status = wf_ctrl.workflow_elements_status(workflow_id)
-    job_ids = []
-    for job_info in element_status[0]:
-      job_ids.append(job_info[0])
-
-
-    wf_ctrl.wait_job(job_ids)
+    wf_ctrl.wait_workflow(workflow_id)
 
 
 

@@ -107,10 +107,12 @@ class JobTests(unittest.TestCase):
                         'Job status after kill: %s. Expected %s or %s' %
                         (status, constants.FAILED, constants.DONE))
         self.failUnless(exit_status == constants.USER_KILLED or
-                        exit_status == constants.FINISHED_REGULARLY,
-                        'Job exit status after kill: %s. Expected %s or %s' %
-                        (exit_status, constants.USER_KILLED,
-                         constants.FINISHED_REGULARLY))
+                        exit_status == constants.FINISHED_REGULARLY or
+                        exit_status == constants.EXIT_ABORTED,
+                        'Job exit status after kill: %s. Expected %s, %s or %s'
+                        % (exit_status, constants.USER_KILLED,
+                           constants.FINISHED_REGULARLY,
+                           constants.EXIT_ABORTED))
 
     @abstractmethod
     def test_result(self):

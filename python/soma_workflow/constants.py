@@ -53,12 +53,12 @@ JOB_STATUS = [NOT_SUBMITTED,
 '''
 Exit job status:
 '''
-EXIT_UNDETERMINED="exit_status_undetermined"
-EXIT_ABORTED="aborted"
-FINISHED_REGULARLY="finished_regularly"
-FINISHED_TERM_SIG="finished_signal"
-FINISHED_UNCLEAR_CONDITIONS="finished_unclear_condition"
-USER_KILLED="killed_by_user"
+EXIT_UNDETERMINED = "exit_status_undetermined"
+EXIT_ABORTED = "aborted"
+FINISHED_REGULARLY = "finished_regularly"
+FINISHED_TERM_SIG = "finished_signal"
+FINISHED_UNCLEAR_CONDITIONS = "finished_unclear_condition"
+USER_KILLED = "killed_by_user"
 JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
                   EXIT_ABORTED,
                   FINISHED_REGULARLY,

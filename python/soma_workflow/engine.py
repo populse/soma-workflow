@@ -573,8 +573,15 @@ class WorkflowEngineLoop(object):
         elif job.queue in self._pending_queues and \
             job in self._pending_queues[job.queue]:
           self._pending_queues[job.queue].remove(job)
+        if job.status in (constants.RUNNING, constants.SYSTEM_SUSPENDED,
+                          constants.USER_SUSPENDED,
+                          constants.USER_SYSTEM_SUSPENDED):
+          # WARNING: check these status values
+          job.exit_status = constants.USER_KILLED
+        else:
+          # in other cases the job has not actually run.
+          job.exit_status = constants.EXIT_ABORTED
         job.status = constants.FAILED
-        job.exit_status = constants.USER_KILLED
         job.exit_value = None
         job.terminating_signal = None
         job.str_rusage = None
@@ -976,15 +983,15 @@ class WorkflowEngine(RemoteFileController):
                                                              self._user_id)
     return (stdout_file, stderr_file)
     
-    
+
   ########## JOB CONTROL VIA DRMS ########################################
-  
+
   def wait_job( self, job_ids, timeout = -1):
     '''
     Implementation of soma_workflow.client.WorkflowController API
-    '''    
+    '''
     self.logger.debug("        waiting...")
-    
+
     waitForever = timeout < 0
     startTime = datetime.now()
     for jid in job_ids:
@@ -1007,8 +1014,41 @@ class WorkflowEngine(RemoteFileController):
           if last_status_update and _out_to_date(last_status_update):
             raise EngineError("wait_job: Could not wait for job %s. " 
                               "The process updating its status failed." %(jid))
-       
- 
+
+  def wait_workflow( self, workflow_id, timeout = -1):
+    '''
+    Implementation of soma_workflow.client.WorkflowController API
+    '''
+    self.logger.debug("        waiting...")
+
+    waitForever = timeout < 0
+    startTime = datetime.now()
+    (status,
+     last_status_update) = self._database_server.get_workflow_status(
+       workflow_id, self._user_id)
+    if status:
+      self.logger.debug("wait        workflow %s status: %s", workflow_id,
+                        status)
+      delta = datetime.now()-startTime
+      while status and not status == constants.WORKFLOW_DONE \
+          and (waitForever or delta < timedelta(seconds=timeout)):
+        time.sleep(refreshment_interval)
+        (status, last_status_update) \
+          = self._database_server.get_workflow_status(
+            workflow_id, self._user_id)
+        self.logger.debug("wait        workflow %s status: %s last update %s,"
+                          " now %s",
+                          workflow_id,
+                          status,
+                          repr(last_status_update),
+                          repr(datetime.now()))
+        delta = datetime.now() - startTime
+        if last_status_update and _out_to_date(last_status_update):
+          raise EngineError("wait_workflow: Could not wait for workflow %s. "
+                            "The process updating its status failed."
+                            % (workflow_id))
+
+
   def restart_job( self, job_id ):
     '''
     Implementation of soma_workflow.client.WorkflowController API
