@@ -23,6 +23,13 @@ import atexit
 import os.path
 import socket
 
+try:
+    # psutil is used to correctly kill a job with its children processes
+    import psutil
+    have_psutil = True
+except ImportError:
+    have_psutil = False
+
 import soma_workflow.constants as constants
 from soma_workflow.errors import DRMError
 from soma_workflow.configuration import LocalSchedulerCfg, Configuration
@@ -673,15 +680,15 @@ class LocalScheduler(Scheduler):
         return None
 
     working_directory = engine_job.plain_working_directory()
-    
+
     try:
-      if sys.platform == 'win32':
-        kwargs = {}
-      else:
-        # set process group/session, to allow killing children processes
-        # as well. see
+      if not have_psutil and sys.platform != 'win32':
+        # if psutil is not here, use process group/session, to allow killing
+        # children processes as well. see
         # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
         kwargs = {'preexec_fn': os.setsid}
+      else:
+        kwargs = {}
       process = subprocess.Popen( command,
                                   stdin=stdin_file,
                                   stdout=stdout_file,
@@ -761,25 +768,33 @@ class LocalScheduler(Scheduler):
       if scheduler_job_id in self._processes:
         #print "    => kill the process "
         process = self._processes[scheduler_job_id]
-        if sys.version_info < (2, 6):
-          if sys.platform == 'win32':
-            PROCESS_TERMINATE = 1
-            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, 
-                                               False, 
-                                               process.pid)
-            ctypes.windll.kernel32.TerminateProcess(handle, -1)
-            ctypes.windll.kernel32.CloseHandle(handle)
-          else:
-            os.kill(process.pid, signal.SIGKILL)
-            os.wait()
+        if have_psutil:
+          kill_process_tree(process.pid)
+          # wait for actual termination, to avoid process writing files after
+          # we return from here.
+          process.communicate()
         else:
-          if sys.platform == 'win32':
-            process.kill()
+          # psutil not available
+          if sys.version_info < (2, 6):
+            if sys.platform == 'win32':
+              PROCESS_TERMINATE = 1
+              handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE,
+                                                False,
+                                                process.pid)
+              ctypes.windll.kernel32.TerminateProcess(handle, -1)
+              ctypes.windll.kernel32.CloseHandle(handle)
+            else:
+              os.kill(process.pid, signal.SIGKILL)
+              os.wait()
           else:
-            # kill process group, to kill children processes as well
-            # see
-            # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
-            os.killpg(process.pid, signal.SIGKILL)
+            if sys.platform == 'win32':
+              # children processes will probably not be killed immediately.
+              process.kill()
+            else:
+              # kill process group, to kill children processes as well
+              # see
+              # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
+              os.killpg(process.pid, signal.SIGKILL)
 
           # wait for actual termination, to avoid process writing files after
           # we return from here.
@@ -800,6 +815,16 @@ class LocalScheduler(Scheduler):
                                               None,
                                               None,
                                               None)
+
+def kill_process_tree(pid):
+    """
+    Kill a process with its children.
+    Needs psutil to get children list
+    """
+    process = psutil.Process(pid)
+    for proc in process.get_children(recursive=True):
+        proc.kill()
+    process.kill()
 
 
 class ConfiguredLocalScheduler(LocalScheduler):
