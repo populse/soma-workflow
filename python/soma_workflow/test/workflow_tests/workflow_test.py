@@ -10,6 +10,9 @@ import unittest
 import sys
 import os
 import shutil
+import tempfile
+import StringIO
+import socket
 
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration, LIGHT_MODE
@@ -45,17 +48,27 @@ class WorkflowTest(unittest.TestCase):
         '''
         cls.path_management = path_management
 
-    @classmethod
-    def setUp(cls):
-        if cls.path_management == cls.LOCAL_PATH:
+    def setUp(self):
+        # use a custom temporary soma-workflow dir to avoid concurrent
+        # access problems
+        tmpdb = tempfile.mkstemp('', prefix='soma_workflow')
+        os.close(tmpdb[0])
+        os.unlink(tmpdb[1])
+        self.soma_workflow_temp_dir = tmpdb[1]
+        os.mkdir(self.soma_workflow_temp_dir)
+        swf_conf = StringIO.StringIO('[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
+            % (socket.gethostname(), tmpdb[1]))
+        Configuration.search_config_path = staticmethod(lambda : swf_conf)
+
+        if self.path_management == self.LOCAL_PATH:
             workflow_examples = WorkflowExamplesLocal()
-        elif cls.path_management == cls.FILE_TRANSFER:
+        elif self.path_management == self.FILE_TRANSFER:
             workflow_examples = WorkflowExamplesTransfer()
-        elif cls.path_management == cls.SHARED_RESOURCE_PATH:
+        elif self.path_management == self.SHARED_RESOURCE_PATH:
             workflow_examples = WorkflowExamplesShared()
-        elif cls.path_management == cls.SHARED_TRANSFER:
+        elif self.path_management == self.SHARED_TRANSFER:
             workflow_examples = WorkflowExamplesSharedTransfer()
-        cls.wf_examples = workflow_examples
+        self.wf_examples = workflow_examples
         #raise Exception("WorkflowTest is an abstract class.")
 
     def tearDown(self):
@@ -63,6 +76,7 @@ class WorkflowTest(unittest.TestCase):
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
         if os.path.isdir(self.wf_examples.output_dir):
             shutil.rmtree(self.wf_examples.output_dir)
+        shutil.rmtree(self.soma_workflow_temp_dir)
 
     @classmethod
     def run_test(cls, debug=False, interactive=False):
