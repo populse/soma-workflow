@@ -365,7 +365,8 @@ class WorkflowDatabaseServer( object ):
     try:
       connection = sqlite3.connect(self._database_file, timeout = 10, isolation_level = "EXCLUSIVE")
     except Exception, e:
-        raise DatabaseError('%s: %s \n' %(type(e), e))
+      raise DatabaseError('On database file %s: %s: %s \n'
+        %(self._database_file, type(e), e))
     return connection
 
   def _user_transfer_dir_path(self, login, user_id):
