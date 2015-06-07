@@ -98,82 +98,87 @@ class MultipleTest(WorkflowTest):
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id))
                 job_stderr_file = job_stderr_file.name
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                    job_stdout_file,
-                                                    job_stderr_file)
-                if job_name == 'job1':
-                    # Test stdout
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout[1])
-                    self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
-                    # Test output files
-                    if self.path_management == self.LOCAL_PATH:
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[11],
-                            self.wf_examples.lo_file[11])
-                        self.assertTrue(isSame, msg)
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[12],
-                            self.wf_examples.lo_file[12])
-                        self.assertTrue(isSame, msg)
-                    if self.path_management == self.FILE_TRANSFER or \
-                            self.path_management == self.SHARED_TRANSFER:
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[11],
-                            self.wf_examples.tr_file[11].client_path)
-                        self.assertTrue(isSame, msg)
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[12],
-                            self.wf_examples.tr_file[12].client_path)
-                        self.assertTrue(isSame, msg)
-                        # For unknown reason, it raises some errors
-                        # http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running
-                        #isSame,	msg	= identical_files(job_stderr_file,self.wf_examples.lo_stderr[1])
-                        #self.failUnless(isSame == True)
 
-                if job_name in ['job2', 'job3', 'job4']:
-                    job_nb = int(job_name[3])
-                    # Test stdout
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout[job_nb])
-                    self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
-                    # Test output files
-                    if self.path_management == self.LOCAL_PATH:
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[job_nb],
-                            self.wf_examples.lo_file[job_nb])
-                        self.assertTrue(isSame, msg)
-                    if self.path_management == self.FILE_TRANSFER or \
-                            self.path_management == self.SHARED_TRANSFER:
-                        isSame, msg = identical_files(
-                            self.wf_examples.lo_out_model_file[job_nb],
-                            self.wf_examples.tr_file[job_nb].client_path)
-                        self.assertTrue(isSame, msg)
+                try:
+                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                      job_stdout_file,
+                                                      job_stderr_file)
+                  if job_name == 'job1':
+                      # Test stdout
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_stdout[1])
+                      self.assertTrue(isSame, msg)
+                      # Test no stderr
+                      self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                      "job stderr not empty : cf %s" %
+                                      job_stderr_file)
+                      # Test output files
+                      if self.path_management == self.LOCAL_PATH:
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[11],
+                              self.wf_examples.lo_file[11])
+                          self.assertTrue(isSame, msg)
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[12],
+                              self.wf_examples.lo_file[12])
+                          self.assertTrue(isSame, msg)
+                      if self.path_management == self.FILE_TRANSFER or \
+                              self.path_management == self.SHARED_TRANSFER:
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[11],
+                              self.wf_examples.tr_file[11].client_path)
+                          self.assertTrue(isSame, msg)
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[12],
+                              self.wf_examples.tr_file[12].client_path)
+                          self.assertTrue(isSame, msg)
+                          # For unknown reason, it raises some errors
+                          # http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running
+                          #isSame,	msg	= identical_files(job_stderr_file,self.wf_examples.lo_stderr[1])
+                          #self.failUnless(isSame == True)
 
-                if job_name in ['job1 with exception',
-                                'job3 with exception']:
-                    # Test stdout
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout_exception_model)
-                    self.assertTrue(isSame)
-                    # Test stderr
-                    with open(job_stderr_file) as f:
-                        lines = f.readlines()
-                    print lines
-                    isSame = (lines[-1] == 'Exception: Paf Boum '
-                                           'Boum Bada Boum !!!\n')
-                    self.assertTrue(isSame, "Job Exception: %s" % lines[-1])
+                  if job_name in ['job2', 'job3', 'job4']:
+                      job_nb = int(job_name[3])
+                      # Test stdout
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_stdout[job_nb])
+                      self.assertTrue(isSame, msg)
+                      # Test no stderr
+                      self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                      "job stderr not empty : cf %s" %
+                                      job_stderr_file)
+                      # Test output files
+                      if self.path_management == self.LOCAL_PATH:
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[job_nb],
+                              self.wf_examples.lo_file[job_nb])
+                          self.assertTrue(isSame, msg)
+                      if self.path_management == self.FILE_TRANSFER or \
+                              self.path_management == self.SHARED_TRANSFER:
+                          isSame, msg = identical_files(
+                              self.wf_examples.lo_out_model_file[job_nb],
+                              self.wf_examples.tr_file[job_nb].client_path)
+                          self.assertTrue(isSame, msg)
+
+                  if job_name in ['job1 with exception',
+                                  'job3 with exception']:
+                      # Test stdout
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_stdout_exception_model)
+                      self.assertTrue(isSame)
+                      # Test stderr
+                      with open(job_stderr_file) as f:
+                          lines = f.readlines()
+                      print lines
+                      isSame = (lines[-1] == 'Exception: Paf Boum '
+                                            'Boum Bada Boum !!!\n')
+                      self.assertTrue(isSame, "Job Exception: %s" % lines[-1])
+                finally:
+                  os.unlink(job_stdout_file)
+                  os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':

@@ -85,42 +85,45 @@ class SpecialTransferTest(WorkflowTest):
                     prefix="job_soma_out_log_",
                     suffix=repr(job_id))
                 job_stdout_file = job_stdout_file.name
-                print 'job_stdout_file :', job_stdout_file
                 job_stderr_file = tempfile.NamedTemporaryFile(
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id))
                 job_stderr_file = job_stderr_file.name
-                print 'job_stderr_file :', job_stderr_file
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                    job_stdout_file,
-                                                    job_stderr_file)
-                if job_name == 'dir_contents':
-                    # Test job standard out
-                    with open(job_stdout_file, 'r+') as f:
-                        dir_contents = f.readlines()
-                    dir_path_in = self.wf_examples.lo_in_dir
-                    full_path_list = []
-                    for element in os.listdir(dir_path_in):
-                        full_path_list.append(os.path.join(dir_path_in,
-                                                           element))
-                    dir_contents_model = list_contents(full_path_list, [])
-                    self.assertTrue(
-                        sorted(dir_contents) == sorted(dir_contents_model))
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
 
-                if job_name == 'multi file format test':
-                    # Test job standard out
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_mff_stdout)
-                    self.assertTrue(isSame, msg)
-                    # Test no stderr
-                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                    "job stderr not empty : cf %s" %
-                                    job_stderr_file)
+                try:
+                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                      job_stdout_file,
+                                                      job_stderr_file)
+                  if job_name == 'dir_contents':
+                      # Test job standard out
+                      with open(job_stdout_file, 'r+') as f:
+                          dir_contents = f.readlines()
+                      dir_path_in = self.wf_examples.lo_in_dir
+                      full_path_list = []
+                      for element in os.listdir(dir_path_in):
+                          full_path_list.append(os.path.join(dir_path_in,
+                                                            element))
+                      dir_contents_model = list_contents(full_path_list, [])
+                      self.assertTrue(
+                          sorted(dir_contents) == sorted(dir_contents_model))
+                      # Test no stderr
+                      self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                      "job stderr not empty : cf %s" %
+                                      job_stderr_file)
+
+                  if job_name == 'multi file format test':
+                      # Test job standard out
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_mff_stdout)
+                      self.assertTrue(isSame, msg)
+                      # Test no stderr
+                      self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                      "job stderr not empty : cf %s" %
+                                      job_stderr_file)
+                finally:
+                  os.unlink(job_stdout_file)
+                  os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':

@@ -108,24 +108,29 @@ class SpecialCommandTest(WorkflowTest):
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id))
                 job_stderr_file = job_stderr_file.name
-                self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                    job_stdout_file,
-                                                    job_stderr_file)
-                # Test job stdout
-                if self.path_management == self.LOCAL_PATH:
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout_command_local)
-                    self.assertTrue(isSame, msg)
-                else:
-                    isSame, msg = identical_files(
-                        job_stdout_file,
-                        self.wf_examples.lo_stdout_command_remote)
-                    self.assertTrue(isSame, msg)
-                # Test no stderr
-                self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                "job stderr not empty : cf %s" %
-                                job_stderr_file)
+
+                try:
+                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                      job_stdout_file,
+                                                      job_stderr_file)
+                  # Test job stdout
+                  if self.path_management == self.LOCAL_PATH:
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_stdout_command_local)
+                      self.assertTrue(isSame, msg)
+                  else:
+                      isSame, msg = identical_files(
+                          job_stdout_file,
+                          self.wf_examples.lo_stdout_command_remote)
+                      self.assertTrue(isSame, msg)
+                  # Test no stderr
+                  self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                  "job stderr not empty : cf %s" %
+                                  job_stderr_file)
+                finally:
+                  os.unlink(job_stdout_file)
+                  os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':
