@@ -109,8 +109,10 @@ class FakePipelineTest(WorkflowTest):
                                   "job stderr not empty : cf %s" %
                                   job_stderr_file)
                 finally:
-                  os.unlink(job_stdout_file)
-                  os.unlink(job_stderr_file)
+                  if os.path.exists(job_stdout_file):
+                    os.unlink(job_stdout_file)
+                  if os.path.exists(job_stderr_file):
+                    os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':

@@ -177,8 +177,10 @@ class MultipleTest(WorkflowTest):
                                             'Boum Bada Boum !!!\n')
                       self.assertTrue(isSame, "Job Exception: %s" % lines[-1])
                 finally:
-                  os.unlink(job_stdout_file)
-                  os.unlink(job_stderr_file)
+                  if os.path.exists(job_stdout_file):
+                    os.unlink(job_stdout_file)
+                  if os.path.exists(job_stderr_file):
+                    os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':
