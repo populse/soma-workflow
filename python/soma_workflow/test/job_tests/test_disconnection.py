@@ -1,27 +1,27 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #"""
-#Created on Mon Oct 28 15:10:19 2013
+# Created on Mon Oct 28 15:10:19 2013
 #
 #@author: laure.hugo@cea.fr
 #@author: Soizic Laguitton
 #@organization: U{IFR 49<http://www.ifr49.org>}
 #@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-# ##########################  BROKEN : Doesn't work  ##########################
+# BROKEN : Doesn't work  ##########################
 #"""
-#import time
-#import os
-#import sys
+# import time
+# import os
+# import sys
 #
-#import soma_workflow.constants as constants
-#from soma_workflow.client import WorkflowController
-#from soma_workflow.test.utils import check_files
-#from soma_workflow.test.job_tests.job_tests import JobTests
-#from soma_workflow.configuration import LIGHT_MODE
-#from soma_workflow.configuration import LOCAL_MODE
-#from soma_workflow.configuration import REMOTE_MODE
+# import soma_workflow.constants as constants
+# from soma_workflow.client import WorkflowController
+# from soma_workflow.test.utils import check_files
+# from soma_workflow.test.job_tests.job_tests import JobTests
+# from soma_workflow.configuration import LIGHT_MODE
+# from soma_workflow.configuration import LOCAL_MODE
+# from soma_workflow.configuration import REMOTE_MODE
 #
 #
-#class DisconnectionTest(JobTests):
+# class DisconnectionTest(JobTests):
 #    '''
 #    Submission of a job pipeline with transfer
 #    '''
@@ -33,7 +33,7 @@
 #        self.client_files = []
 #        self.output_files = []
 #
-#        # Job1
+# Job1
 #        info1 = self.job_examples.submit_job1()
 #        self.my_jobs.append(info1[0])
 #        self.output_files.extend(info1[1])
@@ -54,7 +54,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d. Expected %d' % exit_value, 0)
 #
-#        # Job2 & 3
+# Job2 & 3
 #        info2 = self.job_examples.submit_job2(time=60)
 #        self.my_jobs.append(info2[0])
 #        self.output_files.extend(info2[1])
@@ -75,7 +75,7 @@
 #                                              self.password)
 #
 #        self.job_examples.set_new_connection(self.wf_ctrl)
-#        # time.sleep(1)
+# time.sleep(1)
 #
 #    def tearDown(self):
 #        super(DisconnectionTest, self).tearDown()
@@ -111,7 +111,7 @@
 #        exit_value = job_termination_status[1]
 #        self.failUnless(exit_value == 0, 'Job exit value: %d' % exit_value)
 #
-#        # Job 4
+# Job 4
 #        info4 = self.job_examples.submit_job4()
 #        self.failUnless(not info4[0] == -1, "The job was not submitted.")
 #        self.my_jobs.append(info4[0])
@@ -130,7 +130,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d' % exit_value)
 #
-#        # checking output files
+# checking output files
 #        for file in self.output_files:
 #            client_file = self.wf_ctrl.transfers([file])[file][0]
 #            self.failUnless(client_file)
@@ -146,7 +146,7 @@
 #        (correct, msg) = check_files(self.client_files, models)
 #        self.failUnless(correct, msg)
 #
-#        # checking stdout and stderr
+# checking stdout and stderr
 #        client_stdout = os.path.join(self.job_examples.output_dir,
 #                                     "stdout_pipeline_job1")
 #        client_stderr = os.path.join(self.job_examples.output_dir,
@@ -193,9 +193,9 @@
 #                  self.job_examples.job4_stdouterr_models)
 #        (correct, msg) = check_files(self.client_files[5:13], models, 1)
 #        self.failUnless(correct, msg)
-#        # pass
+# pass
 #
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    DisconnectionTest.run_test(debug=True)
 #    sys.exit(0)

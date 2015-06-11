@@ -10,31 +10,31 @@
 '''
 
 
-###########################
+#
 # Soma-workflow constants #
-###########################
+#
 
 '''
 Job status:
 '''
-NOT_SUBMITTED="not_submitted"
-UNDETERMINED="undetermined"
-QUEUED_ACTIVE="queued_active"
-SYSTEM_ON_HOLD="system_on_hold"
-USER_ON_HOLD="user_on_hold"
-USER_SYSTEM_ON_HOLD="user_system_on_hold"
-RUNNING="running"
-SYSTEM_SUSPENDED="system_suspended"
-USER_SUSPENDED="user_suspended"
-USER_SYSTEM_SUSPENDED="user_system_suspended"
-DONE="done"
-FAILED="failed"
-DELETE_PENDING="delete_pending"
-KILL_PENDING="kill_pending"
-SUBMISSION_PENDING="submission_pending"
-WARNING="warning"
+NOT_SUBMITTED = "not_submitted"
+UNDETERMINED = "undetermined"
+QUEUED_ACTIVE = "queued_active"
+SYSTEM_ON_HOLD = "system_on_hold"
+USER_ON_HOLD = "user_on_hold"
+USER_SYSTEM_ON_HOLD = "user_system_on_hold"
+RUNNING = "running"
+SYSTEM_SUSPENDED = "system_suspended"
+USER_SUSPENDED = "user_suspended"
+USER_SYSTEM_SUSPENDED = "user_system_suspended"
+DONE = "done"
+FAILED = "failed"
+DELETE_PENDING = "delete_pending"
+KILL_PENDING = "kill_pending"
+SUBMISSION_PENDING = "submission_pending"
+WARNING = "warning"
 JOB_STATUS = [NOT_SUBMITTED,
-              UNDETERMINED, 
+              UNDETERMINED,
               QUEUED_ACTIVE,
               SYSTEM_ON_HOLD,
               USER_ON_HOLD,
@@ -59,12 +59,12 @@ FINISHED_REGULARLY = "finished_regularly"
 FINISHED_TERM_SIG = "finished_signal"
 FINISHED_UNCLEAR_CONDITIONS = "finished_unclear_condition"
 USER_KILLED = "killed_by_user"
-JOB_EXIT_STATUS= [EXIT_UNDETERMINED,
-                  EXIT_ABORTED,
-                  FINISHED_REGULARLY,
-                  FINISHED_TERM_SIG,
-                  FINISHED_UNCLEAR_CONDITIONS,
-                  USER_KILLED]
+JOB_EXIT_STATUS = [EXIT_UNDETERMINED,
+                   EXIT_ABORTED,
+                   FINISHED_REGULARLY,
+                   FINISHED_TERM_SIG,
+                   FINISHED_UNCLEAR_CONDITIONS,
+                   USER_KILLED]
 
 
 '''
@@ -108,12 +108,8 @@ Workflow status:
 WORKFLOW_NOT_STARTED = "worklflow_not_started"
 WORKFLOW_IN_PROGRESS = "workflow_in_progress"
 WORKFLOW_DONE = "workflow_done"
-WORKFLOW_STATUS = [ WORKFLOW_NOT_STARTED, 
-                    WORKFLOW_IN_PROGRESS, 
-                    WORKFLOW_DONE,
-                    DELETE_PENDING,
-                    WARNING]
-
-
-
-
+WORKFLOW_STATUS = [WORKFLOW_NOT_STARTED,
+                   WORKFLOW_IN_PROGRESS,
+                   WORKFLOW_DONE,
+                   DELETE_PENDING,
+                   WARNING]

@@ -103,41 +103,42 @@ class NativeSpecPbsTest(WorkflowTest):
                 job_stderr_file = job_stderr_file.name
 
                 try:
-                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                      job_stdout_file,
-                                                      job_stderr_file)
-                  # Test stdout
-                  isSame, msg = identical_files(
-                      job_stdout_file,
-                      self.wf_examples.lo_stdout[1])
-                  self.assertTrue(isSame, msg)
-                  # Test no stderr
-                  self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                  "job stderr not empty : cf %s" %
-                                  job_stderr_file)
-                  # Test output files
-                  if self.path_management == self.LOCAL_PATH:
-                      isSame, msg = identical_files(
-                          self.wf_examples.lo_out_model_file[11],
-                          self.wf_examples.lo_file[11])
-                      self.assertTrue(isSame, msg)
-                      isSame, msg = identical_files(
-                          self.wf_examples.lo_out_model_file[12],
-                          self.wf_examples.lo_file[12])
-                      self.assertTrue(isSame, msg)
-                  if self.path_management == self.FILE_TRANSFER or \
-                          self.path_management == self.SHARED_TRANSFER:
-                      isSame, msg = identical_files(
-                          self.wf_examples.lo_out_model_file[11],
-                          self.wf_examples.tr_file[11].client_path)
-                      self.assertTrue(isSame, msg)
-                      isSame, msg = identical_files(
-                          self.wf_examples.lo_out_model_file[12],
-                          self.wf_examples.tr_file[12].client_path)
-                      self.assertTrue(isSame, msg)
+                    self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                        job_stdout_file,
+                                                        job_stderr_file)
+                    # Test stdout
+                    isSame, msg = identical_files(
+                        job_stdout_file,
+                        self.wf_examples.lo_stdout[1])
+                    self.assertTrue(isSame, msg)
+                    # Test no stderr
+                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                    "job stderr not empty : cf %s" %
+                                    job_stderr_file)
+                    # Test output files
+                    if self.path_management == self.LOCAL_PATH:
+                        isSame, msg = identical_files(
+                            self.wf_examples.lo_out_model_file[11],
+                            self.wf_examples.lo_file[11])
+                        self.assertTrue(isSame, msg)
+                        isSame, msg = identical_files(
+                            self.wf_examples.lo_out_model_file[12],
+                            self.wf_examples.lo_file[12])
+                        self.assertTrue(isSame, msg)
+                    if self.path_management == self.FILE_TRANSFER or \
+                            self.path_management == self.SHARED_TRANSFER:
+                        isSame, msg = identical_files(
+                            self.wf_examples.lo_out_model_file[11],
+                            self.wf_examples.tr_file[11].client_path)
+                        self.assertTrue(isSame, msg)
+                        isSame, msg = identical_files(
+                            self.wf_examples.lo_out_model_file[12],
+                            self.wf_examples.tr_file[12].client_path)
+                        self.assertTrue(isSame, msg)
                 finally:
-                  os.unlink(job_stdout_file)
-                  os.unlink(job_stderr_file)
+                    os.unlink(job_stdout_file)
+                    os.unlink(job_stderr_file)
 
 if __name__ == '__main__':
-    NativeSpecPbsTest.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))
+    NativeSpecPbsTest.run_test(
+        debug=False, **WorkflowTest.parse_args(sys.argv))

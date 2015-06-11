@@ -10,18 +10,18 @@ __version__ = "%s.%s.%s%s" % (version_major,
                               version_micro,
                               version_extra)
 CLASSIFIERS = ['Development Status :: 5 - Production/Stable',
-    'Environment :: Console',
-    ' Environment :: X11 Applications ',
-    'Intended Audience :: Developers',
-    'Intended Audience :: Science/Research',
-    'Intended Audience :: Education',
-    'Operating System :: OS Independent',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 2.6',
-    'Topic :: Scientific/Engineering',
-    'Topic :: Utilities',
-    'Topic :: Software Development :: Libraries',
-    'Topic :: System :: Distributed Computing' ]
+               'Environment :: Console',
+               ' Environment :: X11 Applications ',
+               'Intended Audience :: Developers',
+               'Intended Audience :: Science/Research',
+               'Intended Audience :: Education',
+               'Operating System :: OS Independent',
+               'Programming Language :: Python',
+               'Programming Language :: Python :: 2.6',
+               'Topic :: Scientific/Engineering',
+               'Topic :: Utilities',
+               'Topic :: Software Development :: Libraries',
+               'Topic :: System :: Distributed Computing']
 
 
 description = 'Soma-Workflow. A unified and simple interface to parallel computing resource'
@@ -55,9 +55,9 @@ PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
 REQUIRES = []
 EXTRA_REQUIRES = {
-        "plotting": ["matplotlib"],
-        "client": ["Pyro", "paramiko"],
-        "doc": ["sphinx>="+SPHINX_MIN_VERSION]}
+    "plotting": ["matplotlib"],
+    "client": ["Pyro", "paramiko"],
+    "doc": ["sphinx>=" + SPHINX_MIN_VERSION]}
 
 #-----------------------------------------------------------------------------
 # Globals and constants

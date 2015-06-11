@@ -18,24 +18,22 @@ import os
 import sys
 
 
+resName = None
 
-resName= None
-
-i=0
+i = 0
 while i < len(sys.argv):
-  if sys.argv[i] == "-r" :
-    resName=sys.argv[i+1]
-    break
-  i=i+1
- 
+    if sys.argv[i] == "-r":
+        resName = sys.argv[i + 1]
+        break
+    i = i + 1
+
 lines2cmd = [
-             "kill $(ps -ef | grep 'python -m soma_workflow.start_database_server' | grep '%s' \
-| grep -v grep | awk '{print $2}')"%(resName),
-            "rm ~/.soma-workflow.cfg"
-             ]
+    "kill $(ps -ef | grep 'python -m soma_workflow.start_database_server' | grep '%s' \
+| grep -v grep | awk '{print $2}')" % (resName),
+    "rm ~/.soma-workflow.cfg"
+]
 
 
 for line2cmd in lines2cmd:
-    os.system("echo '%s' "%(line2cmd))
+    os.system("echo '%s' " % (line2cmd))
     os.system(line2cmd)
-

@@ -1,25 +1,25 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #"""
-#Created on Mon Oct 28 15:09:02 2013
+# Created on Mon Oct 28 15:09:02 2013
 #
 #@author: laure.hugo@cea.fr
 #@author: Soizic Laguitton
 #@organization: U{IFR 49<http://www.ifr49.org>}
 #@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-# ##########################  BROKEN : Doesn't work  ##########################
+# BROKEN : Doesn't work  ##########################
 #"""
-#import os
-#import sys
+# import os
+# import sys
 #
-#import soma_workflow.constants as constants
-#from soma_workflow.test.utils import identical_files
-#from soma_workflow.test.job_tests.job_tests import JobTests
-#from soma_workflow.configuration import LIGHT_MODE
-#from soma_workflow.configuration import LOCAL_MODE
-#from soma_workflow.configuration import REMOTE_MODE
+# import soma_workflow.constants as constants
+# from soma_workflow.test.utils import identical_files
+# from soma_workflow.test.job_tests.job_tests import JobTests
+# from soma_workflow.configuration import LIGHT_MODE
+# from soma_workflow.configuration import LOCAL_MODE
+# from soma_workflow.configuration import REMOTE_MODE
 #
 #
-#class ExceptionJobTest(JobTests):
+# class ExceptionJobTest(JobTests):
 #    '''
 #    Submission of a job raising an exception
 #    '''
@@ -42,7 +42,7 @@
 #        jobid = self.my_jobs[0]
 #        self.wf_ctrl.wait_job(self.my_jobs)
 #        status = self.wf_ctrl.job_status(jobid)
-#        # Test end of workflow
+# Test end of workflow
 #        self.failUnless(status == constants.DONE or constants.DONE,
 #                        'Job %s status after wait: %s, instead of %s or %s' %
 #                        (jobid, status, constants.DONE, constants.DONE))
@@ -55,7 +55,7 @@
 #        self.failUnless(exit_value == 1,
 #                        'Job %s exit value: %d, instead of %i' %
 #                        (jobid, exit_value, 1))
-#        # checking stdout and stderr
+# checking stdout and stderr
 #        client_stdout = os.path.join(self.job_examples.output_dir,
 #                                     "stdout_exception_job")
 #        client_stderr = os.path.join(self.job_examples.output_dir,
@@ -65,12 +65,12 @@
 #        self.client_files.append(client_stdout)
 #        self.client_files.append(client_stderr)
 #
-#        #Test stdout
+# Test stdout
 #        (identical, msg) = identical_files(
 #            client_stdout,
 #            self.job_examples.exceptionjobstdouterr[0])
 #        self.failUnless(identical, msg)
-#        # Test the last line of stderr
+# Test the last line of stderr
 #        with open(client_stderr) as f:
 #            lines = f.readlines()
 #        expected_error = 'Exception: Paf Boum Boum Bada Boum !!!\n'
@@ -79,6 +79,6 @@
 #                        "Job exception : %s. Expected : %s" %
 #                        (lines[-1], expected_error))
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    ExceptionJobTest.run_test(debug=True)
 #    sys.exit(0)

@@ -108,20 +108,20 @@ class NJobsWithDependenciesTest(WorkflowTest):
                 job_stderr_file = job_stderr_file.name
 
                 try:
-                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                      job_stdout_file,
-                                                      job_stderr_file)
-                  # Test stdout
-                  self.assertTrue(os.stat(job_stdout_file).st_size == 0,
-                                  "job stdout not empty : cf %s" %
-                                  job_stdout_file)
-                  # Test no stderr
-                  self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                  "job stderr not empty : cf %s" %
-                                  job_stderr_file)
+                    self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                        job_stdout_file,
+                                                        job_stderr_file)
+                    # Test stdout
+                    self.assertTrue(os.stat(job_stdout_file).st_size == 0,
+                                    "job stdout not empty : cf %s" %
+                                    job_stdout_file)
+                    # Test no stderr
+                    self.assertTrue(os.stat(job_stderr_file).st_size == 0,
+                                    "job stderr not empty : cf %s" %
+                                    job_stderr_file)
                 finally:
-                  os.unlink(job_stdout_file)
-                  os.unlink(job_stderr_file)
+                    os.unlink(job_stdout_file)
+                    os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':

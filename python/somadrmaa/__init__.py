@@ -31,7 +31,7 @@ import ctypes as _ct
 
 try:
     import namedtuple as _nt
-except ImportError: # pre 2.6 behaviour
+except ImportError:  # pre 2.6 behaviour
     import nt as _nt
 
 __version__ = "$Revision$"[11:-2]
@@ -41,31 +41,31 @@ from somadrmaa.const import JobState, JobControlAction, JobSubmissionState
 import somadrmaa.wrappers as _w
 import somadrmaa.helpers as _h
 from somadrmaa.errors import (AlreadyActiveSessionException,
-                          AuthorizationException,
-                          ConflictingAttributeValuesException,
-                          DefaultContactStringException,
-                          DeniedByDrmException,
-                          DrmCommunicationException,
-                          DrmsExitException,
-                          DrmsInitException,
-                          ExitTimeoutException,
-                          HoldInconsistentStateException,
-                          IllegalStateException,
-                          InternalException,
-                          InvalidAttributeFormatException,
-                          InvalidContactStringException,
-                          InvalidJobException,
-                          InvalidJobTemplateException,
-                          NoActiveSessionException,
-                          NoDefaultContactStringSelectedException,
-                          ReleaseInconsistentStateException,
-                          ResumeInconsistentStateException,
-                          SuspendInconsistentStateException,
-                          TryLaterException,
-                          UnsupportedAttributeException,
-                          InvalidArgumentException,
-                          InvalidAttributeValueException,
-                          OutOfMemoryException,)
+                              AuthorizationException,
+                              ConflictingAttributeValuesException,
+                              DefaultContactStringException,
+                              DeniedByDrmException,
+                              DrmCommunicationException,
+                              DrmsExitException,
+                              DrmsInitException,
+                              ExitTimeoutException,
+                              HoldInconsistentStateException,
+                              IllegalStateException,
+                              InternalException,
+                              InvalidAttributeFormatException,
+                              InvalidContactStringException,
+                              InvalidJobException,
+                              InvalidJobTemplateException,
+                              NoActiveSessionException,
+                              NoDefaultContactStringSelectedException,
+                              ReleaseInconsistentStateException,
+                              ResumeInconsistentStateException,
+                              SuspendInconsistentStateException,
+                              TryLaterException,
+                              UnsupportedAttributeException,
+                              InvalidArgumentException,
+                              InvalidAttributeValueException,
+                              OutOfMemoryException,)
 
 Version = _h.Version
 JobInfo = _nt.namedtuple("JobInfo",
@@ -75,7 +75,9 @@ JobInfo = _nt.namedtuple("JobInfo",
 #                                   """transferInputStream transferOutputStream
 #                                      transferErrorStream""")
 
+
 class JobTemplate(object):
+
     """A job to be submitted to the DRM."""
 
     HOME_DIRECTORY = '$drmaa_hd_ph$'
@@ -96,40 +98,40 @@ list of attribute names of the JobTemplate instances.
         return list(_h.attribute_names_iterator())
 
     # scalar attributes
-    remoteCommand           = _h.Attribute(_c.REMOTE_COMMAND       )
+    remoteCommand = _h.Attribute(_c.REMOTE_COMMAND)
     """The command to be executed."""
-    jobSubmissionState      = _h.Attribute(_c.JS_STATE             )
+    jobSubmissionState = _h.Attribute(_c.JS_STATE)
     """The job status."""
-    workingDirectory        = _h.Attribute(_c.WD                   )
+    workingDirectory = _h.Attribute(_c.WD)
     """The job working directory."""
-    jobCategory             = _h.Attribute(_c.JOB_CATEGORY         )
+    jobCategory = _h.Attribute(_c.JOB_CATEGORY)
     """The job category."""
-    nativeSpecification     = _h.Attribute(_c.NATIVE_SPECIFICATION )
+    nativeSpecification = _h.Attribute(_c.NATIVE_SPECIFICATION)
     """\
 A (DRM-dependant) opaque string to be passed to the DRM representing
 other directives.
 """
-    blockEmail              = _h.Attribute(
+    blockEmail = _h.Attribute(
         _c.BLOCK_EMAIL,
         type_converter=_h.BoolConverter(true='1', false='0'))
     """False id this job should send an email, True otherwise."""
-    startTime               = _h.Attribute(_c.START_TIME           )
+    startTime = _h.Attribute(_c.START_TIME)
     """The job start time, a partial timestamp string."""
-    jobName                 = _h.Attribute(_c.JOB_NAME             )
+    jobName = _h.Attribute(_c.JOB_NAME)
     """The job Name."""
-    inputPath               = _h.Attribute(_c.INPUT_PATH           )
+    inputPath = _h.Attribute(_c.INPUT_PATH)
     """The path to a file representing job's stdin."""
-    outputPath              = _h.Attribute(_c.OUTPUT_PATH          )
+    outputPath = _h.Attribute(_c.OUTPUT_PATH)
     """The path to a file representing job's stdout."""
-    errorPath               = _h.Attribute(_c.ERROR_PATH           )
+    errorPath = _h.Attribute(_c.ERROR_PATH)
     """The path to a file representing job's stderr."""
-    joinFiles               = _h.Attribute(
+    joinFiles = _h.Attribute(
         _c.JOIN_FILES,
         type_converter=_h.BoolConverter())
     """True if stdin and stdout should be merged, False otherwise."""
     # the following is available on ge6.2 only if enabled via cluster
     # configuration
-    transferFiles           = _h.Attribute(_c.TRANSFER_FILES       )
+    transferFiles = _h.Attribute(_c.TRANSFER_FILES)
     """\
 True if file transfer should be enabled, False otherwise.
 
@@ -137,27 +139,27 @@ This option might require specific DRM configuration (it does on SGE).
 """
     # the following are apparently not available on ge 6.2
     # it will raise if you try to access these attrs
-    deadlineTime            = _h.Attribute(_c.DEADLINE_TIME        )
+    deadlineTime = _h.Attribute(_c.DEADLINE_TIME)
     """The job deadline time, a partial timestamp string."""
-    hardWallclockTimeLimit  = _h.Attribute(_c.WCT_HLIMIT, _h.IntConverter)
+    hardWallclockTimeLimit = _h.Attribute(_c.WCT_HLIMIT, _h.IntConverter)
     """\
 'Hard' Wallclock time limit, in seconds.
 
 The job will be killed by the DRM if it takes more than
 'hardWallclockTimeLimit' to complete.
 """
-    softWallclockTimeLimit  = _h.Attribute(_c.WCT_SLIMIT, _h.IntConverter)
+    softWallclockTimeLimit = _h.Attribute(_c.WCT_SLIMIT, _h.IntConverter)
     """\
 'Soft' Wallclock time limit, in seconds.
 
 The job will be signaled by the DRM if it takes more than
 'hardWallclockTimeLimit' to complete.
 """
-    hardRunDurationLimit    = _h.Attribute(_c.DURATION_HLIMIT, _h.IntConverter)
+    hardRunDurationLimit = _h.Attribute(_c.DURATION_HLIMIT, _h.IntConverter)
     """\
 WRITE ME.
 """
-    softRunDurationLimit    = _h.Attribute(_c.DURATION_SLIMIT, _h.IntConverter)
+    softRunDurationLimit = _h.Attribute(_c.DURATION_SLIMIT, _h.IntConverter)
     """\
 WRITE ME.
 """
@@ -165,7 +167,7 @@ WRITE ME.
     # vector attributes
     email = _h.VectorAttribute(_c.V_EMAIL)
     """email addresses to whom send job completion info."""
-    args  = _h.VectorAttribute(_c.V_ARGV)
+    args = _h.VectorAttribute(_c.V_ARGV)
     """The job's command argument list."""
     # dict attributes
     jobEnvironment = _h.DictAttribute(_c.V_ENV)
@@ -205,7 +207,9 @@ Stops communication with the DRM.
         self.delete()
         return False
 
+
 class Session(object):
+
     """\
 The DRMAA Session.
 
@@ -247,6 +251,7 @@ component.
 a Version object containing the major and minor version numbers of the
 DRMAA library. For DRMAA 1.0, major is 1 and minor is 0.
 """
+
     def __init__(self, contactString=None):
         self.contactString = contactString
 
@@ -359,7 +364,7 @@ the tasks submitted through this method.
     @staticmethod
     def control(jobId, operation):
         """\
-Used to hold, release, suspend, resume, or kill the job identified by jobId.  
+Used to hold, release, suspend, resume, or kill the job identified by jobId.
 
 :Parameters:
   jobId : string
@@ -429,17 +434,19 @@ If the call exits before the
 timeout has elapsed, all the jobs have been waited on or there was an
 interrupt. If the invocation exits on timeout, an ExitTimeoutException
 is thrown. The caller should check system time before and after this
-call in order to be sure of how much time has passed.  
+call in order to be sure of how much time has passed.
 """
-        if dispose: d = 1
-        else: d = 0
+        if dispose:
+            d = 1
+        else:
+            d = 0
         _h.c(_w.drmaa_synchronize, _h.string_vector(jobIds), timeout, d)
 
     # takes string and long, returns JobInfo instance
     @staticmethod
     def wait(jobId, timeout=-1):
         """\
-Wait for a job with jobId to finish execution or fail. 
+Wait for a job with jobId to finish execution or fail.
 
 :Parameters:
   `jobId` : str
@@ -449,7 +456,7 @@ Wait for a job with jobId to finish execution or fail.
     jobId, this routine will wait for any job from the session
   `timeout` : float
     The timeout value is used to specify the desired behavior when a
-    result is not immediately available. 
+    result is not immediately available.
 
     The value `Session.TIMEOUT_WAIT_FOREVER` may be specified to wait
     indefinitely for a result. The value `Session.TIMEOUT_NO_WAIT` may

@@ -15,6 +15,7 @@ from soma_workflow.configuration import REMOTE_MODE
 
 
 class EndedJobWithTransfer(JobTests):
+
     '''
     Submission of a job with transfer
     '''

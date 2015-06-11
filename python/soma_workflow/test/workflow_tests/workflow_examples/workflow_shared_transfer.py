@@ -28,7 +28,7 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
         '''
         super(WorkflowExamplesSharedTransfer, self).__init__()
 
-#        # Initialize the dictionaries
+# Initialize the dictionaries
         self.sh_file = {}
         self.sh_script = {}
         self.sh_stdin = {}

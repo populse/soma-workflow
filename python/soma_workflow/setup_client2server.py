@@ -26,9 +26,9 @@ from soma_workflow.configuration import WriteOutConfiguration
 from soma_workflow.client import Job, Workflow, WorkflowController
 
 
-#############################################################################
+#
 #                    Server Information Tools
-#############################################################################
+#
 
 def GetHostNameOnPBSTORQUE(userid,
                            ip_address_or_domain,
@@ -95,9 +95,9 @@ def GetQueueNamesOnPBSTORQUE(userid,
     return info_queue
 
 
-#############################################################################
+#
 #                      Client Configuration Tools
-#############################################################################
+#
 
 def SetupConfigurationFileOnClient(configuration_item_name,
                                    userid,
@@ -146,7 +146,7 @@ def SetupConfigurationFileOnClient(configuration_item_name,
 
         # Generate client config
         config_parser = ConfiguratePaser(configuration_item_name, userid,
-            ip_address_or_domain, userpw, install_swf_path_server, sshport)
+                                         ip_address_or_domain, userpw, install_swf_path_server, sshport)
         WriteOutConfiguration(config_parser, config_file_path)
 
     # If the configuration already exists
@@ -162,8 +162,8 @@ def SetupConfigurationFileOnClient(configuration_item_name,
         if not configuration_item_name in sections:
             # Add client config
             config_parser = ConfiguratePaser(configuration_item_name, userid,
-                ip_address_or_domain, userpw, install_swf_path_server,
-                sshport, config_parser)
+                                             ip_address_or_domain, userpw, install_swf_path_server,
+                                             sshport, config_parser)
             WriteOutConfiguration(config_parser, config_file_path)
 
 
@@ -307,9 +307,9 @@ def RemoveResNameOnConfigureFile(section_to_remove,
     return 1
 
 
-#############################################################################
+#
 #                      Server Installation Tools
-#############################################################################
+#
 
 def InstallSomaWF2Server(userid,
                          ip_address_or_domain,
@@ -350,8 +350,8 @@ def InstallSomaWF2Server(userid,
     logging.info("ssh command = {0}".format(command))
 
     (std_out_lines, std_err_lines) = SSHExecCmd(command, userid,
-         ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
-         sshport=sshport)
+                                                ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
+                                                sshport=sshport)
     if len(std_err_lines) > 0:
         logging.error("Enable to configure the server: {0}".format(
                       std_err_lines))
@@ -366,10 +366,10 @@ def InstallSomaWF2Server(userid,
 
 
 def CopySomaWF2Server(userid,
-                     ip_address_or_domain,
-                     userpw=None,
-                     install_swf_path_server=None,
-                     sshport=22):
+                      ip_address_or_domain,
+                      userpw=None,
+                      install_swf_path_server=None,
+                      sshport=22):
     """ Copy the soma workflow source from the client to the server.
     Force to have the same version on both side.
 
@@ -397,7 +397,7 @@ def CopySomaWF2Server(userid,
     install_swf_path_server = (install_swf_path_server or
                                os.path.expanduser("~"))
     install_swf_path_server = os.path.join(install_swf_path_server,
-                                         "soma_workflow_auto_remote_install")
+                                           "soma_workflow_auto_remote_install")
     # Create install directory if necessary
     std_out_lines = SSHExecCmd(
         "mkdir -p '{0}'".format(install_swf_path_server),
@@ -412,7 +412,7 @@ def CopySomaWF2Server(userid,
     # Sync soma workflow to server
     sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
                   "{1}@{2}:'{3}'").format(path2somawf, userid,
-                  ip_address_or_domain, install_swf_path_server)
+                                          ip_address_or_domain, install_swf_path_server)
     logging.info("Attempt to copy soma workflow: sshcommand = "
                  " {0}".format(sshcommand))
     os.system(sshcommand)
@@ -420,7 +420,7 @@ def CopySomaWF2Server(userid,
     # Sync drmaa patching to server
     sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
                   "{1}@{2}:'{3}'").format(path2drmaa, userid,
-                  ip_address_or_domain, install_swf_path_server)
+                                          ip_address_or_domain, install_swf_path_server)
     logging.info("Attempt to copy drmaa patching: sshcommand = "
                  " {0}".format(sshcommand))
     os.system(sshcommand)

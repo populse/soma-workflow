@@ -1,25 +1,25 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #"""
-#Created on Mon Oct 28 15:04:47 2013
+# Created on Mon Oct 28 15:04:47 2013
 #
 #@author: laure.hugo@cea.fr
 #@author: Soizic Laguitton
 #@organization: U{IFR 49<http://www.ifr49.org>}
 #@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-# ##########################  BROKEN : Doesn't work  ##########################
+# BROKEN : Doesn't work  ##########################
 #"""
-#import os
-#import sys
+# import os
+# import sys
 #
-#import soma_workflow.constants as constants
-#from soma_workflow.test.utils import check_files
-#from soma_workflow.test.job_tests.job_tests import JobTests
-#from soma_workflow.configuration import LIGHT_MODE
-#from soma_workflow.configuration import LOCAL_MODE
-#from soma_workflow.configuration import REMOTE_MODE
+# import soma_workflow.constants as constants
+# from soma_workflow.test.utils import check_files
+# from soma_workflow.test.job_tests.job_tests import JobTests
+# from soma_workflow.configuration import LIGHT_MODE
+# from soma_workflow.configuration import LOCAL_MODE
+# from soma_workflow.configuration import REMOTE_MODE
 #
 #
-#class SubmissionWithTransferTest(JobTests):
+# class SubmissionWithTransferTest(JobTests):
 #    '''
 #    Submission of a job with transfer
 #    '''
@@ -53,7 +53,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d' % exit_value)
 #
-#        # checking output files
+# checking output files
 #        for file in self.output_files:
 #            client_file = self.wf_ctrl.transfers([file])[file][0]
 #            self.failUnless(client_file)
@@ -67,7 +67,7 @@
 #            self.job_examples.job1_output_file_models)
 #        self.failUnless(correct, msg)
 #
-#        # checking stdout and stderr
+# checking stdout and stderr
 #        client_stdout = os.path.join(self.job_examples.output_dir,
 #                                     "stdout_submit_with_transfer")
 #        client_stderr = os.path.join(self.job_examples.output_dir,
@@ -84,6 +84,6 @@
 #        self.failUnless(correct, msg)
 #
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    SubmissionWithTransferTest.run_test(debug=False)
 #    sys.exit(0)

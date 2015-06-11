@@ -39,6 +39,7 @@ from soma_workflow.test.utils import identical_files
 
 from soma_workflow.test.workflow_tests import WorkflowTest
 
+
 class Exception1Test(WorkflowTest):
     allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
                       (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
@@ -99,27 +100,27 @@ class Exception1Test(WorkflowTest):
                     delete=False)
                 job_stderr_file = job_stderr_file.name
                 try:
-                  self.wf_ctrl.retrieve_job_stdouterr(job_id,
-                                                      job_stdout_file,
-                                                      job_stderr_file)
+                    self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                        job_stdout_file,
+                                                        job_stderr_file)
 
-                  if job_name == 'job1 with exception':
-                      #Test stdout
-                      isSame, msg = identical_files(
-                          job_stdout_file,
-                          self.wf_examples.lo_stdout_exception_model)
-                      self.assertTrue(isSame, msg)
-                      # Test the last line of stderr
-                      with open(job_stderr_file) as f:
-                          lines = f.readlines()
-                      expected_error = 'Exception: Paf Boum Boum Bada Boum !!!\n'
-                      isSame = (lines[-1] == expected_error)
-                      self.assertTrue(isSame,
-                                      "Job exception : %s. Expected : %s" %
-                                      (lines[-1], expected_error))
+                    if job_name == 'job1 with exception':
+                        # Test stdout
+                        isSame, msg = identical_files(
+                            job_stdout_file,
+                            self.wf_examples.lo_stdout_exception_model)
+                        self.assertTrue(isSame, msg)
+                        # Test the last line of stderr
+                        with open(job_stderr_file) as f:
+                            lines = f.readlines()
+                        expected_error = 'Exception: Paf Boum Boum Bada Boum !!!\n'
+                        isSame = (lines[-1] == expected_error)
+                        self.assertTrue(isSame,
+                                        "Job exception : %s. Expected : %s" %
+                                        (lines[-1], expected_error))
                 finally:
-                  os.unlink(job_stdout_file)
-                  os.unlink(job_stderr_file)
+                    os.unlink(job_stdout_file)
+                    os.unlink(job_stderr_file)
 
 
 if __name__ == '__main__':

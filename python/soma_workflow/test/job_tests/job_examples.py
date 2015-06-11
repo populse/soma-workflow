@@ -16,6 +16,7 @@ import soma_workflow.configuration as configuration
 
 
 class JobExamples(object):
+
     '''
     Job submission example.
     Each method submits 1 job and return the tuple (job_id,
@@ -56,7 +57,7 @@ class JobExamples(object):
         self.output_models = {}
         for i in [11, 12, 2, 3, 4]:
             self.output_models[i] = os.path.join(self.models_path,
-                                                      "file" + str(i))
+                                                 "file" + str(i))
         self.job1_output_file_models = [
             self.output_models[11], self.output_models[12]]
         self.job2_output_file_models = [
@@ -67,7 +68,7 @@ class JobExamples(object):
             self.output_models[4]]
 
         self.stdout_models = {}
-        for i in range(1,5):
+        for i in range(1, 5):
             self.stdout_models[i] = os.path.join(self.models_path,
                                                  "stdout_job" + str(i))
         self.job1_stdouterr_models = [
@@ -275,7 +276,7 @@ class JobExamples(object):
         '''
         BROKEN
         '''
-        #compilation
+        # compilation
         source_tr = self.wf_ctrl.register_transfer(FileTransfer(
             True,
             self.examples_dir + "mpi/simple_mpi.c",
@@ -300,7 +301,7 @@ class JobExamples(object):
         sys.stdout.write("object_tr.engine_path = " +
                          object_tr.engine_path + "\n")
         compil1job_id = self.wf_ctrl.submit_job(Job(
-            command=[mpibin+"/mpicc", "-c", source_tr, "-o", object_tr],
+            command=[mpibin + "/mpicc", "-c", source_tr, "-o", object_tr],
             referenced_input_files=[source_tr],
             referenced_output_files=[object_tr],
             join_stderrout=False,

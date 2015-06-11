@@ -30,7 +30,6 @@ import SocketServer
 from soma_workflow.errors import ConnectionError
 
 
-
 def ReadOutput(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
 
@@ -44,14 +43,14 @@ def ReadOutput(stdout, tag=None, num_line_stdout=-1):
             ):
         if tag:
             sline = stdout.readline()
-            while sline and sline != tag+'\n':
+            while sline and sline != tag + '\n':
                 sline = stdout.readline()
 
         sline = stdout.readline()
         while (sline and num_line_stdout != 0):
 
             std_out_lines.append(sline.strip())
-            num_line_stdout = num_line_stdout-1
+            num_line_stdout = num_line_stdout - 1
             if(num_line_stdout == 0):
                 break
 
@@ -74,12 +73,12 @@ def SSHExecCmd(sshcommand,
         tag = '----xxxx=====start to exec=====xxxxx----'
         sshcommand = "echo %s && %s" % (tag, sshcommand)
 
-    #is_limit_stdout = False
-    #is_limit_stderr = False
+    # is_limit_stdout = False
+    # is_limit_stderr = False
 
-    #if num_line_stdout != -1:
+    # if num_line_stdout != -1:
     #    is_limit_stdout = True
-    #if num_line_stderr != -1:
+    # if num_line_stderr != -1:
     #    is_limit_stderr = True
 
     stdin = []
@@ -132,10 +131,10 @@ def SSHExecCmd(sshcommand,
 
 
 def check_if_soma_wf_cr_on_server(
-                            userid,
-                            ip_address_or_domain,
-                            userpw='',
-                            sshport=22):
+    userid,
+    ip_address_or_domain,
+    userpw='',
+        sshport=22):
     """ Check if the check_requirement module exists
     """
     command = "python -c 'import soma_workflow.check_requirement'"
@@ -155,10 +154,10 @@ def check_if_soma_wf_cr_on_server(
 
 
 def check_if_ctype_drmaa_on_server(
-                            userid,
-                            ip_address_or_domain,
-                            userpw='',
-                            sshport=22):
+    userid,
+    ip_address_or_domain,
+    userpw='',
+        sshport=22):
     command = "python -m 'soma_workflow.check_requirement.drmaa'"
     (std_out_lines, std_err_lines) = SSHExecCmd(
         command,
@@ -179,10 +178,10 @@ def check_if_ctype_drmaa_on_server(
 
 
 def check_if_somawf_on_server(
-                            userid,
-                            ip_address_or_domain,
-                            userpw='',
-                            sshport=22):
+    userid,
+    ip_address_or_domain,
+    userpw='',
+        sshport=22):
     """ Check if the soma_workflow module exists
     """
     command = "python -c 'import soma_workflow'"
@@ -202,14 +201,14 @@ def check_if_somawf_on_server(
 
 
 def check_if_somawfdb_on_server(
-                            ResName,
-                            userid,
-                            ip_address_or_domain,
-                            userpw='',
-                            sshport=22):
+    ResName,
+    userid,
+    ip_address_or_domain,
+    userpw='',
+        sshport=22):
 
     command = "ps -ef | grep 'python -m soma_workflow.start_database_server'"\
-    " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
+        " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
     std_out_lines = SSHExecCmd(
         command,
@@ -241,6 +240,7 @@ def searchAvailablePort():
 
 
 class RemoteConnection(object):
+
     '''
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
@@ -268,9 +268,9 @@ class RemoteConnection(object):
 
         # required in the remote connection mode
         import paramiko
-        #from paramiko.file import BufferedFile
+        # from paramiko.file import BufferedFile
         import Pyro.core
-        #from Pyro.errors import ConnectionClosedError
+        # from Pyro.errors import ConnectionClosedError
 
         if not login:
             raise ConnectionError("Remote connection requires a login")
@@ -280,35 +280,33 @@ class RemoteConnection(object):
         if not check_if_somawf_on_server(login, cluster_address, password):
             raise ConnectionError("Cannot find soma-workflow on %s ."
                                   "Please verify if your PYTHONPATH "
-                                  "includes the soma-workflow."\
+                                  "includes the soma-workflow."
                                   % (cluster_address))
 
         if not check_if_soma_wf_cr_on_server(login, cluster_address, password):
-            raise ConnectionError("Cannot find "\
-                "soma_workflow.check_requirement on %s ."\
-                "Please update your soma-workflow on %s."\
+            raise ConnectionError("Cannot find "
+                                  "soma_workflow.check_requirement on %s ."
+                                  "Please update your soma-workflow on %s."
                                   % (cluster_address, cluster_address))
 
         if not check_if_ctype_drmaa_on_server(login, cluster_address,
                                               password):
-            raise ConnectionError("Cannot find "\
-                "drmaa libary on %s ."\
-                "Please verify your drmaa libary on %s. "\
-                "Or setup up enviroment variable DRMAA_LIBRARY_PATH."\
+            raise ConnectionError("Cannot find "
+                                  "drmaa libary on %s ."
+                                  "Please verify your drmaa libary on %s. "
+                                  "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
                                   % (cluster_address, cluster_address))
 
         if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
                                            password):
-           command = "python -m soma_workflow.start_database_server %s & bg"%(resource_id)
-           SSHExecCmd(
-              command,
-              login,
-              cluster_address,
-              userpw=password,
-              wait_output=False)
-
-
-
+            command = "python -m soma_workflow.start_database_server %s & bg" % (
+                resource_id)
+            SSHExecCmd(
+                command,
+                login,
+                cluster_address,
+                userpw=password,
+                wait_output=False)
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
@@ -327,9 +325,7 @@ class RemoteConnection(object):
             sshport=22,
             num_line_stdout=3)
 
-
         # print "std_out_lines="+repr(std_out_lines)
-
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
@@ -376,8 +372,8 @@ class RemoteConnection(object):
                 print "reading RSA key in " + repr(rsa_file_path)
                 if rsa_key_pass:
                     key = paramiko.RSAKey.from_private_key_file(
-                                        rsa_file_path,
-                                        password=rsa_key_pass)
+                        rsa_file_path,
+                        password=rsa_key_pass)
                 else:
                     key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
                 self.__transport.auth_publickey(login, key)
@@ -421,16 +417,16 @@ class RemoteConnection(object):
             try:
                 attempts = attempts + 1
                 print "Communication through the ssh tunnel. Attempt no " + \
-                repr(attempts) + "/" + repr(maxattemps)
+                    repr(attempts) + "/" + repr(maxattemps)
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
             except Pyro.errors.ProtocolError, e:
                 print "-> Communication through ssh tunnel Failed. %s: %s" \
-                % (type(e), e)
+                    % (type(e), e)
                 time.sleep(1)
             except Exception, e:
                 print "-> Communication through ssh tunnel Failed. %s: %s" \
-                % (type(e), e)
+                    % (type(e), e)
                 time.sleep(1)
 
             else:
@@ -616,7 +612,7 @@ class ConnectionChecker(object):
             while True:
                 with self.lock:
                     ls = self.lastSignal
-                delta = datetime.now()-ls
+                delta = datetime.now() - ls
                 if delta > self.interval * 3:
                     self.disconnectionCallback()
                     self.connected = False
@@ -643,6 +639,7 @@ class ConnectionChecker(object):
 
 
 class ConnectionHolder(threading.Thread):
+
     def __init__(self, connectionChecker):
         threading.Thread.__init__(self)
         self.setDaemon(True)
@@ -690,9 +687,9 @@ class Tunnel(threading.Thread):
                                      (self.chain_host, self.chain_port))
 
             print 'Connected!  Tunnel open %r -> %r -> %r' % (
-            self.request.getpeername(),
-            self.__chan.getpeername(),
-            (self.chain_host, self.chain_port))
+                self.request.getpeername(),
+                self.__chan.getpeername(),
+                (self.chain_host, self.chain_port))
 
         def handle(self):
             # print 'Handle : %s %d' %(repr(self.chain_host), self.chain_port)

@@ -27,7 +27,7 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         '''
         super(WorkflowExamplesTransfer, self).__init__()
 
-#        # Initialize the dictionaries
+# Initialize the dictionaries
         self.tr_file = {}
         self.tr_script = {}
         self.tr_stdin = {}

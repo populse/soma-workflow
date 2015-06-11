@@ -1,21 +1,21 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #"""
-#Created on Mon Oct 28 15:12:43 2013
+# Created on Mon Oct 28 15:12:43 2013
 #
 #@author: laure
 #
-# ##########################  BROKEN : Doesn't work  ##########################
+# BROKEN : Doesn't work  ##########################
 #"""
-#import sys
+# import sys
 #
-#import soma_workflow.constants as constants
-#from soma_workflow.test.job_tests.job_tests import JobTests
-#from soma_workflow.configuration import LIGHT_MODE
-#from soma_workflow.configuration import LOCAL_MODE
-#from soma_workflow.configuration import REMOTE_MODE
+# import soma_workflow.constants as constants
+# from soma_workflow.test.job_tests.job_tests import JobTests
+# from soma_workflow.configuration import LIGHT_MODE
+# from soma_workflow.configuration import LOCAL_MODE
+# from soma_workflow.configuration import REMOTE_MODE
 #
 #
-#class MPIParallelJobTest(JobTests):
+# class MPIParallelJobTest(JobTests):
 #    '''
 #    Submission of a parallel job (MPI)
 #    '''
@@ -31,8 +31,8 @@
 #
 #    def tearDown(self):
 #        super(MPIParallelJobTest, self).tearDown()
-#        # for file in self.output_files:
-#            #if os.path.isfile(file): os.remove(file)
+# for file in self.output_files:
+# if os.path.isfile(file): os.remove(file)
 #
 #    def test_result(self):
 #        jobid = self.my_jobs[0]
@@ -68,6 +68,6 @@
 #                        (process_num - 1, self.node_num))
 #
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    MPIParallelJobTest.run_test(debug=False)
 #    sys.exit(0)

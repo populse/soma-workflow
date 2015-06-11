@@ -39,7 +39,7 @@ def get_user_id(resource_id, config):
         sys.stdout.write("password:")
         password = sys.stdin.readline()
         password = password.rstrip()
-        #password = getpass.getpass()
+        # password = getpass.getpass()
         sys.stdout.write("Login => " + repr(login) + "\n")
     else:
         sys.stdout.write("Local connection to %s\n" % resource_id)

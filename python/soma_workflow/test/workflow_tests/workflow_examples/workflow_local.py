@@ -28,7 +28,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def __init__(self):
         super(WorkflowExamplesLocal, self).__init__()
 
-#        # Initialize the dictionaries
+# Initialize the dictionaries
         self.lo_file = {}
         self.lo_script = {}
         self.lo_stdin = {}

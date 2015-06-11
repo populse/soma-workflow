@@ -58,7 +58,7 @@ class WorkflowTest(unittest.TestCase):
         elif self.path_management == self.SHARED_TRANSFER:
             workflow_examples = WorkflowExamplesSharedTransfer()
         self.wf_examples = workflow_examples
-        #raise Exception("WorkflowTest is an abstract class.")
+        # raise Exception("WorkflowTest is an abstract class.")
 
     def tearDown(self):
         if self.wf_id:
@@ -89,16 +89,16 @@ class WorkflowTest(unittest.TestCase):
 
             if not interactive and config.get_mode() != LIGHT_MODE:
                 sys.stdout.write('Resource %s is not tested in '
-                    'non-interactive mode\n' % resource_id)
-                continue # skip login/password ask
+                                 'non-interactive mode\n' % resource_id)
+                continue  # skip login/password ask
             if interactive:
                 sys.stdout.write("Do you want to test the resource "
-                                "%s (Y/n) ? " % resource_id)
+                                 "%s (Y/n) ? " % resource_id)
                 test_resource = sys.stdin.readline()
                 if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
                     # Skip the resource
-                    sys.stdout.write('Resource %s is not tested \n' \
-                        % resource_id)
+                    sys.stdout.write('Resource %s is not tested \n'
+                                     % resource_id)
                     continue
             (login, password) = get_user_id(resource_id, config)
 
@@ -149,4 +149,3 @@ class WorkflowTest(unittest.TestCase):
             if '--interactive' in argv[1:]:
                 kwargs['interactive'] = True
         return kwargs
-

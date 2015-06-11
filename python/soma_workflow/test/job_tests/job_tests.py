@@ -8,8 +8,8 @@
 
 import unittest
 import time
-#import os
-#import getpass
+# import os
+# import getpass
 import sys
 from datetime import datetime
 from datetime import timedelta
@@ -18,13 +18,14 @@ from abc import abstractmethod
 import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration
-#from soma_workflow.test.utils import check_files
+# from soma_workflow.test.utils import check_files
 from soma_workflow.test.job_tests.job_examples import JobExamples
 from soma_workflow.test.utils import get_user_id
 from soma_workflow.test.utils import suppress_stdout
 
 
 class JobTests(unittest.TestCase):
+
     '''
     Abstract class for soma_workflow job and transfer common tests.
     '''

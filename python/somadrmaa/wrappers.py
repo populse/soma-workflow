@@ -30,7 +30,7 @@ import os
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
-(DRMMA_LIB_FOUND,_lib)=DetectFindLib(_drmaa_lib_env_name,'drmaa')
+(DRMMA_LIB_FOUND, _lib) = DetectFindLib(_drmaa_lib_env_name, 'drmaa')
 
 
 STRING = c_char_p
@@ -51,6 +51,8 @@ def init(contact=None):
 
 _lib.drmaa_exit.argtypes = [c_char_p, c_size_t]
 _lib.drmaa_init.restype = error_check
+
+
 def exit():
     return _lib.drmaa_exit(error_buffer, sizeof(error_buffer))
 
@@ -61,16 +63,22 @@ class drmaa_job_template_s(Structure):
 drmaa_job_template_t = drmaa_job_template_s
 drmaa_job_template_s._fields_ = [
 ]
+
+
 class drmaa_attr_names_s(Structure):
     pass
 drmaa_attr_names_t = drmaa_attr_names_s
 drmaa_attr_names_s._fields_ = [
 ]
+
+
 class drmaa_attr_values_s(Structure):
     pass
 drmaa_attr_values_t = drmaa_attr_values_s
 drmaa_attr_values_s._fields_ = [
 ]
+
+
 class drmaa_job_ids_s(Structure):
     pass
 drmaa_job_ids_t = drmaa_job_ids_s
@@ -92,25 +100,29 @@ drmaa_get_DRMAA_implementation.argtypes = [STRING, size_t, STRING, size_t]
 
 drmaa_allocate_job_template = _lib.drmaa_allocate_job_template
 drmaa_allocate_job_template.restype = error_check
-drmaa_allocate_job_template.argtypes = [POINTER(POINTER(drmaa_job_template_t)), STRING, size_t]
+drmaa_allocate_job_template.argtypes = [
+    POINTER(POINTER(drmaa_job_template_t)), STRING, size_t]
 drmaa_delete_job_template = _lib.drmaa_delete_job_template
 drmaa_delete_job_template.restype = error_check
-drmaa_delete_job_template.argtypes = [POINTER(drmaa_job_template_t), STRING, size_t]
+drmaa_delete_job_template.argtypes = [
+    POINTER(drmaa_job_template_t), STRING, size_t]
 drmaa_set_attribute = _lib.drmaa_set_attribute
 drmaa_set_attribute.restype = error_check
-drmaa_set_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING, 
+drmaa_set_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING,
                                 STRING, STRING, size_t]
 drmaa_get_attribute = _lib.drmaa_get_attribute
 drmaa_get_attribute.restype = error_check
-drmaa_get_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING, 
+drmaa_get_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING,
                                 STRING, size_t, STRING, size_t]
 
 drmaa_get_next_attr_name = _lib.drmaa_get_next_attr_name
 drmaa_get_next_attr_name.restype = c_int
-drmaa_get_next_attr_name.argtypes = [POINTER(drmaa_attr_names_t), STRING, size_t]
+drmaa_get_next_attr_name.argtypes = [
+    POINTER(drmaa_attr_names_t), STRING, size_t]
 drmaa_get_next_attr_value = _lib.drmaa_get_next_attr_value
 drmaa_get_next_attr_value.restype = c_int
-drmaa_get_next_attr_value.argtypes = [POINTER(drmaa_attr_values_t), STRING, size_t]
+drmaa_get_next_attr_value.argtypes = [
+    POINTER(drmaa_attr_values_t), STRING, size_t]
 drmaa_get_next_job_id = _lib.drmaa_get_next_job_id
 drmaa_get_next_job_id.restype = error_check
 drmaa_get_next_job_id.argtypes = [POINTER(drmaa_job_ids_t), STRING, size_t]
@@ -126,36 +138,41 @@ drmaa_release_job_ids.argtypes = [POINTER(drmaa_job_ids_t)]
 
 drmaa_set_vector_attribute = _lib.drmaa_set_vector_attribute
 drmaa_set_vector_attribute.restype = error_check
-drmaa_set_vector_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING, 
+drmaa_set_vector_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING,
                                        POINTER(STRING), STRING, size_t]
 drmaa_get_vector_attribute = _lib.drmaa_get_vector_attribute
 drmaa_get_vector_attribute.restype = error_check
-drmaa_get_vector_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING, 
+drmaa_get_vector_attribute.argtypes = [POINTER(drmaa_job_template_t), STRING,
                                        POINTER(POINTER(drmaa_attr_values_t)), STRING, size_t]
 drmaa_get_attribute_names = _lib.drmaa_get_attribute_names
 drmaa_get_attribute_names.restype = error_check
-drmaa_get_attribute_names.argtypes = [POINTER(POINTER(drmaa_attr_names_t)), STRING, size_t]
+drmaa_get_attribute_names.argtypes = [
+    POINTER(POINTER(drmaa_attr_names_t)), STRING, size_t]
 drmaa_get_vector_attribute_names = _lib.drmaa_get_vector_attribute_names
 drmaa_get_vector_attribute_names.restype = error_check
-drmaa_get_vector_attribute_names.argtypes = [POINTER(POINTER(drmaa_attr_names_t)), STRING, size_t]
+drmaa_get_vector_attribute_names.argtypes = [
+    POINTER(POINTER(drmaa_attr_names_t)), STRING, size_t]
 
 try:
     drmaa_get_num_attr_names = _lib.drmaa_get_num_attr_names
     drmaa_get_num_attr_names.restype = c_int
-    drmaa_get_num_attr_names.argtypes = [POINTER(drmaa_attr_names_t), POINTER(c_int)]
+    drmaa_get_num_attr_names.argtypes = [
+        POINTER(drmaa_attr_names_t), POINTER(c_int)]
     drmaa_get_num_attr_values = _lib.drmaa_get_num_attr_values
     drmaa_get_num_attr_values.restype = c_int
-    drmaa_get_num_attr_values.argtypes = [POINTER(drmaa_attr_values_t), POINTER(c_int)]
-except AttributeError: # the above are present from 1.0 onward only
+    drmaa_get_num_attr_values.argtypes = [
+        POINTER(drmaa_attr_values_t), POINTER(c_int)]
+except AttributeError:  # the above are present from 1.0 onward only
     pass
 
 drmaa_run_job = _lib.drmaa_run_job
 drmaa_run_job.restype = error_check
-drmaa_run_job.argtypes = [STRING, size_t, POINTER(drmaa_job_template_t), STRING, size_t]
+drmaa_run_job.argtypes = [
+    STRING, size_t, POINTER(drmaa_job_template_t), STRING, size_t]
 drmaa_run_bulk_jobs = _lib.drmaa_run_bulk_jobs
 drmaa_run_bulk_jobs.restype = error_check
-drmaa_run_bulk_jobs.argtypes = [POINTER(POINTER(drmaa_job_ids_t)), 
-                                POINTER(drmaa_job_template_t), 
+drmaa_run_bulk_jobs.argtypes = [POINTER(POINTER(drmaa_job_ids_t)),
+                                POINTER(drmaa_job_template_t),
                                 c_int, c_int, c_int, STRING, size_t]
 drmaa_control = _lib.drmaa_control
 drmaa_control.restype = error_check
@@ -165,7 +182,7 @@ drmaa_synchronize.restype = error_check
 drmaa_synchronize.argtypes = [POINTER(STRING), c_long, c_int, STRING, size_t]
 drmaa_wait = _lib.drmaa_wait
 drmaa_wait.restype = error_check
-drmaa_wait.argtypes = [STRING, STRING, size_t, POINTER(c_int), c_long, 
+drmaa_wait.argtypes = [STRING, STRING, size_t, POINTER(c_int), c_long,
                        POINTER(POINTER(drmaa_attr_values_t)), STRING, size_t]
 drmaa_wifexited = _lib.drmaa_wifexited
 drmaa_wifexited.restype = error_check

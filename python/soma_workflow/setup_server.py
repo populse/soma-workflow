@@ -25,9 +25,9 @@ import shutil
 from ConfigParser import SafeConfigParser
 
 
-#############################################################################
+#
 #               Global variables
-#############################################################################
+#
 
 path2somawf_setup_server = os.path.realpath(__file__)
 cuurent_dir = os.path.dirname(os.path.realpath(__file__))
@@ -37,9 +37,9 @@ path2resources = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/"
 req_version = (2, 7)
 
 
-#############################################################################
+#
 #               Environement variables to export
-#############################################################################
+#
 
 def SetPathToEnvVar(env_var_name, path):
     """ Set an environment variable
@@ -123,9 +123,9 @@ def SetupServerEnvVar(path2somawf):
     return envlines2add
 
 
-#############################################################################
+#
 #                      Server Configuration Tools
-#############################################################################
+#
 
 def ensure_is_dir(d, clear_dir=False):
     """ If the directory doesn't exist, use os.makedirs
@@ -210,21 +210,21 @@ def SetupConfigurationFileOnServer(userid,
         config_parser.add_section(resource_id)
 
         db_file = os.path.join(install_prefix, "soma_workflow_{0}.db".format(
-                                              resource_id))
+                               resource_id))
         config_parser.set(resource_id, configuration.CFG_DATABASE_FILE,
                           db_file)
         transfer_dir = os.path.join(install_prefix,
-                                  "transfered_files_{0}".format(resource_id))
+                                    "transfered_files_{0}".format(resource_id))
         config_parser.set(resource_id, configuration.CFG_TRANSFERED_FILES_DIR,
                           transfer_dir)
         ensure_is_dir(transfer_dir, clear_dir=True)
         config_parser.set(resource_id, configuration.CFG_NAME_SERVER_HOST,
                           ip_address_or_domain)
         config_parser.set(resource_id, configuration.CFG_SERVER_NAME,
-                      "soma_workflow_database_" + userid)
+                          "soma_workflow_database_" + userid)
 
         log_file = os.path.join(install_prefix, "logs_{0}".format(resource_id),
-                               "log_server")
+                                "log_server")
         config_parser.set(resource_id, configuration.OCFG_SERVER_LOG_FILE,
                           log_file)
         ensure_is_dir(os.path.dirname(log_file), clear_dir=True)
@@ -251,9 +251,9 @@ def SetupConfigurationFileOnServer(userid,
         WriteOutConfiguration(config_parser, config_file_path)
 
 
-#############################################################################
+#
 #               Start to check the requirement on the server side
-#############################################################################
+#
 
 cur_version = sys.version_info
 
@@ -264,7 +264,7 @@ if (cur_version < req_version and
         os.path.exists(path2resources)):
     logging.info("Use nested python to install")
     cmd = ["{0} '{1}'".format(os.path.join(path2resources, "bin", "python"),
-                             path2somawf_setup_server)]
+                              path2somawf_setup_server)]
     cmd.extend(sys.argv[1:])
     os.system(" ".join(cmd))
     sys.exit(0)
@@ -272,13 +272,13 @@ if (cur_version < req_version and
 # Raise Exeption otherwise
 if cur_version < req_version or cur_version >= (3, 0):
     raise ImportError("This program requires a python 2 version >= 2.7. "
-        "Please update your python {0}".format(repr(cur_version)))
+                      "Please update your python {0}".format(repr(cur_version)))
     sys.exit(0)
 
 
-#############################################################################
+#
 #               Set environment variables to the bashrc
-#############################################################################
+#
 
 sys.path.append(path2somawf)
 envlines2add = SetupServerEnvVar(path2somawf)
@@ -291,9 +291,9 @@ from setup_client2server import read_configuration_file
 
 AddLineDefintions2BashrcFile(envlines2add)
 
-#############################################################################
+#
 #             Create the configuration file on the server side
-#############################################################################
+#
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", help="resource id")
@@ -313,10 +313,10 @@ SetupConfigurationFileOnServer(userid, ip_address_or_domain, resource_id)
 lines2cmd = [
     ("kill $(ps -ef | grep 'python -m soma_workflow.start_database_server' |"
         "grep '%s' | grep -v grep | awk '{print $2}')") % (userid),
-     "python -m soma_workflow.start_database_server %s & bg" % (resource_id)
+    "python -m soma_workflow.start_database_server %s & bg" % (resource_id)
 ]
 
 for cmd in lines2cmd:
     print cmd
-    #os.system("echo '%s' " % (cmd))
+    # os.system("echo '%s' " % (cmd))
     os.system(cmd)

@@ -1,25 +1,25 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #"""
-#Created on Mon Oct 28 15:07:28 2013
+# Created on Mon Oct 28 15:07:28 2013
 #
 #@author: laure.hugo@cea.fr
 #@author: Soizic Laguitton
 #@organization: U{IFR 49<http://www.ifr49.org>}
 #@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-# ##########################  BROKEN : Doesn't work  ##########################
+# BROKEN : Doesn't work  ##########################
 #"""
-#import os
-#import sys
+# import os
+# import sys
 #
-#import soma_workflow.constants as constants
-#from soma_workflow.test.utils import check_files
-#from soma_workflow.test.job_tests.job_tests import JobTests
-#from soma_workflow.configuration import LIGHT_MODE
-#from soma_workflow.configuration import LOCAL_MODE
-#from soma_workflow.configuration import REMOTE_MODE
+# import soma_workflow.constants as constants
+# from soma_workflow.test.utils import check_files
+# from soma_workflow.test.job_tests.job_tests import JobTests
+# from soma_workflow.configuration import LIGHT_MODE
+# from soma_workflow.configuration import LOCAL_MODE
+# from soma_workflow.configuration import REMOTE_MODE
 #
 #
-#class JobPipelineWithTransferTest(JobTests):
+# class JobPipelineWithTransferTest(JobTests):
 #    '''
 #    Submission of a job pipeline with transfer
 #    '''
@@ -31,7 +31,7 @@
 #        self.client_files = []
 #        self.output_files = []
 #
-#        # Job1
+# Job1
 #        info1 = self.job_examples.submit_job1()
 #        self.my_jobs.append(info1[0])
 #        self.output_files.extend(info1[1])
@@ -51,7 +51,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d' % exit_value)
 #
-#        # Job2 & 3
+# Job2 & 3
 #        info2 = self.job_examples.submit_job2()
 #        self.my_jobs.append(info2[0])
 #        self.output_files.extend(info2[1])
@@ -89,7 +89,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d' % exit_value)
 #
-#        # Job 4
+# Job 4
 #        info4 = self.job_examples.submit_job4()
 #        self.my_jobs.append(info4[0])
 #        self.output_files.extend(info4[1])
@@ -114,7 +114,7 @@
 #        self.failUnless(exit_value == 0,
 #                        'Job exit value: %d' % exit_value)
 #
-#        # checking output files
+# checking output files
 #        for file in self.output_files:
 #            client_file = self.wf_ctrl.transfers([file])[file][0]
 #            self.failUnless(client_file)
@@ -130,7 +130,7 @@
 #        (correct, msg) = check_files(self.client_files, models)
 #        self.failUnless(correct, msg)
 #
-#        # checking stdout and stderr
+# checking stdout and stderr
 #        for i in range(0, 4):
 #            client_stdout = os.path.join(self.job_examples.output_dir,
 #                                         "stdout_pipeline_job" + str(i+1))
@@ -142,35 +142,35 @@
 #            self.client_files.append(client_stdout)
 #            self.client_files.append(client_stderr)
 #
-##        client_stdout = os.path.join(self.job_examples.output_dir,
-##                                     "stdout_pipeline_job2")
-##        client_stderr = os.path.join(self.job_examples.output_dir,
-##                                     "stderr_pipeline_job2")
-##        self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[1],
-##                                                client_stdout,
-##                                                client_stderr)
-##        self.client_files.append(client_stdout)
-##        self.client_files.append(client_stderr)
-##
-##        client_stdout = os.path.join(self.job_examples.output_dir,
-##                                     "stdout_pipeline_job3")
-##        client_stderr = os.path.join(self.job_examples.output_dir,
-##                                     "stderr_pipeline_job3")
-##        self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[2],
-##                                                client_stdout,
-##                                                client_stderr)
-##        self.client_files.append(client_stdout)
-##        self.client_files.append(client_stderr)
-##
-##        client_stdout = os.path.join(self.job_examples.output_dir,
-##                                     "stdout_pipeline_job4")
-##        client_stderr = os.path.join(self.job_examples.output_dir,
-##                                     "stderr_pipeline_job4")
-##        self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[3],
-##                                                client_stdout,
-##                                                client_stderr)
-##        self.client_files.append(client_stdout)
-##        self.client_files.append(client_stderr)
+# client_stdout = os.path.join(self.job_examples.output_dir,
+# "stdout_pipeline_job2")
+# client_stderr = os.path.join(self.job_examples.output_dir,
+# "stderr_pipeline_job2")
+# self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[1],
+# client_stdout,
+# client_stderr)
+# self.client_files.append(client_stdout)
+# self.client_files.append(client_stderr)
+#
+# client_stdout = os.path.join(self.job_examples.output_dir,
+# "stdout_pipeline_job3")
+# client_stderr = os.path.join(self.job_examples.output_dir,
+# "stderr_pipeline_job3")
+# self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[2],
+# client_stdout,
+# client_stderr)
+# self.client_files.append(client_stdout)
+# self.client_files.append(client_stderr)
+#
+# client_stdout = os.path.join(self.job_examples.output_dir,
+# "stdout_pipeline_job4")
+# client_stderr = os.path.join(self.job_examples.output_dir,
+# "stderr_pipeline_job4")
+# self.wf_ctrl.retrieve_job_stdouterr(self.my_jobs[3],
+# client_stdout,
+# client_stderr)
+# self.client_files.append(client_stdout)
+# self.client_files.append(client_stderr)
 #
 #        models = (self.job_examples.job1_stdouterr_models +
 #                  self.job_examples.job2_stdouterr_models +
@@ -180,6 +180,6 @@
 #        self.failUnless(correct, msg)
 #
 #
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    JobPipelineWithTransferTest.run_test(debug=False)
 #    sys.exit(0)

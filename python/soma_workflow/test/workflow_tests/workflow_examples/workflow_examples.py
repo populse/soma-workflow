@@ -342,7 +342,7 @@ class WorkflowExamples(object):
             job4.name = "Right hemisphere sulci recognition"
             jobs.append(job4)
 
-            #dependencies.append((job1, job2))
+            # dependencies.append((job1, job2))
             dependencies.append((job1, job11))
             dependencies.append((job11, job12))
             dependencies.append((job12, job13))

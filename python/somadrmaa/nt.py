@@ -5,6 +5,7 @@ from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
 
+
 def namedtuple(typename, field_names, verbose=False):
     """Returns a new subclass of tuple with named fields.
 
@@ -30,30 +31,38 @@ def namedtuple(typename, field_names, verbose=False):
     """
 
     # Parse and validate the field names.  Validation serves two purposes,
-    # generating informative error messages and preventing template injection attacks.
+    # generating informative error messages and preventing template injection
+    # attacks.
     if isinstance(field_names, basestring):
-        field_names = field_names.replace(',', ' ').split() # names separated by whitespace and/or commas
+        field_names = field_names.replace(
+            ',', ' ').split()  # names separated by whitespace and/or commas
     field_names = tuple(field_names)
     for name in (typename,) + field_names:
-        if not min(c.isalnum() or c=='_' for c in name):
-            raise ValueError('Type names and field names can only contain alphanumeric characters and underscores: %r' % name)
+        if not min(c.isalnum() or c == '_' for c in name):
+            raise ValueError(
+                'Type names and field names can only contain alphanumeric characters and underscores: %r' % name)
         if _iskeyword(name):
-            raise ValueError('Type names and field names cannot be a keyword: %r' % name)
+            raise ValueError(
+                'Type names and field names cannot be a keyword: %r' % name)
         if name[0].isdigit():
-            raise ValueError('Type names and field names cannot start with a number: %r' % name)
+            raise ValueError(
+                'Type names and field names cannot start with a number: %r' % name)
     seen_names = set()
     for name in field_names:
         if name.startswith('_'):
-            raise ValueError('Field names cannot start with an underscore: %r' % name)
+            raise ValueError(
+                'Field names cannot start with an underscore: %r' % name)
         if name in seen_names:
             raise ValueError('Encountered duplicate field name: %r' % name)
         seen_names.add(name)
 
     # Create and fill-in the class template
     numfields = len(field_names)
-    argtxt = repr(field_names).replace("'", "")[1:-1]   # tuple repr without parens or quotes
+    argtxt = repr(field_names).replace("'", "")[
+        1:-1]   # tuple repr without parens or quotes
     reprtxt = ', '.join('%s=%%r' % name for name in field_names)
-    dicttxt = ', '.join('%r: t[%d]' % (name, pos) for pos, name in enumerate(field_names))
+    dicttxt = ', '.join('%r: t[%d]' % (name, pos)
+                        for pos, name in enumerate(field_names))
     template = '''class %(typename)s(tuple):
         '%(typename)s(%(argtxt)s)' \n
         __slots__ = () \n
