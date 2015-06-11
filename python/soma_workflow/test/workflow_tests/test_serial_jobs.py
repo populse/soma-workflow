@@ -92,11 +92,13 @@ class SerialJobsTest(WorkflowTest):
                 # To check job standard out and standard err
                 job_stdout_file = tempfile.NamedTemporaryFile(
                     prefix="job_soma_out_log_",
-                    suffix=repr(job_id))
+                    suffix=repr(job_id),
+                    delete=False)
                 job_stdout_file = job_stdout_file.name
                 job_stderr_file = tempfile.NamedTemporaryFile(
                     prefix="job_soma_outerr_log_",
-                    suffix=repr(job_id))
+                    suffix=repr(job_id),
+                    delete=False)
                 job_stderr_file = job_stderr_file.name
 
                 try:
