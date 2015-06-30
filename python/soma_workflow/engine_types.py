@@ -699,7 +699,7 @@ class EngineWorkflow(Workflow):
                 assert(job.status == constants.NOT_SUBMITTED)
                 ended_jobs[job.job_id] = job
                 job.status = constants.FAILED
-                job.exit_status = constants.EXIT_ABORTED
+                job.exit_status = constants.EXIT_NOTRUN
 
         if len(running) + len(to_run) > 0:
             status = constants.WORKFLOW_IN_PROGRESS

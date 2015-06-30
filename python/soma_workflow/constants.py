@@ -55,6 +55,7 @@ Exit job status:
 '''
 EXIT_UNDETERMINED = "exit_status_undetermined"
 EXIT_ABORTED = "aborted"
+EXIT_NOTRUN = "aborted_before_running"
 FINISHED_REGULARLY = "finished_regularly"
 FINISHED_TERM_SIG = "finished_signal"
 FINISHED_UNCLEAR_CONDITIONS = "finished_unclear_condition"
@@ -64,7 +65,8 @@ JOB_EXIT_STATUS = [EXIT_UNDETERMINED,
                    FINISHED_REGULARLY,
                    FINISHED_TERM_SIG,
                    FINISHED_UNCLEAR_CONDITIONS,
-                   USER_KILLED]
+                   USER_KILLED,
+                   EXIT_NOTRUN]
 
 
 '''

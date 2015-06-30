@@ -211,19 +211,21 @@ class WorkflowEngineLoop(object):
                     self.logger.debug("idle => scheduler sleep")
                     self._scheduler.sleep()
 
-                # --- 1. Jobs and workflow deletion and kill ------------------------
+                # --- 1. Jobs and workflow deletion and kill ------------------
                 # Get the jobs and workflow with the status DELETE_PENDING
                 # and KILL_PENDING
                 jobs_to_delete = []
                 jobs_to_kill = []
                 if self._jobs:
-                    (jobs_to_delete, jobs_to_kill) = self._database_server.jobs_to_delete_and_kill(
-                        self._user_id)
+                    (jobs_to_delete, jobs_to_kill) \
+                        = self._database_server.jobs_to_delete_and_kill(
+                            self._user_id)
                 wf_to_delete = []
                 wf_to_kill = []
                 if self._workflows:
-                    (wf_to_delete, wf_to_kill) = self._database_server.workflows_to_delete_and_kill(
-                        self._user_id)
+                    (wf_to_delete, wf_to_kill) \
+                        = self._database_server.workflows_to_delete_and_kill(
+                            self._user_id)
 
                 # Delete and kill properly the jobs and workflows in _jobs and
                 # _workflows
@@ -242,6 +244,7 @@ class WorkflowEngineLoop(object):
                             self._database_server.delete_job(job_id)
                             del self._jobs[job_id]
                         else:
+                            job = self._jobs[job_id]
                             self._database_server.set_job_status(job_id,
                                                                  job.status,
                                                                  force=True)
@@ -263,7 +266,7 @@ class WorkflowEngineLoop(object):
                             ended_jobs.update(ended_jobs_in_wf)
                             wf_to_inspect.add(wf_id)
 
-                # --- 2. Update job status from the scheduler -------------------------------
+                # --- 2. Update job status from the scheduler -----------------
                 # get back the termination status and terminate the jobs which
                 # ended
 
@@ -275,7 +278,8 @@ class WorkflowEngineLoop(object):
                     wf_jobs.update(wf.registered_jobs)
                     wf_transfers.update(wf.registered_tr)
 
-                for job in itertools.chain(self._jobs.itervalues(), wf_jobs.itervalues()):
+                for job in itertools.chain(self._jobs.itervalues(),
+                                           wf_jobs.itervalues()):
                     if job.exit_status == None and job.drmaa_id != None:
                         try:
                             job.status = self._scheduler.get_job_status(
@@ -292,14 +296,17 @@ class WorkflowEngineLoop(object):
                             drms_error_jobs[job.job_id] = job
                         self.logger.debug(
                             "job " + repr(job.job_id) + " : " + job.status)
-                        if job.status == constants.DONE or job.status == constants.FAILED:
+                        if job.status == constants.DONE \
+                                or job.status == constants.FAILED:
                             self.logger.debug(
                                 "End of job %s, drmaaJobId = %s, status= %s",
                                 job.job_id, job.drmaa_id, repr(job.status))
                             (job.exit_status,
                              job.exit_value,
                              job.terminating_signal,
-                             job.str_rusage) = self._scheduler.get_job_exit_info(job.drmaa_id)
+                             job.str_rusage) \
+                                = self._scheduler.get_job_exit_info(
+                                    job.drmaa_id)
 
                             self.logger.debug("  after get_job_exit_info ")
                             self.logger.debug(
@@ -385,7 +392,8 @@ class WorkflowEngineLoop(object):
                         #  self._pending_queues[job.queue] = [job]
                         # job.status = constants.SUBMISSION_PENDING
                         self.logger.debug(
-                            "job %s !!!ERROR!!! %s: %s" % (repr(job.command), type(e), e))
+                            "job %s !!!ERROR!!! %s: %s" % (repr(job.command),
+                                                           type(e), e))
                         job.status = constants.FAILED
                         job.exit_status = constants.EXIT_ABORTED
                         stderr_file = open(job.stderr_file, "wa")
@@ -623,7 +631,7 @@ class WorkflowEngineLoop(object):
                     job.exit_status = constants.USER_KILLED
                 else:
                     # in other cases the job has not actually run.
-                    job.exit_status = constants.EXIT_ABORTED
+                    job.exit_status = constants.EXIT_NOTRUN
                 job.status = constants.FAILED
                 job.exit_value = None
                 job.terminating_signal = None
