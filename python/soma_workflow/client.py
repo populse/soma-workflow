@@ -982,6 +982,7 @@ class Helper(object):
 
         * include_aborted_jobs *boolean*
           Include the jobs which exit status is constants.EXIT_ABORTED
+          and constants.EXIT_NOTRUN
 
         * include_user_killed_jobs *boolean*
           Include the jobs which exit status is constants.USER_KILLED
@@ -999,8 +1000,11 @@ class Helper(object):
         for (job_id, status, queue, exit_info, dates) in jobs_info:
             if(status == constants.DONE and exit_info[1] != 0) or \
               (status == constants.FAILED and
-               (include_aborted_jobs or exit_info[0] != constants.EXIT_ABORTED) and
-               (include_user_killed_jobs or exit_info[0] != constants.USER_KILLED)):
+               (include_aborted_jobs
+                or exit_info[0] not in (constants.EXIT_ABORTED,
+                                        constants.EXIT_NOTRUN))
+               and (include_user_killed_jobs
+                    or exit_info[0] != constants.USER_KILLED)):
                 failed_job_ids.append(job_id)
         return failed_job_ids
 
@@ -1009,9 +1013,10 @@ class Helper(object):
         '''
         Delete all the workflows.
         If force is set to True: the call will block until the workflows are
-        deleted. With force set to True, if a workflow can not be deleted properly
-        it is deleted from Soma-workflow database. However, if some jobs are still
-        running they will not be killed. In this case the return value is False.
+        deleted. With force set to True, if a workflow can not be deleted
+        properly it is deleted from Soma-workflow database. However, if some
+        jobs are still running they will not be killed. In this case the return
+        value is False.
 
         * wf_ctrl *client.WorkflowController*
 
@@ -1052,8 +1057,8 @@ class Helper(object):
         * wf_ctrl *client.WorkflowController*
 
         * buffer_size *int*
-            Depending on the transfer method, the files can be transfered piece by
-            piece. The size of each piece can be tuned using the buffer_size
+            Depending on the transfer method, the files can be transfered piece
+            by piece. The size of each piece can be tuned using the buffer_size
             argument.
         '''
         transfer_info = None
@@ -1076,15 +1081,16 @@ class Helper(object):
                               wf_ctrl,
                               buffer_size=512 ** 2):
         '''
-        Transfers all the output files of a workflow which are ready to transfer.
+        Transfers all the output files of a workflow which are ready to
+        transfer.
 
         * workflow_id *workflow identifier*
 
         * wf_ctrl *client.WorkflowController*
 
         * buffer_size *int*
-            Depending on the transfer method, the files can be transfered piece by
-            piece. The size of each piece can be tuned using the buffer_size
+            Depending on the transfer method, the files can be transfered piece
+            by piece. The size of each piece can be tuned using the buffer_size
             argument.
         '''
         transfer_info = None
@@ -1134,8 +1140,8 @@ class Helper(object):
     def unserialize(file_path):
         '''
         Loads a workflow from a file.
-        Opens JSON format or pickle if Python >= 2.6, only Python pickle otherwise
-        (see the method: Helper.convert_wf_file_for_p2_5).
+        Opens JSON format or pickle if Python >= 2.6, only Python pickle
+        otherwise (see the method: Helper.convert_wf_file_for_p2_5).
 
         * file_path *String*
 
@@ -1179,12 +1185,13 @@ class Helper(object):
             try:
                 workflow = pickle.load(file)
             except Exception, e:
-                raise SerializationError("Error %s: %s \n\n"
-                                         "The workflow file may have been created "
-                                         "using Python >= 2.6 using the JSON format.\n"
-                                         "Use the converter: \n"
-                                         "soma_workflow.client.Helper.convert_wf_file_for_p2_5 "
-                                         " " % (type(e), e))
+                raise SerializationError(
+                  "Error %s: %s \n\n"
+                  "The workflow file may have been created "
+                  "using Python >= 2.6 using the JSON format.\n"
+                  "Use the converter: \n"
+                  "soma_workflow.client.Helper.convert_wf_file_for_p2_5 "
+                  " " % (type(e), e))
             try:
                 file.close()
             except Exception, e:
@@ -1201,8 +1208,8 @@ class Helper(object):
     def convert_wf_file_for_p2_5(origin_file_path, target_file_path):
         '''
         This method requires Python >= 2.6.
-        It converts a workflow file created using Python >= 2.6 to workflow file
-        usable in Python 2.5.
+        It converts a workflow file created using Python >= 2.6 to workflow
+        file usable in Python 2.5.
         '''
         if sys.version_info[:2] < (2, 6):
             raise Exception("convert_wf_file_for_p2_5 requires Python >= 2.6.")
@@ -1240,8 +1247,9 @@ class Helper(object):
                 if isinstance(ncpus, int) and ncpus > 0:
                     return ncpus
             else:  # OSX:
-                return int(subprocess.Popen(["sysctl", "-n", "hw.ncpu"],
-                                            stdout=subprocess.PIPE).stdout.read())
+                return int(subprocess.Popen(
+                    ["sysctl", "-n", "hw.ncpu"],
+                    stdout=subprocess.PIPE).stdout.read())
         # Windows:
         if os.environ.has_key("NUMBER_OF_PROCESSORS"):
             ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
