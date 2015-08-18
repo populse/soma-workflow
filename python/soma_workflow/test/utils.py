@@ -112,8 +112,9 @@ def identical_files(filepath1, filepath2):
         identical = (line1 == line2)
     if not identical:
         return (
-            (False, "%s and %s are different. line %d: \n file1: %s file2:%s" %
-             (filepath1, filepath2, lineNb, line1, line2))
+            (False, "Files are different, line %d: \n file1: %s\n"
+             "%s\nfile2: %s\n%s" %
+             (lineNb, filepath1, filepath2, line1, line2))
         )
     else:
         return (True, None)

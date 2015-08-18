@@ -146,6 +146,28 @@ class MultipleTest(WorkflowTest):
                         isSame, msg = identical_files(
                             job_stdout_file,
                             self.wf_examples.lo_stdout[job_nb])
+
+                        # this debug info block should be removed when we find
+                        # out why tests randomly fail from time to time.
+                        if not isSame:
+                            print >> sys.stderr, \
+                                '** failure in test_multiple.py job stdout **'
+                            print >> sys.stderr, msg
+                            eng_stdout, eng_stderr = \
+                                self.wf_ctrl._engine_proxy.stdouterr_file_path(
+                                    job_id)
+                            print >> sys.stderr, 'job:', job_name, \
+                                ', stdout:', eng_stdout
+                            print >> sys.stderr, open(eng_stdout).read()
+                            jobs_files = [
+                                (ji[0],
+                                 self.wf_ctrl. \
+                                    _engine_proxy.stdouterr_file_path(
+                                        ji[0])) for ji in jobs_info]
+                            print >> sys.stderr, 'engine jobs files:', \
+                                jobs_files
+                            print >> sys.stderr, '** **'
+
                         self.assertTrue(isSame, msg)
                         # Test no stderr
                         self.assertTrue(os.stat(job_stderr_file).st_size == 0,
