@@ -4,6 +4,7 @@
 Graphical User Interface 
 ========================
 
+Soma-Workflow provides a graphical interface program, named ``soma_workflow_gui``. It is used to submit, stop, restart, and more generally monitor workflows execution on local or remote computing resources.
 
 Connection
 ==========
