@@ -85,6 +85,8 @@ class FakePipelineTest(WorkflowTest):
             job_list = self.wf_ctrl.jobs([job_id])
             job_name, job_command, job_submission_date = job_list[job_id]
 
+            self.tested_job = job_id
+
             if exit_info[0] == constants.FINISHED_REGULARLY:
                 # To check job standard out and standard err
                 job_stdout_file = tempfile.NamedTemporaryFile(
@@ -115,6 +117,8 @@ class FakePipelineTest(WorkflowTest):
                         os.unlink(job_stdout_file)
                     if os.path.exists(job_stderr_file):
                         os.unlink(job_stderr_file)
+
+        del self.tested_job
 
 
 if __name__ == '__main__':

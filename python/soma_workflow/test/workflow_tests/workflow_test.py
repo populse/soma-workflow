@@ -149,3 +149,48 @@ class WorkflowTest(unittest.TestCase):
             if '--interactive' in argv[1:]:
                 kwargs['interactive'] = True
         return kwargs
+
+    def print_job_io_info(self, job_id, msg=None, file=sys.stderr):
+        # this debug info should be removed when we find
+        # out why tests randomly fail from time to time.
+        (jobs_info, transfers_info, workflow_status, workflow_queue,
+            tmp_files) = self.wf_ctrl.workflow_elements_status(self.wf_id)
+        job_list = self.wf_ctrl.jobs([job_id])
+        job_name, job_command, job_submission_date = job_list[job_id]
+
+        print >> file, '\n** failure in %s job stdout/stderr **' \
+            % self.__class__.__name__
+        if msg:
+            print >> file, msg
+        eng_stdout, eng_stderr = \
+            self.wf_ctrl._engine_proxy.stdouterr_file_path(job_id)
+        print >> file, 'job:', job_name, \
+            ', stdout:', eng_stdout
+        print >> file, open(eng_stdout).read()
+        jobs_files = [
+            (ji[0],
+             self.wf_ctrl._engine_proxy.stdouterr_file_path(ji[0]))
+            for ji in jobs_info]
+        print >> file, 'engine jobs files:', jobs_files
+        print >> file, '** **'
+
+    def assertTrue(self, condition, msg=None):
+        if not bool(condition) and hasattr(self, 'tested_job'):
+            self.print_job_io_info(self.tested_job, msg)
+        return super(WorkflowTest, self).assertTrue(condition, msg)
+
+    def assertFalse(self, condition, msg=None):
+        if bool(condition) and hasattr(self, 'tested_job'):
+            self.print_job_io_info(self.tested_job, msg)
+        return super(WorkflowTest, self).assertFalse(condition, msg)
+
+    def assertEqual(self, first, second, msg=None):
+        if first != second and hasattr(self, 'tested_job'):
+            self.print_job_io_info(self.tested_job, msg)
+        return super(WorkflowTest, self).assertEqual(first, second, msg)
+
+    def assertNonEqual(self, first, second, msg=None):
+        if first == second and hasattr(self, 'tested_job'):
+            self.print_job_io_info(self.tested_job, msg)
+        return super(WorkflowTest, self).assertNonEqual(first, second, msg)
+
