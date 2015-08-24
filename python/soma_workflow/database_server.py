@@ -620,10 +620,11 @@ class WorkflowDatabaseServer(object):
                     0]  # supposes that the user_id is valid
                 login = self._string_conversion(login)
                 count = 0
-                for (count,) in cursor.execute('SELECT count FROM fileCounter'):
-                    break
-                cursor.execute('UPDATE fileCounter SET count=? WHERE count=?',
-                               [count + 1, count])
+                with cursor.connection:
+                    for (count,) in cursor.execute(
+                            'SELECT count FROM fileCounter'):
+                        break
+                    cursor.execute('UPDATE fileCounter SET count=count+1')
                 file_num = count
             except Exception, e:
                 if not external_cursor:
@@ -646,8 +647,9 @@ class WorkflowDatabaseServer(object):
                     # client_file_path[client_file_path.rfind("/")+1:] + '_' +
                     # repr(file_num)
                 else:
-                    newFilePath = os.path.join(userDirPath, client_base_name[
-                                               0:iextention] + '_' + repr(file_num) + client_base_name[iextention:])
+                    newFilePath = os.path.join(
+                        userDirPath, client_base_name[0:iextention] + '_'
+                        + repr(file_num) + client_base_name[iextention:])
                     # newFilePath +=
                     # client_file_path[client_file_path.rfind("/")+1:iextention]
                     # + '_' + repr(file_num) + client_file_path[iextention:]
