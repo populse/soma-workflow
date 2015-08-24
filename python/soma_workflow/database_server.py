@@ -599,13 +599,16 @@ class WorkflowDatabaseServer(object):
         Generates file path for transfers.
         The user_id must be valid.
 
-        @type  user_id: C{UserIdentifier}
-        @param user_id: user identifier
-        @type  client_file_path: string
-        @param client_file_path: the generated name can derivate from
-        this path.
-        @rtype: string
-        @return: file path
+        Parameters:
+
+        user_id: UserIdentifier
+            user identifier
+        client_file_path: string
+            the generated name can derivate from this path.
+
+        Retuns:
+
+        file path: string
         '''
 
         with self._lock:

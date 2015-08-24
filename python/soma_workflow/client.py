@@ -87,21 +87,21 @@ class WorkflowController(object):
         Looks for a soma-workflow configuration file (if not specified in the
         *config* argument).
 
-        * resource_id *string*
+        resource_id: *string*
             Identifier of the computing resource to connect to.
             If None, the number of cpu of the current machine is detected and the basic scheduler is lauched.
 
-        * login *string*
+        login: *string*
             Required if the computing resource is remote.
 
-        * password *string*
+        password: *string*
             Required if the computing resource is remote and not RSA key where
             configured to log on the remote machine with ssh.
 
-        * config *configuration.Configuration*
+        config: *configuration.Configuration*
             Optional configuration.
 
-        * rsa_key_pass *string*
+        rsa_key_pass: *string*
             Required if the RSA key is protected with a password.
 
         .. note::
@@ -196,28 +196,34 @@ class WorkflowController(object):
         '''
         Submits a workflow and returns a workflow identifier.
 
-        * workflow *client.Workflow*
+        Parameters:
+
+        workflow: *client.Workflow*
             Workflow description.
 
-        * expiration_date *datetime.datetime*
+        expiration_date: *datetime.datetime*
             After this date the workflow will be deleted.
 
-        * name *string*
+        name: *string*
             Optional workflow name.
 
-        * queue *string*
-            Optional name of the queue where to submit jobs. If it is not specified
-            the jobs will be submitted to the default queue.
+        queue: *string*
+            Optional name of the queue where to submit jobs. If it is not
+            specified the jobs will be submitted to the default queue.
 
-        * returns: *int*
-            Workflow identifier.
+        Returns:
+
+        Workflow identifier: int
 
         Raises *WorkflowError* or *JobError* if the workflow is not correct.
         '''
 
-        if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
-            raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                                    "Use soma_workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.")
+        if self.engine_config_proxy.get_scheduler_type() \
+                == configuration.MPI_SCHEDULER:
+            raise SomaWorkflowError(
+                "The MPI scheduler is configured for this resource. "
+                "Use soma_workflow.MPI_workflow_runner to submit a workflow "
+                "using the MPI scheduler.")
 
         # cProfile.runctx("wf_id = self._engine_proxy.submit_workflow(workflow,
         # expiration_date, name, queue)", globals(), locals(),
@@ -236,27 +242,32 @@ class WorkflowController(object):
         Submits a job which is not part of a workflow.
         Returns a job identifier.
 
-        If the job used transfered files the list of involved file transfer **must
-        be** specified setting the arguments: *referenced_input_files* and
-        *referenced_output_files*.
+        If the job used transfered files the list of involved file transfer
+        **must be** specified setting the arguments: *referenced_input_files*
+        and *referenced_output_files*.
 
         Each path must be reachable from the computing resource.
 
-        * job *client.Job*
+        job: *client.Job*
 
-        * queue *string*
+        queue: *string*
             Name of the queue where to submit the jobs. If it is not
             specified the job will be submitted to the default queue.
 
-        * returns: int
-          Job identifier.
+        Returns:
+
+        Job identifier: string
 
         Raises *JobError* if the job is not correct.
         '''
-        print "The method submit_job is deprecated since version 2.4. Use submit_workflow instead."
-        if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
-            raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                                    "Use soma_workflow.MPI_workflow_runner to submit a workflow using the MPI scheduler.")
+        print "The method submit_job is deprecated since version 2.4. " \
+            "Use submit_workflow instead."
+        if self.engine_config_proxy.get_scheduler_type() \
+                == configuration.MPI_SCHEDULER:
+            raise SomaWorkflowError(
+                "The MPI scheduler is configured for this resource. "
+                "Use soma_workflow.MPI_workflow_runner to submit a workflow "
+                "using the MPI scheduler.")
 
         job_id = self._engine_proxy.submit_job(job, queue)
         return job_id
@@ -266,9 +277,9 @@ class WorkflowController(object):
         Registers a file transfer which is not part of a workflow and returns a
         file transfer identifier.
 
-        * file_transfer *client.FileTransfer*
+        file_transfer: *client.FileTransfer*
 
-        * returns *EngineTransfer*
+        returns: *EngineTransfer*
         '''
 
         engine_transfer = self._engine_proxy.register_transfer(file_transfer)
@@ -279,9 +290,11 @@ class WorkflowController(object):
 
     def workflow(self, workflow_id):
         '''
-        * workflow_id *workflow_identifier*
+        workflow_id: *workflow_identifier*
 
-        * returns: *Workflow*
+        returns:
+
+        Workflow
 
         Raises *UnknownObjectError* if the workflow_id is not valid
         '''
