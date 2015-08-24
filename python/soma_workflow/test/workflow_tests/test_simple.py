@@ -114,9 +114,11 @@ class SimpleTest(WorkflowTest):
                             self.wf_examples.lo_stdout[1])
                         self.assertTrue(isSame, msg)
                         # Test no stderr
+                        msg = "job stderr not empty : cf %s\n" \
+                            "stderr:\n---\n%s\n---" \
+                            % (job_stderr_file, open(job_stderr_file).read())
                         self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                        "job stderr not empty : cf %s" %
-                                        job_stderr_file)
+                                        msg)
                         # Test output files
                         if self.path_management == self.LOCAL_PATH:
                             isSame, msg = identical_files(

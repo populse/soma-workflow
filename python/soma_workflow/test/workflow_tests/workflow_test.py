@@ -166,19 +166,29 @@ class WorkflowTest(unittest.TestCase):
 
         print >> file, '\n** failure in %s job stdout/stderr **' \
             % self.__class__.__name__
+        print >> file, 'job id:', job_id, ', job name:', job_name
         if msg:
+            print >> file, '++ error message: ++'
             print >> file, msg
+            print >> file, '++ (message end) ++'
         eng_stdout, eng_stderr = \
             self.wf_ctrl._engine_proxy.stdouterr_file_path(job_id)
-        print >> file, 'job:', job_name, \
-            ', stdout:', eng_stdout
+        print >> file, 'job engine stdout:', eng_stdout, \
+            ', stderr:', eng_stderr
+        print >> file, '++ stdout: ++'
         print >> file, open(eng_stdout).read()
+        print >> file, '++ (stdout end) ++'
+        print >> file, '++ stderr: ++'
+        print >> file, open(eng_stderr).read()
+        print >> file, '++ (stderr end) ++'
         jobs_files = [
             (ji[0],
              self.wf_ctrl._engine_proxy.stdouterr_file_path(ji[0]))
             for ji in jobs_info]
         print >> file, 'engine jobs files:', jobs_files
-        print >> file, '** **'
+        print >> file, 'jobs list:', job_list
+        print >> file, 'tmp_files:', tmp_files
+        print >> file, '** (job failure end) **'
 
     def assertTrue(self, condition, msg=None):
         if not bool(condition) and hasattr(self, 'tested_job'):
