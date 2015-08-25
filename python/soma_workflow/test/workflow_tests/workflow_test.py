@@ -98,7 +98,10 @@ class WorkflowTest(unittest.TestCase):
             tmpdb = tempfile.mkstemp('.db', prefix='swf_')
             os.close(tmpdb[0])
             os.unlink(tmpdb[1])
+            # and so on for transfers / stdio files directory
+            tmptrans = tempfile.mkdtemp(prefix='swf_')
             config._database_file = tmpdb[1]
+            config._transfered_file_dir = tmptrans
 
             try:
 
@@ -147,6 +150,7 @@ class WorkflowTest(unittest.TestCase):
 
             finally:
                 os.unlink(config._database_file)
+                shutil.rmtree(config._transfered_file_dir)
 
     @staticmethod
     def parse_args(argv):
