@@ -46,6 +46,7 @@ find_package( Sphinx )
 BRAINVISA_GENERATE_SPHINX_DOC( "doc/source"
   "share/doc/soma-workflow-${BRAINVISA_PACKAGE_VERSION_MAJOR}.${BRAINVISA_PACKAGE_VERSION_MINOR}/sphinx" )
 
+add_test(soma-workflow-api "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.job_tests.test_workflow_api)
 add_test(soma-workflow-exception1 "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_exception1)
 add_test(soma-workflow-exception2 "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_exception2)
 add_test(soma-workflow-fake_pipeline "${CMAKE_BINARY_DIR}/bin/bv_env" "${PYTHON_EXECUTABLE}" -m soma_workflow.test.workflow_tests.test_fake_pipeline)

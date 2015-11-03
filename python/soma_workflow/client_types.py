@@ -640,6 +640,49 @@ class Workflow(object):
         if not root_group:
             self.root_group = self.jobs
 
+    def add_workflow(self, workflow, as_group=None):
+        '''
+        Concatenates a workflow into the current one.
+
+        Parameters
+        ----------
+        workflow: Workflow
+            workflow to be added to self
+        as_group: string (optional)
+            if specified, the workflow will be added as a group with the given
+            name
+
+        Returns
+        -------
+        group or None
+            if as_group is specified, the group created for the sub-workflow
+            will be returned, otherwise the function returns None.
+        '''
+        self.jobs += workflow.jobs
+        if type(self.dependencies) in (list, tuple):
+            self.dependencies += workflow.dependencies
+        else: # assume set
+            self.dependencies.update(workflow.dependencies)
+        if as_group:
+            group = Group(workflow.root_group, name=as_group)
+            self.root_group.append(group)
+            self.groups += [group] + workflow.groups
+        else:
+            group = None
+            self.root_group += workflow.root_group
+            self.groups += workflow.groups
+        return group
+
+    def add_dependencies(self, dependencies):
+        '''
+        Add additional dependencies in the workflow.
+        '''
+        if type(self.dependencies) in (list, tuple):
+            self.dependencies += dependencies
+        else: # assume set
+            self.dependencies.update(dependencies)
+        self.__convert_group_dependencies(dependencies)
+
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
@@ -899,18 +942,33 @@ class Workflow(object):
                 dependencies.append((item, out_hub))
         return dependencies
 
-    def __convert_group_dependencies(self):
+    def __convert_group_dependencies(self, dependencies=None):
         '''
         Converts dependencies using groups into barrier jobs when needed
+
+        Parameters
+        ----------
+        dependencies: list, tuple, set (optional)
+            dependencies list to check. If not specified, chek all dependencies
+            in the workflow. When specified, the dependencies list should be
+            a subset of the workflow dependencies (all must exist in
+            self.dependencies)
         '''
         new_deps_list = []
         group_to_hub = {}
         deps_to_remove = []
-        for index, dependency in enumerate(self.dependencies):
+        if dependencies is None:
+            dependencies = self.dependencies
+            reindex = False
+        else:
+            reindex = True
+        for index, dependency in enumerate(dependencies):
             j1, j2 = dependency
             if not isinstance(j1, Group) and not isinstance(j2, Group):
                 continue
             if type(self.dependencies) in (list, tuple):
+                if reindex:
+                    index = self.dependencies.index(dependency)
                 deps_to_remove.insert(0, index)  # reverse order index list
             else:
                 deps_to_remove.append(dependency)

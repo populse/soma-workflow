@@ -14,25 +14,30 @@ Workflow
 ========
 
 .. autoclass:: client.Workflow
+    :members:
 
 Group
 =====
 
 .. autoclass:: client.Group
+    :members:
 
 
 Job
 ===
 
 .. autoclass:: client.Job
+    :members:
 
 .. autoclass:: client.BarrierJob
+    :members:
 
 
 FileTransfer
 ============
 
 .. autoclass:: client.FileTransfer
+    :members:
 
 
 .. _shared-resource-path-api:
@@ -41,3 +46,4 @@ SharedResourcePath
 ====================
 
 .. autoclass:: client.SharedResourcePath
+    :members:
