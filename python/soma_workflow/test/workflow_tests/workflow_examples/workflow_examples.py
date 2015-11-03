@@ -31,7 +31,7 @@ class WorkflowExamples(object):
         module_file = os.path.realpath(module_file)
         module_path = os.path.dirname(module_file)
         self.examples_dir = os.path.join(module_path,
-                                         "..", "..", "test", "jobExamples")
+                                         "test", "data", "jobExamples")
         tmp = tempfile.mkstemp('', prefix='swf_test_')
         os.close(tmp[0])
         os.unlink(tmp[1])

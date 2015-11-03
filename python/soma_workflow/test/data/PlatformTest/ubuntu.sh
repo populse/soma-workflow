@@ -8,11 +8,11 @@ isfrompypi=1
 rm -rf $TMPNAMEPATH
 mkdir $TMPNAMEPATH
 
-rsync -a -u --exclude=".svn" --exclude=".git" ../../ $TMPNAMEPATH
+rsync -a -u --exclude=".svn" --exclude=".git" ../../../../../ $TMPNAMEPATH
 
 export SWFPATH=$TMPNAMEPATH
-export SOMA_WORKFLOW_EXAMPLES=$SWFPATH/test/jobExamples
-export SOMA_WORKFLOW_EXAMPLES_OUT=$SWFPATH/test/out
+export SOMA_WORKFLOW_EXAMPLES=$SWFPATH/python/soma_workflow/test/data/jobExamples
+export SOMA_WORKFLOW_EXAMPLES_OUT=$SWFPATH/python/soma_workflow/test/out
 
 mkdir $SOMA_WORKFLOW_EXAMPLES_OUT
 

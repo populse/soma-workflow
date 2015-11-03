@@ -34,9 +34,9 @@ class JobExamples(object):
         # Define example directories
         import soma_workflow
         self.examples_dir = os.path.join(soma_workflow.__path__[0],
-                                         "..", "..", "test", "jobExamples")
+                                         "test", "data", "jobExamples")
         self.output_dir = os.path.join(soma_workflow.__path__[0],
-                                       "..", "..", "test", "out")
+                                       "test", "out")
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
         if (not os.path.isdir(self.examples_dir) or
