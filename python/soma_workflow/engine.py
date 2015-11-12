@@ -269,7 +269,6 @@ class WorkflowEngineLoop(object):
                 # --- 2. Update job status from the scheduler -----------------
                 # get back the termination status and terminate the jobs which
                 # ended
-
                 wf_jobs = {}
                 wf_transfers = {}
                 for wf in self._workflows.itervalues():
@@ -1063,6 +1062,8 @@ class WorkflowEngine(RemoteFileController):
         (status,
          last_status_update) = self._database_server.get_workflow_status(
              workflow_id, self._user_id)
+        initial_status, initial_date = status, last_status_update
+        count = 0
         if status:
             self.logger.debug(
                 "wait        workflow %s status: %s", workflow_id,
@@ -1074,17 +1075,25 @@ class WorkflowEngine(RemoteFileController):
                 (status, last_status_update) \
                     = self._database_server.get_workflow_status(
                         workflow_id, self._user_id)
-                self.logger.debug("wait        workflow %s status: %s last update %s,"
-                                  " now %s",
-                                  workflow_id,
-                                  status,
-                                  repr(last_status_update),
-                                  repr(datetime.now()))
+                self.logger.debug(
+                    "wait        workflow %s status: %s last update %s,"
+                    " now %s",
+                    workflow_id,
+                    status,
+                    repr(last_status_update),
+                    repr(datetime.now()))
                 delta = datetime.now() - startTime
                 if last_status_update and _out_to_date(last_status_update):
-                    raise EngineError("wait_workflow: Could not wait for workflow %s. "
-                                      "The process updating its status failed."
-                                      % (workflow_id))
+                    raise EngineError(
+                        "wait_workflow: Could not wait for workflow %s. "
+                        "The process updating its status failed.\n"
+                        "status: %s, last update date: %s, now: %s\n"
+                        "start time: %s, initial status: %s, initial time: %s"
+                        "\nwait iterations: %d"
+                        % (workflow_id, status, repr(last_status_update),
+                           repr(datetime.now()), repr(startTime),
+                           initial_status, repr(initial_date), count))
+                count += 1
 
     def restart_job(self, job_id):
         '''
