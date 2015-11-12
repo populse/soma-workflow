@@ -51,7 +51,11 @@ class FakePipelineTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
-        workflow = self.wf_examples.example_fake_pipelineT1()
+        if hasattr(self.wf_ctrl.scheduler_config, 'get_proc_nb'):
+            n_iter = 10 * self.wf_ctrl.scheduler_config.get_proc_nb()
+        else:
+            n_iter = 100
+        workflow = self.wf_examples.example_fake_pipelineT1(n_iter)
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)

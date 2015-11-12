@@ -313,11 +313,11 @@ class WorkflowExamples(object):
         workflow = Workflow(jobs, dependencies, name=function_name)
         return workflow
 
-    def example_fake_pipelineT1(self):
+    def example_fake_pipelineT1(self, n_iter=100):
         jobs = []
         dependencies = []
         root_group = []
-        for i in range(0, 100):
+        for i in range(0, n_iter):
             job1 = self.job_sleep(2)
             job1.name = "Brain extraction"
             jobs.append(job1)
