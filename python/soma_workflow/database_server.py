@@ -612,6 +612,9 @@ class WorkflowDatabaseServer(object):
         '''
 
         with self._lock:
+            if not hasattr(self, '_free_file_counters'):
+                self._free_file_counters = []
+            filenum_chunks = 200
             if not external_cursor:
                 self.logger.debug("=> generate_file_path")
                 connection = self._connect()
@@ -622,13 +625,17 @@ class WorkflowDatabaseServer(object):
                 login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[
                     0]  # supposes that the user_id is valid
                 login = self._string_conversion(login)
-                count = 0
-                with cursor.connection:
-                    for (count,) in cursor.execute(
-                            'SELECT count FROM fileCounter'):
-                        break
-                    cursor.execute('UPDATE fileCounter SET count=count+1')
-                file_num = count
+                if len(self._free_file_counters) == 0:
+                    count = 0
+                    with cursor.connection:
+                        for (count,) in cursor.execute(
+                                'SELECT count FROM fileCounter'):
+                            break
+                        # UPDATE in sqlite during cursor execution may be
+                        # *very* costy... (about 0.1 second per call)
+                        cursor.execute('UPDATE fileCounter SET count=count+%d' % filenum_chunks)
+                    #file_num = count
+                    self._free_file_counters = range(count, count + filenum_chunks)
             except Exception, e:
                 if not external_cursor:
                     connection.rollback()
@@ -636,6 +643,7 @@ class WorkflowDatabaseServer(object):
                     connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
 
+            file_num = self._free_file_counters.pop(0)
             userDirPath = self._user_transfer_dir_path(login, user_id)
             if client_file_path == None:
                 newFilePath = os.path.join(userDirPath, repr(file_num))
@@ -1265,6 +1273,7 @@ class WorkflowDatabaseServer(object):
                             transfer.temp_path_id] = transfer
 
                 job_info = []
+
                 for job in engine_workflow.job_mapping.itervalues():
                     job.workflow_id = engine_workflow.wf_id
                     job = self.add_job(user_id,
