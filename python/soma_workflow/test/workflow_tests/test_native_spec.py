@@ -144,5 +144,4 @@ class NativeSpecPbsTest(WorkflowTest):
         del self.tested_job
 
 if __name__ == '__main__':
-    NativeSpecPbsTest.run_test(
-        debug=False, **WorkflowTest.parse_args(sys.argv))
+    NativeSpecPbsTest.run_test(**WorkflowTest.parse_args(sys.argv))

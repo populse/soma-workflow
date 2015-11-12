@@ -129,5 +129,4 @@ class NJobsWithDependenciesTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    NJobsWithDependenciesTest.run_test(
-        debug=False, **WorkflowTest.parse_args(sys.argv))
+    NJobsWithDependenciesTest.run_test(**WorkflowTest.parse_args(sys.argv))

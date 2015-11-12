@@ -66,7 +66,7 @@ class WorkflowTest(unittest.TestCase):
             shutil.rmtree(self.wf_examples.output_dir)
 
     @classmethod
-    def run_test(cls, debug=False, interactive=False):
+    def run_test(cls, debug=False, interactive=False, **kwargs):
         sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
 
         config_file_path = Configuration.search_config_path()
@@ -149,15 +149,33 @@ class WorkflowTest(unittest.TestCase):
                         sys.exit(1)
 
             finally:
-                os.unlink(config._database_file)
-                shutil.rmtree(config._transfered_file_dir)
+                if not kwargs.get('keep_temporary', False):
+                    os.unlink(config._database_file)
+                    shutil.rmtree(config._transfered_file_dir)
+                else:
+                    print 'temporary files kept:'
+                    print 'databse file:', config._database_file
+                    print 'transfers:', config._transfered_file_dir
+
+    @staticmethod
+    def print_help(argv):
+        print argv[0], '[-h|--help] [--interactive] [--keep-temporary] [--debug]'
 
     @staticmethod
     def parse_args(argv):
         kwargs = {}
         if len(argv) > 1:
+            if '-h' in argv[1:] or '--help' in argv[1:]:
+                WorkflowTest.print_help(argv)
+                sys.exit(0)
             if '--interactive' in argv[1:]:
                 kwargs['interactive'] = True
+            if '--keep-temporary' in argv[1:]:
+                kwargs['keep_temporary'] = True
+            if '--debug' in argv[1:]:
+                kwargs['debug'] = True
+            else:
+                kwargs['debug'] = False
         return kwargs
 
     def print_job_io_info(self, job_id, msg=None, file=sys.stderr):

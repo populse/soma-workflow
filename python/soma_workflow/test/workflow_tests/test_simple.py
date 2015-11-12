@@ -175,4 +175,4 @@ class SimpleTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    SimpleTest.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))
+    SimpleTest.run_test(**WorkflowTest.parse_args(sys.argv))

@@ -132,5 +132,4 @@ class SpecialTransferTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    SpecialTransferTest.run_test(debug=False,
-                                 **WorkflowTest.parse_args(sys.argv))
+    SpecialTransferTest.run_test(**WorkflowTest.parse_args(sys.argv))

@@ -122,4 +122,4 @@ class FakePipelineTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    FakePipelineTest.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))
+    FakePipelineTest.run_test(**WorkflowTest.parse_args(sys.argv))

@@ -89,5 +89,4 @@ class WrongNativeSpecPbsTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    WrongNativeSpecPbsTest.run_test(debug=False,
-                                    **WorkflowTest.parse_args(sys.argv))
+    WrongNativeSpecPbsTest.run_test(**WorkflowTest.parse_args(sys.argv))

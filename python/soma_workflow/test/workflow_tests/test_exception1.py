@@ -128,4 +128,4 @@ class Exception1Test(WorkflowTest):
 
 
 if __name__ == '__main__':
-    Exception1Test.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))
+    Exception1Test.run_test(**WorkflowTest.parse_args(sys.argv))

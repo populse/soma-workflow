@@ -123,4 +123,4 @@ class SerialJobsTest(WorkflowTest):
 
 
 if __name__ == '__main__':
-    SerialJobsTest.run_test(debug=False, **WorkflowTest.parse_args(sys.argv))
+    SerialJobsTest.run_test(**WorkflowTest.parse_args(sys.argv))
