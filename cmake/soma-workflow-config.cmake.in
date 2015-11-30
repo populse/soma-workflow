@@ -23,7 +23,7 @@ get_filename_component( @PROJECT_NAME_UPPER@_BINARY_DIR "${@PROJECT_NAME_UPPER@_
 set( @PROJECT_NAME_UPPER@_USE_FILE "${@PROJECT_NAME_UPPER@_BINARY_DIR}/share/@PROJECT_NAME@-@BRAINVISA_PACKAGE_VERSION_MAJOR@.@BRAINVISA_PACKAGE_VERSION_MINOR@/cmake/@PROJECT_NAME@-use.cmake" )
 
 find_package( PythonInterp REQUIRED )
-find_package( Epydoc )
+find_package( Sphinx )
 find_package( Dot )
 
 set( @PROJECT_NAME_UPPER@_FOUND true )
