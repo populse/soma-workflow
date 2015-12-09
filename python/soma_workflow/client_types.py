@@ -1094,7 +1094,51 @@ class SpecialPath(object):
 
     FileTransfer, TemporaryPath, and SharedResourcePath are SpecialPath.
     '''
-    pass
+    def __init__(self, path=None):
+        super(SpecialPath, self).__init__()
+        if isinstance(path, self.__class__):
+            self.pattern = path.pattern
+            self.ref = path.referent()
+        else:
+            self.pattern = u'%s'
+            self.ref = None
+
+    def referent(self):
+        return self.ref if self.ref else self
+
+    def __add__(self, other):
+        res = type(self)(self)
+        res.pattern = self.pattern + unicode(other)
+        res.ref = self.referent()
+        return res
+
+    def __radd__(self, other):
+        res = type(self)(self)
+        res.pattern = unicode(other) + self.pattern
+        res.ref = self.referent()
+        return res
+
+    def __iadd__(self, other):
+        self.pattern += unicode(other)
+        super(SpecialPath, self).__iadd__(unicode(other))
+
+    #def __str__(self):
+        #return self.pattern % self.value
+
+    #def __repr__(self):
+        #return repr(self.pattern % self.value)
+
+    #def __eq__(self, other):
+        #return self.__str__().__eq__(other)
+
+    #def __ne__(self, other):
+        #return self.__str__().__ne__(other)
+
+    #def __gt__(self, other):
+        #return self.__str__().__gt__(other)
+
+    #def __le__(self, other):
+        #return self.__str__().__le__(other)
 
 
 class FileTransfer(SpecialPath):
@@ -1166,23 +1210,23 @@ class FileTransfer(SpecialPath):
     '''
 
     # string
-    client_path = None
+    _client_path = None
 
     # sequence of string
-    client_paths = None
+    _client_paths = None
 
     # constants.FILES_DO_NOT_EXIST constants.FILES_ON_CLIENT
-    initial_status = None
+    _initial_status = None
 
     # int (hours)
-    disposal_timeout = None
+    _disposal_timeout = None
 
     # string
-    name = None
+    _name = None
 
     def __init__(self,
                  is_input,
-                 client_path,
+                 client_path=None,
                  disposal_timeout=168,
                  name=None,
                  client_paths=None,
@@ -1202,6 +1246,16 @@ class FileTransfer(SpecialPath):
         client_paths: list (optional)
             when several files are involved
         '''
+        if isinstance(is_input, self.__class__):
+            if client_path is not None or name is not None \
+                    or client_paths is not None:
+                raise TypeError('FileTransfer as copy constructor '
+                    'should have only one argument')
+            super(FileTransfer, self).__init__(is_input)
+            return
+        if client_path is None:
+            raise TypeError('FileTransfer.__init__ takes at least '
+                '3 arguments')
         super(FileTransfer, self).__init__()
         if name:
             ft_name = name
@@ -1209,27 +1263,68 @@ class FileTransfer(SpecialPath):
             ft_name = client_path + "transfer"
         self.name = ft_name
 
-        self.client_path = client_path
-        self.disposal_timeout = disposal_timeout
+        self._client_path = client_path
+        self._disposal_timeout = disposal_timeout
 
-        self.client_paths = client_paths
+        self._client_paths = client_paths
 
         if is_input:
-            self.initial_status = constants.FILES_ON_CLIENT
+            self._initial_status = constants.FILES_ON_CLIENT
         else:
-            self.initial_status = constants.FILES_DO_NOT_EXIST
+            self._initial_status = constants.FILES_DO_NOT_EXIST
+
+    @property
+    def client_path(self):
+        return self.referent()._client_path
+
+    @client_path.setter
+    def client_path(self, value):
+        self.referent()._client_path = value
+
+    @property
+    def client_paths(self):
+        return self.referent()._client_paths
+
+    @client_paths.setter
+    def client_paths(self, value):
+        self.referent()._client_paths = value
+
+    @property
+    def initial_status(self):
+        return self.referent()._initial_status
+
+    @initial_status.setter
+    def initial_status(self, value):
+        self.referent()._initial_status = value
+
+    @property
+    def disposal_timeout(self):
+        return self.referent()._disposal_timeout
+
+    @disposal_timeout.setter
+    def disposal_timeout(self, value):
+        self.referent()._disposal_timeout = value
+
+    @property
+    def name(self):
+        return self.referent()._name
+
+    @name.setter
+    def name(self, value):
+        self.referent()._name = value
 
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
-        attributs = [
+        attributes = [
             "client_path",
             "client_paths",
             "initial_status",
             "disposal_timeout",
             "name",
+            "pattern",
         ]
-        for attr_name in attributs:
+        for attr_name in attributes:
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
             if not other_attr == attr:
@@ -1238,14 +1333,15 @@ class FileTransfer(SpecialPath):
 
     def to_dict(self):
         transfer_dict = {}
-        attributs = [
+        attributes = [
             "client_path",
             "client_paths",
             "initial_status",
             "disposal_timeout",
             "name",
+            "pattern",
         ]
-        for attr_name in attributs:
+        for attr_name in attributes:
             transfer_dict[attr_name] = getattr(self, attr_name)
 
         return transfer_dict
@@ -1257,6 +1353,9 @@ class FileTransfer(SpecialPath):
         for key, value in d.iteritems():
             setattr(transfer, key, value)
         return transfer
+
+    def __str__(self):
+        return self.pattern % self.referent().client_path
 
 
 class SharedResourcePath(SpecialPath):
@@ -1284,33 +1383,69 @@ class SharedResourcePath(SpecialPath):
       the computing resource side.
     '''
 
-    relative_path = None
+    _relative_path = None
 
-    namespace = None
+    _namespace = None
 
-    uuid = None
+    _uuid = None
 
     def __init__(self,
                  relative_path,
-                 namespace,
-                 uuid,
+                 namespace=None,
+                 uuid=None,
                  disposal_timeout=168):
+        if isinstance(relative_path, self.__class__):
+            if namespace is not None or uuid is not None:
+                raise TypeError('SharedResourcePath as copy constructor '
+                    'should have only one argument')
+            super(SharedResourcePath, self).__init__(relative_path)
+            return
+
+        if namespace is None or uuid is None:
+            raise TypeError('SharedResourcePath.__init__ takes at least '
+                '4 arguments')
         super(SharedResourcePath, self).__init__()
         self.relative_path = relative_path
         self.namespace = namespace
         self.uuid = uuid
         self.disposal_timout = disposal_timeout
 
+    @property
+    def relative_path(self):
+        return self.referent()._relative_path
+
+    @relative_path.setter
+    def relative_path(self, value):
+        self.referent()._relative_path = value
+
+    @property
+    def namespace(self):
+        return self.referent()._namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        self.referent()._namespace = value
+
+    @property
+    def uuid(self):
+        return self.referent()._uuid
+
+    @uuid.setter
+    def uuid(self, value):
+        self.referent()._uuid = value
+
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
-        attributs = [
+        attributes = [
             "relative_path",
             "namespace",
             "uuid",
+            "pattern",
         ]
-        for attr_name in attributs:
-            attr = getattr(self, attr_name)
+        ref = self.referent()
+        for attr_name in attributes:
+            attr = getattr(ref, attr_name)
             other_attr = getattr(other, attr_name)
             if not attr == other_attr:
                 return False
@@ -1318,13 +1453,15 @@ class SharedResourcePath(SpecialPath):
 
     def to_dict(self):
         srp_dict = {}
-        attributs = [
+        attributes = [
             "relative_path",
             "namespace",
             "uuid",
+            "pattern",
         ]
-        for attr_name in attributs:
-            srp_dict[attr_name] = getattr(self, attr_name)
+        ref = self.referent()
+        for attr_name in attributes:
+            srp_dict[attr_name] = getattr(ref, attr_name)
 
         return srp_dict
 
@@ -1336,6 +1473,11 @@ class SharedResourcePath(SpecialPath):
         for key, value in d.iteritems():
             setattr(shared_res_path, key, value)
         return shared_res_path
+
+    def __str__(self):
+        ref = self.referent()
+        return self.pattern % ("%s:%s:%s" % (ref.namespace, ref.uuid,
+                                             ref.relative_path))
 
 
 class TemporaryPath(SpecialPath):
@@ -1358,40 +1500,80 @@ class TemporaryPath(SpecialPath):
     '''
 
     # bool
-    is_directory = False
+    _is_directory = False
 
     # int (hours)
-    disposal_timeout = None
+    _disposal_timeout = None
 
     # string
-    name = None
+    _name = None
 
     # string
-    suffix = None
+    _suffix = None
 
     def __init__(self,
                  is_directory=False,
                  disposal_timeout=168,
                  name=None,
                  suffix=''):
+        if isinstance(is_directory, self.__class__):
+            if name is not None or suffix != '':
+                raise TypeError('TemporaryPath as copy constructor should '
+                    'have only one argument')
+            super(TemporaryPath, self).__init__(is_directory)
+            return
         super(TemporaryPath, self).__init__()
-        self.is_directory = is_directory
-        self.disposal_timeout = disposal_timeout
-        self.suffix = suffix
+        self._is_directory = is_directory
+        self._disposal_timeout = disposal_timeout
+        self._suffix = suffix
         if name is None:
-            self.name = 'temporary'
+            self._name = 'temporary'
         else:
-            self.name = name
+            self._name = name
+
+    @property
+    def is_directory(self):
+        return self.referent()._is_directory
+
+    @is_directory.setter
+    def is_directory(self, value):
+        self.referent()._is_directory = value
+
+    @property
+    def disposal_timeout(self):
+        return self.referent()._disposal_timeout
+
+    @disposal_timeout.setter
+    def disposal_timeout(self, value):
+        self.referent()._disposal_timeout = value
+
+    @property
+    def name(self):
+        return self.referent()._name
+
+    @name.setter
+    def name(self, value):
+        self.referent()._name = value
+
+    @property
+    def suffix(self):
+        return self.referent()._suffix
+
+    @suffix.setter
+    def suffix(self, value):
+        self.referent()._suffix = value
 
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
-        attributs = [
+        attributes = [
             "is_directory",
             "disposal_timeout",
+            "name",
             "suffix",
+            "pattern",
         ]
-        for attr_name in attributs:
+        for attr_name in attributes:
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
             if not attr == other_attr:
@@ -1400,12 +1582,14 @@ class TemporaryPath(SpecialPath):
 
     def to_dict(self):
         srp_dict = {}
-        attributs = [
+        attributes = [
             "is_directory",
             "disposal_timeout",
+            "name",
             "suffix",
+            "pattern",
         ]
-        for attr_name in attributs:
+        for attr_name in attributes:
             srp_dict[attr_name] = getattr(self, attr_name)
 
         return srp_dict
@@ -1421,6 +1605,9 @@ class TemporaryPath(SpecialPath):
         for key, value in d.iteritems():
             setattr(temp_file, key, value)
         return temp_file
+
+    def __str__(self):
+        return self.pattern % self.name
 
 
 class IdGenerator(object):

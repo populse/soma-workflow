@@ -894,7 +894,7 @@ class EngineTemporaryPath(TemporaryPath):
 
     temp_path_id = None
 
-    suffix = None
+    #suffix = None
 
     # temporary_directory should be set according to configuration.
     # It will be set by engine.ConfiguredWorkflowEngine, which has access to
