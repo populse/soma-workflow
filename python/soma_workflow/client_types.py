@@ -1122,23 +1122,15 @@ class SpecialPath(object):
         self.pattern += unicode(other)
         super(SpecialPath, self).__iadd__(unicode(other))
 
-    #def __str__(self):
-        #return self.pattern % self.value
+    def __hash__(self):
+        if self.ref:
+            return self.referent().__hash__()
+        return super(SpecialPath, self).__hash__()
 
-    #def __repr__(self):
-        #return repr(self.pattern % self.value)
-
-    #def __eq__(self, other):
-        #return self.__str__().__eq__(other)
-
-    #def __ne__(self, other):
-        #return self.__str__().__ne__(other)
-
-    #def __gt__(self, other):
-        #return self.__str__().__gt__(other)
-
-    #def __le__(self, other):
-        #return self.__str__().__le__(other)
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.referent() is other.referent()
 
 
 class FileTransfer(SpecialPath):
@@ -1356,6 +1348,9 @@ class FileTransfer(SpecialPath):
 
     def __str__(self):
         return self.pattern % self.referent().client_path
+
+    def __repr__(self):
+        return repr(self.__str__())
 
 
 class SharedResourcePath(SpecialPath):
