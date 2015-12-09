@@ -291,25 +291,29 @@ class EngineJob(Job):
                         self.srp_mapping[list_el] = self._translate(list_el)
                     elif isinstance(list_el, SpecialPath):
                         if not list_el in self.transfer_mapping:
-                            raise JobError("The SpecialPath objets used in the "
-                                           "command must be declared in the Job "
-                                           "attributes: referenced_input_files "
-                                           "and referenced_output_files.")
+                            raise JobError("The SpecialPath objets used in "
+                                "the command must be declared in the Job "
+                                "attributes: referenced_input_files "
+                                "and referenced_output_files.")
                     elif isinstance(list_el, tuple) and \
                             isinstance(list_el[0], SpecialPath):
                         if not list_el[0] in self.transfer_mapping:
-                            raise JobError("The SpecialPath objets used in the "
-                                           "command must be declared in the Job "
-                                           "attributes: referenced_input_files "
-                                           "and referenced_output_files.")
+                            raise JobError("The SpecialPath objets used in "
+                                "the command must be declared in the Job "
+                                "attributes: referenced_input_files "
+                                "and referenced_output_files.")
                     else:
                         if not type(list_el) in types.StringTypes:
                             raise JobError(
-                                "Wrong command element type: %s" % (repr(list_el)))
+                                "Wrong command element type: %s"
+                                % (repr(list_el)))
             else:
                 if not type(command_el) in types.StringTypes:
                     raise JobError(
-                        "Wrong command element type: %s" % (repr(command_el)))
+                        "Wrong command element type: %s, of type: %s "
+                        "in job: %s"
+                        % (repr(command_el), repr(type(command_el)),
+                           self.name))
 
     def _translate(self, srp):
         '''
