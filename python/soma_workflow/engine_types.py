@@ -346,19 +346,24 @@ class EngineJob(Job):
         plain_command = []
         for command_el in self.command:
             if isinstance(command_el, SharedResourcePath):
-                plain_command.append(self.srp_mapping[command_el])
+                plain_command.append(command_el.pattern
+                                     % self.srp_mapping[command_el])
             elif isinstance(command_el, SpecialPath):
                 if isinstance(command_el, FileTransfer):
-                    plain_command_el = self.transfer_mapping[
-                        command_el].get_engine_main_path()
+                    plain_command_el = command_el.pattern \
+                        % self.transfer_mapping[
+                            command_el].get_engine_main_path()
                 else:
-                    plain_command_el = self.transfer_mapping[
-                        command_el].get_engine_path()
+                    plain_command_el = command_el.pattern \
+                        % self.transfer_mapping[
+                            command_el].get_engine_path()
                 plain_command.append(plain_command_el)
             elif isinstance(command_el, tuple) and \
                     isinstance(command_el[0], SpecialPath):
                 plain_command_el \
-                    = self.transfer_mapping[command_el[0]].get_engine_path()
+                    = command_el[0].pattern \
+                        % self.transfer_mapping[
+                            command_el[0]].get_engine_path()
                 plain_command_el = os.path.join(
                     plain_command_el, command_el[1])
                 plain_command.append(plain_command_el)
@@ -366,19 +371,23 @@ class EngineJob(Job):
                 new_list = []
                 for list_el in command_el:
                     if isinstance(list_el, SharedResourcePath):
-                        new_list.append(self.srp_mapping[list_el])
+                        new_list.append(command_el.pattern
+                                        % self.srp_mapping[list_el])
                     elif isinstance(list_el, SpecialPath):
                         if isinstance(command_el, FileTransfer):
-                            new_list_el = self.transfer_mapping[
-                                list_el].get_engine_main_path()
+                            new_list_el = command_el.pattern \
+                                % self.transfer_mapping[
+                                    list_el].get_engine_main_path()
                         else:
-                            new_list_el = self.transfer_mapping[
-                                list_el].get_engine_path()
+                            new_list_el = command_el.pattern \
+                                % self.transfer_mapping[
+                                    list_el].get_engine_path()
                         new_list.append(new_list_el)
                     elif isinstance(list_el, tuple) and \
                             isinstance(list_el[0], SpecialPath):
-                        new_list_el = self.transfer_mapping[
-                            list_el[0]].get_engine_path()
+                        new_list_el = command_el[0].pattern \
+                            % self.transfer_mapping[
+                                list_el[0]].get_engine_path()
                         new_list_el = os.path.join(new_list_el, list_el[1])
                         new_list.append(new_list_el)
                     else:
@@ -863,6 +872,7 @@ class EngineTransfer(FileTransfer):
                                              client_file_transfer.client_paths)
 
         self.status = self.initial_status
+        self.pattern = client_file_transfer.pattern
 
         workflow_id = -1
 
@@ -912,6 +922,7 @@ class EngineTemporaryPath(TemporaryPath):
             name=client_temporary_path.name,
             suffix=client_temporary_path.suffix)
         self.status = constants.FILES_DO_NOT_EXIST
+        self.pattern = client_temporary_path.pattern
 
     def files_exist_on_server(self):
         exist = self.status == constants.FILES_ON_CR
