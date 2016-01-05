@@ -22,6 +22,7 @@ import ctypes
 import atexit
 import os.path
 import socket
+import six
 
 try:
     # psutil is used to correctly kill a job with its children processes
@@ -403,12 +404,12 @@ if DRMAA_LIB_FOUND == True:
                 drmaaSubmittedJobId = self._drmaa.runJob(jobTemplateId)
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
-            except DrmaaException, e:
+            except DrmaaException as e:
                 try:
                     f = open(stderr_file, "wa")
                     f.write("Error in job submission: %s" % (e))
                     f.close()
-                except IOError, ioe:
+                except IOError as ioe:
                     pass
                 self.logger.error("Error in job submission: %s" % (e))
                 raise DRMError("Job submission error: %s" % (e))
@@ -423,7 +424,7 @@ if DRMAA_LIB_FOUND == True:
             try:
                 self._drmaa.control(
                     scheduler_job_id, JobControlAction.TERMINATE)
-            except DrmaaException, e:
+            except DrmaaException as e:
                 self.logger.critical("%s" % e)
                 raise e
 
@@ -435,7 +436,7 @@ if DRMAA_LIB_FOUND == True:
                 return constants.DONE
             try:
                 status = self._drmaa.jobStatus(scheduler_job_id)
-            except DrmaaException, e:
+            except DrmaaException as e:
                 self.logger.error("%s" % (e))
                 raise DRMError("%s" % (e))
             return status
@@ -487,7 +488,7 @@ if DRMAA_LIB_FOUND == True:
                             res_status = constants.FINISHED_UNCLEAR_CONDITIONS
 
                 res_resourceUsage = ''
-                for k, v in resource_usage.iteritems():
+                for k, v in six.iteritems(resource_usage):
                     res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
 
             except ExitTimeoutException:
@@ -611,7 +612,7 @@ class LocalScheduler(Scheduler):
         # print "#############################"
         # Control the running jobs
         ended_jobs = []
-        for job_id, process in self._processes.iteritems():
+        for job_id, process in six.iteritems(self._processes):
             ret_value = process.poll()
             # print "job_id " + repr(job_id) + " ret_value " + repr(ret_value)
             if ret_value != None:
@@ -668,7 +669,7 @@ class LocalScheduler(Scheduler):
         if stdout:
             try:
                 stdout_file = open(stdout, "wb")
-            except Exception, e:
+            except Exception as e:
                 return None
 
         stderr = engine_job.plain_stderr()
@@ -676,7 +677,7 @@ class LocalScheduler(Scheduler):
         if stderr:
             try:
                 stderr_file = open(stderr, "wb")
-            except Exception, e:
+            except Exception as e:
                 return None
 
         stdin = engine_job.plain_stdin()
@@ -684,7 +685,7 @@ class LocalScheduler(Scheduler):
         if stdin:
             try:
                 stdin_file = open(stdin, "rb")
-            except Exception, e:
+            except Exception as e:
                 if stderr:
                     stderr_file = open(stderr, "wb")
                     s = '%s: %s \n' % (type(e), e)
@@ -714,7 +715,7 @@ class LocalScheduler(Scheduler):
                                        cwd=working_directory,
                                        **kwargs)
 
-        except Exception, e:
+        except Exception as e:
             if stderr:
                 stderr_file = open(stderr, "wb")
                 s = '%s: %s \n' % (type(e), e)

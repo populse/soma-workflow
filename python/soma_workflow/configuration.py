@@ -18,7 +18,10 @@ from __future__ import with_statement, print_function
 import os
 import sys
 import socket
-import ConfigParser
+try:
+    import configparser # python 3
+except ImportError:
+    import ConfigParser as configparser # python 2
 
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
@@ -350,7 +353,7 @@ class Configuration(observer.Observable):
 
             swf_dir = os.path.join(home_dir, ".soma-workflow")
             if config_path is not None:
-                config_parser = ConfigParser.ConfigParser()
+                config_parser = configparser.ConfigParser()
                 if hasattr(config_path, 'readline'):
                     config_parser.readfp(config_path)
                 else:
@@ -387,7 +390,7 @@ class Configuration(observer.Observable):
                                          "to " + repr(resource_id)
                                          + ": the soma-workflow "
                                          "configuration file could not be found.")
-            config_parser = ConfigParser.ConfigParser()
+            config_parser = configparser.ConfigParser()
             if hasattr(config_path, 'readline'):
                 config_parser.readfp(config_path)
             else:
@@ -494,7 +497,7 @@ class Configuration(observer.Observable):
         resource_ids = []
         if config_file_path == None:
             return [socket.gethostname()]
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read(config_file_path)
         for r_id in config_parser.sections():
             resource_ids.append(r_id)
@@ -511,7 +514,7 @@ class Configuration(observer.Observable):
         resource_ids = []
         if config_file_path == None:
             return {socket.gethostname(): None}
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read(config_file_path)
         logins = {}
         for r_id in config_parser.sections():
@@ -694,7 +697,7 @@ class Configuration(observer.Observable):
                 # file: " + filename)
                 try:
                     f = open(filename, "r")
-                except IOError, e:
+                except IOError as e:
                     raise ConfigurationError("Can not read the translation file %s" %
                                             (filename))
 
@@ -872,7 +875,7 @@ class Configuration(observer.Observable):
             # config_path = os.path.join(home_dir, ".soma-workflow.cfg")
             # print(config_path)
 
-        # config_parser = ConfigParser.ConfigParser()
+        # config_parser = configparser.ConfigParser()
         # config_parser.read(config_path)
 
         # if not config_parser.has_section(self._resource_id):
@@ -955,7 +958,7 @@ class LocalSchedulerCfg(observer.Observable):
         else:
             config_path = Configuration.search_config_path()
 
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         if hasattr(config_path, 'readline'):
             config_parser.readfp(config_path)
         else:
@@ -1000,7 +1003,7 @@ class LocalSchedulerCfg(observer.Observable):
         section_exist = False
         config_path = os.path.join(home_dir, ".soma-workflow-scheduler.cfg")
         if os.path.isfile(config_path):
-            config_parser = ConfigParser.ConfigParser()
+            config_parser = configparser.ConfigParser()
             config_parser.read(config_path)
             section_exist = config_parser.has_section(hostname)
         if not section_exist:
@@ -1008,13 +1011,13 @@ class LocalSchedulerCfg(observer.Observable):
             config_path = os.path.join(
                 config_path, "etc/soma-workflow-scheduler.cfg")
             if os.path.isfile(config_path):
-                config_parser = ConfigParser.ConfigParser()
+                config_parser = configparser.ConfigParser()
                 config_parser.read(config_path)
                 section_exist = config_parser.has_section(hostname)
         if not section_exist:
             config_path = "/etc/soma-workflow-scheduler.cfg"
             if os.path.isfile(config_path):
-                config_parser = ConfigParser.ConfigParser()
+                config_parser = configparser.ConfigParser()
                 config_parser.read(config_path)
                 section_exist = config_parser.has_section(hostname)
         if not section_exist:
@@ -1049,7 +1052,7 @@ class LocalSchedulerCfg(observer.Observable):
                     config_path = os.path.join(
                         home_dir, ".soma-workflow-scheduler.cfg")
 
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read(config_path)
 
         if not config_parser.has_section(hostname):
@@ -1100,7 +1103,7 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
     try:
         with open(path2bashrc) as f:
             content = f.readlines()
-    except IOError, e:
+    except IOError as e:
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
         print("%s does not exist, the system will create the new file"
               % (path2bashrc))
@@ -1128,7 +1131,7 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
         with open(path2bashrc, 'w') as f:
             for cline in content:
                 f.write(cline + "\n")
-    except IOError, e:
+    except IOError as e:
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
         print("The system cannot write the file %s. Please make sure it can "
               "be written. " % (path2bashrc))
@@ -1145,7 +1148,7 @@ def WriteOutConfiguration(config_parser, config_path):
     try:
         with open(config_path, 'w') as cfgfile:
             config_parser.write(cfgfile)
-    except IOError, e:
+    except IOError as e:
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
         print("The system cannot write the file %s. Please make sure that it "
               "can be written. " % (config_path))

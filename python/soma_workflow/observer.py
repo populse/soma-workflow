@@ -1,7 +1,6 @@
 
 from __future__ import print_function
 import weakref
-import types
 
 
 class Observable(object):
@@ -30,8 +29,7 @@ class Observable(object):
     def addObserver(self, observer, cbname=None, events=None):
         if cbname is None:
             cbname = "update"
-        if events is not None and type(events) not in (types.TupleType,
-                                                       types.ListType):
+        if events is not None and type(events) not in (tuple, list):
             events = (events,)
         self._observers[observer] = (cbname, events)
 
@@ -71,8 +69,8 @@ class Observable(object):
                 # print("observer is " + repr(observer))
                 cb = getattr(observer, cbname, None)
                 if cb is None:
-                    raise NotImplementedError, \
-                        "Observer has no %s method." % cbname
+                    raise NotImplementedError(
+                        "Observer has no %s method." % cbname)
                 cb(self, event, msg)
 
 

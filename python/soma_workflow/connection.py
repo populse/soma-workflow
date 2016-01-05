@@ -24,7 +24,10 @@ import socket
 import getpass
 import os
 import select
-import SocketServer
+try:
+    import socketserver # python3
+except ImportError:
+    import SocketServer as socketserver # python 2
 
 
 from soma_workflow.errors import ConnectionError
@@ -102,14 +105,14 @@ def SSHExecCmd(sshcommand,
 
         stdin, stdout, stderr = client.exec_command(sshcommand)
 
-    except paramiko.AuthenticationException, e:
+    except paramiko.AuthenticationException as e:
         print("The authentification failed. %s. "
               "Please check your user and password. "
               "You can test the connection in terminal with "
               "command: ssh -p %s %s@%s"
               % (e, sshport, userid, ip_address_or_domain))
         raise e
-    except Exception, e:
+    except Exception as e:
         print("Can not use ssh to log on the remote machine. "
               "Please Make sure your network can be connected %s. "
               "You can test the connection in terminal with "
@@ -388,10 +391,10 @@ class RemoteConnection(object):
 
             tunnel.start()
 
-        except paramiko.AuthenticationException, e:
+        except paramiko.AuthenticationException as e:
             raise ConnectionError("The authentification failed while "
                                   "creating the ssh tunnel. %s" % (e))
-        except Exception, e:
+        except Exception as e:
             raise ConnectionError("The ssh communication tunnel could not be created."
                                   "%s: %s" % (type(e), e))
 
@@ -418,11 +421,11 @@ class RemoteConnection(object):
                       repr(attempts) + "/" + repr(maxattemps))
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
-            except Pyro.errors.ProtocolError, e:
+            except Pyro.errors.ProtocolError as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
                 time.sleep(1)
-            except Exception, e:
+            except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
                 time.sleep(1)
@@ -646,7 +649,7 @@ class ConnectionHolder(threading.Thread):
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 print("Connection closed")
                 break
             time.sleep(self.interval)
@@ -657,11 +660,11 @@ class ConnectionHolder(threading.Thread):
 
 class Tunnel(threading.Thread):
 
-    class ForwardServer (SocketServer.ThreadingTCPServer):
+    class ForwardServer (socketserver.ThreadingTCPServer):
         daemon_threads = True
         allow_reuse_address = True
 
-    class Handler (SocketServer.BaseRequestHandler):
+    class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
             # print('Setup : %s %d' %(repr(self.chain_host), self.chain_port))
@@ -671,7 +674,7 @@ class Tunnel(threading.Thread):
                     (self.chain_host,
                     self.chain_port),
                     self.request.getpeername())
-            except Exception, e:
+            except Exception as e:
                 raise ConnectionError('Incoming request to %s:%d failed: %s'
                     % (self.chain_host, self.chain_port, repr(e)))
 
@@ -727,5 +730,5 @@ class Tunnel(threading.Thread):
             Tunnel.ForwardServer(('', port), SubHander).serve_forever()
         except KeyboardInterrupt:
             print('tunnel %d:%s:%d stopped !' % (port, host, hostport))
-        except Exception, e:
+        except Exception as e:
             print('Tunnel Error. %s: %s' % (type(e), e))

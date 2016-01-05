@@ -1168,14 +1168,14 @@ class Helper(object):
                 workflow_dict = workflow.to_dict()
                 json.dump(workflow_dict, file, indent=4)
                 file.close()
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
         else:
             try:
                 file = open(file_path, "w")
                 pickle.dump(workflow, file)
                 file.close()
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
 
     @staticmethod
@@ -1195,13 +1195,13 @@ class Helper(object):
         if sys.version_info[:2] >= (2, 6):
             try:
                 file = open(file_path, "r")
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
 
             workflow = None
             try:
                 dict_from_json = json.load(file)
-            except ValueError, e:
+            except ValueError as e:
                 pass
             else:
                 workflow = Workflow.from_dict(dict_from_json)
@@ -1211,22 +1211,22 @@ class Helper(object):
                 file = open(file_path, "r")
                 try:
                     workflow = pickle.load(file)
-                except Exception, e:
+                except Exception as e:
                     raise SerializationError("%s: %s" % (type(e), e))
 
             try:
                 file.close()
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
 
         else:
             try:
                 file = open(file_path, "r")
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
             try:
                 workflow = pickle.load(file)
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError(
                   "Error %s: %s \n\n"
                   "The workflow file may have been created "
@@ -1236,7 +1236,7 @@ class Helper(object):
                   " " % (type(e), e))
             try:
                 file.close()
-            except Exception, e:
+            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
 
         # compatibility with version 2.2 and previous
@@ -1264,7 +1264,7 @@ class Helper(object):
             t_file = open(target_file_path, "w")
             pickle.dump(workflow, t_file)
             t_file.close()
-        except Exception, e:
+        except Exception as e:
             SerializationError("%s: %s" % (type(e), e))
 
     @staticmethod

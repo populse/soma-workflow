@@ -11,7 +11,6 @@ import sys
 import os
 import shutil
 import tempfile
-import StringIO
 import socket
 
 from soma_workflow.client import WorkflowController

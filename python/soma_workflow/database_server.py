@@ -24,6 +24,7 @@ from datetime import date
 from datetime import timedelta
 from datetime import datetime
 import socket
+import six
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -339,7 +340,7 @@ class WorkflowDatabaseServer(object):
         else:
             self._shared_temp_dir = self._tmp_file_dir_path
         # patch EngineTemporaryPath
-        from engine import EngineTemporaryPath
+        from soma_workflow.engine import EngineTemporaryPath
         EngineTemporaryPath.temporary_directory = self._shared_temp_dir
 
         self._lock = threading.RLock()
@@ -359,7 +360,7 @@ class WorkflowDatabaseServer(object):
                 try:
                     for row in cursor.execute("SELECT * FROM db_version"):
                         version = row[0]
-                except Exception, e:
+                except Exception as e:
                     pass
 
                 try:
@@ -368,7 +369,7 @@ class WorkflowDatabaseServer(object):
                                                "queue=?", ["default queue"]).next()[0]
                     elif unicode(version) != unicode(DB_VERSION):
                         raise Exception('Wrong db version')
-                except Exception, e:
+                except Exception as e:
                     cursor.close()
                     connection.close()
                     raise DatabaseError(str(e) + "\n\n"
@@ -390,7 +391,7 @@ class WorkflowDatabaseServer(object):
         try:
             connection = sqlite3.connect(
                 self._database_file, timeout=10, isolation_level="EXCLUSIVE")
-        except Exception, e:
+        except Exception as e:
             raise DatabaseError('On database file %s: %s: %s \n'
                                 % (self._database_file, type(e), e))
         return connection
@@ -419,7 +420,7 @@ class WorkflowDatabaseServer(object):
                         'INSERT INTO users (login) VALUES (?)', [login])
                 user_id = cursor.execute(
                     'SELECT id FROM users WHERE login=?', [login]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -431,7 +432,7 @@ class WorkflowDatabaseServer(object):
             personal_path = self._user_transfer_dir_path(login, user_id)
             if not os.path.isdir(personal_path):
                 os.mkdir(personal_path)
-                os.chmod(personal_path, 0775)
+                os.chmod(personal_path, 0o775)
 
             return user_id
 
@@ -525,7 +526,7 @@ class WorkflowDatabaseServer(object):
                 cursor.execute(
                     'DELETE FROM workflows WHERE expiration_date < ?', [date.today()])
 
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -547,7 +548,7 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             try:
                 cursor.execute('VACUUM')
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -579,7 +580,7 @@ class WorkflowDatabaseServer(object):
                 for row in cursor.execute('SELECT id, login FROM users'):
                     user_id, login = row
                     registered_users.append((user_id, login))
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -633,7 +634,7 @@ class WorkflowDatabaseServer(object):
                         'UPDATE fileCounter SET count=count+%d' % num_files)
                 self._free_file_counters = range(count, count + num_files)
                 return count
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -712,7 +713,7 @@ class WorkflowDatabaseServer(object):
                 login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[
                     0]  # supposes that the user_id is valid
                 login = self._string_conversion(login)
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                     cursor.close()
@@ -750,14 +751,14 @@ class WorkflowDatabaseServer(object):
         if file_path and os.path.isdir(file_path):
             try:
                 shutil.rmtree(file_path)
-            except Exception, e:
+            except Exception as e:
                 self.logger.debug(
                     "Could not remove file %s, error %s: %s \n" % (file_path, type(e), e))
 
         elif file_path and os.path.isfile(file_path):
             try:
                 os.remove(file_path)
-            except Exception, e:
+            except Exception as e:
                 self.logger.debug(
                     "Could not remove file %s, error %s: %s \n" % (file_path, type(e), e))
 
@@ -826,7 +827,7 @@ class WorkflowDatabaseServer(object):
                                engine_transfer.workflow_id,
                                engine_transfer.status,
                                client_path_std))
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                     cursor.close()
@@ -883,7 +884,7 @@ class WorkflowDatabaseServer(object):
                                engine_temp.workflow_id,
                                engine_temp.status))
                 engine_temp.temp_path_id = cursor.lastrowid
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                     cursor.close()
@@ -903,7 +904,7 @@ class WorkflowDatabaseServer(object):
                                   WHERE engine_file_path=? and
                                         user_id=?''',
                                    [engine_file_path, user_id]).next()[0]
-        except Exception, e:
+        except Exception as e:
             cursor.close()
             connection.close()
             raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -920,7 +921,7 @@ class WorkflowDatabaseServer(object):
                                   WHERE temp_path_id=? and
                                         user_id=?''',
                                    [temp_path_id, user_id]).next()[0]
-        except Exception, e:
+        except Exception as e:
             cursor.close()
             connection.close()
             raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -948,7 +949,7 @@ class WorkflowDatabaseServer(object):
             try:
                 cursor.execute(
                     'UPDATE transfers SET expiration_date=? WHERE engine_file_path=?', (yesterday, engine_file_path))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -976,7 +977,7 @@ class WorkflowDatabaseServer(object):
             try:
                 cursor.execute(
                     'UPDATE temporary_paths SET expiration_date=? WHERE temp_path_id=?', (yesterday, temp_path_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1021,7 +1022,7 @@ class WorkflowDatabaseServer(object):
                                   FROM transfers
                                   WHERE engine_file_path=?''',
                                           [engine_file_path]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1080,7 +1081,7 @@ class WorkflowDatabaseServer(object):
                                   FROM temporary_paths
                                   WHERE temp_path_id=?''',
                                           [temp_path_id]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1113,7 +1114,7 @@ class WorkflowDatabaseServer(object):
             try:
                 status = cursor.execute(
                     'SELECT status FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1135,7 +1136,7 @@ class WorkflowDatabaseServer(object):
             try:
                 status = cursor.execute(
                     'SELECT status FROM temporary_paths WHERE temp_path_id=?', [temp_path_id]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1167,7 +1168,7 @@ class WorkflowDatabaseServer(object):
                 if not count == 0:
                     cursor.execute(
                         'UPDATE transfers SET status=? WHERE engine_file_path=?', (status, engine_file_path))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1196,7 +1197,7 @@ class WorkflowDatabaseServer(object):
                 if not count == 0:
                     cursor.execute(
                         'UPDATE temporary_paths SET status=? WHERE temp_path_id=?', (status, temp_path_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1213,7 +1214,7 @@ class WorkflowDatabaseServer(object):
             try:
                 cursor.execute(
                     'UPDATE transfers SET transfer_type=? WHERE engine_file_path=?', (transfer_type, engine_file_path))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1246,7 +1247,7 @@ class WorkflowDatabaseServer(object):
                         str_ended_transfers = engine_file_path
                     cursor.execute(
                         'UPDATE workflows SET ended_transfers=? WHERE id=?', (str_ended_transfers, workflow_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1276,7 +1277,7 @@ class WorkflowDatabaseServer(object):
                             str_ended_transfers).split(separator)
                     cursor.execute(
                         'UPDATE workflows SET ended_transfers=? WHERE id=?', (None, workflow_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1372,7 +1373,7 @@ class WorkflowDatabaseServer(object):
                           WHERE id=?''',
                               (pickled_workflow,
                                engine_workflow.wf_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1406,7 +1407,7 @@ class WorkflowDatabaseServer(object):
                     'UPDATE transfers SET expiration_date=? WHERE workflow_id=?', (yesterday, wf_id))
                 cursor.execute(
                     'UPDATE temporary_paths SET expiration_date=? WHERE workflow_id=?', (yesterday, wf_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1432,7 +1433,7 @@ class WorkflowDatabaseServer(object):
             try:
                 cursor.execute(
                     'UPDATE workflows SET expiration_date=? WHERE id=?', (new_date, wf_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1460,7 +1461,7 @@ class WorkflowDatabaseServer(object):
                 pickled_workflow = cursor.execute('''SELECT
                                               pickled_engine_workflow
                                               FROM workflows WHERE id=?''', [wf_id]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1508,7 +1509,7 @@ class WorkflowDatabaseServer(object):
                                       (status,
                                        datetime.now(),
                                        wf_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1532,7 +1533,7 @@ class WorkflowDatabaseServer(object):
                                                     last_status_update
                                               FROM workflows WHERE id=?''',
                                                    [wf_id]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1654,7 +1655,7 @@ class WorkflowDatabaseServer(object):
                                                engine_file_path,
                                                status))
 
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1672,7 +1673,7 @@ class WorkflowDatabaseServer(object):
                                   WHERE id=? and
                                         user_id=?''',
                                    [job_id, user_id]).next()[0]
-        except Exception, e:
+        except Exception as e:
             cursor.close()
             connection.close()
             raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1700,7 +1701,7 @@ class WorkflowDatabaseServer(object):
                                                  FROM jobs
                                                  WHERE id=?''',
                                                         [job_id]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1877,7 +1878,7 @@ class WorkflowDatabaseServer(object):
                              VALUES (?, ?, ?)''',
                                   (job_id, temp_path_id, False))
 
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                     cursor.close()
@@ -1909,7 +1910,7 @@ class WorkflowDatabaseServer(object):
                                       pickled_engine_job,
                                       workflow_id
                                       FROM jobs WHERE id=?''', [job_id]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1943,7 +1944,7 @@ class WorkflowDatabaseServer(object):
                 cursor.execute(
                     'UPDATE jobs SET expiration_date=? WHERE id=?', (yesterday, job_id))
 
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1980,7 +1981,7 @@ class WorkflowDatabaseServer(object):
                         cursor.execute(
                             '''UPDATE jobs SET queue=? WHERE id=?''',
                             (queue_name, job_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -1999,7 +2000,7 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                for job_id, status in job_status.iteritems():
+                for job_id, status in six.iteritems(job_status):
                     count = cursor.execute(
                         'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
                     if not count == 0:
@@ -2033,7 +2034,7 @@ class WorkflowDatabaseServer(object):
                                           (status, datetime.now(),
                                            execution_date, ending_date,
                                            job_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -2089,7 +2090,7 @@ class WorkflowDatabaseServer(object):
                                       (status, datetime.now(),
                                        execution_date, ending_date,
                                        job_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -2117,7 +2118,7 @@ class WorkflowDatabaseServer(object):
                                      WHERE id=?''',
                                            [job_id]).next()
 
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2142,7 +2143,7 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                for job_id, drmaa_id in drmaa_ids.iteritems():
+                for job_id, drmaa_id in six.iteritems(drmaa_ids):
                     cursor.execute('''UPDATE jobs
                             SET drmaa_id=?,
                                 submission_date=?,
@@ -2166,7 +2167,7 @@ class WorkflowDatabaseServer(object):
                                    None,
                                    None,
                                    job_id))
-            except Exception, e:
+            except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
@@ -2196,7 +2197,7 @@ class WorkflowDatabaseServer(object):
                         0]  # supposes that the job_id is valid
                 else:
                     drmaa_id = None
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2224,7 +2225,7 @@ class WorkflowDatabaseServer(object):
                                         user_id=?''',
                                        [job_id, user_id]).next()[0]
 
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2237,7 +2238,7 @@ class WorkflowDatabaseServer(object):
             try:
                 result = cursor.execute(
                     'SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2267,7 +2268,7 @@ class WorkflowDatabaseServer(object):
                                           resource_usage
                                 FROM jobs WHERE id=?''',
                                         [job_id]).next()
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2286,14 +2287,14 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                for job_id, job in job_dict.iteritems():
+                for job_id, job in six.iteritems(job_dict):
                     self.set_job_exit_info(job_id,
                                            job.exit_status,
                                            job.exit_value,
                                            job.terminating_signal,
                                            job.str_rusage,
                                            cursor)
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2350,7 +2351,7 @@ class WorkflowDatabaseServer(object):
                                    resource_usage,
                                    job_id)
                                    )
-            except Exception, e:
+            except Exception as e:
                 if not external_cursor:
                     connection.rollback()
                     cursor.close()
@@ -2416,7 +2417,7 @@ class WorkflowDatabaseServer(object):
                     result[jid] = (self._string_conversion(name),
                                    self._string_conversion(command),
                                    self._str_to_date_conversion(submission_date))
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2455,7 +2456,7 @@ class WorkflowDatabaseServer(object):
                                            [user_id,
                                             constants.QUEUED_ACTIVE,
                                             constants.UNDETERMINED]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2489,7 +2490,7 @@ class WorkflowDatabaseServer(object):
                                           [user_id, constants.KILL_PENDING]):
                     jid = row[0]
                     job_to_kill_ids.append(jid)
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2546,7 +2547,7 @@ class WorkflowDatabaseServer(object):
                         self._str_to_date_conversion(
                             expiration_date),
                         client_paths)
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2593,7 +2594,7 @@ class WorkflowDatabaseServer(object):
                     result[temp_path_id] = (
                         self._string_conversion(engine_file),
                         self._str_to_date_conversion(expiration_date))
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2609,7 +2610,7 @@ class WorkflowDatabaseServer(object):
                                   WHERE id=? and
                                         user_id=?''',
                                    [wf_id, user_id]).next()[0]
-        except Exception, e:
+        except Exception as e:
             cursor.close()
             connection.close()
             raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2638,7 +2639,7 @@ class WorkflowDatabaseServer(object):
                                                  FROM workflows
                                                  WHERE id=?''',
                                                         [wf_id]).next()[0]
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2678,7 +2679,7 @@ class WorkflowDatabaseServer(object):
                     wf_id, name, expiration_date = row
                     result[wf_id] = (self._string_conversion(name),
                                      self._str_to_date_conversion(expiration_date))
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -2711,7 +2712,7 @@ class WorkflowDatabaseServer(object):
                                           [user_id, constants.KILL_PENDING]):
                     wf_id = row[0]
                     wf_to_kill_ids.append(wf_id)
-            except Exception, e:
+            except Exception as e:
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))

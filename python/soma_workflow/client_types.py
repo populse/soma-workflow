@@ -16,8 +16,16 @@
 #-------------------------------------------------------------------------
 
 import warnings
-import types
+import sys
 import soma_workflow.constants as constants
+
+# python2/3 compatibility
+
+import six
+
+if sys.version_info[0] >= 3:
+    basestring = str
+    unicode = str
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -202,7 +210,7 @@ class Job(object):
         self.native_specification = native_specification
 
         for command_elem in self.command:
-            if type(command_elem) in types.StringTypes:
+            if isinstance(command_elem, basestring):
                 if "'" in command_elem:
                     warnings.warn("%s contains single quote. It could fail using DRMAA"
                                   % command_elem, UserWarning)
@@ -287,7 +295,7 @@ class Job(object):
          * tmp_from_ids *id -> TemporaryPath*
         '''
         job = cls(command=d["command"])
-        for key, value in d.iteritems():
+        for key, value in six.iteritems(d):
             setattr(job, key, value)
 
         new_command = list_from_serializable(job.command,
@@ -474,7 +482,7 @@ class BarrierJob(Job):
          * tmp_from_ids *id -> TemporaryPath*
         '''
         job = cls()
-        for key, value in d.iteritems():
+        for key, value in six.iteritems(d):
             setattr(job, key, value)
 
         if job.referenced_input_files:
@@ -759,7 +767,7 @@ class Workflow(object):
         wf_dict["root_group"] = new_root_group
 
         ser_groups = {}
-        for group, group_id in group_ids.iteritems():
+        for group, group_id in six.iteritems(group_ids):
             ser_groups[str(group_id)] = group.to_dict(group_ids, job_ids)
         wf_dict["serialized_groups"] = ser_groups
 
@@ -768,7 +776,7 @@ class Workflow(object):
         transfer_ids = {}  # FileTransfer -> id
         shared_res_path_ids = {}  # SharedResourcePath -> id
         temporary_ids = {}  # TemporaryPath -> id
-        for job, job_id in job_ids.iteritems():
+        for job, job_id in six.iteritems(job_ids):
             if isinstance(job, BarrierJob):
                 ser_barriers[str(job_id)] = job.to_dict(id_generator,
                                                         transfer_ids,
@@ -783,17 +791,17 @@ class Workflow(object):
         wf_dict["serialized_barriers"] = ser_barriers
 
         ser_transfers = {}
-        for file_transfer, transfer_id in transfer_ids.iteritems():
+        for file_transfer, transfer_id in six.iteritems(transfer_ids):
             ser_transfers[str(transfer_id)] = file_transfer.to_dict()
         wf_dict["serialized_file_transfers"] = ser_transfers
 
         ser_srp = {}
-        for srp, srp_id in shared_res_path_ids.iteritems():
+        for srp, srp_id in six.iteritems(shared_res_path_ids):
             ser_srp[str(srp_id)] = srp.to_dict()
         wf_dict["serialized_shared_res_paths"] = ser_srp
 
         ser_tmp = {}
-        for tmpf, tmp_id in temporary_ids.iteritems():
+        for tmpf, tmp_id in six.iteritems(temporary_ids):
             ser_tmp[str(tmp_id)] = tmpf.to_dict()
         wf_dict["serialized_temporary_paths"] = ser_tmp
 
@@ -806,34 +814,34 @@ class Workflow(object):
         # shared resource paths
         serialized_srp = d["serialized_shared_res_paths"]
         srp_from_ids = {}
-        for srp_id, srp_d in serialized_srp.iteritems():
+        for srp_id, srp_d in six.iteritems(serialized_srp):
             srp = SharedResourcePath.from_dict(srp_d)
             srp_from_ids[int(srp_id)] = srp
 
         # file transfers
         serialized_tr = d["serialized_file_transfers"]
         tr_from_ids = {}
-        for tr_id, tr_d in serialized_tr.iteritems():
+        for tr_id, tr_d in six.iteritems(serialized_tr):
             file_transfer = FileTransfer.from_dict(tr_d)
             tr_from_ids[int(tr_id)] = file_transfer
 
         # file transfers
         serialized_tmp = d["serialized_temporary_paths"]
         tmp_from_ids = {}
-        for tmp_id, tmp_d in serialized_tmp.iteritems():
+        for tmp_id, tmp_d in six.iteritems(serialized_tmp):
             temp_file = TemporaryPath.from_dict(tmp_d)
             tmp_from_ids[int(tmp_id)] = temp_file
 
         # jobs
         serialized_jobs = d["serialized_jobs"]
         job_from_ids = {}
-        for job_id, job_d in serialized_jobs.iteritems():
+        for job_id, job_d in six.iteritems(serialized_jobs):
             job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
             job_from_ids[int(job_id)] = job
 
         # barrier jobs
         serialized_jobs = d["serialized_barriers"]
-        for job_id, job_d in serialized_jobs.iteritems():
+        for job_id, job_d in six.iteritems(serialized_jobs):
             job = BarrierJob.from_dict(
                 job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
             job_from_ids[int(job_id)] = job
@@ -984,7 +992,7 @@ class Workflow(object):
                 j2 = ghubs[0]  # replace output group with the group input hub
             new_deps_list.append((j1, j2))
         # rebuild intra-group links
-        for group, ghubs in group_to_hub.iteritems():
+        for group, ghubs in six.iteritems(group_to_hub):
             new_deps_list += self.__make_group_hubs_deps(group, group_to_hub)
         if type(self.dependencies) is set:
             self.dependencies.difference_update(deps_to_remove)
@@ -1342,7 +1350,7 @@ class FileTransfer(SpecialPath):
     def from_dict(cls, d):
         transfer = cls(is_input=True,
                        client_path="foo")
-        for key, value in d.iteritems():
+        for key, value in six.iteritems(d):
             setattr(transfer, key, value)
         return transfer
 
@@ -1465,7 +1473,7 @@ class SharedResourcePath(SpecialPath):
         shared_res_path = cls(relative_path="toto",
                               namespace="toto",
                               uuid="toto")
-        for key, value in d.iteritems():
+        for key, value in six.iteritems(d):
             setattr(shared_res_path, key, value)
         return shared_res_path
 
@@ -1597,7 +1605,7 @@ class TemporaryPath(SpecialPath):
         temp_file = cls(is_directory=is_directory,
                         disposal_timeout=disposal_timeout,
                         suffix=suffix)
-        for key, value in d.iteritems():
+        for key, value in six.iteritems(d):
             setattr(temp_file, key, value)
         return temp_file
 
