@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import time
 
@@ -33,20 +35,20 @@ sys.stdout.write("\n")
 
 fileIn1 = open(filePathIn1)
 fileOut = open(filePathOut, "w")
-print >> fileOut, "4****************job4***********************"
+print("4****************job4***********************", file=fileOut)
 line = fileIn1.readline()
 while line:
-    print >> fileOut, "4 " + line,
+    print("4 " + line, file=fileOut, end='')
     line = fileIn1.readline()
 
 
 fileIn2 = open(filePathIn2)
 line = fileIn2.readline()
 while line:
-    print >> fileOut, "4 " + line,
+    print("4 " + line, file=fileOut, end='')
     line = fileIn2.readline()
 
-print >> fileOut, "4 "
-print >> fileOut, "4 job4: stdin comment:"
-print >> fileOut, "4 " + comment,
-print >> fileOut, "4******************************************************"
+print("4 ", file=fileOut)
+print("4 job4: stdin comment:", file=fileOut)
+print("4 " + comment, file=fileOut, end='')
+print("4******************************************************", file=fileOut)

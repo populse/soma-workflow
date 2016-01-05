@@ -1,6 +1,7 @@
 
 """named tuple implementation"""
 
+from __future__ import print_function
 from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
@@ -90,7 +91,7 @@ def namedtuple(typename, field_names, verbose=False):
     for i, name in enumerate(field_names):
         template += '        %s = property(itemgetter(%d))\n' % (name, i)
     if verbose:
-        print template
+        print(template)
 
     # Execute the template string in a temporary namespace
     namespace = dict(itemgetter=_itemgetter)

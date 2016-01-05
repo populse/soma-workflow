@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement  # allow python 2.5 to work
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -870,7 +870,7 @@ class Configuration(observer.Observable):
             # config_path = Configuration.search_config_path()
             # if config_path == None:
             # config_path = os.path.join(home_dir, ".soma-workflow.cfg")
-            # print config_path
+            # print(config_path)
 
         # config_parser = ConfigParser.ConfigParser()
         # config_parser.read(config_path)
@@ -892,7 +892,7 @@ class Configuration(observer.Observable):
             # queue_limits_str = queue_limits_str + "{" + repr(limit) + "} "
             # else:
             # queue_limits_str = queue_limits_str + queue + "{" + repr(limit) + "} "
-        # print "queue_limits_str " + queue_limits_str
+        # print("queue_limits_str " + queue_limits_str)
         # config_parser.set(self._resource_id,
                             # OCFG_MAX_JOB_IN_QUEUE,
                             # queue_limits_str)
@@ -1085,7 +1085,7 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
         'export PYTHONPATH=$SOMAWF_PATH/python:$PYTHONPATH',
         'export SOMA_WORKFLOW_EXAMPLES=$SOMAWF_PATH/test/jobExamples/',
         'export SOMA_WORKFLOW_EXAMPLES_OUT=$SOMAWF_PATH/test/jobExamples_out/']
-        >>> print AddVariables2BashrcFile(lines2add, "~/.bashrc")
+        >>> print(AddVariables2BashrcFile(lines2add, "~/.bashrc"))
     """
     import os
     import sys
@@ -1101,12 +1101,13 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
         with open(path2bashrc) as f:
             content = f.readlines()
     except IOError, e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "%s does not exist, the system will create the new file" % (path2bashrc)
+        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        print("%s does not exist, the system will create the new file"
+              % (path2bashrc))
     except ValueError:
-        print "Could not convert data to an integer."
+        print("Could not convert data to an integer.")
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print("Unexpected error:", sys.exc_info()[0])
         raise
 
     for i in range(len(content)):
@@ -1128,14 +1129,15 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
             for cline in content:
                 f.write(cline + "\n")
     except IOError, e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "The system cannot write the file %s. Please make sure it can be wrote. " % (path2bashrc)
+        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        print("The system cannot write the file %s. Please make sure it can "
+              "be written. " % (path2bashrc))
         raise e
     except ValueError:
-        print "Could not convert data to an integer."
+        print("Could not convert data to an integer.")
         raise ValueError
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print("Unexpected error:", sys.exc_info()[0])
         raise
 
 
@@ -1144,12 +1146,13 @@ def WriteOutConfiguration(config_parser, config_path):
         with open(config_path, 'w') as cfgfile:
             config_parser.write(cfgfile)
     except IOError, e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
-        print "The system cannot write the file %s. Please make sure that it can be written. " % (config_path)
+        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        print("The system cannot write the file %s. Please make sure that it "
+              "can be written. " % (config_path))
         raise e
     except ValueError:
-        print "Could not convert data to an integer.%s" % (config_path)
+        print("Could not convert data to an integer.%s" % (config_path))
         raise ValueError
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print("Unexpected error:", sys.exc_info()[0])
         raise

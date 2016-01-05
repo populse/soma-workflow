@@ -8,6 +8,8 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from __future__ import print_function
+
 import os
 import hashlib
 import stat
@@ -78,7 +80,7 @@ class TransferMonitoring(object):
         '''
         returns a tuple (data size, size of data transfered)
         '''
-        # print ">>progress " + repr(path) + " to " + repr(remote_path)
+        # print(">>progress " + repr(path) + " to " + repr(remote_path))
         if os.path.isfile(path):
             r_size = self.remote_file_controller.get_file_size(remote_path)
             size = os.path.getsize(path)
@@ -88,14 +90,14 @@ class TransferMonitoring(object):
         else:
             r_size = 0
             size = 0
-        # print "<<progress " + repr(r_size) + " " + repr(size)
+        # print("<<progress " + repr(r_size) + " " + repr(size))
         return (size, r_size)
 
     def transfer_from_remote_progression(self, remote_path, path):
         '''
         returns a tuple (data size, size of data transfered)
         '''
-        # print ">>progress " + repr(remote_path) + " to " + repr(path)
+        # print(">>progress " + repr(remote_path) + " to " + repr(path))
         if self.remote_file_controller.is_file(remote_path):
             r_size = self.remote_file_controller.get_file_size(remote_path)
             if os.path.isfile(path):
@@ -111,7 +113,7 @@ class TransferMonitoring(object):
         else:
             r_size = 0
             size = 0
-        # print "<<progress " + repr(r_size) + " " + repr(size)
+        # print("<<progress " + repr(r_size) + " " + repr(size))
         return (r_size, size)
 
     def get_dir_size(self, path):
@@ -161,7 +163,7 @@ class Transfer(object):
                 path = os.path.join(directory, file)
                 file_size = os.path.getsize(path)
                 size = size + file_size
-                # print "size: %0.1f MB cumul: %0.1f MB"
+                # print("size: %0.1f MB cumul: %0.1f MB")
                 # %(file_size/(1024*1024.0), size/(1024*1024.0))
         return size
 
@@ -200,7 +202,7 @@ class TransferSCP(Transfer):
         super(TransferSCP, self).__init__(remote_file_controller)
         self.username = username
         self.hostname = hostname
-        # print "SCP transfer"
+        # print("SCP transfer")
 
     def transfer_to_remote(self, path, remote_path):
         if os.path.isfile(path):
@@ -212,7 +214,7 @@ class TransferSCP(Transfer):
                                                      remote_path)
             else:
                 scp_cmd = 'scp -qp %s %s' % (path, remote_path)
-            print scp_cmd
+            print(scp_cmd)
             os.system(scp_cmd)
 
         if os.path.isdir(path):
@@ -234,7 +236,7 @@ class TransferSCP(Transfer):
                                                            remote_path)
                 else:
                     scp_cmd = 'scp -Cqpr %s %s' % (path, remote_path)
-            print scp_cmd
+            print(scp_cmd)
             os.system(scp_cmd)
 
     def transfer_from_remote(self, remote_path, path):
@@ -248,7 +250,7 @@ class TransferSCP(Transfer):
                                                       path)
             else:
                 scp_cmd = 'scp -qp %s %s ' % (remote_path, path)
-            print scp_cmd
+            print(scp_cmd)
             os.system(scp_cmd)
 
         if self.remote_file_controller.is_dir(remote_path):
@@ -273,7 +275,7 @@ class TransferSCP(Transfer):
                 else:
                     scp_cmd = 'scp -Cqpr %s %s ' % (remote_path, path)
 
-            print scp_cmd
+            print(scp_cmd)
             os.system(scp_cmd)
 
 
@@ -287,7 +289,7 @@ class TransferRsync(Transfer):
         super(TransferRsync, self).__init__(remote_file_controller)
         self.username = username
         self.hostname = hostname
-        # print "Rsync transfer"
+        # print("Rsync transfer")
 
     def transfer_to_remote(self, path, remote_path):
         if os.path.isfile(path):
@@ -299,7 +301,7 @@ class TransferRsync(Transfer):
                                                          remote_path)
             else:
                 rsync_cmd = 'rsync -qp %s %s' % (path, remote_path)
-            print rsync_cmd
+            print(rsync_cmd)
             os.system(rsync_cmd)
 
         if os.path.isdir(path):
@@ -312,7 +314,7 @@ class TransferRsync(Transfer):
             else:
                 rsync_cmd = 'rsync -qpr %s %s' % (os.path.join(path, "*"),
                                                   remote_path)
-            print rsync_cmd
+            print(rsync_cmd)
             os.system(rsync_cmd)
 
     def transfer_from_remote(self, remote_path, path):
@@ -326,7 +328,7 @@ class TransferRsync(Transfer):
                                                           path)
             else:
                 rsync_cmd = 'rsync -qp %s %s ' % (remote_path, path)
-            print rsync_cmd
+            print(rsync_cmd)
             os.system(rsync_cmd)
 
         if self.remote_file_controller.is_dir(remote_path):
@@ -339,9 +341,9 @@ class TransferRsync(Transfer):
                                                            remote_path, "*"),
                                                            path)
             else:
-                rsync_cmd = 'rsync -qpr %s %s ' % (os.path.join(remote_path, "*"),
-                                                   path)
-            print rsync_cmd
+                rsync_cmd = 'rsync -qpr %s %s ' \
+                    % (os.path.join(remote_path, "*"), path)
+            print(rsync_cmd)
             os.system(rsync_cmd)
 
 
@@ -349,10 +351,10 @@ class TransferLocal(Transfer):
 
     def __init__(self, remote_file_controller):
         super(TransferLocal, self).__init__(remote_file_controller)
-        # print "Local transfer"
+        # print("Local transfer")
 
     def transfer_to_remote(self, path, remote_path):
-        # print "copy " + repr(path) + " to " + repr(remote_path)
+        # print("copy " + repr(path) + " to " + repr(remote_path))
         # time.sleep(4)
         if os.path.isfile(path):
             if not os.path.isdir(os.path.dirname(remote_path)):
@@ -371,7 +373,7 @@ class TransferLocal(Transfer):
         # time.sleep(4)
 
     def transfer_from_remote(self, remote_path, path):
-        # print "copy " + repr(remote_path) + " to " + repr(path)
+        # print("copy " + repr(remote_path) + " to " + repr(path))
         # time.sleep(4)
         if os.path.isfile(remote_path):
             if not os.path.isdir(os.path.dirname(path)):
@@ -380,7 +382,7 @@ class TransferLocal(Transfer):
 
         if os.path.isdir(remote_path):
             if not os.path.isdir(os.path.dirname(path)):
-                # print "makedirs " + repr(os.path.dirname(path))
+                # print("makedirs " + repr(os.path.dirname(path)))
                 os.makedirs(os.path.dirname(path))
             if os.path.isdir(path):
                 for p in os.listdir(remote_path):
@@ -395,7 +397,7 @@ class PortableRemoteTransfer(Transfer):
 
     def __init__(self, remote_file_controller):
         super(PortableRemoteTransfer, self).__init__(remote_file_controller)
-        # print "Portable transfer"
+        # print("Portable transfer")
 
     def transfer_to_remote(self,
                            path,
@@ -404,7 +406,7 @@ class PortableRemoteTransfer(Transfer):
         '''
         return Transfered_with_success
         '''
-        print "copy " + repr(path) + " to " + repr(remote_path)
+        print("copy " + repr(path) + " to " + repr(remote_path))
         if os.path.isfile(path):
             self.remote_file_controller.create_dirs(remote_path)
             # TBI in case the file were already transfered
@@ -451,7 +453,7 @@ class PortableRemoteTransfer(Transfer):
                              path,
                              buffer_size=512 ** 2):
 
-        print "copy " + repr(remote_path) + " to " + repr(path)
+        print("copy " + repr(remote_path) + " to " + repr(path))
         if self.remote_file_controller.is_file(remote_path):
             if not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))

@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 '''
 @author: laure.hugo@cea.fr
 @author: Soizic Laguitton
@@ -153,13 +153,14 @@ class WorkflowTest(unittest.TestCase):
                     os.unlink(config._database_file)
                     shutil.rmtree(config._transfered_file_dir)
                 else:
-                    print 'temporary files kept:'
-                    print 'databse file:', config._database_file
-                    print 'transfers:', config._transfered_file_dir
+                    print('temporary files kept:')
+                    print('databse file:', config._database_file)
+                    print('transfers:', config._transfered_file_dir)
 
     @staticmethod
     def print_help(argv):
-        print argv[0], '[-h|--help] [--interactive] [--keep-temporary] [--debug]'
+        print(argv[0],
+              '[-h|--help] [--interactive] [--keep-temporary] [--debug]')
 
     @staticmethod
     def parse_args(argv):
@@ -186,31 +187,31 @@ class WorkflowTest(unittest.TestCase):
         job_list = self.wf_ctrl.jobs([job_id])
         job_name, job_command, job_submission_date = job_list[job_id]
 
-        print >> file, '\n** failure in %s job stdout/stderr **' \
-            % self.__class__.__name__
-        print >> file, 'job id:', job_id, ', job name:', job_name
+        print('\n** failure in %s job stdout/stderr **'
+              % self.__class__.__name__, file=file)
+        print('job id:', job_id, ', job name:', job_name, file=file)
         if msg:
-            print >> file, '++ error message: ++'
-            print >> file, msg
-            print >> file, '++ (message end) ++'
+            print('++ error message: ++', file=file)
+            print(msg, file=file)
+            print('++ (message end) ++', file=file)
         eng_stdout, eng_stderr = \
             self.wf_ctrl._engine_proxy.stdouterr_file_path(job_id)
-        print >> file, 'job engine stdout:', eng_stdout, \
-            ', stderr:', eng_stderr
-        print >> file, '++ stdout: ++'
-        print >> file, open(eng_stdout).read()
-        print >> file, '++ (stdout end) ++'
-        print >> file, '++ stderr: ++'
-        print >> file, open(eng_stderr).read()
-        print >> file, '++ (stderr end) ++'
+        print('job engine stdout:', eng_stdout, ', stderr:', eng_stderr,
+              file=file)
+        print('++ stdout: ++', file=file)
+        print(open(eng_stdout).read(), file=file)
+        print('++ (stdout end) ++', file=file)
+        print('++ stderr: ++', file=file)
+        print(open(eng_stderr).read(), file=file)
+        print('++ (stderr end) ++', file=file)
         jobs_files = [
             (ji[0],
              self.wf_ctrl._engine_proxy.stdouterr_file_path(ji[0]))
             for ji in jobs_info]
-        print >> file, 'engine jobs files:', jobs_files
-        print >> file, 'jobs list:', job_list
-        print >> file, 'tmp_files:', tmp_files
-        print >> file, '** (job failure end) **'
+        print('engine jobs files:', jobs_files, file=file)
+        print('jobs list:', job_list, file=file)
+        print('tmp_files:', tmp_files, file=file)
+        print('** (job failure end) **', file=file)
 
     def assertTrue(self, condition, msg=None):
         if not bool(condition) and hasattr(self, 'tested_job'):

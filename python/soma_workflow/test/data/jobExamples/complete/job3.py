@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import time
 
@@ -31,13 +33,14 @@ sys.stdout.write("\n")
 
 fileIn = open(filePathIn)
 fileOut = open(filePathOut, "w")
-print >> fileOut, "3****************job3***********************"
+print("3****************job3***********************", file=fileOut)
 line = fileIn.readline()
 while line:
-    print >> fileOut, "3 " + line,
+    print("3 " + line, file=fileOut, end='')
     line = fileIn.readline()
 
-print >> fileOut, "3 "
-print >> fileOut, "3 job3: stdin comment:"
-print >> fileOut, "3 " + comment,
-print >> fileOut, "3*************************************************************"
+print("3 ", file=fileOut)
+print("3 job3: stdin comment:", file=fileOut)
+print("3 " + comment, file=fileOut, end='')
+print("3*************************************************************",
+      file=fileOut)

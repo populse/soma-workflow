@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 import weakref
 import types
 
@@ -60,16 +62,17 @@ class Observable(object):
 
     def notifyObservers(self, event=None, msg=None):
         for observer, data in self._observers.items():
-            # print "data is", data
+            # print("data is", data)
             cbname, events = data
-            # print "cbname is", cbname
-            # print "events is", events
-            # print "event is", event
+            # print("cbname is", cbname)
+            # print("events is", events)
+            # print("event is", event)
             if events is None or event is None or event in events:
-                # print "observer is " + repr(observer)
+                # print("observer is " + repr(observer))
                 cb = getattr(observer, cbname, None)
                 if cb is None:
-                    raise NotImplementedError, "Observer has no %s method." % cbname
+                    raise NotImplementedError, \
+                        "Observer has no %s method." % cbname
                 cb(self, event, msg)
 
 

@@ -59,10 +59,10 @@ def suppress_stdout(debug=False):
     Examples
     --------
     >>> with suppress_stdout(debug=False):
-    ...     print "hello world"
+    ...     print("hello world")
 
     >>> with suppress_stdout(debug=True):
-    ...     print "hello world"
+    ...     print("hello world")
     hello world
     '''
     if debug:

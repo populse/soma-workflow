@@ -13,6 +13,8 @@ Licence_CeCILL_V2-en.html>}
 """
 
 # System import
+from __future__ import print_function
+
 import os
 import logging
 import sys
@@ -317,6 +319,6 @@ lines2cmd = [
 ]
 
 for cmd in lines2cmd:
-    print cmd
+    print(cmd)
     # os.system("echo '%s' " % (cmd))
     os.system(cmd)

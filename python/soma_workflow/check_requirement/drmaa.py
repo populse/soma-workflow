@@ -12,9 +12,11 @@ Created on Mon May 13 10:48:02 2013
 
 """
 
+from __future__ import print_function
+
 if __name__ == "__main__":
     import soma_workflow.scheduler
     if soma_workflow.scheduler.DRMAA_LIB_FOUND:
-        print "True"
+        print("True")
     else:
-        print "False"
+        print("False")

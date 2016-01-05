@@ -15,6 +15,8 @@
 # Imports
 #-------------------------------------------------------------------------
 
+from __future__ import print_function
+
 import os
 import hashlib
 import stat
@@ -89,7 +91,8 @@ class WorkflowController(object):
 
         resource_id: *string*
             Identifier of the computing resource to connect to.
-            If None, the number of cpu of the current machine is detected and the basic scheduler is lauched.
+            If None, the number of cpu of the current machine is detected and
+            the basic scheduler is lauched.
 
         login: *string*
             Required if the computing resource is remote.
@@ -105,7 +108,8 @@ class WorkflowController(object):
             Required if the RSA key is protected with a password.
 
         .. note::
-          The login and password are only required for a remote computing resource.
+          The login and password are only required for a remote computing
+          resource.
         '''
 
         if config == None:
@@ -120,7 +124,6 @@ class WorkflowController(object):
         self.scheduler_config = None
 
         mode = self.config.get_mode()
-        # print  mode + " mode"
 
         self._resource_id = resource_id
 
@@ -136,10 +139,11 @@ class WorkflowController(object):
         # REMOTE MODE
         elif mode == configuration.REMOTE_MODE:
             submitting_machines = self.config.get_submitting_machines()
-            sub_machine = submitting_machines[random.randint(0,
-                                                             len(submitting_machines) - 1)]
+            sub_machine = submitting_machines[random.randint(
+                0, len(submitting_machines) - 1)]
             cluster_address = self.config.get_cluster_address()
-            print 'cluster address: ' + cluster_address + ', submission machine: ' + sub_machine
+            print('cluster address: ' + cluster_address
+                  + ', submission machine: ' + sub_machine)
             self._connection = connection.RemoteConnection(login,
                                                            password,
                                                            cluster_address,
@@ -161,17 +165,18 @@ class WorkflowController(object):
 
         # LIGHT MODE
         elif mode == configuration.LIGHT_MODE:
-            local_scdl_cfg_path = configuration.LocalSchedulerCfg.search_config_path(
-            )
+            local_scdl_cfg_path \
+                = configuration.LocalSchedulerCfg.search_config_path()
             if local_scdl_cfg_path == None:
                 cpu_count = Helper.cpu_count()
                 self.scheduler_config = configuration.LocalSchedulerCfg(
                     proc_nb=cpu_count)
             else:
-                self.scheduler_config = configuration.LocalSchedulerCfg.load_from_file(
-                    local_scdl_cfg_path)
-            self._engine_proxy = _embedded_engine_and_server(self.config,
-                                                             self.scheduler_config)
+                self.scheduler_config \
+                    = configuration.LocalSchedulerCfg.load_from_file(
+                        local_scdl_cfg_path)
+            self._engine_proxy = _embedded_engine_and_server(
+                self.config, self.scheduler_config)
             self.engine_config_proxy = self.config
             self._connection = None
             self._transfer = TransferLocal(self._engine_proxy)
@@ -260,8 +265,8 @@ class WorkflowController(object):
 
         Raises *JobError* if the job is not correct.
         '''
-        print "The method submit_job is deprecated since version 2.4. " \
-            "Use submit_workflow instead."
+        print("The method submit_job is deprecated since version 2.4. " \
+              "Use submit_workflow instead.")
         if self.engine_config_proxy.get_scheduler_type() \
                 == configuration.MPI_SCHEDULER:
             raise SomaWorkflowError(
@@ -315,9 +320,9 @@ class WorkflowController(object):
 
     def jobs(self, job_ids=None):
         '''
-        Lists the identifiers and general information about all the jobs submitted
-        by the user and which are not part of a workflow, or about the jobs
-        specified in the *job_ids* argument.
+        Lists the identifiers and general information about all the jobs
+        submitted by the user and which are not part of a workflow, or about
+        the jobs specified in the *job_ids* argument.
 
         * job_ids *sequence of job identifiers*
 
@@ -328,9 +333,9 @@ class WorkflowController(object):
 
     def transfers(self, transfer_ids=None):
         '''
-        Lists the identifiers and information about all the user's file transfers
-        which are not part of a workflow or about the file transfers specified in
-        the *transfer_ids* argument.
+        Lists the identifiers and information about all the user's file
+        transfers which are not part of a workflow or about the file transfers
+        specified in the *transfer_ids* argument.
 
         * transfer_ids *sequence of FileTransfer identifiers*
 
@@ -341,7 +346,8 @@ class WorkflowController(object):
                               on the computing resource and all the transfer
                               information will be deleted, unless an existing
                               job has declared this file as output or input.
-                            * client_paths: sequence of file or directory path or None)
+                            * client_paths: sequence of file or directory path
+                              or None)
         '''
         return self._engine_proxy.transfers(transfer_ids)
 
@@ -361,8 +367,8 @@ class WorkflowController(object):
 
     def workflow_elements_status(self, workflow_id):
         '''
-        Gets back the status of all the workflow elements at once, minimizing the
-        communication with the server and request to the database.
+        Gets back the status of all the workflow elements at once, minimizing
+        the communication with the server and request to the database.
         TO DO => make it more user friendly.
 
         * workflow_id *workflow identifier*
@@ -382,7 +388,8 @@ class WorkflowController(object):
         wf_status = self._engine_proxy.workflow_elements_status(workflow_id)
         # special processing for transfer status:
         new_transfer_status = []
-        for engine_path, client_path, client_paths, status, transfer_type in wf_status[1]:
+        for engine_path, client_path, client_paths, status, transfer_type \
+                in wf_status[1]:
             progression = self._transfer_progression(status,
                                                      transfer_type,
                                                      client_path,
@@ -392,7 +399,8 @@ class WorkflowController(object):
             new_transfer_status.append((engine_path, (status, progression)))
 
         new_wf_status = (
-            wf_status[0], new_transfer_status, wf_status[2], wf_status[3], wf_status[4])
+            wf_status[0], new_transfer_status, wf_status[2], wf_status[3],
+            wf_status[4])
         return new_wf_status
 
     # JOB MONITORING #############################################
@@ -420,11 +428,13 @@ class WorkflowController(object):
             * exit value: operating system exit code of the job if the job
               terminated normally.
             * terminating signal: representation of the signal that caused the
-              termination of the job if the job terminated due to the receipt of
-              a signal.
-            * resource usage: resource usage information provided as an array of
-              strings where each string complies with the format <name>=<value>.
-              The information provided depends on the DRMS and DRMAA implementation.
+              termination of the job if the job terminated due to the receipt
+              of a signal.
+            * resource usage: resource usage information provided as an array
+              of strings where each string complies with the format
+              <name>=<value>.
+              The information provided depends on the DRMS and DRMAA
+              implementation.
 
         Raises *UnknownObjectError* if the job_id is not valid
         '''
@@ -469,13 +479,16 @@ class WorkflowController(object):
         * transfer_id *transfer identifier*
 
         * returns: *tuple(transfer_status or None, tuple or None)*
-            * Status of the file transfer : see :ref:`file-transfer-status` or the
-              constants.FILE_TRANSFER_STATUS list.
+            * Status of the file transfer : see :ref:`file-transfer-status` or
+              the constants.FILE_TRANSFER_STATUS list.
             * None if the transfer status in not
               constants.TRANSFERING_FROM_CLIENT_TO_CR or
               constants.TRANSFERING_FROM_CR_TO_CLIENT.
-              tuple (file size, size already transfered) if it is a file transfer.
-              tuple (cumulated size, sequence of tuple (relative_path, file_size, size already transfered) if it is a directory transfer.
+              tuple (file size, size already transfered) if it is a file
+              transfer.
+              tuple (cumulated size, sequence of tuple (relative_path,
+              file_size, size already transfered) if it is a directory
+              transfer.
 
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
@@ -498,24 +511,27 @@ class WorkflowController(object):
     # WORKFLOW CONTROL ############################################
     def restart_workflow(self, workflow_id, queue=None):
         '''
-        Restarts the jobs of the workflow which failed. The jobs will be submitted
-        again.
+        Restarts the jobs of the workflow which failed. The jobs will be
+        submitted again.
         The workflow status has to be constants.WORKFLOW_DONE.
 
         * workflow_id *workflow identifier*
 
         * queue *string*
-            Optional name of the queue where to submit jobs. If it is not specified
-            the jobs will be submitted to the default queue.
+            Optional name of the queue where to submit jobs. If it is not
+            specified the jobs will be submitted to the default queue.
 
         * returns: *boolean*
             True if some jobs were restarted.
 
         Raises *UnknownObjectError* if the workflow_id is not valid
         '''
-        if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
-            raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                                    "Use soma_workflow.MPI_workflow_runner to restart a workflow using the MPI scheduler.")
+        if self.engine_config_proxy.get_scheduler_type() \
+                == configuration.MPI_SCHEDULER:
+            raise SomaWorkflowError(
+                "The MPI scheduler is configured for this resource. "
+                "Use soma_workflow.MPI_workflow_runner to restart a workflow "
+                "using the MPI scheduler.")
 
         return self._engine_proxy.restart_workflow(workflow_id, queue)
 
@@ -525,9 +541,10 @@ class WorkflowController(object):
         Jobs). The worklfow_id will become invalid and can not be used anymore.
         The workflow jobs which are running will be killed.
         If force is set to True: the call will block until the workflow is
-        deleted. With force set to True, if the workflow can not be deleted properly
-        it is deleted from Soma-workflow database. However, if some jobs are still
-        running they are not be killed. In this case the return value is False.
+        deleted. With force set to True, if the workflow can not be deleted
+        properly it is deleted from Soma-workflow database. However, if some
+        jobs are still running they are not be killed. In this case the return
+        value is False.
 
         * workflow_id *workflow_identifier*
 
@@ -555,13 +572,17 @@ class WorkflowController(object):
           if some jobs are possibly still running on the computing resource
           despite the workflow was stopped.
         '''
-        if self.engine_config_proxy.get_scheduler_type() == configuration.MPI_SCHEDULER:
-            raise SomaWorkflowError("The MPI scheduler is configured for this resource. "
-                                    "Kill the soma_workflow.MPI_workflow_runner job to stop the workflow.")
+        if self.engine_config_proxy.get_scheduler_type() \
+                == configuration.MPI_SCHEDULER:
+            raise SomaWorkflowError(
+                "The MPI scheduler is configured for this resource. "
+                "Kill the soma_workflow.MPI_workflow_runner job to stop the "
+                "workflow.")
 
         return self._engine_proxy.stop_workflow(workflow_id)
 
-    def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
+    def change_workflow_expiration_date(self, workflow_id,
+                                        new_expiration_date):
         '''
         Sets a new expiration date for the workflow.
 
@@ -574,7 +595,8 @@ class WorkflowController(object):
 
         Raises *UnknownObjectError* if the workflow_id is not valid
         '''
-        return self._engine_proxy.change_workflow_expiration_date(workflow_id, new_expiration_date)
+        return self._engine_proxy.change_workflow_expiration_date(
+            workflow_id, new_expiration_date)
 
     # JOB CONTROL #################################################
     def wait_job(self, job_ids, timeout=-1):
@@ -611,13 +633,14 @@ class WorkflowController(object):
         '''
         **deprecated since version 2.4:** Use stop_workflow instead.
 
-        Kills a running job. The job will not be deleted from the system (the job
-        identifier remains valid).
+        Kills a running job. The job will not be deleted from the system (the
+        job identifier remains valid).
         Use the restart_job method to restart the job.
 
         Raises *UnknownObjectError* if the job_id is not valid
         '''
-        print "The method kill_job is deprecated since version 2.4. Use stop_workflow instead."
+        print("The method kill_job is deprecated since version 2.4. "
+              "Use stop_workflow instead.")
 
         self._engine_proxy.kill_job(job_id)
 
@@ -633,7 +656,8 @@ class WorkflowController(object):
 
         Raises *UnknownObjectError* if the job_id is not valid
         '''
-        print "The method restart_job is deprecated since version 2.4. Use submit_workflow instead."
+        print("The method restart_job is deprecated since version 2.4. "
+              "Use submit_workflow instead.")
         self._engine_proxy.restart_job(job_id)
 
     def delete_job(self, job_id, force=True):
@@ -647,11 +671,12 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the job_id is not valid
 
         * returns: *boolean*
-          If force is True: return True if the running jobs were killed and False
-          if some jobs are possibly still running on the computing resource despite
-          the workflow doesn't exist.
+          If force is True: return True if the running jobs were killed and
+          False if some jobs are possibly still running on the computing
+          resource despite the workflow doesn't exist.
         '''
-        print "The method delete_job is deprecated since version 2.4. Use delete_workflow instead."
+        print("The method delete_job is deprecated since version 2.4. "
+              "Use delete_workflow instead.")
 
         return self._engine_proxy.delete_job(job_id, force)
 
@@ -660,8 +685,8 @@ class WorkflowController(object):
         '''
         Transfer file(s) associated to the transfer_id.
         If the files are only located on the client side (that is the transfer
-        status is constants.FILES_ON_CLIENT) the file(s) will be transfered from the
-        client to the computing resource.
+        status is constants.FILES_ON_CLIENT) the file(s) will be transfered
+        from the client to the computing resource.
         If the files are located on the computing resource side (that is the
         transfer status is constants.FILES_ON_CR or
         constants.FILES_ON_CLIENT_AND_CR)
@@ -670,8 +695,8 @@ class WorkflowController(object):
         * transfer_id *FileTransfer identifier*
 
         * buffer_size *int*
-            Depending on the transfer method, the files can be transfered piece by
-            piece. The size of each piece can be tuned using the buffer_size
+            Depending on the transfer method, the files can be transfered piece
+            by piece. The size of each piece can be tuned using the buffer_size
             argument.
 
         * returns: *boolean*
@@ -688,11 +713,11 @@ class WorkflowController(object):
 
     def delete_transfer(self, transfer_id):
         '''
-        Deletes the FileTransfer and the associated files and directories on the
-        computing resource side. The transfer_id will become invalid and can not be
-        used anymore. If some jobs reference the FileTransfer as an input or an
-        output the FileTransfer will not be deleted immediately but as soon as these
-        jobs will be deleted.
+        Deletes the FileTransfer and the associated files and directories on
+        the computing resource side. The transfer_id will become invalid and
+        can not be used anymore. If some jobs reference the FileTransfer as an
+        input or an output the FileTransfer will not be deleted immediately but
+        as soon as these jobs will be deleted.
 
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
@@ -710,8 +735,8 @@ class WorkflowController(object):
 
 
             * (file_size, md5_hash) in the case of a file transfer
-            * (cumulated_size, dictionary relative path -> (file_size, md5_hash)) in
-              case of a directory transfer.
+            * (cumulated_size, dictionary relative path -> (file_size,
+              md5_hash)) in case of a directory transfer.
 
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
@@ -727,34 +752,35 @@ class WorkflowController(object):
             if not client_paths:
                 if os.path.isfile(client_path):
                     transfer_type = constants.TR_FILE_C_TO_CR
-                    self._engine_proxy.set_transfer_status(transfer_id,
-                                                           constants.TRANSFERING_FROM_CLIENT_TO_CR)
+                    self._engine_proxy.set_transfer_status(
+                        transfer_id, constants.TRANSFERING_FROM_CLIENT_TO_CR)
                     self._engine_proxy.set_transfer_type(transfer_id,
                                                          transfer_type)
 
                 elif os.path.isdir(client_path):
                     transfer_type = constants.TR_DIR_C_TO_CR
-                    self._engine_proxy.set_transfer_status(transfer_id,
-                                                           constants.TRANSFERING_FROM_CLIENT_TO_CR)
-                    self._engine_proxy.set_transfer_type(transfer_id,
-                                                         constants.TR_DIR_C_TO_CR)
+                    self._engine_proxy.set_transfer_status(
+                        transfer_id, constants.TRANSFERING_FROM_CLIENT_TO_CR)
+                    self._engine_proxy.set_transfer_type(
+                        transfer_id, constants.TR_DIR_C_TO_CR)
                 else:
                     print("WARNING: The file or directory %s doesn't exist "
                           "on the client machine." % (client_path))
             else:  # client_paths
                 for path in client_paths:
                     if not os.path.isfile(path) and not os.path.isdir(path):
-                        print("WARNING: The file or directory %s doesn't exist "
-                              "on the client machine." % (path))
+                        print("WARNING: The file or directory %s doesn't "
+                              "exist on the client machine." % (path))
                 transfer_type = constants.TR_MFF_C_TO_CR
 
-            self._engine_proxy.set_transfer_status(transfer_id,
-                                                   constants.TRANSFERING_FROM_CLIENT_TO_CR)
+            self._engine_proxy.set_transfer_status(
+                transfer_id, constants.TRANSFERING_FROM_CLIENT_TO_CR)
             self._engine_proxy.set_transfer_type(transfer_id,
                                                  transfer_type)
             return transfer_type
 
-        elif status == constants.FILES_ON_CR or status == constants.FILES_ON_CLIENT_AND_CR:
+        elif status == constants.FILES_ON_CR \
+                or status == constants.FILES_ON_CLIENT_AND_CR:
             # transfer_type = self._engine_proxy.init_transfer_from_cr(transfer_id,
                                                    # client_path,
                                                    # expiration_date,
@@ -775,12 +801,13 @@ class WorkflowController(object):
                     r_path = posixpath.join(transfer_id, relative_path)
                     if not self._engine_proxy.is_file(r_path) and \
                        not self._engine_proxy.is_dir(r_path):
-                        print("WARNING: The file or directory %s doesn't exist "
-                              "on the computing resource side." % (r_path))
+                        print("WARNING: The file or directory %s doesn't "
+                              "exist on the computing resource side."
+                              % (r_path))
                 transfer_type = constants.TR_MFF_CR_TO_C
 
-            self._engine_proxy.set_transfer_status(transfer_id,
-                                                   constants.TRANSFERING_FROM_CR_TO_CLIENT)
+            self._engine_proxy.set_transfer_status(
+                transfer_id, constants.TRANSFERING_FROM_CR_TO_CLIENT)
             self._engine_proxy.set_transfer_type(transfer_id,
                                                  transfer_type)
 
@@ -814,8 +841,8 @@ class WorkflowController(object):
                transfer_type == constants.TR_DIR_C_TO_CR:
                 self._transfer.transfer_to_remote(client_path,
                                                   remote_path)
-                self._engine_proxy.set_transfer_status(transfer_id,
-                                                       constants.FILES_ON_CLIENT_AND_CR)
+                self._engine_proxy.set_transfer_status(
+                    transfer_id, constants.FILES_ON_CLIENT_AND_CR)
                 self._engine_proxy.signalTransferEnded(
                     transfer_id, workflow_id)
                 return True
@@ -827,8 +854,8 @@ class WorkflowController(object):
                     self._transfer.transfer_to_remote(path,
                                                       r_path)
 
-                self._engine_proxy.set_transfer_status(transfer_id,
-                                                       constants.FILES_ON_CLIENT_AND_CR)
+                self._engine_proxy.set_transfer_status(
+                    transfer_id, constants.FILES_ON_CLIENT_AND_CR)
                 self._engine_proxy.signalTransferEnded(
                     transfer_id, workflow_id)
                 return True
@@ -852,8 +879,8 @@ class WorkflowController(object):
                 # file case
                 self._transfer.transfer_from_remote(remote_path,
                                                     client_path)
-                self._engine_proxy.set_transfer_status(transfer_id,
-                                                       constants.FILES_ON_CLIENT_AND_CR)
+                self._engine_proxy.set_transfer_status(
+                    transfer_id, constants.FILES_ON_CLIENT_AND_CR)
                 self._engine_proxy.signalTransferEnded(
                     transfer_id, workflow_id)
                 return True
@@ -865,8 +892,8 @@ class WorkflowController(object):
                     self._transfer.transfer_from_remote(r_path,
                                                         path)
 
-                self._engine_proxy.set_transfer_status(transfer_id,
-                                                       constants.FILES_ON_CLIENT_AND_CR)
+                self._engine_proxy.set_transfer_status(
+                    transfer_id, constants.FILES_ON_CLIENT_AND_CR)
                 self._engine_proxy.signalTransferEnded(
                     transfer_id, workflow_id)
                 return True
@@ -886,16 +913,16 @@ class WorkflowController(object):
                 for path in client_paths:
                     relative_path = os.path.basename(path)
                     r_path = posixpath.join(engine_path, relative_path)
-                    (ds,
-                     dt) = self._transfer_monitoring.transfer_to_remote_progression(path,
-                                                                                    r_path)
+                    (ds, dt) \
+                        = self._transfer_monitoring.transfer_to_remote_progression(
+                            path, r_path)
                     data_size = data_size + ds
                     data_transfered = data_transfered + dt
                 progression = (data_size, data_transfered)
             else:
-                progression = self._transfer_monitoring.transfer_to_remote_progression(
-                    client_path,
-                    engine_path)
+                progression \
+                    = self._transfer_monitoring.transfer_to_remote_progression(
+                        client_path, engine_path)
 
         elif status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
             if transfer_type == constants.TR_MFF_CR_TO_C:
@@ -926,7 +953,8 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
     process.
     The client process can not finish before the workflows and jobs are done.
     Using serveral client process simultaneously (thus several database server
-    with the same database file) can cause error (notably database locked problems)
+    with the same database file) can cause error (notably database locked
+    problems)
 
     * config: *soma_workflow.configuration.Configuration*
 
@@ -958,17 +986,18 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
 
     if config.get_scheduler_type() == configuration.DRMAA_SCHEDULER:
         from soma_workflow.scheduler import Drmaa
-        # print "scheduler type: drmaa"
+        # print("scheduler type: drmaa")
         scheduler = DrmaaCTypes(config.get_drmaa_implementation(),
                                 config.get_parallel_job_config(),
-                                configured_native_spec=config.get_native_specification())
+                                configured_native_spec
+                                    =config.get_native_specification())
 
     elif config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
         from soma_workflow.scheduler import ConfiguredLocalScheduler
         if local_scheduler_config == None:
             local_scheduler_config = LocalSchedulerCfg()
-        # print "scheduler type: basic, number of cpu: " +
-        # repr(local_scheduler_config.get_proc_nb())
+        # print("scheduler type: basic, number of cpu: " +
+        # repr(local_scheduler_config.get_proc_nb()))
         scheduler = ConfiguredLocalScheduler(local_scheduler_config)
 
     workflow_engine = ConfiguredWorkflowEngine(database_server,
@@ -1249,8 +1278,8 @@ class Helper(object):
                 import multiprocessing
                 return multiprocessing.cpu_count()
             except:  # sometimes happens on MacOS... ?
-                print >> sys.stderr, \
-                    'Warning: CPU count detection failed. Using default (2)'
+                print('Warning: CPU count detection failed. Using default (2)',
+                      file=sys.stderr)
                 return 2
         # Linux, Unix and MacOS:
         if hasattr(os, "sysconf"):

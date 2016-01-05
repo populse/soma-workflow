@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -253,7 +253,8 @@ def print_job_status(database_file):
 
     for row in cursor.execute('SELECT id, status, queue FROM jobs'):
         job_id, status, queue = row
-        print "job_id: " + repr(job_id) + " status: " + repr(status) + " queue " + repr(queue)
+        print("job_id: " + repr(job_id) + " status: " + repr(status)
+              + " queue " + repr(queue))
 
     cursor.close()
     connection.close()
@@ -265,52 +266,55 @@ def print_tables(database_file):
         database_file, timeout=5, isolation_level="EXCLUSIVE")
     cursor = connection.cursor()
 
-    print "==== users table: ========"
+    print("==== users table: ========")
     for row in cursor.execute('SELECT * FROM users'):
         id, login = row
-        print 'id=', repr(id).rjust(2), 'login=', repr(login).rjust(7)
+        print('id=', repr(id).rjust(2), 'login=', repr(login).rjust(7))
 
-    print "==== transfers table: ===="
+    print("==== transfers table: ====")
     for row in cursor.execute('SELECT * FROM transfers'):
-        print row
-        # engine_file_path, client_file_path, transfer_date, expiration_date, user_id = row
-        # print '| engine_file_path', repr(engine_file_path).ljust(25), '|
+        print(row)
+        # engine_file_path, client_file_path, transfer_date, expiration_date,
+        #     user_id = row
+        # print('| engine_file_path', repr(engine_file_path).ljust(25), '|
         # client_file_path=', repr(client_file_path).ljust(25) , '|
         # transfer_date=', repr(transfer_date).ljust(7), '| expiration_date=',
         # repr(expiration_date).ljust(7), '| user_id=', repr(user_id).rjust(2),
-        # ' |'
+        # ' |')
 
-    print "==== temporary_paths table: ===="
+    print("==== temporary_paths table: ====")
     for row in cursor.execute('SELECT * FROM temporary_paths'):
-        print row
+        print(row)
 
-    print "==== workflows table: ========"
+    print("==== workflows table: ========")
     for row in cursor.execute('SELECT * FROM workflows'):
-        print row
+        print(row)
         # id, submission_date, user_id, expiration_date, stdout_file, stderr_file, join_errout, stdin_file, name, drmaa_id,     working_directory = row
-        # print 'id=', repr(id).rjust(3), 'submission_date=',
+        # print('id=', repr(id).rjust(3), 'submission_date=',
         # repr(submission_date).rjust(7), 'user_id=', repr(user_id).rjust(3),
         # 'expiration_date' , repr(expiration_date).rjust(7), 'stdout_file',
         # repr(stdout_file).rjust(10), 'stderr_file',
         # repr(stderr_file).rjust(10), 'join_errout',
         # repr(join_errout).rjust(5), 'stdin_file', repr(stdin_file).rjust(10),
         # 'name', repr(name).rjust(10), 'drmaa_id', repr(drmaa_id).rjust(10),
-        # 'working_directory', repr(working_directory).rjust(10)
+        # 'working_directory', repr(working_directory).rjust(10))
 
-    print "==== jobs table: ========"
+    print("==== jobs table: ========")
     for row in cursor.execute('SELECT * FROM jobs'):
-        print row
+        print(row)
 
-    print "==== ios table: ========="
+    print("==== ios table: =========")
     for row in cursor.execute('SELECT * FROM ios'):
         job_id, engine_file_path, is_input = row
-        print '| job_id=', repr(job_id).rjust(2), '| engine_file_path=', repr(engine_file_path).ljust(25), '| is_input=', repr(is_input).rjust(2), ' |'
+        print('| job_id=', repr(job_id).rjust(2), '| engine_file_path=',
+              repr(engine_file_path).ljust(25), '| is_input=',
+              repr(is_input).rjust(2), ' |')
 
-    # print "==== file counter table: ========="
+    # print("==== file counter table: =========")
     # for row in cursor.execute('SELECT * FROM fileCounter'):
         # count, foo = row
-        # print '| count=', repr(count).rjust(2), '| foo=', repr(foo).ljust(2),
-        # ' |'
+        # print('| count=', repr(count).rjust(2), '| foo=', repr(foo).ljust(2),
+        # ' |')
     cursor.close()
     connection.close()
 
@@ -345,7 +349,7 @@ class WorkflowDatabaseServer(object):
 
         with self._lock:
             if not os.path.isfile(database_file):
-                print "Database creation " + database_file
+                print("Database creation " + database_file)
                 self.logger.info("Database creation " + database_file)
                 create_database(database_file)
             else:

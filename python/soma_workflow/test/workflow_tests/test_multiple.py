@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 14:03:52 2013
@@ -177,7 +177,7 @@ class MultipleTest(WorkflowTest):
                         # Test stderr
                         with open(job_stderr_file) as f:
                             lines = f.readlines()
-                        print lines
+                        print(lines)
                         isSame = (lines[-1] == 'Exception: Paf Boum '
                                   'Boum Bada Boum !!!\n')
                         self.assertTrue(

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 
@@ -51,27 +52,27 @@ filePathOut2 = sys.argv[3]
 fileOut1 = open(filePathOut1, "w")
 fileOut2 = open(filePathOut2, "w")
 
-print >> fileOut1, "1****************job1**************"
-print >> fileOut2, "1****************job1**************"
+print("1****************job1**************", file=fileOut1)
+print("1****************job1**************", file=fileOut2)
 
 fileIn = open(filePathIn)
 line = fileIn.readline()
 i = 0
 while line:
     if i % 2 == 0:
-        print >> fileOut2, "1 " + repr(i) + " " + line,
+        print("1 " + repr(i) + " " + line, file=fileOut2, end='')
     else:
-        print >> fileOut1, "1 " + repr(i) + " " + line,
+        print("1 " + repr(i) + " " + line, file=fileOut1, end='')
     line = fileIn.readline()
     i += 1
 
 
-print >> fileOut1, "1 "
-print >> fileOut1, "1 job1 out1: stdin comment:"
-print >> fileOut1, "1 " + comment1,
-print >> fileOut1, "1******************************************************"
+print("1 ", file=fileOut1)
+print("1 job1 out1: stdin comment:", file=fileOut1)
+print("1 " + comment1, file=fileOut1, end='')
+print("1******************************************************", file=fileOut1)
 
-print >> fileOut2, "1 "
-print >> fileOut2, "1 job1 out2: stdin comment:************"
-print >> fileOut2, "1 " + comment2,
-print >> fileOut2, "1******************************************************"
+print("1 ", file=fileOut2)
+print("1 job1 out2: stdin comment:************", file=fileOut2)
+print("1 " + comment2, file=fileOut2, end='')
+print("1******************************************************", file=fileOut2)

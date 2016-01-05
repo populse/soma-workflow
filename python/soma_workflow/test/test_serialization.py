@@ -4,6 +4,8 @@
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
+from __future__ import print_function
+
 import os
 
 from soma_workflow.test import workflow_local
@@ -38,7 +40,7 @@ class SerializationTest(unittest.TestCase):
                           srp_wf_examples.example_special_command()))
 
         for workflow_name, workflow in workflows:
-            print "Testing", workflow_name
+            print("Testing", workflow_name)
 
             file_path = os.path.join(directory,
                                      "json_" + workflow_name + ".wf")

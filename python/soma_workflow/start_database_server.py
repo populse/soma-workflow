@@ -10,6 +10,7 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from __future__ import print_function
 
 if __name__ == '__main__':
 
@@ -25,18 +26,20 @@ if __name__ == '__main__':
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-    class WorkflowDatabaseServer(Pyro.core.ObjBase,
-                                 soma_workflow.database_server.WorkflowDatabaseServer):
+    class WorkflowDatabaseServer(
+        Pyro.core.ObjBase,
+        soma_workflow.database_server.WorkflowDatabaseServer):
 
         def __init__(self,
                      database_file,
                      tmp_file_dir_path,
                      shared_tmp_dir=None):
             Pyro.core.ObjBase.__init__(self)
-            soma_workflow.database_server.WorkflowDatabaseServer.__init__(self,
-                                                                          database_file,
-                                                                          tmp_file_dir_path,
-                                                                          shared_tmp_dir)
+            soma_workflow.database_server.WorkflowDatabaseServer.__init__(
+                self,
+                database_file,
+                tmp_file_dir_path,
+                shared_tmp_dir)
         pass
 
         def test(self):
@@ -48,7 +51,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     ressource_id = sys.argv[1]
-    print "Ressource: " + ressource_id
+    print("Ressource: " + ressource_id)
 
     config = Configuration.load_from_file(ressource_id)
     config.mk_config_dirs()
@@ -69,7 +72,7 @@ if __name__ == '__main__':
     daemon = Pyro.core.Daemon()
     # locate the NS
     locator = Pyro.naming.NameServerLocator()
-    print 'searching for Name Server...'
+    print('searching for Name Server...')
 
     try:
         name_server_host = config.get_name_server_host()
@@ -81,14 +84,15 @@ if __name__ == '__main__':
     except:
         # try to run the nameserver first
         import subprocess
-        print 'not found. Starting a new Name Server...'
-        # WARNING: users may not have permission to run pyro-nsd because the pid
-        # file is writen in /var/run/pyro-nsd.pid or something. In this case an
-        # additional argument --pidfile=/tmp/pyro-nsd.pid may be required
+        print('not found. Starting a new Name Server...')
+        # WARNING: users may not have permission to run pyro-nsd because the
+        # pid file is writen in /var/run/pyro-nsd.pid or something. In this
+        # case an additional argument --pidfile=/tmp/pyro-nsd.pid may be
+        # required
         retcode = subprocess.call(['pyro-nsd', 'start'])
         if retcode != 0:
             raise EngineError("Could not find nor start the Pyro name server.")
-        print 'searching again the Name Server...'
+        print('searching again the Name Server...')
         timeout = 15
         start_time = time.time()
         started = False
@@ -106,13 +110,13 @@ if __name__ == '__main__':
                 time.sleep(1.)
         if not started:
             # still not worked, try a custom pidfile with pyro-nsd
-            print 'not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...'
+            print('not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...')
             retcode = subprocess.call(['pyro-nsd', 'start',
                                        '--pidfile=/tmp/pyro-nsd.pid'])
             if retcode != 0:
                 raise EngineError(
                     "Could not find nor start the Pyro name server.")
-            print 'searching again the Name Server...'
+            print('searching again the Name Server...')
             start_time = time.time()
             while not started and time.time() - start_time < timeout:
                 name_server_host = config.get_name_server_host()
@@ -141,10 +145,10 @@ if __name__ == '__main__':
                                     config.get_transfered_file_dir(),
                                     config.get_shared_temporary_directory())
     daemon.connect(server, server_name)
-    print "port = " + repr(daemon.port)
+    print("port = " + repr(daemon.port))
 
     # enter the server loop.
-    print 'Server object ' + server_name + ' ready.'
+    print('Server object ' + server_name + ' ready.')
 
     #
     # Request loop

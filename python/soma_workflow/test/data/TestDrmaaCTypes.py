@@ -10,6 +10,8 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from __future__ import print_function
+
 import unittest
 from unittest import TestSuite
 import sys
@@ -96,7 +98,7 @@ class DrmaaCTypesTest(unittest.TestCase):
             sch.tmp_file_path,
             "soma-workflow-empty-job-patch-torque.o")
         self.failUnless(os.path.isfile(outputfilepath))
-        # print "outputfilepath="+outputfilepath
+        # print("outputfilepath="+outputfilepath)
         outfile = open(outputfilepath)
         line = outfile.readline()
         line = line.strip()
@@ -112,9 +114,9 @@ class DrmaaCTypesTest(unittest.TestCase):
 #    def test_DrmaaCTypes(self):
 #        config = Configuration.load_from_file(self.resource_id)
 #
-# print "config.get_drmaa_implementation()="+repr(config.get_drmaa_implementation())
-# print "config.get_parallel_job_config()="+repr(config.get_parallel_job_config())
-# print "config.get_native_specification()="+repr(config.get_native_specification())
+# print("config.get_drmaa_implementation()="+repr(config.get_drmaa_implementation()))
+# print("config.get_parallel_job_config()="+repr(config.get_parallel_job_config()))
+# print("config.get_native_specification()="+repr(config.get_native_specification()))
 #
 #        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
 #                                    config.get_parallel_job_config(),
@@ -126,9 +128,9 @@ class DrmaaCTypesTest(unittest.TestCase):
 #    def test_DrmaaCTypesSleepWake(self):
 #        config = Configuration.load_from_file(self.resource_id)
 #
-# print "config.get_drmaa_implementation()="+repr(config.get_drmaa_implementation())
-# print "config.get_parallel_job_config()="+repr(config.get_parallel_job_config())
-# print "config.get_native_specification()="+repr(config.get_native_specification())
+# print("config.get_drmaa_implementation()="+repr(config.get_drmaa_implementation()))
+# print("config.get_parallel_job_config()="+repr(config.get_parallel_job_config()))
+# print("config.get_native_specification()="+repr(config.get_native_specification()))
 #
 #        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
 #                                    config.get_parallel_job_config(),
@@ -145,11 +147,11 @@ class DrmaaCTypesTest(unittest.TestCase):
     def test_DrmaaCTypesSubAJob(self):
         config = Configuration.load_from_file(self.resource_id)
 
-        sch = soma_workflow.scheduler.DrmaaCTypes('PBS',
-                                                  config.get_parallel_job_config(
-                                                  ),
-                                                  os.path.expanduser("~"),
-                                                  configured_native_spec=config.get_native_specification())
+        sch = soma_workflow.scheduler.DrmaaCTypes(
+            'PBS',
+            config.get_parallel_job_config(),
+            os.path.expanduser("~"),
+            configured_native_spec=config.get_native_specification())
 
         job = Job(["echo", "hello jinpeng"],
                   None,
@@ -158,23 +160,24 @@ class DrmaaCTypesTest(unittest.TestCase):
                   os.path.join(
                       sch.tmp_file_path,
                       'soma-workflow-empty-job-patch-torque.o'),
-                  os.path.join(sch.tmp_file_path, 'soma-workflow-empty-job-patch-torque.e'))
+                  os.path.join(sch.tmp_file_path,
+                               'soma-workflow-empty-job-patch-torque.e'))
 
         ejob = EngineJob(job, '')
         jobid = sch.job_submission(ejob)
 
         i = 5
         while i > 0:
-            print sch.get_job_status(jobid)
+            print(sch.get_job_status(jobid))
             os.system("sleep 1")
             i = i - 1
 
         exit_status, exit_value, term_sig, str_rusage = sch.get_job_exit_info(
             jobid)
-        print "exit_status=" + repr(exit_status)
-        print "exit_value=" + repr(exit_value)
-        print "term_sig=" + repr(term_sig)
-        print "str_rusage=" + repr(str_rusage)
+        print("exit_status=" + repr(exit_status))
+        print("exit_value=" + repr(exit_value))
+        print("term_sig=" + repr(term_sig))
+        print("str_rusage=" + repr(str_rusage))
 
         self.checkoutput(sch)
 

@@ -1,5 +1,5 @@
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -103,18 +103,18 @@ def SSHExecCmd(sshcommand,
         stdin, stdout, stderr = client.exec_command(sshcommand)
 
     except paramiko.AuthenticationException, e:
-        print   "The authentification failed. %s. " \
-                "Please check your user and password. " \
-                "You can test the connection in terminal with " \
-                "command: ssh -p %s %s@%s" % (
-                    e, sshport, userid, ip_address_or_domain)
+        print("The authentification failed. %s. "
+              "Please check your user and password. "
+              "You can test the connection in terminal with "
+              "command: ssh -p %s %s@%s"
+              % (e, sshport, userid, ip_address_or_domain))
         raise e
     except Exception, e:
-        print   "Can not use ssh to log on the remote machine. "\
-                "Please Make sure your network can be connected %s. "\
-                "You can test the connection in terminal with "\
-                "command: ssh -p %s %s@%s" % (
-                    e, sshport, userid, ip_address_or_domain)
+        print("Can not use ssh to log on the remote machine. "
+              "Please Make sure your network can be connected %s. "
+              "You can test the connection in terminal with "
+              "command: ssh -p %s %s@%s"
+              % (e, sshport, userid, ip_address_or_domain))
         raise e
 
     if wait_output:
@@ -167,8 +167,6 @@ def check_if_ctype_drmaa_on_server(
         wait_output=True,
         isNeedErr=True,
         sshport=sshport)
-
-    # print repr(std_out_lines)
 
     if len(std_out_lines) == 1:
         if std_out_lines[0] == "True":
@@ -313,8 +311,8 @@ class RemoteConnection(object):
         command = "python -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, pyro_objet_name, log)
 
-        print "start engine command: "\
-              "ssh %s@%s %s" % (login, cluster_address, command)
+        print("start engine command: "
+              "ssh %s@%s %s" % (login, cluster_address, command))
 
         (std_out_lines) = SSHExecCmd(
             command,
@@ -325,7 +323,6 @@ class RemoteConnection(object):
             sshport=22,
             num_line_stdout=3)
 
-        # print "std_out_lines="+repr(std_out_lines)
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
@@ -341,25 +338,26 @@ class RemoteConnection(object):
         if (not configuration_uri or
             not connection_checker_uri or
                 not configuration_uri):
-            raise ConnectionError("A problem occured while starting the engine "
-                                  "process on the remote machine " +
-                                  repr(cluster_address) + "\n"
-                                  "**More details:**\n"
-                                  "**Start engine process command line:** \n"
-                                  "\n" + command + "\n\n"
-                                  "**Engine process standard output:** \n"
-                                  "\n" + repr(std_out_lines))
+            raise ConnectionError(
+                "A problem occured while starting the engine "
+                "process on the remote machine " +
+                repr(cluster_address) + "\n"
+                "**More details:**\n"
+                "**Start engine process command line:** \n"
+                "\n" + command + "\n\n"
+                "**Engine process standard output:** \n"
+                "\n" + repr(std_out_lines))
 
-        # print "workflow_engine_uri: " +  workflow_engine_uri
-        # print "connection_checker_uri: " +  connection_checker_uri
-        # print "configuration_uri: " + configuration_uri
+        # print("workflow_engine_uri: " +  workflow_engine_uri)
+        # print("connection_checker_uri: " +  connection_checker_uri)
+        # print("configuration_uri: " + configuration_uri)
         engine_pyro_daemon_port = Pyro.core.processStringURI(
             workflow_engine_uri).port
-        # print "Pyro object port: " + repr(engine_pyro_daemon_port)
+        # print("Pyro object port: " + repr(engine_pyro_daemon_port))
 
         # find an available port              #
         client_pyro_daemon_port = searchAvailablePort()
-        # print "client pyro object port: " + repr(client_pyro_daemon_port)
+        # print("client pyro object port: " + repr(client_pyro_daemon_port))
 
         # tunnel creation                      #
         try:
@@ -369,7 +367,7 @@ class RemoteConnection(object):
             if not password:
                 rsa_file_path = os.path.join(
                     os.environ['HOME'], '.ssh', 'id_rsa')
-                print "reading RSA key in " + repr(rsa_file_path)
+                print("reading RSA key in " + repr(rsa_file_path))
                 if rsa_key_pass:
                     key = paramiko.RSAKey.from_private_key_file(
                         rsa_file_path,
@@ -378,10 +376,10 @@ class RemoteConnection(object):
                     key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
                 self.__transport.auth_publickey(login, key)
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
-            print "tunnel creation " + str(login) + "@" + cluster_address + \
-                  "   port: " + repr(client_pyro_daemon_port) + " host: " + \
-                  str(submitting_machine) + " host port: " + str(
-                      engine_pyro_daemon_port)
+            print("tunnel creation " + str(login) + "@" + cluster_address +
+                  "   port: " + repr(client_pyro_daemon_port) + " host: " +
+                  str(submitting_machine) + " host port: "
+                  + str(engine_pyro_daemon_port))
 
             tunnel = Tunnel(client_pyro_daemon_port,
                             submitting_machine,
@@ -416,21 +414,21 @@ class RemoteConnection(object):
         while not tunnelSet and attempts < maxattemps:
             try:
                 attempts = attempts + 1
-                print "Communication through the ssh tunnel. Attempt no " + \
-                    repr(attempts) + "/" + repr(maxattemps)
+                print("Communication through the ssh tunnel. Attempt no " +
+                      repr(attempts) + "/" + repr(maxattemps))
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
             except Pyro.errors.ProtocolError, e:
-                print "-> Communication through ssh tunnel Failed. %s: %s" \
-                    % (type(e), e)
+                print("-> Communication through ssh tunnel Failed. %s: %s"
+                      % (type(e), e))
                 time.sleep(1)
             except Exception, e:
-                print "-> Communication through ssh tunnel Failed. %s: %s" \
-                    % (type(e), e)
+                print("-> Communication through ssh tunnel Failed. %s: %s"
+                      % (type(e), e))
                 time.sleep(1)
 
             else:
-                print "-> Communication through ssh tunnel OK"
+                print("-> Communication through ssh tunnel OK")
                 tunnelSet = True
 
         if attempts > maxattemps:
@@ -488,12 +486,6 @@ class LocalConnection(object):
             resource_id,
             pyro_objet_name,
             log)
-        # command = "rpdb2 -p Soizic -d /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma_workflow/start_workflow_engine.py %s %s %s" %(
-                                         # resource_id,
-                                         # pyro_objet_name,
-                                         # log)
-
-        # print command
 
         engine_process = subprocess.Popen(command,
                                           shell=True,
@@ -568,9 +560,9 @@ class LocalConnection(object):
                                   "\n" + stderr_content)
         configuration_uri = line.split()[1]
 
-        print "workflow_engine_uri: " + workflow_engine_uri
-        print "connection_checker_uri: " + connection_checker_uri
-        print "configuration_uri: " + configuration_uri
+        print("workflow_engine_uri: " + workflow_engine_uri)
+        print("connection_checker_uri: " + connection_checker_uri)
+        print("configuration_uri: " + configuration_uri)
 
         # create the proxies                     #
         self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
@@ -628,7 +620,7 @@ class ConnectionChecker(object):
 
     def signalConnectionExist(self):
         with self.lock:
-            # print "ConnectionChecker <= a signal was received"
+            # print("ConnectionChecker <= a signal was received")
             self.lastSignal = datetime.now()
 
     def isConnected(self):
@@ -651,11 +643,11 @@ class ConnectionHolder(threading.Thread):
         from Pyro.errors import ConnectionClosedError
         self.stopped = False
         while not self.stopped:
-            # print "ConnectionHolder => signal"
+            # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
             except ConnectionClosedError, e:
-                print "Connection closed"
+                print("Connection closed")
                 break
             time.sleep(self.interval)
 
@@ -672,27 +664,29 @@ class Tunnel(threading.Thread):
     class Handler (SocketServer.BaseRequestHandler):
 
         def setup(self):
-            # print 'Setup : %s %d' %(repr(self.chain_host), self.chain_port)
+            # print('Setup : %s %d' %(repr(self.chain_host), self.chain_port))
             try:
-                self.__chan = self.ssh_transport.open_channel('direct-tcpip',
-                                                             (self.chain_host,
-                                                              self.chain_port),
-                                                              self.request.getpeername())
+                self.__chan = self.ssh_transport.open_channel(
+                    'direct-tcpip',
+                    (self.chain_host,
+                    self.chain_port),
+                    self.request.getpeername())
             except Exception, e:
-                raise ConnectionError('Incoming request to %s:%d failed: %s' % (
-                    self.chain_host, self.chain_port, repr(e)))
+                raise ConnectionError('Incoming request to %s:%d failed: %s'
+                    % (self.chain_host, self.chain_port, repr(e)))
 
             if self.__chan is None:
-                raise ConnectionError('Incoming request to %s:%d was rejected by the SSH server.' %
-                                     (self.chain_host, self.chain_port))
+                raise ConnectionError(
+                    'Incoming request to %s:%d was rejected by the SSH server.'
+                    % (self.chain_host, self.chain_port))
 
-            print 'Connected!  Tunnel open %r -> %r -> %r' % (
-                self.request.getpeername(),
-                self.__chan.getpeername(),
-                (self.chain_host, self.chain_port))
+            print('Connected!  Tunnel open %r -> %r -> %r'
+                  % (self.request.getpeername(),
+                     self.__chan.getpeername(),
+                     (self.chain_host, self.chain_port)))
 
         def handle(self):
-            # print 'Handle : %s %d' %(repr(self.chain_host), self.chain_port)
+            # print('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
             while True:
                 r, w, x = select.select([self.request, self.__chan], [], [])
                 if self.request in r:
@@ -707,7 +701,7 @@ class Tunnel(threading.Thread):
                     self.request.send(data)
 
         def finish(self):
-            print 'Tunnel closed from %r' % (self.request.getpeername(),)
+            print('Tunnel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
 
@@ -732,6 +726,6 @@ class Tunnel(threading.Thread):
         try:
             Tunnel.ForwardServer(('', port), SubHander).serve_forever()
         except KeyboardInterrupt:
-            print 'tunnel %d:%s:%d stopped !' % (port, host, hostport)
+            print('tunnel %d:%s:%d stopped !' % (port, host, hostport))
         except Exception, e:
-            print 'Tunnel Error. %s: %s' % (type(e), e)
+            print('Tunnel Error. %s: %s' % (type(e), e))

@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 # -*- coding: utf-8 -*-
 """
@@ -363,4 +363,4 @@ class WorkflowExamples(object):
 
 
 if __name__ == "__main__":
-    print WorkflowExamples.get_workflow_example_list()
+    print(WorkflowExamples.get_workflow_example_list())

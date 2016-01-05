@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -45,8 +45,6 @@ if QT_BACKEND == None:
     except ImportError, e:
         raise Exception("Soma-workflow Gui requires PyQt or PySide.")
 
-# print "qt backend "  + repr(QT_BACKEND)
-
 if QT_BACKEND == PYQT:
     from PyQt4 import uic
     from PyQt4.uic import loadUiType
@@ -84,13 +82,15 @@ try:
         if 'backend.qt4' in matplotlib.rcParams.keys():
             matplotlib.rcParams['backend.qt4'] = 'PySide'
         else:
-            print "Could not use Matplotlib, the backend using PySide is missing."
+            print("Could not use Matplotlib, the backend using PySide "
+                "is missing.")
             MATPLOTLIB = False
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt4agg \
+        import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     import matplotlib.pyplot
 except ImportError, e:
-    print "Could not use Matplotlib: %s %s" % (type(e), e)
+    print("Could not use Matplotlib: %s %s" % (type(e), e))
     MATPLOTLIB = False
 
 try:
@@ -456,7 +456,6 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                     submitted_wf = Controller.get_submitted_workflows(
                         self.model.current_connection)
                 except ConnectionClosedError, e:
-                    # print e
                     if not self.reconnectAfterConnectionClosed():
                         return
                 else:
@@ -467,19 +466,20 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                 if self.model.is_loaded_workflow(wf_id):
                     self.model.set_current_workflow(wf_id)
                 else:
-                    workflow_info_dict = self.model.current_connection.workflows(
-                        [wf_id])
+                    workflow_info_dict \
+                        = self.model.current_connection.workflows(
+                            [wf_id])
                     if len(workflow_info_dict) > 0:
                         # The workflow exist
-                        workflow_status = self.model.current_connection.workflow_status(
-                            wf_id)
+                        workflow_status \
+                            = self.model.current_connection.workflow_status(
+                                wf_id)
                         workflow_info = workflow_info_dict[wf_id]
-                        self.model.add_to_submitted_workflows(wf_id,
-                                                              workflow_exp_date=workflow_info[
-                                                              1],
-                                                              workflow_name=workflow_info[
-                                                                  0],
-                                                              workflow_status=workflow_status)
+                        self.model.add_to_submitted_workflows(
+                            wf_id,
+                            workflow_exp_date=workflow_info[1],
+                            workflow_name=workflow_info[0],
+                            workflow_status=workflow_status)
             self.resource_ids.append(self.model.current_resource_id)
             self.refresh()
 
@@ -726,13 +726,6 @@ class NewServerDialog(QtGui.QDialog):
             if reply == QtGui.QMessageBox.No:
                 return
 
-#      print "strLogin="+strLogin
-#      print "strAdd="+strAdd
-#      print "ResName="+ResName
-#      print "strPW="+strPW
-#      print "strPWRSA="+strPWRSA
-#      print "intPort="+repr(intPort)
-#      print "strInstallPath="+strInstallPath
         try:
             InstallSomaWF2Server(
                 strInstallPath, ResName, strLogin, strAdd, userpw=strPW, sshport=intPort)
@@ -771,14 +764,6 @@ class NewServerDialog(QtGui.QDialog):
 
         strInstallPath = self.ui.lineEdit_InstallPath.text()
         strInstallPath = unicode(strInstallPath).encode('utf-8')
-
-#      print "strLogin="+strLogin
-#      print "strAdd="+strAdd
-#      print "ResName="+ResName
-#      print "strPW="+strPW
-#      print "strPWRSA="+strPWRSA
-#      print "intPort="+repr(intPort)
-#      print "strInstallPath="+strInstallPath
 
         try:
             SetupSomaWF2Server(
@@ -1303,7 +1288,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                           "%s" % (e))
                 return (None, None)
             except ConnectionClosedError, e:
-                # print e
                 if not self.reconnectAfterConnectionClosed():
                     return (None, None)
             else:
@@ -1365,7 +1349,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     date,
                     self.model.current_connection)
         except ConnectionClosedError, e:
-            # print e
             pass
         except SystemExit, e:
             pass
@@ -1387,7 +1370,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_connection,
                     buffer_size=256 ** 2)
             except ConnectionClosedError, e:
-                # print e
                 self.ui.action_transfer_infiles.setEnabled(True)
                 pass
             except SystemExit, e:
@@ -1409,7 +1391,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_connection,
                     buffer_size=256 ** 2)
             except ConnectionClosedError, e:
-                # print e
                 self.ui.action_transfer_outfiles.setEnabled(True)
             except SystemExit, e:
                 pass
@@ -1454,7 +1435,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 self.model.clear_current_workflow()
             QtGui.QApplication.restoreOverrideCursor()
         except ConnectionClosedError, e:
-            # print e
             QtGui.QApplication.restoreOverrideCursor()
             self.reconnectAfterConnectionClosed()
         except Exception, e:
@@ -1575,7 +1555,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     self.model.current_connection)
             except ConnectionClosedError, e:
-                # print e
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1620,7 +1599,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 deleled_properly = Controller.delete_all_workflows(force,
                                                                    self.model.current_connection)
             except ConnectionClosedError, e:
-                # print e
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1629,14 +1607,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if force:
             self.model.delete_workflow()
             if not deleled_properly and \
-               self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
-                QtGui.QMessageBox.warning(self,
-                                          "Delete workflow",
-                                          "The workflow were deleted. \n However, some jobs "
-                                          "may still be active and burden the computing "
-                                          "resource. \n In case of long jobs, please "
-                                          "inspect the active jobs (running or in the "
-                                          "queue) using the DRMS interface.")
+                  self.model.current_connection.config.get_mode() \
+                      != configuration.LIGHT_MODE:
+                QtGui.QMessageBox.warning(
+                    self,
+                    "Delete workflow",
+                    "The workflow were deleted. \n However, some jobs "
+                    "may still be active and burden the computing "
+                    "resource. \n In case of long jobs, please "
+                    "inspect the active jobs (running or in the "
+                    "queue) using the DRMS interface.")
         self.refreshWorkflowList()
 
     @QtCore.Slot()
@@ -1661,7 +1641,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     force,
                     self.model.current_connection)
             except ConnectionClosedError, e:
-                # print e
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1671,14 +1650,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.model.delete_workflow()
             self.updateWorkflowList()
             if not deleled_properly and \
-               self.model.current_connection.config.get_mode() != configuration.LIGHT_MODE:
-                QtGui.QMessageBox.warning(self,
-                                          "Delete workflow",
-                                          "The workflow was deleted. \n However, some jobs "
-                                          "may still be active and burden the computing "
-                                          "resource. \n In case of long jobs, please "
-                                          "inspect the active jobs (running or in the "
-                                          "queue) using the DRMS interface.")
+                  self.model.current_connection.config.get_mode() \
+                      != configuration.LIGHT_MODE:
+                QtGui.QMessageBox.warning(
+                    self,
+                    "Delete workflow",
+                    "The workflow was deleted. \n However, some jobs "
+                    "may still be active and burden the computing "
+                    "resource. \n In case of long jobs, please "
+                    "inspect the active jobs (running or in the "
+                    "queue) using the DRMS interface.")
 
     @QtCore.Slot()
     def change_expiration_date(self):
@@ -1715,14 +1696,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     date,
                     self.model.current_connection)
             except ConnectionClosedError, e:
-                # print e
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
                 break
         if not change_occured:
             QtGui.QMessageBox.information(
-                self, "information", "The workflow expiration date was not changed.")
+                self, "information",
+                "The workflow expiration date was not changed.")
         else:
             self.model.change_expiration_date(date)
             self.workflow_info_widget.current_workflow_changed()
@@ -1829,13 +1810,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
     def updateWorkflowList(self, force_not_from_model=False):
         if force_not_from_model or \
             not self.update_workflow_list_from_model or \
-                len(self.model.list_workflow_names(self.model.current_resource_id)) == 0:
+                len(self.model.list_workflow_names(
+                        self.model.current_resource_id)) == 0:
             while True:
                 try:
                     submitted_wf = Controller.get_submitted_workflows(
                         self.model.current_connection)
                 except ConnectionClosedError, e:
-                    # print e
                     if not self.reconnectAfterConnectionClosed():
                         return
                 else:
@@ -2041,20 +2022,13 @@ class MainWindow(QtGui.QMainWindow):
         # self.showMaximized()
 
     def canExit(self):
-            # print "canExit"
-            # print repr(self.model.__class__.__name__)
-            # print repr(self.model.resource_pool.resource_ids())
         for res_id in self.model.resource_pool.resource_ids():
-                    # print self.model.list_workflow_status(res_id)
             for workflow_id in self.model.workflows(res_id):
-            # print "workflow_id=", (workflow_id)
-                wf_elements_status = self.model.current_connection.workflow_elements_status(
-                    workflow_id)
-                # print repr(wf_elements_status)
+                wf_elements_status \
+                    = self.model.current_connection.workflow_elements_status(
+                        workflow_id)
                 for transfer_info in wf_elements_status[1]:
                     status = transfer_info[1][0]
-                    # print "=============================="
-                    # print status
                     if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
                        status == constants.TRANSFERING_FROM_CLIENT_TO_CR:
                         reply = QtGui.QMessageBox.question(
@@ -2700,7 +2674,6 @@ class JobInfoWidget(QtGui.QTabWidget):
             try:
                 self.job_item.updateStdOutErr(self.connection)
             except ConnectionClosedError, e:
-                # print e
                 self.parent.emit(QtCore.SIGNAL("connection_closed_error"))
             else:
                 self.dataChanged()
@@ -2710,7 +2683,6 @@ class JobInfoWidget(QtGui.QTabWidget):
         try:
             self.job_item.updateStdOutErr(self.connection)
         except ConnectionClosedError, e:
-                # print e
             self.parent().emit(QtCore.SIGNAL("connection_closed_error"))
         self.dataChanged()
 
@@ -2881,8 +2853,7 @@ class PlotView(QtGui.QWidget):
             try:
                 self.canvas.setParent(self)
             except TypeError, e:
-                # print e
-                print "WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND)
+                print("WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND))
                 return
             self.canvas.updateGeometry()
             self.vlayout.addWidget(self.canvas)
@@ -3049,7 +3020,8 @@ class WorkflowGraphView(QtGui.QWidget):
 
     @QtCore.Slot()
     def dataChanged(self, force=False):
-        if self.workflow and (force or self.ui.checkbox_auto_update.isChecked()):
+        if self.workflow and (force or
+                              self.ui.checkbox_auto_update.isChecked()):
             image_file_path = self.printWorkflow()
             image = QtGui.QImage(image_file_path)
             pixmap = QtGui.QPixmap.fromImage(image)
@@ -3078,62 +3050,73 @@ class WorkflowGraphView(QtGui.QWidget):
         if dot_file_path and os.path.isfile(dot_file_path):
             os.remove(dot_file_path)
         file = open(dot_file_path, "w")
-        print >> file, "digraph G {"
+        print("digraph G {", file=file)
         for node in self.workflow.jobs:
             current_id = current_id + 1
             names[node] = ("node" + repr(current_id), "\"" + node.name + "\"")
         for ar in self.workflow.dependencies:
-            print >> file, names[ar[0]][0] + " -> " + names[ar[1]][0]
+            print(names[ar[0]][0] + " -> " + names[ar[1]][0], file=file)
         for node in self.workflow.jobs:
             if isinstance(node, Job):
                 if node.job_id == NOT_SUBMITTED_JOB_ID:
-                    print >> file, names[node][
-                        0] + "[shape=box label=" + names[node][1] + "];"
+                    print(names[node][0] + "[shape=box label="
+                          + names[node][1] + "];", file=file)
                 else:
                     status = self.connection.job_status(node.job_id)
                     if status == constants.NOT_SUBMITTED:
-                        print >> file, names[node][0] + "[shape=box label=" + names[
-                            node][1] + ", style=filled, color=" + GRAY + "];"
+                        print(names[node][0] + "[shape=box label="
+                              + names[node][1] + ", style=filled, color="
+                              + GRAY + "];", file=file)
                     elif status == constants.DONE:
-                        exit_status, exit_value, term_signal, resource_usage = self.connection.job_termination_status(
-                            node.job_id)
-                        if exit_status == constants.FINISHED_REGULARLY and exit_value == 0:
-                            print >> file, names[node][0] + "[shape=box label=" + names[
-                                node][1] + ", style=filled, color=" + LIGHT_BLUE + "];"
+                        exit_status, exit_value, term_signal, resource_usage \
+                            = self.connection.job_termination_status(
+                                node.job_id)
+                        if exit_status == constants.FINISHED_REGULARLY \
+                                and exit_value == 0:
+                            print(names[node][0] + "[shape=box label="
+                                  + names[node][1] + ", style=filled, color="
+                                  + LIGHT_BLUE + "];", file=file)
                         else:
-                            print >> file, names[node][0] + "[shape=box label=" + names[
-                                node][1] + ", style=filled, color=" + RED + "];"
+                            print(names[node][0] + "[shape=box label="
+                                  + names[node][1] + ", style=filled, color="
+                                  + RED + "];", file=file)
                     elif status == constants.FAILED:
-                        print >> file, names[node][0] + "[shape=box label=" + names[
-                            node][1] + ", style=filled, color=" + RED + "];"
+                        print(names[node][0] + "[shape=box label="
+                              + names[node][1] + ", style=filled, color="
+                              + RED + "];", file=file)
                     else:
-                        print >> file, names[node][0] + "[shape=box label=" + names[
-                            node][1] + ", style=filled, color=" + GREEN + "];"
+                        print(names[node][0] + "[shape=box label="
+                              + names[node][1] + ", style=filled, color="
+                              + GREEN + "];", file=file)
             if isinstance(node, FileTransfer):
                 if not node.engine_path:
-                    print >> file, names[node][
-                        0] + "[label=" + names[node][1] + "];"
+                    print(names[node][0] + "[label=" + names[node][1] + "];",
+                          file=file)
                 else:
                     status = self.connection.transfer_status(
                         node.engine_path)[0]
                     if status == constants.FILES_DONT_EXIST:
-                        print >> file, names[node][0] + "[label=" + names[
-                            node][1] + ", style=filled, color=" + GRAY + "];"
+                        print(names[node][0] + "[label="
+                              + names[node][1] + ", style=filled, color="
+                              + GRAY + "];", file=file)
                     elif status == constants.FILES_ON_CR or status == constants.FILES_ON_CLIENT_AND_CR or status == constants.FILES_ON_CLIENT:
-                        print >> file, names[node][0] + "[label=" + names[
-                            node][1] + ", style=filled, color=" + BLUE + "];"
-                    elif status == constants.TRANSFERING_FROM_CLIENT_TO_CR or status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
-                        print >> file, names[node][0] + "[label=" + names[
-                            node][1] + ", style=filled, color=" + GREEN + "];"
+                        print(names[node][0] + "[label="
+                              + names[node][1] + ", style=filled, color="
+                              + BLUE + "];", file=file)
+                    elif status == constants.TRANSFERING_FROM_CLIENT_TO_CR or \
+                            status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+                        print(names[node][0] + "[label="
+                              + names[node][1] + ", style=filled, color="
+                              + GREEN + "];", file=file)
                     elif status == constants.FILES_UNDER_EDITION:
-                        print >> file, names[node][0] + "[label=" + names[
-                            node][1] + ", style=filled, color=" + LIGHT_BLUE + "];"
+                        print(names[node][0] + "[label=" + names[node][1]
+                              + ", style=filled, color=" + LIGHT_BLUE + "];",
+                              file=file)
 
-        print >> file, "}"
+        print("}", file=file)
         file.close()
 
         command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
-        # print command
         # dot_process = subprocess.Popen(command, shell = True)
         commands.getstatusoutput(command)
         return graph_file_path
@@ -3600,7 +3583,6 @@ class ApplicationModel(QtCore.QObject):
                             # wf_status =
                             # self.current_connection.workflow_status(self.current_wf_id)
                     except ConnectionClosedError, e:
-                        # print e
                         self.emit(
                             QtCore.SIGNAL('connection_closed_error'), self.current_resource_id)
                         self._hold[self.current_resource_id] = True
@@ -3640,7 +3622,6 @@ class ApplicationModel(QtCore.QObject):
                                         # wf_status =
                                         # self.resource_pool.connection(rid).workflow_status(wfid)
                                     except ConnectionClosedError, e:
-                                        # print e
                                         self.emit(
                                             QtCore.SIGNAL('connection_closed_error'), rid)
                                         self._hold[rid] = True
@@ -3847,10 +3828,10 @@ class ApplicationModel(QtCore.QObject):
                     workflow_id] = workflow_status
                 if self._current_workflow != None:
                     try:
-                        wf_status = self.current_connection.workflow_elements_status(
-                            workflow_id)
+                        wf_status \
+                            = self.current_connection.workflow_elements_status(
+                                workflow_id)
                     except ConnectionClosedError, e:
-                        # print e
                         self.emit(QtCore.SIGNAL('connection_closed_error'))
                     else:
                         self._current_workflow.updateState(wf_status)
@@ -3867,7 +3848,6 @@ class ApplicationModel(QtCore.QObject):
             try:
                 workflow = self.current_connection.workflow(self.current_wf_id)
             except ConnectionClosedError, e:
-                # print e
                 QtGui.QApplication.restoreOverrideCursor()
                 self.emit(QtCore.SIGNAL('connection_closed_error'))
             except UnknownObjectError, e:
@@ -3879,10 +3859,10 @@ class ApplicationModel(QtCore.QObject):
                         workflow, self.tmp_stderrout_dir)
                     self._workflows[self.current_resource_id][
                         self._current_workflow.wf_id] = self._current_workflow
-                    wf_status = self.current_connection.workflow_elements_status(
-                        self.current_wf_id)
+                    wf_status \
+                        = self.current_connection.workflow_elements_status(
+                            self.current_wf_id)
                 except ConnectionClosedError, e:
-                    # print e
                     QtGui.QApplication.restoreOverrideCursor()
                     self.emit(QtCore.SIGNAL('connection_closed_error'))
                 else:

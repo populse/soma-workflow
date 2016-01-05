@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
 
 import getpass
@@ -37,7 +39,7 @@ workflow = Workflow(jobs=[job1, job2],
                     dependencies=[])
 
 # Submit the workflow
-print "password? "
+print("password? ")
 password = getpass.getpass()
 controller = WorkflowController("DSV_cluster", login, password)
 

@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Benoit Da Mota
@@ -238,7 +238,7 @@ class MPIScheduler(scheduler.Scheduler):
         with self._lock:
             self.stop_thread_loop = True
             self._loop.join()
-            print "Soma scheduler thread ended nicely."
+            print("Soma scheduler thread ended nicely.")
 
     def _master_iteration(self):
         MPIStatus = MPI.Status()
