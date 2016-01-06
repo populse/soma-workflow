@@ -401,6 +401,8 @@ class WorkflowDatabaseServer(object):
         return connection
 
     def _user_transfer_dir_path(self, login, user_id):
+        if hasattr(login, 'decode'): # python3 bytes object
+            login = login.decode('utf8')
         path = os.path.join(
             self._tmp_file_dir_path, login + "_" + repr(user_id))
         return path  # supposes simple logins. Or use only the user id ?
@@ -637,7 +639,8 @@ class WorkflowDatabaseServer(object):
                     # *very* costy... (about 0.1 second per call)
                     cursor.execute(
                         'UPDATE fileCounter SET count=count+%d' % num_files)
-                self._free_file_counters = range(count, count + num_files)
+                self._free_file_counters = list(range(count,
+                                                      count + num_files))
                 return count
             except Exception as e:
                 if not external_cursor:
@@ -2407,13 +2410,18 @@ class WorkflowDatabaseServer(object):
     def _string_conversion(self, string):
         # return string
         if string:
-            return string.encode('utf-8')
-        else:
-            return string
+            if sys.version_info[0] < 3:
+                return string.encode('utf-8')
+            else:
+                if isinstance(string, bytes):
+                    return string.decode('utf-8')
+        return string
 
     def _str_to_date_conversion(self, strdate):
         if strdate:
-            date = datetime.strptime(strdate.encode('utf-8'), strtime_format)
+            if sys.version_info[0] < 3:
+                strdate = strdate.encode('utf-8')
+            date = datetime.strptime(strdate, strtime_format)
         else:
             date = None
         return date

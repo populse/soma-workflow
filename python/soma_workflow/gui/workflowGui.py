@@ -33,7 +33,7 @@ PYSIDE = "pyside"
 try:
     from PyQt4 import QtGui, QtCore
     QT_BACKEND = PYQT
-except ImportError, e:
+except ImportError as e:
     QT_BACKEND = None
 
 # QT_BACKEND=None
@@ -42,7 +42,7 @@ if QT_BACKEND == None:
     try:
         from PySide import QtGui, QtCore
         QT_BACKEND = PYSIDE
-    except ImportError, e:
+    except ImportError as e:
         raise Exception("Soma-workflow Gui requires PyQt or PySide.")
 
 if QT_BACKEND == PYQT:
@@ -73,6 +73,13 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma_workflow.version as version
 
+# python 2/3 compatibility
+import six
+import sys
+
+if sys.version_info[0] >= 3:
+    unicode = str
+
 
 MATPLOTLIB = True
 try:
@@ -89,7 +96,7 @@ try:
         import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     import matplotlib.pyplot
-except ImportError, e:
+except ImportError as e:
     print("Could not use Matplotlib: %s %s" % (type(e), e))
     MATPLOTLIB = False
 
@@ -455,7 +462,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                 try:
                     submitted_wf = Controller.get_submitted_workflows(
                         self.model.current_connection)
-                except ConnectionClosedError, e:
+                except ConnectionClosedError as e:
                     if not self.reconnectAfterConnectionClosed():
                         return
                 else:
@@ -768,7 +775,7 @@ class NewServerDialog(QtGui.QDialog):
         try:
             SetupSomaWF2Server(
                 strInstallPath, ResName, strLogin, strAdd, userpw=strPW, sshport=intPort)
-        except Exception, e:
+        except Exception as e:
             QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s" % (e))
             self.is_install = False
         except:
@@ -815,7 +822,7 @@ class ServerManagementDialog(QtGui.QDialog):
                 self.config_file_path)
             self.login_list = configuration.Configuration.get_logins(
                 self.config_file_path)
-        except ConfigurationError, e:
+        except ConfigurationError as e:
             QtGui.QMessageBox.critical(
                 self, "Configuration problem", "%s" % (e))
             self.close()
@@ -943,7 +950,9 @@ class ConnectionDialog(QtGui.QDialog):
     @QtCore.Slot()
     def update_login(self):
         resource_id = unicode(
-            self.ui.combo_resources.currentText()).encode('utf-8')
+            self.ui.combo_resources.currentText())
+        if sys.version_info[0] < 3:
+            resource_id = resource_id.encode('utf-8')
         login = self.login_list[resource_id]
         if login != None:
             self.ui.lineEdit_login.setText(login)
@@ -1069,7 +1078,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 self.config_file_path)
             self.login_list = configuration.Configuration.get_logins(
                 self.config_file_path)
-        except ConfigurationError, e:
+        except ConfigurationError as e:
             QtGui.QMessageBox.critical(
                 self, "Configuration problem", "%s" % (e))
             self.close()
@@ -1106,13 +1115,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                                 password,
                                                 rsa_key_pass)
             QtGui.QApplication.restoreOverrideCursor()
-        except ConfigurationError, e:
+        except ConfigurationError as e:
             QtGui.QApplication.restoreOverrideCursor()
             QtGui.QMessageBox.critical(
                 self, "Configuration problem", "%s" % (e))
             self.connection_dlg.ui.lineEdit_password.clear()
             self.connection_dlg.show()
-        except Exception, e:
+        except Exception as e:
             QtGui.QApplication.restoreOverrideCursor()
             detailed_critical_message_box(msg=e.__str__(),
                                           title="Connection failed",
@@ -1162,7 +1171,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if file_path:
             try:
                 workflow = Controller.unserialize_workflow(file_path)
-            except SerializationError, e:
+            except SerializationError as e:
                 QtGui.QMessageBox.warning(
                     self, "Error opening the workflow", "%s" % (e))
             else:
@@ -1184,7 +1193,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             try:
                 Controller.serialize_workflow(
                     file_path, self.model.current_workflow().server_workflow)
-            except SerializationError, e:
+            except SerializationError as e:
                 QtGui.QMessageBox.warning(
                     self, "Error", "%s: %s" % (type(e), e))
 
@@ -1215,13 +1224,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
                         wf_examples = WorkflowExamplesShared()
                     else:
                         wf_examples = WorkflowExamplesLocal()
-                except ConfigurationError, e:
+                except ConfigurationError as e:
                     QtGui.QMessageBox.warning(self, "Error", "%s" % (e))
                 else:
                     workflow = wf_examples.get_workflow_example(example_type)
                     try:
                         Controller.serialize_workflow(file_path, workflow)
-                    except SerializationError, e:
+                    except SerializationError as e:
                         QtGui.QMessageBox.warning(self, "Error", "%s" % (e))
 
     @QtCore.Slot()
@@ -1277,17 +1286,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     name,
                     queue,
                     self.model.current_connection)
-            except WorkflowError, e:
+            except WorkflowError as e:
                 QtGui.QMessageBox.warning(self,
                                           "Workflow submission error",
                                           "%s" % (e))
                 return (None, None)
-            except JobError, e:
+            except JobError as e:
                 QtGui.QMessageBox.warning(self,
                                           "Workflow submission error",
                                           "%s" % (e))
                 return (None, None)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 if not self.reconnectAfterConnectionClosed():
                     return (None, None)
             else:
@@ -1348,9 +1357,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     date,
                     self.model.current_connection)
-        except ConnectionClosedError, e:
+        except ConnectionClosedError as e:
             pass
-        except SystemExit, e:
+        except SystemExit as e:
             pass
         if not done:
             QtGui.QMessageBox.warning(self,
@@ -1369,10 +1378,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     self.model.current_connection,
                     buffer_size=256 ** 2)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 self.ui.action_transfer_infiles.setEnabled(True)
                 pass
-            except SystemExit, e:
+            except SystemExit as e:
                 pass
             self.ui.action_transfer_infiles.setEnabled(True)
         thread = threading.Thread(name="TransferInputFiles",
@@ -1390,9 +1399,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     self.model.current_connection,
                     buffer_size=256 ** 2)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 self.ui.action_transfer_outfiles.setEnabled(True)
-            except SystemExit, e:
+            except SystemExit as e:
                 pass
             self.ui.action_transfer_outfiles.setEnabled(True)
         thread = threading.Thread(name="TransferOuputFiles",
@@ -1434,10 +1443,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
             else:
                 self.model.clear_current_workflow()
             QtGui.QApplication.restoreOverrideCursor()
-        except ConnectionClosedError, e:
+        except ConnectionClosedError as e:
             QtGui.QApplication.restoreOverrideCursor()
             self.reconnectAfterConnectionClosed()
-        except Exception, e:
+        except Exception as e:
             QtGui.QApplication.restoreOverrideCursor()
             raise e
 
@@ -1519,12 +1528,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                                     password,
                                                     rsa_key_pass)
                 QtGui.QApplication.restoreOverrideCursor()
-            except ConfigurationError, e:
+            except ConfigurationError as e:
                 QtGui.QApplication.restoreOverrideCursor()
                 QtGui.QMessageBox.information(
                     self, "Configuration error", "%s" % (e))
                 return (resource_id, None)
-            except Exception, e:
+            except Exception as e:
                 QtGui.QApplication.restoreOverrideCursor()
                 detailed_critical_message_box(msg=e.__str__(),
                                               title="Connection failed",
@@ -1554,7 +1563,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 stopped_properly = Controller.stop_workflow(
                     self.model.current_wf_id,
                     self.model.current_connection)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1577,7 +1586,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if not workflows:
             return
         workflow_names = []
-        for wf_id, (wf_name, exp_date) in workflows.iteritems():
+        for wf_id, (wf_name, exp_date) in six.iteritems(workflows):
             if wf_name:
                 workflow_names.append(wf_name)
             else:
@@ -1596,9 +1605,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         force = self.ui.check_box_force_delete.isChecked()
         while True:
             try:
-                deleled_properly = Controller.delete_all_workflows(force,
-                                                                   self.model.current_connection)
-            except ConnectionClosedError, e:
+                deleled_properly = Controller.delete_all_workflows(
+                    force, self.model.current_connection)
+            except ConnectionClosedError as e:
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1640,7 +1649,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     force,
                     self.model.current_connection)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1695,7 +1704,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     self.model.current_wf_id,
                     date,
                     self.model.current_connection)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 if not self.reconnectAfterConnectionClosed():
                     return
             else:
@@ -1816,7 +1825,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 try:
                     submitted_wf = Controller.get_submitted_workflows(
                         self.model.current_connection)
-                except ConnectionClosedError, e:
+                except ConnectionClosedError as e:
                     if not self.reconnectAfterConnectionClosed():
                         return
                 else:
@@ -2673,7 +2682,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         if (index == 1 or index == 2) and self.job_item.stdout == "":
             try:
                 self.job_item.updateStdOutErr(self.connection)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 self.parent.emit(QtCore.SIGNAL("connection_closed_error"))
             else:
                 self.dataChanged()
@@ -2682,7 +2691,7 @@ class JobInfoWidget(QtGui.QTabWidget):
     def refreshStdErrOut(self):
         try:
             self.job_item.updateStdOutErr(self.connection)
-        except ConnectionClosedError, e:
+        except ConnectionClosedError as e:
             self.parent().emit(QtCore.SIGNAL("connection_closed_error"))
         self.dataChanged()
 
@@ -2852,7 +2861,7 @@ class PlotView(QtGui.QWidget):
             self.canvas = FigureCanvas(self.figure)
             try:
                 self.canvas.setParent(self)
-            except TypeError, e:
+            except TypeError as e:
                 print("WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND))
                 return
             self.canvas.updateGeometry()
@@ -3517,7 +3526,7 @@ class ApplicationModel(QtCore.QObject):
 
         self._lock = threading.RLock()
 
-        for rid, connection in self.resource_pool._connections.iteritems():
+        for rid, connection in six.iteritems(self.resource_pool._connections):
             self.add_connection(rid, connection)
 
         self.update_thread = None
@@ -3582,12 +3591,12 @@ class ApplicationModel(QtCore.QObject):
                                 timeout_duration=self._timeout_duration[self.current_resource_id])
                             # wf_status =
                             # self.current_connection.workflow_status(self.current_wf_id)
-                    except ConnectionClosedError, e:
+                    except ConnectionClosedError as e:
                         self.emit(
                             QtCore.SIGNAL('connection_closed_error'), self.current_resource_id)
                         self._hold[self.current_resource_id] = True
                         return
-                    except UnknownObjectError, e:
+                    except UnknownObjectError as e:
                         self.delete_workflow()
                         return
                     else:
@@ -3621,12 +3630,14 @@ class ApplicationModel(QtCore.QObject):
 
                                         # wf_status =
                                         # self.resource_pool.connection(rid).workflow_status(wfid)
-                                    except ConnectionClosedError, e:
+                                    except ConnectionClosedError as e:
                                         self.emit(
-                                            QtCore.SIGNAL('connection_closed_error'), rid)
+                                            QtCore.SIGNAL(
+                                                'connection_closed_error'),
+                                            rid)
                                         self._hold[rid] = True
                                         break
-                                    except UnknownObjectError, e:
+                                    except UnknownObjectError as e:
                                         self.delete_workflow(wfid)
                                         continue
                                     else:
@@ -3658,7 +3669,7 @@ class ApplicationModel(QtCore.QObject):
             def run(self):
                 try:
                     self.result = func(*args, **kwargs)
-                except Exception, e:
+                except Exception as e:
                     self.exception = e
         it = InterruptibleThread()
         it.start()
@@ -3672,10 +3683,10 @@ class ApplicationModel(QtCore.QObject):
             return it.result
 
     def list_workflow_names(self, resource_id):
-        return self._workflow_names[resource_id].values()
+        return list(six.itervalues(self._workflow_names[resource_id]))
 
     def list_workflow_status(self, resource_id):
-        return self._workflow_statuses[resource_id].values()
+        return list(six.itervalues(self._workflow_statuses[resource_id]))
 
     def get_workflow_status(self, resource_id, workflow_id):
         if workflow_id in self._workflow_statuses[resource_id]:
@@ -3684,7 +3695,7 @@ class ApplicationModel(QtCore.QObject):
             return None
 
     def list_workflow_expiration_dates(self, resource_id):
-        return self._expiration_dates[resource_id].values()
+        return list(six.itervalues(self._expiration_dates[resource_id]))
 
     def workflows(self, resource_id):
         result = {}
@@ -3831,7 +3842,7 @@ class ApplicationModel(QtCore.QObject):
                         wf_status \
                             = self.current_connection.workflow_elements_status(
                                 workflow_id)
-                    except ConnectionClosedError, e:
+                    except ConnectionClosedError as e:
                         self.emit(QtCore.SIGNAL('connection_closed_error'))
                     else:
                         self._current_workflow.updateState(wf_status)
@@ -3847,10 +3858,10 @@ class ApplicationModel(QtCore.QObject):
         with self._lock:
             try:
                 workflow = self.current_connection.workflow(self.current_wf_id)
-            except ConnectionClosedError, e:
+            except ConnectionClosedError as e:
                 QtGui.QApplication.restoreOverrideCursor()
                 self.emit(QtCore.SIGNAL('connection_closed_error'))
-            except UnknownObjectError, e:
+            except UnknownObjectError as e:
                 self.delete_workflow()
                 return self._current_workflow
             else:
@@ -3862,7 +3873,7 @@ class ApplicationModel(QtCore.QObject):
                     wf_status \
                         = self.current_connection.workflow_elements_status(
                             self.current_wf_id)
-                except ConnectionClosedError, e:
+                except ConnectionClosedError as e:
                     QtGui.QApplication.restoreOverrideCursor()
                     self.emit(QtCore.SIGNAL('connection_closed_error'))
                 else:
@@ -4214,7 +4225,7 @@ class GuiWorkflow(object):
         return data_changed
 
     def restart(self):
-        for item in self.items.itervalues():
+        for item in six.itervalues(self.items):
             if isinstance(item, GuiJob):
                 item.stdout = ""
                 item.stderr = ""
@@ -4501,8 +4512,8 @@ class GuiJob(GuiWorkflowItem):
             self.stderr = stderr
             f.close()
 
-            os.chmod(stdout_path, 0666)
-            os.chmod(stderr_path, 0666)
+            os.chmod(stdout_path, 0o666)
+            os.chmod(stderr_path, 0o666)
 
 
 class GuiTransfer(GuiWorkflowItem):
