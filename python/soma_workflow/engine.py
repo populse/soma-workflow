@@ -198,7 +198,7 @@ class WorkflowEngineLoop(object):
             with self._lock:
                 ended_jobs = drms_error_jobs  # {}
                 wf_to_inspect = set()  # set of workflow id
-                for job in drms_error_jobs.itervalues():
+                for job in six.itervalues(drms_error_jobs):
                     if job.workflow_id != -1:
                         wf_to_inspect.add(job.workflow_id)
                 drms_error_jobs = {}
@@ -272,14 +272,14 @@ class WorkflowEngineLoop(object):
                 # ended
                 wf_jobs = {}
                 wf_transfers = {}
-                for wf in self._workflows.itervalues():
+                for wf in six.itervalues(self._workflows):
                     # one_wf_processed = True
                     # TBI add a condition on the workflow status
                     wf_jobs.update(wf.registered_jobs)
                     wf_transfers.update(wf.registered_tr)
 
-                for job in itertools.chain(self._jobs.itervalues(),
-                                           wf_jobs.itervalues()):
+                for job in itertools.chain(six.itervalues(self._jobs),
+                                           six.itervalues(wf_jobs)):
                     if job.exit_status == None and job.drmaa_id != None:
                         try:
                             job.status = self._scheduler.get_job_status(
@@ -351,7 +351,7 @@ class WorkflowEngineLoop(object):
                         self._user_id)
                     transfer.status = status
 
-                for wf_id in self._workflows.iterkeys():
+                for wf_id in six.iterkeys(self._workflows):
                     if self._database_server.pop_workflow_ended_transfer(wf_id):
                         self.logger.debug(
                             "ended transfer for the workflow " + repr(wf_id))
@@ -490,7 +490,7 @@ class WorkflowEngineLoop(object):
                 raise JobError("Could not create the standard error file "
                                "%s: %s \n" % (type(e), e))
 
-        for transfer in engine_job.transfer_mapping.itervalues():
+        for transfer in six.itervalues(engine_job.transfer_mapping):
             if transfer.client_paths and not os.path.isdir(transfer.engine_path):
                 try:
                     os.mkdir(transfer.engine_path)
@@ -565,7 +565,7 @@ class WorkflowEngineLoop(object):
         engine_workflow = self._database_server.add_workflow(
             self._user_id, engine_workflow)
 
-        for job in engine_workflow.job_mapping.itervalues():
+        for job in six.itervalues(engine_workflow.job_mapping):
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
@@ -585,7 +585,7 @@ class WorkflowEngineLoop(object):
                                    "%s %s: %s \n" %
                                    (repr(job.stderr_file), type(e), e))
 
-        for transfer in engine_workflow.transfer_mapping.itervalues():
+        for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:

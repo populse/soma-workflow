@@ -18,7 +18,6 @@ uses on the client side (in the GUI for example) without importing
 module required in the engine module.
 '''
 
-import types
 import os
 import logging
 import tempfile
@@ -28,6 +27,12 @@ from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
 from soma_workflow.client import Job, BarrierJob, SpecialPath, FileTransfer, \
     Workflow, SharedResourcePath, TemporaryPath, Group
+
+# python 2/3 compatibility
+import sys
+if sys.version_info[0] >= 3:
+    basestring = str
+    unicode = str
 
 
 class EngineJob(Job):
@@ -154,7 +159,7 @@ class EngineJob(Job):
             elif isinstance(self.stdin, SharedResourcePath):
                 self.srp_mapping[self.stdin] = self._translate(self.stdin)
             else:
-                if not type(self.stdin) in types.StringTypes:
+                if not isinstance(self.stdin, basestring):
                     raise JobError("Wrong stdin type: %s" % (repr(self.stdin)))
                 self.stdin = os.path.abspath(self.stdin)
 
@@ -178,7 +183,7 @@ class EngineJob(Job):
                 self.srp_mapping[self.working_directory] = self._translate(
                     self.working_directory)
             else:
-                if not type(self.working_directory) in types.StringTypes:
+                if not isinstance(self.working_directory, basestring):
                     raise JobError("Wrong working directory type: %s " %
                                    (repr(self.working_directory)))
                 self.working_directory = os.path.abspath(
@@ -202,9 +207,10 @@ class EngineJob(Job):
                 self.srp_mapping[
                     self.stdout_file] = self._translate(self.stdout_file)
             else:
-                if not type(self.stdout_file) in types.StringTypes:
+                if not isinstance(self.stdout_file, basestring):
                     raise JobError(
-                        "Wrong stdout_file type: %s" % (repr(self.stdout_file)))
+                        "Wrong stdout_file type: %s"
+                        % (repr(self.stdout_file)))
                 self.stdout_file = os.path.abspath(self.stdout_file)
 
         if self.stderr_file:
@@ -225,9 +231,10 @@ class EngineJob(Job):
                 self.srp_mapping[
                     self.stderr_file] = self._translate(self.stderr_file)
             else:
-                if not type(self.stderr_file) in types.StringTypes:
+                if not isinstance(self.stderr_file, basestring):
                     raise JobError(
-                        "Wrong stderr_file type: %s" % (repr(self.stderr_file)))
+                        "Wrong stderr_file type: %s"
+                        % (repr(self.stderr_file)))
                 self.stderr_file = os.path.abspath(self.stderr_file)
 
         # transfer_mapping from referenced_input_files and referenced_output_files
@@ -303,12 +310,12 @@ class EngineJob(Job):
                                 "attributes: referenced_input_files "
                                 "and referenced_output_files.")
                     else:
-                        if not type(list_el) in types.StringTypes:
+                        if not isinstance(list_el, basestring):
                             raise JobError(
                                 "Wrong command element type: %s"
                                 % (repr(list_el)))
             else:
-                if not type(command_el) in types.StringTypes:
+                if not isinstance(command_el, basestring):
                     raise JobError(
                         "Wrong command element type: %s, of type: %s "
                         "in job: %s"
@@ -391,12 +398,12 @@ class EngineJob(Job):
                         new_list_el = os.path.join(new_list_el, list_el[1])
                         new_list.append(new_list_el)
                     else:
-                        assert(type(list_el) in types.StringTypes)
+                        assert(isinstance(list_el, basestring))
                         new_list.append(list_el)
                 str_list = str(repr(new_list))
                 plain_command.append(str_list.replace("'", "\""))
             else:
-                assert(type(command_el) in types.StringTypes)
+                assert(isinstance(command_el, basestring))
                 plain_command.append(command_el)
         return plain_command
 

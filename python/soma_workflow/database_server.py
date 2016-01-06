@@ -24,12 +24,15 @@ from datetime import date
 from datetime import timedelta
 from datetime import datetime
 import socket
-import six
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
 from soma_workflow.info import DB_VERSION
+
+# python 2/3 compatibility
+import sys
+import six
 
 
 #-----------------------------------------------------------------------------
@@ -365,8 +368,9 @@ class WorkflowDatabaseServer(object):
 
                 try:
                     if version == None:
-                        count = cursor.execute("SELECT count(*) FROM workflows WHERE "
-                                               "queue=?", ["default queue"]).next()[0]
+                        count = six.next(cursor.execute(
+                            "SELECT count(*) FROM workflows WHERE "
+                            "queue=?", ["default queue"]))[0]
                     elif unicode(version) != unicode(DB_VERSION):
                         raise Exception('Wrong db version')
                 except Exception as e:
@@ -413,13 +417,13 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM users WHERE login=?', [login]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM users WHERE login=?', [login]))[0]
                 if count == 0:
                     cursor.execute(
                         'INSERT INTO users (login) VALUES (?)', [login])
-                user_id = cursor.execute(
-                    'SELECT id FROM users WHERE login=?', [login]).next()[0]
+                user_id = six.next(cursor.execute(
+                    'SELECT id FROM users WHERE login=?', [login]))[0]
             except Exception as e:
                 connection.rollback()
                 cursor.close()
@@ -458,15 +462,16 @@ class WorkflowDatabaseServer(object):
                     cursor.execute('DELETE FROM ios WHERE job_id=?', [job_id])
                     cursor.execute(
                         'DELETE FROM ios_tmp WHERE job_id=?', [job_id])
-                    stdof, stdef, rusage, custom = cursor.execute('''
-                                                          SELECT
-                                                          stdout_file,
-                                                          stderr_file,
-                                                          resource_usage,
-                                                          custom_submission
-                                                          FROM jobs
-                                                          WHERE id=?''',
-                                                                  [job_id]).next()
+                    stdof, stdef, rusage, custom = six.next(cursor.execute(
+                        '''
+                        SELECT
+                        stdout_file,
+                        stderr_file,
+                        resource_usage,
+                        custom_submission
+                        FROM jobs
+                        WHERE id=?''',
+                        [job_id]))
                     if not custom:
                         self.__removeFile(self._string_conversion(stdof))
                         self.__removeFile(self._string_conversion(stdef))
@@ -486,8 +491,8 @@ class WorkflowDatabaseServer(object):
                 # of a job)
                 transfersToDelete = []
                 for engine_file_path in expiredTransfers:
-                    count = cursor.execute(
-                        'SELECT count(*) FROM ios WHERE engine_file_path=?', [engine_file_path]).next()[0]
+                    count = six.nex(cursor.execute(
+                        'SELECT count(*) FROM ios WHERE engine_file_path=?', [engine_file_path]))[0]
                     if count == 0:
                         transfersToDelete.append(engine_file_path)
 
@@ -509,8 +514,8 @@ class WorkflowDatabaseServer(object):
                 # of a job)
                 tmpToDelete = []
                 for temp_path_id, engine_file_path in expiredTmpPaths:
-                    count = cursor.execute(
-                        'SELECT count(*) FROM ios_tmp WHERE temp_path_id=?', [temp_path_id]).next()[0]
+                    count = six.next(cursor.execute(
+                        'SELECT count(*) FROM ios_tmp WHERE temp_path_id=?', [temp_path_id]))[0]
                     if count == 0:
                         tmpToDelete.append((temp_path_id, engine_file_path))
 
@@ -710,8 +715,9 @@ class WorkflowDatabaseServer(object):
             else:
                 cursor = external_cursor
             try:
-                login = cursor.execute('SELECT login FROM users WHERE id=?',  [user_id]).next()[
-                    0]  # supposes that the user_id is valid
+                login = six.next(cursor.execute(
+                    'SELECT login FROM users WHERE id=?', [user_id]))[0]
+                # supposes that the user_id is valid
                 login = self._string_conversion(login)
             except Exception as e:
                 if not external_cursor:
@@ -899,11 +905,12 @@ class WorkflowDatabaseServer(object):
 
     def _check_transfer(self, connection, cursor, engine_file_path, user_id):
         try:
-            count = cursor.execute('''SELECT count(*)
-                                  FROM transfers
-                                  WHERE engine_file_path=? and
-                                        user_id=?''',
-                                   [engine_file_path, user_id]).next()[0]
+            count = six.next(cursor.execute(
+                '''SELECT count(*)
+                FROM transfers
+                WHERE engine_file_path=? and
+                      user_id=?''',
+                [engine_file_path, user_id]))[0]
         except Exception as e:
             cursor.close()
             connection.close()
@@ -916,11 +923,12 @@ class WorkflowDatabaseServer(object):
 
     def _check_temporary(self, connection, cursor, temp_path_id, user_id):
         try:
-            count = cursor.execute('''SELECT count(*)
-                                  FROM temporary_paths
-                                  WHERE temp_path_id=? and
-                                        user_id=?''',
-                                   [temp_path_id, user_id]).next()[0]
+            count = six.next(cursor.execute(
+                '''SELECT count(*)
+                FROM temporary_paths
+                WHERE temp_path_id=? and
+                      user_id=?''',
+                  [temp_path_id, user_id]))[0]
         except Exception as e:
             cursor.close()
             connection.close()
@@ -1011,17 +1019,18 @@ class WorkflowDatabaseServer(object):
                  workflow_id,
                  client_paths,
                  transfer_type,
-                 status) = cursor.execute('''SELECT
-                                  engine_file_path,
-                                  client_file_path,
-                                  expiration_date,
-                                  workflow_id,
-                                  client_paths,
-                                  transfer_type,
-                                  status
-                                  FROM transfers
-                                  WHERE engine_file_path=?''',
-                                          [engine_file_path]).next()
+                 status) = six.next(cursor.execute(
+                    '''SELECT
+                    engine_file_path,
+                    client_file_path,
+                    expiration_date,
+                    workflow_id,
+                    client_paths,
+                    transfer_type,
+                    status
+                    FROM transfers
+                    WHERE engine_file_path=?''',
+                    [engine_file_path]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1072,15 +1081,16 @@ class WorkflowDatabaseServer(object):
                  workflow_id,
                  client_paths,
                  transfer_type,
-                 status) = cursor.execute('''SELECT
-                                  temp_path_id,
-                                  engine_file_path,
-                                  expiration_date,
-                                  workflow_id,
-                                  status
-                                  FROM temporary_paths
-                                  WHERE temp_path_id=?''',
-                                          [temp_path_id]).next()
+                 status) = six.next(cursor.execute(
+                    '''SELECT
+                    temp_path_id,
+                    engine_file_path,
+                    expiration_date,
+                    workflow_id,
+                    status
+                    FROM temporary_paths
+                    WHERE temp_path_id=?''',
+                    [temp_path_id]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1112,8 +1122,9 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             self._check_transfer(connection, cursor, engine_file_path, user_id)
             try:
-                status = cursor.execute(
-                    'SELECT status FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
+                status = six.next(cursor.execute(
+                    'SELECT status FROM transfers WHERE engine_file_path=?',
+                    [engine_file_path]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1134,8 +1145,9 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             self._check_temporary(connection, cursor, temp_path_id, user_id)
             try:
-                status = cursor.execute(
-                    'SELECT status FROM temporary_paths WHERE temp_path_id=?', [temp_path_id]).next()[0]
+                status = six.next(cursor.execute(
+                    'SELECT status FROM temporary_paths WHERE temp_path_id=?',
+                    [temp_path_id]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1163,8 +1175,9 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM transfers WHERE engine_file_path=?', [engine_file_path]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM transfers WHERE engine_file_path=?',
+                    [engine_file_path]))[0]
                 if not count == 0:
                     cursor.execute(
                         'UPDATE transfers SET status=? WHERE engine_file_path=?', (status, engine_file_path))
@@ -1192,8 +1205,9 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM temporary_paths WHERE temp_path_id=?', [temp_path_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM temporary_paths WHERE temp_path_id=?',
+                    [temp_path_id]))[0]
                 if not count == 0:
                     cursor.execute(
                         'UPDATE temporary_paths SET status=? WHERE temp_path_id=?', (status, temp_path_id))
@@ -1233,11 +1247,13 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM workflows WHERE id=?',
+                    [workflow_id]))[0]
                 if not count == 0:
-                    str_ended_transfers = cursor.execute(
-                        'SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0]
+                    str_ended_transfers = six.next(cursor.execute(
+                        'SELECT ended_transfers FROM workflows WHERE id=?',
+                        [workflow_id]))[0]
                     if str_ended_transfers != None:
                         ended_transfers = self._string_conversion(
                             str_ended_transfers).split(separator)
@@ -1267,11 +1283,13 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM workflows WHERE id=?', [workflow_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM workflows WHERE id=?',
+                    [workflow_id]))[0]
                 if not count == 0:
-                    str_ended_transfers = cursor.execute(
-                        'SELECT ended_transfers FROM workflows WHERE id=?', [workflow_id]).next()[0]
+                    str_ended_transfers = six.next(cursor.execute(
+                        'SELECT ended_transfers FROM workflows WHERE id=?',
+                        [workflow_id]))[0]
                     if str_ended_transfers != None:
                         ended_transfers = self._string_conversion(
                             str_ended_transfers).split(separator)
@@ -1319,7 +1337,10 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             name = None
             if engine_workflow.name != None:
-                name = engine_workflow.name.decode('utf8')
+                if sys.version_info[0] >= 3:
+                    name = engine_workflow.name
+                else:
+                    name = engine_workflow.name.decode('utf8')
             try:
                 cursor.execute('''INSERT INTO workflows
                          (user_id,
@@ -1341,7 +1362,8 @@ class WorkflowDatabaseServer(object):
                 engine_workflow.wf_id = cursor.lastrowid
 
                 # the transfers must be registered before the jobs
-                for transfer in engine_workflow.transfer_mapping.itervalues():
+                for transfer in six.itervalues(
+                        engine_workflow.transfer_mapping):
                     transfer.workflow_id = engine_workflow.wf_id
                     self.add_transfer(transfer,
                                       user_id,
@@ -1356,7 +1378,7 @@ class WorkflowDatabaseServer(object):
 
                 job_info = []
 
-                for job in engine_workflow.job_mapping.itervalues():
+                for job in six.itervalues(engine_workflow.job_mapping):
                     job.workflow_id = engine_workflow.wf_id
                     job = self.add_job(user_id,
                                        job,
@@ -1458,9 +1480,11 @@ class WorkflowDatabaseServer(object):
             self._check_workflow(connection, cursor, wf_id, user_id)
 
             try:
-                pickled_workflow = cursor.execute('''SELECT
-                                              pickled_engine_workflow
-                                              FROM workflows WHERE id=?''', [wf_id]).next()[0]
+                pickled_workflow = six.next(cursor.execute(
+                    '''SELECT
+                    pickled_engine_workflow
+                    FROM workflows WHERE id=?''',
+                    [wf_id]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1491,13 +1515,16 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute('''SELECT count(*)
-                                  FROM workflows
-                                  WHERE id=?''', [wf_id]).next()[0]
+                count = six.next(cursor.execute(
+                    '''SELECT count(*)
+                    FROM workflows
+                    WHERE id=?''',
+                    [wf_id]))[0]
                 if not count == 0:
-                    prev_status = cursor.execute('''SELECT status
-                                          FROM workflows WHERE id=?''',
-                                                 [wf_id]).next()[0]
+                    prev_status = six.next(cursor.execute(
+                        '''SELECT status
+                        FROM workflows WHERE id=?''',
+                        [wf_id]))[0]
                     prev_status = self._string_conversion(prev_status)
                     if force or \
                        (prev_status != constants.DELETE_PENDING and
@@ -1529,10 +1556,10 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             self._check_workflow(connection, cursor, wf_id, user_id)
             try:
-                (status, strdate) = cursor.execute('''SELECT status,
-                                                    last_status_update
-                                              FROM workflows WHERE id=?''',
-                                                   [wf_id]).next()
+                (status, strdate) = six.next(cursor.execute(
+                    '''SELECT status, last_status_update
+                    FROM workflows WHERE id=?''',
+                    [wf_id]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1576,11 +1603,12 @@ class WorkflowDatabaseServer(object):
 
             try:
                 # workflow status
-                (wf_status, wf_queue) = cursor.execute('''SELECT
-                                      status,
-                                      queue
-                                      FROM workflows WHERE id=?''',
-                                                       [wf_id]).next()  # supposes that the wf_id is valid
+                (wf_status, wf_queue) = six.next(cursor.execute(
+                    '''SELECT
+                    status,
+                    queue
+                    FROM workflows WHERE id=?''',
+                    [wf_id]))  # supposes that the wf_id is valid
 
                 workflow_status = ([], [], wf_status, wf_queue, [])
                 # jobs
@@ -1668,11 +1696,12 @@ class WorkflowDatabaseServer(object):
     # JOBS
     def _check_job(self, connection, cursor, job_id, user_id):
         try:
-            count = cursor.execute('''SELECT count(*)
-                                  FROM jobs
-                                  WHERE id=? and
-                                        user_id=?''',
-                                   [job_id, user_id]).next()[0]
+            count = six.next(cursor.execute(
+                '''SELECT count(*)
+                FROM jobs
+                WHERE id=? and
+                      user_id=?''',
+                [job_id, user_id]))[0]
         except Exception as e:
             cursor.close()
             connection.close()
@@ -1690,17 +1719,19 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             last_status_update = None
             try:
-                count = cursor.execute('''SELECT count(*)
-                                  FROM jobs
-                                  WHERE id=? and
-                                        user_id=?''',
-                                       [job_id, user_id]).next()[0]
+                count = six.next(cursor.execute(
+                    '''SELECT count(*)
+                    FROM jobs
+                    WHERE id=? and
+                          user_id=?''',
+                    [job_id, user_id]))[0]
 
                 if count != 0:
-                    last_status_update = cursor.execute('''SELECT last_status_update
-                                                 FROM jobs
-                                                 WHERE id=?''',
-                                                        [job_id]).next()[0]
+                    last_status_update = six.next(cursor.execute(
+                        '''SELECT last_status_update
+                        FROM jobs
+                        WHERE id=?''',
+                        [job_id]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1906,10 +1937,11 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             self._check_job(connection, cursor, job_id, user_id)
             try:
-                (pickled_job, workflow_id) = cursor.execute('''SELECT
-                                      pickled_engine_job,
-                                      workflow_id
-                                      FROM jobs WHERE id=?''', [job_id]).next()
+                (pickled_job, workflow_id) = six.next(cursor.execute(
+                    '''SELECT
+                    pickled_engine_job,
+                    workflow_id
+                    FROM jobs WHERE id=?''', [job_id]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -1967,16 +1999,18 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             try:
                 if wf_id != None:
-                    count = cursor.execute(
-                        'SELECT count(*) FROM workflows WHERE id=?', [wf_id]).next()[0]
+                    count = six.next(cursor.execute(
+                        'SELECT count(*) FROM workflows WHERE id=?',
+                        [wf_id]))[0]
                     if not count == 0:
                         cursor.execute(
                             '''UPDATE workflows SET queue=? WHERE id=?''',
                             (queue_name, wf_id))
 
                 for job_id in job_ids:
-                    count = cursor.execute(
-                        'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+                    count = six.next(cursor.execute(
+                        'SELECT count(*) FROM jobs WHERE id=?',
+                        [job_id]))[0]
                     if not count == 0:
                         cursor.execute(
                             '''UPDATE jobs SET queue=? WHERE id=?''',
@@ -2001,16 +2035,18 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             try:
                 for job_id, status in six.iteritems(job_status):
-                    count = cursor.execute(
-                        'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+                    count = six.next(cursor.execute(
+                        'SELECT count(*) FROM jobs WHERE id=?',
+                        [job_id]))[0]
                     if not count == 0:
                         (previous_status,
                          execution_date,
-                         ending_date) = cursor.execute(''' SELECT status,
-                                                      execution_date,
-                                                      ending_date
-                                              FROM jobs WHERE id=?''',
-                                                       [job_id]).next()  # supposes that the job_id is valid
+                         ending_date) = six.next(cursor.execute(
+                            ''' SELECT status,
+                                    execution_date,
+                                    ending_date
+                            FROM jobs WHERE id=?''',
+                            [job_id]))  # supposes that the job_id is valid
                         previous_status = self._string_conversion(
                             previous_status)
                         execution_date = self._str_to_date_conversion(
@@ -2058,16 +2094,17 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]))[0]
                 if not count == 0:
                     (previous_status,
                      execution_date,
-                     ending_date) = cursor.execute(''' SELECT status,
-                                                    execution_date,
-                                                    ending_date
-                                             FROM jobs WHERE id=?''',
-                                                   [job_id]).next()  # supposes that the job_id is valid
+                     ending_date) = six.next(cursor.execute(
+                        ''' SELECT status,
+                              execution_date,
+                              ending_date
+                        FROM jobs WHERE id=?''',
+                        [job_id]))  # supposes that the job_id is valid
                     previous_status = self._string_conversion(previous_status)
                     execution_date = self._str_to_date_conversion(
                         execution_date)
@@ -2113,10 +2150,11 @@ class WorkflowDatabaseServer(object):
             self._check_job(connection, cursor, job_id, user_id)
             try:
                 (status,
-                 strdate) = cursor.execute('''SELECT status, last_status_update
-                                     FROM jobs
-                                     WHERE id=?''',
-                                           [job_id]).next()
+                 strdate) = six.next(cursor.execute(
+                    '''SELECT status, last_status_update
+                    FROM jobs
+                    WHERE id=?''',
+                    [job_id]))
 
             except Exception as e:
                 cursor.close()
@@ -2190,11 +2228,12 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]))[0]
                 if not count == 0:
-                    drmaa_id = cursor.execute('SELECT drmaa_id FROM jobs WHERE id=?', [job_id]).next()[
-                        0]  # supposes that the job_id is valid
+                    drmaa_id = six.next(cursor.execute(
+                        'SELECT drmaa_id FROM jobs WHERE id=?',
+                        [job_id]))[0]  # supposes that the job_id is valid
                 else:
                     drmaa_id = None
             except Exception as e:
@@ -2219,11 +2258,12 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = cursor.execute('''SELECT count(*)
-                                  FROM jobs
-                                  WHERE id=? and
-                                        user_id=?''',
-                                       [job_id, user_id]).next()[0]
+                count = six.next(cursor.execute(
+                    '''SELECT count(*)
+                    FROM jobs
+                    WHERE id=? and
+                          user_id=?''',
+                    [job_id, user_id]))[0]
 
             except Exception as e:
                 cursor.close()
@@ -2236,8 +2276,9 @@ class WorkflowDatabaseServer(object):
                                          "user " + repr(user_id))
 
             try:
-                result = cursor.execute(
-                    'SELECT stdout_file, stderr_file FROM jobs WHERE id=?', [job_id]).next()
+                result = six.next(cursor.execute(
+                    'SELECT stdout_file, stderr_file FROM jobs WHERE id=?',
+                    [job_id]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -2262,12 +2303,13 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             self._check_job(connection, cursor, job_id, user_id)
             try:
-                result = cursor.execute('''SELECT exit_status,
-                                          exit_value,
-                                          terminating_signal,
-                                          resource_usage
-                                FROM jobs WHERE id=?''',
-                                        [job_id]).next()
+                result = six.next(cursor.execute(
+                    '''SELECT exit_status,
+                              exit_value,
+                              terminating_signal,
+                              resource_usage
+                    FROM jobs WHERE id=?''',
+                    [job_id]))
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -2337,8 +2379,8 @@ class WorkflowDatabaseServer(object):
             else:
                 cursor = external_cursor
             try:
-                count = cursor.execute(
-                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]).next()[0]
+                count = six.next(cursor.execute(
+                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]))[0]
                 if not count == 0:
                     cursor.execute('''UPDATE jobs SET exit_status=?,
                                           exit_value=?,
@@ -2442,20 +2484,22 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             try:
                 if queue_name != None:
-                    count = cursor.execute("SELECT count(*) FROM jobs WHERE "
-                                           "user_id=? and ( status=? or status=?) "
-                                           "and queue=?",
-                                           [user_id,
-                                            constants.QUEUED_ACTIVE,
-                                            constants.UNDETERMINED,
-                                            queue_name]).next()[0]
+                    count = six.next(cursor.execute(
+                        "SELECT count(*) FROM jobs WHERE "
+                        "user_id=? and ( status=? or status=?) "
+                        "and queue=?",
+                        [user_id,
+                         constants.QUEUED_ACTIVE,
+                         constants.UNDETERMINED,
+                         queue_name]))[0]
                 else:
-                    count = cursor.execute("SELECT count(*) FROM jobs WHERE "
-                                           "user_id=? and ( status=? or status=?) "
-                                           "and queue ISNULL",
-                                           [user_id,
-                                            constants.QUEUED_ACTIVE,
-                                            constants.UNDETERMINED]).next()[0]
+                    count = six.next(cursor.execute(
+                        "SELECT count(*) FROM jobs WHERE "
+                        "user_id=? and ( status=? or status=?) "
+                        "and queue ISNULL",
+                        [user_id,
+                         constants.QUEUED_ACTIVE,
+                         constants.UNDETERMINED]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
@@ -2605,11 +2649,12 @@ class WorkflowDatabaseServer(object):
     # WORKFLOWS
     def _check_workflow(self, connection, cursor, wf_id, user_id):
         try:
-            count = cursor.execute('''SELECT count(*)
-                                  FROM workflows
-                                  WHERE id=? and
-                                        user_id=?''',
-                                   [wf_id, user_id]).next()[0]
+            count = six.next(cursor.execute(
+                '''SELECT count(*)
+                FROM workflows
+                WHERE id=? and
+                      user_id=?''',
+                [wf_id, user_id]))[0]
         except Exception as e:
             cursor.close()
             connection.close()
@@ -2627,18 +2672,20 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             last_status_update = None
             try:
-                count = cursor.execute('''SELECT count(*)
-                                  FROM workflows
-                                  WHERE id=? and
-                                        user_id=?''',
-                                       [wf_id, user_id]).next()[0]
+                count = six.next(cursor.execute(
+                    '''SELECT count(*)
+                    FROM workflows
+                    WHERE id=? and
+                          user_id=?''',
+                    [wf_id, user_id]))[0]
 
                 if count != 0:
-                    last_status_update = cursor.execute('''SELECT
-                                                 last_status_update
-                                                 FROM workflows
-                                                 WHERE id=?''',
-                                                        [wf_id]).next()[0]
+                    last_status_update = six.next(cursor.execute(
+                        '''SELECT
+                        last_status_update
+                        FROM workflows
+                        WHERE id=?''',
+                        [wf_id]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
