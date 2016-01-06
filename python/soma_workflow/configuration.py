@@ -359,7 +359,8 @@ class Configuration(observer.Observable):
                 else:
                     config_parser.read(config_path)
                 if config_parser.has_section(resource_id) \
-                        and config_parser.has_option(resource_id, OCFG_SWF_DIR):
+                        and config_parser.has_option(resource_id,
+                                                     OCFG_SWF_DIR):
                     swf_dir = config_parser.get(resource_id, OCFG_SWF_DIR)
 
             database_file = os.path.join(

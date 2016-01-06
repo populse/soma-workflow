@@ -78,8 +78,16 @@ import six
 import sys
 
 if sys.version_info[0] >= 3:
-    unicode = str
+    def unicode(string):
+        if isinstance(string, bytes):
+            return string.decode('utf-8')
+        return str(string)
 
+    def utf8(string):
+        return unicode(string)
+else:
+    def utf8(string):
+        return unicode(string).encode('utf-8')
 
 MATPLOTLIB = True
 try:
@@ -101,7 +109,10 @@ except ImportError as e:
     MATPLOTLIB = False
 
 try:
-    from Pyro.errors import ConnectionClosedError
+    if sys.version_info[0] >= 3:
+        from Pyro4.errors import ConnectionClosedError
+    else:
+        from Pyro.errors import ConnectionClosedError
 except ImportError:
     # Pyro is not required when soma-workflow runs as a one process application
     class PyroError(Exception):
@@ -223,7 +234,7 @@ def setLabelFromString(label, value):
     if value == label.text():
         return
     if value:
-        label.setText(value.encode('utf-8'))
+        label.setText(utf8(value))
     else:
         label.setText("")
 
@@ -235,7 +246,7 @@ def setTextEditFromString(text_edit, value):
     if value == text_edit.toPlainText():
         return
     if value:
-        text_edit.setText(value.encode('utf-8'))
+        text_edit.setText(utf8(value))
     else:
         text_edit.setText("")
 
@@ -446,10 +457,11 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             return
         item = selected_items[0]
         if use_qvariant:
-            rid = unicode(
-                item.data(QtCore.Qt.UserRole).toString()).encode('utf-8')
+            rid = utf8(unicode(
+                item.data(QtCore.Qt.UserRole).toString()))
         else:
-            rid = unicode(item.data(QtCore.Qt.UserRole)).encode('utf-8')
+            rid = utf8(item.data(QtCore.Qt.UserRole))
+        print('resource_selection_changed:', repr(rid))
         self.model.set_current_connection(rid)
 
     @QtCore.Slot()
@@ -623,7 +635,7 @@ class WorkflowEngineConfigController(QtGui.QWidget):
 
     def update_limit(self):
         self.ui.limit.valueChanged.disconnect(self.limit_changed)
-        queue_name = unicode(self.ui.combo_queue.currentText()).encode('utf-8')
+        queue_name = utf8(self.ui.combo_queue.currentText())
         if queue_name == "default":
             self.ui.limit.setValue(self.queue_limits[None])
         else:
@@ -631,7 +643,7 @@ class WorkflowEngineConfigController(QtGui.QWidget):
         self.ui.limit.valueChanged.connect(self.limit_changed)
 
     def limit_changed(self, limit):
-        queue_name = unicode(self.ui.combo_queue.currentText()).encode('utf-8')
+        queue_name = utf8(self.ui.combo_queue.currentText())
         if queue_name == "default":
             self.engine_config.change_queue_limits(None, limit)
         else:
@@ -653,10 +665,10 @@ class RequirePWDialog(QtGui.QDialog):
 
     def EventOK(self):
         self.strPW = self.ui.lineEdit_PW.text()
-        self.strPW = unicode(self.strPW).encode('utf-8')
+        self.strPW = utf8(self.strPW)
 
         self.strRSAPW = self.ui.lineEdit_RSAPW.text()
-        self.strRSAPW = unicode(self.strRSAPW).encode('utf-8')
+        self.strRSAPW = utf8(self.strRSAPW)
 
         self.close()
         pass
@@ -686,17 +698,17 @@ class NewServerDialog(QtGui.QDialog):
 
     def UpdateResName(self):
         strLogin = self.ui.lineEdit_login.text()
-        strLogin = unicode(strLogin).encode('utf-8')
+        strLogin = utf8(strLogin)
 
         strAdd = self.ui.lineEdit_cluster_add.text()
-        strAdd = unicode(strAdd).encode('utf-8')
+        strAdd = utf8(strAdd)
 
         ResName = strLogin + "@" + strAdd
         self.ui.lineEdit_ResName.setText(ResName)
 
     def UpdateInstallationPath(self):
         strLogin = self.ui.lineEdit_login.text()
-        strLogin = unicode(strLogin).encode('utf-8')
+        strLogin = utf8(strLogin)
         self.ui.lineEdit_InstallPath.setText(
             "/home/" + strLogin + "/.soma-workflow")
 
@@ -704,26 +716,26 @@ class NewServerDialog(QtGui.QDialog):
         from soma_workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
 
         strLogin = self.ui.lineEdit_login.text()
-        strLogin = unicode(strLogin).encode('utf-8')
+        strLogin = utf8(strLogin)
 
         strPort = self.ui.lineEdit_Port.text()
-        strPort = unicode(strPort).encode('utf-8')
+        strPort = utf8(strPort)
         intPort = int(strPort)
 
         strAdd = self.ui.lineEdit_cluster_add.text()
-        strAdd = unicode(strAdd).encode('utf-8')
+        strAdd = utf8(strAdd)
 
         ResName = self.ui.lineEdit_ResName.text()
-        ResName = unicode(ResName).encode('utf-8')
+        ResName = utf8(ResName)
 
         strPW = self.ui.lineEdit_PW.text()
-        strPW = unicode(strPW).encode('utf-8')
+        strPW = utf8(strPW)
 
         strPWRSA = self.ui.lineEdit_RSAKeyPW.text()
-        strPWRSA = unicode(strPWRSA).encode('utf-8')
+        strPWRSA = utf8(strPWRSA)
 
         strInstallPath = self.ui.lineEdit_InstallPath.text()
-        strInstallPath = unicode(strInstallPath).encode('utf-8')
+        strInstallPath = utf8(strInstallPath)
 
         if check_if_somawfdb_on_server(ResName, strLogin, strAdd, userpw=strPW, sshport=intPort):
             reply = QtGui.QMessageBox.question(self, 'Message',
@@ -751,26 +763,26 @@ class NewServerDialog(QtGui.QDialog):
         from soma_workflow.setup_client2server import SetupSomaWF2Server
 
         strLogin = self.ui.lineEdit_login.text()
-        strLogin = unicode(strLogin).encode('utf-8')
+        strLogin = utf8(strLogin)
 
         strPort = self.ui.lineEdit_Port.text()
-        strPort = unicode(strPort).encode('utf-8')
+        strPort = utf8(strPort)
         intPort = int(strPort)
 
         strAdd = self.ui.lineEdit_cluster_add.text()
-        strAdd = unicode(strAdd).encode('utf-8')
+        strAdd = utf8(strAdd)
 
         ResName = self.ui.lineEdit_ResName.text()
-        ResName = unicode(ResName).encode('utf-8')
+        ResName = utf8(ResName)
 
         strPW = self.ui.lineEdit_PW.text()
-        strPW = unicode(strPW).encode('utf-8')
+        strPW = utf8(strPW)
 
         strPWRSA = self.ui.lineEdit_RSAKeyPW.text()
-        strPWRSA = unicode(strPWRSA).encode('utf-8')
+        strPWRSA = utf8(strPWRSA)
 
         strInstallPath = self.ui.lineEdit_InstallPath.text()
-        strInstallPath = unicode(strInstallPath).encode('utf-8')
+        strInstallPath = utf8(strInstallPath)
 
         try:
             SetupSomaWF2Server(
@@ -1266,14 +1278,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 return (None, None)
 
             if ui.lineedit_wf_name.text():
-                name = unicode(ui.lineedit_wf_name.text()).encode('utf-8')
+                name = utf8(ui.lineedit_wf_name.text())
             else:
                 name = None
             qtdt = ui.dateTimeEdit_expiration.dateTime()
             date = datetime(
                 qtdt.date().year(), qtdt.date().month(), qtdt.date().day(),
                 qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
-            queue = unicode(ui.combo_queue.currentText()).encode('utf-8')
+            queue = utf8(ui.combo_queue.currentText())
             if queue == "default queue":
                 queue = None
 
@@ -1339,7 +1351,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
             if submission_dlg.exec_() != QtGui.QDialog.Accepted:
                 return
-            queue = unicode(ui.combo_queue.currentText()).encode('utf-8')
+            queue = utf8(ui.combo_queue.currentText())
             if queue == "default queue":
                 queue = None
 
@@ -1458,8 +1470,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.ui.combo_resources.setCurrentIndex(index)
             return
 
-        resource_id = unicode(
-            self.ui.combo_resources.itemText(index)).encode('utf-8')
+        resource_id = utf8(unicode(
+            self.ui.combo_resources.itemText(index)))
         if resource_id == " ":
             index = self.ui.combo_resources.findText(
                 self.model.current_resource_id)
@@ -3766,6 +3778,7 @@ class ApplicationModel(QtCore.QObject):
     def set_current_connection(self, resource_id):
         if resource_id != self.current_resource_id:
             with self._lock:
+                print('resource_exist:', repr(resource_id), self.resource_pool.resource_exist(resource_id))
                 assert(self.resource_pool.resource_exist(resource_id))
                 self.current_resource_id = resource_id
                 self.current_connection = self.resource_pool.connection(
@@ -4446,7 +4459,7 @@ class GuiJob(GuiWorkflowItem):
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
             elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
-                cmd_seq.append(unicode(command_el).encode('utf-8'))
+                cmd_seq.append(utf8(command_el))
             else:
                 cmd_seq.append(repr(command_el))
         separator = " "

@@ -34,6 +34,12 @@ from soma_workflow.info import DB_VERSION
 import sys
 import six
 
+if sys.version_info[0] >= 3:
+    def unicode(string):
+        if isinstance(string, bytes):
+            return string.decode('utf-8')
+        return str(string)
+
 
 #-----------------------------------------------------------------------------
 # Globals and constants
