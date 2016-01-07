@@ -25,6 +25,7 @@ import ctypes as _ct
 from somadrmaa.wrappers import *
 from somadrmaa.errors import error_buffer
 import somadrmaa.const as const
+import six
 
 _BUFLEN = const.ATTR_BUFFER
 
@@ -162,7 +163,7 @@ To be managed with vector C DRMAA attribute management functions."""
         self.name = name
 
     def __set__(self, instance, value):
-        v = ["%s=%s" % (k, v) for (k, v) in value.iteritems()]
+        v = ["%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
         c(drmaa_set_vector_attribute, instance, self.name, string_vector(v))
 
     def __get__(self, instance, _):

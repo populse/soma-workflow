@@ -6,6 +6,10 @@ from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
 
+# python 2/3 compatibility
+if sys.version_info[0] >= 3:
+    basestring = str
+
 
 def namedtuple(typename, field_names, verbose=False):
     """Returns a new subclass of tuple with named fields.

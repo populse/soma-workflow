@@ -20,6 +20,7 @@ import os
 import shutil
 import optparse
 import tarfile
+import six
 
 from mpi4py import MPI
 
@@ -104,7 +105,7 @@ def slave_loop(communicator,
 
             else:
                 raise Exception('Unknown tag')
-        for job_id, command in commands.iteritems():
+        for job_id, command in six.iteritems(commands):
             if command == None:
                 # ended_jobs_info[job_id] = (constants.FAILED,
                                            #(constants.EXIT_ABORTED, None,
@@ -134,7 +135,7 @@ def slave_loop(communicator,
                                                 ret_value, None, None))
 
         if ended_jobs_info:
-            for job_id in ended_jobs_info.iterkeys():
+            for job_id in six.iterkeys(ended_jobs_info):
                 del commands[job_id]
             logger.debug("Slave " + repr(rank) + " send JOB_RESULT")
             communicator.send(ended_jobs_info, dest=0,
@@ -272,9 +273,10 @@ class MPIScheduler(scheduler.Scheduler):
             elif t == MPIScheduler.JOB_RESULT:
                 # self._logger.debug("Master received the JOB_RESULT signal")
                 s = MPIStatus.Get_source()
-                ended_jobs_info = self._communicator.recv(source=s,
-                                                          tag=MPIScheduler.JOB_RESULT)
-                for job_id, end_info in ended_jobs_info.iteritems():
+                ended_jobs_info = self._communicator.recv(
+                    source=s,
+                    tag=MPIScheduler.JOB_RESULT)
+                for job_id, end_info in six.iteritems(ended_jobs_info):
                     job_status, exit_info = end_info
                     ret_value = exit_info[1]
                     if ret_value != 0 and \

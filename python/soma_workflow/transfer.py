@@ -16,6 +16,7 @@ import stat
 import operator
 import shutil
 import time
+import six
 
 
 class RemoteFileController(object):
@@ -438,7 +439,7 @@ class PortableRemoteTransfer(Transfer):
             (dir_list, file_path_dict) = self.top_down_dir_list(path)
             self.remote_file_controller.create_dir_structure(remote_path,
                                                              dir_list)
-            for relative_dir_path, file_list in file_path_dict.iteritems():
+            for relative_dir_path, file_list in six.iteritems(file_path_dict):
                 dir_path = os.path.join(path, relative_dir_path)
                 r_dir_path = os.path.join(remote_path, relative_dir_path)
                 for file_name in file_list:
@@ -500,7 +501,7 @@ class PortableRemoteTransfer(Transfer):
                 remote_path)
             self.create_dir_structure(path,
                                       dir_list)
-            for relative_dir_path, file_list in file_path_dict.iteritems():
+            for relative_dir_path, file_list in six.iteritems(file_path_dict):
                 dir_path = os.path.join(path, relative_dir_path)
                 r_dir_path = os.path.join(remote_path, relative_dir_path)
                 for file_name in file_list:

@@ -27,6 +27,8 @@ from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
 from soma_workflow.info import DB_VERSION
 
+import six
+
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -891,7 +893,7 @@ class Configuration(observer.Observable):
         # self.get_queue_limits()
         # if self._queue_limits != None and len(self._queue_limits):
         # queue_limits_str = ""
-        # for queue, limit in self._queue_limits.iteritems():
+        # for queue, limit in six.iteritems(self._queue_limits):
             # if queue == None:
             # queue_limits_str = queue_limits_str + "{" + repr(limit) + "} "
             # else:

@@ -846,7 +846,7 @@ class Workflow(object):
                 job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
             job_from_ids[int(job_id)] = job
 
-        jobs = job_from_ids.values()
+        jobs = list(job_from_ids.values())
 
         # groups
         serialized_groups = d["serialized_groups"]
@@ -865,7 +865,7 @@ class Workflow(object):
             for group_id in new_converted:
                 to_convert.remove(group_id)
             converted_or_stuck = not to_convert or not new_converted
-        groups = group_from_ids.values()
+        groups = group_from_ids.values() # WARNING, not used
 
         # root group
         id_root_group = d["root_group"]
