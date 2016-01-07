@@ -40,6 +40,13 @@ if sys.version_info[0] >= 3:
             return string.decode('utf-8')
         return str(string)
 
+if not hasattr(six, 'next'):
+    # ubuntu 12.04 does not have next() in its six module
+    def six_next(obj):
+        return obj.next()
+    six.next = six_next
+    del six_next
+
 
 #-----------------------------------------------------------------------------
 # Globals and constants
