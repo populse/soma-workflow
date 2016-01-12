@@ -7,7 +7,7 @@ from keyword import iskeyword as _iskeyword
 import sys as _sys
 
 # python 2/3 compatibility
-if sys.version_info[0] >= 3:
+if _sys.version_info[0] >= 3:
     basestring = str
 
 
