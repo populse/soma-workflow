@@ -1178,7 +1178,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     @QtCore.Slot()
     def openWorkflow(self):
         file_path = QtGui.QFileDialog.getOpenFileName(
-            self, "Open a workflow", "", "", None, 
+            self, "Open a workflow", "", "", None,
             QtGui.QFileDialog.DontUseNativeDialog)
         if QT_BACKEND == PYSIDE:
             file_path = file_path[0]
@@ -1199,7 +1199,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
     @QtCore.Slot()
     def saveWorkflow(self):
         file_path = QtGui.QFileDialog.getSaveFileName(
-            self, "Save the current workflow")
+            self, "Save the current workflow", "", "", None,
+            QtGui.QFileDialog.DontUseNativeDialog)
         if QT_BACKEND == PYSIDE:
             file_path = file_path[0]
 
