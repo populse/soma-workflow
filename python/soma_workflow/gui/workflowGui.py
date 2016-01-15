@@ -461,7 +461,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                 item.data(QtCore.Qt.UserRole).toString()))
         else:
             rid = utf8(item.data(QtCore.Qt.UserRole))
-        print('resource_selection_changed:', repr(rid))
+        # print('resource_selection_changed:', repr(rid))
         self.model.set_current_connection(rid)
 
     @QtCore.Slot()
