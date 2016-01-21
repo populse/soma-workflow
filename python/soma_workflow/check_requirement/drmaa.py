@@ -15,8 +15,16 @@ Created on Mon May 13 10:48:02 2013
 from __future__ import print_function
 
 if __name__ == "__main__":
-    import soma_workflow.scheduler
-    if soma_workflow.scheduler.DRMAA_LIB_FOUND:
-        print("True")
-    else:
+    try:
+        import soma_workflow.scheduler
+        from soma_workflow import configuration
+        c = configuration.Configuration.load_from_file()
+        if c.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
+            # local mode on a remote server
+            print("True")
+        elif soma_workflow.scheduler.DRMAA_LIB_FOUND:
+            print("True")
+        else:
+            print("False")
+    except:
         print("False")
