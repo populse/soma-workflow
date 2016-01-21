@@ -16,6 +16,7 @@ import sys
 import os
 from contextlib import contextmanager
 import stat
+import getpass
 
 
 #-----------------------------------------------------------------------------
@@ -33,13 +34,14 @@ def get_user_id(resource_id, config):
     password = None
     if config.get_mode() == 'remote':
         sys.stdout.write("Remote connection to %s\n" % resource_id)
-        sys.stdout.write("login:")
+        default_login = getpass.getuser()
+        sys.stdout.write("Login (default: %s): " % default_login)
         login = sys.stdin.readline()
         login = login.rstrip()
-        sys.stdout.write("password:")
-        password = sys.stdin.readline()
+        if not login:
+            login = default_login
+        password = getpass.getpass("Password (blank=ssh key): ")
         password = password.rstrip()
-        # password = getpass.getpass()
         sys.stdout.write("Login => " + repr(login) + "\n")
     else:
         sys.stdout.write("Local connection to %s\n" % resource_id)
