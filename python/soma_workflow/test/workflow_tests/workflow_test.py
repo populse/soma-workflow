@@ -84,23 +84,26 @@ class WorkflowTest(unittest.TestCase):
             if interactive:
                 sys.stdout.write("Do you want to test the resource "
                                  "%s (Y/n) ? " % resource_id)
+                sys.stdout.flush()
                 test_resource = sys.stdin.readline()
                 if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
                     # Skip the resource
                     sys.stdout.write('Resource %s is not tested \n'
                                      % resource_id)
+                    sys.stdout.flush()
                     continue
             (login, password) = get_user_id(resource_id, config)
 
-            # use a temporary sqlite database in soma-workflow to avoid
-            # concurrent access problems
-            tmpdb = tempfile.mkstemp('.db', prefix='swf_')
-            os.close(tmpdb[0])
-            os.unlink(tmpdb[1])
-            # and so on for transfers / stdio files directory
-            tmptrans = tempfile.mkdtemp(prefix='swf_')
-            config._database_file = tmpdb[1]
-            config._transfered_file_dir = tmptrans
+            if config.get_mode() == LIGHT_MODE:
+                # use a temporary sqlite database in soma-workflow to avoid
+                # concurrent access problems
+                tmpdb = tempfile.mkstemp('.db', prefix='swf_')
+                os.close(tmpdb[0])
+                os.unlink(tmpdb[1])
+                # and so on for transfers / stdio files directory
+                tmptrans = tempfile.mkdtemp(prefix='swf_')
+                config._database_file = tmpdb[1]
+                config._transfered_file_dir = tmptrans
 
             try:
 
@@ -128,6 +131,15 @@ class WorkflowTest(unittest.TestCase):
                     sys.stdout.write("File system : " + file_system + '\n')
                     cls.setup_path_management(file_system)
 
+                    if file_system in (cls.SHARED_RESOURCE_PATH,
+                                       cls.SHARED_TRANSFER) \
+                            and not config.get_path_translation():
+                        sys.stdout.write(
+                            "Paths translation unavailable - not testing "
+                            "this case\n")
+                        sys.stdout.flush()
+                        continue
+
                     suite_list = []
                     list_tests = []
                     for test in dir(cls):
@@ -143,18 +155,20 @@ class WorkflowTest(unittest.TestCase):
                     with suppress_stdout(debug):
                         res = unittest.TextTestRunner(verbosity=2).run(
                             alltests)
+                    sys.stdout.flush()
 
                     if len(res.errors) != 0 or len(res.failures) != 0:
-                        sys.exit(1)
+                        raise RuntimeError("tests failed.")
 
             finally:
-                if not kwargs.get('keep_temporary', False):
-                    os.unlink(config._database_file)
-                    shutil.rmtree(config._transfered_file_dir)
-                else:
-                    print('temporary files kept:')
-                    print('databse file:', config._database_file)
-                    print('transfers:', config._transfered_file_dir)
+                if config.get_mode() == LIGHT_MODE:
+                    if not kwargs.get('keep_temporary', False):
+                        os.unlink(config._database_file)
+                        shutil.rmtree(config._transfered_file_dir)
+                    else:
+                        print('temporary files kept:')
+                        print('databse file:', config._database_file)
+                        print('transfers:', config._transfered_file_dir)
 
     @staticmethod
     def print_help(argv):
