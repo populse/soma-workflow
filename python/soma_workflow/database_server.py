@@ -506,7 +506,7 @@ class WorkflowDatabaseServer(object):
                 # of a job)
                 transfersToDelete = []
                 for engine_file_path in expiredTransfers:
-                    count = six.nex(cursor.execute(
+                    count = six.next(cursor.execute(
                         'SELECT count(*) FROM ios WHERE engine_file_path=?', [engine_file_path]))[0]
                     if count == 0:
                         transfersToDelete.append(engine_file_path)
