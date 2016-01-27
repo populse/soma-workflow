@@ -2507,7 +2507,7 @@ class WorkflowDatabaseServer(object):
         -------
         number of jobs: int
         '''
-        self.logger.debug("=> nb_queued_jobs")
+        self.logger.debug("=> nb_running_jobs")
         return self.nb_jobs(user_id, queue_name,
                             [constants.RUNNING, constants.QUEUED_ACTIVE])
 
