@@ -276,6 +276,10 @@ Configuration items optional on the server side:
     running through a given queue. It thus includes actually running jobs, plus
     queued jobs (which may get to running status at any time).
 
+    Note that cluster queues may impose their own running jobs limits, which
+    are not controlled by this parameter, thus the minimum limit will actually
+    be effective.
+
   **PATH_TRANSLATION_FILES**
     Specify here the shared resource path translation files, mandatory to use
     the SharedResourcePath objects (see :ref:`shared-resource-path-concept`).
