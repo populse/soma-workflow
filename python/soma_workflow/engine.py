@@ -746,7 +746,8 @@ class WorkflowEngine(RemoteFileController):
                  database_server,
                  scheduler,
                  path_translation=None,
-                 queue_limits={}):
+                 queue_limits={},
+                 running_jobs_limits={}):
         '''
         @type  database_server:
                L{soma_workflow.database_server.WorkflowDatabaseServer}
@@ -769,7 +770,8 @@ class WorkflowEngine(RemoteFileController):
         self.engine_loop = WorkflowEngineLoop(database_server,
                                               scheduler,
                                               path_translation,
-                                              queue_limits)
+                                              queue_limits,
+                                              running_jobs_limits)
         self.engine_loop_thread = EngineLoopThread(self.engine_loop)
         self.engine_loop_thread.setDaemon(True)
         self.engine_loop_thread.start()
