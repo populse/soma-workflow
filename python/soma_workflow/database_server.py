@@ -362,6 +362,7 @@ class WorkflowDatabaseServer(object):
         self._lock = threading.RLock()
 
         self.logger = logging.getLogger('jobServer')
+        self.logger.debug("=> starting database server")
         self._free_file_counters = []
 
         with self._lock:
@@ -2537,12 +2538,14 @@ class WorkflowDatabaseServer(object):
         ----------
         user_id: UserIdentifier
         queue_name: str or None
-        status: list of str among constants.JOB_STATUS
+        status: str among constants.JOB_STATUS, or list
 
         Returns
         -------
         number of jobs: int
         '''
+        if not isinstance(status, list) and not isinstance(status, tuple):
+            status = [status]
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -2553,19 +2556,19 @@ class WorkflowDatabaseServer(object):
                         "user_id=? and ( status=?"
                         + " or status=?" * len(status) + ") "
                         "and queue=?",
-                        [user_id,
-                         status,
-                         constants.UNDETERMINED,
-                         queue_name]))[0]
+                        [user_id,]
+                        + status
+                        + [constants.UNDETERMINED,
+                           queue_name]))[0]
                 else:
                     count = six.next(cursor.execute(
                         "SELECT count(*) FROM jobs WHERE "
                         "user_id=? and ( status=?"
                         + " or status=?" * len(status) + ") "
                         "and queue ISNULL",
-                        [user_id,
-                         constants.QUEUED_ACTIVE,
-                         constants.UNDETERMINED]))[0]
+                        [user_id,]
+                        + status
+                        + [constants.UNDETERMINED]))[0]
             except Exception as e:
                 cursor.close()
                 connection.close()
