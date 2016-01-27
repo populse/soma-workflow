@@ -543,6 +543,7 @@ class WorkflowEngineLoop(object):
         to_run = []
         for queue_name, jobs in six.iteritems(self._pending_queues):
             if jobs and queue_name in self._running_jobs_limits:
+                self.logger.debug("queue " + repr(queue_name) + " is limited: " + repr(self._running_jobs_limits[queue_name]))
                 nb_running_jobs = self._database_server.nb_running_jobs(
                     self._user_id,
                     queue_name)
