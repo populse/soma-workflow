@@ -109,6 +109,9 @@ class WorkflowEngineLoop(object):
     # max number of job for some queues
     # dictionary, queue name (str) => max nb of job (int)
     _queue_limits = None
+    # max number of running (+queued) job for some queues
+    # dictionary, queue name (str) => max nb of job (int)
+    _running_jobs_limits = None
     # Submission pending queues.
     # For each limited queue, a submission pending queue is needed to store the
     # jobs that couldn't be submitted.
@@ -127,7 +130,8 @@ class WorkflowEngineLoop(object):
                  database_server,
                  scheduler,
                  path_translation=None,
-                 queue_limits={}):
+                 queue_limits={},
+                 running_jobs_limits={}):
 
         self.logger = logging.getLogger('engine.WorkflowEngineLoop')
 
@@ -142,7 +146,11 @@ class WorkflowEngineLoop(object):
 
         self._queue_limits = queue_limits
 
+        self._running_jobs_limits = running_jobs_limits
+
         self.logger.debug('queue_limits ' + repr(self._queue_limits))
+        self.logger.debug(
+            'running_jobs_limits ' + repr(self._running_jobs_limits))
 
         self._pending_queues = {}
 
@@ -464,6 +472,10 @@ class WorkflowEngineLoop(object):
         with self._lock:
             self._queue_limits = queue_limits
 
+    def set_running_jobs_limits(self, running_jobs_limits):
+        with self._lock:
+            self._running_jobs_limits = running_jobs_limits
+
     def add_job(self, client_job, queue):
         # register
         engine_job = EngineJob(client_job=client_job,
@@ -530,7 +542,25 @@ class WorkflowEngineLoop(object):
         '''
         to_run = []
         for queue_name, jobs in six.iteritems(self._pending_queues):
-            if jobs and queue_name in self._queue_limits:
+            if jobs and queue_name in self._running_jobs_limits:
+                nb_running_jobs = self._database_server.nb_running_jobs(
+                    self._user_id,
+                    queue_name)
+                nb_jobs_to_run = self._running_jobs_limits[
+                    queue_name] - nb_running_jobs
+                # limit also queue length
+                if queue_name in self._queue_limits:
+                    nb_jobs_to_run = min(nb_jobs_to_run,
+                                         self._queue_limits[queue_name])
+                self.logger.debug("queue " + repr(queue_name)
+                                  + " nb_running_jobs "
+                                  + repr(nb_running_jobs) + " nb_jobs_to_run "
+                                  + repr(nb_jobs_to_run))
+                while nb_jobs_to_run > 0 and \
+                        len(self._pending_queues[queue_name]) > 0:
+                    to_run.append(self._pending_queues[queue_name].pop(0))
+                    nb_jobs_to_run = nb_jobs_to_run - 1
+            elif jobs and queue_name in self._queue_limits:
                 nb_queued_jobs = self._database_server.nb_queued_jobs(
                     self._user_id,
                     queue_name)
@@ -1225,9 +1255,9 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         super(ConfiguredWorkflowEngine, self).__init__(
             database_server,
             scheduler,
-            path_translation=config.get_path_translation(
-            ),
-            queue_limits=config.get_queue_limits())
+            path_translation=config.get_path_translation(),
+            queue_limits=config.get_queue_limits(),
+            running_jobs_limits=config.get_running_jobs_limits())
 
         self.config = config
 
@@ -1241,4 +1271,7 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
     def update_from_config(self, observable, event, msg):
         if event == Configuration.QUEUE_LIMITS_CHANGED:
             self.engine_loop.set_queue_limits(self.config.get_queue_limits())
+        elif event == Configuration.RUNNING_JOBS_LIMITS_CHANGED:
+            self.engine_loop.set_running_jobs_limits(
+                self.config.get_running_jobs_limits())
         self.config.save_to_file()

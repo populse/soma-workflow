@@ -70,11 +70,15 @@ OCFG_SSHPort = 'SSHPort'
 OCFG_INSTALLPATH = 'INSTALLPATH'
 
 # OCFG_MAX_JOB_IN_QUEUE allow to specify a maximum number of job N which can be
-# in the queue for one user. The engine won't submit more than N job at once. The
-# also wait for the job to leave the queue before submitting new jobs.
+# in the queue for one user. The engine won't submit more than N jobs at once.
+# Also wait for the job to leave the queue before submitting new jobs.
 # syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1}
 # queue2{max_nb_job2}"
 OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE'
+# OCFG_MAX_JOB_RUNNNING allow to specify a maximum number of job N which can be
+# running or in the queue for one user. The engine won't submit more than
+# N jobs at once.
+OCFG_MAX_JOB_RUNNING = 'MAX_JOB_RUNNING'
 
 # database server
 CFG_DATABASE_FILE = 'DATABASE_FILE'
@@ -163,6 +167,8 @@ class Configuration(observer.Observable):
 
     _queue_limits = None
 
+    _running_jobs_limits = None
+
     _queues = None
 
     _drmaa_implementation = None
@@ -182,6 +188,7 @@ class Configuration(observer.Observable):
     path_translation = None
 
     QUEUE_LIMITS_CHANGED = 0
+    RUNNING_JOBS_LIMITS_CHANGED = 1
 
     def __init__(self,
                  resource_id,
@@ -199,7 +206,8 @@ class Configuration(observer.Observable):
                  login=None,
                  native_specification=None,
                  sshport=22,
-                 res_install_path=None
+                 res_install_path=None,
+                 running_jobs_limits=None,
                  ):
         '''
         * resource_id *string*
@@ -260,6 +268,13 @@ class Configuration(observer.Observable):
 
         * res_install_path *string*
           soma-workflow installation path on the resource server
+
+        * running_jobs_limits *dictionary: string -> int*
+          Maximum number of job running in each queue
+          (dictionary: queue name -> limit).
+          If a queue does not appear here, soma-workflow considers that there
+          is no limitation.
+
         '''
 
         super(Configuration, self).__init__()
@@ -283,6 +298,10 @@ class Configuration(observer.Observable):
             self._queues = queues
         if queue_limits == None:
             self._queue_limits = {}
+        else:
+            self._queue_limits = queue_limits
+        if _running_jobs_limits == None:
+            self._running_jobs_limits = {}
         else:
             self._queue_limits = queue_limits
         self._queue_limits_disabled = False
@@ -755,6 +774,16 @@ class Configuration(observer.Observable):
         self._queue_limits[queue_name] = queue_limit
         self.notifyObservers(Configuration.QUEUE_LIMITS_CHANGED)
 
+    def change_running_jobs_limits(self, queue_name, running_jobs_limit):
+        '''
+        * queue_name *string*
+
+        * running_jobs_limit *int*
+        '''
+        self.get_running_jobs_limits()
+        self._running_jobs_limits[queue_name] = running_jobs_limit
+        self.notifyObservers(Configuration.RUNNING_JOBS_LIMITS_CHANGED)
+
     def disable_queue_limits(self):
         self._queue_limits_disabled = True
 
@@ -780,6 +809,26 @@ class Configuration(observer.Observable):
                 self._queue_limits[queue_name] = max_job
 
         return self._queue_limits
+
+    def get_running_jobs_limits(self):
+        if self._config_parser == None or len(self._running_jobs_limits) != 0:
+            return self._running_jobs_limits
+
+        self._running_jobs_limits = {}
+        if self._config_parser.has_option(self._resource_id,
+                                          OCFG_MAX_JOB_RUNNING):
+            running_jobs_limits_str = self._config_parser.get(
+                self._resource_id, OCFG_MAX_JOB_RUNNING)
+            for info_str in running_jobs_limits_str.split():
+                info = info_str.split("{")
+                if len(info[0]) == 0:
+                    queue_name = None
+                else:
+                    queue_name = info[0]
+                max_job = int(info[1].rstrip("}"))
+                self._running_jobs_limits[queue_name] = max_job
+
+        return self._running_jobs_limits
 
     def get_queues(self):
         if self._config_parser == None or len(self._queues) != 0:

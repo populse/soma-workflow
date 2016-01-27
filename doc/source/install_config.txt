@@ -219,6 +219,7 @@ Configuration file example: ::
 
   # optional limitation of the jobs in various queues
   MAX_JOB_IN_QUEUE = {10} test{50} long{3}
+  MAX_JOB_RUNNING  = {100} test{500} long{30}
 
   # optional logging
   SERVER_LOG_FILE   = path/logs/log_server
@@ -269,6 +270,11 @@ Configuration items optional on the server side:
     Maximum number of job in each queue. If a queue does not appear here,
     Soma-workflow considers that there is no limitation.
     The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
+
+  **MAX_JOB_RUNNING**
+    Like MAX_JOB_IN_QUEUE, but also limits the number of jobs which may be
+    running through a given queue. It thus includes actually running jobs, plus
+    queued jobs (which may get to running status at any time).
 
   **PATH_TRANSLATION_FILES**
     Specify here the shared resource path translation files, mandatory to use

@@ -2490,16 +2490,59 @@ class WorkflowDatabaseServer(object):
 
             return result
 
-    def nb_queued_jobs(self, user_id, queue_name):
+    def nb_running_jobs(self, user_id, queue_name=None):
+        '''
+        Returns the number of job of the user with the status
+        constants.RUNNING or constants.QUEUED_ACTIVE in the queue queue_name.
+
+        Running and queued jobs are added since the use of it it to limit
+        the number of jobs that can get running simultaneously.
+
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        queue_name: str or None
+
+        Returns
+        -------
+        number of jobs: int
+        '''
+        self.logger.debug("=> nb_queued_jobs")
+        return self.nb_jobs(user_id, queue_name,
+                            [constants.RUNNING, constants.QUEUED_ACTIVE])
+
+    def nb_queued_jobs(self, user_id, queue_name=None):
         '''
         Returns the number of job of the user with the status
         constants.QUEUED_ACTIVE in the queue queue_name.
 
-        @type user_id: C{UserIdentifier}
-        @type queue_name: str
-        @rtype: int
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        queue_name: str or None
+
+        Returns
+        -------
+        number of jobs: int
         '''
         self.logger.debug("=> nb_queued_jobs")
+        return self.nb_jobs(user_id, queue_name, [constants.QUEUED_ACTIVE])
+
+    def nb_jobs(self, user_id, queue_name, status):
+        '''
+        Returns the number of job of the user with the given statuses
+        in the queue queue_name.
+
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        queue_name: str or None
+        status: list of str among constants.JOB_STATUS
+
+        Returns
+        -------
+        number of jobs: int
+        '''
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -2507,16 +2550,18 @@ class WorkflowDatabaseServer(object):
                 if queue_name != None:
                     count = six.next(cursor.execute(
                         "SELECT count(*) FROM jobs WHERE "
-                        "user_id=? and ( status=? or status=?) "
+                        "user_id=? and ( status=?"
+                        + " or status=?" * len(status) + ") "
                         "and queue=?",
                         [user_id,
-                         constants.QUEUED_ACTIVE,
+                         status,
                          constants.UNDETERMINED,
                          queue_name]))[0]
                 else:
                     count = six.next(cursor.execute(
                         "SELECT count(*) FROM jobs WHERE "
-                        "user_id=? and ( status=? or status=?) "
+                        "user_id=? and ( status=?"
+                        + " or status=?" * len(status) + ") "
                         "and queue ISNULL",
                         [user_id,
                          constants.QUEUED_ACTIVE,
