@@ -300,10 +300,10 @@ class Configuration(observer.Observable):
             self._queue_limits = {}
         else:
             self._queue_limits = queue_limits
-        if _running_jobs_limits == None:
+        if running_jobs_limits == None:
             self._running_jobs_limits = {}
         else:
-            self._queue_limits = queue_limits
+            self._running_jobs_limits = running_jobs_limits
         self._queue_limits_disabled = False
         self._drmaa_implementation = drmaa_implementation
         self.parallel_job_config = None
