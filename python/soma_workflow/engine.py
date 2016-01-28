@@ -1267,6 +1267,9 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         self.config.addObserver(self,
                                 "update_from_config",
                                 [Configuration.QUEUE_LIMITS_CHANGED])
+        self.config.addObserver(self,
+                                "update_from_config",
+                                [Configuration.RUNNING_JOBS_LIMITS_CHANGED])
         # set temp path in EngineTemporaryPath
         EngineTemporaryPath.temporary_directory \
             = config.get_shared_temporary_directory()

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>273</width>
+    <width>399</width>
     <height>31</height>
    </rect>
   </property>
@@ -37,7 +37,31 @@
     <widget class="QComboBox" name="combo_queue"/>
    </item>
    <item>
-    <widget class="QSpinBox" name="limit"/>
+    <widget class="QSpinBox" name="limit">
+     <property name="specialValueText">
+      <string>unlimited</string>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="running_label">
+     <property name="text">
+      <string>Max runing:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSpinBox" name="max_running">
+     <property name="specialValueText">
+      <string>unlimited</string>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="horizontalSpacer">

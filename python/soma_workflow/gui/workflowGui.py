@@ -564,7 +564,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                         self)
                     self.ui.table.setCellWidget(row, 2, scheduler_widget)
                     self.ui.table.resizeColumnToContents(2)
-            elif resource.engine_config_proxy.get_queue_limits():
+            elif resource.engine_config_proxy.get_queue_limits() \
+                    or resource.engine_config_proxy.get_running_jobs_limits():
                 controller_widget = WorkflowEngineConfigController(
                     resource.engine_config_proxy,
                     self)
@@ -604,8 +605,8 @@ class LocalSchedulerConfigController(QtGui.QWidget):
 class WorkflowEngineConfigController(QtGui.QWidget):
 
     engine_config = None
-
     queue_limits = None
+    running_jobs_limits = None
 
     def __init__(self, engine_config, parent=None):
         super(WorkflowEngineConfigController, self).__init__(parent)
@@ -616,31 +617,40 @@ class WorkflowEngineConfigController(QtGui.QWidget):
         self.engine_config = engine_config
 
         self.queue_limits = self.engine_config.get_queue_limits()
+        self.running_jobs_limits = self.engine_config.get_running_jobs_limits()
 
-        if not self.queue_limits:
+        queues = sorted(self.engine_config.get_queues())
+        if not queues:
             self.ui.label.hide()
             self.ui.combo_queue.hide()
             self.ui.limit.hide()
+            self.ui.running_label.hide()
+            self.ui.max_running.hide()
         else:
-            for queue_name in self.queue_limits.keys():
-                if queue_name == None:
-                    self.ui.combo_queue.addItem("default")
+            for queue_name in queues:
+                if queue_name is None:
+                    if 'default' not in queues:
+                        self.ui.combo_queue.addItem("default")
                 else:
                     self.ui.combo_queue.addItem(queue_name)
 
             self.ui.combo_queue.currentIndexChanged.connect(self.update_limit)
             self.ui.limit.valueChanged.connect(self.limit_changed)
+            self.ui.max_running.valueChanged.connect(self.max_running_changed)
 
             self.update_limit()
 
     def update_limit(self):
-        self.ui.limit.valueChanged.disconnect(self.limit_changed)
+        self.ui.limit.blockSignals(True)
+        self.ui.max_running.blockSignals(True)
         queue_name = utf8(self.ui.combo_queue.currentText())
         if queue_name == "default":
-            self.ui.limit.setValue(self.queue_limits[None])
-        else:
-            self.ui.limit.setValue(self.queue_limits[queue_name])
-        self.ui.limit.valueChanged.connect(self.limit_changed)
+            queue_name = None
+        self.ui.limit.setValue(self.queue_limits.get(queue_name, 0))
+        self.ui.max_running.setValue(self.running_jobs_limits.get(
+            queue_name, 0))
+        self.ui.limit.blockSignals(False)
+        self.ui.max_running.blockSignals(False)
 
     def limit_changed(self, limit):
         queue_name = utf8(self.ui.combo_queue.currentText())
@@ -648,6 +658,12 @@ class WorkflowEngineConfigController(QtGui.QWidget):
             self.engine_config.change_queue_limits(None, limit)
         else:
             self.engine_config.change_queue_limits(queue_name, limit)
+
+    def max_running_changed(self, limit):
+        queue_name = utf8(self.ui.combo_queue.currentText())
+        if queue_name == "default":
+            queue_name = None
+        self.engine_config.change_running_jobs_limits(queue_name, limit)
 
 
 class RequirePWDialog(QtGui.QDialog):
@@ -873,7 +889,7 @@ class ServerManagementDialog(QtGui.QDialog):
         self.ui.lineEdit_cluster_add.clear()
 
         if config != None:
-            queues = config.get_queues()
+            queues = sorted(config.get_queues())
             cluster_address = config.get_cluster_address()
             installpath = config.get_res_install_path()
 
@@ -1273,8 +1289,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
             ui.dateTimeEdit_expiration.setDateTime(
                 datetime.now() + timedelta(days=5))
 
-            queues = ["default queue"]
-            queues.extend(Controller.get_queues(self.model.current_connection))
+            queues = ["default"]
+            queues.extend(sorted(Controller.get_queues(
+                self.model.current_connection)))
             ui.combo_queue.addItems(queues)
 
             if submission_dlg.exec_() != QtGui.QDialog.Accepted:
@@ -1289,7 +1306,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 qtdt.date().year(), qtdt.date().month(), qtdt.date().day(),
                 qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
             queue = utf8(ui.combo_queue.currentText())
-            if queue == "default queue":
+            if queue == "default":
                 queue = None
 
         while True:
@@ -1343,19 +1360,20 @@ class SomaWorkflowWidget(QtGui.QWidget):
             ui.dateTimeEdit_expiration.setDateTime(
                 datetime.now() + timedelta(days=5))
             submission_dlg.setWindowTitle("Restart")
-            queues = ["default queue"]
-            queues.extend(Controller.get_queues(self.model.current_connection))
+            queues = ["default"]
+            queues.extend(sorted(Controller.get_queues(
+                self.model.current_connection)))
             ui.combo_queue.addItems(queues)
             previous_queue = self.model.current_workflow().queue
             if previous_queue == None:
-                previous_queue = "default queue"
+                previous_queue = "default"
             index = queues.index(previous_queue)
             ui.combo_queue.setCurrentIndex(index)
 
             if submission_dlg.exec_() != QtGui.QDialog.Accepted:
                 return
             queue = utf8(ui.combo_queue.currentText())
-            if queue == "default queue":
+            if queue == "default":
                 queue = None
 
             qtdt = ui.dateTimeEdit_expiration.dateTime()

@@ -75,7 +75,7 @@ OCFG_INSTALLPATH = 'INSTALLPATH'
 # syntax: "{default_queue_max_nb_jobs} queue1{max_nb_jobs1}
 # queue2{max_nb_job2}"
 OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE'
-# OCFG_MAX_JOB_RUNNNING allow to specify a maximum number of job N which can be
+# OCFG_MAX_JOB_RUNNING allow to specify a maximum number of job N which can be
 # running or in the queue for one user. The engine won't submit more than
 # N jobs at once.
 OCFG_MAX_JOB_RUNNING = 'MAX_JOB_RUNNING'
@@ -771,7 +771,11 @@ class Configuration(observer.Observable):
         * queue_limit *int*
         '''
         self.get_queue_limits()
-        self._queue_limits[queue_name] = queue_limit
+        if queue_limit == 0: # unlimited
+            if self._queue_limits.has_key(queue_name):
+                del self._queue_limits[queue_name]
+        else:
+            self._queue_limits[queue_name] = queue_limit
         self.notifyObservers(Configuration.QUEUE_LIMITS_CHANGED)
 
     def change_running_jobs_limits(self, queue_name, running_jobs_limit):
@@ -781,7 +785,11 @@ class Configuration(observer.Observable):
         * running_jobs_limit *int*
         '''
         self.get_running_jobs_limits()
-        self._running_jobs_limits[queue_name] = running_jobs_limit
+        if running_jobs_limit == 0: # unlimited
+            if self._running_jobs_limits.has_key(queue_name):
+                del self._running_jobs_limits[queue_name]
+        else:
+            self._running_jobs_limits[queue_name] = running_jobs_limit
         self.notifyObservers(Configuration.RUNNING_JOBS_LIMITS_CHANGED)
 
     def disable_queue_limits(self):
@@ -838,6 +846,16 @@ class Configuration(observer.Observable):
         if self._config_parser.has_option(self._resource_id, OCFG_QUEUES):
             self._queues.extend(self._config_parser.get(self._resource_id,
                                                         OCFG_QUEUES).split())
+        if self._config_parser.has_option(self._resource_id,
+                                          OCFG_MAX_JOB_IN_QUEUE):
+            self._queues.extend(self._config_parser.get(
+                self._resource_id,
+                OCFG_MAX_JOB_IN_QUEUE).split())
+        if self._config_parser.has_option(self._resource_id,
+                                          OCFG_MAX_JOB_RUNNING):
+            self._queues.extend(self._config_parser.get(
+                self._resource_id,
+                OCFG_MAX_JOB_RUNNING).split())
         return self._queues
 
     def get_engine_log_info(self):
