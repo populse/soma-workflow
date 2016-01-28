@@ -498,3 +498,33 @@ Configuration file example: ::
   **SOMA_WORKFLOW_DIR** (new in 2.7)
     Directory which will contain soma_workflow files (typically, the SQlite
     database, and file transfers).
+
+
+Server configuration examples
+=============================
+
+Local mode on a server, with client/server access
+-------------------------------------------------
+
+This mode allows remote access from a client to a computing server which does not have any DRMS and is using Soma-Workflow's local (simple) scheduler.
+
+.. note:: It is better not to use the local scheduler on machines shared between several users, as this basic scheduler does not handle inter-user load.
+
+Server configuratinon (soma-workflow.cfg):
+::
+
+  [averell]
+
+  CLUSTER_ADDRESS     = averell.mylab.fr
+  SUBMITTING_MACHINES = averell.mylab.fr
+  LOGIN = my_login
+  SCHEDULER_TYPE = local_basic
+  NAME_SERVER_HOST = averell.mylab.fr
+  SERVER_NAME = averell
+  ENGINE_LOG_DIR = /home/my_login/.soma_workflow/averell/logs
+  TRANSFERED_FILE_DIR = /home/my_login/.soma_workflow/averell/file_transfers
+  DATABASE_FILE = /home/my_login/.soma_workflow/averell/soma_workflow.db
+  CPU_NB = 16
+  SCHEDULER_INTERVAL = 1
+
+
