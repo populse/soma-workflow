@@ -619,26 +619,19 @@ class WorkflowEngineConfigController(QtGui.QWidget):
         self.queue_limits = self.engine_config.get_queue_limits()
         self.running_jobs_limits = self.engine_config.get_running_jobs_limits()
 
-        queues = sorted(self.engine_config.get_queues())
-        if not queues:
-            self.ui.label.hide()
-            self.ui.combo_queue.hide()
-            self.ui.limit.hide()
-            self.ui.running_label.hide()
-            self.ui.max_running.hide()
-        else:
-            for queue_name in queues:
-                if queue_name is None:
-                    if 'default' not in queues:
-                        self.ui.combo_queue.addItem("default")
-                else:
-                    self.ui.combo_queue.addItem(queue_name)
+        queues = ['default'] + sorted(self.engine_config.get_queues())
+        if 'default' in queues[1:]:
+            del queues[queues.index('default', 1)]
 
-            self.ui.combo_queue.currentIndexChanged.connect(self.update_limit)
-            self.ui.limit.valueChanged.connect(self.limit_changed)
-            self.ui.max_running.valueChanged.connect(self.max_running_changed)
+        for queue_name in queues:
+            if queue_name is not None:
+                self.ui.combo_queue.addItem(queue_name)
 
-            self.update_limit()
+        self.ui.combo_queue.currentIndexChanged.connect(self.update_limit)
+        self.ui.limit.valueChanged.connect(self.limit_changed)
+        self.ui.max_running.valueChanged.connect(self.max_running_changed)
+
+        self.update_limit()
 
     def update_limit(self):
         self.ui.limit.blockSignals(True)
@@ -1292,6 +1285,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             queues = ["default"]
             queues.extend(sorted(Controller.get_queues(
                 self.model.current_connection)))
+            if 'default' in queues[1:]:
+                del queues[queues.index('default', 1)]
             ui.combo_queue.addItems(queues)
 
             if submission_dlg.exec_() != QtGui.QDialog.Accepted:
@@ -1363,6 +1358,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             queues = ["default"]
             queues.extend(sorted(Controller.get_queues(
                 self.model.current_connection)))
+            if 'default' in queues[1:]:
+                del queues[queues.index('default', 1)]
             ui.combo_queue.addItems(queues)
             previous_queue = self.model.current_workflow().queue
             if previous_queue == None:
