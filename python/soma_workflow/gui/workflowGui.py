@@ -648,15 +648,16 @@ class WorkflowEngineConfigController(QtGui.QWidget):
     def limit_changed(self, limit):
         queue_name = utf8(self.ui.combo_queue.currentText())
         if queue_name == "default":
-            self.engine_config.change_queue_limits(None, limit)
-        else:
-            self.engine_config.change_queue_limits(queue_name, limit)
+            queue_name = None
+        self.engine_config.change_queue_limits(queue_name, limit)
+        self.queue_limits = self.engine_config.get_queue_limits()
 
     def max_running_changed(self, limit):
         queue_name = utf8(self.ui.combo_queue.currentText())
         if queue_name == "default":
             queue_name = None
         self.engine_config.change_running_jobs_limits(queue_name, limit)
+        self.running_jobs_limits = self.engine_config.get_running_jobs_limits()
 
 
 class RequirePWDialog(QtGui.QDialog):
