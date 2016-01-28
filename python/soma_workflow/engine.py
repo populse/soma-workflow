@@ -1274,6 +1274,9 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         EngineTemporaryPath.temporary_directory \
             = config.get_shared_temporary_directory()
 
+    def get_configuration(self):
+        return self.config
+
     def update_from_config(self, observable, event, msg):
         if event == Configuration.QUEUE_LIMITS_CHANGED:
             self.engine_loop.set_queue_limits(self.config.get_queue_limits())

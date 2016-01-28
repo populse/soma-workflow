@@ -68,21 +68,25 @@ if __name__ == "__main__":
                      server_name=None,
                      queues=None,
                      queue_limits=None,
-                     drmaa_implementation=None):
+                     drmaa_implementation=None,
+                     running_jobs_limits=None):
             Pyro.core.ObjBase.__init__(self)
-            soma_workflow.configuration.Configuration.__init__(self,
-                                                               resource_id,
-                                                               mode,
-                                                               scheduler_type,
-                                                               database_file,
-                                                               transfered_file_dir,
-                                                               submitting_machines,
-                                                               cluster_address,
-                                                               name_server_host,
-                                                               server_name,
-                                                               queues,
-                                                               queue_limits,
-                                                               drmaa_implementation)
+            soma_workflow.configuration.Configuration.__init__(
+                self,
+                resource_id,
+                mode,
+                scheduler_type,
+                database_file,
+                transfered_file_dir,
+                submitting_machines,
+                cluster_address,
+                name_server_host,
+                server_name,
+                queues,
+                queue_limits,
+                drmaa_implementation,
+                running_jobs_limits=running_jobs_limits,
+            )
             pass
 
     def get_database_server_proxy(config, logger):
@@ -164,7 +168,8 @@ if __name__ == "__main__":
         else:
             logger = None
 
-        if config.get_scheduler_type() == soma_workflow.configuration.DRMAA_SCHEDULER:
+        if config.get_scheduler_type() \
+                == soma_workflow.configuration.DRMAA_SCHEDULER:
 
             if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
                 raise NoDrmaaLibError
@@ -176,10 +181,10 @@ if __name__ == "__main__":
                 configured_native_spec=config.get_native_specification())
             database_server = get_database_server_proxy(config, logger)
 
-        elif config.get_scheduler_type() == soma_workflow.configuration.LOCAL_SCHEDULER:
+        elif config.get_scheduler_type() \
+                == soma_workflow.configuration.LOCAL_SCHEDULER:
             from soma_workflow.scheduler import ConfiguredLocalScheduler
-            local_scheduler_cfg_file_path = soma_workflow.configuration.LocalSchedulerCfg.search_config_path(
-            )
+            local_scheduler_cfg_file_path = soma_workflow.configuration.LocalSchedulerCfg.search_config_path()
             if local_scheduler_cfg_file_path:
                 local_scheduler_config = soma_workflow.configuration.LocalSchedulerCfg.load_from_file(
                     local_scheduler_cfg_file_path)
@@ -189,7 +194,8 @@ if __name__ == "__main__":
             sch = ConfiguredLocalScheduler(local_scheduler_config)
             database_server = get_database_server_proxy(config, logger)
 
-        elif config.get_scheduler_type() == soma_workflow.configuration.MPI_SCHEDULER:
+        elif config.get_scheduler_type() \
+                == soma_workflow.configuration.MPI_SCHEDULER:
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
@@ -198,12 +204,30 @@ if __name__ == "__main__":
         # Pyro.config.PYRO_MULTITHREADED = 0
         Pyro.core.initServer()
         daemon = Pyro.core.Daemon()
+        # locate the NS
+        locator = Pyro.naming.NameServerLocator()
+        #print('searching for Name Server...')
+
+        try:
+            name_server_host = config.get_name_server_host()
+            if name_server_host == 'None':
+                ns = locator.getNS()
+            else:
+                ns = locator.getNS(host=name_server_host)
+            daemon.useNameServer(ns)
+        except:
+             print('Name Server not found.')
+             raise
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
 
         # connection to the pyro daemon and output its URI
+        try:
+            ns.unregister(engine_name)
+        except NamingError:
+            pass
         uri_engine = daemon.connect(workflow_engine, engine_name)
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
@@ -212,11 +236,19 @@ if __name__ == "__main__":
 
         # connection check
         connection_checker = ConnectionChecker()
+        try:
+            ns.unregister('connection_checker')
+        except NamingError:
+            pass
         uri_cc = daemon.connect(connection_checker, 'connection_checker')
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
+        try:
+            ns.unregister('configuration')
+        except NamingError:
+            pass
         uri_config = daemon.connect(config, 'configuration')
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()

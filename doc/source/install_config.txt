@@ -308,6 +308,14 @@ Configuration items optional on the server side:
       * using a PBS cluster: NATIVE_SPECIFICATION= -l walltime=10:00:00,pmem=16gb
       * using a SGE cluster: NATIVE_SPECIFICATION= -l h_rt=10:00:00
 
+  **SCHEDULER_TYPE**
+    Scheduler type:
+      **local_basic**: simple builtin scheduler (the one used for the local single process mode). It may be used also on a remote machine (without DRMS support).
+
+      **drmaa**: cluster or grid scheduler, based on DRMAA. This is the scheduler used normally on servers, and is the default in such a case.
+
+      **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters` (light) mode.
+
 
 Logging configuration:
 

@@ -298,16 +298,17 @@ class RemoteConnection(object):
                                   "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
                                   % (cluster_address, cluster_address))
 
-        if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
-                                           password):
-            command = "python -m soma_workflow.start_database_server %s & bg" % (
-                resource_id)
-            SSHExecCmd(
-                command,
-                login,
-                cluster_address,
-                userpw=password,
-                wait_output=False)
+        # start_workflow_engine will run the database server
+        #if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
+                                           #password):
+            #command = "python -m soma_workflow.start_database_server %s & bg" % (
+                #resource_id)
+            #SSHExecCmd(
+                #command,
+                #login,
+                #cluster_address,
+                #userpw=password,
+                #wait_output=False)
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
@@ -409,6 +410,8 @@ class RemoteConnection(object):
         self.workflow_engine.URI.address = 'localhost'
         connection_checker.URI.port = client_pyro_daemon_port
         connection_checker.URI.address = 'localhost'
+        self.configuration.URI.port = client_pyro_daemon_port
+        self.configuration.URI.address = 'localhost'
 
         # waiting for the tunnel to be set
         tunnelSet = False
