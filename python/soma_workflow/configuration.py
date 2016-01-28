@@ -842,38 +842,39 @@ class Configuration(observer.Observable):
         if self._config_parser == None or len(self._queues) != 0:
             return self._queues
 
-        self._queues = []
+        queues = set()
         if self._config_parser.has_option(self._resource_id, OCFG_QUEUES):
-            self._queues.extend(self._config_parser.get(self._resource_id,
+            queues.update(self._config_parser.get(self._resource_id,
                                                         OCFG_QUEUES).split())
         if self._config_parser.has_option(self._resource_id,
                                           OCFG_MAX_JOB_IN_QUEUE):
-            self._queues.extend(self._config_parser.get(
-                self._resource_id,
-                OCFG_MAX_JOB_IN_QUEUE).split())
+            queues.update(self.get_queue_limits().keys())
         if self._config_parser.has_option(self._resource_id,
                                           OCFG_MAX_JOB_RUNNING):
-            self._queues.extend(self._config_parser.get(
-                self._resource_id,
-                OCFG_MAX_JOB_RUNNING).split())
+            queues.update(self.get_running_jobs_limits().keys())
+        self._queues = list(queues)
         return self._queues
 
     def get_engine_log_info(self):
-        if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_ENGINE_LOG_DIR):
+        if self._config_parser != None \
+                and self._config_parser.has_option(self._resource_id,
+                                                   OCFG_ENGINE_LOG_DIR):
             engine_log_dir = self._config_parser.get(self._resource_id,
                                                      OCFG_ENGINE_LOG_DIR)
             engine_log_dir = os.path.expandvars(engine_log_dir)
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_ENGINE_LOG_FORMAT):
-                engine_log_format = self._config_parser.get(self._resource_id,
-                                                            OCFG_ENGINE_LOG_FORMAT,
-                                                            1)
+                engine_log_format = self._config_parser.get(
+                    self._resource_id,
+                    OCFG_ENGINE_LOG_FORMAT,
+                    1)
             else:
                 engine_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_ENGINE_LOG_LEVEL):
-                engine_log_level = self._config_parser.get(self._resource_id,
-                                                           OCFG_ENGINE_LOG_LEVEL)
+                engine_log_level = self._config_parser.get(
+                    self._resource_id,
+                    OCFG_ENGINE_LOG_LEVEL)
             else:
                 engine_log_level = "WARNING"
             return (engine_log_dir, engine_log_format, engine_log_level)
@@ -881,21 +882,25 @@ class Configuration(observer.Observable):
             return (None, None, None)
 
     def get_server_log_info(self):
-        if self._config_parser != None and self._config_parser.has_option(self._resource_id, OCFG_SERVER_LOG_FILE):
+        if self._config_parser != None \
+                and self._config_parser.has_option(self._resource_id,
+                                                   OCFG_SERVER_LOG_FILE):
             server_log_file = self._config_parser.get(self._resource_id,
                                                       OCFG_SERVER_LOG_FILE)
             server_log_file = os.path.expandvars(server_log_file)
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_SERVER_LOG_FORMAT):
-                server_log_format = self._config_parser.get(self._resource_id,
-                                                            OCFG_SERVER_LOG_FORMAT,
-                                                            1)
+                server_log_format = self._config_parser.get(
+                    self._resource_id,
+                    OCFG_SERVER_LOG_FORMAT,
+                    1)
             else:
                 server_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_SERVER_LOG_LEVEL):
-                server_log_level = self._config_parser.get(self._resource_id,
-                                                           OCFG_SERVER_LOG_LEVEL)
+                server_log_level = self._config_parser.get(
+                    self._resource_id,
+                    OCFG_SERVER_LOG_LEVEL)
             else:
                 server_log_level = "WARNING"
             return (server_log_file, server_log_format, server_log_level)
