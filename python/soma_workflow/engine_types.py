@@ -378,21 +378,21 @@ class EngineJob(Job):
                 new_list = []
                 for list_el in command_el:
                     if isinstance(list_el, SharedResourcePath):
-                        new_list.append(command_el.pattern
+                        new_list.append(list_el.pattern
                                         % self.srp_mapping[list_el])
                     elif isinstance(list_el, SpecialPath):
-                        if isinstance(command_el, FileTransfer):
-                            new_list_el = command_el.pattern \
+                        if isinstance(list_el, FileTransfer):
+                            new_list_el = list_el.pattern \
                                 % self.transfer_mapping[
                                     list_el].get_engine_main_path()
                         else:
-                            new_list_el = command_el.pattern \
+                            new_list_el = list_el.pattern \
                                 % self.transfer_mapping[
                                     list_el].get_engine_path()
                         new_list.append(new_list_el)
                     elif isinstance(list_el, tuple) and \
                             isinstance(list_el[0], SpecialPath):
-                        new_list_el = command_el[0].pattern \
+                        new_list_el = list_el[0].pattern \
                             % self.transfer_mapping[
                                 list_el[0]].get_engine_path()
                         new_list_el = os.path.join(new_list_el, list_el[1])
