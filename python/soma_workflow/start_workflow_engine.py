@@ -32,15 +32,17 @@ if __name__ == "__main__":
     import time
 
     # WorkflowEngine pyro object
-    class ConfiguredWorkflowEngine(Pyro.core.SynchronizedObjBase,
-                                   soma_workflow.engine.ConfiguredWorkflowEngine):
+    class ConfiguredWorkflowEngine(
+            Pyro.core.SynchronizedObjBase,
+            soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
             Pyro.core.SynchronizedObjBase.__init__(self)
-            soma_workflow.engine.ConfiguredWorkflowEngine.__init__(self,
-                                                                   database_server,
-                                                                   scheduler,
-                                                                   config)
+            soma_workflow.engine.ConfiguredWorkflowEngine.__init__(
+                self,
+                database_server,
+                scheduler,
+                config)
         pass
 
     class ConnectionChecker(Pyro.core.ObjBase,
@@ -48,9 +50,10 @@ if __name__ == "__main__":
 
         def __init__(self, interval=1, control_interval=3):
             Pyro.core.ObjBase.__init__(self)
-            soma_workflow.connection.ConnectionChecker.__init__(self,
-                                                                interval,
-                                                                control_interval)
+            soma_workflow.connection.ConnectionChecker.__init__(
+                self,
+                interval,
+                control_interval)
         pass
 
     class Configuration(Pyro.core.ObjBase,
@@ -89,9 +92,22 @@ if __name__ == "__main__":
             )
             pass
 
+
+    def start_database_server(resource_id, logger):
+        import subprocess
+        if logger:
+            logger.info('Trying to start database server:'
+                        + resource_id)
+        subprocess.Popen(
+            [sys.executable,
+              '-m', 'soma_workflow.start_database_server', resource_id],
+            close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
     def get_database_server_proxy(config, logger):
+        name_server_host = config.get_name_server_host()
+        starting_server = False
         try:
-            name_server_host = config.get_name_server_host()
             server_name = config.get_server_name()
 
             Pyro.core.initClient()
@@ -108,11 +124,11 @@ if __name__ == "__main__":
             # First try to launch the database server
             import subprocess
             logger.info('Trying to start database server:' + resource_id)
-            subprocess.Popen([sys.executable,
-                              '-m', 'soma_workflow.start_database_server',
-                              resource_id])
+            start_database_server(resource_id, logger)
+            name_server_host = 'localhost'
+            starting_server = True
 
-        timeout = 15
+        timeout = 35
         start_time = time.time()
         started = False
         while not started and time.time() - start_time < timeout:
@@ -131,14 +147,23 @@ if __name__ == "__main__":
                 started = database_server.test()
 
             except:
-                logger.info(
-                    'Database server:' + resource_id + ' was not started. Waiting 1 sec...')
+                if starting_server:
+                    logger.info(
+                        'Database server:' + resource_id
+                        + ' was not started. Waiting 1 sec...')
+                else:
+                    # try to launch the database server
+                    start_database_server(resource_id, logger)
+                    name_server_host = 'localhost'
+                    starting_server = True
                 time.sleep(1)
 
         if not started:
-            raise EngineError("The database server might not be running. "
-                              "Run the following command on %s to start the server: \n"
-                              "python -m soma_workflow.start_database_server %s" % (name_server_host, resource_id))
+            raise EngineError(
+                "The database server might not be running. "
+                "Run the following command on %s to start the server: \n"
+                "python -m soma_workflow.start_database_server %s"
+                % (name_server_host, resource_id))
         else:
             # enter the server loop.
             logger.info('Database server object ready for URI:' + repr(uri))
