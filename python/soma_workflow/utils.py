@@ -8,10 +8,12 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from __future__ import print_function
 
 import copy
 import os
-from soma_workflow.client import Workflow, Group, Job
+from soma_workflow.client import Workflow, Group, Job, Helper
+from soma_workflow.configuration import cpu_count, default_cpu_number
 
 
 def DetectFindLib(env_name, libname):
@@ -227,3 +229,4 @@ def explore(root_job,
                         serial_jobs,
                         explored,
                         workflow)
+

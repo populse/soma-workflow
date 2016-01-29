@@ -1273,28 +1273,5 @@ class Helper(object):
         Detects the number of CPUs on a system.
         ==> Python >= 2.6: multiprocessing.cpu_count
         """
-        if sys.version_info[:2] >= (2, 6):
-            try:
-                import multiprocessing
-                return multiprocessing.cpu_count()
-            except:  # sometimes happens on MacOS... ?
-                print('Warning: CPU count detection failed. Using default (2)',
-                      file=sys.stderr)
-                return 2
-        # Linux, Unix and MacOS:
-        if hasattr(os, "sysconf"):
-            if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
-                        # Linux & Unix:
-                ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-                if isinstance(ncpus, int) and ncpus > 0:
-                    return ncpus
-            else:  # OSX:
-                return int(subprocess.Popen(
-                    ["sysctl", "-n", "hw.ncpu"],
-                    stdout=subprocess.PIPE).stdout.read())
-        # Windows:
-        if os.environ.has_key("NUMBER_OF_PROCESSORS"):
-            ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
-            if ncpus > 0:
-                return ncpus
-        return 1  # Default
+        return configuration.cpu_count()
+

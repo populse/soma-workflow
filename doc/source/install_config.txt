@@ -271,7 +271,7 @@ Configuration items optional on the server side:
     Soma-workflow considers that there is no limitation.
     The syntax is "{default_queue_max_nb_jobs} queue_name1{max_nb_jobs_1} queue_name_2{max_nb_job_2}". Example: "{5} test{20}"
 
-  **MAX_JOB_RUNNING**
+  **MAX_JOB_RUNNING** (new in 2.8)
     Like MAX_JOB_IN_QUEUE, but also limits the number of jobs which may be
     running through a given queue. It thus includes actually running jobs, plus
     queued jobs (which may get to running status at any time).
@@ -490,10 +490,13 @@ Configuration file example: ::
     switching between different soma-workflow versions.
 
   **CPU_NB**
-    Maximum number of CPU cores to be used
+    Maximum number of CPU cores to be used.
+
+    When not specified the number of available cores - 1 will be used when
+    there are 3 or more cores, or the number of cores when there are 2 or less.
 
   **SCHEDULER_INTERVAL**
-    Polling interval for the scheduler
+    Polling interval for the scheduler, in seconds. The default is 1 second.
 
   **SOMA_WORKFLOW_DIR** (new in 2.7)
     Directory which will contain soma_workflow files (typically, the SQlite
@@ -510,7 +513,7 @@ This mode allows remote access from a client to a computing server which does no
 
 .. note:: It is better not to use the local scheduler on machines shared between several users, as this basic scheduler does not handle inter-user load.
 
-Server configuratinon (soma-workflow.cfg):
+Server configuratinon (``$HOME/.soma-workflow.cfg``):
 ::
 
   [averell]
@@ -524,7 +527,12 @@ Server configuratinon (soma-workflow.cfg):
   ENGINE_LOG_DIR = /home/my_login/.soma_workflow/averell/logs
   TRANSFERED_FILE_DIR = /home/my_login/.soma_workflow/averell/file_transfers
   DATABASE_FILE = /home/my_login/.soma_workflow/averell/soma_workflow.db
+
+The local scheduler also uses its own config file (``$HOME/.soma-workflow-scheduler.cfg``):
+::
+
+  [averell]
+
   CPU_NB = 16
   SCHEDULER_INTERVAL = 1
-
 

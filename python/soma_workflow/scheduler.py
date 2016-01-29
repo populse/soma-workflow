@@ -35,6 +35,7 @@ import soma_workflow.constants as constants
 from soma_workflow.errors import DRMError
 from soma_workflow.configuration import LocalSchedulerCfg, Configuration
 from soma_workflow.utils import DetectFindLib
+from soma_workflow.configuration import default_cpu_number
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
@@ -560,7 +561,7 @@ class LocalScheduler(Scheduler):
 
     _lock = None
 
-    def __init__(self, proc_nb=1, interval=1):
+    def __init__(self, proc_nb=default_cpu_number(), interval=1):
         super(LocalScheduler, self).__init__()
 
         self.parallel_job_submission_info = None
