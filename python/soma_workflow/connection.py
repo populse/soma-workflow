@@ -325,11 +325,12 @@ class RemoteConnection(object):
             userpw=password,
             wait_output=True,
             sshport=22,
-            num_line_stdout=3)
+            num_line_stdout=4)
 
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
+        scheduler_config_uri = None
 
         for std_out_line in std_out_lines:
             if std_out_line.split()[0] == pyro_objet_name:
@@ -338,6 +339,10 @@ class RemoteConnection(object):
                 connection_checker_uri = std_out_line.split()[1]
             elif std_out_line.split()[0] == "configuration":
                 configuration_uri = std_out_line.split()[1]
+            elif std_out_line.split()[0] == "scheduler_config":
+                scheduler_config_uri = std_out_line.split()[1]
+                if scheduler_config_uri == "None":
+                    scheduler_config_uri = None
 
         if (not configuration_uri or
             not connection_checker_uri or
@@ -413,6 +418,15 @@ class RemoteConnection(object):
         self.configuration.URI.port = client_pyro_daemon_port
         self.configuration.URI.address = 'localhost'
 
+        if scheduler_config_uri is not None:
+            self.scheduler_config \
+                = Pyro.core.getAttrProxyForURI(scheduler_config_uri)
+            # setting the proxies to use the tunnel  #
+            self.scheduler_config.URI.port = client_pyro_daemon_port
+            self.scheduler_config.URI.address = 'localhost'
+        else:
+            self.scheduler_config = None
+
         # waiting for the tunnel to be set
         tunnelSet = False
         maxattemps = 3
@@ -461,6 +475,9 @@ class RemoteConnection(object):
 
     def get_configuration(self):
         return self.configuration
+
+    def get_scheduler_config(self):
+        return self.scheduler_config
 
 
 class LocalConnection(object):

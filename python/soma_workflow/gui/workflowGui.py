@@ -557,10 +557,15 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(
                 icon, repr(len(status_list)) + " workflows" + to_display))
             resource = self.model.resource_pool.connection(rid)
-            if resource.config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-                if resource.scheduler_config:
+            if resource.config.get_scheduler_type() \
+                    == configuration.LOCAL_SCHEDULER:
+                scheduler_config = resource.scheduler_config
+                if not scheduler_config and resource.engine_config_proxy:
+                    scheduler_config \
+                        = self.model.current_connection.scheduler_config
+                if scheduler_config:
                     scheduler_widget = LocalSchedulerConfigController(
-                        resource.scheduler_config,
+                        scheduler_config,
                         self)
                     self.ui.table.setCellWidget(row, 2, scheduler_widget)
                     self.ui.table.resizeColumnToContents(2)
@@ -592,7 +597,7 @@ class LocalSchedulerConfigController(QtGui.QWidget):
 
         self.scheduler_config = scheduler_config
 
-        cpu_count = Helper.cpu_count()
+        cpu_count = scheduler_config.get_cpu_count()
         self.ui.advice_label.setText(" " + repr(cpu_count) + " CPUs detected")
         self.ui.spin_box.setValue(scheduler_config.get_proc_nb())
 

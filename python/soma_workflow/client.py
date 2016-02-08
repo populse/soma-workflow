@@ -153,6 +153,7 @@ class WorkflowController(object):
                                                            rsa_key_pass)
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
+            self.scheduler_config = self._connection.get_scheduler_config()
 
             if not password and not rsa_key_pass:
                 self._transfer = TransferSCP(self._engine_proxy,

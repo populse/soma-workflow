@@ -29,6 +29,7 @@ if __name__ == "__main__":
     import soma_workflow.configuration
     from soma_workflow.errors import NoDrmaaLibError, EngineError
     from soma_workflow.database_server import WorkflowDatabaseServer
+    from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
 
     # WorkflowEngine pyro object
@@ -91,6 +92,19 @@ if __name__ == "__main__":
                 running_jobs_limits=running_jobs_limits,
             )
             pass
+
+    class LocalSchedulerCfg(Pyro.core.ObjBase,
+                            soma_workflow.configuration.LocalSchedulerCfg):
+
+        def __init__(self,
+                     proc_nb=soma_workflow.configuration.default_cpu_number(),
+                     interval=1):
+            Pyro.core.ObjBase.__init__(self)
+            soma_workflow.configuration.LocalSchedulerCfg.__init__(
+                self,
+                proc_nb=proc_nb,
+                interval=interval,
+            )
 
 
     def start_database_server(resource_id, logger):
@@ -208,16 +222,16 @@ if __name__ == "__main__":
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
-            from soma_workflow.scheduler import ConfiguredLocalScheduler
-            local_scheduler_cfg_file_path = soma_workflow.configuration.LocalSchedulerCfg.search_config_path()
+            local_scheduler_cfg_file_path \
+                = LocalSchedulerCfg.search_config_path()
             if local_scheduler_cfg_file_path:
-                local_scheduler_config = soma_workflow.configuration.LocalSchedulerCfg.load_from_file(
+                local_scheduler_config = LocalSchedulerCfg.load_from_file(
                     local_scheduler_cfg_file_path)
             else:
-                local_scheduler_config = soma_workflow.configuration.LocalSchedulerCfg(
-                )
+                local_scheduler_config = LocalSchedulerCfg()
             sch = ConfiguredLocalScheduler(local_scheduler_config)
             database_server = get_database_server_proxy(config, logger)
+            config.set_scheduler_config(local_scheduler_config)
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.MPI_SCHEDULER:
@@ -276,6 +290,20 @@ if __name__ == "__main__":
             pass
         uri_config = daemon.connect(config, 'configuration')
         sys.stdout.write("configuration " + str(uri_config) + "\n")
+        sys.stdout.flush()
+
+        # local scheduler config
+        try:
+            ns.unregister('scheduler_config')
+        except NamingError:
+            pass
+        if config.get_scheduler_config():
+            uri_sched_config = daemon.connect(config.get_scheduler_config(),
+                                              'scheduler_config')
+            sys.stdout.write("scheduler_config " + str(uri_sched_config)
+                             + "\n")
+        else:
+            sys.stdout.write("scheduler_config None\n")
         sys.stdout.flush()
 
         # Daemon request loop thread

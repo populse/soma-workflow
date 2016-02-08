@@ -153,6 +153,8 @@ class Configuration(observer.Observable):
 
     _scheduler_type = None
 
+    _scheduler_config = None
+
     _database_file = None
 
     _transfered_file_dir = None
@@ -311,6 +313,7 @@ class Configuration(observer.Observable):
 
         self._sshport = sshport
         self._res_install_path = res_install_path
+        self._scheduler_config = None
 
     @staticmethod
     def get_home_dir():
@@ -979,6 +982,12 @@ class Configuration(observer.Observable):
         # config_parser.write(config_file)
         # config_file.close()
 
+    def set_scheduler_config(self, scheduler_config):
+        self._scheduler_config = scheduler_config
+
+    def get_scheduler_config(self):
+        return self._scheduler_config
+
 
 def cpu_count():
     """
@@ -1146,6 +1155,9 @@ class LocalSchedulerCfg(observer.Observable):
 
     def get_proc_nb(self):
         return self._proc_nb
+
+    def get_cpu_count(self):
+        return cpu_count()
 
     def get_interval(self):
         return self._interval
