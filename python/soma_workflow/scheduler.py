@@ -35,7 +35,7 @@ import soma_workflow.constants as constants
 from soma_workflow.errors import DRMError
 from soma_workflow.configuration import LocalSchedulerCfg, Configuration
 from soma_workflow.utils import DetectFindLib
-from soma_workflow.configuration import default_cpu_number
+from soma_workflow.configuration import default_cpu_number, cpu_count
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
@@ -545,6 +545,8 @@ class LocalScheduler(Scheduler):
 
     _proc_nb = None
 
+    _max_proc_nb = None
+
     _queue = None
 
     _jobs = None
@@ -561,12 +563,17 @@ class LocalScheduler(Scheduler):
 
     _lock = None
 
-    def __init__(self, proc_nb=default_cpu_number(), interval=1):
+    _lasttime = None
+    _lastidle = None
+
+    def __init__(self, proc_nb=default_cpu_number(), interval=1,
+                 max_proc_nb=0):
         super(LocalScheduler, self).__init__()
 
         self.parallel_job_submission_info = None
 
         self._proc_nb = proc_nb
+        self._max_proc_nb = max_proc_nb
         self._interval = interval
         self._queue = []
         self._jobs = {}
@@ -595,6 +602,10 @@ class LocalScheduler(Scheduler):
     def change_proc_nb(self, proc_nb):
         with self._lock:
             self._proc_nb = proc_nb
+
+    def change_max_proc_nb(self, proc_nb):
+        with self._lock:
+            self._max_proc_nb = proc_nb
 
     def change_interval(self, interval):
         with self._lock:
@@ -630,8 +641,7 @@ class LocalScheduler(Scheduler):
             del self._processes[job_id]
 
         # run new jobs
-        while (self._queue and
-               len(self._processes) < self._proc_nb):
+        while (self._queue and self._can_submit_new_job()):
             job_id = self._queue.pop(0)
             job = self._jobs[job_id]
             # print "new job " + repr(job.job_id)
@@ -654,6 +664,37 @@ class LocalScheduler(Scheduler):
                 else:
                     self._processes[job.job_id] = process
                     self._status[job.job_id] = constants.RUNNING
+
+    def _can_submit_new_job(self):
+        n = len(self._processes)
+        if n < self._proc_nb:
+            return True
+        max_proc_nb = self._max_proc_nb
+        if max_proc_nb == 0:
+            if have_psutil:
+                max_proc_nb = cpu_count()
+            else:
+                max_proc_nb = cpu_count() - 1
+        if n < max_proc_nb and self.is_available_cpu():
+            return True
+        return False
+
+    @staticmethod
+    def is_available_cpu():
+        # OK if there is at least one half CPU left idle
+        if have_psutil:
+            if LocalScheduler._lasttime is None or time.time() - LocalScheduler._lasttime > 0.1:
+                LocalScheduler._lasttime = time.time()
+                LocalScheduler._lastidle = psutil.cpu_times_percent().idle * psutil.cpu_count()
+            if LocalScheduler._lastidle > 20.:
+                # decrease artificially idle because we will sublit a job,
+                # and next calls should take it into account
+                # until another measurement is done.
+                LocalScheduler._lastidle -= 100. # increase artificially
+                return True
+            return False
+        # no psutil: get to the upper limit.
+        return True
 
     @staticmethod
     def create_process(engine_job):
@@ -859,17 +900,23 @@ class ConfiguredLocalScheduler(LocalScheduler):
         '''
         * config *LocalSchedulerCfg*
         '''
-        super(ConfiguredLocalScheduler, self).__init__(config.get_proc_nb(),
-                                                       config.get_interval())
+        super(ConfiguredLocalScheduler, self).__init__(
+            config.get_proc_nb(),
+            config.get_interval(),
+            config.get_max_proc_nb())
         self._config = config
 
         self._config.addObserver(self,
                                  "update_from_config",
-                                 [LocalSchedulerCfg.PROC_NB_CHANGED, LocalSchedulerCfg.INTERVAL_CHANGED])
+                                 [LocalSchedulerCfg.PROC_NB_CHANGED,
+                                  LocalSchedulerCfg.INTERVAL_CHANGED,
+                                  LocalSchedulerCfg.MAX_PROC_NB_CHANGED,])
 
     def update_from_config(self, observable, event, msg):
         if event == LocalSchedulerCfg.PROC_NB_CHANGED:
             self.change_proc_nb(self._config.get_proc_nb())
-        if event == LocalSchedulerCfg.PROC_NB_CHANGED:
+        elif event == LocalSchedulerCfg.PROC_NB_CHANGED:
             self.change_interval(self._config.get_interval())
+        elif event == LocalSchedulerCfg.MAX_PROC_NB_CHANGED:
+            self.change_max_proc_nb(self._config.get_max_proc_nb())
         self._config.save_to_file()

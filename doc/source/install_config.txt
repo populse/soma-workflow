@@ -489,18 +489,11 @@ Configuration file example: ::
     the database file name, to avoid mixing several incompatible databases when
     switching between different soma-workflow versions.
 
-  **CPU_NB**
-    Maximum number of CPU cores to be used.
-
-    When not specified the number of available cores - 1 will be used when
-    there are 3 or more cores, or the number of cores when there are 2 or less.
-
-  **SCHEDULER_INTERVAL**
-    Polling interval for the scheduler, in seconds. The default is 1 second.
-
   **SOMA_WORKFLOW_DIR** (new in 2.7)
     Directory which will contain soma_workflow files (typically, the SQlite
     database, and file transfers).
+
+  In addition :ref:`Local scheduler options <local_sched_config>` can be used in the configuration: **CPU_NB**, **MAX_CPU_NB**, and **SCHEDULER_INTERVAL**.
 
 
 Server configuration examples
@@ -511,7 +504,7 @@ Local mode on a server, with client/server access
 
 This mode allows remote access from a client to a computing server which does not have any DRMS and is using Soma-Workflow's local (simple) scheduler.
 
-.. note:: It is better not to use the local scheduler on machines shared between several users, as this basic scheduler does not handle inter-user load.
+.. note:: It is better not to use the local scheduler on machines shared between several users, as this basic scheduler does not handle inter-user load very well.
 
 Server configuratinon (``$HOME/.soma-workflow.cfg``):
 ::
@@ -528,11 +521,34 @@ Server configuratinon (``$HOME/.soma-workflow.cfg``):
   TRANSFERED_FILE_DIR = /home/my_login/.soma_workflow/averell/file_transfers
   DATABASE_FILE = /home/my_login/.soma_workflow/averell/soma_workflow.db
 
+.. _local_sched_config:
+
 The local scheduler also uses its own config file (``$HOME/.soma-workflow-scheduler.cfg``):
+
+The scheduler options are:
+
+  **CPU_NB**
+    Number of CPU cores to be used.
+    May be 0.
+    From Soma-workflow 2.8, this number is not a maximum any longer, but rather a minimum. See MAX_CPU_NB.
+
+  **MAX_CPU_NB** (new in 2.8)
+    Maximum number of CPU cores to be used.
+    0 means all processors detected on the machine.
+    The number of processors used (provided there are enough jobs to feed them) is at least CPU_NB, and at most MAX_CPU_NB, depending on the machine load at the time of job submission.
+    This load adjustment allows to use soma-workflow on a shared machine using the local scheduler. However this load adjustment is not an advanced load balancing feature, it is a cheap solution to avoid heavy overloading, but it is very limited and approximative.
+
+    When not specified (or zero), the number of available cores will be used as max, and 0 as cpu_nb.
+
+  **SCHEDULER_INTERVAL**
+    Polling interval for the scheduler, in seconds. The default is 1 second.
+
+Ex:
 ::
 
   [averell]
 
-  CPU_NB = 16
+  CPU_NB = 2
+  MAX_CPU_NB = 16
   SCHEDULER_INTERVAL = 1
 

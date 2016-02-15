@@ -132,6 +132,7 @@ OCFG_NATIVE_SPECIFICATION = 'NATIVE_SPECIFICATION'
 # local sheduler configuration -------------------------------------------
 
 OCFG_SCDL_CPU_NB = "CPU_NB"
+OCFG_SCDL_MAX_CPU_NB = "MAX_CPU_NB"
 OCFG_SCDL_INTERVAL = "SCHEDULER_INTERVAL"
 OCFG_SWF_DIR = "SOMA_WORKFLOW_DIR"
 
@@ -1027,10 +1028,11 @@ def default_cpu_number():
     when 3 processors or more are available, or cpu_count() on a mono or
     bi-processor machine.
     '''
-    cpu = cpu_count()
-    if cpu > 2:
-        return cpu - 1
-    return cpu
+    #cpu = cpu_count()
+    #if cpu > 2:
+        #return cpu - 1
+    #return cpu
+    return 0
 
 
 class LocalSchedulerCfg(observer.Observable):
@@ -1039,8 +1041,14 @@ class LocalSchedulerCfg(observer.Observable):
     Local scheduler configuration.
     '''
 
-    # number of processus which can run in parallel
+    # number of processus which can run in parallel, which may be used
+    # unconditionally.
     _proc_nb = None
+
+    # max number of processus. Processes may be submitted additionally to
+    # _proc_nb if the CPU load is not full, and this max number of running
+    # processes is not reached.
+    _max_proc_nb = None
 
     # interval (second)
     _interval = None
@@ -1050,8 +1058,10 @@ class LocalSchedulerCfg(observer.Observable):
 
     PROC_NB_CHANGED = 0
     INTERVAL_CHANGED = 1
+    MAX_PROC_NB_CHANGED = 2
 
-    def __init__(self, proc_nb=default_cpu_number(), interval=1):
+    def __init__(self, proc_nb=default_cpu_number(), interval=1,
+                 max_proc_nb=0):
         '''
         * proc_nb *int*
           Number of processus which can run in parallel
@@ -1062,6 +1072,7 @@ class LocalSchedulerCfg(observer.Observable):
 
         super(LocalSchedulerCfg, self).__init__()
         self._proc_nb = proc_nb
+        self._max_proc_nb = max_proc_nb
         self._interval = interval
 
     @classmethod
@@ -1098,7 +1109,8 @@ class LocalSchedulerCfg(observer.Observable):
                                      " in configuration "
                                      "file: " + config_path)
 
-        proc_nb = None
+        proc_nb = 0
+        max_proc_nb = 0
         interval = None
 
         if config_parser.has_option(hostname,
@@ -1111,13 +1123,14 @@ class LocalSchedulerCfg(observer.Observable):
             interval_str = config_parser.get(hostname,
                                              OCFG_SCDL_INTERVAL)
             interval = int(interval_str)
+        if config_parser.has_option(hostname,
+                                    OCFG_SCDL_MAX_CPU_NB):
+            max_proc_nb_str = config_parser.get(socket.gethostname(),
+                                                OCFG_SCDL_MAX_CPU_NB)
+            max_proc_nb = int(max_proc_nb_str)
 
-        if proc_nb == None and interval == None:
-            config = cls()
-        elif proc_nb == None and interval != None:
-            config = cls(interval=interval)
-        else:
-            config = cls(proc_nb=proc_nb, interval=interval)
+        config = cls(proc_nb=proc_nb, interval=interval,
+                     max_proc_nb=max_proc_nb)
         config._config_path = config_path
         return config
 
@@ -1156,6 +1169,9 @@ class LocalSchedulerCfg(observer.Observable):
     def get_proc_nb(self):
         return self._proc_nb
 
+    def get_max_proc_nb(self):
+        return self._max_proc_nb
+
     def get_cpu_count(self):
         return cpu_count()
 
@@ -1165,6 +1181,10 @@ class LocalSchedulerCfg(observer.Observable):
     def set_proc_nb(self, proc_nb):
         self._proc_nb = proc_nb
         self.notifyObservers(LocalSchedulerCfg.PROC_NB_CHANGED)
+
+    def set_max_proc_nb(self, proc_nb):
+        self._max_proc_nb = proc_nb
+        self.notifyObservers(LocalSchedulerCfg.MAX_PROC_NB_CHANGED)
 
     def set_interval(self, interval):
         self._interval = interval
@@ -1195,6 +1215,9 @@ class LocalSchedulerCfg(observer.Observable):
         config_parser.set(hostname,
                           OCFG_SCDL_INTERVAL,
                           str(self._interval))
+        config_parser.set(hostname,
+                          OCFG_SCDL_MAX_CPU_NB,
+                          str(self._max_proc_nb))
         config_file = open(config_path, "w")
         config_parser.write(config_file)
         config_file.close()

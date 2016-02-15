@@ -599,12 +599,25 @@ class LocalSchedulerConfigController(QtGui.QWidget):
 
         cpu_count = scheduler_config.get_cpu_count()
         self.ui.advice_label.setText(" " + repr(cpu_count) + " CPUs detected")
-        self.ui.spin_box.setValue(scheduler_config.get_proc_nb())
+        proc_nb = scheduler_config.get_proc_nb()
+        if proc_nb is None:
+            self.ui.spin_box.setValue(-1)
+        else:
+            self.ui.spin_box.setValue(proc_nb)
+        max_proc_nb = scheduler_config.get_max_proc_nb()
+        if max_proc_nb is None:
+            self.ui.max_spin_box.setValue(0)
+        else:
+            self.ui.max_spin_box.setValue(max_proc_nb)
 
         self.ui.spin_box.valueChanged.connect(self.nb_proc_changed)
+        self.ui.max_spin_box.valueChanged.connect(self.max_proc_changed)
 
     def nb_proc_changed(self, nb_proc):
         self.scheduler_config.set_proc_nb(nb_proc)
+
+    def max_proc_changed(self, nb_proc):
+        self.scheduler_config.set_max_proc_nb(nb_proc)
 
 
 class WorkflowEngineConfigController(QtGui.QWidget):
