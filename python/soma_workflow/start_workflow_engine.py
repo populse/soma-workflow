@@ -96,9 +96,7 @@ if __name__ == "__main__":
     class LocalSchedulerCfg(Pyro.core.ObjBase,
                             soma_workflow.configuration.LocalSchedulerCfg):
 
-        def __init__(self,
-                     proc_nb=soma_workflow.configuration.default_cpu_number(),
-                     interval=1):
+        def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
             Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.LocalSchedulerCfg.__init__(
                 self,
