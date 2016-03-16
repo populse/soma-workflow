@@ -539,9 +539,13 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
                     item.data(QtCore.Qt.UserRole).toString()))
             else:
                 rid = utf8(item.data(QtCore.Qt.UserRole))
-            if not rid:
-                continue
-            resources.append(rid)
+            if rid and rid != "None":
+                resources.append(rid)
+        if len(resources) >= len(self.resource_ids):
+            QtGui.QMessageBox.warning(
+                self, "Cannot disconnect all resources",
+                "We must keep at least one valid resource.")
+            return
         if len(resources) != 0:
             resp = QtGui.QMessageBox.question(
                 self, "Disconnect the following resources ?",
