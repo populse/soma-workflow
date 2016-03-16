@@ -372,6 +372,7 @@ class RemoteConnection(object):
         try:
             self.__transport = paramiko.Transport((cluster_address, 22))
             self.__transport.setDaemon(True)
+            self.__transport.set_keepalive(150)
             self.__transport.connect(username=login, password=password)
             if not password:
                 rsa_file_path = os.path.join(
