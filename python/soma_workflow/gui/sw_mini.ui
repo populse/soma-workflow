@@ -52,6 +52,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QToolButton" name="disconnect_resource_tool_button">
+       <property name="text">
+        <string>Disconnect</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -108,18 +115,6 @@
       <bool>true</bool>
      </attribute>
      <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderStretchLastSection">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="horizontalHeaderStretchLastSection">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="horizontalHeaderVisible">
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderStretchLastSection">

@@ -354,7 +354,10 @@ class Controller(object):
 
     @staticmethod
     def get_submitted_workflows(wf_ctrl):
-        return wf_ctrl.workflows()
+        if wf_ctrl:
+            return wf_ctrl.workflows()
+        else:
+            return {}
 
     @staticmethod
     def restart_workflow(workflow_id, queue, wf_ctrl):
@@ -370,6 +373,10 @@ class Controller(object):
                                      password=password,
                                      rsa_key_pass=rsa_key_pass)
         return wf_ctrl
+
+    @staticmethod
+    def disconnect(wf_ctrl):
+        wf_ctrl.disconnect()
 
     @staticmethod
     def serialize_workflow(file_path, workflow):
@@ -427,15 +434,25 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
         self.action_add_resource = QtGui.QAction("Add a resource", self)
         self.addAction(self.action_add_resource)
+
+        self.action_disconnect_resource = QtGui.QAction(
+            "Disconnect a resource", self)
+        self.addAction(self.action_disconnect_resource)
         self.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
 
         self.ui.table.doubleClicked.connect(self.sw_widget.show)
         self.ui.table.doubleClicked.connect(self.raise_sw_widget)
         self.action_add_resource.triggered.connect(self.add_resource)
+        self.action_disconnect_resource.triggered.connect(
+            self.disconnect_resource)
 
         self.ui.add_resource_tool_button.setDefaultAction(
             self.action_add_resource)
         self.ui.add_resource_tool_button.setText("Add")
+
+        self.ui.disconnect_resource_tool_button.setDefaultAction(
+            self.action_disconnect_resource)
+        self.ui.disconnect_resource_tool_button.setText("Disconnect")
 
         self.connect(self.model, QtCore.SIGNAL(
             'global_workflow_state_changed()'), self.refresh)
@@ -511,6 +528,30 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
         (resource_id, new_connection) = self.sw_widget.createConnection()
         if new_connection:
             self.model.add_connection(resource_id, new_connection)
+
+    @QtCore.Slot()
+    def disconnect_resource(self):
+        selected = self.ui.table.selectedItems()
+        resources = []
+        for item in selected:
+            if use_qvariant:
+                rid = utf8(unicode(
+                    item.data(QtCore.Qt.UserRole).toString()))
+            else:
+                rid = utf8(item.data(QtCore.Qt.UserRole))
+            if not rid:
+                continue
+            resources.append(rid)
+        if len(resources) != 0:
+            resp = QtGui.QMessageBox.question(
+                self, "Disconnect the following resources ?",
+                "\n".join(resources),
+                QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            if resp == QtGui.QMessageBox.Ok:
+                for resource_id in resources:
+                    if resource_id in self.resource_ids:
+                        self.resource_ids.remove(resource_id)
+                    self.model.delete_connection(resource_id)
 
     @QtCore.Slot()
     def refresh(self):
@@ -1770,12 +1811,15 @@ class SomaWorkflowWidget(QtGui.QWidget):
     def currentConnectionChanged(self):
         self.model.clear_current_workflow()
         self.updateWorkflowList()
-        index = self.ui.combo_resources.findText(
-            self.model.current_resource_id)
-        self.ui.combo_resources.setCurrentIndex(index)
+        if self.model.current_resource_id is not None:
+            index = self.ui.combo_resources.findText(
+                self.model.current_resource_id)
+            self.ui.combo_resources.setCurrentIndex(index)
 
     @QtCore.Slot()
     def current_workflow_changed(self):
+        if not self.model.current_connection:
+            return
         scheduler_type = self.model.current_connection.engine_config_proxy.get_scheduler_type(
         )
         control_authorized = (scheduler_type != configuration.MPI_SCHEDULER)
@@ -2104,8 +2148,11 @@ class MainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def currentConnectionChanged(self):
+        current_resource_id = self.model.current_resource_id
+        if current_resource_id is None:
+            current_resource_id = '<none>'
         self.setWindowTitle(
-            "soma-workflow - " + self.model.current_resource_id)
+            "soma-workflow - " + current_resource_id)
 
     @QtCore.Slot()
     def closeEvent(self, event):
@@ -3450,8 +3497,10 @@ class ComputingResourcePool(object):
         self._connection_locks[resource_id] = threading.RLock()
 
     def delete_connection(self, resource_id):
-        del self._connections[resource_id]
-        del self._connection_locks[resource_id]
+        if resource_id in self._connections:
+            del self._connections[resource_id]
+        if resource_id in self._connection_locks:
+            del self._connection_locks[resource_id]
 
     def reinit_connection(self, resource_id, workflow_controller):
         with self._connection_locks[resource_id]:
@@ -3801,7 +3850,7 @@ class ApplicationModel(QtCore.QObject):
                 self.workflow_exp_date = None
                 self.workflow_name = None
                 resource_ids = self.resource_pool.resource_ids()
-                if resource_ids != None:
+                if resource_ids:
                     self.current_resource_id = self.resource_pool.resource_ids()[
                         0]
                 else:
