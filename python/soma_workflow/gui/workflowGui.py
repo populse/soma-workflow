@@ -367,10 +367,12 @@ class Controller(object):
     def get_connection(resource_id,
                        login,
                        password,
-                       rsa_key_pass):
+                       rsa_key_pass,
+                       config=None):
         wf_ctrl = WorkflowController(resource_id=resource_id,
                                      login=login,
                                      password=password,
+                                     config=config,
                                      rsa_key_pass=rsa_key_pass)
         return wf_ctrl
 
@@ -1067,7 +1069,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
                  auto_connect=False,
                  computing_resource=None,
                  parent=None,
-                 flags=0):
+                 flags=0,
+                 config_file=None,
+                 db_file=None):
 
         super(SomaWorkflowWidget, self).__init__(parent)
 
@@ -1137,6 +1141,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connection_dlg.accepted.connect(self.firstConnection)
         self.connection_dlg.rejected.connect(self.close)
 
+        self.config_file = config_file
+        self.db_file = db_file
+
         # First connection:
         # Try to connect directly:
         if computing_resource:
@@ -1178,7 +1185,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                             version.shortVersion),
                                         parent=self)
         message_box.setIconPixmap(
-            QtGui.QPixmap(os.path.join(os.path.dirname(__file__), "icon/logo.png")))  # .scaledToWidth(100))
+            QtGui.QPixmap(os.path.join(os.path.dirname(__file__),
+                                       "icon/logo.png")))
 
         message_box.exec_()
 
@@ -1194,11 +1202,22 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
         wf_ctrl = None
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        config = None
+        if self.config_file is not None \
+                or (resource_id in ('localhost', socket.gethostname())
+                    and self.db_file is not None):
+            print('customized config.')
+            config = configuration.Configuration.load_from_file(
+                self.config_file)
+            if resource_id in ('localhost', socket.gethostname()) \
+                    and self.db_file is not None:
+                config._database_file = self.db_file
         try:
             wf_ctrl = Controller.get_connection(resource_id,
                                                 login,
                                                 password,
-                                                rsa_key_pass)
+                                                rsa_key_pass,
+                                                config=config)
             QtGui.QApplication.restoreOverrideCursor()
         except ConfigurationError as e:
             QtGui.QApplication.restoreOverrideCursor()
@@ -1994,7 +2013,11 @@ class MainWindow(QtGui.QMainWindow):
                  auto_connect=False,
                  computing_resource=None,
                  parent=None,
-                 flags=0):
+                 flags=0,
+                 config_file=None,
+                 db_file=None):
+
+        print('db_file:', db_file)
 
         super(MainWindow, self).__init__(parent)
 
@@ -2024,7 +2047,9 @@ class MainWindow(QtGui.QMainWindow):
                                             auto_connect,
                                             computing_resource,
                                             self,
-                                            flags)
+                                            flags,
+                                            config_file=config_file,
+                                            db_file=db_file)
 
         if True:
             self.mini_widget = SomaWorkflowMiniWidget(self.model,
@@ -2093,6 +2118,9 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.menu_file.addSeparator()
         self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
         self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
+        self.ui.menu_file.addSeparator()
+        self.ui.menu_file.addAction(
+            'Quit', self.close, QtCore.Qt.Key_Q | QtCore.Qt.ControlModifier)
 
         self.ui.menu_workflow.addAction(self.sw_widget.ui.action_submit)
         self.ui.menu_workflow.addAction(self.sw_widget.ui.action_stop_wf)

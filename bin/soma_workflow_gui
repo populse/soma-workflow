@@ -32,6 +32,10 @@ parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
                     "without displaying connection dialog.")
 parser.add_option('-r', '--computing-resource', dest='computing_resource', 
                   help='computing resource identifier')
+parser.add_option('--database', dest='database',
+                  help='connect localhost with the specified database file')
+parser.add_option('--config', dest='config',
+                  help='use the specified config file')
 
 options, args = parser.parse_args(sys.argv)
 
@@ -47,10 +51,14 @@ if __name__=="__main__":
 
   if i == 1:
   
+    if options.computing_resource is None and options.database is not None:
+        options.computing_resource = 'localhost'
     sw_main_window = MainWindow(model, 
                                 options.user, 
                                 options.auto_connect,
-                                options.computing_resource)
+                                options.computing_resource,
+                                config_file=options.config,
+                                db_file=options.database)
     
     sw_main_window.show()
 
@@ -58,7 +66,9 @@ if __name__=="__main__":
     sw_widget = SomaWorkflowWidget(model, 
                                   options.user, 
                                   options.auto_connect,
-                                  options.computing_resource)
+                                  options.computing_resource,
+                                  config_file=options.config,
+                                  db_file=options.database)
     sw_widget.show()
   
 
