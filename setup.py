@@ -16,8 +16,11 @@ commands = [op.join('bin', 'soma_delete_all_workflows'),
 
 python_dir = os.path.join(os.path.dirname(__file__), "python")
 release_info = {}
-execfile(os.path.join(python_dir, "soma_workflow", "info.py"), release_info)
-            
+
+with open(os.path.join(python_dir, "soma_workflow", "info.py")) as f:
+    code = f.read()
+    exec(code, release_info)
+
 setup(
     name=release_info["NAME"],
     description=release_info["DESCRIPTION"],
