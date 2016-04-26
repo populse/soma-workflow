@@ -664,17 +664,17 @@ class EngineWorkflow(Workflow):
 
         self.logger = logging.getLogger('engine.EngineWorkflow')
         self.logger.debug("self.jobs=" + repr(self.jobs))
-        to_run = []
-        to_abort = set([])
+        to_run = set()
+        to_abort = set()
         done = []
-        running = []
+        running = set()
         for client_job in self.jobs:
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
             if job.is_done():
                 done.append(job)
             elif job.is_running():
-                running.append(job)
+                running.add(job)
             elif job.status == constants.NOT_SUBMITTED:
                 job_to_run = True
                 job_to_abort = False
@@ -696,7 +696,7 @@ class EngineWorkflow(Workflow):
                                 break
                         # TO DO to abort
                 if job_to_run:
-                    to_run.append(job)
+                    to_run.add(job)
                 if job_to_abort:
                     to_abort.add(job)
         # if a job fails the whole workflow branch has to be stopped
@@ -720,20 +720,31 @@ class EngineWorkflow(Workflow):
                 ended_jobs[job.job_id] = job
                 job.status = constants.FAILED
                 job.exit_status = constants.EXIT_NOTRUN
+                # remove job from to_run and running sets otherwise the
+                # workflow status could be wrong
+                to_run.discard(job)
+                running.discard(job)
 
         if len(running) + len(to_run) > 0:
             status = constants.WORKFLOW_IN_PROGRESS
         elif len(done) + len(to_abort) == len(self.jobs):
             status = constants.WORKFLOW_DONE
         elif len(done) > 0:
-            status = constants.WORKFLOW_IN_PROGRESS
+            # set it to DONE to avoid hangout
+            status = constants.WORKFLOW_DONE
             # !!!! the workflow may be stuck !!!!
             # TBI
-            self.logger.debug("!!!! The workflow may be stuck !!!!")
+            self.logger.error("!!!! The workflow status is not clear. "
+                              "Stoppinng if !!!!")
+            self.logger.error(
+                "total jobs: %d, done/aborted: %d, to abort: %d, running: %d, "
+                "to run: %d"
+                % (len(self.jobs), len(done), len(to_abort), len(running),
+                   len(to_run)))
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        return (to_run, ended_jobs, status)
+        return (list(to_run), ended_jobs, status)
 
     def _update_state_from_database_server(self, database_server):
         wf_status = database_server.get_detailed_workflow_status(self.wf_id)
