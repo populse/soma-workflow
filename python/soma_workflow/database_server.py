@@ -1526,7 +1526,8 @@ class WorkflowDatabaseServer(object):
         @type  status: string
         @param status: workflow status as defined in constants.WORKFLOW_STATUS
         '''
-        self.logger.debug("=> set_workflow_status")
+        self.logger.debug("=> set_workflow_status, wf_id: %s, status: %s"
+                          % (wf_id, status))
         with self._lock:
             # TBI if the status is not valid raise an exception ??
             connection = self._connect()
@@ -1544,8 +1545,8 @@ class WorkflowDatabaseServer(object):
                         [wf_id]))[0]
                     prev_status = self._string_conversion(prev_status)
                     if force or \
-                       (prev_status != constants.DELETE_PENDING and
-                            prev_status != constants.KILL_PENDING):
+                            (prev_status != constants.DELETE_PENDING and
+                                prev_status != constants.KILL_PENDING):
                         cursor.execute('''UPDATE workflows
                             SET status=?,
                             last_status_update=?
@@ -1553,11 +1554,17 @@ class WorkflowDatabaseServer(object):
                                       (status,
                                        datetime.now(),
                                        wf_id))
+                        self.logger.debug("===> workflow_status updated")
+                    else:
+                        self.logger.debug("===> (workflow_status not updated)")
             except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                self.logger.error(
+                    "===> workflow_status update failed, error: %s, : %s"
+                    % (str(type(e)), str(e)))
+                raise DatabaseError('%s: %s \n' % (str(type(e)), str(e)))
             connection.commit()
             cursor.close()
             connection.close()
@@ -1567,7 +1574,8 @@ class WorkflowDatabaseServer(object):
         Returns the workflow status stored in the database
         (updated by L{DrmaaWorkflowEngine}) and the date of its last update.
         '''
-        self.logger.debug("=> get_workflow_status")
+        self.logger.debug("=> get_workflow_status, wf_id: %s, user_id: %s"
+            % (wf_id, user_id))
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -1585,35 +1593,45 @@ class WorkflowDatabaseServer(object):
             date = self._str_to_date_conversion(strdate)
             cursor.close()
             connection.close()
-
+        self.logger.debug("===> status: %s, date: %s" % (status, strdate))
         return (status, date)
 
-    def get_detailed_workflow_status(self, wf_id):
+    def get_detailed_workflow_status(self, wf_id, check_status=False):
         '''
-        Gets back the status of all the workflow elements at once, minimizing the
-        requests to the database.
+        Gets back the status of all the workflow elements at once, minimizing
+        the requests to the database.
 
-        @type wf_id: C{WorflowIdentifier}
-        @rtype: tuple (sequence of tuple (job_id,
-                                          status,
-                                          queue,
-                                          exit_info,
-                                          (submission_date,
-                                           execution_date,
-                                           ending_date)),
-                       sequence of tuple (transfer_id,
-                                          client_file_path,
-                                          client_paths,
-                                          status,
-                                          transfer_type),
-                       workflow_status,
-                       workflow_queue,
-                       sequence of tuple (temp_path_id,
-                                          engine_path,
-                                          status),
-                      )
+        Parameters
+        ----------
+        wf_id: WorflowIdentifier
+        check_status: bool (optional, default=False)
+            if True, check that a workflow with status RUNNING has actually
+            some running or pending jobs. If not, set the state to DONE. It
+            should not happen, and if it does, it's a bug (which has actually
+            happened in Soma-Workflow <= 2.8.0)
+
+        Returns
+        -------
+        tuple (sequence of tuple (job_id,
+                                  status,
+                                  queue,
+                                  exit_info,
+                                  (submission_date,
+                                    execution_date,
+                                    ending_date)),
+                sequence of tuple (transfer_id,
+                                  client_file_path,
+                                  client_paths,
+                                  status,
+                                  transfer_type),
+                workflow_status,
+                workflow_queue,
+                sequence of tuple (temp_path_id,
+                                  engine_path,
+                                  status),
+        )
         '''
-        self.logger.debug("=> get_detailed_workflow_status")
+        self.logger.debug("=> get_detailed_workflow_status, wf_id: %s" % wf_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -1639,8 +1657,11 @@ class WorkflowDatabaseServer(object):
                                             execution_date,
                                             ending_date,
                                             queue
-                                     FROM jobs WHERE workflow_id=?''', [wf_id]):
-                    job_id, status, exit_status, exit_value, term_signal, resource_usage, submission_date, execution_date, ending_date, queue = row
+                                     FROM jobs WHERE workflow_id=?''',
+                                     [wf_id]):
+                    job_id, status, exit_status, exit_value, term_signal, \
+                    resource_usage, submission_date, execution_date, \
+                    ending_date, queue = row
 
                     submission_date = self._str_to_date_conversion(
                         submission_date)
@@ -1650,7 +1671,11 @@ class WorkflowDatabaseServer(object):
                     queue = self._string_conversion(queue)
 
                     workflow_status[0].append(
-                        (job_id, status, queue, (exit_status, exit_value, term_signal, resource_usage), (submission_date, execution_date, ending_date, queue)))
+                        (job_id, status, queue,
+                         (exit_status, exit_value, term_signal,
+                          resource_usage),
+                         (submission_date, execution_date, ending_date,
+                          queue)))
 
                 # transfers
                 for row in cursor.execute('''SELECT engine_file_path,
@@ -1658,7 +1683,8 @@ class WorkflowDatabaseServer(object):
                                             client_paths,
                                             status,
                                             transfer_type
-                                     FROM transfers WHERE workflow_id=?''', [wf_id]):
+                                     FROM transfers WHERE workflow_id=?''',
+                                     [wf_id]):
                     (engine_file_path,
                      client_file_path,
                      client_paths,
@@ -1687,7 +1713,8 @@ class WorkflowDatabaseServer(object):
                 for row in cursor.execute('''SELECT temp_path_id,
                                             engine_file_path,
                                             status
-                                     FROM temporary_paths WHERE workflow_id=?''', [wf_id]):
+                                  FROM temporary_paths WHERE workflow_id=?''',
+                                  [wf_id]):
                     (temp_path_id,
                      engine_file_path,
                      status) = row
@@ -1707,6 +1734,22 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+        self.logger.debug("===> status: %s, queue: %s" % (wf_status, wf_queue))
+        if check_status and wf_status == constants.WORKFLOW_IN_PROGRESS:
+            done = []
+            not_done = []
+            for job_status in workflow_status[0]:
+                if job_status[1] in (constants.DONE, constants.FAILED):
+                    done.append(job_status[0])
+                else:
+                    not_done.append(job_status[0])
+            self.logger.debug("===> ended jobs: %d, not ended: %d"
+                % (len(done), len(not_done)))
+            if len(not_done) == 0:
+                self.logger.warning("=> Workflow status error: is RUNNING "
+                                    "with no jobs left to be processed")
+                self.logger.warning("=> fixing workflow status")
+                self.set_workflow_status(wf_id, constants.WORKFLOW_DONE, True)
         return workflow_status
 
     #

@@ -446,6 +446,8 @@ class WorkflowEngineLoop(object):
                     force = False
                     if wf_id in wf_to_kill + wf_to_delete:
                         force = True
+                    self.logger.debug("set workflow status for: %s, status: %s"
+                        % (wf_id, workflow.status))
                     self._database_server.set_workflow_status(
                         wf_id, workflow.status,
                         force=force)
@@ -923,10 +925,10 @@ class WorkflowEngine(RemoteFileController):
                 self.engine_loop.force_stop(workflow_id)
                 return False
             else:
-                self._database_server.set_workflow_status(workflow_id,
-                                                          constants.KILL_PENDING)
-                self._wait_wf_status_update(workflow_id,
-                                            expected_status=constants.WORKFLOW_DONE)
+                self._database_server.set_workflow_status(
+                    workflow_id, constants.KILL_PENDING)
+                self._wait_wf_status_update(
+                    workflow_id, expected_status=constants.WORKFLOW_DONE)
 
         return True
 
