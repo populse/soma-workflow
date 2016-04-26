@@ -1206,7 +1206,6 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if self.config_file is not None \
                 or (resource_id in ('localhost', socket.gethostname())
                     and self.db_file is not None):
-            print('customized config.')
             config = configuration.Configuration.load_from_file(
                 self.config_file)
             if resource_id in ('localhost', socket.gethostname()) \
@@ -2016,8 +2015,6 @@ class MainWindow(QtGui.QMainWindow):
                  flags=0,
                  config_file=None,
                  db_file=None):
-
-        print('db_file:', db_file)
 
         super(MainWindow, self).__init__(parent)
 
