@@ -979,17 +979,67 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
     from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
     from soma_workflow.database_server import WorkflowDatabaseServer
 
+    # configure logging
+    log_config = {'version': 1}
+
     (engine_log_dir,
      engine_log_format,
      engine_log_level) = config.get_engine_log_info()
     if engine_log_dir:
         logfilepath = os.path.join(
             os.path.abspath(engine_log_dir), "log_light_mode")
-        logging.basicConfig(
-            filename=logfilepath,
-            format=engine_log_format,
-            level=eval("logging." + engine_log_level))
+        log_config['loggers'] = {
+            'engine': {
+                'level': eval("logging." + engine_log_level),
+                'handlers': ['engine'],
+            }
+        }
+        log_config['handlers'] = {
+            'engine': {
+                'class': 'logging.FileHandler',
+                'filename': logfilepath,
+                'level': eval("logging." + engine_log_level),
+                'formatter': 'engine',
+            }
+        }
+        log_config['formatters'] = {
+            'engine': {
+                'format': engine_log_format,
+            }
+        }
+
+    (server_log_file,
+     server_log_format,
+     server_log_level) = config.get_server_log_info()
+    if server_log_file:
+        log_config.setdefault('loggers', {})['jobServer'] = {
+            'level': eval("logging." + server_log_level),
+            'handlers': ['jobServer'],
+        }
+        log_config.setdefault('handlers', {})['jobServer'] = {
+            'class': 'logging.FileHandler',
+            'filename': server_log_file,
+            'level': eval("logging." + server_log_level),
+            'formatter': 'jobServer',
+        }
+        log_config.setdefault('formatters', {})['jobServer'] = {
+            'format': server_log_format,
+        }
+
+    import logging.config
+    logging.config.dictConfig(log_config)
+
+    if engine_log_dir:
+        #logging.basicConfig(
+            #filename=logfilepath,
+            #format=engine_log_format,
+            #level=eval("logging." + engine_log_level))
         logger = logging.getLogger('engine')
+        logger.info(" ")
+        logger.info("****************************************************")
+        logger.info("****************************************************")
+    if server_log_file:
+        logger = logging.getLogger('jobServer')
         logger.info(" ")
         logger.info("****************************************************")
         logger.info("****************************************************")
