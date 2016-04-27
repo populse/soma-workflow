@@ -1026,14 +1026,16 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
             'format': server_log_format,
         }
 
-    import logging.config
-    logging.config.dictConfig(log_config)
+    if sys.version_info >= [2, 7]:
+        import logging.config
+        logging.config.dictConfig(log_config)
+    elif engine_log_dir:
+        logging.basicConfig(
+            filename=logfilepath,
+            format=engine_log_format,
+            level=eval("logging." + engine_log_level))
 
     if engine_log_dir:
-        #logging.basicConfig(
-            #filename=logfilepath,
-            #format=engine_log_format,
-            #level=eval("logging." + engine_log_level))
         logger = logging.getLogger('engine')
         logger.info(" ")
         logger.info("****************************************************")
