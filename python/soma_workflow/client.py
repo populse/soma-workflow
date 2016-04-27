@@ -1026,7 +1026,7 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
             'format': server_log_format,
         }
 
-    if sys.version_info >= [2, 7]:
+    if sys.version_info >= (2, 7):
         import logging.config
         logging.config.dictConfig(log_config)
     elif engine_log_dir:
