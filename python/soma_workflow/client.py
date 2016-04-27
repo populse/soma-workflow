@@ -992,6 +992,7 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
             'engine': {
                 'level': eval("logging." + engine_log_level),
                 'handlers': ['engine'],
+                'propagate': False,
             }
         }
         log_config['handlers'] = {
@@ -1015,6 +1016,7 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
         log_config.setdefault('loggers', {})['jobServer'] = {
             'level': eval("logging." + server_log_level),
             'handlers': ['jobServer'],
+            'propagate': False,
         }
         log_config.setdefault('handlers', {})['jobServer'] = {
             'class': 'logging.FileHandler',
