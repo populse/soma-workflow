@@ -871,7 +871,7 @@ class Configuration(observer.Observable):
                 engine_log_format = self._config_parser.get(
                     self._resource_id,
                     OCFG_ENGINE_LOG_FORMAT,
-                    1)
+                    raw=1)
             else:
                 engine_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
             if self._config_parser.has_option(self._resource_id,
@@ -897,7 +897,7 @@ class Configuration(observer.Observable):
                 server_log_format = self._config_parser.get(
                     self._resource_id,
                     OCFG_SERVER_LOG_FORMAT,
-                    1)
+                    raw=1)
             else:
                 server_log_format = "%(asctime)s => %(module)s line %(lineno)s: %(message)s"
             if self._config_parser.has_option(self._resource_id,
