@@ -50,7 +50,7 @@ if QT_BACKEND == PYQT:
     from PyQt4.uic import loadUiType
     import sip
     sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
-                    'QTextStream', 'QTime', 'QUrl', 'QStringList']
+                   'QTextStream', 'QTime', 'QUrl', 'QStringList']
     for sip_class in sip_classes:
         try:
             sip.setapi(sip_class, 2)
@@ -1443,10 +1443,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 datetime.now() + timedelta(days=5))
             submission_dlg.setWindowTitle("Restart")
             queues = ["default"]
-            queues.extend(sorted(Controller.get_queues(
-                self.model.current_connection)))
-            if 'default' in queues[1:]:
-                del queues[queues.index('default', 1)]
+            queues.extend(sorted([q for q in Controller.get_queues(
+                self.model.current_connection) if q not in (None, 'default')]))
             ui.combo_queue.addItems(queues)
             previous_queue = self.model.current_workflow().queue
             if previous_queue == None:
