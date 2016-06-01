@@ -49,6 +49,13 @@ if QT_BACKEND == PYQT:
     from PyQt4 import uic
     from PyQt4.uic import loadUiType
     import sip
+    sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
+                    'QTextStream', 'QTime', 'QUrl', 'QStringList']
+    for sip_class in sip_classes:
+        try:
+            sip.setapi(sip_class, 2)
+        except ValueError as e:
+            pass
     use_qvariant = False
     if sip.getapi('QVariant') < 2:
         use_qvariant = True
@@ -1365,10 +1372,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 datetime.now() + timedelta(days=5))
 
             queues = ["default"]
-            queues.extend(sorted(Controller.get_queues(
-                self.model.current_connection)))
-            if 'default' in queues[1:]:
-                del queues[queues.index('default', 1)]
+            queues.extend(sorted([q for q in Controller.get_queues(
+                self.model.current_connection) if q not in (None, 'default')]))
             ui.combo_queue.addItems(queues)
 
             if submission_dlg.exec_() != QtGui.QDialog.Accepted:
