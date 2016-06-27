@@ -622,9 +622,10 @@ class EngineWorkflow(Workflow):
                     self.transfer_mapping.update(ejob.transfer_mapping)
                     self.job_mapping[elem] = ejob
             elif not isinstance(elem, Group):
-                raise WorkflowError("%s: Wrong type in the workflow root_group."
-                                    " Objects of type Job or Group are required." %
-                                    (repr(elem)))
+                raise WorkflowError(
+                      "%s: Wrong type in the workflow root_group."
+                      " Objects of type Job or Group are required." %
+                      (repr(elem)))
 
     def find_out_independant_jobs(self):
         independant_jobs = []
@@ -632,8 +633,9 @@ class EngineWorkflow(Workflow):
             to_run = True
             for ft in job.referenced_input_files:
                 if not self.transfer_mapping[ft].files_exist_on_server():
-                    if self.transfer_mapping[ft].status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
-                            # TBI stop the transfer
+                    if self.transfer_mapping[ft].status
+                            == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+                        # TBI stop the transfer
                         pass
                     to_run = False
                     break
@@ -646,8 +648,10 @@ class EngineWorkflow(Workflow):
                 independant_jobs.append(self.job_mapping[job])
         if independant_jobs:
             status = constants.WORKFLOW_IN_PROGRESS
-        else:
+        elif len(self.jobs) != 0:
             status = self.status
+        else:
+            status = constants.WORKFLOW_DONE
         return (independant_jobs, status)
 
     def find_out_jobs_to_process(self):
