@@ -633,7 +633,7 @@ class EngineWorkflow(Workflow):
             to_run = True
             for ft in job.referenced_input_files:
                 if not self.transfer_mapping[ft].files_exist_on_server():
-                    if self.transfer_mapping[ft].status
+                    if self.transfer_mapping[ft].status \
                             == constants.TRANSFERING_FROM_CR_TO_CLIENT:
                         # TBI stop the transfer
                         pass
