@@ -23,6 +23,7 @@ from datetime import datetime
 from datetime import timedelta
 import socket
 import weakref
+import subprocess
 # import cProfile
 # import traceback
 # import pdb
@@ -3195,7 +3196,8 @@ class WorkflowGraphView(QtGui.QWidget):
             print(names[ar[0]][0] + " -> " + names[ar[1]][0], file=file)
         for node in self.workflow.jobs:
             if isinstance(node, Job):
-                if node.job_id == NOT_SUBMITTED_JOB_ID:
+                if not hasattr(node, "job_id") \
+                        or node.job_id == NOT_SUBMITTED_JOB_ID:
                     print(names[node][0] + "[shape=box label="
                           + names[node][1] + "];", file=file)
                 else:
@@ -3226,7 +3228,7 @@ class WorkflowGraphView(QtGui.QWidget):
                               + names[node][1] + ", style=filled, color="
                               + GREEN + "];", file=file)
             if isinstance(node, FileTransfer):
-                if not node.engine_path:
+                if not hasattr(node, "engine_path") or not node.engine_path:
                     print(names[node][0] + "[label=" + names[node][1] + "];",
                           file=file)
                 else:
@@ -3253,9 +3255,10 @@ class WorkflowGraphView(QtGui.QWidget):
         print("}", file=file)
         file.close()
 
-        command = "dot -Tpng " + dot_file_path + " -o " + graph_file_path
+        command = ["dot", "-Tpng", dot_file_path, "-o", graph_file_path]
         # dot_process = subprocess.Popen(command, shell = True)
-        commands.getstatusoutput(command)
+        #commands.getstatusoutput(command)
+        subprocess.check_call(command)
         return graph_file_path
 
 
