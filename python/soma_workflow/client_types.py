@@ -1673,7 +1673,7 @@ def from_serializable(element,
                       srp_from_ids,
                       tmp_from_ids):
     if isinstance(element, list):
-        if element[0] == "soma-workflow-tuple" and len(element) == 3:
+        if len(element) == 3 and element[0] == "soma-workflow-tuple":
             return (from_serializable(element[1],
                                       tr_from_ids,
                                       srp_from_ids,
