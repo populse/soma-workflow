@@ -1256,12 +1256,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
             login = None
         if self.connection_dlg.ui.lineEdit_password.text():
             password = unicode(
-                self.connection_dlg.ui.lineEdit_password.text()).encode('utf-8')
+                self.connection_dlg.ui.lineEdit_password.text()).encode(
+                    'utf-8')
         else:
             password = None
         if self.connection_dlg.ui.lineEdit_rsa_password.text():
             rsa_key_pass = unicode(
-                self.connection_dlg.ui.lineEdit_rsa_password.text()).encode('utf-8')
+                self.connection_dlg.ui.lineEdit_rsa_password.text()).encode(
+                    'utf-8')
         else:
             rsa_key_pass = None
 
@@ -2074,19 +2076,21 @@ class MainWindow(QtGui.QMainWindow):
         treeWidgetLayout.addWidget(self.treeWidget)
         self.ui.centralwidget.setLayout(treeWidgetLayout)
 
-        self.itemInfoWidget = WorkflowElementInfo(model=self.model,
-                                                  proxy_model=self.treeWidget.proxy_model,
-                                                  parent=self)
+        self.itemInfoWidget = WorkflowElementInfo(
+            model=self.model, proxy_model=self.treeWidget.proxy_model,
+            parent=self)
         itemInfoLayout = QtGui.QVBoxLayout()
         itemInfoLayout.setContentsMargins(2, 2, 2, 2)
         itemInfoLayout.addWidget(self.itemInfoWidget)
         self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
         self.connect(self.treeWidget, QtCore.SIGNAL(
-            'selection_model_changed(QItemSelectionModel)'), self.itemInfoWidget.setSelectionModel)
+            'selection_model_changed(QItemSelectionModel)'),
+            self.itemInfoWidget.setSelectionModel)
 
         self.connect(self.itemInfoWidget, QtCore.SIGNAL(
-            'connection_closed_error'), self.sw_widget.reconnectAfterConnectionClosed)
+            'connection_closed_error'),
+            self.sw_widget.reconnectAfterConnectionClosed)
 
         self.workflowInfoWidget = WorkflowGroupInfo(self.model, self)
         wfInfoLayout = QtGui.QVBoxLayout()
@@ -2094,15 +2098,15 @@ class MainWindow(QtGui.QMainWindow):
         wfInfoLayout.addWidget(self.workflowInfoWidget)
         self.ui.widget_wf_info.setLayout(wfInfoLayout)
 
-        # self.graphWidget = WorkflowGraphView(self)
-        # graphWidgetLayout = QtGui.QVBoxLayout()
-        # graphWidgetLayout.setContentsMargins(2,2,2,2)
-        # graphWidgetLayout.addWidget(self.graphWidget)
-        # self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
+        self.graphWidget = WorkflowGraphView(self.model, self)
+        graphWidgetLayout = QtGui.QVBoxLayout()
+        graphWidgetLayout.setContentsMargins(2,2,2,2)
+        graphWidgetLayout.addWidget(self.graphWidget)
+        self.ui.dockWidgetContents_graph.setLayout(graphWidgetLayout)
 
         # no graph for now
-        self.ui.dock_graph.hide()
-        self.ui.dock_graph.toggleViewAction().setVisible(False)
+        #self.ui.dock_graph.hide()
+        #self.ui.dock_graph.toggleViewAction().setVisible(False)
 
         self.workflowPlotWidget = WorkflowPlot(self.model, parent=self)
         plotLayout = QtGui.QVBoxLayout()
@@ -3103,7 +3107,7 @@ class PlotView(QtGui.QWidget):
 
 class WorkflowGraphView(QtGui.QWidget):
 
-    def __init__(self, connection, parent=None):
+    def __init__(self, model=None, parent=None):
         super(WorkflowGraphView, self).__init__(parent)
         self.ui = Ui_GraphWidget()
         self.ui.setupUi(self)
@@ -3129,6 +3133,29 @@ class WorkflowGraphView(QtGui.QWidget):
         self.ui.adjust_size_checkBox.stateChanged.connect(
             self.adjustSizeChanged)
         self.ui.button_refresh.clicked.connect(self.refresh)
+
+        self.model = model
+        if model is not None:
+            self.connect(self.model,
+                         QtCore.SIGNAL('current_workflow_changed()'),
+                         self.current_workflow_changed)
+            self.connect(self.model, QtCore.SIGNAL(
+                        'current_connection_changed()'),
+                        self.current_workflow_changed)
+
+    @QtCore.Slot()
+    def current_workflow_changed(self):
+        if self.model is not None:
+            gui_workflow = self.model.current_workflow()
+            if gui_workflow is None:
+                workflow = None
+            else:
+                workflow = gui_workflow.server_workflow
+            self.setWorkflow(workflow,
+                             self.model.current_connection)
+            self.refresh()
+        else:
+            self.setWorkflow(None, None)
 
     def setWorkflow(self, workflow, connection):
         self.workflow = workflow
@@ -3238,7 +3265,9 @@ class WorkflowGraphView(QtGui.QWidget):
                         print(names[node][0] + "[label="
                               + names[node][1] + ", style=filled, color="
                               + GRAY + "];", file=file)
-                    elif status == constants.FILES_ON_CR or status == constants.FILES_ON_CLIENT_AND_CR or status == constants.FILES_ON_CLIENT:
+                    elif status == constants.FILES_ON_CR \
+                            or status == constants.FILES_ON_CLIENT_AND_CR \
+                            or status == constants.FILES_ON_CLIENT:
                         print(names[node][0] + "[label="
                               + names[node][1] + ", style=filled, color="
                               + BLUE + "];", file=file)
@@ -3256,8 +3285,6 @@ class WorkflowGraphView(QtGui.QWidget):
         file.close()
 
         command = ["dot", "-Tpng", dot_file_path, "-o", graph_file_path]
-        # dot_process = subprocess.Popen(command, shell = True)
-        #commands.getstatusoutput(command)
         subprocess.check_call(command)
         return graph_file_path
 
