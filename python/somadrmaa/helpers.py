@@ -30,9 +30,9 @@ import six
 _BUFLEN = const.ATTR_BUFFER
 
 try:
-    import namedtuple as _nt
+    import collections as _nt
 except ImportError:  # pre 2.6 behaviour
-    import nt as _nt
+    from somadrmaa import nt as _nt
 
 
 class BoolConverter(object):

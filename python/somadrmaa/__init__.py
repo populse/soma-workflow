@@ -30,9 +30,9 @@ __docformat__ = "restructuredtext en"
 import ctypes as _ct
 
 try:
-    import namedtuple as _nt
+    import collections as _nt
 except ImportError:  # pre 2.6 behaviour
-    import nt as _nt
+    from somadrmaa import nt as _nt
 
 __version__ = "$Revision$"[11:-2]
 
