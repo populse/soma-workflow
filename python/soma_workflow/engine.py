@@ -42,7 +42,7 @@ from soma_workflow.configuration import Configuration
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-refreshment_interval = 1  # seconds
+refreshment_interval = 0.1  # seconds
 # if the last status update is older than the refreshment_timeout
 # the status is changed into WARNING
 refreshment_timeout = 60  # seconds
@@ -198,6 +198,11 @@ class WorkflowEngineLoop(object):
         # stopped from another thread (typically the main thread) when we
         # get here (typically in a secondary thread)
         # self._running = True
+        import cProfile
+        cProfile.runctx('self.start_loop__(time_interval)', globals(), locals(), '/tmp/profile')
+
+    def start_loop__(self, time_interval):
+
         drms_error_jobs = {}
         idle_cmpt = 0
         while True:

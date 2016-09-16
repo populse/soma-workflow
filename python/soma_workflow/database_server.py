@@ -1450,12 +1450,14 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
+                self.vacuum()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
 
             cursor.close()
             connection.commit()
             connection.close()
             self.clean()
+            self.vacuum()
 
     def change_workflow_expiration_date(self, wf_id, new_date, user_id):
         '''

@@ -513,6 +513,16 @@ class EngineWorkflow(Workflow):
 
     logger = None
 
+    class WorkflowCache(object):
+
+        def __init__(self):
+            self.waiting_jobs = set()
+            self.to_run = set()
+            self.dependencies = {}
+            self.done = set()
+            self.running = set()
+            self.to_abort = set()
+
     def __init__(self,
                  client_workflow,
                  path_translation,
@@ -547,6 +557,7 @@ class EngineWorkflow(Workflow):
                 self._dependency_dict[dep[1]].append(dep[0])
             else:
                 self._dependency_dict[dep[1]] = [dep[0]]
+        self.cache = None
 
     def _map(self):
         '''
@@ -668,21 +679,36 @@ class EngineWorkflow(Workflow):
 
         self.logger = logging.getLogger('engine.EngineWorkflow')
         self.logger.debug("self.jobs=" + repr(self.jobs))
+        if self.cache is None:
+            self.cache = EngineWorkflow.WorkflowCache()
+            self.cache.waiting_jobs = set(self.jobs)
+            self.cache.dependencies = dict(self._dependency_dict)
+        cache = self.cache
         to_run = set()
         to_abort = set()
-        done = []
+        done = set()
         running = set()
-        for client_job in self.jobs:
+        rmap = {}
+        jcount = 0
+        dcount = 0
+        fcount = 0
+        import time
+        t0 = time.clock()
+        for client_job in cache.waiting_jobs:
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
+            jcount += 1
             if job.is_done():
-                done.append(job)
+                done.add(job)
+                rmap[job] = client_job
             elif job.is_running():
                 running.add(job)
+                rmap[job] = client_job
             elif job.status == constants.NOT_SUBMITTED:
                 job_to_run = True
                 job_to_abort = False
                 for ft in job.referenced_input_files:
+                    fcount += 1
                     eft = job.transfer_mapping[ft]
                     if not eft.files_exist_on_server():
                         if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
@@ -690,19 +716,61 @@ class EngineWorkflow(Workflow):
                             pass
                         job_to_run = False
                         break
-                if client_job in self._dependency_dict:
-                    for dep_client_job in self._dependency_dict[client_job]:
+                deps = cache.dependencies.get(client_job)
+                if deps is not None:
+                    remove_deps = []
+                    for dep_client_job \
+                            in cache.dependencies[client_job]:
+                        dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
                             if dep_job.failed():
                                 job_to_abort = True
                                 break
+                        else:
+                            remove_deps.append(dep_client_job)
                         # TO DO to abort
+                    for dep_client_job in remove_deps:
+                        deps.remove(dep_client_job)
                 if job_to_run:
                     to_run.add(job)
                 if job_to_abort:
                     to_abort.add(job)
+                if job_to_run or job_to_abort:
+                    rmap[job] = client_job
+
+        # update status of former cache
+        to_remove = []
+        for job in cache.to_run:
+            if job.is_done():
+                done.add(job)
+                to_remove.append(job)
+            elif job.is_running():
+                running.add(job)
+                to_remove.append(job)
+        cache.to_run.difference_update(to_remove)
+        to_remove = []
+        for job in cache.running:
+            if job.is_done():
+                done.add(job)
+                to_remove.append(job)
+        cache.running.difference_update(to_remove)
+        to_remove = []
+        for job in cache.to_abort:
+            if job.is_done():
+                done.add(job)
+                to_remove.append(job)
+        cache.to_abort.difference_update(to_remove)
+
+        cache.waiting_jobs.difference_update(rmap.values())
+
+        cache.to_run.update(to_run)
+        cache.running.update(running)
+        cache.to_abort.update(to_abort)
+        to_run = cache.to_run
+        running = cache.running
+
         # if a job fails the whole workflow branch has to be stopped
         # look for the node in the branch to abort
         previous_size = 0
@@ -729,6 +797,13 @@ class EngineWorkflow(Workflow):
                 to_run.discard(job)
                 running.discard(job)
 
+        # counts
+        to_run.difference_update(done)
+        to_abort.difference_update(done)
+        running.difference_update(done)
+        cache.done.update(done)
+        done = cache.done
+
         if len(running) + len(to_run) > 0:
             status = constants.WORKFLOW_IN_PROGRESS
         elif len(done) + len(to_abort) == len(self.jobs):
@@ -747,6 +822,9 @@ class EngineWorkflow(Workflow):
                    len(to_run)))
         else:
             status = constants.WORKFLOW_NOT_STARTED
+
+        t1 = time.clock()
+        print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', ended:', len(ended_jobs), ', done:', len(done), ', running:', len(running))
 
         return (list(to_run), ended_jobs, status)
 
