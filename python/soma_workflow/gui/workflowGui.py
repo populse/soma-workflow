@@ -2107,6 +2107,8 @@ class MainWindow(QtGui.QMainWindow):
         # no graph for now
         #self.ui.dock_graph.hide()
         #self.ui.dock_graph.toggleViewAction().setVisible(False)
+        self.ui.dock_graph.visibilityChanged.connect(
+            self.graphWidget.graph_visibility_changed)
 
         self.workflowPlotWidget = WorkflowPlot(self.model, parent=self)
         plotLayout = QtGui.QVBoxLayout()
@@ -3114,6 +3116,8 @@ class WorkflowGraphView(QtGui.QWidget):
 
         self.workflow = None
         self.connection = None
+        self.draw_enabled = False
+        self._data_changed = False
 
         self.image_label = QtGui.QLabel(self)
         self.image_label.setBackgroundRole(QtGui.QPalette.Base)
@@ -3185,17 +3189,30 @@ class WorkflowGraphView(QtGui.QWidget):
 
     @QtCore.Slot()
     def dataChanged(self, force=False):
+        if not self.draw_enabled:
+            self._data_changed = True
+            return
         if self.workflow and (force or
                               self.ui.checkbox_auto_update.isChecked()):
-            image_file_path = self.printWorkflow()
-            image = QtGui.QImage(image_file_path)
-            pixmap = QtGui.QPixmap.fromImage(image)
-            self.image_label.setPixmap(pixmap)
-            self.ui.scrollArea.setWidget(self.image_label)
-            self.image_label.resize(
-                self.image_label.pixmap().size() * self.scale_factor)
+            self.rebuild_graph()
         else:
             self.ui.scrollArea.takeWidget()
+        self._data_changed = False
+
+    def rebuild_graph(self):
+        image_file_path = self.printWorkflow()
+        image = QtGui.QImage(image_file_path)
+        pixmap = QtGui.QPixmap.fromImage(image)
+        self.image_label.setPixmap(pixmap)
+        self.ui.scrollArea.setWidget(self.image_label)
+        self.image_label.resize(
+            self.image_label.pixmap().size() * self.scale_factor)
+        self._data_changed = False
+
+    def graph_visibility_changed(self, visible):
+        self.draw_enabled = visible
+        if visible and self._data_changed:
+            self.rebuild_graph()
 
     def printWorkflow(self):
 
