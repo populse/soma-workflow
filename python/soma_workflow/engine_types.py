@@ -560,6 +560,8 @@ class EngineWorkflow(Workflow):
             else:
                 self._dependency_dict[dep[1]] = [dep[0]]
         self.cache = None
+        # begin without cache because it also has an overhead
+        self.use_cache = False
 
     def _map(self):
         '''
@@ -678,6 +680,9 @@ class EngineWorkflow(Workflow):
                   ended jobs
                   workflow status)
         '''
+
+        if not self.use_cache:
+            return self.find_out_jobs_to_process_nocache()
 
         self.logger = logging.getLogger('engine.EngineWorkflow')
         self.logger.debug("self.jobs=" + repr(self.jobs))
@@ -842,6 +847,128 @@ class EngineWorkflow(Workflow):
         print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', ended:', len(ended_jobs), ', done:', len(done), ', running:', len(running))
 
         return (list(to_run), ended_jobs, status)
+
+    def find_out_jobs_to_process_nocache(self):
+        '''
+        Workflow exploration to find out new node to process.
+
+        @rtype: tuple (sequence of EngineJob,
+                       sequence of EngineJob,
+                       constanst.WORKFLOW_STATUS)
+        @return: (jobs to run,
+                  ended jobs
+                  workflow status)
+        '''
+
+        self.logger = logging.getLogger('engine.EngineWorkflow')
+        self.logger.debug("self.jobs=" + repr(self.jobs))
+        to_run = set()
+        to_abort = set()
+        done = []
+        running = set()
+        jcount = 0
+        dcount = 0
+        fcount = 0
+        j_to_discard = 0
+        d_to_discard = 0
+        f_to_discard = 0
+        #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
+        #self.has_new_failed_jobs = False
+        import time
+        t0 = time.clock()
+        for client_job in self.jobs:
+            jcount += 1
+            self.logger.debug("client_job=" + repr(client_job))
+            job = self.job_mapping[client_job]
+            if job.is_done():
+                done.append(job)
+                j_to_discard += 1
+            elif job.is_running():
+                running.add(job)
+                j_to_discard += 1
+            elif job.status == constants.NOT_SUBMITTED:
+                job_to_run = True
+                job_to_abort = False
+                for ft in job.referenced_input_files:
+                    fcount += 1
+                    eft = job.transfer_mapping[ft]
+                    if not eft.files_exist_on_server():
+                        if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+                        # TBI stop the transfer
+                            pass
+                        job_to_run = False
+                        break
+                if client_job in self._dependency_dict:
+                    for dep_client_job in self._dependency_dict[client_job]:
+                        dcount += 1
+                        dep_job = self.job_mapping[dep_client_job]
+                        if not dep_job.ended_with_success():
+                            job_to_run = False
+                            if dep_job.failed():
+                                job_to_abort = True
+                                break
+                        else: d_to_discard += 1
+                        # TO DO to abort
+                if job_to_run:
+                    to_run.add(job)
+                    j_to_discard += 1
+                if job_to_abort:
+                    j_to_discard += 1
+                    to_abort.add(job)
+        # if a job fails the whole workflow branch has to be stopped
+        # look for the node in the branch to abort
+        previous_size = 0
+        while previous_size != len(to_abort):
+            previous_size = len(to_abort)
+            for dep in self.dependencies:
+                job_a = self.job_mapping[dep[0]]
+                job_b = self.job_mapping[dep[1]]
+                if job_a in to_abort and not job_b in to_abort:
+                    to_abort.add(job_b)
+                    j_to_discard += 1
+                    break
+
+        # stop the whole branch
+        ended_jobs = {}
+        for job in to_abort:
+            if job.job_id and job.status != constants.FAILED:
+                self.logger.debug("  ---- Failure: job to abort " + job.name)
+                assert(job.status == constants.NOT_SUBMITTED)
+                ended_jobs[job.job_id] = job
+                job.status = constants.FAILED
+                job.exit_status = constants.EXIT_NOTRUN
+                # remove job from to_run and running sets otherwise the
+                # workflow status could be wrong
+                to_run.discard(job)
+                running.discard(job)
+
+        if len(running) + len(to_run) > 0:
+            status = constants.WORKFLOW_IN_PROGRESS
+        elif len(done) + len(to_abort) == len(self.jobs):
+            status = constants.WORKFLOW_DONE
+        elif len(done) > 0:
+            # set it to DONE to avoid hangout
+            status = constants.WORKFLOW_DONE
+            # !!!! the workflow may be stuck !!!!
+            # TBI
+            self.logger.error("!!!! The workflow status is not clear. "
+                              "Stoppinng if !!!!")
+            self.logger.error(
+                "total jobs: %d, done/aborted: %d, to abort: %d, running: %d, "
+                "to run: %d"
+                % (len(self.jobs), len(done), len(to_abort), len(running),
+                   len(to_run)))
+        else:
+            status = constants.WORKFLOW_NOT_STARTED
+
+        t1 = time.clock()
+        print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', done:', len(done), ', running:', len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:', d_to_discard)
+        if j_to_discard >= 3000:
+            self.use_cache = True
+            print('=== enabling cache. ===')
+
+        return (list(to_run), ended_jobs, status)
+
 
     def _update_state_from_database_server(self, database_server):
         wf_status = database_server.get_detailed_workflow_status(self.wf_id)
