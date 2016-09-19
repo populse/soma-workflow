@@ -707,43 +707,47 @@ class WorkflowDatabaseServer(object):
     def generate_file_path(self,
                            user_id,
                            client_file_path=None,
-                           external_cursor=None):
+                           external_cursor=None,
+                           login=None):
         '''
         Generates file path for transfers.
         The user_id must be valid.
 
-        Parameters:
-
+        Parameters
+        ----------
         user_id: UserIdentifier
             user identifier
         client_file_path: string
             the generated name can derivate from this path.
+        external_cursor: SQlite Cursor object (optionsl)
+        login: user login corresponding to the id (optional)
+            If specified, a SQL request is saved.
 
-        Retuns:
-
+        Retuns
+        ------
         file path: string
         '''
 
+        self.logger.debug("=> generate_file_path")
         with self._lock:
             if not external_cursor:
-                self.logger.debug("=> generate_file_path")
                 connection = self._connect()
-                cursor = connection.cursor()
+                cursor = connection
             else:
                 cursor = external_cursor
-            try:
-                login = six.next(cursor.execute(
-                    'SELECT login FROM users WHERE id=?', [user_id]))[0]
-                # supposes that the user_id is valid
-                login = self._string_conversion(login)
-            except Exception as e:
-                if not external_cursor:
-                    connection.rollback()
-                    cursor.close()
-                    connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+            if login is None:
+                try:
+                    login = six.next(cursor.execute(
+                        'SELECT login FROM users WHERE id=?', [user_id]))[0]
+                    # supposes that the user_id is valid
+                    login = self._string_conversion(login)
+                except Exception as e:
+                    if not external_cursor:
+                        connection.rollback()
+                        connection.close()
+                    raise DatabaseError('%s: %s \n' % (type(e), e))
 
-            file_num = self.get_new_file_number(cursor)
+            file_num = self.get_new_file_number(external_cursor)
             userDirPath = self._user_transfer_dir_path(login, user_id)
             if client_file_path == None:
                 newFilePath = os.path.join(userDirPath, repr(file_num))
@@ -765,7 +769,6 @@ class WorkflowDatabaseServer(object):
                     # client_file_path[client_file_path.rfind("/")+1:iextention]
                     # + '_' + repr(file_num) + client_file_path[iextention:]
             if not external_cursor:
-                cursor.close()
                 connection.commit()
                 connection.close()
             return newFilePath
@@ -1327,7 +1330,8 @@ class WorkflowDatabaseServer(object):
 
     def add_workflow(self,
                      user_id,
-                     engine_workflow):
+                     engine_workflow,
+                     login=None):
         '''
         Register a workflow to the database and returns identifiers for every
         workflow element.
@@ -1395,12 +1399,16 @@ class WorkflowDatabaseServer(object):
 
                 job_info = []
 
+                if login is None:
+                    login = self.get_user_login(cursor)
+
                 for job in six.itervalues(engine_workflow.job_mapping):
                     job.workflow_id = engine_workflow.wf_id
                     job = self.add_job(user_id,
                                        job,
                                        engine_workflow.expiration_date,
-                                       external_cursor=cursor)
+                                       external_cursor=cursor,
+                                       login=login)
                     job_info.append(
                         (job.job_id, job.stdout_file, job.stderr_file))
                     engine_workflow.registered_jobs[job.job_id] = job
@@ -1535,30 +1543,24 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             try:
-                count = six.next(cursor.execute(
-                    '''SELECT count(*)
-                    FROM workflows
-                    WHERE id=?''',
+                prev_status = six.next(cursor.execute(
+                    '''SELECT status
+                    FROM workflows WHERE id=?''',
                     [wf_id]))[0]
-                if not count == 0:
-                    prev_status = six.next(cursor.execute(
-                        '''SELECT status
-                        FROM workflows WHERE id=?''',
-                        [wf_id]))[0]
-                    prev_status = self._string_conversion(prev_status)
-                    if force or \
-                            (prev_status != constants.DELETE_PENDING and
-                                prev_status != constants.KILL_PENDING):
-                        cursor.execute('''UPDATE workflows
-                            SET status=?,
-                            last_status_update=?
-                            WHERE id=?''',
-                                      (status,
-                                       datetime.now(),
-                                       wf_id))
-                        self.logger.debug("===> workflow_status updated")
-                    else:
-                        self.logger.debug("===> (workflow_status not updated)")
+                prev_status = self._string_conversion(prev_status)
+                if force or \
+                        (prev_status != constants.DELETE_PENDING and
+                            prev_status != constants.KILL_PENDING):
+                    cursor.execute('''UPDATE workflows
+                        SET status=?,
+                        last_status_update=?
+                        WHERE id=?''',
+                                  (status,
+                                    datetime.now(),
+                                    wf_id))
+                    self.logger.debug("===> workflow_status updated")
+                else:
+                    self.logger.debug("===> (workflow_status not updated)")
             except Exception as e:
                 connection.rollback()
                 cursor.close()
@@ -1804,11 +1806,36 @@ class WorkflowDatabaseServer(object):
                 last_status_update)
         return (count != 0, last_status_update)
 
+
+    def get_user_login(self, user_id, external_cursor=None):
+        self.logger.debug("=> get_user_login")
+        if not external_cursor:
+            connection = self._connect()
+            cursor = connection
+        else:
+            cursor = external_cursor
+        try:
+            login = six.next(cursor.execute(
+                'SELECT login FROM users WHERE id=?', [user_id]))[0]
+            # supposes that the user_id is valid
+            login = self._string_conversion(login)
+        except Exception as e:
+            if not external_cursor:
+                connection.rollback()
+                connection.close()
+            raise DatabaseError('%s: %s \n' % (type(e), e))
+        if not external_cursor:
+            connection.commit()
+            connection.close()
+        return login
+
+
     def add_job(self,
                 user_id,
                 engine_job,
                 expiration_date=None,
-                external_cursor=None):
+                external_cursor=None,
+                login=None):
         '''
         Adds a job to the database and returns its identifier.
 
@@ -1826,7 +1853,8 @@ class WorkflowDatabaseServer(object):
         parallel_config_name = None
         max_node_number = 1
         if engine_job.parallel_job_info:
-            parallel_config_name, max_node_number = engine_job.parallel_job_info
+            parallel_config_name, max_node_number \
+                = engine_job.parallel_job_info
         command_info = ""
         for command_element in engine_job.plain_command():
             command_info = command_info + " " + repr(command_element)
@@ -1839,13 +1867,16 @@ class WorkflowDatabaseServer(object):
             else:
                 cursor = external_cursor
 
+            if login is None:
+                login = self.get_user_login(user_id, cursor)
+
             try:
 
                 if not engine_job.plain_stdout():
-                    engine_job.stdout_file = self.generate_file_path(user_id,
-                                                                     external_cursor=cursor)
-                    engine_job.stderr_file = self.generate_file_path(user_id,
-                                                                     external_cursor=cursor)
+                    engine_job.stdout_file = self.generate_file_path(
+                        user_id, external_cursor=cursor, login=login)
+                    engine_job.stderr_file = self.generate_file_path(
+                        user_id, external_cursor=cursor, login=login)
                     custom_submission = False  # the std out and err file has to be removed with the job
                 else:
                     custom_submission = True  # the std out and err file won't to be removed with the job
@@ -2014,6 +2045,7 @@ class WorkflowDatabaseServer(object):
         if pickled_job:
             pickled_job = pickled_job.encode('utf-8')
             job = pickle.loads(pickled_job)
+            job.job_id = job_id
         else:
             job = None
 
@@ -2169,48 +2201,49 @@ class WorkflowDatabaseServer(object):
         with self._lock:
             # TBI if the status is not valid raise an exception ??
             connection = self._connect()
-            cursor = connection.cursor()
-            try:
-                count = six.next(cursor.execute(
-                    'SELECT count(*) FROM jobs WHERE id=?', [job_id]))[0]
-                if not count == 0:
-                    (previous_status,
-                     execution_date,
-                     ending_date) = six.next(cursor.execute(
+            sel = connection.execute(
                         ''' SELECT status,
                               execution_date,
                               ending_date
                         FROM jobs WHERE id=?''',
-                        [job_id]))  # supposes that the job_id is valid
-                    previous_status = self._string_conversion(previous_status)
-                    execution_date = self._str_to_date_conversion(
-                        execution_date)
-                    ending_date = self._str_to_date_conversion(ending_date)
-                    if previous_status != status:
-                        if not execution_date and status == constants.RUNNING:
-                            execution_date = datetime.now()
-                        if not ending_date and status == constants.DONE or \
-                           status == constants.FAILED:
-                            ending_date = datetime.now()
-                            if not execution_date:
-                                execution_date = datetime.now()
-                    if force or \
-                       (previous_status != constants.DELETE_PENDING and
-                            previous_status != constants.KILL_PENDING):
-                        cursor.execute('''UPDATE jobs SET status=?,
-                                              last_status_update=?,
-                                              execution_date=?,
-                                              ending_date=? WHERE id=?''',
-                                      (status, datetime.now(),
-                                       execution_date, ending_date,
-                                       job_id))
-            except Exception as e:
-                connection.rollback()
-                cursor.close()
+                        [job_id])
+            try:
+                (previous_status,
+                 execution_date,
+                 ending_date) = six.next(sel)
+            except StopIteration:
+                # job does not exist
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                return
+
+            previous_status = self._string_conversion(previous_status)
+            execution_date = self._str_to_date_conversion(
+                execution_date)
+            ending_date = self._str_to_date_conversion(ending_date)
+            if previous_status != status:
+                if not execution_date and status == constants.RUNNING:
+                    execution_date = datetime.now()
+                if not ending_date and status == constants.DONE or \
+                    status == constants.FAILED:
+                    ending_date = datetime.now()
+                    if not execution_date:
+                        execution_date = datetime.now()
+            if force or \
+                    (previous_status != constants.DELETE_PENDING and
+                     previous_status != constants.KILL_PENDING):
+                try:
+                    connection.execute('''UPDATE jobs SET status=?,
+                                          last_status_update=?,
+                                          execution_date=?,
+                                          ending_date=? WHERE id=?''',
+                                  (status, datetime.now(),
+                                    execution_date, ending_date,
+                                    job_id))
+                except Exception as e:
+                    connection.rollback()
+                    connection.close()
+                    raise DatabaseError('%s: %s \n' % (type(e), e))
             connection.commit()
-            cursor.close()
             connection.close()
 
     def get_job_status(self, job_id, user_id):
