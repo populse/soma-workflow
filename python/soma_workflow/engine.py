@@ -76,7 +76,7 @@ class EngineLoopThread(threading.Thread):
 
     def run(self):
         # cProfile.runctx("self.engine_loop.start_loop(self.time_interval)",
-        # globals(), locals(), "/home/sl225510/profiling/profile_loop_thread")
+        # globals(), locals(), "/tmp/profile_loop_thread")
         self.engine_loop.start_loop(self.time_interval)
 
     def stop(self):
@@ -193,17 +193,15 @@ class WorkflowEngineLoop(object):
 
     def start_loop(self, time_interval):
         '''
-        Start the workflow engine loop. The loop will run until stop() is called.
+        Start the workflow engine loop. The loop will run until stop() is
+        called.
         '''
         # one_wf_processed = False
-        # Modif: don't set the running flag here, because the loop may be already
+        # Modif: don't set the running flag here, because the loop may be
+        # already
         # stopped from another thread (typically the main thread) when we
         # get here (typically in a secondary thread)
         # self._running = True
-        import cProfile
-        cProfile.runctx('self.start_loop__(time_interval)', globals(), locals(), '/tmp/profile_sql2')
-
-    def start_loop__(self, time_interval):
 
         drms_error_jobs = {}
         idle_cmpt = 0
