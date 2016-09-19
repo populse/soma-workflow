@@ -42,7 +42,7 @@ from soma_workflow.configuration import Configuration
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-refreshment_interval = 0.1  # seconds
+refreshment_interval = 1.  # seconds
 # if the last status update is older than the refreshment_timeout
 # the status is changed into WARNING
 refreshment_timeout = 60  # seconds
@@ -102,6 +102,7 @@ class WorkflowEngineLoop(object):
     _database_server = None
     # user_id
     _user_id = None
+    _user_login = None
     # for each namespace a dictionary holding the traduction
     #  (association uuid => engine path)
     # dictionary, namespace => uuid => path
@@ -178,6 +179,7 @@ class WorkflowEngineLoop(object):
                 "Couldn't identify user %s: %s \n" % (type(e), e))
 
         self._user_id = self._database_server.register_user(userLogin)
+        self._user_login = userLogin
         self.logger.debug("user_id : " + repr(self._user_id))
 
         self._j_wf_ended = True
@@ -489,7 +491,8 @@ class WorkflowEngineLoop(object):
                                queue=queue,
                                path_translation=self._path_translation)
 
-        engine_job = self._database_server.add_job(self._user_id, engine_job)
+        engine_job = self._database_server.add_job(self._user_id, engine_job,
+                                                   login=self._user_login)
 
         # create standard output files
         try:
@@ -601,7 +604,7 @@ class WorkflowEngineLoop(object):
                                          name)
 
         engine_workflow = self._database_server.add_workflow(
-            self._user_id, engine_workflow)
+            self._user_id, engine_workflow, login=self._user_login)
 
         for job in six.itervalues(engine_workflow.job_mapping):
             try:
