@@ -523,6 +523,7 @@ class EngineWorkflow(Workflow):
             self.done = set()
             self.running = set()
             self.to_abort = set()
+            self.has_new_failed_jobs = False
 
     def __init__(self,
                  client_workflow,
@@ -903,6 +904,7 @@ class EngineWorkflow(Workflow):
         sub_info_to_resert = {}
         new_status = {}
         jobs_queue_changed = []
+        self.cache = None
         for client_job in self.jobs:
             job = self.job_mapping[client_job]
             if job.failed():
