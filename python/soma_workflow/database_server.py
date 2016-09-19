@@ -2094,44 +2094,59 @@ class WorkflowDatabaseServer(object):
         with self._lock:
             # TBI if the status is not valid raise an exception ??
             connection = self._connect()
+            statuses = []
+
+            # execute all queries before writing in the database, it's
+            # more efficient.
+            sel = connection.execute(
+                ''' SELECT id,
+                        status,
+                        last_status_update,
+                        execution_date,
+                        ending_date
+                FROM jobs WHERE id IN (%s)'''
+                % ','.join('?' * len(job_status)),
+                job_status.keys())
+            for (job_id, previous_status, last_update, execution_date,
+                 ending_date) in sel:
+                status = job_status[job_id]
+                previous_status = self._string_conversion(
+                    previous_status)
+                execution_date = self._str_to_date_conversion(
+                    execution_date)
+                ending_date = self._str_to_date_conversion(ending_date)
+                statuses.append((job_id, status, previous_status,
+                                  last_update, execution_date,
+                                  ending_date))
+
             cursor = connection.cursor()
+            now = datetime.now()
             try:
-                for job_id, status in six.iteritems(job_status):
-                    count = six.next(cursor.execute(
-                        'SELECT count(*) FROM jobs WHERE id=?',
-                        [job_id]))[0]
-                    if not count == 0:
-                        (previous_status,
-                         execution_date,
-                         ending_date) = six.next(cursor.execute(
-                            ''' SELECT status,
-                                    execution_date,
-                                    ending_date
-                            FROM jobs WHERE id=?''',
-                            [job_id]))  # supposes that the job_id is valid
-                        previous_status = self._string_conversion(
-                            previous_status)
-                        execution_date = self._str_to_date_conversion(
-                            execution_date)
-                        ending_date = self._str_to_date_conversion(ending_date)
-                        if previous_status != status:
-                            if not execution_date and status == constants.RUNNING:
-                                execution_date = datetime.now()
-                            if not ending_date and status == constants.DONE or \
-                                    status == constants.FAILED:
-                                ending_date = datetime.now()
-                                if not execution_date:
-                                    execution_date = datetime.now()
-                        if force or \
-                            (previous_status != constants.DELETE_PENDING and
-                             previous_status != constants.KILL_PENDING):
-                            cursor.execute('''UPDATE jobs SET status=?,
-                                                last_status_update=?,
-                                                execution_date=?,
-                                                ending_date=? WHERE id=?''',
-                                          (status, datetime.now(),
-                                           execution_date, ending_date,
-                                           job_id))
+                for (job_id, status, previous_status, last_update,
+                     execution_date, ending_date) in statuses:
+                    do_update = force or \
+                        (previous_status != constants.DELETE_PENDING and
+                          previous_status != constants.KILL_PENDING)
+                    if previous_status != status:
+                        if not execution_date \
+                                and status == constants.RUNNING:
+                            execution_date = now
+                        if not ending_date and status == constants.DONE \
+                                or status == constants.FAILED:
+                            ending_date = now
+                            if not execution_date:
+                                execution_date = now
+                    else:
+                        # if status has not changed, do not update to
+                        # save load on the database
+                        do_update = False
+                    if do_update:
+                        cursor.execute('''UPDATE jobs SET status=?,
+                                            last_status_update=?,
+                                            execution_date=?,
+                                            ending_date=? WHERE id=?''',
+                                       (status, now, execution_date,
+                                        ending_date, job_id))
             except Exception as e:
                 connection.rollback()
                 cursor.close()
