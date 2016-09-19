@@ -652,10 +652,10 @@ class EngineWorkflow(Workflow):
                     to_run = False
                     break
             if to_run:
-                for dep in self.dependencies:
-                    if dep[1] == job:
-                        to_run = False
-                        break
+                deps = self._dependency_dict.get(job)
+                if deps is not None and len(deps) != 0:
+                    to_run = False
+                    break
             if to_run:
                 independant_jobs.append(self.job_mapping[job])
         if independant_jobs:
