@@ -199,7 +199,7 @@ class WorkflowEngineLoop(object):
         # get here (typically in a secondary thread)
         # self._running = True
         import cProfile
-        cProfile.runctx('self.start_loop__(time_interval)', globals(), locals(), '/tmp/profile')
+        cProfile.runctx('self.start_loop__(time_interval)', globals(), locals(), '/tmp/profile_sql2')
 
     def start_loop__(self, time_interval):
 
