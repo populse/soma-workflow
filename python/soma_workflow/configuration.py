@@ -390,17 +390,23 @@ class Configuration(observer.Observable):
 
             database_file = os.path.join(
                 swf_dir, "soma_workflow-%s.db" % DB_VERSION)
-            transfered_file_dir = os.path.join(swf_dir, "transfered_files")
 
             config = cls(resource_id=resource_id,
                          mode=mode,
                          scheduler_type=scheduler_type,
                          database_file=database_file,
-                         transfered_file_dir=transfered_file_dir)
+                         transfered_file_dir=None)
 
-            if config_path is not None and config_parser.has_section(resource_id):
+            if config_path is not None \
+                    and config_parser.has_section(resource_id):
                 config._config_parser = config_parser
                 config._config_path = config_path
+
+            try:
+                transfered_file_dir = config.get_transfered_file_dir()
+            except:
+                transfered_file_dir = os.path.join(swf_dir, "transfered_files")
+                config._transfered_file_dir = transfered_file_dir
 
             if not os.path.isdir(os.path.join(home_dir, ".soma-workflow")):
                 os.mkdir(os.path.join(home_dir, ".soma-workflow"))
@@ -630,8 +636,8 @@ class Configuration(observer.Observable):
                                     (CFG_TRANSFERED_FILES_DIR,
                                         self._resource_id,
                                         self._config_path))
-        self._transfered_file_dir = self._config_parser.get(self._resource_id,
-                                                            CFG_TRANSFERED_FILES_DIR)
+        self._transfered_file_dir = self._config_parser.get(
+            self._resource_id, CFG_TRANSFERED_FILES_DIR)
         self._transfered_file_dir = os.path.expandvars(
             self._transfered_file_dir)
         return self._transfered_file_dir
