@@ -22,6 +22,7 @@ import os
 import logging
 import tempfile
 import weakref
+import six
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
@@ -682,7 +683,9 @@ class EngineWorkflow(Workflow):
         if self.cache is None:
             self.cache = EngineWorkflow.WorkflowCache()
             self.cache.waiting_jobs = set(self.jobs)
-            self.cache.dependencies = dict(self._dependency_dict)
+            self.cache.dependencies = dict(
+                (k, set(v)) for k, v in  six.iteritems(self._dependency_dict))
+            self.cache.has_new_failed_jobs = False
         cache = self.cache
         to_run = set()
         to_abort = set()
@@ -692,6 +695,8 @@ class EngineWorkflow(Workflow):
         jcount = 0
         dcount = 0
         fcount = 0
+        has_failed_jobs = self.cache.has_new_failed_jobs
+        self.cache.has_new_failed_jobs = False
         import time
         t0 = time.clock()
         for client_job in cache.waiting_jobs:
@@ -701,6 +706,9 @@ class EngineWorkflow(Workflow):
             if job.is_done():
                 done.add(job)
                 rmap[job] = client_job
+                if job.failed():
+                    has_failed_jobs = True
+                    self.has_new_failed_jobs = True
             elif job.is_running():
                 running.add(job)
                 rmap[job] = client_job
@@ -719,14 +727,20 @@ class EngineWorkflow(Workflow):
                 deps = cache.dependencies.get(client_job)
                 if deps is not None:
                     remove_deps = []
-                    for dep_client_job \
-                            in cache.dependencies[client_job]:
+                    for dep_client_job in deps:
                         dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
                             if dep_job.failed():
                                 job_to_abort = True
+                                has_failed_jobs = True
+                                self.has_new_failed_jobs = True
+                                break
+                            if not has_failed_jobs:
+                                # if no new failed jobs have been encountered,
+                                # no need to scan every dep to propagate
+                                # abort.
                                 break
                         else:
                             remove_deps.append(dep_client_job)
