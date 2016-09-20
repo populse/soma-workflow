@@ -2822,14 +2822,14 @@ class WorkflowDatabaseServer(object):
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
 
-            cursor.close()
-            connection.close()
-
             try:
                 last_status_update = six.next(sel)[0]
                 valid = True
             except StopIteration:
                 valid = False
+
+            cursor.close()
+            connection.close()
 
             last_status_update = self._str_to_date_conversion(
                 last_status_update)
