@@ -608,21 +608,23 @@ class WorkflowEngineLoop(object):
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
+                break # OK we have checked the directory can be witten.
             except Exception as e:
                 self._database_server.delete_workflow(engine_workflow.wf_id)
                 raise JobError("Could not create the standard output file "
                                "%s %s: %s \n" %
                                (repr(job.stdout_file), type(e), e))
-            if job.stderr_file:
-                try:
-                    tmp = open(job.stderr_file, 'w')
-                    tmp.close()
-                except Exception as e:
-                    self._database_server.delete_workflow(
-                        engine_workflow.wf_id)
-                    raise JobError("Could not create the standard error file "
-                                   "%s %s: %s \n" %
-                                   (repr(job.stderr_file), type(e), e))
+            #if job.stderr_file:
+                #try:
+                    #tmp = open(job.stderr_file, 'w')
+                    #tmp.close()
+                    #break # OK we have checked the directory can be witten.
+                #except Exception as e:
+                    #self._database_server.delete_workflow(
+                        #engine_workflow.wf_id)
+                    #raise JobError("Could not create the standard error file "
+                                   #"%s %s: %s \n" %
+                                   #(repr(job.stderr_file), type(e), e))
 
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
