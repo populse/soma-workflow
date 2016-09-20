@@ -2800,8 +2800,8 @@ class WorkflowDatabaseServer(object):
         try:
             six.next(sel)
         except StopIteration:
-            raise UnknownObjectError("The workflow id " + repr(wf_id) + " is not "
-                                     "valid or does not belong to "
+            raise UnknownObjectError("The workflow id " + repr(wf_id)
+                                     + " is not valid or does not belong to "
                                      "user " + repr(user_id))
 
     def is_valid_workflow(self, wf_id, user_id):
@@ -2822,18 +2822,18 @@ class WorkflowDatabaseServer(object):
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
 
-            try:
-                last_status_update = six.next(sel)[0]
-            except StopIteration:
-                cursor.close()
-                connection.close()
-                raise UnknownObjectError("The workflow id " + repr(wf_id)
-                                         + " is not valid")
             cursor.close()
             connection.close()
+
+            try:
+                last_status_update = six.next(sel)[0]
+                valid = True
+            except StopIteration:
+                valid = False
+
             last_status_update = self._str_to_date_conversion(
                 last_status_update)
-        return (count != 0, last_status_update)
+        return (valid, last_status_update)
 
     def get_workflows(self, user_id, workflow_ids=None):
         '''
