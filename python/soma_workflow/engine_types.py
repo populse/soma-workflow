@@ -697,17 +697,17 @@ class EngineWorkflow(Workflow):
         done = set()
         running = set()
         rmap = {}
-        jcount = 0
-        dcount = 0
-        fcount = 0
+        #jcount = 0
+        #dcount = 0
+        #fcount = 0
         has_failed_jobs = self.cache.has_new_failed_jobs
         self.cache.has_new_failed_jobs = False
-        import time
-        t0 = time.clock()
+        #import time
+        #t0 = time.clock()
         for client_job in cache.waiting_jobs:
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
-            jcount += 1
+            #jcount += 1
             if job.is_done():
                 done.add(job)
                 rmap[job] = client_job
@@ -721,7 +721,7 @@ class EngineWorkflow(Workflow):
                 job_to_run = True
                 job_to_abort = False
                 for ft in job.referenced_input_files:
-                    fcount += 1
+                    #fcount += 1
                     eft = job.transfer_mapping[ft]
                     if not eft.files_exist_on_server():
                         if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
@@ -733,7 +733,7 @@ class EngineWorkflow(Workflow):
                 if deps is not None:
                     remove_deps = []
                     for dep_client_job in deps:
-                        dcount += 1
+                        #dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
@@ -842,8 +842,8 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        t1 = time.clock()
-        print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', ended:', len(ended_jobs), ', done:', len(done), ', running:', len(running))
+        #t1 = time.clock()
+        #print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', ended:', len(ended_jobs), ', done:', len(done), ', running:', len(running))
 
         return (list(to_run), ended_jobs, status)
 
@@ -865,18 +865,18 @@ class EngineWorkflow(Workflow):
         to_abort = set()
         done = []
         running = set()
-        jcount = 0
-        dcount = 0
-        fcount = 0
+        #jcount = 0
+        #dcount = 0
+        #fcount = 0
         j_to_discard = 0
-        d_to_discard = 0
-        f_to_discard = 0
+        #d_to_discard = 0
+        #f_to_discard = 0
         #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
         #self.has_new_failed_jobs = False
         import time
         t0 = time.clock()
         for client_job in self.jobs:
-            jcount += 1
+            #jcount += 1
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
             if job.is_done():
@@ -889,24 +889,25 @@ class EngineWorkflow(Workflow):
                 job_to_run = True
                 job_to_abort = False
                 for ft in job.referenced_input_files:
-                    fcount += 1
+                    #fcount += 1
                     eft = job.transfer_mapping[ft]
                     if not eft.files_exist_on_server():
-                        if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
-                        # TBI stop the transfer
+                        if eft.status \
+                                == constants.TRANSFERING_FROM_CR_TO_CLIENT:
+                            # TBI stop the transfer
                             pass
                         job_to_run = False
                         break
                 if client_job in self._dependency_dict:
                     for dep_client_job in self._dependency_dict[client_job]:
-                        dcount += 1
+                        #dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
                             if dep_job.failed():
                                 job_to_abort = True
                                 break
-                        else: d_to_discard += 1
+                        #else: d_to_discard += 1
                         # TO DO to abort
                 if job_to_run:
                     to_run.add(job)
@@ -960,11 +961,11 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        t1 = time.clock()
-        print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', done:', len(done), ', running:', len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:', d_to_discard)
-        if j_to_discard >= 3000:
+        #t1 = time.clock()
+        #print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', done:', len(done), ', running:', len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:', d_to_discard)
+        if j_to_discard >= 2000:
             self.use_cache = True
-            print('=== enabling cache. ===')
+            self.logger.debug('enabling cache.')
 
         return (list(to_run), ended_jobs, status)
 
