@@ -472,81 +472,94 @@ class WorkflowDatabaseServer(object):
                 # Jobs and associated files (std out, std err and ressouce
                 # usage file)
                 jobsToDelete = []
-                for row in cursor.execute('SELECT id FROM jobs WHERE expiration_date < ?', [date.today()]):
+                for row in cursor.execute(
+                        'SELECT id FROM jobs WHERE expiration_date < ?',
+                        [date.today()]):
                     jobsToDelete.append(row[0])
 
-                for job_id in jobsToDelete:
-                    cursor.execute('DELETE FROM ios WHERE job_id=?', [job_id])
-                    cursor.execute(
-                        'DELETE FROM ios_tmp WHERE job_id=?', [job_id])
-                    stdof, stdef, rusage, custom = six.next(cursor.execute(
-                        '''
-                        SELECT
+                job_str = ','.join(['?'] * len(jobsToDelete))
+                cursor.execute('DELETE FROM ios WHERE job_id IN (%s)'
+                               % job_str, jobsToDelete)
+                cursor.execute(
+                    'DELETE FROM ios_tmp WHERE job_id IN (%s)' % job_str,
+                    jobsToDelete)
+
+                for stdof, stdef in cursor.execute(
+                        '''SELECT
                         stdout_file,
-                        stderr_file,
-                        resource_usage,
-                        custom_submission
+                        stderr_file
                         FROM jobs
-                        WHERE id=?''',
-                        [job_id]))
-                    if not custom:
-                        self.__removeFile(self._string_conversion(stdof))
-                        self.__removeFile(self._string_conversion(stdef))
+                        WHERE id IN (%s) AND custom_submission''' % job_str,
+                        jobsToDelete):
+                    self.__removeFile(self._string_conversion(stdof))
+                    self.__removeFile(self._string_conversion(stdef))
 
                 cursor.execute(
-                    'DELETE FROM jobs WHERE expiration_date < ?', [date.today()])
+                    'DELETE FROM jobs WHERE expiration_date < ?',
+                    [date.today()])
 
                 #
                 # Transfers
 
                 # get back the expired transfers
-                expiredTransfers = []
-                for row in cursor.execute('SELECT engine_file_path FROM transfers WHERE expiration_date < ?', [date.today()]):
-                    expiredTransfers.append(row[0])
+                transfersToDelete = set()
+                for row in cursor.execute(
+                        'SELECT engine_file_path FROM transfers WHERE expiration_date < ?',
+                        [date.today()]):
+                    transfersToDelete.add(row[0])
 
                 # check that they are not currently used (as an input of output
                 # of a job)
-                transfersToDelete = []
-                for engine_file_path in expiredTransfers:
-                    count = six.next(cursor.execute(
-                        'SELECT count(*) FROM ios WHERE engine_file_path=?', [engine_file_path]))[0]
-                    if count == 0:
-                        transfersToDelete.append(engine_file_path)
+                if len(transfersToDelete) != 0:
+                    for engine_file_path in cursor.execute(
+                            'SELECT DISTINCT engine_file_path FROM ios WHERE engine_file_path IN (%s)'
+                            % ','.join(['?'] * len(transfersToDelete)),
+                            transfersToDelete):
+                        transfersToDelete.remove(engine_file_path)
 
                 # delete transfers data and associated engine file
-                for engine_file_path in transfersToDelete:
+                if len(transfersToDelete) != 0:
                     cursor.execute(
-                        'DELETE FROM transfers WHERE engine_file_path=?', [engine_file_path])
-                    self.__removeFile(engine_file_path)
+                        'DELETE FROM transfers WHERE engine_file_path IN (%s)'
+                        % ','.join(['?'] * len(transfersToDelete)),
+                        transfersToDelete)
+                    for engine_file_path in transfersToDelete:
+                        self.__removeFile(engine_file_path)
 
                 #
                 # temporary_paths
 
                 # get back the expired temp_path_id
-                expiredTmpPaths = []
-                for row in cursor.execute('SELECT temp_path_id, engine_file_path FROM temporary_paths WHERE expiration_date < ?', [date.today()]):
-                    expiredTmpPaths.append(row)
+                tmpToDelete = {}
+                for row in cursor.execute(
+                        'SELECT temp_path_id, engine_file_path FROM temporary_paths WHERE expiration_date < ?',
+                        [date.today()]):
+                    tmpToDelete[row[0]] = row[1]
 
                 # check that they are not currently used (as an input of output
                 # of a job)
-                tmpToDelete = []
-                for temp_path_id, engine_file_path in expiredTmpPaths:
-                    count = six.next(cursor.execute(
-                        'SELECT count(*) FROM ios_tmp WHERE temp_path_id=?', [temp_path_id]))[0]
-                    if count == 0:
-                        tmpToDelete.append((temp_path_id, engine_file_path))
+                if len(tmpToDelete) != 0:
+                    for temp_path_id in cursor.execute(
+                            'SELECT DISTINCT temp_path_id FROM ios_tmp WHERE temp_path_id IN (%s)'
+                            % ','.join(['?'] * len(tmpToDelete)),
+                            tmpToDelete.keys()):
+                        tmpToDelete.remove(temp_path_id)
 
                 # delete temporary_paths data and associated engine file
-                for temp_path_id, engine_file_path in tmpToDelete:
+                if len(tmpToDelete) != 0:
                     cursor.execute(
-                        'DELETE FROM temporary_paths WHERE temp_path_id=?', [temp_path_id])
-                    self.__removeFile(engine_file_path)
+                        'DELETE FROM temporary_paths WHERE temp_path_id IN (%s)'
+                        % ','.join(['?'] * len(tmpToDelete)),
+                        tmpToDelete.keys())
+                    for engine_file_path in six.itervalues(tmpToDelete):
+                        self.__removeFile(engine_file_path)
 
                 #
                 # Workflows
 
                 cursor.execute(
-                    'DELETE FROM workflows WHERE expiration_date < ?', [date.today()])
+                    'DELETE FROM workflows WHERE expiration_date < ?',
+                    [date.today()])
 
             except Exception as e:
                 connection.rollback()
