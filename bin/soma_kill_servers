@@ -10,7 +10,7 @@ import random
 import re
 
 parser = argparse.ArgumentParser(
-    'Restart soma-workflow servers on a given computing resource')
+    'Kill soma-workflow servers on a given computing resource')
 parser.add_argument('-r', '--resource', help='computing resource id')
 parser.add_argument('-u', '--user', help='user name')
 parser.add_argument('-p', '--password', help='password')
