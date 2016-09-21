@@ -1058,9 +1058,11 @@ class ConnectionDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def kill_servers(self):
-        resource_id = unicode(
-            self.ui.combo_resources.currentText())
+        resource_id = unicode(self.ui.combo_resources.currentText())
         erase_db = self.ui.erase_db_checkbox.isChecked()
+        login = unicode(self.ui.lineEdit_login.text())
+        passwd = unicode(self.ui.lineEdit_password.text())
+        rsa_passwd = unicode(self.ui.lineEdit_rsa_password.text())
         print('kill_servers', resource_id, erase_db)
         exe = distutils.spawn.find_executable('soma_kill_servers')
         if not exe:
@@ -1069,9 +1071,15 @@ class ConnectionDialog(QtGui.QDialog):
                     os.path.dirname(os.path.realpath(__file__))))), 'bin',
                 'soma_kill_servers')
         cmd = [sys.executable, exe, '-r', resource_id]
+        if login:
+            cmd += ['-u', login]
+        if passwd:
+            cmd += ['-p', passwd]
+        #if rsa_key_pass:
+            #cmd += ['--rsa-pass', rsa_passwd]
         if erase_db:
             cmd.append('-c')
-        print(*cmd)
+        #print(*cmd)
         subprocess.call(cmd)
 
 
