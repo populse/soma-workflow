@@ -24,6 +24,8 @@ import socket
 import getpass
 import os
 import select
+import re
+import random
 try:
     import socketserver # python3
 except ImportError:
@@ -479,6 +481,62 @@ class RemoteConnection(object):
 
     def get_scheduler_config(self):
         return self.scheduler_config
+
+    @staticmethod
+    def kill_remote_servers(resource_id, login=None, passwd=None,
+                            ssh_port=22, clear_db=False):
+        '''Kill servers and possibly delete the database on the given remote
+        computing resource.
+        '''
+        from soma_workflow import configuration
+        import paramiko
+
+        config = configuration.Configuration.load_from_file(resource_id)
+        if login is None:
+            login = config.get_login()
+
+        submitting_machines = config.get_submitting_machines()
+        sub_machine = submitting_machines[random.randint(
+            0, len(submitting_machines) - 1)]
+
+        ssh = paramiko.SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect(sub_machine, port=ssh_port, username=login,
+                    password=passwd)
+
+        stdin, stdout, stderr = ssh.exec_command('ps ux')
+
+        db_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+        en_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+        for psline in stdout.readlines():
+            m = db_re.match(psline)
+            if m:
+                resource = m.group(2).strip()
+                if resource == resource_id:
+                    print('found database process id:', m.group(1))
+                    cmd = 'kill %s' % m.group(1)
+                    ssh.exec_command(cmd)
+            else:
+                m = en_re.match(psline)
+                if m:
+                    if m.group(2) == resource_id:
+                        print('found engine process id:', m.group(1))
+                        cmd = 'kill %s' % m.group(1)
+                        ssh.exec_command(cmd)
+
+        if clear_db:
+            print('clearing database')
+            cmd = '''. $HOME/.bashrc && python -c 'from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print config.get_database_file()\'''' % resource_id
+            stdin, stdout, stderr = ssh.exec_command(cmd)
+            db_file = stdout.read().strip()
+            if db_file:
+                print('remove:', db_file)
+                cmd = 'rm %s' % db_file
+                ssh.exec_command(cmd)
+            else:
+                print('cannot retreive database file name from server config. '
+                      'Installation problem on server side?')
+
 
 
 class LocalConnection(object):
