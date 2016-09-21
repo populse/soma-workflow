@@ -20,8 +20,6 @@ parser.add_argument('-c', '--clear', action='store_true',
 
 options = parser.parse_args(sys.argv[1:])
 
-print(options)
-
 resource_id = options.resource
 login = options.user
 
@@ -33,14 +31,11 @@ submitting_machines = config.get_submitting_machines()
 sub_machine = submitting_machines[random.randint(
     0, len(submitting_machines) - 1)]
 cluster_address = config.get_cluster_address()
-print('cluster address: ' + cluster_address
-      + ', submission machine: ' + sub_machine)
 
 ssh = paramiko.SSHClient()
 ssh.load_system_host_keys()
 ssh.connect(sub_machine, port=config.get_ssh_port(), username=login,
             password=options.password)
-print('connected')
 
 stdin, stdout, stderr = ssh.exec_command('ps ux')
 
