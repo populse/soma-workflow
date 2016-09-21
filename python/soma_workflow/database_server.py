@@ -55,6 +55,7 @@ if not hasattr(six, 'next'):
 
 strtime_format = '%Y-%m-%d %H:%M:%S'
 file_separator = ', '
+update_interval = timedelta(0, 30, 0)
 
 #-----------------------------------------------------------------------------
 # Local utilities
@@ -2151,6 +2152,7 @@ class WorkflowDatabaseServer(object):
 
             cursor = connection.cursor()
             now = datetime.now()
+            date_to_update = []
             try:
                 for (job_id, status, previous_status, last_update,
                      execution_date, ending_date) in statuses:
@@ -2170,6 +2172,12 @@ class WorkflowDatabaseServer(object):
                         # if status has not changed, do not update to
                         # save load on the database
                         do_update = False
+                        # update just last_status_update after a given
+                        # time (typically 30 s), all jobs at once
+                        if force or now \
+                                - self._str_to_date_conversion(last_update) \
+                                > update_interval:
+                            date_to_update.append(job_id)
                     if do_update:
                         cursor.execute('''UPDATE jobs SET status=?,
                                             last_status_update=?,
@@ -2177,6 +2185,13 @@ class WorkflowDatabaseServer(object):
                                             ending_date=? WHERE id=?''',
                                        (status, now, execution_date,
                                         ending_date, job_id))
+                if len(date_to_update) != 0:
+                    # update last_status_update for all jobs which may
+                    # become outdated
+                    cursor.execute(
+                        '''UPDATE jobs SET last_status_update=? WHERE id IN (%s)'''
+                        % ','.join(['?'] * len(date_to_update)),
+                        [now] + date_to_update)
             except Exception as e:
                 connection.rollback()
                 cursor.close()

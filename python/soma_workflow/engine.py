@@ -45,7 +45,7 @@ from soma_workflow.configuration import Configuration
 refreshment_interval = 1.  # seconds
 # if the last status update is older than the refreshment_timeout
 # the status is changed into WARNING
-refreshment_timeout = 60  # seconds
+refreshment_timeout = 90  # seconds
 
 
 def _out_to_date(last_status_update):
