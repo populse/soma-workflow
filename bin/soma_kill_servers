@@ -44,13 +44,13 @@ print('connected')
 
 stdin, stdout, stderr = ssh.exec_command('ps ux')
 
-db_re = re.compile('^[^ ]+ ([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
-en_re = re.compile('^[^ ]+ ([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+db_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+en_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
 for psline in stdout.readlines():
-    #print(psline)
     m = db_re.match(psline)
     if m:
-        if m.group(2) == resource_id:
+        resource = m.group(2).strip()
+        if resource == resource_id:
             print('found database process id:', m.group(1))
             cmd = 'kill %s' % m.group(1)
             ssh.exec_command(cmd)
