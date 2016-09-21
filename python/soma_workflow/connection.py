@@ -526,7 +526,7 @@ class RemoteConnection(object):
 
         if clear_db:
             print('clearing database')
-            cmd = '''. $HOME/.bashrc && python -c 'from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print config.get_database_file()\'''' % resource_id
+            cmd = '''. $HOME/.bashrc && python -c 'from __future__ import print_function; from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print(config.get_database_file())\'''' % resource_id
             stdin, stdout, stderr = ssh.exec_command(cmd)
             db_file = stdout.read().strip()
             if db_file:

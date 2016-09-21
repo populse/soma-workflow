@@ -3759,7 +3759,7 @@ class ApplicationModel(QtCore.QObject):
                         if self.current_wf_id == NOT_SUBMITTED_WF_ID:
                             wf_status = None
                         elif self._current_workflow:
-                            # print " ==> communication with the server " + repr(self.wf_id)
+                            # print(" ==> communication with the server " + repr(self.wf_id))
                             # begining = datetime.now()
 
                             # wf_complete_status =
@@ -3771,8 +3771,8 @@ class ApplicationModel(QtCore.QObject):
                                 timeout_duration=self._timeout_duration[self.current_resource_id])
                             wf_status = wf_complete_status[2]
                             # end = datetime.now() - begining
-                            # print " <== end communication" + repr(self.wf_id)
-                            # + " : " + repr(end.seconds)
+                            # print(" <== end communication" + repr(self.wf_id)
+                            # + " : " + repr(end.seconds))
                         else:
                             wf_status = self.connection_timeout(
                                 WorkflowController.workflow_status,
@@ -4194,7 +4194,7 @@ class GuiWorkflow(object):
         self.server_jobs = {}
         self.server_file_transfers = {}
 
-        # print " ==> building the workflow "
+        # print(" ==> building the workflow ")
         # begining = datetime.now()
         # retrieving the set of job and the set of file transfers
         w_js = set([])
@@ -4279,7 +4279,7 @@ class GuiWorkflow(object):
             return cmp(str1, str2)
 
         for ft in w_fts:
-            # print " ft " + repr(ft)
+            # print(" ft " + repr(ft))
             ids[ft] = []
             for job in w_js:
                 ref_in = list(job.referenced_input_files)
@@ -4312,8 +4312,8 @@ class GuiWorkflow(object):
                         self.server_file_transfers[
                             gui_transfer.engine_id] = [item_id]
                     self.items[ids[job]].children[row] = item_id
-                    # print repr(job.name) + " " +
-                    # repr(self.items[ids[job]].children)
+                    # print(repr(job.name) + " " +
+                    # repr(self.items[ids[job]].children))
                 if ft in ref_out:
                     item_id = id_cnt
                     id_cnt = id_cnt + 1
@@ -4341,23 +4341,23 @@ class GuiWorkflow(object):
                             gui_ft.engine_id] = [item_id]
 
                     self.items[ids[job]].children[row] = item_id
-                    # print repr(job.name) + " " +
-                    # repr(self.items[ids[job]].children)
+                    # print(repr(job.name) + " " +
+                    # repr(self.items[ids[job]].children))
 
         # for item in self.items.itervalues():
-            # print repr(item.children)
+            # print(repr(item.children))
 
         # end = datetime.now() - begining
-        # print " <== end building workflow " + repr(end.seconds)
+        # print(" <== end building workflow " + repr(end.seconds))
 
         # print model ####################
-        # print "dependencies : " + repr(len(workflow.dependencies))
+        # print("dependencies : " + repr(len(workflow.dependencies)))
         # if workflow.full_dependencies:
-            # print "full_dependencies : " + repr(len(workflow.full_dependencies))
+            # print("full_dependencies : " + repr(len(workflow.full_dependencies)))
         # for dep in workflow.dependencies:
-            # print dep[0].name + " -> " + dep[1].name
+            # print(dep[0].name + " -> " + dep[1].name)
         # for item in self.items.values():
-            # print repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.name) + " " + repr(item.children)
+            # print(repr(item.it_id) + " " + repr(item.parent) + " " + repr(item.row) + " " + repr(item.it_type) + " " + repr(item.name) + " " + repr(item.children))
         # raw_input()
         #
 
@@ -4380,10 +4380,10 @@ class GuiWorkflow(object):
                 status, queue, exit_info, date_info) or data_changed
 
         # end = datetime.now() - begining
-        # print " <== end updating jobs" + repr(self.wf_id) + " : " +
-        # repr(end.seconds)
+        # print(" <== end updating jobs" + repr(self.wf_id) + " : " +
+        # repr(end.seconds))
 
-        # print " ==> updating transfers " + repr(self.wf_id)
+        # print(" ==> updating transfers " + repr(self.wf_id))
         # begining = datetime.now()
 
         # updating file transfer
@@ -4404,8 +4404,8 @@ class GuiWorkflow(object):
                     complete_status) or data_changed
 
         # end = datetime.now() - begining
-        # print " <== end updating transfers" + repr(self.wf_id) + " : " +
-        # repr(end.seconds) + " " + repr(data_changed)
+        # print(" <== end updating transfers" + repr(self.wf_id) + " : " +
+        # repr(end.seconds) + " " + repr(data_changed))
 
         # updateing groups
         self.root_item.updateState()

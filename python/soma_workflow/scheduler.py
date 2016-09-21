@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -173,8 +173,8 @@ if DRMAA_LIB_FOUND == True:
                 tmp_err = os.path.join(
                     self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")
 
-                # print "tmp_out="+tmp_out
-                # print "tmp_err="+tmp_err
+                # print("tmp_out="+tmp_out)
+                # print("tmp_err="+tmp_err)
 
                 if os.path.isfile(tmp_out):
                     os.remove(tmp_out)
@@ -225,18 +225,18 @@ if DRMAA_LIB_FOUND == True:
                 jobTemplateId.errorPath = "%s:%s" % (
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
 
-                # print "jobTemplateId="+repr(jobTemplateId)
-                # print "jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand)
-                # print "jobTemplateId.args="+repr(jobTemplateId.args)
-                # print "jobTemplateId.outputPath="+repr(jobTemplateId.outputPath)
-                # print
-                # "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath)
+                # print("jobTemplateId="+repr(jobTemplateId))
+                # print("jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand))
+                # print("jobTemplateId.args="+repr(jobTemplateId.args))
+                # print("jobTemplateId.outputPath="+repr(jobTemplateId.outputPath))
+                # print(
+                # "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath))
 
                 jobid = self._drmaa.runJob(jobTemplateId)
-                # print "jobid="+jobid
+                # print("jobid="+jobid)
                 retval = self._drmaa.wait(
                     jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-                # print "retval="+repr(retval)
+                # print("retval="+repr(retval))
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
         def _setDrmaaParallelJob(self,
@@ -615,18 +615,18 @@ class LocalScheduler(Scheduler):
         with self._lock:
             self.stop_thread_loop = True
             self._loop.join()
-            # print "Soma scheduler thread ended nicely."
+            # print("Soma scheduler thread ended nicely.")
 
     def _iterate(self):
         # Nothing to do if the queue is empty and nothing is running
         if not self._queue and not self._processes:
             return
-        # print "#############################"
+        # print("#############################")
         # Control the running jobs
         ended_jobs = []
         for job_id, process in six.iteritems(self._processes):
             ret_value = process.poll()
-            # print "job_id " + repr(job_id) + " ret_value " + repr(ret_value)
+            # print("job_id " + repr(job_id) + " ret_value " + repr(ret_value))
             if ret_value != None:
                 ended_jobs.append(job_id)
                 self._exit_info[job_id] = (constants.FINISHED_REGULARLY,
@@ -636,7 +636,7 @@ class LocalScheduler(Scheduler):
 
         # update for the ended job
         for job_id in ended_jobs:
-            # print "updated job_id " + repr(job_id) + " status DONE"
+            # print("updated job_id " + repr(job_id) + " status DONE")
             self._status[job_id] = constants.DONE
             del self._processes[job_id]
 
@@ -644,7 +644,7 @@ class LocalScheduler(Scheduler):
         while (self._queue and self._can_submit_new_job()):
             job_id = self._queue.pop(0)
             job = self._jobs[job_id]
-            # print "new job " + repr(job.job_id)
+            # print("new job " + repr(job.job_id))
             if job.is_barrier:
                 # barrier jobs are not actually run using Popen:
                 # they succeed immediately.
@@ -781,7 +781,7 @@ class LocalScheduler(Scheduler):
         if not job.job_id or job.job_id == -1:
             raise LocalSchedulerError("Invalid job: no id")
         with self._lock:
-            # print "job submission " + repr(job.job_id)
+            # print("job submission " + repr(job.job_id))
             self._queue.append(job.job_id)
             self._jobs[job.job_id] = job
             self._status[job.job_id] = constants.QUEUED_ACTIVE
@@ -824,7 +824,7 @@ class LocalScheduler(Scheduler):
 
         with self._lock:
             if scheduler_job_id in self._processes:
-                # print "    => kill the process "
+                # print("    => kill the process ")
                 process = self._processes[scheduler_job_id]
                 if have_psutil:
                     kill_process_tree(process.pid)
@@ -867,7 +867,7 @@ class LocalScheduler(Scheduler):
                                                      None,
                                                      None)
             elif scheduler_job_id in self._queue:
-                # print "    => removed from queue "
+                # print("    => removed from queue ")
                 self._queue.remove(scheduler_job_id)
                 del self._jobs[scheduler_job_id]
                 self._status[scheduler_job_id] = constants.FAILED
