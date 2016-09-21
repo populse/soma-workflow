@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import sys
+import argparse
+import paramiko
+import soma_workflow.client as swc
+from soma_workflow import configuration
+import random
+import re
+
+parser = argparse.ArgumentParser(
+    'Restart soma-workflow servers on a given computing resource')
+parser.add_argument('-r', '--resource', help='computing resource id')
+parser.add_argument('-u', '--user', help='user name')
+parser.add_argument('-p', '--password', help='password')
+parser.add_argument('-c', '--clear', action='store_true',
+                    help='clear (remove) SQLite database: '
+                    'all workflows and jobs will be lost.')
+
+options = parser.parse_args(sys.argv[1:])
+
+print(options)
+
+resource_id = options.resource
+login = options.user
+
+config = configuration.Configuration.load_from_file(resource_id)
+if login is None:
+    login = config.get_login()
+
+submitting_machines = config.get_submitting_machines()
+sub_machine = submitting_machines[random.randint(
+    0, len(submitting_machines) - 1)]
+cluster_address = config.get_cluster_address()
+print('cluster address: ' + cluster_address
+      + ', submission machine: ' + sub_machine)
+
+ssh = paramiko.SSHClient()
+ssh.load_system_host_keys()
+ssh.connect(sub_machine, port=config.get_ssh_port(), username=login,
+            password=options.password)
+print('connected')
+
+stdin, stdout, stderr = ssh.exec_command('ps ux')
+
+db_re = re.compile('^[^ ]+ ([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+en_re = re.compile('^[^ ]+ ([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+for psline in stdout.readlines():
+    #print(psline)
+    m = db_re.match(psline)
+    if m:
+        if m.group(2) == resource_id:
+            print('found database process id:', m.group(1))
+            cmd = 'kill %s' % m.group(1)
+            ssh.exec_command(cmd)
+    else:
+        m = en_re.match(psline)
+        if m:
+            if m.group(2) == resource_id:
+                print('found engine process id:', m.group(1))
+                cmd = 'kill %s' % m.group(1)
+                ssh.exec_command(cmd)
+
+if options.clear:
+    print('clearing database')
+    cmd = '''. $HOME/.bashrc && python -c 'from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print config.get_database_file()\'''' % resource_id
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+    db_file = stdout.read().strip()
+    print('remove:', db_file)
+    cmd = 'rm %s' % db_file
+    ssh.exec_command(cmd)
+

@@ -690,9 +690,7 @@ class Configuration(observer.Observable):
         if self._config_parser == None or self._login != None:
             return self._login
         self._login = None
-        if self._config_parser != None and \
-           self._config_parser.has_option(self._resource_id,
-                                          OCFG_DRMAA_IMPLEMENTATION):
+        if self._config_parser != None:
             self._login = os.path.expandvars(
                 self._config_parser.get(self._resource_id,
                                         OCFG_LOGIN))
