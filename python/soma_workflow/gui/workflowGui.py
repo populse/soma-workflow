@@ -24,6 +24,7 @@ from datetime import timedelta
 import socket
 import weakref
 import subprocess
+import distutils.spawn
 # import cProfile
 # import traceback
 # import pdb
@@ -1041,6 +1042,7 @@ class ConnectionDialog(QtGui.QDialog):
 
         self.ui.combo_resources.currentIndexChanged.connect(self.update_login)
         self.update_login()
+        self.ui.kill_button.clicked.connect(self.kill_servers)
 
     @QtCore.Slot()
     def update_login(self):
@@ -1053,6 +1055,24 @@ class ConnectionDialog(QtGui.QDialog):
             self.ui.lineEdit_login.setText(login)
         else:
             self.ui.lineEdit_login.clear()
+
+    @QtCore.Slot()
+    def kill_servers(self):
+        resource_id = unicode(
+            self.ui.combo_resources.currentText())
+        erase_db = self.ui.erase_db_checkbox.isChecked()
+        print('kill_servers', resource_id, erase_db)
+        exe = distutils.spawn.find_executable('soma_kill_servers')
+        if not exe:
+            exe = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(
+                    os.path.dirname(os.path.realpath(__file__))))), 'bin',
+                'soma_kill_servers')
+        cmd = [sys.executable, exe, '-r', resource_id]
+        if erase_db:
+            cmd.append('-c')
+        print(*cmd)
+        subprocess.call(cmd)
 
 
 class SomaWorkflowWidget(QtGui.QWidget):
