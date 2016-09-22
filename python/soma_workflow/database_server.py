@@ -41,12 +41,17 @@ if sys.version_info[0] >= 3:
             return string.decode('utf-8')
         return str(string)
 
+    def keys(thing):
+        return list(thing.keys())
+
 if not hasattr(six, 'next'):
     # ubuntu 12.04 does not have next() in its six module
     def six_next(obj):
         return obj.next()
     six.next = six_next
     del six_next
+    def keys(thing):
+        return thing.keys()
 
 
 #-----------------------------------------------------------------------------
@@ -543,7 +548,7 @@ class WorkflowDatabaseServer(object):
                     for temp_path_id in cursor.execute(
                             'SELECT DISTINCT temp_path_id FROM ios_tmp WHERE temp_path_id IN (%s)'
                             % ','.join(['?'] * len(tmpToDelete)),
-                            tmpToDelete.keys()):
+                            keys(tmpToDelete)):
                         tmpToDelete.remove(temp_path_id)
 
                 # delete temporary_paths data and associated engine file
@@ -551,7 +556,7 @@ class WorkflowDatabaseServer(object):
                     cursor.execute(
                         'DELETE FROM temporary_paths WHERE temp_path_id IN (%s)'
                         % ','.join(['?'] * len(tmpToDelete)),
-                        tmpToDelete.keys())
+                        keys(tmpToDelete))
                     for engine_file_path in six.itervalues(tmpToDelete):
                         self.__removeFile(engine_file_path)
 
@@ -2137,7 +2142,7 @@ class WorkflowDatabaseServer(object):
                         ending_date
                 FROM jobs WHERE id IN (%s)'''
                 % ','.join('?' * len(job_status)),
-                job_status.keys())
+                keys(job_status))
             for (job_id, previous_status, last_update, execution_date,
                  ending_date) in sel:
                 status = job_status[job_id]
