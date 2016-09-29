@@ -53,6 +53,7 @@ from soma_workflow.client_types import FileTransfer
 from soma_workflow.client_types import SharedResourcePath
 from soma_workflow.client_types import TemporaryPath
 from soma_workflow.client_types import SpecialPath
+from soma_workflow.client_types import OptionPath
 
 
 class WorkflowController(object):

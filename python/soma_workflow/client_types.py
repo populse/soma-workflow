@@ -221,7 +221,8 @@ class Job(object):
         for i in range(0, len(el_list)):
             if isinstance(el_list[i], FileTransfer) or\
                 isinstance(el_list[i], SharedResourcePath) or\
-                    isinstance(el_list[i], TemporaryPath):
+                    isinstance(el_list[i], TemporaryPath) or\
+                    isinstance(el_list[i], OptionPath):
                 if not el_list[i].attributs_equal(other_el_list[i]):
                     return False
             elif isinstance(el_list[i], tuple):
@@ -275,7 +276,8 @@ class Job(object):
             other_attr = getattr(other, attr_name)
             if isinstance(attr, FileTransfer) or\
                isinstance(attr, SharedResourcePath) or\
-               isinstance(attr, TemporaryPath):
+               isinstance(attr, TemporaryPath) or\
+               isinstance(attr, OptionPath):
                 if not attr.attributs_equal(other_attr):
                     return False
             elif not attr == other_attr:
@@ -287,12 +289,14 @@ class Job(object):
                   d,
                   tr_from_ids,
                   srp_from_ids,
-                  tmp_from_ids):
+                  tmp_from_ids,
+                  opt_from_ids):
         '''
          * d *dictionary*
          * tr_from_id *id -> FileTransfer*
          * srp_from_id *id -> SharedResourcePath*
          * tmp_from_ids *id -> TemporaryPath*
+         * opt_from_ids *id -> OptionPath*
         '''
         job = cls(command=d["command"])
         for key, value in six.iteritems(d):
@@ -301,43 +305,50 @@ class Job(object):
         new_command = list_from_serializable(job.command,
                                              tr_from_ids,
                                              srp_from_ids,
-                                             tmp_from_ids)
+                                             tmp_from_ids,
+                                             opt_from_ids)
         job.command = new_command
 
         if job.referenced_input_files:
             ref_in_files = list_from_serializable(job.referenced_input_files,
                                                   tr_from_ids,
                                                   srp_from_ids,
-                                                  tmp_from_ids)
+                                                  tmp_from_ids,
+                                                  opt_from_ids)
             job.referenced_input_files = ref_in_files
 
         if job.referenced_output_files:
             ref_out_files = list_from_serializable(job.referenced_output_files,
                                                    tr_from_ids,
                                                    srp_from_ids,
-                                                   tmp_from_ids)
+                                                   tmp_from_ids,
+                                                   opt_from_ids)
             job.referenced_output_files = ref_out_files
 
         if job.stdin:
             job.stdin = from_serializable(job.stdin,
                                           tr_from_ids,
                                           srp_from_ids,
-                                          tmp_from_ids)
+                                          tmp_from_ids,
+                                          opt_from_ids)
         if job.stdout_file:
             job.stdout_file = from_serializable(job.stdout_file,
                                                 tr_from_ids,
                                                 srp_from_ids,
-                                                tmp_from_ids)
+                                                tmp_from_ids,
+                                                opt_from_ids)
         if job.stderr_file:
             job.stderr_file = from_serializable(job.stderr_file,
                                                 tr_from_ids,
                                                 srp_from_ids,
-                                                tmp_from_ids)
+                                                tmp_from_ids,
+                                                opt_from_ids)
         if job.working_directory:
             job.working_directory = from_serializable(job.working_directory,
                                                       tr_from_ids,
                                                       srp_from_ids,
-                                                      tmp_from_ids)
+                                                      tmp_from_ids,
+                                                      opt_from_ids)
 
         return job
 
@@ -345,7 +356,8 @@ class Job(object):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids):
+                tmp_ids,
+                opt_ids):
         '''
         * id_generator *IdGenerator*
         * transfer_ids *dict: client.FileTransfer -> int*
@@ -353,6 +365,7 @@ class Job(object):
         * shared_res_path_id *dict: client.SharedResourcePath -> int*
             This dictonary will be modified.
         * tmp_ids *dict: client.TemporaryPath -> int*
+        * opt_ids *dict: client.OptionPath -> int*
         '''
         job_dict = {}
 
@@ -376,7 +389,8 @@ class Job(object):
                                            id_generator,
                                            transfer_ids,
                                            shared_res_path_id,
-                                           tmp_ids)
+                                           tmp_ids,
+                                           opt_ids)
 
         job_dict['command'] = ser_command
 
@@ -386,7 +400,8 @@ class Job(object):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids)
+                tmp_ids,
+                opt_ids)
             job_dict['referenced_input_files'] = ser_ref_in_files
 
         if self.referenced_output_files:
@@ -395,7 +410,8 @@ class Job(object):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids)
+                tmp_ids,
+                opt_ids)
             job_dict['referenced_output_files'] = ser_ref_out_files
 
         if self.stdin:
@@ -403,21 +419,24 @@ class Job(object):
                                                 id_generator,
                                                 transfer_ids,
                                                 shared_res_path_id,
-                                                tmp_ids)
+                                                tmp_ids,
+                                                opt_ids)
 
         if self.stdout_file:
             job_dict['stdout_file'] = to_serializable(self.stdout_file,
                                                       id_generator,
                                                       transfer_ids,
                                                       shared_res_path_id,
-                                                      tmp_ids)
+                                                      tmp_ids,
+                                                      opt_ids)
 
         if self.stderr_file:
             job_dict['stderr_file'] = to_serializable(self.stderr_file,
                                                       id_generator,
                                                       transfer_ids,
                                                       shared_res_path_id,
-                                                      tmp_ids)
+                                                      tmp_ids,
+                                                      opt_ids)
 
         if self.working_directory:
             job_dict[
@@ -425,7 +444,8 @@ class Job(object):
                                                        id_generator,
                                                        transfer_ids,
                                                        shared_res_path_id,
-                                                       tmp_ids)
+                                                       tmp_ids,
+                                                       opt_ids)
 
         return job_dict
 
@@ -474,12 +494,14 @@ class BarrierJob(Job):
                   d,
                   tr_from_ids,
                   srp_from_ids,
-                  tmp_from_ids):
+                  tmp_from_ids,
+                  opt_from_ids):
         '''
          * d *dictionary*
          * tr_from_id *id -> FileTransfer*
          * srp_from_id *id -> SharedResourcePath*
          * tmp_from_ids *id -> TemporaryPath*
+         * opt_from_ids *id -> OptionPath*
         '''
         job = cls()
         for key, value in six.iteritems(d):
@@ -489,14 +511,16 @@ class BarrierJob(Job):
             ref_in_files = list_from_serializable(job.referenced_input_files,
                                                   tr_from_ids,
                                                   srp_from_ids,
-                                                  tmp_from_ids)
+                                                  tmp_from_ids,
+                                                  opt_from_ids)
             job.referenced_input_files = ref_in_files
 
         if job.referenced_output_files:
             ref_out_files = list_from_serializable(job.referenced_output_files,
                                                    tr_from_ids,
                                                    srp_from_ids,
-                                                   tmp_from_ids)
+                                                   tmp_from_ids,
+                                                   opt_from_ids)
             job.referenced_output_files = ref_out_files
 
         return job
@@ -505,7 +529,8 @@ class BarrierJob(Job):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids):
+                tmp_ids,
+                opt_ids):
         '''
         * id_generator *IdGenerator*
         * transfer_ids *dict: client.FileTransfer -> int*
@@ -513,6 +538,7 @@ class BarrierJob(Job):
         * shared_res_path_id *dict: client.SharedResourcePath -> int*
             This dictonary will be modified.
         * tmp_ids *dict: client.TemporaryPath -> int*
+        * opt_ids *dict: client.OptionPath -> int*
         '''
         job_dict = {}
 
@@ -534,7 +560,8 @@ class BarrierJob(Job):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids)
+                tmp_ids,
+                opt_ids)
             job_dict['referenced_input_files'] = ser_ref_in_files
 
         if self.referenced_output_files:
@@ -543,7 +570,8 @@ class BarrierJob(Job):
                 id_generator,
                 transfer_ids,
                 shared_res_path_id,
-                tmp_ids)
+                tmp_ids,
+                opt_ids)
             job_dict['referenced_output_files'] = ser_ref_out_files
 
         return job_dict
@@ -776,17 +804,20 @@ class Workflow(object):
         transfer_ids = {}  # FileTransfer -> id
         shared_res_path_ids = {}  # SharedResourcePath -> id
         temporary_ids = {}  # TemporaryPath -> id
+        option_ids = {} # OptionPath -> id
         for job, job_id in six.iteritems(job_ids):
             if isinstance(job, BarrierJob):
                 ser_barriers[str(job_id)] = job.to_dict(id_generator,
                                                         transfer_ids,
                                                         shared_res_path_ids,
-                                                        temporary_ids)
+                                                        temporary_ids,
+                                                        option_ids)
             else:
                 ser_jobs[str(job_id)] = job.to_dict(id_generator,
                                                     transfer_ids,
                                                     shared_res_path_ids,
-                                                    temporary_ids)
+                                                    temporary_ids,
+                                                    option_ids)
         wf_dict["serialized_jobs"] = ser_jobs
         wf_dict["serialized_barriers"] = ser_barriers
 
@@ -804,6 +835,11 @@ class Workflow(object):
         for tmpf, tmp_id in six.iteritems(temporary_ids):
             ser_tmp[str(tmp_id)] = tmpf.to_dict()
         wf_dict["serialized_temporary_paths"] = ser_tmp
+
+        ser_opt = {}
+        for optf, opt_id in six.iteritems(option_ids):
+            ser_opt[str(opt_id)] = optf.to_dict()
+        wf_dict["serialized_option_paths"] = ser_opt
 
         return wf_dict
 
@@ -832,18 +868,25 @@ class Workflow(object):
             temp_file = TemporaryPath.from_dict(tmp_d)
             tmp_from_ids[int(tmp_id)] = temp_file
 
+        # option paths
+        serialized_opt = d["serialized_option_paths"]
+        opt_from_ids = {}
+        for opt_id, opt_d in six.iteritems(serialized_opt):
+            opt_file = OptionPath.from_dict(opt_d)
+            opt_from_ids[int(opt_d)] = opt_file
+
         # jobs
         serialized_jobs = d["serialized_jobs"]
         job_from_ids = {}
         for job_id, job_d in six.iteritems(serialized_jobs):
-            job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
+            job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
 
         # barrier jobs
         serialized_jobs = d["serialized_barriers"]
         for job_id, job_d in six.iteritems(serialized_jobs):
             job = BarrierJob.from_dict(
-                job_d, tr_from_ids, srp_from_ids, tmp_from_ids)
+                job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
 
         jobs = list(job_from_ids.values())
@@ -1392,6 +1435,8 @@ class SharedResourcePath(SpecialPath):
 
     _uuid = None
 
+    _disposal_timeout = None
+
     def __init__(self,
                  relative_path,
                  namespace=None,
@@ -1437,6 +1482,14 @@ class SharedResourcePath(SpecialPath):
     def uuid(self, value):
         self.referent()._uuid = value
 
+    @property
+    def disposal_timeout(self):
+        return self.referent()._disposal_timeout
+
+    @disposal_timeout.setter
+    def disposal_timeout(self, value):
+        self.referent()._disposal_timeout = value
+
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
@@ -1444,6 +1497,7 @@ class SharedResourcePath(SpecialPath):
             "relative_path",
             "namespace",
             "uuid",
+            "disposal_timeout",
             "pattern",
         ]
         ref = self.referent()
@@ -1460,6 +1514,7 @@ class SharedResourcePath(SpecialPath):
             "relative_path",
             "namespace",
             "uuid",
+            "disposal_timeout",
             "pattern",
         ]
         ref = self.referent()
@@ -1612,6 +1667,150 @@ class TemporaryPath(SpecialPath):
     def __str__(self):
         return self.pattern % self.name
 
+class OptionPath(SpecialPath):
+    '''
+    File with reading or writing parameters given through a URI (or any
+    other suffix system). The file can be passed as a string or as a
+    SpecialPath object.
+
+    Parameters
+    ----------
+    parent_path : :obj:`str` or :obj:`SpecialPath`
+        Path to the input file. If it is a :obj:`FileTransfer` or
+        :obj:`TemporayPath`, this parent path should be added to
+        the Job's referenced_input_files or referenced_output_files.
+    uri : :obj:`str` or :obj:`dict`
+        * If the provided URI is a string, it is tored as is and will be
+        added at the end of the path when the server-side command is
+        generated. A URI is of the form '?option1=value1&option2=value2'.
+        However, since the provided `uri` is untouched, any other option
+        passing system can be used.
+        * If the provided URI is a dictionary, it is converted to a URI
+        string. Each key is considered an option name, mapped to its
+        associated value.
+    name : :obj:`str` (optional)
+        Name of the path. If not provided, the full client-side path + URI is
+        used.
+    '''
+
+    _parent_path = None
+    _uri = ''
+    _name = None
+
+    def __init__(self, parent_path=None, uri=None, name=None):
+        # copy constructor
+        if isinstance(parent_path, OptionPath):
+            if not uri is None:
+                raise TypeError('OptionPath as copy constructor should '
+                    'have only one argument')
+            super(OptionPath, self).__init__(parent_path)
+            return
+
+        # normal constructor
+        super(OptionPath, self).__init__()
+        if isinstance(parent_path, SpecialPath):
+            self._parent_path = parent_path
+            self._is_special_path = True
+        else:
+            self._parent_path = str(parent_path)
+            self._is_special_path = False
+
+        if isinstance(uri, dict):
+            from six import iteritems
+            build_uri = '?'
+            for key, value in iteritems(uri):
+                build_uri += str(key) + '=' + str(value) + '&'
+            build_uri = build_uri[:-1]
+            self._uri = build_uri
+        elif str(uri):
+            self._uri = str(uri)
+
+        if name is None:
+            self._name = 'parent_path' + self._uri
+        else:
+            self._name = name
+
+    @property
+    def is_special_path(self):
+        return self.referent()._is_special_path
+
+    @property
+    def parent_path(self):
+        return self.referent()._parent_path
+
+    @parent_path.setter
+    def parent_path(self, value):
+        self.referent()._path = value
+        if isinstance(value, SpecialPath):
+            self.referent()._parent_path = value
+            self.referent()._is_special_path = True
+        else:
+            self.referent()._parent_path = str(value)
+            self.referent()._is_special_path = False
+
+    @property
+    def uri(self):
+        return self.referent()._uri
+
+    @uri.setter
+    def uri(self, value):
+        self.referent()._uri = value
+
+    @property
+    def name(self):
+        return self.referent()._name
+
+    @name.setter
+    def name(self, value):
+        self.referent()._name = value
+
+    def attributs_equal(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        attributes = [
+            "is_special_path",
+            "parent_path",
+            "uri",
+            "name",
+            "pattern",
+        ]
+        for attr_name in attributes:
+            attr = getattr(self, attr_name)
+            other_attr = getattr(other, attr_name)
+            if not attr == other_attr:
+                return False
+        return True
+
+    def to_dict(self):
+        srp_dict = {}
+        attributes = [
+            "is_special_path",
+            "parent_path",
+            "uri",
+            "name",
+            "pattern",
+        ]
+        for attr_name in attributes:
+            srp_dict[attr_name] = getattr(self, attr_name)
+
+        return srp_dict
+
+    @classmethod
+    def from_dict(cls, d):
+        parent_path = d.get("parent_path", None)
+        uri = d.get("uri", None)
+        name = d.get("name", None)
+        temp_file = cls(parent_path=parent_path, uri=uri, name=name)
+        for key, value in six.iteritems(d):
+            setattr(temp_file, key, value)
+        return temp_file
+
+    def __str__(self):
+        return self.pattern % ("%s%s" % (self.referent().parent_path,
+                                         self.referent().uri))
+
+    def __repr__(self):
+        return repr(self.__str__())
 
 class IdGenerator(object):
 
@@ -1628,7 +1827,8 @@ def to_serializable(element,
                     id_generator,
                     transfer_ids,
                     shared_res_path_ids,
-                    tmp_ids):
+                    tmp_ids,
+                    opt_ids):
     if isinstance(element, FileTransfer):
         if element in transfer_ids:
             return transfer_ids[element]
@@ -1650,19 +1850,28 @@ def to_serializable(element,
             ident = id_generator.generate_id()
             tmp_ids[element] = ident
             return ident
+    elif isinstance(element, OptionPath):
+        if element in opt_ids:
+            return opt_ids[element]
+        else:
+            ident = id_generator.generate_id()
+            opt_ids[element] = ident
+            return ident
     elif isinstance(element, list):
         return list_to_serializable(element,
                                     id_generator,
                                     transfer_ids,
                                     shared_res_path_ids,
-                                    tmp_ids)
+                                    tmp_ids,
+                                    opt_ids)
     elif isinstance(element, tuple):
         return ["soma-workflow-tuple",
                 to_serializable(element[0],
                                 id_generator,
                                 transfer_ids,
                                 shared_res_path_ids,
-                                tmp_ids),
+                                tmp_ids,
+                                opt_ids),
                 element[1]]
     else:
         return element
@@ -1671,13 +1880,15 @@ def to_serializable(element,
 def from_serializable(element,
                       tr_from_ids,
                       srp_from_ids,
-                      tmp_from_ids):
+                      tmp_from_ids,
+                      opt_from_ids):
     if isinstance(element, list):
         if len(element) == 3 and element[0] == "soma-workflow-tuple":
             return (from_serializable(element[1],
                                       tr_from_ids,
                                       srp_from_ids,
-                                      tmp_from_ids),
+                                      tmp_from_ids,
+                                      opt_from_ids),
                     element[2])
 
         else:
@@ -1689,6 +1900,8 @@ def from_serializable(element,
         return srp_from_ids[element]
     elif element in tmp_from_ids:
         return tmp_from_ids[element]
+    elif element in opt_from_ids:
+        return opt_from_ids[element]
     else:
         return element
 
@@ -1697,14 +1910,16 @@ def list_to_serializable(list_to_convert,
                          id_generator,
                          transfer_ids,
                          shared_res_path_ids,
-                         tmp_ids):
+                         tmp_ids,
+                         opt_ids):
     ser_list = []
     for element in list_to_convert:
         ser_element = to_serializable(element,
                                       id_generator,
                                       transfer_ids,
                                       shared_res_path_ids,
-                                      tmp_ids)
+                                      tmp_ids,
+                                      opt_ids)
         ser_list.append(ser_element)
     return ser_list
 
@@ -1712,12 +1927,14 @@ def list_to_serializable(list_to_convert,
 def list_from_serializable(list_to_convert,
                            tr_from_ids,
                            srp_from_ids,
-                           tmp_from_ids):
+                           tmp_from_ids,
+                           opt_from_ids):
     us_list = []
     for element in list_to_convert:
         us_element = from_serializable(element,
                                        tr_from_ids,
                                        srp_from_ids,
-                                       tmp_from_ids)
+                                       tmp_from_ids,
+                                       opt_from_ids)
         us_list.append(us_element)
     return us_list
