@@ -838,7 +838,11 @@ class Workflow(object):
 
         ser_opt = {}
         for optf, opt_id in six.iteritems(option_ids):
-            ser_opt[str(opt_id)] = optf.to_dict()
+            ser_opt[str(opt_id)] = optf.to_dict(id_generator,
+                                                transfer_ids,
+                                                shared_res_path_ids,
+                                                temporary_ids,
+                                                option_ids)
         wf_dict["serialized_option_paths"] = ser_opt
 
         return wf_dict
@@ -872,8 +876,8 @@ class Workflow(object):
         serialized_opt = d["serialized_option_paths"]
         opt_from_ids = {}
         for opt_id, opt_d in six.iteritems(serialized_opt):
-            opt_file = OptionPath.from_dict(opt_d)
-            opt_from_ids[int(opt_d)] = opt_file
+            opt_file = OptionPath.from_dict(opt_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
+            opt_from_ids[int(opt_id)] = opt_file
 
         # jobs
         serialized_jobs = d["serialized_jobs"]
@@ -1694,6 +1698,7 @@ class OptionPath(SpecialPath):
     '''
 
     _parent_path = None
+    _parent_type = None
     _uri = ''
     _name = None
 
@@ -1710,10 +1715,9 @@ class OptionPath(SpecialPath):
         super(OptionPath, self).__init__()
         if isinstance(parent_path, SpecialPath):
             self._parent_path = parent_path
-            self._is_special_path = True
         else:
             self._parent_path = str(parent_path)
-            self._is_special_path = False
+        self._parent_type = type(self._parent_path).__name__
 
         if isinstance(uri, dict):
             from six import iteritems
@@ -1731,8 +1735,8 @@ class OptionPath(SpecialPath):
             self._name = name
 
     @property
-    def is_special_path(self):
-        return self.referent()._is_special_path
+    def parent_type(self):
+        return self.referent()._parent_type
 
     @property
     def parent_path(self):
@@ -1743,10 +1747,9 @@ class OptionPath(SpecialPath):
         self.referent()._path = value
         if isinstance(value, SpecialPath):
             self.referent()._parent_path = value
-            self.referent()._is_special_path = True
         else:
             self.referent()._parent_path = str(value)
-            self.referent()._is_special_path = False
+        self.referent()._parent_type = type(self.referent()._parent_path).__name__
 
     @property
     def uri(self):
@@ -1768,7 +1771,7 @@ class OptionPath(SpecialPath):
         if not isinstance(other, self.__class__):
             return False
         attributes = [
-            "is_special_path",
+            "parent_type",
             "parent_path",
             "uri",
             "name",
@@ -1781,33 +1784,57 @@ class OptionPath(SpecialPath):
                 return False
         return True
 
-    def to_dict(self):
-        srp_dict = {}
+    def to_dict(self,
+                id_generator,
+                transfer_ids,
+                shared_res_path_id,
+                tmp_ids,
+                opt_ids):
+        opt_dict = {}
         attributes = [
-            "is_special_path",
+            "parent_type",
             "parent_path",
             "uri",
             "name",
             "pattern",
         ]
         for attr_name in attributes:
-            srp_dict[attr_name] = getattr(self, attr_name)
+            if attr_name == "parent_path" and getattr(self, "parent_type") != 'str':
+                opt_dict[attr_name] = to_serializable(getattr(self, attr_name),
+                                                      id_generator,
+                                                      transfer_ids,
+                                                      shared_res_path_id,
+                                                      tmp_ids,
+                                                      opt_ids)
+            else:
+                opt_dict[attr_name] = getattr(self, attr_name)
 
-        return srp_dict
+        return opt_dict
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d,
+                  tr_from_ids,
+                  srp_from_ids,
+                  tmp_from_ids,
+                  opt_from_ids):
+        parent_type = d.get("parent_type", "str")
         parent_path = d.get("parent_path", None)
+        if parent_type != "str":
+            parent_path = from_serializable(parent_path,
+                                            tr_from_ids,
+                                            srp_from_ids,
+                                            tmp_from_ids,
+                                            opt_from_ids)
         uri = d.get("uri", None)
         name = d.get("name", None)
         temp_file = cls(parent_path=parent_path, uri=uri, name=name)
         for key, value in six.iteritems(d):
-            setattr(temp_file, key, value)
+            if not key in ("parent_path", "parent_type", "uri", "name"):
+                setattr(temp_file, key, value)
         return temp_file
 
     def __str__(self):
-        return self.pattern % ("%s%s" % (self.referent().parent_path,
-                                         self.referent().uri))
+        return self.pattern % ("%s%s" % (str(self.parent_path), self.uri))
 
     def __repr__(self):
         return repr(self.__str__())
@@ -1893,7 +1920,7 @@ def from_serializable(element,
 
         else:
             return list_from_serializable(element, tr_from_ids, srp_from_ids,
-                                          tmp_from_ids)
+                                          tmp_from_ids, opt_from_ids)
     elif element in tr_from_ids:
         return tr_from_ids[element]
     elif element in srp_from_ids:
