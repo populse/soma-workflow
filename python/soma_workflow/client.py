@@ -27,6 +27,7 @@ import types
 import subprocess
 import sys
 import posixpath
+import logging
 
 if sys.version_info[:2] >= (2, 6):
     import json
@@ -113,7 +114,7 @@ class WorkflowController(object):
           resource.
         '''
 
-        if config == None:
+        if config is None:
             self.config = configuration.Configuration.load_from_file(
                 resource_id)
         else:
@@ -134,7 +135,7 @@ class WorkflowController(object):
             # setup logging
             (engine_log_dir,
             engine_log_format,
-            engine_log_level) = config.get_engine_log_info()
+            engine_log_level) = self.config.get_engine_log_info()
             if engine_log_dir:
                 logfilepath = os.path.join(
                     os.path.abspath(engine_log_dir), "log_local_mode")
