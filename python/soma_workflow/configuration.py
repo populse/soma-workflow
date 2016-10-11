@@ -369,7 +369,9 @@ class Configuration(observer.Observable):
         config = None
         home_dir = Configuration.get_home_dir()
 
-        if resource_id == None or resource_id == socket.gethostname():
+        if resource_id == None \
+                or resource_id in (socket.gethostname(), 
+                                   socket.gethostname().split('.')[0]):
 
             # scheduler local on the local machine
             resource_id = socket.gethostname()
@@ -631,15 +633,19 @@ class Configuration(observer.Observable):
 
         if not self._config_parser.has_option(self._resource_id,
                                               CFG_TRANSFERED_FILES_DIR):
-            raise ConfigurationError("Can not find the configuration item %s "
-                                     "for the resource %s, in the configuration " "file %s." %
-                                    (CFG_TRANSFERED_FILES_DIR,
-                                        self._resource_id,
-                                        self._config_path))
-        self._transfered_file_dir = self._config_parser.get(
-            self._resource_id, CFG_TRANSFERED_FILES_DIR)
-        self._transfered_file_dir = os.path.expandvars(
-            self._transfered_file_dir)
+            swf_dir = os.path.join(self.get_home_dir(), ".soma-workflow")
+            self._transfered_file_dir = os.path.join(
+                swf_dir, 'transfered_files')
+            #raise ConfigurationError("Can not find the configuration item %s "
+                                     #"for the resource %s, in the configuration " "file %s." %
+                                    #(CFG_TRANSFERED_FILES_DIR,
+                                        #self._resource_id,
+                                        #self._config_path))
+        else:
+            self._transfered_file_dir = self._config_parser.get(
+                self._resource_id, CFG_TRANSFERED_FILES_DIR)
+            self._transfered_file_dir = os.path.expandvars(
+                self._transfered_file_dir)
         return self._transfered_file_dir
 
     def get_shared_temporary_directory(self):
