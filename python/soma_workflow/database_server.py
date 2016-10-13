@@ -2114,7 +2114,7 @@ class WorkflowDatabaseServer(object):
                 cursor.execute(
                     '''UPDATE jobs SET queue=? WHERE id in (%s)'''
                     % ','.join(['?'] * len(job_ids)),
-                    itertools.chain((queue_name, ), job_ids))
+                    list(itertools.chain((queue_name, ), job_ids)))
             except Exception as e:
                 connection.rollback()
                 cursor.close()
