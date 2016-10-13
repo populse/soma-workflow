@@ -883,7 +883,7 @@ def kill_process_tree(pid):
     Needs psutil to get children list
     """
     process = psutil.Process(pid)
-    for proc in process.get_children(recursive=True):
+    for proc in process.children(recursive=True):
         proc.kill()
     process.kill()
 
