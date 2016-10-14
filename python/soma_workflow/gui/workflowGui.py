@@ -465,10 +465,8 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             self.action_disconnect_resource)
         self.ui.disconnect_resource_tool_button.setText("Disconnect")
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'global_workflow_state_changed()'), self.refresh)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_connection_changed()'), self.connection_changed)
+        self.model.global_workflow_state_changed.connect(self.refresh)
+        self.model.current_connection_changed.connect(self.connection_changed)
         self.ui.table.itemSelectionChanged.connect(
             self.resource_selection_changed)
 
@@ -1106,14 +1104,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.workflow_info_widget = WorkflowInfoWidget(self.model, parent=self)
         self.ui.wf_info_layout.addWidget(self.workflow_info_widget)
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_connection_changed()'), self.currentConnectionChanged)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_changed()'),  self.current_workflow_changed)
-        self.connect(self.model, QtCore.SIGNAL(
-            'connection_closed_error'), self.reconnectAfterConnectionClosed)
-        self.connect(self.model, QtCore.SIGNAL(
-            'global_workflow_state_changed()'), self.update_workflow_status_icons)
+        self.model.current_connection_changed.connect(
+            self.currentConnectionChanged)
+        self.model.current_workflow_changed.connect(
+            self.current_workflow_changed)
+        self.model.connection_closed_error[()].connect(
+            self.reconnectAfterConnectionClosed)
+        self.model.connection_closed_error[str].connect(
+            self.reconnectAfterConnectionClosed)
+        self.model.global_workflow_state_changed.connect(
+            self.update_workflow_status_icons)
 
         self.UpdateLocalparameters()
 
@@ -1197,7 +1197,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.close()
 
     def closeEvent(self, event):
-        self.emit(QtCore.SIGNAL("closing()"))
+        self.closing.emit()
 
     def display_about_dlg(self):
         message_box = QtGui.QMessageBox(QtGui.QMessageBox.NoIcon,
@@ -2054,9 +2054,8 @@ class MainWindow(QtGui.QMainWindow):
 
         self.model = model
 
-        self.connect(self.model,
-                     QtCore.SIGNAL('current_connection_changed()'),
-                     self.currentConnectionChanged)
+        self.model.current_connection_changed.connect(
+            self.currentConnectionChanged)
 
         self.sw_widget = SomaWorkflowWidget(self.model,
                                             user,
@@ -2081,7 +2080,7 @@ class MainWindow(QtGui.QMainWindow):
         resourcesWfLayout.addWidget(self.sw_widget)
         self.ui.dockWidgetContents_resource_wf.setLayout(resourcesWfLayout)
 
-        self.connect(self.sw_widget, QtCore.SIGNAL('closing()'), self.close)
+        self.sw_widget.closing.connect(self.close)
 
         self.treeWidget = WorkflowTree(self.model, parent=self)
         treeWidgetLayout = QtGui.QVBoxLayout()
@@ -2097,12 +2096,12 @@ class MainWindow(QtGui.QMainWindow):
         itemInfoLayout.addWidget(self.itemInfoWidget)
         self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
-        self.connect(self.treeWidget, QtCore.SIGNAL(
-            'selection_model_changed(QItemSelectionModel)'),
+        self.treeWidget.selection_model_changed[QItemSelectionModel].connect(
             self.itemInfoWidget.setSelectionModel)
 
-        self.connect(self.itemInfoWidget, QtCore.SIGNAL(
-            'connection_closed_error'),
+        self.itemInfoWidget.connection_closed_error[()].connect(
+            self.sw_widget.reconnectAfterConnectionClosed)
+        self.itemInfoWidget.connection_closed_error[str].connect(
             self.sw_widget.reconnectAfterConnectionClosed)
 
         self.workflowInfoWidget = WorkflowGroupInfo(self.model, self)
@@ -2231,10 +2230,9 @@ class WorkflowInfoWidget(QtGui.QWidget):
         self.assigned_wf_id = assigned_wf_id
         self.assigned_resource_id = assigned_resource_id
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_changed()'),  self.current_workflow_changed)
-        self.connect(self.model, QtCore.SIGNAL('workflow_state_changed()'),
-                     self.update_workflow_status)
+        self.model.current_workflow_changed.connect(
+            self.current_workflow_changed)
+        self.model.workflow_state_changed.connect(self.update_workflow_status)
 
     def check_workflow(self):
         return self.assigned_wf_id == None or \
@@ -2458,6 +2456,11 @@ class WorkflowTree(QtGui.QWidget):
     current_workflow_changed
     '''
 
+    current_connection_changed = QtCore.Signal()
+    current_workflow_about_to_change = QtCore.Signal()
+    current_workflow_changed = QtCore.Signal()
+   
+
     assigned_wf_id = None
 
     selection_model_changed = QtCore.Signal(['QItemSelectionModel'])
@@ -2482,8 +2485,7 @@ class WorkflowTree(QtGui.QWidget):
         self.assigned_resource_id = assigned_resource_id
 
         self.proxy_model = JobFilterProxyModel(self)
-        self.connect(self.model, QtCore.SIGNAL(
-            'workflow_state_changed()'), self.proxy_model.invalidate)
+        self.model.workflow_state_changed.connect(self.proxy_model.invalidate)
 
         self.tree_view = QtGui.QTreeView(self)
         self.tree_view.setHeaderHidden(True)
@@ -2493,14 +2495,12 @@ class WorkflowTree(QtGui.QWidget):
         self.vLayout.addWidget(self.tree_view)
         self.vLayout.addWidget(self.search_widget)
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_connection_changed()'), self.clear)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_about_to_change()'), self.currentWorkflowAboutToChange)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_changed()'),  self.current_workflow_changed)
-        self.connect(self.model, QtCore.SIGNAL(
-            'workflow_state_changed()'), self.dataChanged)
+        self.model.current_connection_changed.connect(self.clear)
+        self.model.current_workflow_about_to_change.connect(
+            self.currentWorkflowAboutToChange)
+        self.model.current_workflow_changed.connect(
+            self.current_workflow_changed)
+        self.model.workflow_state_changed.connect(self.dataChanged)
 
     def check_workflow(self):
         return self.assigned_wf_id == None or \
@@ -2513,7 +2513,7 @@ class WorkflowTree(QtGui.QWidget):
             if self.assigned_wf_id != None:
                 self.setEnabled(False)
             else:
-                self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
+                self.item_model.modelAboutToBeReset.emit()
                 self.item_model = None
                 self.tree_view.setModel(None)
 
@@ -2523,7 +2523,7 @@ class WorkflowTree(QtGui.QWidget):
             if self.assigned_wf_id != None:
                 self.setEnabled(False)
             else:
-                self.item_model.emit(QtCore.SIGNAL("modelAboutToBeReset()"))
+                self.item_model.modelAboutToBeReset.emit()
                 self.item_model = None
                 self.tree_view.setModel(None)
 
@@ -2540,7 +2540,7 @@ class WorkflowTree(QtGui.QWidget):
                         self.tree_view.setModel(self.proxy_model)
                     else:
                         self.tree_view.setModel(self.item_model)
-                    self.item_model.emit(QtCore.SIGNAL("modelReset()"))
+                    self.item_model.modelReset.emit()
                     self.selection_model_changed.emit(
                         self.tree_view.selectionModel())
                 else:
@@ -2570,14 +2570,11 @@ class WorkflowGroupInfo(QtGui.QWidget):
         self.vLayout = QtGui.QVBoxLayout(self)
         self.model = model
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_connection_changed()'), self.clear)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_about_to_change()'), self.clear)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_changed()'),  self.current_workflow_changed)
-        self.connect(self.model, QtCore.SIGNAL(
-            'workflow_state_changed()'), self.dataChanged)
+        self.model.current_connection_changed.connect(self.clear)
+        self.model.current_workflow_about_to_change.connect(self.clear)
+        self.model.current_workflow_changed.connect(
+            self.current_workflow_changed)
+        self.model.workflow_state_changed.connect(self.dataChanged)
 
     @QtCore.Slot()
     def clear(self):
@@ -2621,14 +2618,11 @@ class WorkflowPlot(QtGui.QWidget):
         self.assigned_resource_id = assigned_resource_id
 
         if MATPLOTLIB:
-            self.connect(self.model, QtCore.SIGNAL(
-                'current_connection_changed()'), self.clear)
-            self.connect(self.model, QtCore.SIGNAL(
-                'current_workflow_about_to_change()'), self.clear)
-            self.connect(self.model, QtCore.SIGNAL(
-                'current_workflow_changed()'),  self.current_workflow_changed)
-            self.connect(self.model, QtCore.SIGNAL(
-                'workflow_state_changed()'), self.dataChanged)
+            self.model.current_connection_changed.connect(self.clear)
+            self.model.current_workflow_about_to_change.connect(self.clear)
+            self.model.current_workflow_changed.connect(
+                self.current_workflow_changed)
+            self.model.workflow_state_changed.connect(self.dataChanged)
 
     def check_workflow(self):
         return self.assigned_wf_id == None or \
@@ -2677,6 +2671,8 @@ class WorkflowElementInfo(QtGui.QWidget):
     # QtGui.QAbstractProxyModel used in the widget providing the selection
     # model
     proxy_model = None
+    
+    connection_closed_error = QtCore.Signal()
 
     def __init__(self, model, proxy_model=None, parent=None):
         super(WorkflowElementInfo, self).__init__(parent)
@@ -2687,33 +2683,24 @@ class WorkflowElementInfo(QtGui.QWidget):
 
         self.job_info_current_tab = 0
 
-        self.connect(self.model, QtCore.SIGNAL(
-            'workflow_state_changed()'), self.dataChanged)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_connection_changed()'), self.clear)
-        self.connect(self.model, QtCore.SIGNAL(
-            'current_workflow_changed()'), self.clear)
+        self.model.workflow_state_changed.connect(self.dataChanged)
+        self.model.current_connection_changed.connect(self.clear)
+        self.model.current_workflow_changed.connect(self.clear)
 
         self.vLayout = QtGui.QVBoxLayout(self)
 
     @QtCore.Slot(QtGui.QItemSelectionModel)
     def setSelectionModel(self, selectionModel):
         if self.selectionModel:
-            # patch PyQt 4.7.4: use of old style disconnection
-            QtCore.QObject.disconnect(self.selectionModel,
-                                      QtCore.SIGNAL("currentChanged(QModelIndex, "
-                                                    "QModelIndex)"),
-                                      self.currentChanged)
-            # self.selectionModel.currentChanged.disconnect(self.currentChanged)
+            self.selectionModel.currentChanged[QtCore.QModelIndex,
+                                               QtCore.QModelIndex].disconnect(
+                self.currentChanged)
 
         self.selectionModel = selectionModel
 
-        # patch PyQt 4.7.4: use of old style connection
-        QtCore.QObject.connect(self.selectionModel,
-                               QtCore.SIGNAL("currentChanged(QModelIndex, "
-                                             "QModelIndex)"),
-                               self.currentChanged)
-        # self.selectionModel.currentChanged.connect(self.currentChanged)
+        self.selectionModel.currentChanged[QtCore.QModelIndex, 
+                                           QtCore.QModelIndex].connect(
+            self.currentChanged)
 
         if self.infoWidget:
             self.infoWidget.hide()
@@ -2831,7 +2818,7 @@ class JobInfoWidget(QtGui.QTabWidget):
             try:
                 self.job_item.updateStdOutErr(self.connection)
             except ConnectionClosedError as e:
-                self.parent.emit(QtCore.SIGNAL("connection_closed_error"))
+                self.parent.connection_closed_error[()].emit()
             else:
                 self.dataChanged()
 
@@ -2840,7 +2827,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         try:
             self.job_item.updateStdOutErr(self.connection)
         except ConnectionClosedError as e:
-            self.parent().emit(QtCore.SIGNAL("connection_closed_error"))
+            self.parent().connection_closed_error[()].emit()
         self.dataChanged()
 
 
@@ -3153,12 +3140,10 @@ class WorkflowGraphView(QtGui.QWidget):
 
         self.model = model
         if model is not None:
-            self.connect(self.model,
-                         QtCore.SIGNAL('current_workflow_changed()'),
-                         self.current_workflow_changed)
-            self.connect(self.model, QtCore.SIGNAL(
-                        'current_connection_changed()'),
-                        self.current_workflow_changed)
+            self.model.current_workflow_changed.connect(
+                self.current_workflow_changed)
+            self.model.current_connection_changed.connect(
+                self.current_workflow_changed)
 
     @QtCore.Slot()
     def current_workflow_changed(self):
@@ -3662,12 +3647,12 @@ class ApplicationModel(QtCore.QObject):
     _timeout_duration = None
 
     # signals
-    # connection_closed_error
-    # current_connection_changed
-    # workflow_state_changed
-    # current_workflow_about_to_change
-    # current_workflow_changed
-    # global_workflow_state_changed
+    connection_closed_error = QtCore.Signal((), (str,))
+    current_connection_changed = QtCore.Signal()
+    workflow_state_changed = QtCore.Signal()
+    current_workflow_about_to_change = QtCore.Signal()
+    current_workflow_changed = QtCore.Signal()
+    global_workflow_state_changed = QtCore.Signal()
 
     class UpdateThread(QtCore.QThread):
 
@@ -3721,7 +3706,7 @@ class ApplicationModel(QtCore.QObject):
 
         self.update_thread = None
 
-        self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+        self.global_workflow_state_changed.emit()
         self._timer = QtCore.QTimer(self)
         self._timer.setInterval(self.update_interval * 3000)
         self._timer.timeout.connect(self.threaded_update)
@@ -3782,8 +3767,8 @@ class ApplicationModel(QtCore.QObject):
                             # wf_status =
                             # self.current_connection.workflow_status(self.current_wf_id)
                     except ConnectionClosedError as e:
-                        self.emit(
-                            QtCore.SIGNAL('connection_closed_error'), self.current_resource_id)
+                        self.connection_closed_error[str].emit(
+                            self.current_resource_id)
                         self._hold[self.current_resource_id] = True
                         return
                     except UnknownObjectError as e:
@@ -3792,16 +3777,13 @@ class ApplicationModel(QtCore.QObject):
                     else:
                         if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:
                             if self._current_workflow.updateState(wf_complete_status):
-                                self.emit(
-                                    QtCore.SIGNAL('workflow_state_changed()'))
+                                self.workflow_state_changed.emit()
                         if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
                             self.workflow_status = wf_status
                             self._workflow_statuses[self.current_resource_id][
                                 self.current_wf_id] = wf_status
-                            self.emit(
-                                QtCore.SIGNAL('workflow_state_changed()'))
-                            self.emit(
-                                QtCore.SIGNAL('global_workflow_state_changed()'))
+                            self.workflow_state_changed.emit()
+                            self.global_workflow_state_changed.emit()
                 if True:
                     # update the status of every workflow
                     global_wf_state_changed = False
@@ -3821,9 +3803,7 @@ class ApplicationModel(QtCore.QObject):
                                         # wf_status =
                                         # self.resource_pool.connection(rid).workflow_status(wfid)
                                     except ConnectionClosedError as e:
-                                        self.emit(
-                                            QtCore.SIGNAL(
-                                                'connection_closed_error'),
+                                        self.connection_closed_error[str].emit(
                                             rid)
                                         self._hold[rid] = True
                                         break
@@ -3836,8 +3816,7 @@ class ApplicationModel(QtCore.QObject):
                                             self._workflow_statuses[
                                                 rid][wfid] = wf_status
                     if global_wf_state_changed:
-                        self.emit(
-                            QtCore.SIGNAL('global_workflow_state_changed()'))
+                        self.global_workflow_state_changed.emit()
 
     def connection_timeout(self,
                            func,
@@ -3915,9 +3894,9 @@ class ApplicationModel(QtCore.QObject):
                 self._timeout_duration[resource_id] = 40
             else:
                 self._timeout_duration[resource_id] = 240
-            self.emit(QtCore.SIGNAL('current_connection_changed()'))
-            self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
-            self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+            self.current_connection_changed.emit()
+            self.current_workflow_about_to_change.emit()
+            self.current_workflow_changed.emit()
             self._hold[resource_id] = False
 
     def delete_connection(self, resource_id):
@@ -3950,8 +3929,8 @@ class ApplicationModel(QtCore.QObject):
                 if self.current_resource_id != None:
                     self.current_connection = self.resource_pool.connection(
                         self.current_resource_id)
-                self.emit(QtCore.SIGNAL('current_connection_changed()'))
-            self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+                self.current_connection_changed.emit()
+            self.global_workflow_state_changed.emit()
 
     def set_current_connection(self, resource_id):
         if resource_id != self.current_resource_id:
@@ -3961,14 +3940,14 @@ class ApplicationModel(QtCore.QObject):
                 self.current_resource_id = resource_id
                 self.current_connection = self.resource_pool.connection(
                     resource_id)
-                self.emit(QtCore.SIGNAL('current_connection_changed()'))
+                self.current_connection_changed.emit()
 
     def reinit_connection(self, resource_id, connection):
         with self._lock:
             self.current_resource_id = resource_id
             self.current_connection = connection
             self.resource_pool.reinit_connection(resource_id, connection)
-            self.emit(QtCore.SIGNAL('current_connection_changed()'))
+            self.current_connection_changed.emit()
             self._hold[resource_id] = False
 
     def add_to_submitted_workflows(self,
@@ -3995,7 +3974,7 @@ class ApplicationModel(QtCore.QObject):
                     workflow_id] = workflow_name
                 self._workflow_statuses[self.current_resource_id][
                     workflow_id] = workflow_status
-            self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+            self.global_workflow_state_changed.emit()
 
     def add_workflow(self,
                      workflow_id,
@@ -4008,7 +3987,7 @@ class ApplicationModel(QtCore.QObject):
         use it as the current workflow.
         '''
         with self._lock:
-            self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+            self.current_workflow_about_to_change.emit()
             if workflow:
                 self._current_workflow = GuiWorkflow(
                     workflow, self.tmp_stderrout_dir)
@@ -4034,11 +4013,11 @@ class ApplicationModel(QtCore.QObject):
                             = self.current_connection.workflow_elements_status(
                                 workflow_id)
                     except ConnectionClosedError as e:
-                        self.emit(QtCore.SIGNAL('connection_closed_error'))
+                        self.connection_closed_error[()].emit()
                     else:
                         self._current_workflow.updateState(wf_status)
-            self.emit(QtCore.SIGNAL('current_workflow_changed()'))
-            self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+            self.current_workflow_changed.emit()
+            self.global_workflow_state_changed.emit()
 
     def current_workflow(self):
         if self.current_wf_id == NOT_SUBMITTED_WF_ID or \
@@ -4051,7 +4030,7 @@ class ApplicationModel(QtCore.QObject):
                 workflow = self.current_connection.workflow(self.current_wf_id)
             except ConnectionClosedError as e:
                 QtGui.QApplication.restoreOverrideCursor()
-                self.emit(QtCore.SIGNAL('connection_closed_error'))
+                self.connection_closed_error[()].emit()
             except UnknownObjectError as e:
                 self.delete_workflow()
                 return self._current_workflow
@@ -4066,7 +4045,7 @@ class ApplicationModel(QtCore.QObject):
                             self.current_wf_id)
                 except ConnectionClosedError as e:
                     QtGui.QApplication.restoreOverrideCursor()
-                    self.emit(QtCore.SIGNAL('connection_closed_error'))
+                    self.connection_closed_error[()].emit()
                 else:
                     self._current_workflow.updateState(wf_status)
 
@@ -4085,7 +4064,7 @@ class ApplicationModel(QtCore.QObject):
                 del self._workflow_statuses[
                     self.current_resource_id][workflow_id]
             else:
-                self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+                self.current_workflow_about_to_change.emit()
                 if self._current_workflow and self._current_workflow.wf_id in self._workflows[self.current_resource_id].keys():
                     del self._workflows[self.current_resource_id][
                         self._current_workflow.wf_id]
@@ -4100,27 +4079,27 @@ class ApplicationModel(QtCore.QObject):
                 self.workflow_exp_date = None  # datetime.now()
                 self.workflow_status = None
                 self.workflow_name = None
-                self.emit(QtCore.SIGNAL('current_workflow_changed()'))
-            self.emit(QtCore.SIGNAL('global_workflow_state_changed()'))
+                self.current_workflow_changed.emit()
+            self.global_workflow_state_changed.emit()
 
     def clear_current_workflow(self):
         with self._lock:
             if self._current_workflow != None or \
                self.current_wf_id != NOT_SUBMITTED_WF_ID:
-                self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+                self.current_workflow_about_to_change.emit()
                 self._current_workflow = None
                 self.current_wf_id = None
                 self.workflow_exp_date = None  # datetime.now()
                 self.workflow_status = None
                 self.workflow_name = None
-                self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+                self.current_workflow_changed.emit()
 
     def set_current_workflow(self, wf_id):
         if wf_id != self.current_wf_id:
             with self._lock:
                 assert(wf_id in self._workflows[
                        self.current_resource_id].keys())
-                self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+                self.current_workflow_about_to_change.emit()
                 self.current_wf_id = wf_id
                 self._current_workflow = self._workflows[
                     self.current_resource_id][self.current_wf_id]
@@ -4130,17 +4109,17 @@ class ApplicationModel(QtCore.QObject):
                     self.current_resource_id][self.current_wf_id]
                 self.workflow_status = self._workflow_statuses[
                     self.current_resource_id][self.current_wf_id]
-                self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+                self.current_workflow_changed.emit()
 
     def set_no_current_workflow(self):
         with self._lock:
-            self.emit(QtCore.SIGNAL('current_workflow_about_to_change()'))
+            self.current_workflow_about_to_change.emit()
             self._current_workflow = None
             self.current_wf_id = None
             self.workflow_exp_date = None  # datetime.now()
             self.workflow_status = None
             self.workflow_name = None
-            self.emit(QtCore.SIGNAL('current_workflow_changed()'))
+            self.current_workflow_changed.emit()
 
     def change_expiration_date(self, date):
         self.workflow_exp_date = date
