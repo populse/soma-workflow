@@ -25,30 +25,48 @@ import socket
 import weakref
 import subprocess
 from soma_workflow import connection
+import sys
 # import cProfile
 # import traceback
 # import pdb
 
-PYQT = "pyqt"
+PYQT4 = "pyqt4"
+PYQT5 = "pyqt5"
 PYSIDE = "pyside"
+QT_BACKEND = None
 
-try:
-    from PyQt4 import QtGui, QtCore
-    QT_BACKEND = PYQT
-except ImportError as e:
-    QT_BACKEND = None
+if 'PyQt4' in sys.modules:
+    QT_BACKEND = PYQT4
+elif 'PyQt5' in sys.modules:
+    QT_BACKEND = PYQT5
+elif 'PySide' in sys.modules:
+    QT_BACKEND = PYSIDE
 
-# QT_BACKEND=None
+if QT_BACKEND is None:
+    try:
+        from PyQt4 import QtGui, QtCore
+        QT_BACKEND = PYQT4
+    except ImportError as e:
+        pass
 
-if QT_BACKEND == None:
+if QT_BACKEND is None:
     try:
         from PySide import QtGui, QtCore
         QT_BACKEND = PYSIDE
     except ImportError as e:
-        raise Exception("Soma-workflow Gui requires PyQt or PySide.")
+        pass
 
-if QT_BACKEND == PYQT:
-    from PyQt4 import uic
+if QT_BACKEND is None:
+    try:
+        from PyQt5 import QtGui, QtCore, QtWidgets
+        QT_BACKEND = PYQT5
+    except ImportError as e:
+        raise Exception("Soma-workflow Gui requires PyQt4, PyQt5 or PySide.")
+
+use_qvariant = False
+
+if QT_BACKEND == PYQT4:
+    from PyQt4 import QtCore, QtGui, uic
     from PyQt4.uic import loadUiType
     import sip
     sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
@@ -64,10 +82,22 @@ if QT_BACKEND == PYQT:
     QtCore.Slot = QtCore.pyqtSlot
     QtCore.Signal = QtCore.pyqtSignal
 
-elif QT_BACKEND == PYSIDE:
-    use_qvariant = False
+elif QT_BACKEND == PYQT5:
+    from PyQt5 import QtCore, QtGui, QtWidgets, uic
+    from PyQt5.uic import loadUiType
+    QtCore.Slot = QtCore.pyqtSlot
+    QtCore.Signal = QtCore.pyqtSignal
+    # copy QtWidgets contents into QtGui
+    for key in QtWidgets.__dict__:
+        if not key.startswith('__') and key not in QtGui.__dict__:
+            setattr(QtGui, key, getattr(QtWidgets, key))
+    # more hacks
+    QtGui.QSortFilterProxyModel = QtCore.QSortFilterProxyModel
+    QtGui.QItemSelectionModel = QtCore.QItemSelectionModel
 
-    from PySide import QtUiTools
+elif QT_BACKEND == PYSIDE:
+
+    from PySide import QtCore, QtGui, QtUiTools
 
 
 from soma_workflow.client import Workflow, Group, FileTransfer, SharedResourcePath, TemporaryPath, Job, WorkflowController, Helper
@@ -101,16 +131,24 @@ else:
 MATPLOTLIB = True
 try:
     import matplotlib
-    matplotlib.use('Qt4Agg')
-    if QT_BACKEND == PYSIDE:
+    if QT_BACKEND == PYQT4:
+        matplotlib.use('Qt4Agg')
+    elif QT_BACKEND == PYQT5:
+        matplotlib.use('Qt5Agg')
+    elif QT_BACKEND == PYSIDE:
+        matplotlib.use('Qt4Agg')
         if 'backend.qt4' in matplotlib.rcParams.keys():
             matplotlib.rcParams['backend.qt4'] = 'PySide'
         else:
             print("Could not use Matplotlib, the backend using PySide "
                 "is missing.")
             MATPLOTLIB = False
-    from matplotlib.backends.backend_qt4agg \
-        import FigureCanvasQTAgg as FigureCanvas
+    if QT_BACKEND in (PYQT4, PYSIDE):
+        from matplotlib.backends.backend_qt4agg \
+            import FigureCanvasQTAgg as FigureCanvas
+    else:
+        from matplotlib.backends.backend_qt5agg \
+            import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     import matplotlib.pyplot
 except ImportError as e:
@@ -148,7 +186,7 @@ GREEN = QtGui.QColor(155, 255, 50)
 LIGHT_BLUE = QtGui.QColor(200, 255, 255)
 
 
-if QT_BACKEND == PYQT:
+if QT_BACKEND in (PYQT4, PYQT5):
     '''
     The types can be loaded directly from the ui files (useful during developpement)
     '''
@@ -1296,7 +1334,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         file_path = QtGui.QFileDialog.getOpenFileName(
             self, "Open a workflow", "", "", None,
             QtGui.QFileDialog.DontUseNativeDialog)
-        if QT_BACKEND == PYSIDE:
+        if QT_BACKEND in(PYSIDE, PYQT5):
             file_path = file_path[0]
         if file_path:
             try:
@@ -1317,7 +1355,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         file_path = QtGui.QFileDialog.getSaveFileName(
             self, "Save the current workflow", "", "", None,
             QtGui.QFileDialog.DontUseNativeDialog)
-        if QT_BACKEND == PYSIDE:
+        if QT_BACKEND in (PYSIDE, PYQT5):
             file_path = file_path[0]
 
         if file_path:
@@ -1343,7 +1381,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             example_type = ui.comboBox_example_type.currentIndex()
             file_path = QtGui.QFileDialog.getSaveFileName(self,
                                                           "Create a workflow example")
-            if QT_BACKEND == PYSIDE:
+            if QT_BACKEND in (PYSIDE, PYQT5):
                 file_path = file_path[0]
             if file_path:
                 try:

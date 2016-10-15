@@ -22,8 +22,6 @@ import optparse
 #  sip.setapi('QVariant', 2)
 #  sip.setapi('QString', 2)
 
-from soma_workflow.gui.workflowGui import ApplicationModel, MainWindow, SomaWorkflowWidget, QtCore, QtGui
-
 parser = optparse.OptionParser()
 
 parser.add_option('-u', '--user', help="User for logging in to server")
@@ -36,8 +34,24 @@ parser.add_option('--database', dest='database',
                   help='connect localhost with the specified database file')
 parser.add_option('--config', dest='config',
                   help='use the specified config file')
+parser.add_option('--gui', dest='gui',
+                  help='use the specified Qt GUI type: PyQt4, PyQt5, PySide.'
+                  'Default: guess in the above order.')
 
 options, args = parser.parse_args(sys.argv)
+
+gui =options.gui
+if gui == 'PyQt4':
+    import PyQt4
+elif gui == 'PyQt5':
+    import PyQt5
+elif gui == 'PySide':
+    import PySide
+elif gui is not None:
+    raise ValueError('unrecognized GUI type: %s' % gui)
+
+from soma_workflow.gui.workflowGui import ApplicationModel, MainWindow, SomaWorkflowWidget, QtCore, QtGui
+
 
 if __name__=="__main__":
   
