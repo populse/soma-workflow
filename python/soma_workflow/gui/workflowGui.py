@@ -1082,6 +1082,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     workflow_info_widget = None
 
+    closing = QtCore.Signal()
+
     def __init__(self,
                  model,
                  user=None,
@@ -2096,12 +2098,10 @@ class MainWindow(QtGui.QMainWindow):
         itemInfoLayout.addWidget(self.itemInfoWidget)
         self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
-        self.treeWidget.selection_model_changed[QItemSelectionModel].connect(
+        self.treeWidget.selection_model_changed['QItemSelectionModel'].connect(
             self.itemInfoWidget.setSelectionModel)
 
-        self.itemInfoWidget.connection_closed_error[()].connect(
-            self.sw_widget.reconnectAfterConnectionClosed)
-        self.itemInfoWidget.connection_closed_error[str].connect(
+        self.itemInfoWidget.connection_closed_error.connect(
             self.sw_widget.reconnectAfterConnectionClosed)
 
         self.workflowInfoWidget = WorkflowGroupInfo(self.model, self)
