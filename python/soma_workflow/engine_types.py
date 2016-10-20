@@ -234,9 +234,6 @@ class EngineJob(Job):
                     if not true_file in self.path_mapping:
                         self.path_mapping[true_file] = self.transfer_mapping[true_file]
                 elif isinstance(true_file, SharedResourcePath) and not true_file in self.path_mapping:
-                    print('map SharedResourcePath to EngineSharedResourcePath')
-                    if not self.path_translation:
-                        print('EngineJob: path translation is None')
                     self.path_mapping[true_file] = EngineSharedResourcePath(true_file, path_translation=self.path_translation)
                 else:
                     if not isinstance(true_file, basestring):
@@ -1117,8 +1114,6 @@ class EngineOptionPath(OptionPath):
         elif isinstance(client_option_path, SharedResourcePath):
             self.engine_parent_path = EngineSharedResourcePath(client_option_path.parent_path, path_translation)
             self.status = self.engine_parent_path.status
-            if not path_translation:
-                print('EngineOptionPath: path_translation is None')
         else:
             self.engine_parent_path = client_option_path.parent_path
             self.status = constants.FILES_ON_CLIENT
@@ -1153,10 +1148,6 @@ class EngineSharedResourcePath(SharedResourcePath):
             uuid=client_shared_path.uuid,
             disposal_timeout=client_shared_path.disposal_timeout)
         self.path_translation = path_translation
-        if not path_translation:
-            print('EngineSharedResourcePath: path_translation is None')
-        if not self.path_translation:
-            print('EngineSharedResourcePath: self.path_translation is None')
         self.translated_path = self._translate()
 
     def _translate(self):
