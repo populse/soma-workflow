@@ -44,6 +44,14 @@ elif 'PySide' in sys.modules:
 
 if QT_BACKEND is None:
     try:
+        import sip
+        sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
+                       'QTextStream', 'QTime', 'QUrl', 'QStringList']
+        for sip_class in sip_classes:
+            try:
+                sip.setapi(sip_class, 2)
+            except ValueError as e:
+                pass
         from PyQt4 import QtGui, QtCore
         QT_BACKEND = PYQT4
     except ImportError as e:
@@ -68,14 +76,6 @@ use_qvariant = False
 if QT_BACKEND == PYQT4:
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.uic import loadUiType
-    import sip
-    sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
-                   'QTextStream', 'QTime', 'QUrl', 'QStringList']
-    for sip_class in sip_classes:
-        try:
-            sip.setapi(sip_class, 2)
-        except ValueError as e:
-            pass
     use_qvariant = False
     if sip.getapi('QVariant') < 2:
         use_qvariant = True
