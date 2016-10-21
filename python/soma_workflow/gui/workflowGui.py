@@ -74,6 +74,7 @@ if QT_BACKEND is None:
 use_qvariant = False
 
 if QT_BACKEND == PYQT4:
+    import sip
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.uic import loadUiType
     use_qvariant = False
