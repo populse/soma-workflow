@@ -334,6 +334,7 @@ if DRMAA_LIB_FOUND == True:
                 jobTemplateId = self._drmaa.createJobTemplate()
                 jobTemplateId.remoteCommand = command[0]
                 jobTemplateId.args = command[1:]
+                jobTemplateId.jobName = job.name
 
                 self.logger.info("jobTemplateId=" + repr(jobTemplateId) + " command[0]=" + repr(
                     command[0]) + " command[1:]=" + repr(command[1:]))
