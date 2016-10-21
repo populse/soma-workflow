@@ -26,6 +26,7 @@ import os
 import select
 import re
 import random
+import errno
 try:
     import socketserver # python3
 except ImportError:
@@ -768,9 +769,20 @@ class Tunnel(threading.Thread):
                      (self.chain_host, self.chain_port)))
 
         def handle(self):
-            # print('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
+            #print('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
             while True:
-                r, w, x = select.select([self.request, self.__chan], [], [])
+                try:
+                    r, w, x = select.select([self.request, self.__chan], [],
+                                            [])
+                except Exception as e:
+                    if e.args[0] == errno.EINTR:
+                        # Qt modal dialogs event loop (at least in QFileDialog)
+                        # can cause an interrupted system call here.
+                        # It seems not to completely break the connection, 
+                        # we can go on.
+                        continue
+                    else:
+                        raise
                 if self.request in r:
                     data = self.request.recv(1024)
                     if len(data) == 0:
