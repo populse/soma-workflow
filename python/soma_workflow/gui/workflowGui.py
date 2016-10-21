@@ -171,6 +171,10 @@ except ImportError:
     class ConnectionClosedError(ProtocolError):
         pass
 
+# QFileDialog options:
+# in binary packages containing thirdpary libs/python, we must use 
+# DontUseNativeDialog to prevent loading external libs from the system.
+filedialog_options = QtGui.QFileDialog.DontUseNativeDialog
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -1332,8 +1336,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
     @QtCore.Slot()
     def openWorkflow(self):
         file_path = QtGui.QFileDialog.getOpenFileName(
-            self, "Open a workflow", "", "", None,
-            QtGui.QFileDialog.DontUseNativeDialog)
+            self, "Open a workflow", "", "", None, filedialog_options)
         if QT_BACKEND in(PYSIDE, PYQT5):
             file_path = file_path[0]
         if file_path:
@@ -1353,8 +1356,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
     @QtCore.Slot()
     def saveWorkflow(self):
         file_path = QtGui.QFileDialog.getSaveFileName(
-            self, "Save the current workflow", "", "", None,
-            QtGui.QFileDialog.DontUseNativeDialog)
+            self, "Save the current workflow", "", "", None, 
+            filedialog_options)
         if QT_BACKEND in (PYSIDE, PYQT5):
             file_path = file_path[0]
 
