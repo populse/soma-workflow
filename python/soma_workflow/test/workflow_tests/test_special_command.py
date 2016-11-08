@@ -24,6 +24,7 @@ Workflow test of one job with a command:
           job stdout and stderr
           submission warning when single quote comand
 """
+from __future__ import print_function
 import tempfile
 import os
 import sys
@@ -48,16 +49,16 @@ class SpecialCommandTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
     def test_result(self):
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
         with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
-            warnings.simplefilter("always")
             # Trigger a warning.
             workflow = self.wf_examples.example_special_command()
             # Verify some things
-            assert len(w) == 1
-            assert issubclass(w[-1].category, UserWarning)
-            assert ("contains single quote. It could fail using DRMAA" in
-                    str(w[-1].message))
+            self.assertTrue(len(w) == 1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("contains single quote. It could fail using DRMAA"
+                            in str(w[-1].message))
 
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
