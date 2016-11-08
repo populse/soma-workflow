@@ -48,7 +48,7 @@ def slave_loop(communicator,
                 epd_tar = tarfile.open(epd_to_deploy)
                 epd_tar.extractall(path=untar_directory)
                 # logger.debug('extract %s' %(epd_to_deploy))
-            except IOError, e:
+            except IOError as e:
                 logger.error("Could not deploy epd: %s" % (e))
                 pass
 
@@ -159,7 +159,7 @@ def slave_loop(communicator,
                 if os.path.isdir(archive_dir_path):
                     shutil.rmtree(archive_dir_path)
                     logger.debug("remove %s" % (archive_dir_path))
-            except Exception, e:
+            except Exception as e:
                 pass
         logger.debug("Slave %d: end of cleaning! \n" % (rank))
     logger.debug("Slave %d END!!! \n" % (rank))
@@ -484,7 +484,7 @@ if __name__ == '__main__':
             while not sch.stop_thread_loop:
                 time.sleep(1)
             logger.debug("######### master ends #############")
-        except Exception, e:
+        except Exception as e:
             for slave in range(1, comm.size):
                 logger.debug("STOP !!!  slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
