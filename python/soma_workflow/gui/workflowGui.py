@@ -1336,10 +1336,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def openWorkflow(self):
-        file_path = QtGui.QFileDialog.getOpenFileName(
-            self, "Open a workflow", "", "", None, filedialog_options)
         if QT_BACKEND in(PYSIDE, PYQT5):
+            file_path = QtGui.QFileDialog.getOpenFileName(
+                self, "Open a workflow", "", "", "", filedialog_options)
             file_path = file_path[0]
+        else: # PyQt4
+            file_path = QtGui.QFileDialog.getOpenFileName(
+                self, "Open a workflow", "", "", filedialog_options)
         if file_path:
             try:
                 workflow = Controller.unserialize_workflow(file_path)
@@ -1356,11 +1359,15 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def saveWorkflow(self):
-        file_path = QtGui.QFileDialog.getSaveFileName(
-            self, "Save the current workflow", "", "", None, 
-            filedialog_options)
         if QT_BACKEND in (PYSIDE, PYQT5):
+            file_path = QtGui.QFileDialog.getSaveFileName(
+                self, "Save the current workflow", "", "", "",
+                filedialog_options)
             file_path = file_path[0]
+        else: # PyQt4
+            file_path = QtGui.QFileDialog.getSaveFileName(
+                self, "Save the current workflow", "", "",
+                filedialog_options)
 
         if file_path:
             try:
@@ -1386,7 +1393,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
             file_path = QtGui.QFileDialog.getSaveFileName(self,
                                                           "Create a workflow example")
             if QT_BACKEND in (PYSIDE, PYQT5):
+                file_path = QtGui.QFileDialog.getSaveFileName(
+                    self, "Create a workflow example", "", "", "",
+                    filedialog_options)
                 file_path = file_path[0]
+            else: # PyQt4
+                file_path = QtGui.QFileDialog.getSaveFileName(
+                    self, "Create a workflow example", "", "",
+                    filedialog_options)
             if file_path:
                 try:
                     if with_file_transfer and not with_shared_resource_path:
