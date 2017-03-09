@@ -3228,8 +3228,9 @@ class WorkflowGraphView(QtGui.QWidget):
     def zoomChanged(self, percentage):
         self.scale_factor = percentage / 100.0
         if self.workflow:
-            self.image_label.resize(
-                self.image_label.pixmap().size() * self.scale_factor)
+            if self.image_label.pixmap():
+                self.image_label.resize(
+                    self.image_label.pixmap().size() * self.scale_factor)
 
     @QtCore.Slot(int)
     def adjustSizeChanged(self, state):
@@ -3255,12 +3256,13 @@ class WorkflowGraphView(QtGui.QWidget):
 
     def rebuild_graph(self):
         image_file_path = self.printWorkflow()
-        image = QtGui.QImage(image_file_path)
-        pixmap = QtGui.QPixmap.fromImage(image)
-        self.image_label.setPixmap(pixmap)
-        self.ui.scrollArea.setWidget(self.image_label)
-        self.image_label.resize(
-            self.image_label.pixmap().size() * self.scale_factor)
+        if image_file_path is not None:
+            image = QtGui.QImage(image_file_path)
+            pixmap = QtGui.QPixmap.fromImage(image)
+            self.image_label.setPixmap(pixmap)
+            self.ui.scrollArea.setWidget(self.image_label)
+            self.image_label.resize(
+                self.image_label.pixmap().size() * self.scale_factor)
         self._data_changed = False
 
     def graph_visibility_changed(self, visible):
@@ -3270,7 +3272,15 @@ class WorkflowGraphView(QtGui.QWidget):
 
     def printWorkflow(self):
 
-        output_dir = "/tmp/"
+        import tempfile
+        from distutils.spawn import find_executable
+        
+        if not find_executable("dot"):
+            print("Unable to print workflow because dot executable is not",
+                  "available.", file = sys.stderr)
+            return None
+        
+        output_dir = tempfile.gettempdir()
 
         GRAY = "\"#C8C8B4\""
         BLUE = "\"#00C8FF\""
@@ -3281,8 +3291,8 @@ class WorkflowGraphView(QtGui.QWidget):
         names = dict()
         current_id = 0
 
-        dot_file_path = output_dir + "tmp.dot"
-        graph_file_path = output_dir + "tmp.png"
+        dot_file_path = os.path.join(output_dir, "tmp.dot")
+        graph_file_path = os.path.join(output_dir, "tmp.png")
         if dot_file_path and os.path.isfile(dot_file_path):
             os.remove(dot_file_path)
         file = open(dot_file_path, "w")
