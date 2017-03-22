@@ -34,6 +34,9 @@ if sys.version_info[:2] >= (2, 6):
 # import cProfile
 # import traceback
 
+if sys.version_info[0] >= 3:
+    basestring = str
+
 import soma_workflow.connection as connection
 from soma_workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
 import soma_workflow.constants as constants
@@ -721,7 +724,7 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the transfer_id is not valid
         #Raises *TransferError*
         '''
-        if not type(transfer_ids) in types.StringTypes:
+        if not isinstance(transfer_ids, basestring):
             for transfer_id in transfer_ids:
                 self._transfer_file(transfer_id, buffer_size)
         else:
