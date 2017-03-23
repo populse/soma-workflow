@@ -1207,7 +1207,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connection_dlg.accepted.connect(self.firstConnection)
         self.connection_dlg.rejected.connect(self.close)
 
-        self.config_file = config_file
+        self.config_file_path = config_file
         self.db_file = db_file
 
         # First connection:
@@ -1230,10 +1230,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
     def UpdateLocalparameters(self):
 
         try:
-            self.config_file_path = configuration.Configuration.search_config_path(
-            )
-            self.resource_list = configuration.Configuration.get_configured_resources(
-                self.config_file_path)
+            self.config_file_path \
+                = configuration.Configuration.search_config_path()
+            self.resource_list \
+                = configuration.Configuration.get_configured_resources(
+                    self.config_file_path)
             self.login_list = configuration.Configuration.get_logins(
                 self.config_file_path)
         except ConfigurationError as e:
@@ -1269,11 +1270,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
         wf_ctrl = None
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         config = None
-        if self.config_file is not None \
+        if self.config_file_path is not None \
                 or (resource_id in ('localhost', socket.gethostname())
                     and self.db_file is not None):
             config = configuration.Configuration.load_from_file(
-                self.config_file)
+                config_file_path=self.config_file_path)
             if resource_id in ('localhost', socket.gethostname()) \
                     and self.db_file is not None:
                 config._database_file = self.db_file
