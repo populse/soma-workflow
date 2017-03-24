@@ -23,6 +23,7 @@ import logging
 import tempfile
 import weakref
 import six
+import time
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
@@ -753,7 +754,6 @@ class EngineWorkflow(Workflow):
         #f_to_discard = 0
         #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
         #self.has_new_failed_jobs = False
-        import time
         t0 = time.clock()
         for client_job in self.jobs:
             #jcount += 1

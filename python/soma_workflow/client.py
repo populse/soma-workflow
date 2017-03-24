@@ -24,7 +24,6 @@ import operator
 import random
 import pickle
 import types
-import subprocess
 import sys
 import posixpath
 import logging

@@ -240,7 +240,6 @@ class WorkflowEngineLoop(object):
                     (wf_to_delete, wf_to_kill) \
                         = self._database_server.workflows_to_delete_and_kill(
                             self._user_id)
-
                 # Delete and kill properly the jobs and workflows in _jobs and
                 # _workflows
                 for job_id in jobs_to_kill + jobs_to_delete:

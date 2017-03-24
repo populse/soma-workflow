@@ -554,7 +554,10 @@ class LocalConnection(object):
         # required in the local connection mode
         import Pyro.core
         from Pyro.errors import ConnectionClosedError
-        import subprocess
+        try:
+            import subprocess32 as subprocess
+        except ImportError:
+            import subprocess
 
         login = getpass.getuser()
         pyro_objet_name = "workflow_engine_" + login

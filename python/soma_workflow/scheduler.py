@@ -11,7 +11,12 @@ from __future__ import with_statement, print_function
 '''
 
 
-import subprocess
+try:
+    import subprocess32 as subprocess
+    print('using subprocess32')
+except ImportError:
+    print('subprocess32 could not be loaded - processes may hangup')
+    import subprocess
 import threading
 import time
 import logging
