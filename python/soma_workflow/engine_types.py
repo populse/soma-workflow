@@ -714,7 +714,7 @@ class EngineWorkflow(Workflow):
             # !!!! the workflow may be stuck !!!!
             # TBI
             self.logger.error("!!!! The workflow status is not clear. "
-                              "Stoppinng if !!!!")
+                              "Stopping it !!!!")
             self.logger.error(
                 "total jobs: %d, done/aborted: %d, to abort: %d, running: %d, "
                 "to run: %d"
@@ -832,7 +832,7 @@ class EngineWorkflow(Workflow):
             # !!!! the workflow may be stuck !!!!
             # TBI
             self.logger.error("!!!! The workflow status is not clear. "
-                              "Stoppinng if !!!!")
+                              "Stopping it !!!!")
             self.logger.error(
                 "total jobs: %d, done/aborted: %d, to abort: %d, running: %d, "
                 "to run: %d"
