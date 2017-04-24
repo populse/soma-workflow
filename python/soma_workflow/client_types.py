@@ -849,45 +849,45 @@ class Workflow(object):
 
     @classmethod
     def from_dict(cls, d):
-        name = d["name"]
+        name = d.get("name", None)
 
         # shared resource paths
-        serialized_srp = d["serialized_shared_res_paths"]
+        serialized_srp = d.get("serialized_shared_res_paths", {})
         srp_from_ids = {}
         for srp_id, srp_d in six.iteritems(serialized_srp):
             srp = SharedResourcePath.from_dict(srp_d)
             srp_from_ids[int(srp_id)] = srp
 
         # file transfers
-        serialized_tr = d["serialized_file_transfers"]
+        serialized_tr = d.get("serialized_file_transfers", {})
         tr_from_ids = {}
         for tr_id, tr_d in six.iteritems(serialized_tr):
             file_transfer = FileTransfer.from_dict(tr_d)
             tr_from_ids[int(tr_id)] = file_transfer
 
         # file transfers
-        serialized_tmp = d["serialized_temporary_paths"]
+        serialized_tmp = d.get("serialized_temporary_paths", {})
         tmp_from_ids = {}
         for tmp_id, tmp_d in six.iteritems(serialized_tmp):
             temp_file = TemporaryPath.from_dict(tmp_d)
             tmp_from_ids[int(tmp_id)] = temp_file
 
         # option paths
-        serialized_opt = d["serialized_option_paths"]
+        serialized_opt = d.get("serialized_option_paths", {})
         opt_from_ids = {}
         for opt_id, opt_d in six.iteritems(serialized_opt):
             opt_file = OptionPath.from_dict(opt_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             opt_from_ids[int(opt_id)] = opt_file
 
         # jobs
-        serialized_jobs = d["serialized_jobs"]
+        serialized_jobs = d.get("serialized_jobs", {})
         job_from_ids = {}
         for job_id, job_d in six.iteritems(serialized_jobs):
             job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
 
         # barrier jobs
-        serialized_jobs = d["serialized_barriers"]
+        serialized_jobs = d.get("serialized_barriers", {})
         for job_id, job_d in six.iteritems(serialized_jobs):
             job = BarrierJob.from_dict(
                 job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
@@ -896,7 +896,7 @@ class Workflow(object):
         jobs = list(job_from_ids.values())
 
         # groups
-        serialized_groups = d["serialized_groups"]
+        serialized_groups = d.get("serialized_groups", {})
         group_from_ids = {}
         to_convert = serialized_groups.keys()
         converted_or_stuck = False
@@ -915,7 +915,7 @@ class Workflow(object):
         groups = group_from_ids.values() # WARNING, not used
 
         # root group
-        id_root_group = d["root_group"]
+        id_root_group = d.get("root_group", [])
         root_group = []
         for el_id in id_root_group:
             if el_id in group_from_ids:
@@ -925,7 +925,7 @@ class Workflow(object):
 
         # dependencies
         dependencies = []
-        id_dependencies = d["dependencies"]
+        id_dependencies = d.get("dependencies", [])
         for id_dep in id_dependencies:
             dep = (job_from_ids[id_dep[0]], job_from_ids[id_dep[1]])
             dependencies.append(dep)
