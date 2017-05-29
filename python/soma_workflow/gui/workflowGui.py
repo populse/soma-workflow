@@ -2155,7 +2155,7 @@ class MainWindow(QtGui.QMainWindow):
         itemInfoLayout.addWidget(self.itemInfoWidget)
         self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
 
-        self.treeWidget.selection_model_changed['QItemSelectionModel'].connect(
+        self.treeWidget.selection_model_changed.connect(
             self.itemInfoWidget.setSelectionModel)
 
         self.itemInfoWidget.connection_closed_error.connect(
@@ -2520,7 +2520,7 @@ class WorkflowTree(QtGui.QWidget):
 
     assigned_wf_id = None
 
-    selection_model_changed = QtCore.Signal(['QItemSelectionModel'])
+    selection_model_changed = QtCore.Signal('QItemSelectionModel')
 
     tree_view = None
 
