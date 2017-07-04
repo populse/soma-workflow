@@ -460,8 +460,11 @@ class WorkflowDatabaseServer(object):
 
             personal_path = self._user_transfer_dir_path(login, user_id)
             if not os.path.isdir(personal_path):
-                os.mkdir(personal_path)
-                os.chmod(personal_path, 0o775)
+                try:
+                    os.mkdir(personal_path)
+                    os.chmod(personal_path, 0o775)
+                except OSError:
+                    pass
 
             return user_id
 
