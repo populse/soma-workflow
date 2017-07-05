@@ -420,9 +420,15 @@ class Configuration(observer.Observable):
                 config._transfered_file_dir = transfered_file_dir
 
             if not os.path.isdir(os.path.join(home_dir, ".soma-workflow")):
-                os.mkdir(os.path.join(home_dir, ".soma-workflow"))
+                try:
+                    os.mkdir(os.path.join(home_dir, ".soma-workflow"))
+                except OSError:
+                    pass # ignore failed mkdir
             if not os.path.isdir(transfered_file_dir):
-                os.mkdir(transfered_file_dir)
+                try:
+                    os.mkdir(transfered_file_dir)
+                except OSError:
+                    pass # ignore failed mkdir
 
             return config
 
