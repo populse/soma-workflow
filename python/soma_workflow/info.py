@@ -11,7 +11,7 @@ __version__ = "%s.%s.%s%s" % (version_major,
                               version_extra)
 CLASSIFIERS = ['Development Status :: 5 - Production/Stable',
                'Environment :: Console',
-               ' Environment :: X11 Applications ',
+               'Environment :: X11 Applications',
                'Intended Audience :: Developers',
                'Intended Audience :: Science/Research',
                'Intended Audience :: Education',
