@@ -316,6 +316,8 @@ Configuration items optional on the server side:
 
       **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters` (light) mode.
 
+  **SHARED_TEMPORARY_DIR**
+    Directory where to generate temporary files used between jobs. The directory should be visible by all processing nodes (on a cluster), and the filesystem should be large enough to store temporary files during a whole workflow execution.
 
 Logging configuration:
 
