@@ -27,6 +27,7 @@ import select
 import re
 import random
 import errno
+import logging
 try:
     import socketserver # python3
 except ImportError:
@@ -36,7 +37,7 @@ except ImportError:
 from soma_workflow.errors import ConnectionError
 
 
-def ReadOutput(stdout, tag=None, num_line_stdout=-1):
+def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
 
     if num_line_stdout != -1:
@@ -65,14 +66,14 @@ def ReadOutput(stdout, tag=None, num_line_stdout=-1):
     return std_out_lines
 
 
-def SSHExecCmd(sshcommand,
-               userid,
-               ip_address_or_domain,
-               userpw='',
-               wait_output=True,
-               sshport=22,
-               isNeedErr=False,
-               num_line_stdout=-1,  # How many stdout or stderr lines to read
+def SSH_exec_cmd(sshcommand,
+                 userid,
+                 ip_address_or_domain,
+                 userpw='',
+                 wait_output=True,
+                 sshport=22,
+                 isNeedErr=False,
+                 num_line_stdout=-1,  # How many stdout or stderr lines to read
                num_line_stderr=-1):  # -1 means unlimited
 
     if wait_output:
@@ -124,9 +125,9 @@ def SSHExecCmd(sshcommand,
         raise e
 
     if wait_output:
-        std_out_lines = ReadOutput(stdout, tag, num_line_stdout)
+        std_out_lines = read_output(stdout, tag, num_line_stdout)
         if isNeedErr:
-            std_err_lines = ReadOutput(stderr, None, num_line_stderr)
+            std_err_lines = read_output(stderr, None, num_line_stderr)
 
     client.close()
 
@@ -144,7 +145,7 @@ def check_if_soma_wf_cr_on_server(
     """ Check if the check_requirement module exists
     """
     command = "python -c 'import soma_workflow.check_requirement'"
-    (std_out_lines, std_err_lines) = SSHExecCmd(
+    (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
         ip_address_or_domain,
@@ -165,7 +166,7 @@ def check_if_ctype_drmaa_on_server(
     userpw='',
         sshport=22):
     command = "python -m 'soma_workflow.check_requirement.drmaa'"
-    (std_out_lines, std_err_lines) = SSHExecCmd(
+    (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
         ip_address_or_domain,
@@ -189,7 +190,7 @@ def check_if_somawf_on_server(
     """ Check if the soma_workflow module exists
     """
     command = "python -c 'import soma_workflow'"
-    (std_out_lines, std_err_lines) = SSHExecCmd(
+    (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
         ip_address_or_domain,
@@ -214,7 +215,7 @@ def check_if_somawfdb_on_server(
     command = "ps -ef | grep 'python -m soma_workflow.start_database_server'"\
         " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
-    std_out_lines = SSHExecCmd(
+    std_out_lines = SSH_exec_cmd(
         command,
         userid,
         ip_address_or_domain,
@@ -228,7 +229,7 @@ def check_if_somawfdb_on_server(
         return True
 
 
-def searchAvailablePort():
+def search_available_port():
     s = socket.socket(
         socket.AF_INET, socket.SOCK_STREAM)  # Create a TCP socket
     s.bind(('localhost', 0))  # try to bind to the port 0 so that the system
@@ -321,7 +322,7 @@ class RemoteConnection(object):
         print("start engine command: "
               "ssh %s@%s %s" % (login, cluster_address, command))
 
-        (std_out_lines) = SSHExecCmd(
+        (std_out_lines) = SSH_exec_cmd(
             command,
             login,
             cluster_address,
@@ -368,7 +369,7 @@ class RemoteConnection(object):
         # print("Pyro object port: " + repr(engine_pyro_daemon_port))
 
         # find an available port              #
-        client_pyro_daemon_port = searchAvailablePort()
+        client_pyro_daemon_port = search_available_port()
         # print("client pyro object port: " + repr(client_pyro_daemon_port))
 
         # tunnel creation                      #
