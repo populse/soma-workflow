@@ -28,6 +28,7 @@ import re
 import random
 import errno
 import logging
+
 try:
     import socketserver # python3
 except ImportError:
@@ -274,7 +275,12 @@ class RemoteConnection(object):
         # required in the remote connection mode
         import paramiko
         # from paramiko.file import BufferedFile
-        import Pyro.core
+        ###TODO
+        #import Pyro.core
+        import Pyro4
+
+
+        ###was already commented
         # from Pyro.errors import ConnectionClosedError
 
         if not login:
@@ -364,11 +370,19 @@ class RemoteConnection(object):
         # print("workflow_engine_uri: " +  workflow_engine_uri)
         # print("connection_checker_uri: " +  connection_checker_uri)
         # print("configuration_uri: " + configuration_uri)
-        engine_pyro_daemon_port = Pyro.core.processStringURI(
-            workflow_engine_uri).port
-        # print("Pyro object port: " + repr(engine_pyro_daemon_port))
+
+        #TODO
+        #engine_pyro_daemon_port = Pyro.core.processStringURI(
+        #    workflow_engine_uri).port
+
+        #??????
+        engine_pyro_daemon_port = Pyro4.Proxy(workflow_engine_uri).port
+
+        #checking
+        print("Pyro object port: " + repr(engine_pyro_daemon_port))
 
         # find an available port              #
+        #TODO
         client_pyro_daemon_port = search_available_port()
         # print("client pyro object port: " + repr(client_pyro_daemon_port))
 
@@ -410,12 +424,22 @@ class RemoteConnection(object):
                                   "%s: %s" % (type(e), e))
 
         # create the proxies                     #
-        self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
-        connection_checker = Pyro.core.getAttrProxyForURI(
-            connection_checker_uri)
-        self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
+        #TODO
+        ###attempt
+        #self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
+        #connection_checker = Pyro.core.getAttrProxyForURI(
+        #    connection_checker_uri)
+        #self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
+        #NOTE that the name server is not used
 
-        # setting the proxies to use the tunnel  #
+        self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
+        connection_checker = Pyro4.Proxy(connection_checker_uri)
+        self.configuration = Pyro4.Proxy(configuration_uri)
+
+
+
+
+        # setting the proxies to use the tunnel
         self.workflow_engine.URI.port = client_pyro_daemon_port
         self.workflow_engine.URI.address = 'localhost'
         connection_checker.URI.port = client_pyro_daemon_port
@@ -423,9 +447,12 @@ class RemoteConnection(object):
         self.configuration.URI.port = client_pyro_daemon_port
         self.configuration.URI.address = 'localhost'
 
+        #TODO
         if scheduler_config_uri is not None:
-            self.scheduler_config \
-                = Pyro.core.getAttrProxyForURI(scheduler_config_uri)
+            #self.scheduler_config
+                #= Pyro.core.getAttrProxyForURI(scheduler_config_uri)
+            self.scheduler_config = Pyro4.Proxy(scheduler_config_uri)
+
             # setting the proxies to use the tunnel  #
             self.scheduler_config.URI.port = client_pyro_daemon_port
             self.scheduler_config.URI.address = 'localhost'
@@ -443,7 +470,9 @@ class RemoteConnection(object):
                       repr(attempts) + "/" + repr(maxattemps))
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
-            except Pyro.errors.ProtocolError as e:
+            ###TODO
+            #except Pyro.errors.ProtocolError as e:
+            except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
                 time.sleep(1)
@@ -553,8 +582,13 @@ class LocalConnection(object):
                  log=""):
 
         # required in the local connection mode
-        import Pyro.core
-        from Pyro.errors import ConnectionClosedError
+
+        #TODO
+        #import Pyro.core
+
+        import Pyro4
+        #from Pyro.errors import ConnectionClosedError
+
         try:
             import subprocess32 as subprocess
         except ImportError:
@@ -652,10 +686,18 @@ class LocalConnection(object):
         print("configuration_uri: " + configuration_uri)
 
         # create the proxies                     #
-        self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
-        connection_checker = Pyro.core.getAttrProxyForURI(
-            connection_checker_uri)
-        self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
+
+        #TODO
+        # self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
+        # connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
+        # self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
+
+
+        self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
+        connection_checker = Pyro4.Proxy(connection_checker_uri)
+        self.configuration = Pyro4.Proxy(configuration_uri)
+
+
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #

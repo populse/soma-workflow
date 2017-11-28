@@ -19,9 +19,11 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import Pyro.naming
-    import Pyro.core
-    from Pyro.errors import PyroError, NamingError, ProtocolError
+    ###TODO
+    import Pyro4
+    #import Pyro.naming
+    #import Pyro.core
+    #from Pyro.errors import PyroError, NamingError, ProtocolError
 
     import soma_workflow.engine
     import soma_workflow.scheduler
@@ -33,12 +35,15 @@ if __name__ == "__main__":
     import time
 
     # WorkflowEngine pyro object
+    @Pyro4.expose
     class ConfiguredWorkflowEngine(
-            Pyro.core.SynchronizedObjBase,
+            ###TODO
+            #Pyro.core.SynchronizedObjBase,
             soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
-            Pyro.core.SynchronizedObjBase.__init__(self)
+            ###TODO
+            #Pyro.core.SynchronizedObjBase.__init__(self)
             soma_workflow.engine.ConfiguredWorkflowEngine.__init__(
                 self,
                 database_server,
@@ -46,18 +51,25 @@ if __name__ == "__main__":
                 config)
         pass
 
-    class ConnectionChecker(Pyro.core.ObjBase,
+    ###TODO
+    @Pyro4.expose
+    class ConnectionChecker(
+                            #Pyro.core.ObjBase,
                             soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
-            Pyro.core.ObjBase.__init__(self)
+            ###TODO
+            #Pyro.core.ObjBase.__init__(self)
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
                 control_interval)
         pass
 
-    class Configuration(Pyro.core.ObjBase,
+    ###TODO
+    @Pyro4.expose
+    class Configuration(
+                        #Pyro.core.ObjBase,
                         soma_workflow.configuration.Configuration):
 
         def __init__(self,
@@ -74,7 +86,8 @@ if __name__ == "__main__":
                      queue_limits=None,
                      drmaa_implementation=None,
                      running_jobs_limits=None):
-            Pyro.core.ObjBase.__init__(self)
+            ###TODO
+            #Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.Configuration.__init__(
                 self,
                 resource_id,
@@ -93,11 +106,16 @@ if __name__ == "__main__":
             )
             pass
 
-    class LocalSchedulerCfg(Pyro.core.ObjBase,
+
+    ###TODO
+    @Pyro4.expose
+    class LocalSchedulerCfg(
+                            #Pyro.core.ObjBase,
                             soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
-            Pyro.core.ObjBase.__init__(self)
+            ###TODO
+            #Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.LocalSchedulerCfg.__init__(
                 self,
                 proc_nb=proc_nb,
@@ -118,18 +136,34 @@ if __name__ == "__main__":
 
     def get_database_server_proxy(config, logger):
         name_server_host = config.get_name_server_host()
+        ###TODO added print()
+        print("Debug: name_server_host: {}".format(name_server_host))
+
         starting_server = False
         try:
             server_name = config.get_server_name()
 
-            Pyro.core.initClient()
-            locator = Pyro.naming.NameServerLocator()
-            if name_server_host == 'None':
-                ns = locator.getNS()
-            else:
-                ns = locator.getNS(host=name_server_host)
 
-            uri = ns.resolve(server_name)
+            ###TODO
+            ###This is to init a client which means that
+            ###both client and server code are in this file
+            #
+
+            ###
+            # Pyro.core.initClient()
+            # locator = Pyro.naming.NameServerLocator()
+            # if name_server_host == 'None':
+            #     ns = locator.getNS()
+            # else:
+            #     ns = locator.getNS(host=name_server_host)
+            #
+            # uri = ns.resolve(server_name)
+
+            uri = ""
+
+            with Pyro4.locateNS() as ns:
+                uri = ns.list()[server_name]
+
             logger.info('Server URI:' + repr(uri))
 
         except:
@@ -146,15 +180,26 @@ if __name__ == "__main__":
         while not started and time.time() - start_time < timeout:
 
             try:
-                if name_server_host == 'None':
-                    ns = locator.getNS()
-                else:
-                    ns = locator.getNS(host=name_server_host)
+                ###TODO?
+                # if name_server_host == 'None':
+                #     ns = locator.getNS()
+                # else:
+                #     ns = locator.getNS(host=name_server_host)
+                #
+                # uri = ns.resolve(server_name)
+                # logger.info('Server URI:' + repr(uri))
+                #
+                # ###TODO
+                # database_server = Pyro.core.getProxyForURI(uri)
 
-                uri = ns.resolve(server_name)
+                uri=""
+
+                with Pyro4.locateNS() as ns:
+                    uri = ns.list()[server_name]
+
                 logger.info('Server URI:' + repr(uri))
 
-                database_server = Pyro.core.getProxyForURI(uri)
+                database_server = Pyro4.Proxy(uri)
 
                 started = database_server.test()
 
@@ -239,65 +284,99 @@ if __name__ == "__main__":
                 config.get_transfered_file_dir())
 
         # Pyro.config.PYRO_MULTITHREADED = 0
-        Pyro.core.initServer()
-        daemon = Pyro.core.Daemon()
-        # locate the NS
-        locator = Pyro.naming.NameServerLocator()
-        #print('searching for Name Server...')
+        ####TODO ?
+        ###initialisation of the Pyro server.
+        #Pyro.core.initServer()
+        #daemon = Pyro.core.Daemon()
+        daemon = Pyro4.Daemon()
 
-        try:
-            name_server_host = config.get_name_server_host()
-            if name_server_host == 'None':
-                ns = locator.getNS()
-            else:
-                ns = locator.getNS(host=name_server_host)
-            daemon.useNameServer(ns)
-        except:
-             print('Name Server not found.')
-             raise
+
+        # locate the NS
+        # locator = Pyro.naming.NameServerLocator()
+        # #print('searching for Name Server...')
+        #
+        # #with Pyro4.locateNS() as ns:
+        # try:
+        #     ###TODO?
+        #     name_server_host = config.get_name_server_host()
+        #     if name_server_host == 'None':
+        #         ns = locator.getNS()
+        #     else:
+        #         ns = locator.getNS(host=name_server_host)
+        #     ###TODO unecessary just need to register objects or URI?
+        #     daemon.useNameServer(ns)
+        # except:
+        #      print('Name Server not found.')
+        #      raise
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
 
         # connection to the pyro daemon and output its URI
-        try:
-            ns.unregister(engine_name)
-        except NamingError:
-            pass
-        uri_engine = daemon.connect(workflow_engine, engine_name)
+        ###TODO
+        # try:
+        #     ns.unregister(engine_name)
+        # except NamingError:
+        #     pass
+        # uri_engine = daemon.connect(workflow_engine, engine_name)
+
+        uri_engine = daemon.register(workflow_engine, engine_name)
+        with Pyro4.locateNS() as ns:
+            ns.register(engine_name, uri_engine)
+
+
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
 
         logger.info('Pyro object ' + engine_name + ' is ready.')
 
         # connection check
+        ###TODO
         connection_checker = ConnectionChecker()
-        try:
-            ns.unregister('connection_checker')
-        except NamingError:
-            pass
-        uri_cc = daemon.connect(connection_checker, 'connection_checker')
+        # try:
+        #     ns.unregister('connection_checker')
+        # except NamingError:
+        #     pass
+        # uri_cc = daemon.connect(connection_checker, 'connection_checker')
+
+        uri_cc = daemon.register(connection_checker, 'connection_checker')
+        with Pyro4.locateNS() as ns:
+            ns.register('connection_checker', uri_cc)
+
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        try:
-            ns.unregister('configuration')
-        except NamingError:
-            pass
-        uri_config = daemon.connect(config, 'configuration')
+        ###TODO
+        # try:
+        #     ns.unregister('configuration')
+        # except NamingError:
+        #     pass
+        # uri_config = daemon.connect(config, 'configuration')
+
+        uri_config = daemon.register(config, 'configuration')
+        with Pyro4.locateNS() as ns:
+            ns.register('configuration', uri_config)
+
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
         # local scheduler config
-        try:
-            ns.unregister('scheduler_config')
-        except NamingError:
-            pass
+        ###TODO
+        # try:
+        #     ns.unregister('scheduler_config')
+        # except NamingError:
+        #     pass
+
         if config.get_scheduler_config():
-            uri_sched_config = daemon.connect(config.get_scheduler_config(),
-                                              'scheduler_config')
+            #uri_sched_config = daemon.connect(config.get_scheduler_config(),
+            #                                  'scheduler_config')
+            uri_sched_config = daemon.register(config.get_sheduler_config(), 'scheduler_config')
+            with Pyro4.locateNS() as ns:
+                ns.register('scheduler_config', uri_sched_config)
+
+
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
         else:
@@ -326,6 +405,9 @@ if __name__ == "__main__":
             time.sleep(1)
 
         logger.info("******** client disconnection **********************")
+        ###TODO ?
+        #seems the daemon is on only for a short period of time
+        #why is that so????
         daemon.shutdown(disconnect=True)  # stop the request loop
         daemon.sock.close()  # free the port
 
