@@ -10,7 +10,6 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
 if __name__ == "__main__":
 
     import sys
@@ -19,11 +18,7 @@ if __name__ == "__main__":
     import logging
     import os
 
-    ###TODO
     import Pyro4
-    #import Pyro.naming
-    #import Pyro.core
-    #from Pyro.errors import PyroError, NamingError, ProtocolError
 
     import soma_workflow.engine
     import soma_workflow.scheduler
@@ -34,43 +29,44 @@ if __name__ == "__main__":
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
 
+
     # WorkflowEngine pyro object
     @Pyro4.expose
     class ConfiguredWorkflowEngine(
-            ###TODO
-            #Pyro.core.SynchronizedObjBase,
-            soma_workflow.engine.ConfiguredWorkflowEngine):
+        soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
-            ###TODO
-            #Pyro.core.SynchronizedObjBase.__init__(self)
             soma_workflow.engine.ConfiguredWorkflowEngine.__init__(
                 self,
                 database_server,
                 scheduler,
                 config)
+
         pass
+
 
     ###TODO
     @Pyro4.expose
     class ConnectionChecker(
-                            #Pyro.core.ObjBase,
-                            soma_workflow.connection.ConnectionChecker):
+        # Pyro.core.ObjBase,
+        soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
             ###TODO
-            #Pyro.core.ObjBase.__init__(self)
+            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
                 control_interval)
+
         pass
+
 
     ###TODO
     @Pyro4.expose
     class Configuration(
-                        #Pyro.core.ObjBase,
-                        soma_workflow.configuration.Configuration):
+        # Pyro.core.ObjBase,
+        soma_workflow.configuration.Configuration):
 
         def __init__(self,
                      resource_id,
@@ -87,7 +83,7 @@ if __name__ == "__main__":
                      drmaa_implementation=None,
                      running_jobs_limits=None):
             ###TODO
-            #Pyro.core.ObjBase.__init__(self)
+            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.Configuration.__init__(
                 self,
                 resource_id,
@@ -110,12 +106,12 @@ if __name__ == "__main__":
     ###TODO
     @Pyro4.expose
     class LocalSchedulerCfg(
-                            #Pyro.core.ObjBase,
-                            soma_workflow.configuration.LocalSchedulerCfg):
+        # Pyro.core.ObjBase,
+        soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
             ###TODO
-            #Pyro.core.ObjBase.__init__(self)
+            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.LocalSchedulerCfg.__init__(
                 self,
                 proc_nb=proc_nb,
@@ -130,7 +126,7 @@ if __name__ == "__main__":
                         + resource_id)
         subprocess.Popen(
             [sys.executable,
-              '-m', 'soma_workflow.start_database_server', resource_id],
+             '-m', 'soma_workflow.start_database_server', resource_id],
             close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
@@ -142,7 +138,6 @@ if __name__ == "__main__":
         starting_server = False
         try:
             server_name = config.get_server_name()
-
 
             ###TODO
             ###This is to init a client which means that
@@ -192,7 +187,7 @@ if __name__ == "__main__":
                 # ###TODO
                 # database_server = Pyro.core.getProxyForURI(uri)
 
-                uri=""
+                uri = ""
 
                 with Pyro4.locateNS() as ns:
                     uri = ns.list()[server_name]
@@ -226,6 +221,7 @@ if __name__ == "__main__":
             logger.info('Database server object ready for URI:' + repr(uri))
 
         return database_server
+
 
     # main server program
     def main(resource_id, engine_name, log=""):
@@ -286,10 +282,9 @@ if __name__ == "__main__":
         # Pyro.config.PYRO_MULTITHREADED = 0
         ####TODO ?
         ###initialisation of the Pyro server.
-        #Pyro.core.initServer()
-        #daemon = Pyro.core.Daemon()
+        # Pyro.core.initServer()
+        # daemon = Pyro.core.Daemon()
         daemon = Pyro4.Daemon()
-
 
         # locate the NS
         # locator = Pyro.naming.NameServerLocator()
@@ -324,7 +319,6 @@ if __name__ == "__main__":
         uri_engine = daemon.register(workflow_engine, engine_name)
         with Pyro4.locateNS() as ns:
             ns.register(engine_name, uri_engine)
-
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
@@ -370,12 +364,11 @@ if __name__ == "__main__":
         #     pass
 
         if config.get_scheduler_config():
-            #uri_sched_config = daemon.connect(config.get_scheduler_config(),
+            # uri_sched_config = daemon.connect(config.get_scheduler_config(),
             #                                  'scheduler_config')
             uri_sched_config = daemon.register(config.get_sheduler_config(), 'scheduler_config')
             with Pyro4.locateNS() as ns:
                 ns.register('scheduler_config', uri_sched_config)
-
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
@@ -406,12 +399,12 @@ if __name__ == "__main__":
 
         logger.info("******** client disconnection **********************")
         ###TODO ?
-        #seems the daemon is on only for a short period of time
-        #why is that so????
+        # seems the daemon is on only for a short period of time
+        # why is that so????
         daemon.shutdown(disconnect=True)  # stop the request loop
         daemon.sock.close()  # free the port
 
-        del(daemon)
+        del (daemon)
 
         logger.info("******** second mode: waiting for jobs to finish****")
         jobs_running = True
@@ -425,6 +418,7 @@ if __name__ == "__main__":
 
         sch.clean()
         sys.exit()
+
 
     if not len(sys.argv) == 3 and not len(sys.argv) == 4:
         sys.stdout.write("start_workflow_engine takes 2 arguments:\n")

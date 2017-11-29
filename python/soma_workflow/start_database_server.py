@@ -28,24 +28,19 @@ if __name__ == '__main__':
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-    @Pyro4.expose ###
-    class WorkflowDatabaseServer(
-        ###TODO
-        #Pyro.core.ObjBase,
-        soma_workflow.database_server.WorkflowDatabaseServer):
+    @Pyro4.expose
+    class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
 
         def __init__(self,
                      database_file,
                      tmp_file_dir_path,
                      shared_tmp_dir=None):
-            ###TODO
-            #Pyro.core.ObjBase.__init__(self)
+
             soma_workflow.database_server.WorkflowDatabaseServer.__init__(
                 self,
                 database_file,
                 tmp_file_dir_path,
                 shared_tmp_dir)
-        pass
 
         def test(self):
             return True
