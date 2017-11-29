@@ -172,7 +172,9 @@ if __name__ == '__main__':
         ns.register(server_name, server_uri)
 
     #daemon.connect(server, server_name)
-    print("port = " + repr(daemon.port))
+    #TODO
+    ###unecessary and in Pyro4 there is no such attribute.
+    #print("port = " + repr(daemon.port))
 
     # enter the server loop.
     print('Server object ' + server_name + ' ready.')
