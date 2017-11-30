@@ -32,8 +32,7 @@ if __name__ == "__main__":
 
     # WorkflowEngine pyro object
     @Pyro4.expose
-    class ConfiguredWorkflowEngine(
-        soma_workflow.engine.ConfiguredWorkflowEngine):
+    class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
             soma_workflow.engine.ConfiguredWorkflowEngine.__init__(
@@ -41,8 +40,6 @@ if __name__ == "__main__":
                 database_server,
                 scheduler,
                 config)
-
-        pass
 
 
     ###TODO
@@ -136,9 +133,14 @@ if __name__ == "__main__":
         print("Debug: name_server_host: {}".format(name_server_host))
 
         starting_server = False
+        #TODO bancal
+        started = False
+
         try:
             server_name = config.get_server_name()
 
+
+            print("Debug: server_name is: {}".format(server_name))
             ###TODO
             ###This is to init a client which means that
             ###both client and server code are in this file
@@ -160,6 +162,14 @@ if __name__ == "__main__":
                 uri = ns.list()[server_name]
 
             logger.info('Server URI:' + repr(uri))
+            print("Debug: server URI is: {}".format(repr(uri)))
+
+            #TODO bancal, que se passe-t-il quand le serveur n'est pas
+            #déjà lancé
+            database_server = Pyro4.Proxy(uri)
+
+            started = database_server.test()
+
 
         except:
             # First try to launch the database server
@@ -171,7 +181,6 @@ if __name__ == "__main__":
 
         timeout = 35
         start_time = time.time()
-        started = False
         while not started and time.time() - start_time < timeout:
 
             try:
@@ -249,6 +258,7 @@ if __name__ == "__main__":
         if config.get_scheduler_type() \
                 == soma_workflow.configuration.DRMAA_SCHEDULER:
 
+            print("DRMAA_SCHEDULER")
             if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
                 raise NoDrmaaLibError
 
@@ -261,6 +271,8 @@ if __name__ == "__main__":
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
+
+            print("LOCAL_SCHEDULER")
             local_scheduler_cfg_file_path \
                 = LocalSchedulerCfg.search_config_path()
             if local_scheduler_cfg_file_path:
@@ -274,6 +286,8 @@ if __name__ == "__main__":
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.MPI_SCHEDULER:
+
+            print("MPI_SCHEDULER")
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
@@ -303,6 +317,10 @@ if __name__ == "__main__":
         # except:
         #      print('Name Server not found.')
         #      raise
+
+        print("Is database_server accessible: {}".format(database_server.test()))
+        #TODO test
+        database_server.clean()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,

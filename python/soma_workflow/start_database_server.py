@@ -18,15 +18,14 @@ if __name__ == '__main__':
     import logging
     import time
 
-    ###TODO
     import Pyro4
-    #import Pyro.naming
-    #import Pyro.core
-    #from Pyro.errors import PyroError, NamingError
 
     import soma_workflow.database_server
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
+
+    #@Pyro4.expose
+    #soma_workflow.database_server.WorkflowDatabaseServer
 
     @Pyro4.expose
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
@@ -68,14 +67,8 @@ if __name__ == '__main__':
 
     #
     # Pyro server creation
-    #TODO ??
-    #initialisation of the Pyro server (3)
-    #Pyro.core.initServer()
-    #TODO
-    #daemon = Pyro.core.Daemon()
     daemon = Pyro4.Daemon() #specify hostIP and hostPort
     # locate the NS
-    #TODO
 
 
     #locator = Pyro.naming.NameServerLocator()
@@ -172,7 +165,7 @@ if __name__ == '__main__':
     #print("port = " + repr(daemon.port))
 
     # enter the server loop.
-    print('Server object ' + server_name + ' ready.')
+    print('SUCCESS: Server object ' + server_name + ' ready.')
 
     #
     # Request loop

@@ -344,7 +344,9 @@ def print_tables(database_file):
     cursor.close()
     connection.close()
 
+import Pyro4
 
+@Pyro4.expose
 class WorkflowDatabaseServer(object):
 
     def __init__(self, database_file, tmp_file_dir_path, shared_tmp_dir=None):
