@@ -140,6 +140,9 @@ OCFG_SWF_DIR = "SOMA_WORKFLOW_DIR"
 #-------------------------------------------------------------------------------
 # Classes and functions
 #-------------------------------------------------------------------------
+import Pyro4
+
+@Pyro4.expose
 class Configuration(observer.Observable):
 
     # path of the configuration file
@@ -1059,7 +1062,7 @@ def default_cpu_number():
     #return cpu
     return 0
 
-
+@Pyro4.expose
 class LocalSchedulerCfg(observer.Observable):
 
     '''

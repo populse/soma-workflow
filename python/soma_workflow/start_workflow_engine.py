@@ -30,7 +30,6 @@ if __name__ == "__main__":
     import time
 
 
-    # WorkflowEngine pyro object
     @Pyro4.expose
     class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
@@ -42,15 +41,10 @@ if __name__ == "__main__":
                 config)
 
 
-    ###TODO
     @Pyro4.expose
-    class ConnectionChecker(
-        # Pyro.core.ObjBase,
-        soma_workflow.connection.ConnectionChecker):
+    class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
-            ###TODO
-            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
@@ -59,11 +53,8 @@ if __name__ == "__main__":
         pass
 
 
-    ###TODO
     @Pyro4.expose
-    class Configuration(
-        # Pyro.core.ObjBase,
-        soma_workflow.configuration.Configuration):
+    class Configuration(soma_workflow.configuration.Configuration):
 
         def __init__(self,
                      resource_id,
@@ -79,8 +70,6 @@ if __name__ == "__main__":
                      queue_limits=None,
                      drmaa_implementation=None,
                      running_jobs_limits=None):
-            ###TODO
-            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.Configuration.__init__(
                 self,
                 resource_id,
@@ -100,15 +89,10 @@ if __name__ == "__main__":
             pass
 
 
-    ###TODO
     @Pyro4.expose
-    class LocalSchedulerCfg(
-        # Pyro.core.ObjBase,
-        soma_workflow.configuration.LocalSchedulerCfg):
+    class LocalSchedulerCfg(soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
-            ###TODO
-            # Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.LocalSchedulerCfg.__init__(
                 self,
                 proc_nb=proc_nb,
@@ -121,6 +105,8 @@ if __name__ == "__main__":
         if logger:
             logger.info('Trying to start database server:'
                         + resource_id)
+        ##print("Debug: Starting database server, isPython?: {}".format(sys.executable))
+        ##print("resource_id is: {}".format(resource_id))
         subprocess.Popen(
             [sys.executable,
              '-m', 'soma_workflow.start_database_server', resource_id],
@@ -130,7 +116,7 @@ if __name__ == "__main__":
     def get_database_server_proxy(config, logger):
         name_server_host = config.get_name_server_host()
         ###TODO added print()
-        print("Debug: name_server_host: {}".format(name_server_host))
+        ##print("Debug: name_server_host: {}".format(name_server_host))
 
         starting_server = False
         #TODO bancal
@@ -140,7 +126,7 @@ if __name__ == "__main__":
             server_name = config.get_server_name()
 
 
-            print("Debug: server_name is: {}".format(server_name))
+            ##print("Debug: server_name is: {}".format(server_name))
             ###TODO
             ###This is to init a client which means that
             ###both client and server code are in this file
@@ -162,7 +148,7 @@ if __name__ == "__main__":
                 uri = ns.list()[server_name]
 
             logger.info('Server URI:' + repr(uri))
-            print("Debug: server URI is: {}".format(repr(uri)))
+            ##print("Debug: server URI is: {}".format(repr(uri)))
 
             #TODO bancal, que se passe-t-il quand le serveur n'est pas
             #déjà lancé
@@ -171,13 +157,18 @@ if __name__ == "__main__":
             started = database_server.test()
 
 
-        except:
+        except Exception as e:
             # First try to launch the database server
+            ##print(e)
             import subprocess
             logger.info('Trying to start database server:' + resource_id)
+            ##print('Trying to start database server: ' + resource_id)
             start_database_server(resource_id, logger)
             name_server_host = 'localhost'
             starting_server = True
+
+        #TODO test
+        #assert starting_server == True
 
         timeout = 35
         start_time = time.time()
@@ -212,6 +203,7 @@ if __name__ == "__main__":
                     logger.info(
                         'Database server:' + resource_id
                         + ' was not started. Waiting 1 sec...')
+                    ##print("waiting for the databaser server to start")
                 else:
                     # try to launch the database server
                     start_database_server(resource_id, logger)
@@ -258,7 +250,7 @@ if __name__ == "__main__":
         if config.get_scheduler_type() \
                 == soma_workflow.configuration.DRMAA_SCHEDULER:
 
-            print("DRMAA_SCHEDULER")
+            ##print("DRMAA_SCHEDULER")
             if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
                 raise NoDrmaaLibError
 
@@ -272,7 +264,7 @@ if __name__ == "__main__":
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
 
-            print("LOCAL_SCHEDULER")
+            ##print("LOCAL_SCHEDULER")
             local_scheduler_cfg_file_path \
                 = LocalSchedulerCfg.search_config_path()
             if local_scheduler_cfg_file_path:
@@ -287,7 +279,7 @@ if __name__ == "__main__":
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.MPI_SCHEDULER:
 
-            print("MPI_SCHEDULER")
+            ##print("MPI_SCHEDULER")
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
@@ -318,9 +310,9 @@ if __name__ == "__main__":
         #      print('Name Server not found.')
         #      raise
 
-        print("Is database_server accessible: {}".format(database_server.test()))
+        ##print("Is database_server accessible: {}".format(database_server.test()))
         #TODO test
-        database_server.clean()
+        #database_server.clean()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
@@ -336,6 +328,8 @@ if __name__ == "__main__":
 
         uri_engine = daemon.register(workflow_engine, engine_name)
         with Pyro4.locateNS() as ns:
+            ns.remove(engine_name) #in case it was left by someone else.
+            #What if multiple people are using the same name server?!?
             ns.register(engine_name, uri_engine)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
@@ -395,7 +389,8 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
         # Daemon request loop thread
-        logger.info("daemon port = " + repr(daemon.port))
+        ###TODO no need of this information
+        #logger.info("daemon port = " + repr(daemon.port))
         daemon_request_loop_thread = threading.Thread(name="pyro_request_loop",
                                                       target=daemon.requestLoop)
 
@@ -419,8 +414,18 @@ if __name__ == "__main__":
         ###TODO ?
         # seems the daemon is on only for a short period of time
         # why is that so????
-        daemon.shutdown(disconnect=True)  # stop the request loop
-        daemon.sock.close()  # free the port
+
+        daemon.shutdown()
+        #cleaning up the nameserver:
+        with Pyro4.locateNS() as ns:
+            ns.remove('scheduler_config')
+            ns.remove('configuration')
+            ns.remove('connection_checker')
+            ns.remove(engine_name)
+
+
+        #daemon.shutdown(disconnect=True)  # stop the request loop
+        #daemon.sock.close()  # free the port
 
         del (daemon)
 

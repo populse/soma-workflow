@@ -731,7 +731,7 @@ class LocalConnection(object):
     def get_configuration(self):
         return self.configuration
 
-
+@Pyro4.expose
 class ConnectionChecker(object):
 
     def __init__(self, interval=2, controlInterval=3):
