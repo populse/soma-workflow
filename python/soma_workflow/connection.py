@@ -343,6 +343,7 @@ class RemoteConnection(object):
         scheduler_config_uri = None
 
         for std_out_line in std_out_lines:
+            print(std_out_line)
             if std_out_line.split()[0] == pyro_objet_name:
                 workflow_engine_uri = std_out_line.split()[1]
             elif std_out_line.split()[0] == "connection_checker":
@@ -376,7 +377,16 @@ class RemoteConnection(object):
         #    workflow_engine_uri).port
 
         #??????
-        engine_pyro_daemon_port = Pyro4.Proxy(workflow_engine_uri).port
+        #engine_pyro_daemon_port = Pyro4.Proxy(workflow_engine_uri).port
+
+        import re
+
+        whole_uri = str(workflow_engine_uri)
+        pattern = re.compile("\d+$")
+        port = pattern.search(whole_uri).group()
+        engine_pyro_daemon_port = port
+
+        print(engine_pyro_daemon_port)
 
         #checking
         print("Pyro object port: " + repr(engine_pyro_daemon_port))
@@ -440,12 +450,13 @@ class RemoteConnection(object):
 
 
         # setting the proxies to use the tunnel
-        self.workflow_engine.URI.port = client_pyro_daemon_port
-        self.workflow_engine.URI.address = 'localhost'
-        connection_checker.URI.port = client_pyro_daemon_port
-        connection_checker.URI.address = 'localhost'
-        self.configuration.URI.port = client_pyro_daemon_port
-        self.configuration.URI.address = 'localhost'
+        #TODO does not seem to be necessary
+        #self.workflow_engine.URI.port = client_pyro_daemon_port
+        #self.workflow_engine.URI.address = 'localhost'
+        #connection_checker.URI.port = client_pyro_daemon_port
+        #connection_checker.URI.address = 'localhost'
+        #self.configuration.URI.port = client_pyro_daemon_port
+        #self.configuration.URI.address = 'localhost'
 
         #TODO
         if scheduler_config_uri is not None:
@@ -454,8 +465,9 @@ class RemoteConnection(object):
             self.scheduler_config = Pyro4.Proxy(scheduler_config_uri)
 
             # setting the proxies to use the tunnel  #
-            self.scheduler_config.URI.port = client_pyro_daemon_port
-            self.scheduler_config.URI.address = 'localhost'
+            ##TODO
+            #self.scheduler_config.URI.port = client_pyro_daemon_port
+            #self.scheduler_config.URI.address = 'localhost'
         else:
             self.scheduler_config = None
 
