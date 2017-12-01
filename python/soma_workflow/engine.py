@@ -28,6 +28,8 @@ import itertools
 import atexit
 import six
 
+import Pyro4
+
 # import cProfile
 # import traceback
 
@@ -737,7 +739,7 @@ class WorkflowEngineLoop(object):
             pass
             # TBI
 
-
+@Pyro4.expose
 class WorkflowEngine(RemoteFileController):
 
     '''
@@ -1248,7 +1250,7 @@ class WorkflowEngine(RemoteFileController):
             return False
         return True
 
-
+@Pyro4.expose
 class ConfiguredWorkflowEngine(WorkflowEngine):
 
     '''
