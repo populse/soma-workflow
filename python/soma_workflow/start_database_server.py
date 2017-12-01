@@ -24,8 +24,12 @@ if __name__ == '__main__':
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-    #@Pyro4.expose
-    #soma_workflow.database_server.WorkflowDatabaseServer
+
+    #Launching the name server, Pyro4 has to be installed and pyro4-ns has to be accessible
+    #in the PATH
+    #voir les biblio subprocess et multiprocessing
+    #import os
+    #os.system("pyro4-ns -p 9889")
 
     @Pyro4.expose
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
@@ -73,6 +77,17 @@ if __name__ == '__main__':
 
     #locator = Pyro.naming.NameServerLocator()
     #print('searching for Name Server...')
+
+
+    ###TODO
+    # the name_server_host might not be necessary anymore
+    # in that case the option from the configuration file
+    # might not be necessary anymore either
+
+    #TODO
+    #launch from the code the name server
+    #voir les biblio subprocess et multiprocessing
+    #pyro4-ns -p 9889
 
     ###
     #try:
