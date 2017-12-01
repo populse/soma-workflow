@@ -29,6 +29,8 @@ import random
 import errno
 import logging
 
+import Pyro4
+
 try:
     import socketserver # python3
 except ImportError:
@@ -275,13 +277,6 @@ class RemoteConnection(object):
         # required in the remote connection mode
         import paramiko
         # from paramiko.file import BufferedFile
-        ###TODO
-        #import Pyro.core
-        import Pyro4
-
-
-        ###was already commented
-        # from Pyro.errors import ConnectionClosedError
 
         if not login:
             raise ConnectionError("Remote connection requires a login")
@@ -583,11 +578,6 @@ class LocalConnection(object):
 
         # required in the local connection mode
 
-        #TODO
-        #import Pyro.core
-
-        import Pyro4
-        #from Pyro.errors import ConnectionClosedError
 
         try:
             import subprocess32 as subprocess
