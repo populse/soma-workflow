@@ -28,7 +28,6 @@ import re
 import random
 import errno
 import logging
-
 import Pyro4
 
 try:
@@ -708,6 +707,7 @@ class LocalConnection(object):
 
     def get_configuration(self):
         return self.configuration
+
 
 @Pyro4.expose
 class ConnectionChecker(object):
