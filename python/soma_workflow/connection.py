@@ -1,4 +1,3 @@
-
 from __future__ import with_statement, print_function
 
 '''
@@ -244,6 +243,7 @@ def search_available_port():
 
 class RemoteConnection(object):
 
+
     '''
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
@@ -279,21 +279,21 @@ class RemoteConnection(object):
         pyro_objet_name = "workflow_engine_" + login
 
         if not check_if_somawf_on_server(login, cluster_address, password):
-            raise ConnectionError("Cannot find soma-workflow on %s ."
+            raise ConnectionError("Cannot find soma-workflow on %s. "
                                   "Please verify if your PYTHONPATH "
                                   "includes the soma-workflow."
                                   % (cluster_address))
 
         if not check_if_soma_wf_cr_on_server(login, cluster_address, password):
             raise ConnectionError("Cannot find "
-                                  "soma_workflow.check_requirement on %s ."
+                                  "soma_workflow.check_requirement on %s. "
                                   "Please update your soma-workflow on %s."
                                   % (cluster_address, cluster_address))
 
         if not check_if_ctype_drmaa_on_server(login, cluster_address,
                                               password):
             raise ConnectionError("Cannot find "
-                                  "drmaa libary on %s ."
+                                  "drmaa libary on %s. "
                                   "Please verify your drmaa libary on %s. "
                                   "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
                                   % (cluster_address, cluster_address))
@@ -326,13 +326,13 @@ class RemoteConnection(object):
             wait_output=True,
             sshport=22,
             num_line_stdout=4)
-
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
         scheduler_config_uri = None
 
         for std_out_line in std_out_lines:
+            print(std_out_line)
             if std_out_line.split()[0] == pyro_objet_name:
                 workflow_engine_uri = std_out_line.split()[1]
             elif std_out_line.split()[0] == "connection_checker":
@@ -346,7 +346,7 @@ class RemoteConnection(object):
 
         if (not configuration_uri or
             not connection_checker_uri or
-                not configuration_uri):
+            not workflow_engine_uri):
             raise ConnectionError(
                 "A problem occured while starting the engine "
                 "process on the remote machine " +
@@ -357,35 +357,41 @@ class RemoteConnection(object):
                 "**Engine process standard output:** \n"
                 "\n" + repr(std_out_lines))
 
-        # print("workflow_engine_uri: " +  workflow_engine_uri)
-        # print("connection_checker_uri: " +  connection_checker_uri)
-        # print("configuration_uri: " + configuration_uri)
+        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
+        logging.debug("connection_checker_uri: " +  connection_checker_uri)
+        logging.debug("configuration_uri: " + configuration_uri)
 
-        #TODO
-        #engine_pyro_daemon_port = Pyro.core.processStringURI(
-        #    workflow_engine_uri).port
+        import re
 
-        #??????
-        engine_pyro_daemon_port = Pyro4.Proxy(workflow_engine_uri).port
+        whole_uri = str(workflow_engine_uri)
+        pattern = re.compile("\d+$")
+        port = pattern.search(whole_uri).group()
+        engine_pyro_daemon_port = int(port)
+
+        logging.debug(engine_pyro_daemon_port)
+        logging.debug(type(engine_pyro_daemon_port))
 
         #checking
-        print("Pyro object port: " + repr(engine_pyro_daemon_port))
+        logging.debug("Pyro object port: " + repr(engine_pyro_daemon_port))
 
-        # find an available port              #
-        #TODO
+        ### find an available port            ###
         client_pyro_daemon_port = search_available_port()
-        # print("client pyro object port: " + repr(client_pyro_daemon_port))
+        logging.debug("client pyro object port on localhost: " + repr(client_pyro_daemon_port))
 
-        # tunnel creation                      #
+
+        paramiko.util.log_to_file("/home/mb253889/paramiko.log")
+
+        ### tunnel creation                     ###
         try:
             self.__transport = paramiko.Transport((cluster_address, 22))
             self.__transport.setDaemon(True)
             self.__transport.set_keepalive(150)
             self.__transport.connect(username=login, password=password)
+
             if not password:
                 rsa_file_path = os.path.join(
                     os.environ['HOME'], '.ssh', 'id_rsa')
-                print("reading RSA key in " + repr(rsa_file_path))
+                logging.info("reading RSA key in " + repr(rsa_file_path))
                 if rsa_key_pass:
                     key = paramiko.RSAKey.from_private_key_file(
                         rsa_file_path,
@@ -393,6 +399,7 @@ class RemoteConnection(object):
                 else:
                     key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
                 self.__transport.auth_publickey(login, key)
+
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
             print("tunnel creation " + str(login) + "@" + cluster_address +
                   "   port: " + repr(client_pyro_daemon_port) + " host: " +
@@ -400,9 +407,10 @@ class RemoteConnection(object):
                   + str(engine_pyro_daemon_port))
 
             tunnel = Tunnel(client_pyro_daemon_port,
-                            submitting_machine,
+                            #submitting_machine,
                             engine_pyro_daemon_port,
                             self.__transport)
+
 
             tunnel.start()
 
@@ -414,28 +422,30 @@ class RemoteConnection(object):
                                   "%s: %s" % (type(e), e))
 
         # create the proxies                     #
-        #TODO
-        ###attempt
-        #self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
-        #connection_checker = Pyro.core.getAttrProxyForURI(
-        #    connection_checker_uri)
-        #self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
         #NOTE that the name server is not used
+
+        #rewrite URIs
+        #workflow_engine_uri = workflow_engine_uri[0:-5] + str(client_pyro_daemon_port)
+        #connection_checker_uri = connection_checker_uri[0:-5] + str(client_pyro_daemon_port)
+        #configuration_uri = configuration_uri[0:-5] + str(client_pyro_daemon_port)
+
+        logging.debug("The workflow engine URI is: " + workflow_engine_uri)
 
         self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
         connection_checker = Pyro4.Proxy(connection_checker_uri)
         self.configuration = Pyro4.Proxy(configuration_uri)
 
-
-
-
         # setting the proxies to use the tunnel
-        self.workflow_engine.URI.port = client_pyro_daemon_port
-        self.workflow_engine.URI.address = 'localhost'
-        connection_checker.URI.port = client_pyro_daemon_port
-        connection_checker.URI.address = 'localhost'
-        self.configuration.URI.port = client_pyro_daemon_port
-        self.configuration.URI.address = 'localhost'
+        #TODO does not seem to be necessary
+        logging.debug("==DEBUG== port: " + str(self.workflow_engine._pyroUri.port))
+        logging.debug("==DEBUG== host: " + str(self.workflow_engine._pyroUri.host))
+
+        self.workflow_engine._pyroUri.port = client_pyro_daemon_port
+        #self.workflow_engine._pyroUri.host = 'localhost'
+        connection_checker._pyroUri.port = client_pyro_daemon_port
+        #connection_checker._pyroUri.host = 'localhost'
+        self.configuration._pyroUri.port = client_pyro_daemon_port
+        #self.configuration._pyroUri.host = 'localhost'
 
         #TODO
         if scheduler_config_uri is not None:
@@ -444,8 +454,9 @@ class RemoteConnection(object):
             self.scheduler_config = Pyro4.Proxy(scheduler_config_uri)
 
             # setting the proxies to use the tunnel  #
-            self.scheduler_config.URI.port = client_pyro_daemon_port
-            self.scheduler_config.URI.address = 'localhost'
+            ##TODO
+            self.scheduler_config._pyroUri.port = client_pyro_daemon_port
+            #self.scheduler_config._pyroUri.host = 'localhost'
         else:
             self.scheduler_config = None
 
@@ -458,6 +469,7 @@ class RemoteConnection(object):
                 attempts = attempts + 1
                 print("Communication through the ssh tunnel. Attempt no " +
                       repr(attempts) + "/" + repr(maxattemps))
+                logging.debug("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
             ###TODO
@@ -466,23 +478,19 @@ class RemoteConnection(object):
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
                 time.sleep(1)
-            except Exception as e:
-                print("-> Communication through ssh tunnel Failed. %s: %s"
-                      % (type(e), e))
-                time.sleep(1)
-
             else:
                 print("-> Communication through ssh tunnel OK")
                 tunnelSet = True
 
-        if attempts > maxattemps:
+        if attempts >= maxattemps:
             raise ConnectionError("The ssh tunnel could not be started within"
-                                  + repr(maxattemps) + " seconds.")
+                                  + repr(maxattemps) + " attempts.")
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #
         self.__connection_holder = ConnectionHolder(connection_checker)
         self.__connection_holder.start()
+
 
     def isValid(self):
         return self.__connection_holder.isAlive()
@@ -769,7 +777,6 @@ class ConnectionHolder(threading.Thread):
     def stop(self):
         self.stopped = True
 
-
 class Tunnel(threading.Thread):
 
     class ForwardServer (socketserver.ThreadingTCPServer):
@@ -779,29 +786,35 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            # print('Setup : %s %d' %(repr(self.chain_host), self.chain_port))
+            logging.info('Setup : %d' %(self.chain_port))
+            logging.debug("Beginning of setup")
             try:
+                #There has been quite lot of tweaks around this function
+                #as it is very counter intuitive. On the destination
+                #adress the host should be localhost, this is quite
+                #reminiscent of the -L option of ssh.
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
-                    (self.chain_host,
-                    self.chain_port),
-                    self.request.getpeername())
+                    ('localhost', self.chain_port), #destination address
+                    self.request.getpeername())#source address (from the Pyro Proxy object)
             except Exception as e:
-                raise ConnectionError('Incoming request to %s:%d failed: %s'
-                    % (self.chain_host, self.chain_port, repr(e)))
+                logging.exception("Hey here is an exception!")
+                raise ConnectionError('Incoming request to %d failed: %s'
+                    % (self.chain_port, repr(e)))
 
             if self.__chan is None:
                 raise ConnectionError(
                     'Incoming request to %s:%d was rejected by the SSH server.'
-                    % (self.chain_host, self.chain_port))
+                    % ('localhost', self.chain_port))
 
-            print('Connected!  Tunnel open %r -> %r -> %r'
+            logging.info('Connected!  Tunnel open %r -> %r -> %r'
                   % (self.request.getpeername(),
                      self.__chan.getpeername(),
-                     (self.chain_host, self.chain_port)))
+                     ('localhost', self.chain_port)))
 
         def handle(self):
-            #print('Handle : %s %d' %(repr(self.chain_host), self.chain_port))
+            logging.debug("Beginning of handle")
+            logging.info('Handle : %s %d' %('localhost', self.chain_port))
             while True:
                 try:
                     r, w, x = select.select([self.request, self.__chan], [],
@@ -810,48 +823,61 @@ class Tunnel(threading.Thread):
                     if e.args[0] == errno.EINTR:
                         # Qt modal dialogs event loop (at least in QFileDialog)
                         # can cause an interrupted system call here.
-                        # It seems not to completely break the connection, 
+                        # It seems not to completely break the connection,
                         # we can go on.
                         continue
                     else:
                         raise
                 if self.request in r:
-                    data = self.request.recv(1024)
+                    logging.debug("Transfering from the local server handling the channel"
+                          "to the original object")
+                    data = self.request.recv(2048)
+
                     if len(data) == 0:
                         break
+                    if len(data) == 2048:
+                        print("Too small??????????????????")
+                        logging.info("Tunnel.Handler.handle: multiple receive to transfert"
+                                 " the data, could potential be a problem")
                     self.__chan.send(data)
                 if self.__chan in r:
-                    data = self.__chan.recv(1024)
+                    logging.debug('Transfering from the channel to the proxy')
+                    data = self.__chan.recv(2048)
                     if len(data) == 0:
                         break
+                    if len(data) == 2048:
+                        print("Too small2??????????????????")
+                        logging.info("Tunnel.Handler.handle: multiple receive to transfert"
+                                 "the data, could potentially be a problem")
                     self.request.send(data)
 
         def finish(self):
-            print('Tunnel closed from %r' % (self.request.getpeername(),))
+            logging.info('Tunnel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
 
-    def __init__(self, port, host, hostport, transport):
+    def __init__(self, localport, hostport, transport):
         threading.Thread.__init__(self)
-        self.__port = port
-        self.__host = host
+        self.__port = localport
         self.__hostport = hostport
         self.__transport = transport
         self.setDaemon(True)
 
     def run(self):
-        host = self.__host
         hostport = self.__hostport
         transport = self.__transport
         port = self.__port
 
-        class SubHander (Tunnel.Handler):
-            chain_host = host
+        logging.debug("local server port: " + str(port) )
+
+        class SubHandler (Tunnel.Handler):
             chain_port = hostport
             ssh_transport = transport
+
         try:
-            Tunnel.ForwardServer(('', port), SubHander).serve_forever()
+            Tunnel.ForwardServer(('', port), SubHandler).serve_forever()
         except KeyboardInterrupt:
             print('tunnel %d:%s:%d stopped !' % (port, host, hostport))
         except Exception as e:
             print('Tunnel Error. %s: %s' % (type(e), e))
+
