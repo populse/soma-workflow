@@ -3,11 +3,10 @@
 *.o
 *.so
 *.pyc
+
 #Specific files#
 ################
 git-related.txt
-update.sh
-
 update.sh
 
 # Logs and databases #
