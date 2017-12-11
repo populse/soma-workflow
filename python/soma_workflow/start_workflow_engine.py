@@ -50,8 +50,6 @@ if __name__ == "__main__":
                 interval,
                 control_interval)
 
-        pass
-
 
     @Pyro4.expose
     class Configuration(soma_workflow.configuration.Configuration):
@@ -86,8 +84,6 @@ if __name__ == "__main__":
                 drmaa_implementation,
                 running_jobs_limits=running_jobs_limits,
             )
-            pass
-
 
     @Pyro4.expose
     class LocalSchedulerCfg(soma_workflow.configuration.LocalSchedulerCfg):

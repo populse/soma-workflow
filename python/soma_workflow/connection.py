@@ -15,7 +15,6 @@ from __future__ import with_statement, print_function
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------
-
 from datetime import datetime
 from datetime import timedelta
 import threading
@@ -35,9 +34,7 @@ try:
 except ImportError:
     import SocketServer as socketserver # python 2
 
-
 from soma_workflow.errors import ConnectionError
-
 
 def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
@@ -244,7 +241,6 @@ def search_available_port():
 #-------------------------------------------------------------------------------
 # Classes and functions
 #-------------------------------------------------------------------------
-
 
 class RemoteConnection(object):
 
@@ -574,8 +570,6 @@ class RemoteConnection(object):
                 print('cannot retreive database file name from server config. '
                       'Installation problem on server side?')
 
-
-
 class LocalConnection(object):
 
     '''
@@ -720,7 +714,6 @@ class LocalConnection(object):
     def get_configuration(self):
         return self.configuration
 
-
 @Pyro4.expose
 class ConnectionChecker(object):
 
@@ -749,6 +742,10 @@ class ConnectionChecker(object):
         self.controlThread.setDaemon(True)
         self.controlThread.start()
 
+    @property
+    def get_interval(self):
+        return self.interval.seconds
+
     def signalConnectionExist(self):
         with self.lock:
             # print("ConnectionChecker <= a signal was received")
@@ -760,7 +757,6 @@ class ConnectionChecker(object):
     def disconnectionCallback(self):
         pass
 
-
 class ConnectionHolder(threading.Thread):
 
     def __init__(self, connectionChecker):
@@ -768,7 +764,7 @@ class ConnectionHolder(threading.Thread):
         self.setDaemon(True)
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
-        self.interval = self.connectionChecker.interval.seconds
+        self.interval = self.connectionChecker.get_interval
 
     def run(self):
         from Pyro.errors import ConnectionClosedError
