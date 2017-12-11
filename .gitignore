@@ -4,6 +4,8 @@
 *.so
 *.pyc
 
+update.sh
+
 # Logs and databases #
 ######################
 *.log
