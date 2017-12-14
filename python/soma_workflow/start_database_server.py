@@ -16,20 +16,11 @@ if __name__ == '__main__':
 
     import sys
     import logging
-    import time
-
     import Pyro4
 
     import soma_workflow.database_server
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
-
-
-    #Launching the name server, Pyro4 has to be installed and pyro4-ns has to be accessible
-    #in the PATH
-    #voir les biblio subprocess et multiprocessing
-    #import os
-    #os.system("pyro4-ns -p 9889")
 
     @Pyro4.expose
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
@@ -37,16 +28,15 @@ if __name__ == '__main__':
         def __init__(self,
                      database_file,
                      tmp_file_dir_path,
-                     shared_tmp_dir=None):
+                     shared_tmp_dir=None,
+                     logging_configuration=None):
 
             soma_workflow.database_server.WorkflowDatabaseServer.__init__(
                 self,
                 database_file,
                 tmp_file_dir_path,
-                shared_tmp_dir)
-
-        def test(self):
-            return True
+                shared_tmp_dir,
+                logging_configuration)
 
     if not len(sys.argv) == 2:
         sys.stdout.write(
@@ -54,7 +44,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     ressource_id = sys.argv[1]
-    print("Ressource: " + ressource_id)
 
     config = Configuration.load_from_file(ressource_id)
     config.mk_config_dirs()
@@ -69,119 +58,28 @@ if __name__ == '__main__':
             format=server_log_format,
             level=eval("logging." + server_log_level))
 
-    #
     # Pyro server creation
-    daemon = Pyro4.Daemon() #specify hostIP and hostPort
-    # locate the NS
+    daemon = Pyro4.Daemon()  # specify hostIP and hostPort
 
-
-    #locator = Pyro.naming.NameServerLocator()
-    #print('searching for Name Server...')
-
-
-    ###TODO
-    # the name_server_host might not be necessary anymore
-    # in that case the option from the configuration file
-    # might not be necessary anymore either
-
-    #TODO
-    #launch from the code the name server
-    #voir les biblio subprocess et multiprocessing
-    #pyro4-ns -p 9889
-
-    ###
-    #try:
-    #     ##### complicated things seem to happen to identify the nameserver
-    #     name_server_host = config.get_name_server_host()
-    #     if name_server_host == 'None':
-    #         ns = locator.getNS()
-    #     else:
-    #         ns = locator.getNS(host=name_server_host)
-    #     daemon.useNameServer(ns)
-    # except:
-    #     # try to run the nameserver first
-    #     import subprocess
-    #     print('not found. Starting a new Name Server...')
-    #     # WARNING: users may not have permission to run pyro-nsd because the
-    #     # pid file is writen in /var/run/pyro-nsd.pid or something. In this
-    #     # case an additional argument --pidfile=/tmp/pyro-nsd.pid may be
-    #     # required
-    #     retcode = subprocess.call(['pyro-nsd', 'start'])
-    #     if retcode != 0:
-    #         raise EngineError("Could not find nor start the Pyro name server.")
-    #     print('searching again the Name Server...')
-    #     timeout = 15
-    #     start_time = time.time()
-    #     started = False
-    #     while not started and time.time() - start_time < timeout:
-    #         name_server_host = config.get_name_server_host()
-    #         try:
-    #             if name_server_host == 'None':
-    #                 ns = locator.getNS()
-    #             else:
-    #                 ns = locator.getNS(host=name_server_host)
-    #             daemon.useNameServer(ns)
-    #             started = True
-    #         except:
-    #             started = False
-    #             time.sleep(1.)
-    #     if not started:
-    #         # still not worked, try a custom pidfile with pyro-nsd
-    #         print('not found. Starting a new Name Server with pidfile=/tmp/pyro-nsd.pid...')
-    #         retcode = subprocess.call(['pyro-nsd', 'start',
-    #                                    '--pidfile=/tmp/pyro-nsd.pid'])
-    #         if retcode != 0:
-    #             raise EngineError(
-    #                 "Could not find nor start the Pyro name server.")
-    #         print('searching again the Name Server...')
-    #         start_time = time.time()
-    #         while not started and time.time() - start_time < timeout:
-    #             name_server_host = config.get_name_server_host()
-    #             try:
-    #                 if name_server_host == 'None':
-    #                     ns = locator.getNS()
-    #                 else:
-    #                     ns = locator.getNS(host=name_server_host)
-    #                 daemon.useNameServer(ns)
-    #                 started = True
-    #             except:
-    #                 started = False
-    #                 time.sleep(1.)
-    #     if not started:
-    #         raise EngineError("Could not find nor start the Pyro name server.")
-
-    # connect a new object implementation (first unregister previous one)
-
-
+    logging.info("Launching the database process")
 
     server_name = config.get_server_name()
 
-    ###
-    # try:
-    #     ns.unregister(server_name)
-    # except NamingError:
-    #     pass
+    logging.debug("Server name is: " + server_name)
 
-    # connect new object implementation
     server = WorkflowDatabaseServer(config.get_database_file(),
                                     config.get_transfered_file_dir(),
-                                    config.get_shared_temporary_directory())
+                                    config.get_shared_temporary_directory(),
+                                    config.get_server_log_info())
 
     server_uri = daemon.register(server)
 
-
-    #Need to unregister previous registration?
-    with Pyro4.locateNS() as ns:
-        ns.register(server_name, server_uri)
-
-    #daemon.connect(server, server_name)
-    #TODO
-    ###unecessary and in Pyro4 there is no such attribute.
-    #print("port = " + repr(daemon.port))
+    logging.info("Writting the uri of the database server.")
+    sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
+    sys.stdout.flush()
 
     # enter the server loop.
-    print('SUCCESS: Server object ' + server_name + ' ready.')
-
+    logging.info('SUCCESS: Server object ' + server_name + ' ready.')
     #
     # Request loop
     daemon.requestLoop()
