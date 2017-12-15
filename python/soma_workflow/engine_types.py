@@ -176,6 +176,7 @@ class EngineJob(Job):
             if parallel_config_name not in parallel_job_submission_info:
                 raise JobError("The parallel job can not be submitted because the "
                                "parallel configuration %s is missing." % (configuration_name))
+                # potential bug should configuration_name be parallel_config_name
 
         def map_and_register(file, mode=None, addTo=[]):
             '''
@@ -398,26 +399,23 @@ class EngineWorkflow(Workflow):
     logger = None
 
     # Entamme, si l'on souhaitait utiliser serpent il faudrait
-    # définir ces fonctions pour la plupart des Engines de ce fichier.
-    # Néanmoins on peut utiliser pickle et il ne semble pas y avoir
-    # de problème de sécurité puisque l'on utilise une connection ssh
+    # definir ces fonctions pour la plupart des Engines de ce fichier.
+    # Neanmoins on peut utiliser pickle et il ne semble pas y avoir
+    # de probleme de securite puisque l'on utilise une connection ssh
     # via paramiko pour communiquer sur le cluster.
-    # Cette méthode demanderait à être retravaillé car les dictionnaires
-    # ne sont pas constitué de type de base.
+    # Cette methode demanderait a etre retravaille car les dictionnaires
+    # ne sont pas constitue de type de base.
     def to_dict(self):
         d = {}
-        d['wf_id'] = wf_id
-        d['_user_id'] = _user_id #much more complicated than that
-        d['_path_translation'] = _path_translation
-        d['expiration_date'] = expiration_date
-        d['queue'] = queue
-        d['job_mapping'] = job_mapping
-        d['transfer_mapping'] = transfer_mapping
-        d['registered_jobs'] = registered_jobs
-        d['registered_tr'] = registered_tr
-        d['_dependency_dict'] = _dependency_dict
-        d['logger'] = logger
-        d['_client_workflow'] = _client_workflow.to_dict()
+        d['wf_id'] = self.wf_id
+        d['_user_id'] = self._user_id #much more complicated than that
+        d['expiration_date'] = self.expiration_date
+        d['queue'] = self.queue
+        d['registered_jobs'] = self.registered_jobs
+        d['registered_tr'] = self.registered_tr
+        d['_dependency_dict'] = self._dependency_dict
+        d['logger'] = self.logger
+        d['_client_workflow'] = self._client_workflow.to_dict()
         return d
 
 

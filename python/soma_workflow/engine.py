@@ -769,7 +769,7 @@ class WorkflowEngine(RemoteFileController):
         @type  engine_loop: L{WorkflowEngineLoop}
         '''
         # TODO harmoniser les loggings que l'on ait
-        # une logique cohérente transverse au projet
+        # une logique coherente transverse au projet
         self.logger = logging.getLogger('engine.WorkflowEngine')
 
         self._database_server = database_server
