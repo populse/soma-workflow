@@ -421,42 +421,31 @@ class RemoteConnection(object):
             raise ConnectionError("The ssh communication tunnel could not be created."
                                   "%s: %s" % (type(e), e))
 
-        # create the proxies                     #
-        #NOTE that the name server is not used
-
-        #rewrite URIs
-        #workflow_engine_uri = workflow_engine_uri[0:-5] + str(client_pyro_daemon_port)
-        #connection_checker_uri = connection_checker_uri[0:-5] + str(client_pyro_daemon_port)
-        #configuration_uri = configuration_uri[0:-5] + str(client_pyro_daemon_port)
-
         logging.debug("The workflow engine URI is: " + workflow_engine_uri)
+
+        # create the proxy objects                     #
 
         self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
         connection_checker = Pyro4.Proxy(connection_checker_uri)
         self.configuration = Pyro4.Proxy(configuration_uri)
 
-        # setting the proxies to use the tunnel
-        #TODO does not seem to be necessary
-        logging.debug("==DEBUG== port: " + str(self.workflow_engine._pyroUri.port))
-        logging.debug("==DEBUG== host: " + str(self.workflow_engine._pyroUri.host))
+        logging.debug("==DEBUG== original port on the"
+                      "cluster before redirection to the tunnel "
+                      "entrance: " +
+                      str(self.workflow_engine._pyroUri.port))
+
+        # setting the proxies to use the tunnel the port
+        # has to be redirected to use the entrance of the tunnel.
 
         self.workflow_engine._pyroUri.port = client_pyro_daemon_port
-        #self.workflow_engine._pyroUri.host = 'localhost'
         connection_checker._pyroUri.port = client_pyro_daemon_port
-        #connection_checker._pyroUri.host = 'localhost'
         self.configuration._pyroUri.port = client_pyro_daemon_port
-        #self.configuration._pyroUri.host = 'localhost'
 
-        #TODO
         if scheduler_config_uri is not None:
-            #self.scheduler_config
-                #= Pyro.core.getAttrProxyForURI(scheduler_config_uri)
             self.scheduler_config = Pyro4.Proxy(scheduler_config_uri)
 
             # setting the proxies to use the tunnel  #
-            ##TODO
             self.scheduler_config._pyroUri.port = client_pyro_daemon_port
-            #self.scheduler_config._pyroUri.host = 'localhost'
         else:
             self.scheduler_config = None
 
@@ -472,7 +461,6 @@ class RemoteConnection(object):
                 logging.debug("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
-            ###TODO
             #except Pyro.errors.ProtocolError as e:
             except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
@@ -486,7 +474,7 @@ class RemoteConnection(object):
             raise ConnectionError("The ssh tunnel could not be started within"
                                   + repr(maxattemps) + " attempts.")
 
-        # create the connection holder objet for #
+        # create the connection holder object for #
         # a clean disconnection in any case      #
         self.__connection_holder = ConnectionHolder(connection_checker)
         self.__connection_holder.start()
@@ -672,23 +660,15 @@ class LocalConnection(object):
                                   "\n" + stderr_content)
         configuration_uri = line.split()[1]
 
-        print("workflow_engine_uri: " + workflow_engine_uri)
-        print("connection_checker_uri: " + connection_checker_uri)
-        print("configuration_uri: " + configuration_uri)
+        logging.debug("workflow_engine_uri: " + workflow_engine_uri)
+        logging.debug("connection_checker_uri: " + connection_checker_uri)
+        logging.debug("configuration_uri: " + configuration_uri)
 
         # create the proxies                     #
-
-        #TODO
-        # self.workflow_engine = Pyro.core.getProxyForURI(workflow_engine_uri)
-        # connection_checker = Pyro.core.getAttrProxyForURI(connection_checker_uri)
-        # self.configuration = Pyro.core.getAttrProxyForURI(configuration_uri)
-
 
         self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
         connection_checker = Pyro4.Proxy(connection_checker_uri)
         self.configuration = Pyro4.Proxy(configuration_uri)
-
-
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #
@@ -722,10 +702,14 @@ class ConnectionChecker(object):
 
         def controlLoop(self, control_interval):
             while True:
-                with self.lock:
+                with self.lock:#Pourquoi un verrou?
                     ls = self.lastSignal
+                    # TODO
+                    # print(ls)
                 delta = datetime.now() - ls
                 if delta > self.interval * 3:
+                    # TODO
+                    # print("Zarbi, dans ConnectionChecker, control loop thread")
                     self.disconnectionCallback()
                     self.connected = False
                 else:
@@ -877,7 +861,7 @@ class Tunnel(threading.Thread):
         try:
             Tunnel.ForwardServer(('', port), SubHandler).serve_forever()
         except KeyboardInterrupt:
-            print('tunnel %d:%s:%d stopped !' % (port, host, hostport))
+            print('tunnel from port %d to port %d stopped !' % (port, hostport))
         except Exception as e:
             print('Tunnel Error. %s: %s' % (type(e), e))
 
