@@ -36,7 +36,6 @@ if sys.version_info[0] >= 3:
     basestring = str
     unicode = str
 
-
 class EngineJob(Job):
     '''
     This object represents a Job, i.e. an individual processing task, on the
@@ -393,7 +392,38 @@ class EngineWorkflow(Workflow):
     # dictionary: job_id -> list of job id
     _dependency_dict = None
 
+    #A workflow object. For serialisation purposes with serpent
+    _client_workflow = None
+
     logger = None
+
+    # Entamme, si l'on souhaitait utiliser serpent il faudrait
+    # définir ces fonctions pour la plupart des Engines de ce fichier.
+    # Néanmoins on peut utiliser pickle et il ne semble pas y avoir
+    # de problème de sécurité puisque l'on utilise une connection ssh
+    # via paramiko pour communiquer sur le cluster.
+    # Cette méthode demanderait à être retravaillé car les dictionnaires
+    # ne sont pas constitué de type de base.
+    def to_dict(self):
+        d = {}
+        d['wf_id'] = wf_id
+        d['_user_id'] = _user_id #much more complicated than that
+        d['_path_translation'] = _path_translation
+        d['expiration_date'] = expiration_date
+        d['queue'] = queue
+        d['job_mapping'] = job_mapping
+        d['transfer_mapping'] = transfer_mapping
+        d['registered_jobs'] = registered_jobs
+        d['registered_tr'] = registered_tr
+        d['_dependency_dict'] = _dependency_dict
+        d['logger'] = logger
+        d['_client_workflow'] = _client_workflow.to_dict()
+        return d
+
+
+    @classmethod
+    def from_dict(cls, d):
+        pass
 
     class WorkflowCache(object):
 
@@ -412,13 +442,22 @@ class EngineWorkflow(Workflow):
                  queue,
                  expiration_date,
                  name):
+        logging.debug("Within Engine workflow constructor")
+
+        #to be able to serialize the object for pyro
+        self._client_workflow = client_workflow
 
         super(EngineWorkflow, self).__init__(client_workflow.jobs,
                                              client_workflow.dependencies,
                                              client_workflow.root_group,
                                              client_workflow.groups)
+                                             # STRANGE: does not match Workflow constructor,
+                                             # ,client_workflow.groups)
         self.wf_id = -1
 
+        logging.debug("After call to parent constructor, if we change the "
+                      "prototype of the constructor suppressing the "
+                      "last parametre nothing seem to happen, see comment above")
         self.status = constants.WORKFLOW_NOT_STARTED
         self._path_translation = path_translation
         self.queue = queue

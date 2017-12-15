@@ -346,10 +346,16 @@ def print_tables(database_file):
 
 import Pyro4
 
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+
 @Pyro4.expose
 class WorkflowDatabaseServer(object):
 
-    def __init__(self, database_file, tmp_file_dir_path, shared_tmp_dir=None):
+    def __init__(self,
+                 database_file,
+                 tmp_file_dir_path,
+                 shared_tmp_dir=None,
+                 logging_configuration=None):
         '''
         The constructor gets as parameter the database information.
 
@@ -373,12 +379,22 @@ class WorkflowDatabaseServer(object):
         self._lock = threading.RLock()
 
         self.logger = logging.getLogger('jobServer')
-        self.logger.debug("=> starting database server")
+        self.logger.debug("=> starting database server, within the constructor")
         self._free_file_counters = []
+
+        # For some reason logger does not work so we log using logging
+        if logging_configuration:
+            (server_log_file,
+             server_log_format,
+             server_log_level) = logging_configuration
+
+            logging.basicConfig(filename=server_log_file,
+                                format=server_log_format,
+                                level=eval("logging." + server_log_level))
 
         with self._lock:
             if not os.path.isfile(database_file):
-                print("Database creation " + database_file)
+                # print("Database creation " + database_file)
                 self.logger.info("Database creation " + database_file)
                 create_database(database_file)
             else:
@@ -415,6 +431,12 @@ class WorkflowDatabaseServer(object):
     def __del__(self):
         # send VACUUM command ?
         pass
+
+    def test(self):
+        self.logger.debug("=======>Dans test")
+        logging.info("Testing that the database_server is reachable as a remote object")
+        return True
+
 
     def _connect(self):
         try:
@@ -1367,6 +1389,7 @@ class WorkflowDatabaseServer(object):
         '''
         # get back the workflow id first
         self.logger.debug("=> add_workflow")
+        logging.debug("test youhou!!!")
         with self._lock:
             # try to allocate enough file counters before opening a new cursor
             needed_files = len(engine_workflow.transfer_mapping) \
@@ -1448,6 +1471,7 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+        self.logger.debug("==>end of add_workflow")
         return engine_workflow
 
     def delete_workflow(self, wf_id):

@@ -595,7 +595,9 @@ class WorkflowEngineLoop(object):
         @type name: str
         @type queue: str
         '''
+        Pyro4.config.SERIALIZER = 'pickle'
         # register
+
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
@@ -626,7 +628,6 @@ class WorkflowEngineLoop(object):
                     #raise JobError("Could not create the standard error file "
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
-
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
@@ -735,13 +736,15 @@ class WorkflowEngineLoop(object):
             with self._lock:
                 self._jobs[job.job_id] = job
         else:
-
             pass
             # TBI
 
+
+
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+
 @Pyro4.expose
 class WorkflowEngine(RemoteFileController):
-
     '''
     '''
     # database server
@@ -765,7 +768,8 @@ class WorkflowEngine(RemoteFileController):
                L{soma_workflow.database_server.WorkflowDatabaseServer}
         @type  engine_loop: L{WorkflowEngineLoop}
         '''
-
+        # TODO harmoniser les loggings que l'on ait
+        # une logique cohérente transverse au projet
         self.logger = logging.getLogger('engine.WorkflowEngine')
 
         self._database_server = database_server
@@ -776,6 +780,7 @@ class WorkflowEngine(RemoteFileController):
             raise EngineError(
                 "Couldn't identify user %s: %s \n" % (type(e), e))
 
+        self.logger.debug("user_login: " + user_login)
         self._user_id = self._database_server.register_user(user_login)
         self.logger.debug("user_id : " + repr(self._user_id))
 
@@ -887,12 +892,12 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        logging.debug("Receiving a workflow to treat: " + repr(workflow))
         if not expiration_date:
             expiration_date = datetime.now() + timedelta(days=7)
-
         wf_id = self.engine_loop.add_workflow(
             workflow, expiration_date, name, queue)
-
+        logging.debug("Workflow identifier is: " + str(wf_id))
         return wf_id
 
     def delete_workflow(self, workflow_id, force=True):
