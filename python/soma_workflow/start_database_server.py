@@ -74,6 +74,12 @@ if __name__ == '__main__':
 
     server_uri = daemon.register(server)
 
+    #Write the uri into a file
+    file_path = os.path.join(server_log_file, "database_server_uri.txt")
+
+    with open(file_path, "w") as f:
+        f.write(server_uri)
+
     logging.info("Writting the uri of the database server.")
     sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
     sys.stdout.flush()
@@ -82,4 +88,8 @@ if __name__ == '__main__':
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
     #
     # Request loop
-    daemon.requestLoop()
+    try:
+        daemon.requestLoop()
+    except:
+        with open(file_path, "w") as f:
+            f.write("") #empty file
