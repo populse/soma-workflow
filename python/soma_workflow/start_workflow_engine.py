@@ -111,19 +111,41 @@ if __name__ == "__main__":
         name_server_host = config.get_name_server_host()
         logger.debug("Debug: name_server_host: {}".format(name_server_host))
 
-        logger.info('Launching database server and getting a proxy object on it')
+        #Checking if the database server is running
+        #if it is running we get its uri
+        #else we launch it and get its uri
 
+        try:
+            path = os.path.split(config.get_server_log_info()[0])[0]
+            full_file_name = os.path.join(path, "database_server_uri.txt")
+            logger.debug("DEBUG full file name: " + full_file_name)
+            f = open(full_file_name, 'r')
+            uri = f.readline().strip()
+            logger.debug(uri)
+            f.close()
+            if uri:
+                #create proxy and return
+                return Pyro4.Proxy(uri)
+        except IOError:
+            pass #file does not exist continue
+        except Exception as e:
+            print(e)
+
+        logger.info('Launching database server and getting a proxy object on it')
+        # We don't need the handle since the database server will continue
+        # to run indepently of the server engine.
         subprocess_db_server_handle = start_database_server(resource_id, logger)
         logger.debug('Waiting for the database server process to write something')
         output = subprocess_db_server_handle.stdout.readline()
-        db_name, uri = output.strip().split(': ')
+
+        (db_name, uri) = output.strip().split(': ')
 
         logger.debug('Name of the database server is: ' + db_name)
         logger.debug('Server URI: ' + repr(uri))
 
         database_server_proxy = Pyro4.Proxy(uri)
 
-        return database_server_proxy, subprocess_db_server_handle
+        return database_server_proxy #, subprocess_db_server_handle
 
 
     # main server program
@@ -161,7 +183,7 @@ if __name__ == "__main__":
                 config.get_parallel_job_config(),
                 os.path.expanduser("~"),
                 configured_native_spec=config.get_native_specification())
-            (database_server, subprocess_db_h) = get_database_server_proxy(config, logger)
+            database_server = get_database_server_proxy(config, logger)
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
@@ -174,7 +196,7 @@ if __name__ == "__main__":
             else:
                 local_scheduler_config = LocalSchedulerCfg()
             sch = ConfiguredLocalScheduler(local_scheduler_config)
-            (database_server, subprocess_db_h) = get_database_server_proxy(config, logger)
+            database_server = get_database_server_proxy(config, logger)
             config.set_scheduler_config(local_scheduler_config)
 
         elif config.get_scheduler_type() \

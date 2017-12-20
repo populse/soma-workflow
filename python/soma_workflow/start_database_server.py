@@ -10,7 +10,10 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from __future__ import print_function
+from __future__ import print_function, with_statement
+import os
+import signal
+
 
 if __name__ == '__main__':
 
@@ -72,13 +75,17 @@ if __name__ == '__main__':
                                     config.get_shared_temporary_directory(),
                                     config.get_server_log_info())
 
+    logging.debug("The server has been instantiated ")
+
     server_uri = daemon.register(server)
-
+    logging.debug("server_uri: " + str(server_uri))
     #Write the uri into a file
-    file_path = os.path.join(server_log_file, "database_server_uri.txt")
+    (dir, file) = os.path.split(server_log_file)
+    file_path = os.path.join(dir, "database_server_uri.txt")
+    logging.debug(file_path)
 
-    with open(file_path, "w") as f:
-        f.write(server_uri)
+    with open(file_path, 'w') as f:
+        f.write(str(server_uri) + "\n")
 
     logging.info("Writting the uri of the database server.")
     sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
@@ -88,8 +95,16 @@ if __name__ == '__main__':
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
     #
     # Request loop
-    try:
-        daemon.requestLoop()
-    except:
+    def handler(signum, frame):
         with open(file_path, "w") as f:
-            f.write("") #empty file
+             f.write("") #empty file
+
+    signal.signal(signal.SIGTERM, handler)
+
+    #TODO, there seem to have a conflict with Pyro
+    #that should disapear with zro.
+    #signal.signal(signal.SIGKILL, handler)
+    signal.signal(signal.SIGINT, handler)
+
+    daemon.requestLoop()
+
