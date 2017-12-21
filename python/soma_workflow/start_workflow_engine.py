@@ -104,9 +104,9 @@ if __name__ == "__main__":
         name_server_host = config.get_name_server_host()
         logger.debug("Debug: name_server_host: {}".format(name_server_host))
 
-        #Checking if the database server is running
-        #if it is running we get its uri
-        #else we launch it and get its uri
+        # Checking if the database server is running
+        # if it is running we get its uri
+        # else we launch it and get its uri
 
         try:
             path = os.path.split(config.get_server_log_info()[0])[0]
@@ -117,10 +117,10 @@ if __name__ == "__main__":
             logger.debug(uri)
             f.close()
             if uri:
-                #create proxy and return
+                # Create proxy and return
                 return zro.Proxy(uri)
         except IOError:
-            pass #file does not exist continue
+            pass # File does not exist continue
         except Exception as e:
             print(e)
 
@@ -138,12 +138,13 @@ if __name__ == "__main__":
 
         database_server_proxy = zro.Proxy(uri)
 
-        return database_server_proxy #, subprocess_db_server_handle
+        return database_server_proxy
 
 
     # main server program
     def main(resource_id, engine_name, log=""):
 
+        database_server = None
         config = Configuration.load_from_file(resource_id)
         config.mk_config_dirs()
 
@@ -263,23 +264,20 @@ if __name__ == "__main__":
         logger.info("******** first mode: client connection *************")
         while client_connected:
             logger.debug("client is connected we sleep multiple times one second")
-            # TODO here we could check the status of the pyro thread
-            # that has been called from the client, how to identify it
-            # are they all active?
             client_connected = connection_checker.isConnected()
             time.sleep(1)
 
         logger.info("******** client disconnection **********************")
 
-        #TODO shutdown cleanly might change serve_forever to serveLoop or
-        #sth like this
-        #daemon.shutdown()
+        # TODO shutdown cleanly might change serve_forever to serveLoop or
+        # sth like this
+        # daemon.shutdown()
 
-        #daemon.shutdown(disconnect=True)  # stop the request loop
-        #daemon.sock.close()  # free the port
+        # daemon.shutdown(disconnect=True)  # stop the request loop
+        # daemon.sock.close()  # free the port
 
-        #TODO add a destructor if necessary.
-        #del (daemon)
+        # TODO add a destructor if necessary.
+        # del (daemon)
 
         logger.info("******** second mode: wait for jobs to finish ********")
         jobs_running = True

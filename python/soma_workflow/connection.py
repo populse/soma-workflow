@@ -496,6 +496,7 @@ class RemoteConnection(object):
         computing resource.
         '''
         from soma_workflow import configuration
+        import paramiko
 
         config = configuration.Configuration.load_from_file(resource_id)
         if login is None:
