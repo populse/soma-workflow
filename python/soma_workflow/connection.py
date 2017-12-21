@@ -26,7 +26,6 @@ import re
 import random
 import errno
 import logging
-import paramiko
 import zro
 
 try:
@@ -93,6 +92,8 @@ def SSH_exec_cmd(sshcommand,
 
     std_out_lines = []
     std_err_lines = []
+
+    import paramiko
 
     try:
         client = paramiko.SSHClient()
@@ -374,8 +375,8 @@ class RemoteConnection(object):
         tunnel_entrance_port = search_available_port()
         logging.debug("client tunel port on localhost: " + repr(tunnel_entrance_port))
 
-
-        paramiko.util.log_to_file("/home/mb253889/paramiko.log")
+        import paramiko
+        #paramiko.util.log_to_file("/home/mb253889/paramiko.log")
 
         ### tunnel creation                     ###
         try:
