@@ -29,8 +29,42 @@ def find_free_port():
         s.bind(('', 0))
         return s.getsockname()[1]
 
+class Respond(threading.Thread):
+    def __init__(self, a_socket, obj_server):
+        threading.Thread.__init__(self) #TODO TBC sanity check
+        self.client= a_socket
+        self.obj_server = obj_server
 
-
+    def run(self):
+        while True:
+            try:
+                message = self.client.recv(12000)
+            except:
+                print("Exception while waiting to receive a message")
+            #print("msg received")
+            #message = self.socket.recv()
+            if message:
+                try:
+                    classname, object_id, method, args, kwargs = pickle.loads(message)
+                    #TODO
+                    #logging.debug(classname, object_id, method, args)
+                    try:
+                        if self.obj_server.objects[classname][object_id]:
+                            #print("accessing the object")
+                            result = getattr(self.obj_server.objects[classname][object_id], method)(*args, **kwargs)
+                        else:
+                            #print("object not found")
+                            pass #TODO
+                            #logging.debug("object not in the list of objects")
+                    except Exception as e:
+                        #print("an exception occurred")
+                        result = e
+                    #print("sending result")
+                    self.client.send(pickle.dumps(result))
+                except Exception as e:
+                    print("An exception ocurred in the server of the remote object")
+                    print(e)
+                    traceback.print_last() #TODO what is this?
 
 class ObjectServer:
     '''
@@ -41,33 +75,9 @@ class ObjectServer:
     -lauch the server loop.
     '''
 
-    class Respond(threading.Thread)
-        def _init__(self, a_socket, obj_server):
-            self.client= a_socket
-            self.obj_server = obj_server
-
-        def run(self):
-            message = self.client.recv(12000)
-            #message = self.socket.recv()
-            try:
-                classname, object_id, method, args, kwargs = pickle.loads(message)
-                #TODO
-                #logging.debug(classname, object_id, method, args)
-                try:
-                    if self.obj_server.objects[classname][object_id]:
-                        result = getattr(self.obj_server.objects[classname][object_id], method)(*args, **kwargs)
-                    else:
-                        pass #TODO
-                        #logging.debug("object not in the list of objects")
-                except Exception as e:
-                    result = e
-                self.client.send(pickle.dumps(result))
-            except:
-                print("An exception ocurred in the server of the remote object")
-                traceback.print_last()
 
     def __init__(self, port=None):
-        #self.objects = {}
+        self.objects = {}
         #self.context = zmq.Context()
         #self.socket = self.context.socket(zmq.REP)
 
@@ -87,7 +97,7 @@ class ObjectServer:
         #else:
         #self.socket.bind("tcp://*:" + str(port))
         self.socket.bind(('', port))
-        socket.listen(12)
+        self.socket.listen(12)
         self.port = port
 
     def register(self, object):
@@ -104,8 +114,9 @@ class ObjectServer:
 
     def serve_forever(self):
         while True:
-            self.client, address = socket.accept()
-            receiving_thread = Respond(self.client, self)
+            client, address = self.socket.accept() #multiple client possible
+            #print("Accepting a new connection")
+            receiving_thread = Respond(client, self)
             receiving_thread.start()
 
             #  Wait for next request from client
@@ -124,7 +135,7 @@ class Proxy(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         (self.classname, self.object_id, self._port) = uri.split(":")
         #self.socket.connect("tcp://localhost:" + self._port)
-        self.socket.connect((localhost, int(port)))
+        self.socket.connect(("localhost", int(self._port)))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
