@@ -1969,20 +1969,4 @@ def list_from_serializable(list_to_convert,
     return us_list
 
 
-# import Pyro4
-# from Pyro4.util import SerializerBase
-#
-# Pyro4.config.SERIALIZER = "serpent"
-#
-# def workflow_class_to_dict(object):
-#     print("Serializer hook converting to dictionnary: %s" %object)
-#     my_dict = object.to_dict()
-#     my_dict["__class__"] = "Workflow"
-#     return my_dict
-#
-# def workflow_dict_to_class(classname, d):
-#     print("Deserializer hook, converting to class: %s; %s" % (classname, d))
-#     return Workflow.from_dict(d)
-#
-# SerializerBase.register_class_to_dict(Workflow, workflow_class_to_dict)
-# SerializerBase.register_dict_to_class("Workflow", workflow_dict_to_class)
+

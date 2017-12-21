@@ -18,7 +18,6 @@ if __name__ == "__main__":
     import logging
     import os
 
-    #import Pyro4
     import zro
 
     import soma_workflow.engine
@@ -30,8 +29,6 @@ if __name__ == "__main__":
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
 
-
-    #@Pyro4.expose
     class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
@@ -41,8 +38,6 @@ if __name__ == "__main__":
                 scheduler,
                 config)
 
-
-    #@Pyro4.expose
     class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
@@ -51,8 +46,6 @@ if __name__ == "__main__":
                 interval,
                 control_interval)
 
-
-    #@Pyro4.expose
     class Configuration(soma_workflow.configuration.Configuration):
 
         def __init__(self,
@@ -86,7 +79,6 @@ if __name__ == "__main__":
                 running_jobs_limits=running_jobs_limits,
             )
 
-    #@Pyro4.expose
     class LocalSchedulerCfg(soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
@@ -126,7 +118,6 @@ if __name__ == "__main__":
             f.close()
             if uri:
                 #create proxy and return
-                #return Pyro4.Proxy(uri)
                 return zro.Proxy(uri)
         except IOError:
             pass #file does not exist continue
@@ -145,7 +136,7 @@ if __name__ == "__main__":
         logger.debug('Name of the database server is: ' + db_name)
         logger.debug('Server URI: ' + repr(uri))
 
-        database_server_proxy = zro.Proxy(uri) # Pyro4.Proxy(uri)
+        database_server_proxy = zro.Proxy(uri)
 
         return database_server_proxy #, subprocess_db_server_handle
 
@@ -209,9 +200,8 @@ if __name__ == "__main__":
                 config.get_database_file(),
                 config.get_transfered_file_dir())
 
-        # Pyro.config.PYRO_MULTITHREADED = 0
-        # initialisation of the Pyro server.
-        daemon = zro.ObjectServer() # Pyro4.Daemon()
+        # initialisation of the zro object server.
+        daemon = zro.ObjectServer()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,

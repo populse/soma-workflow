@@ -344,11 +344,6 @@ def print_tables(database_file):
     cursor.close()
     connection.close()
 
-import Pyro4
-
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
-@Pyro4.expose
 class WorkflowDatabaseServer(object):
 
     def __init__(self,

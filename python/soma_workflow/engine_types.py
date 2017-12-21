@@ -398,27 +398,6 @@ class EngineWorkflow(Workflow):
 
     logger = None
 
-    # Entamme, si l'on souhaitait utiliser serpent il faudrait
-    # definir ces fonctions pour la plupart des Engines de ce fichier.
-    # Neanmoins on peut utiliser pickle et il ne semble pas y avoir
-    # de probleme de securite puisque l'on utilise une connection ssh
-    # via paramiko pour communiquer sur le cluster.
-    # Cette methode demanderait a etre retravaille car les dictionnaires
-    # ne sont pas constitue de type de base.
-    def to_dict(self):
-        d = {}
-        d['wf_id'] = self.wf_id
-        d['_user_id'] = self._user_id #much more complicated than that
-        d['expiration_date'] = self.expiration_date
-        d['queue'] = self.queue
-        d['registered_jobs'] = self.registered_jobs
-        d['registered_tr'] = self.registered_tr
-        d['_dependency_dict'] = self._dependency_dict
-        d['logger'] = self.logger
-        d['_client_workflow'] = self._client_workflow.to_dict()
-        return d
-
-
     @classmethod
     def from_dict(cls, d):
         pass
@@ -441,9 +420,6 @@ class EngineWorkflow(Workflow):
                  expiration_date,
                  name):
         logging.debug("Within Engine workflow constructor")
-
-        #to be able to serialize the object for pyro
-        self._client_workflow = client_workflow
 
         super(EngineWorkflow, self).__init__(client_workflow.jobs,
                                              client_workflow.dependencies,
