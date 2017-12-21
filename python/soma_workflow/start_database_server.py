@@ -13,19 +13,19 @@
 from __future__ import print_function, with_statement
 import os
 import signal
-
+import sys
+import logging
+#import Pyro4
+import zro
 
 if __name__ == '__main__':
 
-    import sys
-    import logging
-    import Pyro4
 
     import soma_workflow.database_server
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-    @Pyro4.expose
+    #@Pyro4.expose
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
 
         def __init__(self,
@@ -62,7 +62,9 @@ if __name__ == '__main__':
             level=eval("logging." + server_log_level))
 
     # Pyro server creation
-    daemon = Pyro4.Daemon()  # specify hostIP and hostPort
+    #daemon = Pyro4.Daemon()  # specify hostIP and hostPort
+
+    daemon = zro.ObjectServer()
 
     logging.info("Launching the database process")
 
@@ -106,5 +108,5 @@ if __name__ == '__main__':
     #signal.signal(signal.SIGKILL, handler)
     signal.signal(signal.SIGINT, handler)
 
-    daemon.requestLoop()
+    daemon.serve_forever()
 

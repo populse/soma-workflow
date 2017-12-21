@@ -18,7 +18,8 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import Pyro4
+    #import Pyro4
+    import zro
 
     import soma_workflow.engine
     import soma_workflow.scheduler
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     import time
 
 
-    @Pyro4.expose
+    #@Pyro4.expose
     class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
@@ -41,7 +42,7 @@ if __name__ == "__main__":
                 config)
 
 
-    @Pyro4.expose
+    #@Pyro4.expose
     class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
@@ -51,7 +52,7 @@ if __name__ == "__main__":
                 control_interval)
 
 
-    @Pyro4.expose
+    #@Pyro4.expose
     class Configuration(soma_workflow.configuration.Configuration):
 
         def __init__(self,
@@ -85,7 +86,7 @@ if __name__ == "__main__":
                 running_jobs_limits=running_jobs_limits,
             )
 
-    @Pyro4.expose
+    #@Pyro4.expose
     class LocalSchedulerCfg(soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
@@ -125,7 +126,8 @@ if __name__ == "__main__":
             f.close()
             if uri:
                 #create proxy and return
-                return Pyro4.Proxy(uri)
+                #return Pyro4.Proxy(uri)
+                return zro.Proxy(uri)
         except IOError:
             pass #file does not exist continue
         except Exception as e:
@@ -143,7 +145,7 @@ if __name__ == "__main__":
         logger.debug('Name of the database server is: ' + db_name)
         logger.debug('Server URI: ' + repr(uri))
 
-        database_server_proxy = Pyro4.Proxy(uri)
+        database_server_proxy = zro.Proxy(uri) # Pyro4.Proxy(uri)
 
         return database_server_proxy #, subprocess_db_server_handle
 
@@ -209,7 +211,7 @@ if __name__ == "__main__":
 
         # Pyro.config.PYRO_MULTITHREADED = 0
         # initialisation of the Pyro server.
-        daemon = Pyro4.Daemon()
+        daemon = zro.ObjectServer() # Pyro4.Daemon()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
@@ -220,30 +222,30 @@ if __name__ == "__main__":
         ################################################################################
         # connection to the pyro daemon and output its URI
 
-        uri_engine = daemon.register(workflow_engine, engine_name)
+        uri_engine = daemon.register(workflow_engine) #, engine_name)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
 
-        logger.info('Pyro object ' + engine_name + ' is ready.')
+        #logger.info('Pyro object ' + engine_name + ' is ready.')
 
         # connection checker
         connection_checker = ConnectionChecker()
 
-        uri_cc = daemon.register(connection_checker, 'connection_checker')
+        uri_cc = daemon.register(connection_checker) #, 'connection_checker')
 
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        uri_config = daemon.register(config, 'configuration')
+        uri_config = daemon.register(config) #, 'configuration')
 
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
         # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.register(config.get_sheduler_config(), 'scheduler_config')
+            uri_sched_config = daemon.register(config.get_sheduler_config()) #, 'scheduler_config')
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
@@ -255,8 +257,11 @@ if __name__ == "__main__":
         # Daemon request loop thread
         ################################################################################
 
-        daemon_request_loop_thread = threading.Thread(name="pyro_request_loop",
-                                                      target=daemon.requestLoop)
+        daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
+                                                      target=daemon.serve_forever())
+#
+#            (name="pyro_request_loop",
+#                                                      target=daemon.requestLoop)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
@@ -286,12 +291,15 @@ if __name__ == "__main__":
 
         logger.info("******** client disconnection **********************")
 
-        daemon.shutdown()
+        #TODO shutdown cleanly might change serve_forever to serveLoop or
+        #sth like this
+        #daemon.shutdown()
 
         #daemon.shutdown(disconnect=True)  # stop the request loop
         #daemon.sock.close()  # free the port
 
-        del (daemon)
+        #TODO add a destructor if necessary.
+        #del (daemon)
 
         logger.info("******** second mode: wait for jobs to finish ********")
         jobs_running = True

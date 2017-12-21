@@ -75,12 +75,14 @@ class ObjectServer:
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
-                logging.debug(classname, object_id, method, args)
+                #TODO
+                #logging.debug(classname, object_id, method, args)
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
                     else:
-                        logging.debug("object not in the list of objects")
+                        pass #TODO
+                        #logging.debug("object not in the list of objects")
                 except Exception as e:
                     result = e
                 self.socket.send(pickle.dumps(result))
@@ -99,7 +101,8 @@ class Proxy(object):
         self.socket = self.context.socket(zmq.REQ)
         (self.classname, self.object_id, self._port) = uri.split(":")
         self.socket.connect("tcp://localhost:" + self._port)
-        logging.debug(self.classname, self.object_id, self._port)
+        # TODO
+        # logging.debug(self.classname, self.object_id, self._port)
 
     def __getattr__(self, method_name):
         return ProxyMethod(self, method_name)
