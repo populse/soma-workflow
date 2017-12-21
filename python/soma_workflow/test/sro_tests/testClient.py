@@ -1,9 +1,9 @@
-import zro
+import sro
 from six.moves import input
 
 object_uri = input("Please enter object URI: ")
 
-test_proxy = zro.Proxy(object_uri)
+test_proxy = sro.Proxy(object_uri)
 
 result = test_proxy.add(40, 2)
 print(type(result))

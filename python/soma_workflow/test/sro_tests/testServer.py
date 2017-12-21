@@ -1,4 +1,4 @@
-import zro
+import sro
 
 class TestObject:
     @staticmethod
@@ -14,7 +14,7 @@ class TestObject:
 test = TestObject("Hello")
 #TODO add doc
 #server = zro.ObjectServer(4444)
-server = zro.ObjectServer()
+server = sro.ObjectServer()
 objectURI = server.register(test)
 print(objectURI)
 server.serve_forever()
