@@ -26,7 +26,8 @@ import re
 import random
 import errno
 import logging
-import Pyro4
+import paramiko
+import zro
 
 try:
     import socketserver # python3
@@ -92,8 +93,6 @@ def SSH_exec_cmd(sshcommand,
 
     std_out_lines = []
     std_err_lines = []
-
-    import paramiko
 
     try:
         client = paramiko.SSHClient()
@@ -248,7 +247,7 @@ class RemoteConnection(object):
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
     The communication between the client and the computing resource is done
-    with Pyro inside a ssh port forwarding tunnel.
+    with zro inside a ssh port forwarding tunnel.
     '''
 
     def __init__(self,
@@ -270,12 +269,12 @@ class RemoteConnection(object):
         '''
 
         # required in the remote connection mode
-        import paramiko
         # from paramiko.file import BufferedFile
 
         if not login:
             raise ConnectionError("Remote connection requires a login")
 
+        #TODO remove reference to pyro
         pyro_objet_name = "workflow_engine_" + login
 
         if not check_if_somawf_on_server(login, cluster_address, password):
@@ -361,22 +360,19 @@ class RemoteConnection(object):
         logging.debug("connection_checker_uri: " +  connection_checker_uri)
         logging.debug("configuration_uri: " + configuration_uri)
 
-        import re
-
         whole_uri = str(workflow_engine_uri)
-        pattern = re.compile("\d+$")
-        port = pattern.search(whole_uri).group()
-        engine_pyro_daemon_port = int(port)
+        (object_data_type, object_id, port) = whole_uri.split(":")
+        remote_object_server_port = int(port)
 
-        logging.debug(engine_pyro_daemon_port)
-        logging.debug(type(engine_pyro_daemon_port))
+        logging.debug(remote_object_server_port)
+        logging.debug(type(remote_object_server_port))
 
         #checking
-        logging.debug("Pyro object port: " + repr(engine_pyro_daemon_port))
+        logging.debug("zro object server port: " + repr(remote_object_server_port))
 
         ### find an available port            ###
-        client_pyro_daemon_port = search_available_port()
-        logging.debug("client pyro object port on localhost: " + repr(client_pyro_daemon_port))
+        tunnel_entrance_port = search_available_port()
+        logging.debug("client tunel port on localhost: " + repr(tunnel_entrance_port))
 
 
         paramiko.util.log_to_file("/home/mb253889/paramiko.log")
@@ -402,15 +398,14 @@ class RemoteConnection(object):
 
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
             print("tunnel creation " + str(login) + "@" + cluster_address +
-                  "   port: " + repr(client_pyro_daemon_port) + " host: " +
+                  "   port: " + repr(tunnel_entrance_port) + " host: " +
                   str(submitting_machine) + " host port: "
-                  + str(engine_pyro_daemon_port))
+                  + str(remote_object_server_port))
 
-            tunnel = Tunnel(client_pyro_daemon_port,
+            tunnel = Tunnel(tunnel_entrance_port,
                             #submitting_machine,
-                            engine_pyro_daemon_port,
+                            remote_object_server_port,
                             self.__transport)
-
 
             tunnel.start()
 
@@ -423,29 +418,27 @@ class RemoteConnection(object):
 
         logging.debug("The workflow engine URI is: " + workflow_engine_uri)
 
+        # rewritting the uri to use the tunnel entrance port
+        (object_data_type, object_id, object_server_port) = workflow_engine_uri.split(":")
+        workflow_engine_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+        (object_data_type, object_id, object_server_port) = connection_checker_uri.split(":")
+        connection_checker_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+        (object_data_type, object_id, object_server_port) = configuration_uri.split(":")
+        configuration_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+
         # create the proxy objects                     #
 
-        self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
-        connection_checker = Pyro4.Proxy(connection_checker_uri)
-        self.configuration = Pyro4.Proxy(configuration_uri)
+        self.workflow_engine = zro.Proxy(workflow_engine_uri)
+        connection_checker = zro.Proxy(connection_checker_uri)
+        self.configuration = zro.Proxy(configuration_uri)
 
-        logging.debug("==DEBUG== original port on the"
-                      "cluster before redirection to the tunnel "
-                      "entrance: " +
-                      str(self.workflow_engine._pyroUri.port))
-
-        # setting the proxies to use the tunnel the port
-        # has to be redirected to use the entrance of the tunnel.
-
-        self.workflow_engine._pyroUri.port = client_pyro_daemon_port
-        connection_checker._pyroUri.port = client_pyro_daemon_port
-        self.configuration._pyroUri.port = client_pyro_daemon_port
+        # self.configuration._pyroUri.port = tunnel_entrance_port
 
         if scheduler_config_uri is not None:
-            self.scheduler_config = Pyro4.Proxy(scheduler_config_uri)
-
             # setting the proxies to use the tunnel  #
-            self.scheduler_config._pyroUri.port = client_pyro_daemon_port
+            (object_data_type, object_id, object_server_port) = scheduler_config_uri.split(":")
+            scheduler_config_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+            self.scheduler_config = zro.Proxy(scheduler_config_uri)
         else:
             self.scheduler_config = None
 
@@ -461,7 +454,6 @@ class RemoteConnection(object):
                 logging.debug("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 connection_checker.isConnected()
-            #except Pyro.errors.ProtocolError as e:
             except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
@@ -506,7 +498,6 @@ class RemoteConnection(object):
         computing resource.
         '''
         from soma_workflow import configuration
-        import paramiko
 
         config = configuration.Configuration.load_from_file(resource_id)
         if login is None:
@@ -625,6 +616,8 @@ class LocalConnection(object):
             stderr_content = line
             while line:
                 line = engine_process.stderr.readline()
+                #TODO TBC
+                print("this should contain the uri of the connection checker in 2nd position" +line)
                 stderr_content = stderr_content + "\n" + line
             raise ConnectionError("A problem occured while starting the engine "
                                   "process on the local machine. \n"
@@ -636,6 +629,7 @@ class LocalConnection(object):
                                   "**Engine process standard error:** \n"
                                   "\n" + stderr_content)
 
+        #TODO
         connection_checker_uri = line.split()[1]
         line = engine_process.stdout.readline()
         stdout_content = stdout_content + "\n" + line
@@ -666,9 +660,9 @@ class LocalConnection(object):
 
         # create the proxies                     #
 
-        self.workflow_engine = Pyro4.Proxy(workflow_engine_uri)
-        connection_checker = Pyro4.Proxy(connection_checker_uri)
-        self.configuration = Pyro4.Proxy(configuration_uri)
+        self.workflow_engine = zro.Proxy(workflow_engine_uri)
+        connection_checker = zro.Proxy(connection_checker_uri)
+        self.configuration = zro.Proxy(configuration_uri)
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #
@@ -690,7 +684,6 @@ class LocalConnection(object):
     def get_configuration(self):
         return self.configuration
 
-@Pyro4.expose
 class ConnectionChecker(object):
 
     def __init__(self, interval=2, controlInterval=3):
@@ -747,7 +740,6 @@ class ConnectionHolder(threading.Thread):
         self.interval = self.connectionChecker.get_interval
 
     def run(self):
-        from Pyro.errors import ConnectionClosedError
         self.stopped = False
         while not self.stopped:
             # print("ConnectionHolder => signal")
@@ -780,7 +772,7 @@ class Tunnel(threading.Thread):
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
                     ('localhost', self.chain_port), #destination address
-                    self.request.getpeername())#source address (from the Pyro Proxy object)
+                    self.request.getpeername())#source address (from the Proxy object)
             except Exception as e:
                 logging.exception("Hey here is an exception!")
                 raise ConnectionError('Incoming request to %d failed: %s'
