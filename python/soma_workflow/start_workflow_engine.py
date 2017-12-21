@@ -210,32 +210,29 @@ if __name__ == "__main__":
         ################################################################################
         # Register the objects as remote accessible objects
         ################################################################################
-        # connection to the pyro daemon and output its URI
 
-        uri_engine = daemon.register(workflow_engine) #, engine_name)
+        uri_engine = daemon.register(workflow_engine)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
 
-        #logger.info('Pyro object ' + engine_name + ' is ready.')
-
         # connection checker
         connection_checker = ConnectionChecker()
 
-        uri_cc = daemon.register(connection_checker) #, 'connection_checker')
+        uri_cc = daemon.register(connection_checker)
 
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        uri_config = daemon.register(config) #, 'configuration')
+        uri_config = daemon.register(config)
 
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
         # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.register(config.get_sheduler_config()) #, 'scheduler_config')
+            uri_sched_config = daemon.register(config.get_sheduler_config())
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
@@ -249,14 +246,11 @@ if __name__ == "__main__":
 
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
                                                       target=daemon.serve_forever())
-#
-#            (name="pyro_request_loop",
-#                                                      target=daemon.requestLoop)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
 
-        logging.debug("Thread pyro principale (daemon): " + str(daemon_request_loop_thread))
+        logging.debug("Thread object server principale (daemon): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
@@ -265,10 +259,6 @@ if __name__ == "__main__":
             client_connected = connection_checker.isConnected()  # seem useless since it will be false
             timeout = timeout - 1
             time.sleep(1)
-
-        logger.debug("==>Is client connected?" + str(client_connected))
-        logger.debug("Is pyro thread alive? " + str(daemon_request_loop_thread.isAlive()))
-        logger.debug("Thread count: " + str(threading.activeCount()))
 
         logger.info("******** first mode: client connection *************")
         while client_connected:

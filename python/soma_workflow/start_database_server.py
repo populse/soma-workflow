@@ -88,20 +88,25 @@ if __name__ == '__main__':
     sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
     sys.stdout.flush()
 
-    # enter the server loop.
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
-    #
-    # Request loop
+
+    #There could be a problem if multiple servers are running:
+    #closing one will remove the reference of the object server
+    #even if we are not closing the one holding this object server.
+    #Nonetheless, there should not be multiple servers running.
+
     def handler(signum, frame):
         with open(file_path, "w") as f:
-             f.write("") #empty file
+            print('empty file: ' + file_path)
+            f.write("") #empty file
 
     signal.signal(signal.SIGTERM, handler)
 
-    #TODO, there seem to have a conflict with Pyro
-    #that should disapear with zro.
+    #TODO for some reason there is a problem if we handle this signal:
+    #the workflow engine does not start normally
     #signal.signal(signal.SIGKILL, handler)
     signal.signal(signal.SIGINT, handler)
 
+    # Enter the server loop.
     daemon.serve_forever()
 

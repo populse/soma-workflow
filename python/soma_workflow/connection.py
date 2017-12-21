@@ -275,8 +275,7 @@ class RemoteConnection(object):
         if not login:
             raise ConnectionError("Remote connection requires a login")
 
-        #TODO remove reference to pyro
-        pyro_objet_name = "workflow_engine_" + login
+        remote_workflow_engine_name = "workflow_engine_" + login
 
         if not check_if_somawf_on_server(login, cluster_address, password):
             raise ConnectionError("Cannot find soma-workflow on %s. "
@@ -313,7 +312,7 @@ class RemoteConnection(object):
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
         command = "python -m soma_workflow.start_workflow_engine"\
-                  " %s %s %s" % (resource_id, pyro_objet_name, log)
+                  " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         print("start engine command: "
               "ssh %s@%s %s" % (login, cluster_address, command))
@@ -333,7 +332,7 @@ class RemoteConnection(object):
 
         for std_out_line in std_out_lines:
             print(std_out_line)
-            if std_out_line.split()[0] == pyro_objet_name:
+            if std_out_line.split()[0] == remote_workflow_engine_name:
                 workflow_engine_uri = std_out_line.split()[1]
             elif std_out_line.split()[0] == "connection_checker":
                 connection_checker_uri = std_out_line.split()[1]
@@ -432,8 +431,6 @@ class RemoteConnection(object):
         self.workflow_engine = zro.Proxy(workflow_engine_uri)
         connection_checker = zro.Proxy(connection_checker_uri)
         self.configuration = zro.Proxy(configuration_uri)
-
-        # self.configuration._pyroUri.port = tunnel_entrance_port
 
         if scheduler_config_uri is not None:
             # setting the proxies to use the tunnel  #
@@ -566,17 +563,17 @@ class LocalConnection(object):
             import subprocess
 
         login = getpass.getuser()
-        pyro_objet_name = "workflow_engine_" + login
+        remote_workflow_engine_name = "workflow_engine_" + login
 
         # run the workflow engine process and get back the
         # workflow_engine and ConnectionChecker URIs
         # command = "python -m cProfile -o /home/soizic/profile/profile /home/soizic/svn/brainvisa/source/soma/soma-workflow/trunk/python/soma_workflow/start_workflow_engine.py %s %s %s" %(
                                          # resource_id,
-                                         # pyro_objet_name,
+                                         # remote_workflow_engine_name,
                                          # log)
         command = "python -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
-            pyro_objet_name,
+            remote_workflow_engine_name,
             log)
 
         engine_process = subprocess.Popen(command,
@@ -586,7 +583,7 @@ class LocalConnection(object):
 
         line = engine_process.stdout.readline()
         stdout_content = line
-        while line and line.split()[0] != pyro_objet_name:
+        while line and line.split()[0] != remote_workflow_engine_name:
             line = engine_process.stdout.readline()
             stdout_content = stdout_content + "\n" + line
 
