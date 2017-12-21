@@ -15,7 +15,6 @@ import os
 import signal
 import sys
 import logging
-#import Pyro4
 import zro
 
 if __name__ == '__main__':
@@ -25,7 +24,6 @@ if __name__ == '__main__':
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-    #@Pyro4.expose
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
 
         def __init__(self,
@@ -60,9 +58,6 @@ if __name__ == '__main__':
             filename=server_log_file,
             format=server_log_format,
             level=eval("logging." + server_log_level))
-
-    # Pyro server creation
-    #daemon = Pyro4.Daemon()  # specify hostIP and hostPort
 
     daemon = zro.ObjectServer()
 
