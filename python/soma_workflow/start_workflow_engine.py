@@ -18,7 +18,7 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import zro
+    import sro
 
     import soma_workflow.engine
     import soma_workflow.scheduler
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             f.close()
             if uri:
                 # Create proxy and return
-                return zro.Proxy(uri)
+                return sro.Proxy(uri)
         except IOError:
             pass # File does not exist continue
         except Exception as e:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         logger.debug('Name of the database server is: ' + db_name)
         logger.debug('Server URI: ' + repr(uri))
 
-        database_server_proxy = zro.Proxy(uri)
+        database_server_proxy = sro.Proxy(uri)
 
         return database_server_proxy
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                 config.get_transfered_file_dir())
 
         # initialisation of the zro object server.
-        daemon = zro.ObjectServer()
+        daemon = sro.ObjectServer()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,

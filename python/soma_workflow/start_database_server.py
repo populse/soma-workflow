@@ -15,7 +15,7 @@ import os
 import signal
 import sys
 import logging
-import zro
+import sro
 
 if __name__ == '__main__':
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             format=server_log_format,
             level=eval("logging." + server_log_level))
 
-    daemon = zro.ObjectServer()
+    daemon = sro.ObjectServer()
 
     logging.info("Launching the database process")
 

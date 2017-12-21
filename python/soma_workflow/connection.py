@@ -26,7 +26,7 @@ import re
 import random
 import errno
 import logging
-import zro
+import sro
 
 try:
     import socketserver # python3
@@ -428,15 +428,15 @@ class RemoteConnection(object):
 
         # create the proxy objects                     #
 
-        self.workflow_engine = zro.Proxy(workflow_engine_uri)
-        connection_checker = zro.Proxy(connection_checker_uri)
-        self.configuration = zro.Proxy(configuration_uri)
+        self.workflow_engine = sro.Proxy(workflow_engine_uri)
+        connection_checker = sro.Proxy(connection_checker_uri)
+        self.configuration = sro.Proxy(configuration_uri)
 
         if scheduler_config_uri is not None:
             # setting the proxies to use the tunnel  #
             (object_data_type, object_id, object_server_port) = scheduler_config_uri.split(":")
             scheduler_config_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
-            self.scheduler_config = zro.Proxy(scheduler_config_uri)
+            self.scheduler_config = sro.Proxy(scheduler_config_uri)
         else:
             self.scheduler_config = None
 
@@ -659,9 +659,9 @@ class LocalConnection(object):
 
         # create the proxies                     #
 
-        self.workflow_engine = zro.Proxy(workflow_engine_uri)
-        connection_checker = zro.Proxy(connection_checker_uri)
-        self.configuration = zro.Proxy(configuration_uri)
+        self.workflow_engine = sro.Proxy(workflow_engine_uri)
+        connection_checker = sro.Proxy(connection_checker_uri)
+        self.configuration = sro.Proxy(configuration_uri)
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #
