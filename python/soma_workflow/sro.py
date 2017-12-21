@@ -12,10 +12,10 @@ try:
 except:
     import pickle
 import traceback
-import zmq
+#import zmq
 #import re
 import logging
-
+import threading
 
 #For some reason the zmq bind_to_random_port did not work with
 #one of the version of zmq that we are using. Therfore we have
@@ -30,6 +30,8 @@ def find_free_port():
         return s.getsockname()[1]
 
 
+
+
 class ObjectServer:
     '''
     Usage:
@@ -38,10 +40,40 @@ class ObjectServer:
     a distant object.
     -lauch the server loop.
     '''
+
+    class Respond(threading.Thread)
+        def _init__(self, a_socket, obj_server):
+            self.client= a_socket
+            self.obj_server = obj_server
+
+        def run(self):
+            message = self.client.recv(12000)
+            #message = self.socket.recv()
+            try:
+                classname, object_id, method, args, kwargs = pickle.loads(message)
+                #TODO
+                #logging.debug(classname, object_id, method, args)
+                try:
+                    if self.obj_server.objects[classname][object_id]:
+                        result = getattr(self.obj_server.objects[classname][object_id], method)(*args, **kwargs)
+                    else:
+                        pass #TODO
+                        #logging.debug("object not in the list of objects")
+                except Exception as e:
+                    result = e
+                self.client.send(pickle.dumps(result))
+            except:
+                print("An exception ocurred in the server of the remote object")
+                traceback.print_last()
+
     def __init__(self, port=None):
-        self.objects = {}
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
+        #self.objects = {}
+        #self.context = zmq.Context()
+        #self.socket = self.context.socket(zmq.REP)
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+
         if not port:
             port = find_free_port()
             # try:
@@ -53,7 +85,9 @@ class ObjectServer:
             # except Exception as e:
             #     logging.debug("Maximum number of attempt to find a port reached?: " + str(e))
         #else:
-        self.socket.bind("tcp://*:" + str(port))
+        #self.socket.bind("tcp://*:" + str(port))
+        self.socket.bind(('', port))
+        socket.listen(12)
         self.port = port
 
     def register(self, object):
@@ -70,24 +104,13 @@ class ObjectServer:
 
     def serve_forever(self):
         while True:
+            self.client, address = socket.accept()
+            receiving_thread = Respond(self.client, self)
+            receiving_thread.start()
+
             #  Wait for next request from client
-            message = self.socket.recv()
-            try:
-                classname, object_id, method, args, kwargs = pickle.loads(message)
-                #TODO
-                #logging.debug(classname, object_id, method, args)
-                try:
-                    if self.objects[classname][object_id]:
-                        result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
-                    else:
-                        pass #TODO
-                        #logging.debug("object not in the list of objects")
-                except Exception as e:
-                    result = e
-                self.socket.send(pickle.dumps(result))
-            except:
-                print("An exception ocurred in the server of the remote object")
-                traceback.print_last()
+
+
 
 class Proxy(object):
     """
@@ -96,10 +119,12 @@ class Proxy(object):
     to access variable attributes you will have to create properties (accessors)
     """
     def __init__(self, uri):
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
+        #self.context = zmq.Context()
+        #self.socket = self.context.socket(zmq.REQ)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         (self.classname, self.object_id, self._port) = uri.split(":")
-        self.socket.connect("tcp://localhost:" + self._port)
+        #self.socket.connect("tcp://localhost:" + self._port)
+        self.socket.connect((localhost, int(port)))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
@@ -113,7 +138,7 @@ class ProxyMethod(object):
 
     def __call__(self, *args, **kwargs):
         self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
-        result = pickle.loads(self.proxy.socket.recv())
+        result = pickle.loads(self.proxy.socket.recv(12000))
         if isinstance(result, Exception):
             raise result
         return result

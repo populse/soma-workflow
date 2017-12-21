@@ -248,7 +248,7 @@ class RemoteConnection(object):
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
     The communication between the client and the computing resource is done
-    with zro inside a ssh port forwarding tunnel.
+    with sro inside a ssh port forwarding tunnel.
     '''
 
     def __init__(self,
@@ -331,7 +331,6 @@ class RemoteConnection(object):
         scheduler_config_uri = None
 
         for std_out_line in std_out_lines:
-            print(std_out_line)
             if std_out_line.split()[0] == remote_workflow_engine_name:
                 workflow_engine_uri = std_out_line.split()[1]
             elif std_out_line.split()[0] == "connection_checker":
@@ -368,7 +367,7 @@ class RemoteConnection(object):
         logging.debug(type(remote_object_server_port))
 
         #checking
-        logging.debug("zro object server port: " + repr(remote_object_server_port))
+        logging.debug("sro object server port: " + repr(remote_object_server_port))
 
         ### find an available port            ###
         tunnel_entrance_port = search_available_port()
