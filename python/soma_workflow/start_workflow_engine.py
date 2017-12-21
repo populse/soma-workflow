@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 config.get_database_file(),
                 config.get_transfered_file_dir())
 
-        # initialisation of the zro object server.
+        # initialisation of the sro object server.
         daemon = sro.ObjectServer()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
@@ -245,7 +245,7 @@ if __name__ == "__main__":
         # Daemon request loop thread
         ################################################################################
 
-        daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
+        daemon_request_loop_thread = threading.Thread(name="sro_serve_forever",
                                                       target=daemon.serve_forever())
 
         daemon_request_loop_thread.daemon = True
