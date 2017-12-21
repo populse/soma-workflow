@@ -3,7 +3,6 @@
 
 @organization: NAO, UNATI, Neurospin, Gif-sur-Yvette, France
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
 from __future__ import print_function

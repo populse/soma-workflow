@@ -714,7 +714,6 @@ class ConnectionChecker(object):
         self.controlThread.setDaemon(True)
         self.controlThread.start()
 
-    @property
     def get_interval(self):
         return self.interval.seconds
 
@@ -736,7 +735,7 @@ class ConnectionHolder(threading.Thread):
         self.setDaemon(True)
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
-        self.interval = self.connectionChecker.get_interval
+        self.interval = self.connectionChecker.get_interval()
 
     def run(self):
         self.stopped = False
