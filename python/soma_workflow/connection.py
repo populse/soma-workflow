@@ -742,7 +742,7 @@ class ConnectionHolder(threading.Thread):
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
-            except ConnectionClosedError as e:
+            except ConnectionClosedError as e: # TBC Apparently the exception is not defined anymore
                 print("Connection closed")
                 break
             time.sleep(self.interval)

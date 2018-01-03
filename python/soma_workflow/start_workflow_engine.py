@@ -18,7 +18,7 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import sro
+    import zro
 
     import soma_workflow.engine
     import soma_workflow.scheduler
