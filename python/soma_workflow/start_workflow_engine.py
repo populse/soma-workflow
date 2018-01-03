@@ -118,7 +118,7 @@ if __name__ == "__main__":
             f.close()
             if uri:
                 # Create proxy and return
-                return sro.Proxy(uri)
+                return zro.Proxy(uri)
         except IOError:
             pass # File does not exist continue
         except Exception as e:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         logger.debug('Name of the database server is: ' + db_name)
         logger.debug('Server URI: ' + repr(uri))
 
-        database_server_proxy = sro.Proxy(uri)
+        database_server_proxy = zro.Proxy(uri)
 
         return database_server_proxy
 
@@ -201,8 +201,8 @@ if __name__ == "__main__":
                 config.get_database_file(),
                 config.get_transfered_file_dir())
 
-        # initialisation of the sro object server.
-        daemon = sro.ObjectServer()
+        # initialisation of the zro object server.
+        daemon = zro.ObjectServer()
 
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
@@ -245,7 +245,7 @@ if __name__ == "__main__":
         # Daemon request loop thread
         ################################################################################
 
-        daemon_request_loop_thread = threading.Thread(name="sro_serve_forever",
+        daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
                                                       target=daemon.serve_forever())
 
         daemon_request_loop_thread.daemon = True

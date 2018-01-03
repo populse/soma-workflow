@@ -15,14 +15,14 @@ import os
 import signal
 import sys
 import logging
-import sro
+import zro
 
 if __name__ == '__main__':
-
 
     import soma_workflow.database_server
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
+
 
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
 
@@ -31,13 +31,13 @@ if __name__ == '__main__':
                      tmp_file_dir_path,
                      shared_tmp_dir=None,
                      logging_configuration=None):
-
             soma_workflow.database_server.WorkflowDatabaseServer.__init__(
                 self,
                 database_file,
                 tmp_file_dir_path,
                 shared_tmp_dir,
                 logging_configuration)
+
 
     if not len(sys.argv) == 2:
         sys.stdout.write(
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             format=server_log_format,
             level=eval("logging." + server_log_level))
 
-    daemon = sro.ObjectServer()
+    daemon = zro.ObjectServer()
 
     logging.info("Launching the database process")
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     server_uri = daemon.register(server)
     logging.debug("server_uri: " + str(server_uri))
-    #Write the uri into a file
+    # Write the uri into a file
     (dir, file) = os.path.split(server_log_file)
     file_path = os.path.join(dir, "database_server_uri.txt")
     logging.debug(file_path)
@@ -90,23 +90,24 @@ if __name__ == '__main__':
 
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
 
-    #There could be a problem if multiple servers are running:
-    #closing one will remove the reference of the object server
-    #even if we are not closing the one holding this object server.
-    #Nonetheless, there should not be multiple servers running.
+
+    # There could be a problem if multiple servers are running:
+    # closing one will remove the reference of the object server
+    # even if we are not closing the one holding this object server.
+    # Nonetheless, there should not be multiple servers running.
 
     def handler(signum, frame):
         with open(file_path, "w") as f:
             print('empty file: ' + file_path)
-            f.write("") #empty file
+            f.write("")  # empty file
+
 
     signal.signal(signal.SIGTERM, handler)
 
-    #TODO for some reason there is a problem if we handle this signal:
-    #the workflow engine does not start normally
-    #signal.signal(signal.SIGKILL, handler)
+    # TODO for some reason there is a problem if we handle this signal:
+    # the workflow engine does not start normally
+    # signal.signal(signal.SIGKILL, handler)
     signal.signal(signal.SIGINT, handler)
 
     # Enter the server loop.
     daemon.serve_forever()
-
