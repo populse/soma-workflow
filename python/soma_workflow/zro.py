@@ -99,6 +99,10 @@ class Proxy(object):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         (self.classname, self.object_id, self._port) = uri.split(":")
+        # caveat: note that connect will succeed even if there is
+        # no port waiting for a connection, as such you have to
+        # check yourself that the connection has succeeded
+        # (cf how the database server engine is handled
         self.socket.connect("tcp://localhost:" + self._port)
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)

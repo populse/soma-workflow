@@ -765,7 +765,6 @@ class WorkflowEngine(RemoteFileController):
         self.logger = logging.getLogger('engine.WorkflowEngine')
 
         self._database_server = database_server
-
         try:
             user_login = getpass.getuser()
         except Exception as e:
@@ -775,7 +774,6 @@ class WorkflowEngine(RemoteFileController):
         self.logger.debug("user_login: " + user_login)
         self._user_id = self._database_server.register_user(user_login)
         self.logger.debug("user_id : " + repr(self._user_id))
-
         self.engine_loop = WorkflowEngineLoop(database_server,
                                               scheduler,
                                               path_translation,

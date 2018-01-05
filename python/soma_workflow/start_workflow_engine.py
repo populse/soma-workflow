@@ -28,6 +28,28 @@ if __name__ == "__main__":
     from soma_workflow.database_server import WorkflowDatabaseServer
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
+    import signal
+
+    class Timeout():
+        """Timeout class using ALARM signal."""
+        class Timeout(Exception):
+            pass
+
+        def __init__(self, sec):
+            self.sec = sec
+
+        def __enter__(self):
+            signal.signal(signal.SIGALRM, self.raise_timeout)
+            signal.alarm(self.sec)
+
+        def __exit__(self, *args):
+            signal.alarm(0)    # disable alarm
+
+        def raise_timeout(self, *args):
+            raise Timeout.Timeout()
+
+    class DBEngineNotRunning(Exception):
+        pass
 
     class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
@@ -88,7 +110,6 @@ if __name__ == "__main__":
                 interval=interval,
             )
 
-
     def start_database_server(resource_id, logger):
         import subprocess
         if logger:
@@ -117,8 +138,24 @@ if __name__ == "__main__":
             logger.debug(uri)
             f.close()
             if uri:
-                # Create proxy and return
-                return zro.Proxy(uri)
+                # Check that the database is running
+                # and add not been killed with a -9 signal for instance
+                # without removing the .txt file containing its uri
+                data_base_proxy = zro.Proxy(uri)
+
+                try:
+                    with Timeout(1):
+                        data_base_proxy.test()
+                except Timeout.Timeout:
+                    #for some reason this message does not appear in the log??
+                    logger.exception("Note that when you have shut down the database"
+                                     " server engine and the file database_server_uri.txt"
+                                     " was not removed")
+                    raise DBEngineNotRunning("")
+
+                return data_base_proxy
+        except DBEngineNotRunning:
+            pass
         except IOError:
             pass # File does not exist continue
         except Exception as e:
@@ -137,6 +174,13 @@ if __name__ == "__main__":
         logger.debug('Server URI: ' + repr(uri))
 
         database_server_proxy = zro.Proxy(uri)
+
+        logger.debug("You should not have to erase the text file containing "
+                     "the database server engine uri by hand, there is still"
+                     "a bug to remove.")
+        is_accessible = database_server_proxy.test()
+
+        logger.debug('Database server is accessible: ' + str(is_accessible))
 
         return database_server_proxy
 
@@ -202,8 +246,10 @@ if __name__ == "__main__":
                 config.get_transfered_file_dir())
 
         # initialisation of the zro object server.
+        logger.info("Starting object server for the workflow engine")
         daemon = zro.ObjectServer()
 
+        logger.info("Instanciation of the workflow engine")
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
@@ -212,6 +258,7 @@ if __name__ == "__main__":
         # Register the objects as remote accessible objects
         ################################################################################
 
+        logger.info("Registering objects and sending their uri to the client.")
         uri_engine = daemon.register(workflow_engine)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
@@ -244,7 +291,7 @@ if __name__ == "__main__":
         ################################################################################
         # Daemon request loop thread
         ################################################################################
-
+        logging.info("Launching a threaded request loop for the object server.")
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
                                                       target=daemon.serve_forever())
 
