@@ -178,6 +178,9 @@ Basic file transfer
 
 To run this example, create first the file "/tmp/soma_workflow_examples/myfile" 
 with any content. It will stand for an input file to transfer. 
+Although the job is executed on the computing resource it appears that the
+command is running on the local files, this is of course not the case. For another
+example of file transfer without the gui go to the next section.
 
 ::
 
@@ -241,6 +244,65 @@ The progression and the end of the transfer are visible in the GUI.
 
 
 .. _working_directory_transfer_example:
+
+Another basic file transfer
+---------------------------
+
+For this example we use a dummy program that will create a file on the computing resource:
+
+::
+
+  import sys
+
+  if __name__ == "__main__":
+
+      if len(sys.argv) == 2:
+          output_file = sys.argv[1]
+          f = open(output_file, 'w')
+          f.write("a very original message: Hello world!")
+          f.close()
+
+it takes, as input, the name of the file that it creates.
+
+Here is the program:
+
+::
+
+  from soma_workflow.client import Job, Workflow, WorkflowController, Helper, FileTransfer
+
+  controller = WorkflowController("Gabriel", "mb253889")
+
+  # FileTransfer creation for input files
+  file1 = FileTransfer(is_input=True,
+                       client_path="/home/mb253889/create_file.py",
+                       name="script")
+
+  file2 = FileTransfer(is_input=True,
+                       client_path="/home/mb253889/output_file",
+                       name="file created on the server")
+
+  # Job and Workflow
+  run_script = Job(command=["python", file1, file2],
+                   name="copy",
+                   referenced_input_files=[file1],
+                   referenced_output_files=[file2])
+
+  workflow = Workflow(jobs=[run_script],
+                      dependencies=[])
+
+  workflow_id = controller.submit_workflow(workflow=workflow,
+                                         name="Simple transfer")
+
+  # You may use the gui or manually transfer the files:
+  manual = True
+  if manual:
+      Helper.transfer_input_files(workflow_id, controller)
+      Helper.wait_workflow(workflow_id, controller)
+      Helper.transfer_output_files(workflow_id, controller)
+
+  print("Finished !!!")
+
+Easy, isn't it?
 
 Working directory transfer
 --------------------------
