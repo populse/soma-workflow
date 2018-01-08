@@ -18,8 +18,7 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import zro
-
+    import soma_workflow.zro as zro
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection

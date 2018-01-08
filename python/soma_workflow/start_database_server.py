@@ -15,7 +15,7 @@ import os
 import signal
 import sys
 import logging
-import zro
+import soma_workflow.zro as zro
 
 if __name__ == '__main__':
 
