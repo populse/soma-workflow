@@ -1,3 +1,10 @@
+'''
+@authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
+
+@organization: NAO, UNATI, Neurospin, Gif-sur-Yvette, France
+
+'''
+
 import zro
 from six.moves import input
 

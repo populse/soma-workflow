@@ -26,7 +26,7 @@ import re
 import random
 import errno
 import logging
-import zro
+import soma_workflow.zro as zro
 
 try:
     import socketserver # python3

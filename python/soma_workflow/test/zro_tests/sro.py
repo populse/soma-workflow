@@ -1,5 +1,5 @@
 '''
-@author: Manuel Boissenin, Yann Cointepas
+@authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
 @organization: NAO, UNATI, Neurospin, Gif-sur-Yvette, France
 
