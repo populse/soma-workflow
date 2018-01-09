@@ -258,7 +258,8 @@ class RemoteConnection(object):
                  submitting_machine,
                  resource_id,
                  log="",
-                 rsa_key_pass=None):
+                 rsa_key_pass=None,
+                 config = None):
         '''
         @type  login: string
         @param login: user's login on the computing resource
@@ -288,14 +289,15 @@ class RemoteConnection(object):
                                   "soma_workflow.check_requirement on %s. "
                                   "Please update your soma-workflow on %s."
                                   % (cluster_address, cluster_address))
-
-        if not check_if_ctype_drmaa_on_server(login, cluster_address,
-                                              password):
-            raise ConnectionError("Cannot find "
-                                  "drmaa libary on %s. "
-                                  "Please verify your drmaa libary on %s. "
-                                  "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
-                                  % (cluster_address, cluster_address))
+        if config:
+            if config.get_scheduler_type() != 'local_basic':
+                if not check_if_ctype_drmaa_on_server(login, cluster_address,
+                                                      password):
+                    raise ConnectionError("Cannot find "
+                                          "drmaa libary on %s. "
+                                          "Please verify your drmaa libary on %s. "
+                                          "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
+                                          % (cluster_address, cluster_address))
 
         # start_workflow_engine will run the database server
         #if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
@@ -766,6 +768,7 @@ class Tunnel(threading.Thread):
                 #as it is very counter intuitive. On the destination
                 #adress the host should be localhost, this is quite
                 #reminiscent of the -L option of ssh.
+                print("Peername is: ", self.request.getpeername())
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
                     ('localhost', self.chain_port), #destination address

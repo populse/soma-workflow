@@ -166,7 +166,8 @@ class WorkflowController(object):
                                                            sub_machine,
                                                            resource_id,
                                                            "",
-                                                           rsa_key_pass)
+                                                           rsa_key_pass,
+                                                           self.config)
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()
