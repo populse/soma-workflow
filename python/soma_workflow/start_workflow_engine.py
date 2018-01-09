@@ -199,6 +199,7 @@ if __name__ == "__main__":
         if engine_log_dir:
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
+            #print(logfilepath, engine_log_format, engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
                 format=engine_log_format,
@@ -280,7 +281,7 @@ if __name__ == "__main__":
 
         # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.register(config.get_sheduler_config())
+            uri_sched_config = daemon.register(config.get_scheduler_config())
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
