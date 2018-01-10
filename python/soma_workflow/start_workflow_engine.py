@@ -297,7 +297,7 @@ if __name__ == "__main__":
         ################################################################################
         logging.info("Launching a threaded request loop for the object server.")
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
-                                                      target=daemon.serve_forever())
+                                                      target=daemon.serve_forever)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()

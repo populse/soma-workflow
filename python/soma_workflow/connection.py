@@ -761,7 +761,7 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            logging.info('Setup : %d' %(self.chain_port))
+            logging.info('Setup : %d' %(self.channel_end_port))
             logging.debug("Beginning of setup")
             try:
                 #There has been quite lot of tweaks around this function
@@ -771,26 +771,26 @@ class Tunnel(threading.Thread):
                 print("Peername is: ", self.request.getpeername())
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
-                    ('localhost', self.chain_port), #destination address
+                    ('localhost', self.channel_end_port), #destination address
                     self.request.getpeername())#source address (from the Proxy object)
             except Exception as e:
                 logging.exception("Hey here is an exception!")
                 raise ConnectionError('Incoming request to %d failed: %s'
-                    % (self.chain_port, repr(e)))
+                    % (self.channel_end_port, repr(e)))
 
             if self.__chan is None:
                 raise ConnectionError(
                     'Incoming request to %s:%d was rejected by the SSH server.'
-                    % ('localhost', self.chain_port))
+                    % ('localhost', self.channel_end_port))
 
             logging.info('Connected!  Tunnel open %r -> %r -> %r'
                   % (self.request.getpeername(),
                      self.__chan.getpeername(),
-                     ('localhost', self.chain_port)))
+                     ('localhost', self.channel_end_port)))
 
         def handle(self):
             logging.debug("Beginning of handle")
-            logging.info('Handle : %s %d' %('localhost', self.chain_port))
+            logging.info('Handle : %s %d' %('localhost', self.channel_end_port))
             while True:
                 try:
                     r, w, x = select.select([self.request, self.__chan], [],
@@ -842,18 +842,18 @@ class Tunnel(threading.Thread):
     def run(self):
         hostport = self.__hostport
         transport = self.__transport
-        port = self.__port
+        local_port = self.__port
 
-        logging.debug("local server port: " + str(port) )
+        logging.debug("local server port: " + str(local_port) )
 
         class SubHandler (Tunnel.Handler):
-            chain_port = hostport
+            channel_end_port = hostport
             ssh_transport = transport
 
         try:
-            Tunnel.ForwardServer(('', port), SubHandler).serve_forever()
+            Tunnel.ForwardServer(('', local_port), SubHandler).serve_forever()
         except KeyboardInterrupt:
-            print('tunnel from port %d to port %d stopped !' % (port, hostport))
+            print('tunnel from local_port %d to port %d stopped !' % (local_port, hostport))
         except Exception as e:
             print('Tunnel Error. %s: %s' % (type(e), e))
 
