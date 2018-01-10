@@ -18,8 +18,7 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import zro
-
+    import soma_workflow.zro as zro
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection
@@ -117,9 +116,12 @@ if __name__ == "__main__":
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
         return subprocess.Popen([sys.executable,
-           '-m', 'soma_workflow.start_database_server', resource_id],
-           close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+                                 '-m',
+                                 'soma_workflow.start_database_server',
+                                 resource_id],
+                                close_fds=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
 
     def get_database_server_proxy(config, logger):
         name_server_host = config.get_name_server_host()
@@ -167,10 +169,11 @@ if __name__ == "__main__":
         subprocess_db_server_handle = start_database_server(resource_id, logger)
         logger.debug('Waiting for the database server process to write something')
         output = subprocess_db_server_handle.stdout.readline()
+        output = output.strip()
 
-        (db_name, uri) = output.strip().split(': ')
+        (db_name, uri) = output.split(b': ')
 
-        logger.debug('Name of the database server is: ' + db_name)
+        logger.debug('Name of the database server is: ' + repr(db_name))
         logger.debug('Server URI: ' + repr(uri))
 
         database_server_proxy = zro.Proxy(uri)

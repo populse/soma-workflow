@@ -98,12 +98,24 @@ class Proxy(object):
     def __init__(self, uri):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
-        (self.classname, self.object_id, self._port) = uri.split(":")
-        # caveat: note that connect will succeed even if there is
-        # no port waiting for a connection, as such you have to
-        # check yourself that the connection has succeeded
-        # (cf how the database server engine is handled
-        self.socket.connect("tcp://localhost:" + self._port)
+        #Deux cas: ou uri est un bytes object ou il est du type str
+        if type(uri) == type(b'bytes type'):
+            (self.classname, self.object_id, self._port) = uri.split(b':')
+            # caveat: note that connect will succeed even if there is
+            # no port waiting for a connection, as such you have to
+            # check yourself that the connection has succeeded
+            # (cf how the database server engine is handled
+            self.classname = self.classname.decode('utf-8')
+            self.object_id = self.object_id.decode('utf-8')
+            self.socket.connect("tcp://localhost:" + self._port.decode('utf-8'))
+        if type(uri) == type("string type"):
+            (self.classname, self.object_id, self._port) = uri.split(':')
+            # caveat: note that connect will succeed even if there is
+            # no port waiting for a connection, as such you have to
+            # check yourself that the connection has succeeded
+            # (cf how the database server engine is handled
+            self.socket.connect("tcp://localhost:" + self._port)
+
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
