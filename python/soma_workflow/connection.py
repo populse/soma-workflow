@@ -27,6 +27,8 @@ import random
 import errno
 import logging
 import soma_workflow.zro as zro
+import zmq
+import sys
 
 try:
     import socketserver # python3
@@ -313,7 +315,7 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        command = "python -m soma_workflow.start_workflow_engine"\
+        command = sys.executable + " -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         print("start engine command: "
@@ -326,11 +328,13 @@ class RemoteConnection(object):
             userpw=password,
             wait_output=True,
             sshport=22,
-            num_line_stdout=4)
+            num_line_stdout=5)
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
         scheduler_config_uri = None
+
+        # print(std_out_lines)
 
         for std_out_line in std_out_lines:
             if std_out_line.split()[0] == remote_workflow_engine_name:
@@ -343,6 +347,16 @@ class RemoteConnection(object):
                 scheduler_config_uri = std_out_line.split()[1]
                 if scheduler_config_uri == "None":
                     scheduler_config_uri = None
+            elif std_out_line.split()[0] == "zmq":
+                version = std_out_line.split()[1]
+                if zmq.__version__ != version:
+                    print("WARNING!!!: you are not using the same version of "
+                          "zmq on the server and you might have some issues: \n"
+                          "local version is: " + zmq.__version__ + "\nserver version is: "
+                          + version)
+                else:
+                    # print("DEBUG same version of ZMQ on both sides")
+                    pass
 
         if (not configuration_uri or
             not connection_checker_uri or
@@ -449,9 +463,10 @@ class RemoteConnection(object):
             try:
                 attempts = attempts + 1
                 print("Communication through the ssh tunnel. Attempt no " +
-                      repr(attempts) + "/" + repr(maxattemps))
-                logging.debug("BEFORE calling a remote object")
+                       repr(attempts) + "/" + repr(maxattemps))
+                # print("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
+                # print("After calling the remote object")
                 connection_checker.isConnected()
             except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
@@ -573,7 +588,7 @@ class LocalConnection(object):
                                          # resource_id,
                                          # remote_workflow_engine_name,
                                          # log)
-        command = "python -m soma_workflow.start_workflow_engine %s %s %s" % (
+        command = sys.executable + " -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
             remote_workflow_engine_name,
             log)
@@ -761,14 +776,15 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            logging.info('Setup : %d' %(self.channel_end_port))
+            # print('Setup : %d' %(self.channel_end_port))
             logging.debug("Beginning of setup")
             try:
-                #There has been quite lot of tweaks around this function
-                #as it is very counter intuitive. On the destination
-                #adress the host should be localhost, this is quite
-                #reminiscent of the -L option of ssh.
-                print("Peername is: ", self.request.getpeername())
+                # There has been quite lot of tweaks around this function
+                # as it is very counter intuitive. On the destination
+                # adress the host should be localhost, this is quite
+                # reminiscent of the -L option of ssh.
+
+                # print("Peername is: ", self.request.getpeername())
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
                     ('localhost', self.channel_end_port), #destination address
@@ -789,7 +805,7 @@ class Tunnel(threading.Thread):
                      ('localhost', self.channel_end_port)))
 
         def handle(self):
-            logging.debug("Beginning of handle")
+            # print("Beginning of handle")
             logging.info('Handle : %s %d' %('localhost', self.channel_end_port))
             while True:
                 try:
@@ -805,30 +821,30 @@ class Tunnel(threading.Thread):
                     else:
                         raise
                 if self.request in r:
-                    logging.debug("Transfering from the local server handling the channel"
-                          "to the original object")
-                    data = self.request.recv(2048)
+                    # print("Transfering from the local server handling the channel "
+                    #      "to the original object")
+                    data = self.request.recv(12000)
 
                     if len(data) == 0:
                         break
-                    if len(data) == 2048:
+                    if len(data) == 12000:
                         print("Too small??????????????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  " the data, could potential be a problem")
                     self.__chan.send(data)
                 if self.__chan in r:
-                    logging.debug('Transfering from the channel to the proxy')
-                    data = self.__chan.recv(2048)
+                    # print('Transfering from the channel to the proxy')
+                    data = self.__chan.recv(12000)
                     if len(data) == 0:
                         break
-                    if len(data) == 2048:
+                    if len(data) == 12000:
                         print("Too small2??????????????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  "the data, could potentially be a problem")
                     self.request.send(data)
 
         def finish(self):
-            logging.info('Tunnel closed from %r' % (self.request.getpeername(),))
+            print('Tunnel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
 

@@ -4,7 +4,6 @@
 @organization: NAO, UNATI, Neurospin, Gif-sur-Yvette, France
 
 '''
-
 from __future__ import print_function
 
 try:
@@ -13,9 +12,7 @@ except:
     import pickle
 import traceback
 import zmq
-#import re
 import logging
-
 
 #For some reason the zmq bind_to_random_port did not work with
 #one of the version of zmq that we are using. Therfore we have
@@ -24,11 +21,12 @@ import logging
 import socket
 from contextlib import closing
 
+DEBUG=True #we print in file /tmp/zro
+
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
-
 
 class ObjectServer:
     '''
@@ -67,15 +65,15 @@ class ObjectServer:
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
-
     def serve_forever(self):
         while True:
             #  Wait for next request from client
+            #print("Waiting for incoming data", file=open('/tmp/WTF','a'))
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
                 #TODO
-                #logging.debug(classname, object_id, method, args)
+                #print(classname, object_id, method, args, file=open('/tmp/WTF','a'))
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -100,26 +98,40 @@ class Proxy(object):
         self.socket = self.context.socket(zmq.REQ)
         #Deux cas: ou uri est un bytes object ou il est du type str
         if type(uri) == type(b'bytes type'):
-            (self.classname, self.object_id, self._port) = uri.split(b':')
+            (classname, object_id, self._port) = uri.split(b':')
             # caveat: note that connect will succeed even if there is
             # no port waiting for a connection, as such you have to
             # check yourself that the connection has succeeded
             # (cf how the database server engine is handled
-            self.classname = self.classname.decode('utf-8')
-            self.object_id = self.object_id.decode('utf-8')
+            self.classname = classname.decode('utf-8')
+            self.object_id = object_id.decode('utf-8')
             self.socket.connect("tcp://localhost:" + self._port.decode('utf-8'))
-        if type(uri) == type("string type"):
+        elif type(uri) == type("str type"):
             (self.classname, self.object_id, self._port) = uri.split(':')
             # caveat: note that connect will succeed even if there is
             # no port waiting for a connection, as such you have to
             # check yourself that the connection has succeeded
             # (cf how the database server engine is handled
             self.socket.connect("tcp://localhost:" + self._port)
-
+        elif type(uri) == type(u"unicode type"):
+            (self.classname, self.object_id, self._port) = uri.split(':')
+            # caveat: note that connect will succeed even if there is
+            # no port waiting for a connection, as such you have to
+            # check yourself that the connection has succeeded
+            # (cf how the database server engine is handled
+            self.socket.connect("tcp://localhost:" + self._port)
+        else:
+            print("Issue in zro: the uri is not taken into account, "
+                  "this is probably due to its type")
+        if DEBUG:
+            print("Proxy: ", str(self.classname), str(self.object_id), str(self._port), file=open('/tmp/zro','a'))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
     def __getattr__(self, method_name):
+        if DEBUG:
+            print("On class: ", self.classname, file=open('/tmp/zro','a'))
+            print("method called: ", method_name, file=open('/tmp/zro','a'))
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -128,8 +140,13 @@ class ProxyMethod(object):
         self.method = method
 
     def __call__(self, *args, **kwargs):
-        self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
+        try:
+            self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
+        except Exception as e:
+            print(e)
         result = pickle.loads(self.proxy.socket.recv())
+        if DEBUG:
+            print(result, file=open('/tmp/'+ 'zro','a'))
         if isinstance(result, Exception):
             raise result
         return result

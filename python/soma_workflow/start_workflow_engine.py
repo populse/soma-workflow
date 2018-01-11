@@ -19,6 +19,7 @@ if __name__ == "__main__":
     import os
 
     import soma_workflow.zro as zro
+    import zmq #isn't that redundant as it should have been imported in zro??
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection
@@ -290,7 +291,11 @@ if __name__ == "__main__":
                              + "\n")
         else:
             sys.stdout.write("scheduler_config None\n")
+        #sys.stdout.flush()
+
+        sys.stdout.write("zmq " + zmq.__version__ + '\n')
         sys.stdout.flush()
+        #print(sys.path, file=open('/tmp/WTF','a'))
 
         ################################################################################
         # Daemon request loop thread
