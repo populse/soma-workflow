@@ -26,8 +26,6 @@ import re
 import random
 import errno
 import logging
-import soma_workflow.zro as zro
-import zmq
 import sys
 
 try:
@@ -272,6 +270,8 @@ class RemoteConnection(object):
         computing resource.
         '''
 
+        import soma_workflow.zro as zro
+
         # required in the remote connection mode
         # from paramiko.file import BufferedFile
 
@@ -349,6 +349,7 @@ class RemoteConnection(object):
                     scheduler_config_uri = None
             elif std_out_line.split()[0] == "zmq":
                 version = std_out_line.split()[1]
+                import zmq
                 if zmq.__version__ != version:
                     print("WARNING!!!: you are not using the same version of "
                           "zmq on the server and you might have some issues: \n"
@@ -573,6 +574,8 @@ class LocalConnection(object):
 
         # required in the local connection mode
 
+
+        import soma_workflow.zro as zro
 
         try:
             import subprocess32 as subprocess
