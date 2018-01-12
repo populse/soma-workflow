@@ -1,6 +1,6 @@
 
-version_major = 2
-version_minor = 9
+version_major = 3
+version_minor = 0
 version_micro = 0
 version_extra = ''
 
@@ -56,11 +56,11 @@ PROVIDES = ["soma-workflow"]
 REQUIRES = []
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
-    "client": ["Pyro", "paramiko"],
+    "client": ["zmq", "paramiko"],
     "doc": ["sphinx>=" + SPHINX_MIN_VERSION]}
 
 #-----------------------------------------------------------------------------
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-DB_VERSION = '1.1'
+DB_VERSION = '2.0'
