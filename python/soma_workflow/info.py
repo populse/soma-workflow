@@ -53,7 +53,7 @@ AUTHOR = "Soma-Workflow developers"
 AUTHOR_EMAIL = ""
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
-REQUIRES = []
+REQUIRES = ["six"]
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
     "client": ["zmq", "paramiko"],
