@@ -641,6 +641,8 @@ class Workflow(object):
                  disposal_timeout=168,
                  user_storage=None,
                  name=None):
+        import logging
+        logging.debug("Within Workflow constructor")
 
         self.name = name
         self.jobs = jobs
@@ -1965,3 +1967,6 @@ def list_from_serializable(list_to_convert,
                                        opt_from_ids)
         us_list.append(us_element)
     return us_list
+
+
+

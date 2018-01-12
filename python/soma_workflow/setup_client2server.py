@@ -20,7 +20,7 @@ import logging
 from ConfigParser import SafeConfigParser
 
 # Soma Workflow import
-from soma_workflow.connection import SSHExecCmd, check_if_somawfdb_on_server
+from soma_workflow.connection import SSH_exec_cmd, check_if_somawfdb_on_server
 import soma_workflow.configuration as configuration
 from soma_workflow.configuration import WriteOutConfiguration
 from soma_workflow.client import Job, Workflow, WorkflowController
@@ -54,7 +54,7 @@ def GetHostNameOnPBSTORQUE(userid,
         Raises paramiko.AuthenticationException when the authetification
         fails.
     """
-    return SSHExecCmd("hostname", userid, ip_address_or_domain, userpw)[0]
+    return SSH_exec_cmd("hostname", userid, ip_address_or_domain, userpw)[0]
 
 
 def GetQueueNamesOnPBSTORQUE(userid,
@@ -81,8 +81,8 @@ def GetQueueNamesOnPBSTORQUE(userid,
         Raises paramiko.AuthenticationException when the authetification
         fails.
     """
-    std_out_lines = SSHExecCmd("qstat -Q", userid, ip_address_or_domain,
-                               userpw)
+    std_out_lines = SSH_exec_cmd("qstat -Q", userid, ip_address_or_domain,
+                                 userpw)
 
     info_queue = []
     # Skip the first line since it is the header
@@ -349,9 +349,9 @@ def InstallSomaWF2Server(userid,
                                             configuration_item_name)
     logging.info("ssh command = {0}".format(command))
 
-    (std_out_lines, std_err_lines) = SSHExecCmd(command, userid,
-                                                ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
-                                                sshport=sshport)
+    (std_out_lines, std_err_lines) = SSH_exec_cmd(command, userid,
+                                                  ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
+                                                  sshport=sshport)
     if len(std_err_lines) > 0:
         logging.error("Enable to configure the server: {0}".format(
                       std_err_lines))
@@ -399,7 +399,7 @@ def CopySomaWF2Server(userid,
     install_swf_path_server = os.path.join(install_swf_path_server,
                                            "soma_workflow_auto_remote_install")
     # Create install directory if necessary
-    std_out_lines = SSHExecCmd(
+    std_out_lines = SSH_exec_cmd(
         "mkdir -p '{0}'".format(install_swf_path_server),
         userid, ip_address_or_domain, userpw, sshport=sshport)
     logging.info("Install soma workflow on server attempt to create server "
@@ -533,13 +533,13 @@ def RemoveSomaWF2Server(userid,
                                        "soma_workflow", "clean_server.py")
     command = "python '{0}' -r {1}".format(clean_script_server,
                                            configuration_item_name)
-    SSHExecCmd(command, userid, ip_address_or_domain,
-               userpw, wait_output=False, sshport=sshport)
+    SSH_exec_cmd(command, userid, ip_address_or_domain,
+                 userpw, wait_output=False, sshport=sshport)
 
     # Remove the source files on the server
     command = "rm -rf '{0}'".format(install_swf_path_server)
-    SSHExecCmd(command, userid, ip_address_or_domain,
-               userpw, wait_output=False, sshport=sshport)
+    SSH_exec_cmd(command, userid, ip_address_or_domain,
+                 userpw, wait_output=False, sshport=sshport)
 
     # remove the configuration on the client
     RemoveResNameOnConfigureFile(configuration_item_name)

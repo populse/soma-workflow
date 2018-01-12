@@ -36,12 +36,12 @@ if sys.version_info[:2] >= (2, 6):
 if sys.version_info[0] >= 3:
     basestring = str
 
+
 import soma_workflow.connection as connection
 from soma_workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
 import soma_workflow.constants as constants
 import soma_workflow.configuration as configuration
 from soma_workflow.errors import TransferError, SerializationError, SomaWorkflowError
-
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -57,7 +57,6 @@ from soma_workflow.client_types import SharedResourcePath
 from soma_workflow.client_types import TemporaryPath
 from soma_workflow.client_types import SpecialPath
 from soma_workflow.client_types import OptionPath
-
 
 class WorkflowController(object):
 
@@ -167,7 +166,8 @@ class WorkflowController(object):
                                                            sub_machine,
                                                            resource_id,
                                                            "",
-                                                           rsa_key_pass)
+                                                           rsa_key_pass,
+                                                           self.config)
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()

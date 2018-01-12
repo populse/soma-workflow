@@ -4,6 +4,11 @@
 *.so
 *.pyc
 
+#Specific files#
+################
+git-related.txt
+update.sh
+
 # Logs and databases #
 ######################
 *.log
@@ -12,3 +17,10 @@
 # Folders #
 ###########
 build/
+dist/
+python/soma_workflow.egg-info/
+
+# Pycharm project#
+##################
+.idea
+

@@ -10,7 +10,6 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
 if __name__ == "__main__":
 
     import sys
@@ -19,10 +18,8 @@ if __name__ == "__main__":
     import logging
     import os
 
-    import Pyro.naming
-    import Pyro.core
-    from Pyro.errors import PyroError, NamingError, ProtocolError
-
+    import soma_workflow.zro as zro
+    import zmq 
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection
@@ -31,34 +28,47 @@ if __name__ == "__main__":
     from soma_workflow.database_server import WorkflowDatabaseServer
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
+    import signal
 
-    # WorkflowEngine pyro object
-    class ConfiguredWorkflowEngine(
-            Pyro.core.SynchronizedObjBase,
-            soma_workflow.engine.ConfiguredWorkflowEngine):
+    class Timeout():
+        """Timeout class using ALARM signal."""
+        class Timeout(Exception):
+            pass
+
+        def __init__(self, sec):
+            self.sec = sec
+
+        def __enter__(self):
+            signal.signal(signal.SIGALRM, self.raise_timeout)
+            signal.alarm(self.sec)
+
+        def __exit__(self, *args):
+            signal.alarm(0)    # disable alarm
+
+        def raise_timeout(self, *args):
+            raise Timeout.Timeout()
+
+    class DBEngineNotRunning(Exception):
+        pass
+
+    class ConfiguredWorkflowEngine(soma_workflow.engine.ConfiguredWorkflowEngine):
 
         def __init__(self, database_server, scheduler, config):
-            Pyro.core.SynchronizedObjBase.__init__(self)
             soma_workflow.engine.ConfiguredWorkflowEngine.__init__(
                 self,
                 database_server,
                 scheduler,
                 config)
-        pass
 
-    class ConnectionChecker(Pyro.core.ObjBase,
-                            soma_workflow.connection.ConnectionChecker):
+    class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
-            Pyro.core.ObjBase.__init__(self)
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
                 control_interval)
-        pass
 
-    class Configuration(Pyro.core.ObjBase,
-                        soma_workflow.configuration.Configuration):
+    class Configuration(soma_workflow.configuration.Configuration):
 
         def __init__(self,
                      resource_id,
@@ -74,7 +84,6 @@ if __name__ == "__main__":
                      queue_limits=None,
                      drmaa_implementation=None,
                      running_jobs_limits=None):
-            Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.Configuration.__init__(
                 self,
                 resource_id,
@@ -91,109 +100,110 @@ if __name__ == "__main__":
                 drmaa_implementation,
                 running_jobs_limits=running_jobs_limits,
             )
-            pass
 
-    class LocalSchedulerCfg(Pyro.core.ObjBase,
-                            soma_workflow.configuration.LocalSchedulerCfg):
+    class LocalSchedulerCfg(soma_workflow.configuration.LocalSchedulerCfg):
 
         def __init__(self, proc_nb=0, interval=1, max_proc_nb=0):
-            Pyro.core.ObjBase.__init__(self)
             soma_workflow.configuration.LocalSchedulerCfg.__init__(
                 self,
                 proc_nb=proc_nb,
                 interval=interval,
             )
 
-
     def start_database_server(resource_id, logger):
         import subprocess
         if logger:
-            logger.info('Trying to start database server:'
-                        + resource_id)
-        subprocess.Popen(
-            [sys.executable,
-              '-m', 'soma_workflow.start_database_server', resource_id],
-            close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+            logger.info('Trying to start database server:' + resource_id)
+            logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
+            logger.debug("Resource_id is: {}".format(resource_id))
+        return subprocess.Popen([sys.executable,
+                                 '-m',
+                                 'soma_workflow.start_database_server',
+                                 resource_id],
+                                close_fds=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
 
     def get_database_server_proxy(config, logger):
         name_server_host = config.get_name_server_host()
-        starting_server = False
+        logger.debug("Debug: name_server_host: {}".format(name_server_host))
+
+        # Checking if the database server is running
+        # if it is running we get its uri
+        # else we launch it and get its uri
+
         try:
-            server_name = config.get_server_name()
+            path = os.path.split(config.get_server_log_info()[0])[0]
+            full_file_name = os.path.join(path, "database_server_uri.txt")
+            logger.debug("DEBUG full file name: " + full_file_name)
+            f = open(full_file_name, 'r')
+            uri = f.readline().strip()
+            logger.debug(uri)
+            f.close()
+            if uri:
+                # Check that the database is running
+                # and add not been killed with a -9 signal for instance
+                # without removing the .txt file containing its uri
+                data_base_proxy = zro.Proxy(uri)
 
-            Pyro.core.initClient()
-            locator = Pyro.naming.NameServerLocator()
-            if name_server_host == 'None':
-                ns = locator.getNS()
-            else:
-                ns = locator.getNS(host=name_server_host)
+                try:
+                    with Timeout(1):
+                        data_base_proxy.test()
+                except Timeout.Timeout:
+                    #for some reason this message does not appear in the log??
+                    logger.exception("Note that when you have shut down the database"
+                                     " server engine and the file database_server_uri.txt"
+                                     " was not removed")
+                    raise DBEngineNotRunning("")
 
-            uri = ns.resolve(server_name)
-            logger.info('Server URI:' + repr(uri))
+                return data_base_proxy
+        except DBEngineNotRunning:
+            pass
+        except IOError:
+            pass # File does not exist continue
+        except Exception as e:
+            print(e)
 
-        except:
-            # First try to launch the database server
-            import subprocess
-            logger.info('Trying to start database server:' + resource_id)
-            start_database_server(resource_id, logger)
-            name_server_host = 'localhost'
-            starting_server = True
+        logger.info('Launching database server and getting a proxy object on it')
+        # We don't need the handle since the database server will continue
+        # to run indepently of the server engine.
+        subprocess_db_server_handle = start_database_server(resource_id, logger)
+        logger.debug('Waiting for the database server process to write something')
+        output = subprocess_db_server_handle.stdout.readline()
+        output = output.strip()
 
-        timeout = 35
-        start_time = time.time()
-        started = False
-        while not started and time.time() - start_time < timeout:
+        (db_name, uri) = output.split(b': ')
 
-            try:
-                if name_server_host == 'None':
-                    ns = locator.getNS()
-                else:
-                    ns = locator.getNS(host=name_server_host)
+        logger.debug('Name of the database server is: ' + repr(db_name))
+        logger.debug('Server URI: ' + repr(uri))
 
-                uri = ns.resolve(server_name)
-                logger.info('Server URI:' + repr(uri))
+        database_server_proxy = zro.Proxy(uri)
 
-                database_server = Pyro.core.getProxyForURI(uri)
+        logger.debug("You should not have to erase the text file containing "
+                     "the database server engine uri by hand, there is still"
+                     "a bug to remove.")
+        is_accessible = database_server_proxy.test()
 
-                started = database_server.test()
+        logger.debug('Database server is accessible: ' + str(is_accessible))
 
-            except:
-                if starting_server:
-                    logger.info(
-                        'Database server:' + resource_id
-                        + ' was not started. Waiting 1 sec...')
-                else:
-                    # try to launch the database server
-                    start_database_server(resource_id, logger)
-                    name_server_host = 'localhost'
-                    starting_server = True
-                time.sleep(1)
+        return database_server_proxy
 
-        if not started:
-            raise EngineError(
-                "The database server might not be running. "
-                "Run the following command on %s to start the server: \n"
-                "python -m soma_workflow.start_database_server %s"
-                % (name_server_host, resource_id))
-        else:
-            # enter the server loop.
-            logger.info('Database server object ready for URI:' + repr(uri))
-
-        return database_server
 
     # main server program
     def main(resource_id, engine_name, log=""):
 
+        database_server = None
         config = Configuration.load_from_file(resource_id)
         config.mk_config_dirs()
 
         (engine_log_dir,
          engine_log_format,
          engine_log_level) = config.get_engine_log_info()
+
         if engine_log_dir:
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
+            #print(logfilepath, engine_log_format, engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
                 format=engine_log_format,
@@ -207,7 +217,7 @@ if __name__ == "__main__":
 
         if config.get_scheduler_type() \
                 == soma_workflow.configuration.DRMAA_SCHEDULER:
-
+            logger.info("using DRMAA_SCHEDULER")
             if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
                 raise NoDrmaaLibError
 
@@ -220,6 +230,7 @@ if __name__ == "__main__":
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
+            logger.info("using LOCAL_SCHEDULER")
             local_scheduler_cfg_file_path \
                 = LocalSchedulerCfg.search_config_path()
             if local_scheduler_cfg_file_path:
@@ -233,116 +244,110 @@ if __name__ == "__main__":
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.MPI_SCHEDULER:
+            logger.info("using MPI_SCHEDULER")
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
                 config.get_transfered_file_dir())
 
-        # Pyro.config.PYRO_MULTITHREADED = 0
-        Pyro.core.initServer()
-        daemon = Pyro.core.Daemon()
-        # locate the NS
-        locator = Pyro.naming.NameServerLocator()
-        #print('searching for Name Server...')
+        # initialisation of the zro object server.
+        logger.info("Starting object server for the workflow engine")
+        daemon = zro.ObjectServer()
 
-        try:
-            name_server_host = config.get_name_server_host()
-            if name_server_host == 'None':
-                ns = locator.getNS()
-            else:
-                ns = locator.getNS(host=name_server_host)
-            daemon.useNameServer(ns)
-        except:
-             print('Name Server not found.')
-             raise
-
+        logger.info("Instanciation of the workflow engine")
         workflow_engine = ConfiguredWorkflowEngine(database_server,
                                                    sch,
                                                    config)
 
-        # connection to the pyro daemon and output its URI
-        try:
-            ns.unregister(engine_name)
-        except NamingError:
-            pass
-        uri_engine = daemon.connect(workflow_engine, engine_name)
+        ################################################################################
+        # Register the objects as remote accessible objects
+        ################################################################################
+
+        logger.info("Registering objects and sending their uri to the client.")
+        uri_engine = daemon.register(workflow_engine)
+
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
 
-        logger.info('Pyro object ' + engine_name + ' is ready.')
-
-        # connection check
+        # connection checker
         connection_checker = ConnectionChecker()
-        try:
-            ns.unregister('connection_checker')
-        except NamingError:
-            pass
-        uri_cc = daemon.connect(connection_checker, 'connection_checker')
+
+        uri_cc = daemon.register(connection_checker)
+
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        try:
-            ns.unregister('configuration')
-        except NamingError:
-            pass
-        uri_config = daemon.connect(config, 'configuration')
+        uri_config = daemon.register(config)
+
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
-        # local scheduler config
-        try:
-            ns.unregister('scheduler_config')
-        except NamingError:
-            pass
+        # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.connect(config.get_scheduler_config(),
-                                              'scheduler_config')
+            uri_sched_config = daemon.register(config.get_scheduler_config())
+
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
         else:
             sys.stdout.write("scheduler_config None\n")
-        sys.stdout.flush()
+        #sys.stdout.flush()
 
+        sys.stdout.write("zmq " + zmq.__version__ + '\n')
+        sys.stdout.flush()
+        #print(sys.path, file=open('/tmp/WTF','a'))
+
+        ################################################################################
         # Daemon request loop thread
-        logger.info("daemon port = " + repr(daemon.port))
-        daemon_request_loop_thread = threading.Thread(name="pyro_request_loop",
-                                                      target=daemon.requestLoop)
+        ################################################################################
+        logging.info("Launching a threaded request loop for the object server.")
+        daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
+                                                      target=daemon.serve_forever)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
+
+        logging.debug("Thread object server principale (daemon): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
         timeout = 40
         while not client_connected and timeout > 0:
-            client_connected = connection_checker.isConnected()
+            client_connected = connection_checker.isConnected()  # seem useless since it will be false
             timeout = timeout - 1
             time.sleep(1)
 
         logger.info("******** first mode: client connection *************")
         while client_connected:
+            logger.debug("client is connected we sleep multiple times one second")
             client_connected = connection_checker.isConnected()
             time.sleep(1)
 
         logger.info("******** client disconnection **********************")
-        daemon.shutdown(disconnect=True)  # stop the request loop
-        daemon.sock.close()  # free the port
 
-        del(daemon)
+        # TODO shutdown cleanly might change serve_forever to serveLoop or
+        # sth like this
+        # daemon.shutdown()
 
-        logger.info("******** second mode: waiting for jobs to finish****")
+        # daemon.shutdown(disconnect=True)  # stop the request loop
+        # daemon.sock.close()  # free the port
+
+        # TODO add a destructor if necessary.
+        # del (daemon)
+
+        logger.info("******** second mode: wait for jobs to finish ********")
         jobs_running = True
         while jobs_running:
             jobs_running = not workflow_engine.engine_loop.are_jobs_and_workflow_done(
-            )
+                         )
             time.sleep(1)
 
-        logger.info("******** jobs are done ! ***************************")
+        logger.info("******** jobs are done ! Shuting down workflow engine ***************************")
         workflow_engine.engine_loop_thread.stop()
 
         sch.clean()
         sys.exit()
+
 
     if not len(sys.argv) == 3 and not len(sys.argv) == 4:
         sys.stdout.write("start_workflow_engine takes 2 arguments:\n")

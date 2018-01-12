@@ -1059,7 +1059,6 @@ def default_cpu_number():
     #return cpu
     return 0
 
-
 class LocalSchedulerCfg(observer.Observable):
 
     '''

@@ -10,7 +10,6 @@ from __future__ import with_statement, print_function
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
 try:
     import subprocess32 as subprocess
 #    print('using subprocess32')
@@ -51,10 +50,10 @@ except:
     # because of a failed dependency (torque, grid engine etc)
     DRMAA_LIB_FOUND = False
 
+
 if DRMAA_LIB_FOUND == True:
     from somadrmaa.errors import *
     from somadrmaa.const import JobControlAction
-
 
 class Scheduler(object):
 
@@ -114,6 +113,7 @@ class Scheduler(object):
         raise Exception("Scheduler is an abstract class!")
 
 if DRMAA_LIB_FOUND == True:
+
 
     class DrmaaCTypes(Scheduler):
 

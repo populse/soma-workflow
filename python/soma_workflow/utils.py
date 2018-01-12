@@ -10,11 +10,11 @@
 
 from __future__ import print_function
 
+
 import copy
 import os
 from soma_workflow.client import Workflow, Group, Job, Helper
 from soma_workflow.configuration import cpu_count, default_cpu_number
-
 
 def DetectFindLib(env_name, libname):
     '''Try to find libname using ctype
