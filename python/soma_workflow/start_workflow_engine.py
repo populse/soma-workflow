@@ -13,10 +13,10 @@
 if __name__ == "__main__":
 
     import sys
+    import os
+    import logging
     import threading
     import time
-    import logging
-    import os
 
     import soma_workflow.zro as zro
     # import soma_workflow.sro as zro
@@ -117,7 +117,8 @@ if __name__ == "__main__":
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
-        return subprocess.Popen([sys.executable,
+        python_interpreter = os.path.basename(sys.executable)
+        return subprocess.Popen([python_interpreter,
                                  '-m',
                                  'soma_workflow.start_database_server',
                                  resource_id],
@@ -294,7 +295,7 @@ if __name__ == "__main__":
             sys.stdout.write("scheduler_config None\n")
         #sys.stdout.flush()
 
-        sys.stdout.write("zmq " + zmq.__version__ + '\n')
+        sys.stdout.write("zmq " + zmq.__version__ + " " + sys.path + '\n')
         sys.stdout.flush()
         #print(sys.path, file=open('/tmp/WTF','a'))
 
