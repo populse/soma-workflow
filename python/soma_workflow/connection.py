@@ -27,6 +27,7 @@ import random
 import errno
 import logging
 import soma_workflow.zro as zro
+#import soma_workflow.sro as zro
 import zmq
 import sys
 
@@ -36,6 +37,12 @@ except ImportError:
     import SocketServer as socketserver # python 2
 
 from soma_workflow.errors import ConnectionError
+
+DEBUG = False
+
+if DEBUG:
+    logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
+                        level=logging.DEBUG)
 
 def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
@@ -315,7 +322,8 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        command = sys.executable + " -m soma_workflow.start_workflow_engine"\
+        (local_dir, python_interpreter) = os.path.split(sys.executable)
+        command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         print("start engine command: "
@@ -349,14 +357,20 @@ class RemoteConnection(object):
                     scheduler_config_uri = None
             elif std_out_line.split()[0] == "zmq":
                 version = std_out_line.split()[1]
+                python_path = std_out_line.split()[2]
                 if zmq.__version__ != version:
                     print("WARNING!!!: you are not using the same version of "
                           "zmq on the server and you might have some issues: \n"
                           "local version is: " + zmq.__version__ + "\nserver version is: "
                           + version)
+                    print("Note, your PYTHONPATH on host is: " + python_path)
                 else:
                     # print("DEBUG same version of ZMQ on both sides")
                     pass
+
+        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
+        logging.debug("connection_checker_uri: " +  connection_checker_uri)
+        logging.debug("configuration_uri: " + configuration_uri)
 
         if (not configuration_uri or
             not connection_checker_uri or
@@ -371,19 +385,15 @@ class RemoteConnection(object):
                 "**Engine process standard output:** \n"
                 "\n" + repr(std_out_lines))
 
-        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
-        logging.debug("connection_checker_uri: " +  connection_checker_uri)
-        logging.debug("configuration_uri: " + configuration_uri)
 
         whole_uri = str(workflow_engine_uri)
         (object_data_type, object_id, port) = whole_uri.split(":")
         remote_object_server_port = int(port)
 
-        logging.debug(remote_object_server_port)
-        logging.debug(type(remote_object_server_port))
 
         #checking
         logging.debug("zro object server port: " + repr(remote_object_server_port))
+        logging.debug('its type: ', type(remote_object_server_port))
 
         ### find an available port            ###
         tunnel_entrance_port = search_available_port()
@@ -561,7 +571,6 @@ class RemoteConnection(object):
                       'Installation problem on server side?')
 
 class LocalConnection(object):
-
     '''
     Local version of the connection.
     The workflow engine process is created using subprocess.
@@ -572,7 +581,6 @@ class LocalConnection(object):
                  log=""):
 
         # required in the local connection mode
-
 
         try:
             import subprocess32 as subprocess
@@ -588,7 +596,8 @@ class LocalConnection(object):
                                          # resource_id,
                                          # remote_workflow_engine_name,
                                          # log)
-        command = sys.executable + " -m soma_workflow.start_workflow_engine %s %s %s" % (
+        (local_dir, python_interpreter) = os.path.split(sys.executable)
+        command = python_interpreter + " -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
             remote_workflow_engine_name,
             log)
@@ -644,7 +653,6 @@ class LocalConnection(object):
                                   "**Engine process standard error:** \n"
                                   "\n" + stderr_content)
 
-        #TODO
         connection_checker_uri = line.split()[1]
         line = engine_process.stdout.readline()
         stdout_content = stdout_content + "\n" + line
@@ -776,8 +784,8 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            # print('Setup : %d' %(self.channel_end_port))
-            logging.debug("Beginning of setup")
+            logging.info('Setup : %d' %(self.channel_end_port))
+            logging.debug("Tunnel::Handler::Beginning of setup")
             try:
                 # There has been quite lot of tweaks around this function
                 # as it is very counter intuitive. On the destination
