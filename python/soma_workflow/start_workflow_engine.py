@@ -19,7 +19,8 @@ if __name__ == "__main__":
     import os
 
     import soma_workflow.zro as zro
-    import zmq 
+    # import soma_workflow.sro as zro
+    import zmq
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection
