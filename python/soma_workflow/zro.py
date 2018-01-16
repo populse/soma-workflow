@@ -67,13 +67,13 @@ class ObjectServer:
 
     def serve_forever(self):
         while True:
-            #  Wait for next request from client
-            #print("Waiting for incoming data", file=open('/tmp/WTF','a'))
+            # Wait for next request from client
+            print("Waiting for incoming data", file=open('/tmp/zro','a'))
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
                 #TODO
-                #print(classname, object_id, method, args, file=open('/tmp/WTF','a'))
+                print(classname, object_id, method, args, file=open('/tmp/zro','a'))
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -82,6 +82,7 @@ class ObjectServer:
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
                     result = e
+                print(result, file=open('/tmp/zro','a'))
                 self.socket.send(pickle.dumps(result))
             except:
                 print("An exception ocurred in the server of the remote object")
