@@ -254,7 +254,7 @@ if __name__ == "__main__":
 
         # initialisation of the zro object server.
         logger.info("Starting object server for the workflow engine")
-        daemon = zro.ObjectServer()
+        obj_serv = zro.ObjectServer()
 
         logger.info("Instanciation of the workflow engine")
         workflow_engine = ConfiguredWorkflowEngine(database_server,
@@ -266,7 +266,7 @@ if __name__ == "__main__":
         ################################################################################
 
         logger.info("Registering objects and sending their uri to the client.")
-        uri_engine = daemon.register(workflow_engine)
+        uri_engine = obj_serv.register(workflow_engine)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
@@ -274,20 +274,20 @@ if __name__ == "__main__":
         # connection checker
         connection_checker = ConnectionChecker()
 
-        uri_cc = daemon.register(connection_checker)
+        uri_cc = obj_serv.register(connection_checker)
 
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        uri_config = daemon.register(config)
+        uri_config = obj_serv.register(config)
 
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
         # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.register(config.get_scheduler_config())
+            uri_sched_config = obj_serv.register(config.get_scheduler_config())
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
@@ -295,7 +295,7 @@ if __name__ == "__main__":
             sys.stdout.write("scheduler_config None\n")
         #sys.stdout.flush()
 
-        sys.stdout.write("zmq " + zmq.__version__ + " " + sys.path + '\n')
+        sys.stdout.write("zmq " + zmq.__version__ + " " + repr(sys.path) + '\n')
         sys.stdout.flush()
         #print(sys.path, file=open('/tmp/WTF','a'))
 
@@ -304,18 +304,19 @@ if __name__ == "__main__":
         ################################################################################
         logging.info("Launching a threaded request loop for the object server.")
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
-                                                      target=daemon.serve_forever)
+                                                      target=obj_serv.serve_forever)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
 
-        logging.debug("Thread object server principale (daemon): " + str(daemon_request_loop_thread))
+        logging.debug("Thread object server principale (obj_serv): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
         timeout = 40
         while not client_connected and timeout > 0:
-            client_connected = connection_checker.isConnected()  # seem useless since it will be false
+            client_connected = connection_checker.isConnected()
+            logger.debug("Client connection status: " + repr(client_connected))
             timeout = timeout - 1
             time.sleep(1)
 
@@ -327,12 +328,8 @@ if __name__ == "__main__":
 
         logger.info("******** client disconnection **********************")
 
-        # TODO shutdown cleanly might change serve_forever to serveLoop or
-        # sth like this
-        # daemon.shutdown()
+        # obj_serv.sock.close()  # free the port
 
-        # daemon.shutdown(disconnect=True)  # stop the request loop
-        # daemon.sock.close()  # free the port
 
         # TODO add a destructor if necessary.
         # del (daemon)
