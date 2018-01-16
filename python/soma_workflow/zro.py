@@ -32,8 +32,8 @@ class ObjectServer:
     '''
     Usage:
     -create an ObjectServer providing a port.
-    -register the object you want to access from another program that might be on
-    a distant object.
+    -register the object you want to access from another 
+     program that might be on a distant object.
     -lauch the server loop.
     '''
     def __init__(self, port=None):
@@ -82,7 +82,7 @@ class ObjectServer:
                 except Exception as e:
                     result = e
                 print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
-                self.socket.send(pickle.dumps(result))
+               self.socket.send(pickle.dumps(result))
             except:
                 print("An exception occurred in the server of the remote object")
                 traceback.print_last()

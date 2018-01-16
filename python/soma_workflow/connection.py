@@ -38,11 +38,12 @@ except ImportError:
 
 from soma_workflow.errors import ConnectionError
 
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
-    logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
-                        level=logging.DEBUG)
+    if os.path.exists('/home/mb253889/.soma-workflow/'):
+        logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
+                            level=logging.DEBUG)
 
 def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
@@ -279,6 +280,10 @@ class RemoteConnection(object):
         computing resource.
         '''
 
+        logging.info("************************************************")
+        logging.info("***********Init remote connection***************")
+
+
         # required in the remote connection mode
         # from paramiko.file import BufferedFile
 
@@ -357,13 +362,16 @@ class RemoteConnection(object):
                     scheduler_config_uri = None
             elif std_out_line.split()[0] == "zmq":
                 version = std_out_line.split()[1]
-                python_path = std_out_line.split()[2]
+                if len(std_out_line.split()) > 9:
+                    python_path = std_out_line.split()[2:9]
+                else:
+                    python_path = std_out_line.split()[2:]
                 if zmq.__version__ != version:
                     print("WARNING!!!: you are not using the same version of "
                           "zmq on the server and you might have some issues: \n"
                           "local version is: " + zmq.__version__ + "\nserver version is: "
                           + version)
-                    print("Note, your PYTHONPATH on host is: " + python_path)
+                    print("Note, the beginning of your PYTHONPATH on host is: " + repr(python_path))
                 else:
                     # print("DEBUG same version of ZMQ on both sides")
                     pass
@@ -392,12 +400,12 @@ class RemoteConnection(object):
 
 
         #checking
-        logging.debug("zro object server port: " + repr(remote_object_server_port))
-        logging.debug('its type: ', type(remote_object_server_port))
+        logging.debug("zro object server port: %d" % remote_object_server_port)
+        logging.debug('its type: %s' % repr(type(remote_object_server_port)))
 
         ### find an available port            ###
         tunnel_entrance_port = search_available_port()
-        logging.debug("client tunel port on localhost: " + repr(tunnel_entrance_port))
+        logging.debug("client tunel port on localhost: %s" % repr(tunnel_entrance_port))
 
         import paramiko
         #paramiko.util.log_to_file("/home/mb253889/paramiko.log")
@@ -492,6 +500,7 @@ class RemoteConnection(object):
 
         # create the connection holder object for #
         # a clean disconnection in any case      #
+        logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
         self.__connection_holder.start()
 
@@ -719,13 +728,10 @@ class ConnectionChecker(object):
         def controlLoop(self, control_interval):
             while True:
                 with self.lock:#Pourquoi un verrou?
-                    ls = self.lastSignal
-                    # TODO
+                    last_signal = self.lastSignal
                     # print(ls)
-                delta = datetime.now() - ls
+                delta = datetime.now() - last_signal
                 if delta > self.interval * 3:
-                    # TODO
-                    # print("Zarbi, dans ConnectionChecker, control loop thread")
                     self.disconnectionCallback()
                     self.connected = False
                 else:
