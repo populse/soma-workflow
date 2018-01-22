@@ -88,13 +88,6 @@ if __name__ == '__main__':
     file_path = os.path.join(dir, "database_server_uri.txt")
     logging.debug(file_path)
 
-    with open(file_path, 'w') as f:
-        f.write(str(server_uri) + "\n")
-
-    logging.info("Writting the uri of the database server.")
-    sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
-    sys.stdout.flush()
-
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
 
 
@@ -108,13 +101,20 @@ if __name__ == '__main__':
             print('empty file: ' + file_path)
             f.write("")  # empty file
 
-
-    signal.signal(signal.SIGTERM, handler)
+    # signal.signal(signal.SIGTERM, handler)
 
     # TODO for some reason there is a problem if we handle this signal:
     # the workflow engine does not start normally
     # signal.signal(signal.SIGKILL, handler)
-    signal.signal(signal.SIGINT, handler)
+    # signal.signal(signal.SIGINT, handler)
+
+
+    with open(file_path, 'w') as f:
+        f.write(str(server_uri) + "\n")
+
+    logging.info("Writting the uri of the database server.")
+    sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
+    sys.stdout.flush()
 
     # Enter the server loop.
     obj_serv.serve_forever()

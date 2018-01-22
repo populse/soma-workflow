@@ -116,6 +116,7 @@ if __name__ == "__main__":
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
+            logger.debug(os.path.basename(sys.executable) +'-m' + 'soma_workflow.start_database_server' + resource_id)
         python_interpreter = os.path.basename(sys.executable)
         return subprocess.Popen([python_interpreter,
                                  '-m',
@@ -145,11 +146,15 @@ if __name__ == "__main__":
                 # Check that the database is running
                 # and add not been killed with a -9 signal for instance
                 # without removing the .txt file containing its uri
+                logger.info("Using the file to find the database server that is running "
+                            "if it hasn't been stopped in the meantime.")
                 data_base_proxy = zro.Proxy(uri)
 
                 try:
                     with Timeout(1):
-                        data_base_proxy.test()
+                        logger.debug("testing the connection with db server is okay")
+                        test_res = data_base_proxy.test()
+                        logger.debug('Connection was successfull: %s' % repr(test_res))
                 except Timeout.Timeout:
                     #for some reason this message does not appear in the log??
                     logger.exception("Note that when you have shut down the database"

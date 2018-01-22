@@ -54,6 +54,8 @@ class ObjectServer:
         #else:
         self.socket.bind("tcp://*:" + str(port))
         self.port = port
+        print("Initialising object server on port: " + repr(self.port),
+              file=open('/tmp/zro','a'))
 
     def register(self, object):
         """The full socket adress should be provided
@@ -63,6 +65,9 @@ class ObjectServer:
         if object.__class__.__name__ not in self.objects:
             self.objects[object.__class__.__name__] = {}
         self.objects[object.__class__.__name__][str(id(object))] = object
+
+        print("The oject server is registering a " + repr(object.__class__.__name__) +
+              "object, on ", repr(self.port), file=open('/tmp/zro','a'))
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
@@ -145,7 +150,6 @@ class ProxyMethod(object):
     def __call__(self, *args, **kwargs):
         self.proxy.lock.acquire()
         try:
-            self.proxy.lock.acquire()
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
         except Exception as e:
             print(e)
