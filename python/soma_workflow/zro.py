@@ -143,6 +143,7 @@ class ProxyMethod(object):
         self.method = method
 
     def __call__(self, *args, **kwargs):
+        self.proxy.lock.acquire()
         try:
             self.proxy.lock.acquire()
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
