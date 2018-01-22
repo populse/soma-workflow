@@ -1628,6 +1628,7 @@ class WorkflowDatabaseServer(object):
                     FROM workflows WHERE id=?''',
                     [wf_id]))
             except Exception as e:
+                self.logger.exception("In get_workflow_status")
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1636,7 +1637,8 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
         self.logger.debug("===> status: %s, date: %s" % (status, strdate))
-        return (status, date)
+        self.logger.debug("===> status: %s, date: %s" % (status, repr(date)))
+        return status, date
 
     def get_detailed_workflow_status(self, wf_id, check_status=False):
         '''

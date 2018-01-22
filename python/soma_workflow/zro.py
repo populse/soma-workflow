@@ -13,6 +13,7 @@ except:
 import traceback
 import zmq
 import logging
+import threading
 
 #For some reason the zmq bind_to_random_port did not work with
 #one of the version of zmq that we are using. Therfore we have
@@ -82,7 +83,7 @@ class ObjectServer:
                 except Exception as e:
                     result = e
                 print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
-               self.socket.send(pickle.dumps(result))
+                self.socket.send(pickle.dumps(result))
             except:
                 print("An exception occurred in the server of the remote object")
                 traceback.print_last()
@@ -96,6 +97,8 @@ class Proxy(object):
     def __init__(self, uri):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
+        # To avoid multiple threads using the socket at the same time
+        self.lock = threading.Lock()
         #Deux cas: ou uri est un bytes object ou il est du type str
         if type(uri) == type(b'bytes type'):
             (classname, object_id, self._port) = uri.split(b':')
@@ -130,8 +133,8 @@ class Proxy(object):
 
     def __getattr__(self, method_name):
         if DEBUG:
-            print("On class: ", self.classname, file=open('/tmp/zro','a'))
-            print("method called: ", method_name, file=open('/tmp/zro','a'))
+            print("On class:               ", self.classname, file=open('/tmp/zro','a'))
+            print("method called:          ", method_name, file=open('/tmp/zro','a'))
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -141,12 +144,14 @@ class ProxyMethod(object):
 
     def __call__(self, *args, **kwargs):
         try:
+            self.proxy.lock.acquire()
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
         except Exception as e:
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
+        self.proxy.lock.release()
         if DEBUG:
-            print("remote call result: ", result, file=open('/tmp/zro','a'))
+            print("remote call result:     ", result, file=open('/tmp/zro','a'))
         if isinstance(result, Exception):
             raise result
         return result

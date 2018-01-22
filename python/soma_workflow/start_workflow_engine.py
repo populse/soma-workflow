@@ -16,7 +16,6 @@ if __name__ == "__main__":
     import os
     import logging
     import threading
-    import time
 
     import soma_workflow.zro as zro
     # import soma_workflow.sro as zro
@@ -205,12 +204,13 @@ if __name__ == "__main__":
         if engine_log_dir:
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
-            #print(logfilepath, engine_log_format, engine_log_level)
+            if False:
+                print('logs: ',logfilepath, engine_log_format, engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
                 format=engine_log_format,
                 level=eval("logging." + engine_log_level))
-            logger = logging.getLogger('engine')
+            logger = logging.getLogger('engine')  # TODO why??
             logger.info(" ")
             logger.info("****************************************************")
             logger.info("****************************************************")

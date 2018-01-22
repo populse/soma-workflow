@@ -54,13 +54,19 @@ if __name__ == '__main__':
      server_log_format,
      server_log_level) = config.get_server_log_info()
 
+    DEBUG_LOGGING = False
+    if DEBUG_LOGGING:
+        print("logging configuration: ", server_log_file,
+              server_log_format, server_log_level,
+              file=open('/tmp/db_server_dbg', 'a'))
+
     if server_log_file:
         logging.basicConfig(
             filename=server_log_file,
             format=server_log_format,
             level=eval("logging." + server_log_level))
 
-    daemon = zro.ObjectServer()
+    obj_serv = zro.ObjectServer()
 
     logging.info("Launching the database process")
 
@@ -75,7 +81,7 @@ if __name__ == '__main__':
 
     logging.debug("The server has been instantiated ")
 
-    server_uri = daemon.register(server)
+    server_uri = obj_serv.register(server)
     logging.debug("server_uri: " + str(server_uri))
     # Write the uri into a file
     (dir, file) = os.path.split(server_log_file)
@@ -111,4 +117,4 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler)
 
     # Enter the server loop.
-    daemon.serve_forever()
+    obj_serv.serve_forever()

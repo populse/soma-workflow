@@ -1007,6 +1007,7 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        self.logger.debug("! Entering workflow_status")
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
@@ -1022,6 +1023,7 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        self.logger.debug("! Entering workflow_elements_status")
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)

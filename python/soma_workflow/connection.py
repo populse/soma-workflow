@@ -38,13 +38,6 @@ except ImportError:
 
 from soma_workflow.errors import ConnectionError
 
-DEBUG = True
-
-if DEBUG:
-    if os.path.exists('/home/mb253889/.soma-workflow/'):
-        logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
-                            level=logging.DEBUG)
-
 def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
 
@@ -279,6 +272,13 @@ class RemoteConnection(object):
         @param submitting_machine: address of a submitting machine of the
         computing resource.
         '''
+
+        DEBUG = True
+
+        if DEBUG:
+            if os.path.exists('/home/mb253889/.soma-workflow/'):
+                logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
+                                    level=logging.DEBUG)
 
         logging.info("************************************************")
         logging.info("***********Init remote connection***************")
