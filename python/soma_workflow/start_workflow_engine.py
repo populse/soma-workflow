@@ -32,8 +32,6 @@ if __name__ == "__main__":
 
     class Timeout():
         """Timeout class using ALARM signal."""
-        class Timeout(Exception):
-            pass
 
         def __init__(self, sec):
             self.sec = sec
@@ -46,7 +44,7 @@ if __name__ == "__main__":
             signal.alarm(0)    # disable alarm
 
         def raise_timeout(self, *args):
-            raise Timeout.Timeout()
+            raise Exception("Timeout exceeded")
 
     class DBEngineNotRunning(Exception):
         pass
@@ -116,7 +114,7 @@ if __name__ == "__main__":
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
-            logger.debug(os.path.basename(sys.executable) +'-m' + 'soma_workflow.start_database_server' + resource_id)
+            logger.debug(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server' + resource_id)
         python_interpreter = os.path.basename(sys.executable)
         return subprocess.Popen([python_interpreter,
                                  '-m',
@@ -155,11 +153,12 @@ if __name__ == "__main__":
                         logger.debug("testing the connection with db server is okay")
                         test_res = data_base_proxy.test()
                         logger.debug('Connection was successfull: %s' % repr(test_res))
-                except Timeout.Timeout:
+                except Exception as e:
                     #for some reason this message does not appear in the log??
                     logger.exception("Note that when you have shut down the database"
                                      " server engine and the file database_server_uri.txt"
-                                     " was not removed")
+                                     " was not removed: " + repr(e))
+                    data_base_proxy.lock.release()
                     raise DBEngineNotRunning("")
 
                 return data_base_proxy
@@ -234,6 +233,7 @@ if __name__ == "__main__":
                 os.path.expanduser("~"),
                 configured_native_spec=config.get_native_specification())
             database_server = get_database_server_proxy(config, logger)
+            logger.debug("database_server launched")
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
