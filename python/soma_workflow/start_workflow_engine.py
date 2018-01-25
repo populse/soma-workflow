@@ -29,6 +29,7 @@ if __name__ == "__main__":
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
     import signal
+    import subprocess
 
     class Timeout():
         """Timeout class using ALARM signal."""
@@ -146,28 +147,22 @@ if __name__ == "__main__":
                 # without removing the .txt file containing its uri
                 logger.info("Using the file to find the database server that is running "
                             "if it hasn't been stopped in the meantime.")
-                data_base_proxy = zro.Proxy(uri)
 
-                try:
-                    with Timeout(1):
-                        logger.debug("testing the connection with db server is okay")
-                        test_res = data_base_proxy.test()
-                        logger.debug('Connection was successfull: %s' % repr(test_res))
-                except Exception as e:
-                    #for some reason this message does not appear in the log??
-                    logger.exception("Note that when you have shut down the database"
-                                     " server engine and the file database_server_uri.txt"
-                                     " was not removed: " + repr(e))
-                    data_base_proxy.lock.release()
-                    raise DBEngineNotRunning("")
+                command='ps ux | grep soma_workflow.start_database_server | grep -v grep'
+                output = subprocess.check_output(command, shell=True)
 
-                return data_base_proxy
-        except DBEngineNotRunning:
-            pass
-        except IOError:
-            pass # File does not exist continue
+                logger.debug("Output of grep is: " + repr(output))
+                #will always be true anyway since grep exit status is 1 when
+                #there is no matching pattern and therefore check_output raises
+                #an exception.
+                if len(output) > 3:
+                    logger.info("Connection to an already opened database")
+                    data_base_proxy = zro.Proxy(uri)
+                    return data_base_proxy
         except Exception as e:
-            print(e)
+            logger.exception("Note that when you have shut down the database"
+                             " server engine and the file database_server_uri.txt"
+                             " was not removed. ")
 
         logger.info('Launching database server and getting a proxy object on it')
         # We don't need the handle since the database server will continue
@@ -189,7 +184,7 @@ if __name__ == "__main__":
                      "a bug to remove.")
         is_accessible = database_server_proxy.test()
 
-        logger.debug('Database server is accessible: ' + str(is_accessible))
+        logger.debug('Database server is accessible: ' + repr(is_accessible))
 
         return database_server_proxy
 
