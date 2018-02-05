@@ -22,7 +22,7 @@ import threading
 import socket
 from contextlib import closing
 
-DEBUG=False #we print in file /tmp/zro
+DEBUG=True #we print in file /tmp/zro
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:

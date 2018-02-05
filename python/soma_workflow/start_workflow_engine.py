@@ -62,6 +62,8 @@ if __name__ == "__main__":
     class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
+            """On client will sleep for interval time, on
+            server side will sleep for control_interval"""
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
