@@ -22,12 +22,18 @@ import threading
 import socket
 from contextlib import closing
 
-DEBUG=True #we print in file /tmp/zro
+DEBUG=False #we print in file /tmp/zro
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
+
+
+class ReturnException(Exception):
+    def __init__(self, e, exc_info):
+        self.exc = e
+        self.exc_info = exc_info
 
 class ObjectServer:
     '''
@@ -73,6 +79,9 @@ class ObjectServer:
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
+
+
+
     def serve_forever(self):
         while True:
             #  Wait for next request from client
@@ -90,7 +99,7 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
-                    result = e
+                    result = ReturnException(e, sys.exc_info())
                 if DEBUG:
                     print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
                 self.socket.send(pickle.dumps(result))
@@ -162,6 +171,8 @@ class ProxyMethod(object):
         self.proxy.lock.release()
         if DEBUG:
             print("remote call result:     ", result, file=open('/tmp/zro','a'))
-        if isinstance(result, Exception):
-            raise result
+        if isinstance(result, ReturnException):
+            print(result.exc_info)
+            raise result.exc
+
         return result

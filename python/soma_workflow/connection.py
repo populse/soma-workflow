@@ -849,7 +849,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        print("Too small??????????????????")
+                        logging.debug("Too small?????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  " the data, could potential be a problem")
                     self.__chan.send(data)
@@ -859,7 +859,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        print("Too small2??????????????????")
+                        logging.debug("Too small2?????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  "the data, could potentially be a problem")
                     self.request.send(data)
