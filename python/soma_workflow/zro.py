@@ -14,6 +14,7 @@ import traceback
 import zmq
 import logging
 import threading
+import sys
 
 #For some reason the zmq bind_to_random_port did not work with
 #one of the version of zmq that we are using. Therfore we have
@@ -22,7 +23,7 @@ import threading
 import socket
 from contextlib import closing
 
-DEBUG=False #we print in file /tmp/zro
+DEBUG=True #we print in file /tmp/zro
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
@@ -33,7 +34,7 @@ def find_free_port():
 class ReturnException(Exception):
     def __init__(self, e, exc_info):
         self.exc = e
-        self.exc_info = exc_info
+        self.exc_info = exc_info # a tuple (exc_type, exc_value, traceback)
 
 class ObjectServer:
     '''
@@ -79,9 +80,6 @@ class ObjectServer:
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
-
-
-
     def serve_forever(self):
         while True:
             #  Wait for next request from client
@@ -99,6 +97,7 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
+                    # result = e
                     result = ReturnException(e, sys.exc_info())
                 if DEBUG:
                     print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
@@ -168,11 +167,21 @@ class ProxyMethod(object):
         except Exception as e:
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
-        self.proxy.lock.release()
         if DEBUG:
             print("remote call result:     ", result, file=open('/tmp/zro','a'))
+        self.proxy.lock.release()
+
+        # if isinstance(result, Exception):
+        #     print(result, file=open('/tmp/zro','a'))
+        #     raise result
+
         if isinstance(result, ReturnException):
-            print(result.exc_info)
-            raise result.exc
+            if DEBUG:
+                traceback.print_exception(result.exc_info[0],
+                                          result.exc_info[1],
+                                          result.exc_info[2],
+                                          limit=3,
+                                          file=open('/tmp/zro','a'))
+            raise result.exc_info[1]
 
         return result

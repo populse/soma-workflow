@@ -132,7 +132,7 @@ class WorkflowController(object):
 
         # LOCAL MODE
         if mode == configuration.LOCAL_MODE:
-
+            print("In local mode")
             # setup logging
             (engine_log_dir,
             engine_log_format,
@@ -154,6 +154,7 @@ class WorkflowController(object):
 
         # REMOTE MODE
         elif mode == configuration.REMOTE_MODE:
+            print("In remote mode")
             submitting_machines = self.config.get_submitting_machines()
             sub_machine = submitting_machines[random.randint(
                 0, len(submitting_machines) - 1)]
@@ -168,6 +169,7 @@ class WorkflowController(object):
                                                            "",
                                                            rsa_key_pass,
                                                            self.config)
+            print("Remote connection established")
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()
@@ -183,6 +185,7 @@ class WorkflowController(object):
 
         # LIGHT MODE
         elif mode == configuration.LIGHT_MODE:
+            print("In light mode")
             local_scdl_cfg_path \
                 = configuration.LocalSchedulerCfg.search_config_path()
             if local_scdl_cfg_path == None:
@@ -201,6 +204,7 @@ class WorkflowController(object):
             self._transfer_stdouterr = TransferLocal(self._engine_proxy)
 
         self._transfer_monitoring = TransferMonitoring(self._engine_proxy)
+        print("Workflow controller initialised")
 
     def disconnect(self):
         '''
