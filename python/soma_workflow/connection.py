@@ -145,7 +145,9 @@ def check_if_soma_wf_cr_on_server(
         sshport=22):
     """ Check if the check_requirement module exists
     """
-    command = "python -c 'import soma_workflow.check_requirement'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -c 'import soma_workflow.check_requirement'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -166,7 +168,9 @@ def check_if_ctype_drmaa_on_server(
     ip_address_or_domain,
     userpw='',
         sshport=22):
-    command = "python -m 'soma_workflow.check_requirement.drmaa'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -m 'soma_workflow.check_requirement.drmaa'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -190,7 +194,9 @@ def check_if_somawf_on_server(
         sshport=22):
     """ Check if the soma_workflow module exists
     """
-    command = "python -c 'import soma_workflow'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -c 'import soma_workflow'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -473,10 +479,12 @@ class RemoteConnection(object):
 
         if scheduler_config_uri is not None:
             # setting the proxies to use the tunnel  #
+            logging.info("Scheduler config available")
             (object_data_type, object_id, object_server_port) = scheduler_config_uri.split(":")
             scheduler_config_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
             self.scheduler_config = zro.Proxy(scheduler_config_uri)
         else:
+            logging.info('No scheduler config')
             self.scheduler_config = None
 
         # waiting for the tunnel to be set
@@ -509,6 +517,8 @@ class RemoteConnection(object):
         logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
         self.__connection_holder.start()
+        logging.info("End of the initialisation of RemoteConnection.")
+
 
 
     def isValid(self):
@@ -864,7 +874,7 @@ class Tunnel(threading.Thread):
                     self.request.send(data)
 
         def finish(self):
-            print('Tunnel closed from %r' % (self.request.getpeername(),))
+            print('Channel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
 
