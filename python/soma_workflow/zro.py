@@ -99,7 +99,9 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
-                    result = ReturnException(e, sys.exc_info())
+                    print("An exception occurred", file=open('/tmp/zro','a'))
+                    result = e
+                    #result = ReturnException(e, sys.exc_info())
                 if DEBUG:
                     print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
                 self.socket.send(pickle.dumps(result))
@@ -166,13 +168,18 @@ class ProxyMethod(object):
         try:
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
         except Exception as e:
+            print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
         self.proxy.lock.release()
         if DEBUG:
             print("remote call result:     ", result, file=open('/tmp/zro','a'))
-        if isinstance(result, ReturnException):
-            print(result.exc_info)
-            raise result.exc
+
+        if isinstance(result, Exception):
+            print(result, file=open('/tmp/zro','a'))
+            raise result
+        # if isinstance(result, ReturnException):
+        #     print(result.exc, result.exc_info, file=open('/tmp/zro','a'))
+        #     raise result.exc
 
         return result

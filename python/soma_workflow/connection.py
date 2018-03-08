@@ -737,12 +737,13 @@ class ConnectionChecker(object):
                     last_signal = self.lastSignal
                     # print(ls)
                 delta = datetime.now() - last_signal
-                if delta > self.interval * 6:
+                if delta > self.interval * 12:
                     logging.debug("Delta is too large, the client is not connected anymore: ", delta)
                     self.disconnectionCallback()
                     self.connected = False
                 else:
                     self.connected = True
+                logging.debug("Connected? :", self.connected)
                 time.sleep(control_interval)
 
         self.controlThread = threading.Thread(name="connectionControlThread",
