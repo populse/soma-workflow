@@ -1384,7 +1384,6 @@ class WorkflowDatabaseServer(object):
         '''
         # get back the workflow id first
         self.logger.debug("=> add_workflow")
-        logging.debug("test youhou!!!")
         with self._lock:
             # try to allocate enough file counters before opening a new cursor
             needed_files = len(engine_workflow.transfer_mapping) \
@@ -1476,6 +1475,7 @@ class WorkflowDatabaseServer(object):
         @type wf_id: C{WorkflowIdentifier}
         '''
         self.logger.debug("=> delete_workflow")
+        self.logger.debug("wf_id is: ", wf_id)
         with self._lock:
             # set expiration date to yesterday + clean() ?
             connection = self._connect()
@@ -2564,6 +2564,9 @@ class WorkflowDatabaseServer(object):
         if strdate:
             if sys.version_info[0] < 3:
                 strdate = strdate.encode('utf-8')
+            # this is a hack to avoid issues because
+            # for an undetermined reason the date may be stored in
+            # a different format in the database.
             try:
                 date = datetime.strptime(strdate, strtime_format)
             except ValueError:

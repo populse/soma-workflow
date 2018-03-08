@@ -48,6 +48,7 @@ try:
 except:
     # an exception occurs when drmaa lib is detected but cannot be loaded
     # because of a failed dependency (torque, grid engine etc)
+    print("detection of the DRMAA library failed")
     DRMAA_LIB_FOUND = False
 
 
