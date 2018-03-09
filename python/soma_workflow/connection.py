@@ -27,7 +27,6 @@ import random
 import errno
 import logging
 import soma_workflow.zro as zro
-#import soma_workflow.sro as zro
 import zmq
 import sys
 
@@ -295,6 +294,8 @@ class RemoteConnection(object):
         logging.info("************************************************")
         logging.info("***********Init remote connection***************")
 
+
+        import soma_workflow.zro as zro
 
         # required in the remote connection mode
         # from paramiko.file import BufferedFile
