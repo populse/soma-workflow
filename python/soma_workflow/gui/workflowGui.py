@@ -421,6 +421,7 @@ class Controller(object):
                        password,
                        rsa_key_pass,
                        config=None):
+        print("Lauching workflow controller")
         wf_ctrl = WorkflowController(resource_id=resource_id,
                                      login=login,
                                      password=password,
@@ -452,6 +453,8 @@ class Controller(object):
             expiration_date=expiration_date,
             name=name,
             queue=queue)
+        # TEST
+        # return wf_id
         workflow = wf_ctrl.workflow(wf_id)
         return workflow
 
@@ -1469,6 +1472,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         while True:
             try:
                 workflow = Controller.submit_workflow(
+                # TEST
+                # workflow_id = Controller.submit_workflow(
                     self.model.current_workflow(
                     ).server_workflow,
                     date,
@@ -1490,13 +1495,20 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     return (None, None)
             else:
                 break
-
+        # TEST
+        # self.model.add_workflow(workflow_id,
+        #                        date,
+        #                        name,
+        #                        constants.WORKFLOW_NOT_STARTED,
+        #                        self.model.current_workflow().server_workflow)
         self.model.add_workflow(workflow.wf_id,
                                 date,
                                 workflow.name,
                                 constants.WORKFLOW_NOT_STARTED,
                                 workflow)
         self.updateWorkflowList()
+        # TEST
+        # return (workflow_id, self.model.current_resource_id)
         return (workflow.wf_id, self.model.current_resource_id)
 
     @QtCore.Slot()

@@ -13,6 +13,8 @@ except:
 import traceback
 import zmq
 import logging
+import threading
+import sys
 
 #For some reason the zmq bind_to_random_port did not work with
 #one of the version of zmq that we are using. Therfore we have
@@ -28,12 +30,18 @@ def find_free_port():
         s.bind(('', 0))
         return s.getsockname()[1]
 
+
+class ReturnException(Exception):
+    def __init__(self, e, exc_info):
+        self.exc = e
+        self.exc_info = exc_info # a tuple (exc_type, exc_value, traceback)
+
 class ObjectServer:
     '''
     Usage:
     -create an ObjectServer providing a port.
-    -register the object you want to access from another program that might be on
-    a distant object.
+    -register the object you want to access from another 
+     program that might be on a distant object.
     -lauch the server loop.
     '''
     def __init__(self, port=None):
@@ -53,6 +61,9 @@ class ObjectServer:
         #else:
         self.socket.bind("tcp://*:" + str(port))
         self.port = port
+        if DEBUG:
+            print("Initialising object server on port: " + repr(self.port),
+                  file=open('/tmp/zro','a'))
 
     def register(self, object):
         """The full socket adress should be provided
@@ -63,17 +74,22 @@ class ObjectServer:
             self.objects[object.__class__.__name__] = {}
         self.objects[object.__class__.__name__][str(id(object))] = object
 
+        if DEBUG:
+            print("The oject server is registering a " + repr(object.__class__.__name__) +
+                  "object, on ", repr(self.port), file=open('/tmp/zro','a'))
+
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
     def serve_forever(self):
         while True:
             #  Wait for next request from client
-            #print("Waiting for incoming data", file=open('/tmp/WTF','a'))
+            if DEBUG:
+                print("ObS0:" + str(self.port)[-3:] + ":Waiting for incoming data", file=open('/tmp/zro','a'))
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
-                #TODO
-                #print(classname, object_id, method, args, file=open('/tmp/WTF','a'))
+                if DEBUG:
+                    print("ObS1:" + str(self.port)[-3:] + ":calling ", classname, object_id, method, args, file=open('/tmp/zro','a'))
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -81,10 +97,14 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
-                    result = e
+                    print("An exception occurred", file=open('/tmp/zro','a'))
+                    #result = e
+                    result = ReturnException(e, sys.exc_info())
+                if DEBUG:
+                    print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
                 self.socket.send(pickle.dumps(result))
             except:
-                print("An exception ocurred in the server of the remote object")
+                print("An exception occurred in the server of the remote object")
                 traceback.print_last()
 
 class Proxy(object):
@@ -96,6 +116,8 @@ class Proxy(object):
     def __init__(self, uri):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
+        # To avoid multiple threads using the socket at the same time
+        self.lock = threading.Lock()
         #Deux cas: ou uri est un bytes object ou il est du type str
         if type(uri) == type(b'bytes type'):
             (classname, object_id, self._port) = uri.split(b':')
@@ -130,8 +152,8 @@ class Proxy(object):
 
     def __getattr__(self, method_name):
         if DEBUG:
-            print("On class: ", self.classname, file=open('/tmp/zro','a'))
-            print("method called: ", method_name, file=open('/tmp/zro','a'))
+            print("On class:               ", self.classname, file=open('/tmp/zro','a'))
+            print("method called:          ", method_name, file=open('/tmp/zro','a'))
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -140,13 +162,28 @@ class ProxyMethod(object):
         self.method = method
 
     def __call__(self, *args, **kwargs):
+        self.proxy.lock.acquire()
         try:
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
         except Exception as e:
+            print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
         if DEBUG:
-            print(result, file=open('/tmp/'+ 'zro','a'))
-        if isinstance(result, Exception):
-            raise result
+            print("remote call result:     ", result, file=open('/tmp/zro','a'))
+        self.proxy.lock.release()
+
+        # if isinstance(result, Exception):
+        #     print(result, file=open('/tmp/zro','a'))
+        #     raise result
+
+        if isinstance(result, ReturnException):
+            if DEBUG:
+                traceback.print_exception(result.exc_info[0],
+                                          result.exc_info[1],
+                                          result.exc_info[2],
+                                          limit=3,
+                                          file=open('/tmp/zro','a'))
+            raise result.exc_info[1]
+
         return result

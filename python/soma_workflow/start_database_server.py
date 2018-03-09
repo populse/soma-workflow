@@ -16,6 +16,7 @@ import signal
 import sys
 import logging
 import soma_workflow.zro as zro
+# import soma_workflow.sro as zro
 
 if __name__ == '__main__':
 
@@ -53,13 +54,19 @@ if __name__ == '__main__':
      server_log_format,
      server_log_level) = config.get_server_log_info()
 
+    DEBUG_LOGGING = False
+    if DEBUG_LOGGING:
+        print("logging configuration: ", server_log_file,
+              server_log_format, server_log_level,
+              file=open('/tmp/db_server_dbg', 'a'))
+
     if server_log_file:
         logging.basicConfig(
             filename=server_log_file,
             format=server_log_format,
             level=eval("logging." + server_log_level))
 
-    daemon = zro.ObjectServer()
+    obj_serv = zro.ObjectServer()
 
     logging.info("Launching the database process")
 
@@ -74,19 +81,12 @@ if __name__ == '__main__':
 
     logging.debug("The server has been instantiated ")
 
-    server_uri = daemon.register(server)
+    server_uri = obj_serv.register(server)
     logging.debug("server_uri: " + str(server_uri))
     # Write the uri into a file
     (dir, file) = os.path.split(server_log_file)
     file_path = os.path.join(dir, "database_server_uri.txt")
     logging.debug(file_path)
-
-    with open(file_path, 'w') as f:
-        f.write(str(server_uri) + "\n")
-
-    logging.info("Writting the uri of the database server.")
-    sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
-    sys.stdout.flush()
 
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
 
@@ -101,13 +101,20 @@ if __name__ == '__main__':
             print('empty file: ' + file_path)
             f.write("")  # empty file
 
-
-    signal.signal(signal.SIGTERM, handler)
+    # signal.signal(signal.SIGTERM, handler)
 
     # TODO for some reason there is a problem if we handle this signal:
     # the workflow engine does not start normally
     # signal.signal(signal.SIGKILL, handler)
-    signal.signal(signal.SIGINT, handler)
+    # signal.signal(signal.SIGINT, handler)
+
+
+    with open(file_path, 'w') as f:
+        f.write(str(server_uri) + "\n")
+
+    logging.info("Writting the uri of the database server.")
+    sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
+    sys.stdout.flush()
 
     # Enter the server loop.
-    daemon.serve_forever()
+    obj_serv.serve_forever()

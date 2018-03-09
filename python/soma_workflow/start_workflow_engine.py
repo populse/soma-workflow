@@ -13,13 +13,13 @@
 if __name__ == "__main__":
 
     import sys
-    import threading
-    import time
-    import logging
     import os
+    import logging
+    import threading
 
     import soma_workflow.zro as zro
-    import zmq 
+    # import soma_workflow.sro as zro
+    import zmq
     import soma_workflow.engine
     import soma_workflow.scheduler
     import soma_workflow.connection
@@ -29,11 +29,10 @@ if __name__ == "__main__":
     from soma_workflow.scheduler import ConfiguredLocalScheduler
     import time
     import signal
+    import subprocess
 
     class Timeout():
         """Timeout class using ALARM signal."""
-        class Timeout(Exception):
-            pass
 
         def __init__(self, sec):
             self.sec = sec
@@ -46,7 +45,7 @@ if __name__ == "__main__":
             signal.alarm(0)    # disable alarm
 
         def raise_timeout(self, *args):
-            raise Timeout.Timeout()
+            raise Exception("Timeout exceeded")
 
     class DBEngineNotRunning(Exception):
         pass
@@ -63,6 +62,8 @@ if __name__ == "__main__":
     class ConnectionChecker(soma_workflow.connection.ConnectionChecker):
 
         def __init__(self, interval=1, control_interval=3):
+            """On client will sleep for interval time, on
+            server side will sleep for control_interval"""
             soma_workflow.connection.ConnectionChecker.__init__(
                 self,
                 interval,
@@ -116,7 +117,9 @@ if __name__ == "__main__":
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
-        return subprocess.Popen([sys.executable,
+            logger.debug(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server' + resource_id)
+        python_interpreter = os.path.basename(sys.executable)
+        return subprocess.Popen([python_interpreter,
                                  '-m',
                                  'soma_workflow.start_database_server',
                                  resource_id],
@@ -144,25 +147,24 @@ if __name__ == "__main__":
                 # Check that the database is running
                 # and add not been killed with a -9 signal for instance
                 # without removing the .txt file containing its uri
-                data_base_proxy = zro.Proxy(uri)
+                logger.info("Using the file to find the database server that is running "
+                            "if it hasn't been stopped in the meantime.")
 
-                try:
-                    with Timeout(1):
-                        data_base_proxy.test()
-                except Timeout.Timeout:
-                    #for some reason this message does not appear in the log??
-                    logger.exception("Note that when you have shut down the database"
-                                     " server engine and the file database_server_uri.txt"
-                                     " was not removed")
-                    raise DBEngineNotRunning("")
+                command='ps ux | grep soma_workflow.start_database_server | grep -v grep'
+                output = subprocess.check_output(command, shell=True)
 
-                return data_base_proxy
-        except DBEngineNotRunning:
-            pass
-        except IOError:
-            pass # File does not exist continue
+                logger.debug("Output of grep is: " + repr(output))
+                #will always be true anyway since grep exit status is 1 when
+                #there is no matching pattern and therefore check_output raises
+                #an exception.
+                if len(output) > 3:
+                    logger.info("Connection to an already opened database")
+                    data_base_proxy = zro.Proxy(uri)
+                    return data_base_proxy
         except Exception as e:
-            print(e)
+            logger.exception("Note that when you have shut down the database"
+                             " server engine and the file database_server_uri.txt"
+                             " was not removed. ")
 
         logger.info('Launching database server and getting a proxy object on it')
         # We don't need the handle since the database server will continue
@@ -184,7 +186,7 @@ if __name__ == "__main__":
                      "a bug to remove.")
         is_accessible = database_server_proxy.test()
 
-        logger.debug('Database server is accessible: ' + str(is_accessible))
+        logger.debug('Database server is accessible: ' + repr(is_accessible))
 
         return database_server_proxy
 
@@ -203,12 +205,13 @@ if __name__ == "__main__":
         if engine_log_dir:
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
-            #print(logfilepath, engine_log_format, engine_log_level)
+            if False:
+                print('logs: ',logfilepath, engine_log_format, engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
                 format=engine_log_format,
                 level=eval("logging." + engine_log_level))
-            logger = logging.getLogger('engine')
+            logger = logging.getLogger('engine')  # TODO why??
             logger.info(" ")
             logger.info("****************************************************")
             logger.info("****************************************************")
@@ -227,6 +230,7 @@ if __name__ == "__main__":
                 os.path.expanduser("~"),
                 configured_native_spec=config.get_native_specification())
             database_server = get_database_server_proxy(config, logger)
+            logger.debug("database_server launched")
 
         elif config.get_scheduler_type() \
                 == soma_workflow.configuration.LOCAL_SCHEDULER:
@@ -252,7 +256,7 @@ if __name__ == "__main__":
 
         # initialisation of the zro object server.
         logger.info("Starting object server for the workflow engine")
-        daemon = zro.ObjectServer()
+        obj_serv = zro.ObjectServer()
 
         logger.info("Instanciation of the workflow engine")
         workflow_engine = ConfiguredWorkflowEngine(database_server,
@@ -264,7 +268,7 @@ if __name__ == "__main__":
         ################################################################################
 
         logger.info("Registering objects and sending their uri to the client.")
-        uri_engine = daemon.register(workflow_engine)
+        uri_engine = obj_serv.register(workflow_engine)
 
         sys.stdout.write(engine_name + " " + str(uri_engine) + "\n")
         sys.stdout.flush()
@@ -272,20 +276,20 @@ if __name__ == "__main__":
         # connection checker
         connection_checker = ConnectionChecker()
 
-        uri_cc = daemon.register(connection_checker)
+        uri_cc = obj_serv.register(connection_checker)
 
         sys.stdout.write("connection_checker " + str(uri_cc) + "\n")
         sys.stdout.flush()
 
         # configuration
-        uri_config = daemon.register(config)
+        uri_config = obj_serv.register(config)
 
         sys.stdout.write("configuration " + str(uri_config) + "\n")
         sys.stdout.flush()
 
         # scheduler configuration
         if config.get_scheduler_config():
-            uri_sched_config = daemon.register(config.get_scheduler_config())
+            uri_sched_config = obj_serv.register(config.get_scheduler_config())
 
             sys.stdout.write("scheduler_config " + str(uri_sched_config)
                              + "\n")
@@ -293,7 +297,7 @@ if __name__ == "__main__":
             sys.stdout.write("scheduler_config None\n")
         #sys.stdout.flush()
 
-        sys.stdout.write("zmq " + zmq.__version__ + '\n')
+        sys.stdout.write("zmq " + zmq.__version__ + " " + repr(sys.path) + '\n')
         sys.stdout.flush()
         #print(sys.path, file=open('/tmp/WTF','a'))
 
@@ -302,18 +306,19 @@ if __name__ == "__main__":
         ################################################################################
         logging.info("Launching a threaded request loop for the object server.")
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
-                                                      target=daemon.serve_forever)
+                                                      target=obj_serv.serve_forever)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
 
-        logging.debug("Thread object server principale (daemon): " + str(daemon_request_loop_thread))
+        logging.debug("Thread object server principale (obj_serv): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
         timeout = 40
         while not client_connected and timeout > 0:
-            client_connected = connection_checker.isConnected()  # seem useless since it will be false
+            client_connected = connection_checker.isConnected()
+            logger.debug("Client connection status: " + repr(client_connected))
             timeout = timeout - 1
             time.sleep(1)
 
@@ -325,12 +330,8 @@ if __name__ == "__main__":
 
         logger.info("******** client disconnection **********************")
 
-        # TODO shutdown cleanly might change serve_forever to serveLoop or
-        # sth like this
-        # daemon.shutdown()
+        # obj_serv.sock.close()  # free the port
 
-        # daemon.shutdown(disconnect=True)  # stop the request loop
-        # daemon.sock.close()  # free the port
 
         # TODO add a destructor if necessary.
         # del (daemon)

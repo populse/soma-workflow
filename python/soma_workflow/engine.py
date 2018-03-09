@@ -594,7 +594,7 @@ class WorkflowEngineLoop(object):
         @type queue: str
         '''
         # register
-
+        self.logger.debug("Within add_workflow")
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
@@ -608,7 +608,8 @@ class WorkflowEngineLoop(object):
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
-                break # OK we have checked the directory can be witten.
+                self.logger.debug("OK we have checked the directory can be written.")
+                break # OK we have checked the directory can be written.
             except Exception as e:
                 self._database_server.delete_workflow(engine_workflow.wf_id)
                 raise JobError("Could not create the standard output file "
@@ -629,8 +630,11 @@ class WorkflowEngineLoop(object):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:
-                    os.mkdir(transfer.engine_path)
+                    # self.logger.debug("Try to create directory: %s \n" % transfer.engine_path)
+                    os.makedirs(transfer.engine_path)
                 except Exception as e:
+                    self.logger.debug("WARNING: could not create directory %s: \n" % transfer.engine_path)
+                    self.logger.debug("You might not have enough space available.")
                     self._database_server.delete_workflow(
                         engine_workflow.wf_id)
                     raise JobError("Could not create the directory %s %s: %s \n" %
@@ -884,9 +888,17 @@ class WorkflowEngine(RemoteFileController):
         '''
         logging.debug("Receiving a workflow to treat: " + repr(workflow))
         if not expiration_date:
+            logging.debug("No expiration date")
             expiration_date = datetime.now() + timedelta(days=7)
-        wf_id = self.engine_loop.add_workflow(
-            workflow, expiration_date, name, queue)
+        logging.debug("Going to add a workflow")
+        try:
+            wf_id = self.engine_loop.add_workflow(workflow,
+                                                  expiration_date,
+                                                  name,
+                                                  queue)
+        except Exception as e:
+            logging.exception("ERROR: in submit_worflow, an exception occurred when calling engine_loop.add_workflow")
+
         logging.debug("Workflow identifier is: " + str(wf_id))
         return wf_id
 
@@ -1007,10 +1019,11 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        self.logger.debug("! Entering workflow_status")
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
-
+        self.logger.debug("!Getting workflow status: ", repr(status))
         if status and \
            not status == constants.WORKFLOW_DONE and \
            _out_to_date(last_status_update):
@@ -1022,9 +1035,12 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        self.logger.debug("! Entering workflow_elements_status")
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
+
+        self.logger.debug("!Getting workflow elements status: ", repr(status))
 
         wf_status = self._database_server.get_detailed_workflow_status(wf_id)
         if status and \

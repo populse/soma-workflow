@@ -1384,7 +1384,6 @@ class WorkflowDatabaseServer(object):
         '''
         # get back the workflow id first
         self.logger.debug("=> add_workflow")
-        logging.debug("test youhou!!!")
         with self._lock:
             # try to allocate enough file counters before opening a new cursor
             needed_files = len(engine_workflow.transfer_mapping) \
@@ -1476,6 +1475,7 @@ class WorkflowDatabaseServer(object):
         @type wf_id: C{WorkflowIdentifier}
         '''
         self.logger.debug("=> delete_workflow")
+        self.logger.debug("wf_id is: ", wf_id)
         with self._lock:
             # set expiration date to yesterday + clean() ?
             connection = self._connect()
@@ -1628,6 +1628,7 @@ class WorkflowDatabaseServer(object):
                     FROM workflows WHERE id=?''',
                     [wf_id]))
             except Exception as e:
+                self.logger.exception("In get_workflow_status")
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))
@@ -1636,7 +1637,8 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
         self.logger.debug("===> status: %s, date: %s" % (status, strdate))
-        return (status, date)
+        self.logger.debug("===> status: %s, date: %s" % (status, repr(date)))
+        return status, date
 
     def get_detailed_workflow_status(self, wf_id, check_status=False):
         '''
@@ -2562,7 +2564,13 @@ class WorkflowDatabaseServer(object):
         if strdate:
             if sys.version_info[0] < 3:
                 strdate = strdate.encode('utf-8')
-            date = datetime.strptime(strdate, strtime_format)
+            # this is a hack to avoid issues because
+            # for an undetermined reason the date may be stored in
+            # a different format in the database.
+            try:
+                date = datetime.strptime(strdate, strtime_format)
+            except ValueError:
+                date = datetime.strptime(strdate, '%Y-%m-%d')
         else:
             date = None
         return date
@@ -2915,6 +2923,7 @@ class WorkflowDatabaseServer(object):
             argument = workflow_ids
 
         with self._lock:
+            self.logger.debug("=> get_workflows, within lock")
             connection = self._connect()
             cursor = connection.cursor()
             result = {}
@@ -2925,6 +2934,7 @@ class WorkflowDatabaseServer(object):
                     result[wf_id] = (self._string_conversion(name),
                                      self._str_to_date_conversion(expiration_date))
             except Exception as e:
+                self.logger.exception("=> get_workflows, an exception occurred!")
                 cursor.close()
                 connection.close()
                 raise DatabaseError('%s: %s \n' % (type(e), e))

@@ -26,6 +26,8 @@ import re
 import random
 import errno
 import logging
+import soma_workflow.zro as zro
+import zmq
 import sys
 
 try:
@@ -142,7 +144,9 @@ def check_if_soma_wf_cr_on_server(
         sshport=22):
     """ Check if the check_requirement module exists
     """
-    command = "python -c 'import soma_workflow.check_requirement'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -c 'import soma_workflow.check_requirement'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -163,7 +167,9 @@ def check_if_ctype_drmaa_on_server(
     ip_address_or_domain,
     userpw='',
         sshport=22):
-    command = "python -m 'soma_workflow.check_requirement.drmaa'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -m 'soma_workflow.check_requirement.drmaa'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -187,7 +193,9 @@ def check_if_somawf_on_server(
         sshport=22):
     """ Check if the soma_workflow module exists
     """
-    command = "python -c 'import soma_workflow'"
+    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    command = python_interpreter + " -c 'import soma_workflow'"
+    print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
         userid,
@@ -269,6 +277,23 @@ class RemoteConnection(object):
         @param submitting_machine: address of a submitting machine of the
         computing resource.
         '''
+        DEBUG = True
+
+        if DEBUG:
+            if os.path.exists('/home/mb253889/.soma-workflow/'):
+                logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
+                                    level=logging.DEBUG)
+
+        DEBUG = True
+
+        if DEBUG:
+            if os.path.exists('/home/mb253889/.soma-workflow/'):
+                logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
+                                    level=logging.DEBUG)
+
+        logging.info("************************************************")
+        logging.info("***********Init remote connection***************")
+
 
         import soma_workflow.zro as zro
 
@@ -315,7 +340,8 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        command = sys.executable + " -m soma_workflow.start_workflow_engine"\
+        (local_dir, python_interpreter) = os.path.split(sys.executable)
+        command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         print("start engine command: "
@@ -349,15 +375,23 @@ class RemoteConnection(object):
                     scheduler_config_uri = None
             elif std_out_line.split()[0] == "zmq":
                 version = std_out_line.split()[1]
-                import zmq
+                if len(std_out_line.split()) > 9:
+                    python_path = std_out_line.split()[2:9]
+                else:
+                    python_path = std_out_line.split()[2:]
                 if zmq.__version__ != version:
                     print("WARNING!!!: you are not using the same version of "
                           "zmq on the server and you might have some issues: \n"
                           "local version is: " + zmq.__version__ + "\nserver version is: "
                           + version)
+                    print("Note, the beginning of your PYTHONPATH on host is: " + repr(python_path))
                 else:
                     # print("DEBUG same version of ZMQ on both sides")
                     pass
+
+        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
+        logging.debug("connection_checker_uri: " +  connection_checker_uri)
+        logging.debug("configuration_uri: " + configuration_uri)
 
         if (not configuration_uri or
             not connection_checker_uri or
@@ -372,23 +406,19 @@ class RemoteConnection(object):
                 "**Engine process standard output:** \n"
                 "\n" + repr(std_out_lines))
 
-        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
-        logging.debug("connection_checker_uri: " +  connection_checker_uri)
-        logging.debug("configuration_uri: " + configuration_uri)
 
         whole_uri = str(workflow_engine_uri)
         (object_data_type, object_id, port) = whole_uri.split(":")
         remote_object_server_port = int(port)
 
-        logging.debug(remote_object_server_port)
-        logging.debug(type(remote_object_server_port))
 
         #checking
-        logging.debug("zro object server port: " + repr(remote_object_server_port))
+        logging.debug("zro object server port: %d" % remote_object_server_port)
+        logging.debug('its type: %s' % repr(type(remote_object_server_port)))
 
         ### find an available port            ###
         tunnel_entrance_port = search_available_port()
-        logging.debug("client tunel port on localhost: " + repr(tunnel_entrance_port))
+        logging.debug("client tunel port on localhost: %s" % repr(tunnel_entrance_port))
 
         import paramiko
         #paramiko.util.log_to_file("/home/mb253889/paramiko.log")
@@ -450,10 +480,12 @@ class RemoteConnection(object):
 
         if scheduler_config_uri is not None:
             # setting the proxies to use the tunnel  #
+            logging.info("Scheduler config available")
             (object_data_type, object_id, object_server_port) = scheduler_config_uri.split(":")
             scheduler_config_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
             self.scheduler_config = zro.Proxy(scheduler_config_uri)
         else:
+            logging.info('No scheduler config')
             self.scheduler_config = None
 
         # waiting for the tunnel to be set
@@ -483,8 +515,11 @@ class RemoteConnection(object):
 
         # create the connection holder object for #
         # a clean disconnection in any case      #
+        logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
         self.__connection_holder.start()
+        logging.info("End of the initialisation of RemoteConnection.")
+
 
 
     def isValid(self):
@@ -562,7 +597,6 @@ class RemoteConnection(object):
                       'Installation problem on server side?')
 
 class LocalConnection(object):
-
     '''
     Local version of the connection.
     The workflow engine process is created using subprocess.
@@ -573,9 +607,6 @@ class LocalConnection(object):
                  log=""):
 
         # required in the local connection mode
-
-
-        import soma_workflow.zro as zro
 
         try:
             import subprocess32 as subprocess
@@ -591,7 +622,8 @@ class LocalConnection(object):
                                          # resource_id,
                                          # remote_workflow_engine_name,
                                          # log)
-        command = sys.executable + " -m soma_workflow.start_workflow_engine %s %s %s" % (
+        (local_dir, python_interpreter) = os.path.split(sys.executable)
+        command = python_interpreter + " -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
             remote_workflow_engine_name,
             log)
@@ -647,7 +679,6 @@ class LocalConnection(object):
                                   "**Engine process standard error:** \n"
                                   "\n" + stderr_content)
 
-        #TODO
         connection_checker_uri = line.split()[1]
         line = engine_process.stdout.readline()
         stdout_content = stdout_content + "\n" + line
@@ -714,17 +745,16 @@ class ConnectionChecker(object):
         def controlLoop(self, control_interval):
             while True:
                 with self.lock:#Pourquoi un verrou?
-                    ls = self.lastSignal
-                    # TODO
+                    last_signal = self.lastSignal
                     # print(ls)
-                delta = datetime.now() - ls
-                if delta > self.interval * 3:
-                    # TODO
-                    # print("Zarbi, dans ConnectionChecker, control loop thread")
+                delta = datetime.now() - last_signal
+                if delta > self.interval * 12:
+                    logging.debug("Delta is too large, the client is not connected anymore: ", delta)
                     self.disconnectionCallback()
                     self.connected = False
                 else:
                     self.connected = True
+                logging.debug("Connected? :", self.connected)
                 time.sleep(control_interval)
 
         self.controlThread = threading.Thread(name="connectionControlThread",
@@ -779,8 +809,8 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            # print('Setup : %d' %(self.channel_end_port))
-            logging.debug("Beginning of setup")
+            logging.info('Setup : %d' %(self.channel_end_port))
+            logging.debug("Tunnel::Handler::Beginning of setup")
             try:
                 # There has been quite lot of tweaks around this function
                 # as it is very counter intuitive. On the destination
@@ -831,7 +861,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        print("Too small??????????????????")
+                        logging.debug("Too small?????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  " the data, could potential be a problem")
                     self.__chan.send(data)
@@ -841,13 +871,13 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        print("Too small2??????????????????")
+                        logging.debug("Too small2?????????")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  "the data, could potentially be a problem")
                     self.request.send(data)
 
         def finish(self):
-            print('Tunnel closed from %r' % (self.request.getpeername(),))
+            print('Channel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
 
