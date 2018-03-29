@@ -133,7 +133,8 @@ class EngineJob(Job):
                                         client_job.working_directory,
                                         client_job.parallel_job_info,
                                         client_job.priority,
-                                        client_job.native_specification)
+                                        client_job.native_specification,
+                                        env = client_job.env)
 
         self.job_id = -1
 
