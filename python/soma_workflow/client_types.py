@@ -122,7 +122,7 @@ class Job(object):
       For the user needs, any small and picklable object can be stored here.
 
     ..
-      **disposal_time_out**: int
+      **disposal_timeout**: int
       Only requiered outside of a workflow
     '''
 
@@ -648,7 +648,7 @@ class Workflow(object):
             self.dependencies = dependencies
         else:
             self.dependencies = []
-        self.disposal_timeout = 168
+        self.disposal_timeout = disposal_timeout
 
         # Groups
         if root_group:
