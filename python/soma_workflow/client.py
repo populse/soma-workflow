@@ -1036,6 +1036,9 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
             'format': server_log_format,
         }
 
+        if not os.path.exists(os.path.dirname(server_log_file)):
+            os.makedirs(os.path.dirname(server_log_file))
+
     if sys.version_info >= (2, 7):
         import logging.config
         logging.config.dictConfig(log_config)
