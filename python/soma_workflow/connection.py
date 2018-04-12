@@ -277,20 +277,6 @@ class RemoteConnection(object):
         @param submitting_machine: address of a submitting machine of the
         computing resource.
         '''
-        DEBUG = True
-
-        if DEBUG:
-            if os.path.exists('/home/mb253889/.soma-workflow/'):
-                logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
-                                    level=logging.DEBUG)
-
-        DEBUG = True
-
-        if DEBUG:
-            if os.path.exists('/home/mb253889/.soma-workflow/'):
-                logging.basicConfig(filename='/home/mb253889/.soma-workflow/logs/log_client_side',
-                                    level=logging.DEBUG)
-
         logging.info("************************************************")
         logging.info("***********Init remote connection***************")
 
@@ -421,7 +407,6 @@ class RemoteConnection(object):
         logging.debug("client tunel port on localhost: %s" % repr(tunnel_entrance_port))
 
         import paramiko
-        #paramiko.util.log_to_file("/home/mb253889/paramiko.log")
 
         ### tunnel creation                     ###
         try:
@@ -861,7 +846,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        logging.debug("Too small?????????")
+                        logging.debug("Network data too small")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  " the data, could potential be a problem")
                     self.__chan.send(data)
@@ -871,7 +856,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 0:
                         break
                     if len(data) == 12000:
-                        logging.debug("Too small2?????????")
+                        logging.debug("Network data too small 2")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                  "the data, could potentially be a problem")
                     self.request.send(data)

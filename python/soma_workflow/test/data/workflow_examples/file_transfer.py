@@ -1,17 +1,27 @@
 import time
 
 from soma_workflow.client import Job, Workflow, WorkflowController, Helper, FileTransfer
+from soma_workflow.configuration import Configuration
 # from soma_workflow.connection import RemoteConnection
 
-controller = WorkflowController("Gabriel", "mb253889")
+user = 'nobody'
+try:
+    import pwd
+    user = pwd.getpwuid(os.getuid()).pw_name
+except:
+    pass
+
+controller = WorkflowController("Gabriel", user)
 
 # FileTransfer creation for input files
 file1 = FileTransfer(is_input=True,
-                     client_path="/home/mb253889/create_file.py",
+                     client_path="%s/create_file.py"
+                        % Configuration.get_home_dir(),
                      name="script")
 
 file2 = FileTransfer(is_input=True,
-                     client_path="/home/mb253889/output_file",
+                     client_path="%s/output_file"
+                        % Configuration.get_home_dir(),
                      name="file created on the server")
 
 # Job and Workflow
