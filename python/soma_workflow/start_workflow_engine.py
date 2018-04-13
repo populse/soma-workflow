@@ -151,7 +151,10 @@ if __name__ == "__main__":
                             "if it hasn't been stopped in the meantime.")
 
                 command='ps ux | grep soma_workflow.start_database_server | grep -v grep'
-                output = subprocess.check_output(command, shell=True)
+                try:
+                    output = subprocess.check_output(command, shell=True)
+                except subprocess.CalledProcessError:
+                    output = ''
 
                 logger.debug("Output of grep is: " + repr(output))
                 #will always be true anyway since grep exit status is 1 when
