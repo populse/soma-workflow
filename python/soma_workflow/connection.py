@@ -29,6 +29,8 @@ import logging
 import soma_workflow.zro as zro
 import zmq
 import sys
+import io
+import traceback
 
 try:
     import socketserver # python3
@@ -36,6 +38,7 @@ except ImportError:
     import SocketServer as socketserver # python 2
 
 from soma_workflow.errors import ConnectionError
+
 
 def read_output(stdout, tag=None, num_line_stdout=-1):
     is_limit_stdout = False
@@ -439,6 +442,7 @@ class RemoteConnection(object):
                             self.__transport)
 
             tunnel.start()
+            self.__tunnel = tunnel
 
         except paramiko.AuthenticationException as e:
             raise ConnectionError("The authentification failed while "
@@ -505,7 +509,9 @@ class RemoteConnection(object):
         self.__connection_holder.start()
         logging.info("End of the initialisation of RemoteConnection.")
 
-
+    def __del__(self):
+        if self.__tunnel is not None:
+            self.__tunnel.shutdown()
 
     def isValid(self):
         return self.__connection_holder.isAlive()
@@ -514,6 +520,8 @@ class RemoteConnection(object):
         '''
         For test purpose only !
         '''
+        self.__tunnel.shutdown()
+        del self.__tunnel
         self.__connection_holder.stop()
         self.__transport.close()
 
@@ -857,7 +865,7 @@ class Tunnel(threading.Thread):
                     if len(data) == 12000:
                         logging.debug("Network data too small")
                         logging.info("Tunnel.Handler.handle: multiple receive to transfert"
-                                 " the data, could potential be a problem")
+                                 " the data, could potentially be a problem")
                     self.__chan.send(data)
                 if self.__chan in r:
                     # print('Transfering from the channel to the proxy')
@@ -880,7 +888,11 @@ class Tunnel(threading.Thread):
         self.__port = localport
         self.__hostport = hostport
         self.__transport = transport
+        self.__server = None
         self.setDaemon(True)
+
+    def __del__(self):
+        self.shutdown()
 
     def run(self):
         hostport = self.__hostport
@@ -894,9 +906,15 @@ class Tunnel(threading.Thread):
             ssh_transport = transport
 
         try:
-            Tunnel.ForwardServer(('', local_port), SubHandler).serve_forever()
+            self.__server = Tunnel.ForwardServer(('', local_port), SubHandler)
+            self.__server.serve_forever()
         except KeyboardInterrupt:
             print('tunnel from local_port %d to port %d stopped !' % (local_port, hostport))
         except Exception as e:
             print('Tunnel Error. %s: %s' % (type(e), e))
+        print('Tunnel stopped.')
 
+    def shutdown(self):
+        if self.__server is not None:
+            self.__server.shutdown()
+            self.__server = None
