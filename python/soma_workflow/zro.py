@@ -23,7 +23,8 @@ import sys
 import socket
 from contextlib import closing
 
-DEBUG=True #we print in file /tmp/zro
+DEBUG = True #we print in file /tmp/zro
+DEBUG_FILE = '/tmp/zro'
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
@@ -63,7 +64,7 @@ class ObjectServer:
         self.port = port
         if DEBUG:
             print("Initialising object server on port: " + repr(self.port),
-                  file=open('/tmp/zro','a'))
+                  file=open(DEBUG_FILE,'a'))
 
     def register(self, object):
         """The full socket adress should be provided
@@ -76,7 +77,7 @@ class ObjectServer:
 
         if DEBUG:
             print("The oject server is registering a " + repr(object.__class__.__name__) +
-                  "object, on ", repr(self.port), file=open('/tmp/zro','a'))
+                  "object, on ", repr(self.port), file=open(DEBUG_FILE, 'a'))
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
@@ -84,12 +85,12 @@ class ObjectServer:
         while True:
             #  Wait for next request from client
             if DEBUG:
-                print("ObS0:" + str(self.port)[-3:] + ":Waiting for incoming data", file=open('/tmp/zro','a'))
+                print("ObS0:" + str(self.port)[-3:] + ":Waiting for incoming data", file=open(DEBUG_FILE, 'a'))
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
                 if DEBUG:
-                    print("ObS1:" + str(self.port)[-3:] + ":calling ", classname, object_id, method, args, file=open('/tmp/zro','a'))
+                    print("ObS1:" + str(self.port)[-3:] + ":calling ", classname, object_id, method, args, file=open(DEBUG_FILE, 'a'))
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -97,15 +98,20 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
-                    print("An exception occurred", file=open('/tmp/zro','a'))
+                    if DEBUG:
+                        print("An exception occurred", file=open(DEBUG_FILE, 'a'))
+                        traceback.print_exc(file=open(DEBUG_FILE, 'a'))
                     #result = e
                     result = ReturnException(e, sys.exc_info())
                 if DEBUG:
-                    print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open('/tmp/zro','a'))
+                    print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open(DEBUG_FILE,'a'))
                 self.socket.send(pickle.dumps(result))
             except:
                 print("An exception occurred in the server of the remote object")
-                traceback.print_last()
+                if DEBUG:
+                    traceback.print_last(open(DEBUG_FILE, 'a'))
+                else:
+                    traceback.print_last()
 
 class Proxy(object):
     """
@@ -146,14 +152,14 @@ class Proxy(object):
             print("Issue in zro: the uri is not taken into account, "
                   "this is probably due to its type")
         if DEBUG:
-            print("Proxy: ", str(self.classname), str(self.object_id), str(self._port), file=open('/tmp/zro','a'))
+            print("Proxy: ", str(self.classname), str(self.object_id), str(self._port), file=open(DEBUG_FILE, 'a'))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
     def __getattr__(self, method_name):
         if DEBUG:
-            print("On class:               ", self.classname, file=open('/tmp/zro','a'))
-            print("method called:          ", method_name, file=open('/tmp/zro','a'))
+            print("On class:               ", self.classname, file=open(DEBUG_FILE, 'a'))
+            print("method called:          ", method_name, file=open(DEBUG_FILE, 'a'))
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -170,11 +176,11 @@ class ProxyMethod(object):
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
         if DEBUG:
-            print("remote call result:     ", result, file=open('/tmp/zro','a'))
+            print("remote call result:     ", result, file=open(DEBUG_FILE, 'a'))
         self.proxy.lock.release()
 
         # if isinstance(result, Exception):
-        #     print(result, file=open('/tmp/zro','a'))
+        #     print(result, file=open(DEBUG_FILE, 'a'))
         #     raise result
 
         if isinstance(result, ReturnException):
@@ -183,7 +189,7 @@ class ProxyMethod(object):
                                           result.exc_info[1],
                                           result.exc_info[2],
                                           limit=3,
-                                          file=open('/tmp/zro','a'))
+                                          file=open(DEBUG_FILE, 'a'))
             raise result.exc_info[1]
 
         return result

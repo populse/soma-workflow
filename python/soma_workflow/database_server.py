@@ -25,6 +25,8 @@ from datetime import timedelta
 from datetime import datetime
 import socket
 import itertools
+import io
+import traceback
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -36,6 +38,8 @@ import sys
 import six
 
 if sys.version_info[0] >= 3:
+    StringIO = io.StringIO
+
     def unicode(string):
         if isinstance(string, bytes):
             return string.decode('utf-8')
@@ -45,6 +49,9 @@ if sys.version_info[0] >= 3:
         return list(thing.keys())
 
 else:
+    import StringIO
+    StringIO = StringIO.StringIO
+
     def keys(thing):
         return thing.keys()
 
@@ -544,7 +551,7 @@ class WorkflowDatabaseServer(object):
                     for engine_file_path in cursor.execute(
                             'SELECT DISTINCT engine_file_path FROM ios WHERE engine_file_path IN (%s)'
                             % ','.join(['?'] * len(transfersToDelete)),
-                            transfersToDelete):
+                            list(transfersToDelete)):
                         transfersToDelete.remove(engine_file_path)
 
                 # delete transfers data and associated engine file
@@ -552,7 +559,7 @@ class WorkflowDatabaseServer(object):
                     cursor.execute(
                         'DELETE FROM transfers WHERE engine_file_path IN (%s)'
                         % ','.join(['?'] * len(transfersToDelete)),
-                        transfersToDelete)
+                        list(transfersToDelete))
                     for engine_file_path in transfersToDelete:
                         self.__removeFile(engine_file_path)
 
@@ -595,7 +602,11 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                self.logger.error('%s: %s \n' % (str(type(e)), str(e)))
+                tb = StringIO()
+                traceback.print_exc(file=tb)
+                self.logger.error(tb.getvalue())
+                raise DatabaseError('%s: %s \n' % (str(type(e)), str(e)))
 
             cursor.close()
             connection.commit()
