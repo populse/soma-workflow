@@ -115,14 +115,14 @@ def SSH_exec_cmd(sshcommand,
               "You can test the connection in terminal with "
               "command: ssh -p %s %s@%s"
               % (e, sshport, userid, ip_address_or_domain))
-        raise e
+        raise
     except Exception as e:
         print("Can not use ssh to log on the remote machine. "
               "Please Make sure your network can be connected %s. "
               "You can test the connection in terminal with "
               "command: ssh -p %s %s@%s"
               % (e, sshport, userid, ip_address_or_domain))
-        raise e
+        raise
 
     if wait_output:
         std_out_lines = read_output(stdout, tag, num_line_stdout)
@@ -543,10 +543,19 @@ class RemoteConnection(object):
         sub_machine = submitting_machines[random.randint(
             0, len(submitting_machines) - 1)]
 
-        ssh = paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.connect(sub_machine, port=ssh_port, username=login,
-                    password=passwd)
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.load_system_host_keys()
+            ssh.connect(sub_machine, port=ssh_port, username=login,
+                        password=passwd)
+        except paramiko.AuthenticationException as e:
+            print("The authentification failed. %s. "
+                  "Please check your user and password. "
+                  "You can test the connection in terminal with "
+                  "command: ssh -p %s %s@%s"
+                  % (e, sshport, userid, ip_address_or_domain))
+            raise
 
         stdin, stdout, stderr = ssh.exec_command('ps ux')
 
