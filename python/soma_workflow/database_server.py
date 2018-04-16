@@ -1,14 +1,19 @@
 from __future__ import with_statement, print_function
 
 '''
-@author: Soizic Laguitton
+author: Soizic Laguitton
 
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
+organization: I2BM, Neurospin, Gif-sur-Yvette, France
+organization: CATI, France
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+license: `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html>`_
 '''
+
+# TODO:
+# clean() is called way too often (for each workflow / job / file to be
+# removed), and too much power is probably taken in scanning obsolete items and
+# files. It should be actually done after a short time, combining several calls
+# to clean()
 
 
 #-------------------------------------------------------------------------------
@@ -466,7 +471,9 @@ class WorkflowDatabaseServer(object):
                 except OSError:
                     pass
 
-            return user_id
+        self.remove_non_registered_files()
+
+        return user_id
 
     def clean(self):
         '''
