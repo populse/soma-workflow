@@ -580,39 +580,42 @@ class WorkflowDatabaseServer(object):
                 # check that they are not currently used (as an input of output
                 # of a job)
                 if len(transfersToDelete) != 0:
-                    deleted = set()
+                    transfers_list = list(transfersToDelete)
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
-                    nchunks = int(math.ceil(float(len(transfersToDelete)) / nmax))
+                    nchunks = int(math.ceil(float(len(transfersToDelete))
+                                            / nmax))
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
                         else:
                             n = len(transfersToDelete) - chunk * nmax
                         for engine_file_path in cursor.execute(
-                                'SELECT DISTINCT engine_file_path FROM ios WHERE engine_file_path IN (%s)'
+                                'SELECT DISTINCT engine_file_path FROM ios '
+                                'WHERE engine_file_path IN (%s)'
                                 % ','.join(['?'] * n),
-                                transfersToDelete[chunk * nmax:chunk * nmax + n]):
-                            deleted.add(engine_file_path)
-                    transfersToDelete.difference_update(deleted)
-                    del deleted
+                                transfers_list[chunk * nmax:chunk * nmax + n]):
+                            transfersToDelete.remove(engine_file_path)
 
                 # delete transfers data and associated engine file
                 if len(transfersToDelete) != 0:
+                    transfers_list = list(transfersToDelete)
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
-                    nchunks = int(math.ceil(float(len(transfersToDelete)) / nmax))
+                    nchunks = int(math.ceil(float(len(transfersToDelete))
+                                            / nmax))
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
                         else:
                             n = len(transfersToDelete) - chunk * nmax
                         cursor.execute(
-                            'DELETE FROM transfers WHERE engine_file_path IN (%s)'
+                            'DELETE FROM transfers '
+                            'WHERE engine_file_path IN (%s)'
                             % ','.join(['?'] * n),
-                            transfersToDelete[chunk * nmax:chunk * nmax + n])
+                            transfers_list[chunk * nmax:chunk * nmax + n])
                     for engine_file_path in transfersToDelete:
                         self.__removeFile(engine_file_path)
 
@@ -622,7 +625,8 @@ class WorkflowDatabaseServer(object):
                 # get back the expired temp_path_id
                 tmpToDelete = {}
                 for row in cursor.execute(
-                        'SELECT temp_path_id, engine_file_path FROM temporary_paths WHERE expiration_date < ?',
+                        'SELECT temp_path_id, engine_file_path '
+                        'FROM temporary_paths WHERE expiration_date < ?',
                         [date.today()]):
                     tmpToDelete[row[0]] = row[1]
 
@@ -634,18 +638,17 @@ class WorkflowDatabaseServer(object):
                         nmax = len(tmpToDelete)
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
                     tkeys = keys(tmpToDelete)
-                    deleted = set()
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
                         else:
                             n = len(tmpToDelete) - chunk * nmax
                         for temp_path_id in cursor.execute(
-                                'SELECT DISTINCT temp_path_id FROM ios_tmp WHERE temp_path_id IN (%s)'
+                                'SELECT DISTINCT temp_path_id FROM ios_tmp '
+                                'WHERE temp_path_id IN (%s)'
                                 % ','.join(['?'] * n),
                                 tkeys[chunk * nmax:chunk * nmax + n]):
-                            deleted.add(temp_path_id)
-                    tmpToDelete.difference_update(deleted)
+                            tmpToDelete.remove(temp_path_id)
 
                 # delete temporary_paths data and associated engine file
                 if len(tmpToDelete) != 0:
@@ -654,14 +657,14 @@ class WorkflowDatabaseServer(object):
                         nmax = len(tmpToDelete)
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
                     tkeys = keys(tmpToDelete)
-                    deleted = set()
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
                         else:
                             n = len(tmpToDelete) - chunk * nmax
                         cursor.execute(
-                            'DELETE FROM temporary_paths WHERE temp_path_id IN (%s)'
+                            'DELETE FROM temporary_paths '
+                            'WHERE temp_path_id IN (%s)'
                             % ','.join(['?'] * n),
                             tkeys[chunk * nmax:chunk * nmax + n])
                     for engine_file_path in six.itervalues(tmpToDelete):
@@ -2246,7 +2249,7 @@ class WorkflowDatabaseServer(object):
                 nmax = len(job_status)
             sel = []
             nchunks = int(math.ceil(float(len(job_status)) / nmax))
-            jkeys = job_status.keys()
+            jkeys = keys(job_status)
             for chunk in range(nchunks):
                 if chunk < nchunks - 1:
                     n = nmax
@@ -2318,9 +2321,11 @@ class WorkflowDatabaseServer(object):
                         else:
                             n = len(date_to_update) - chunk * nmax
                         cursor.execute(
-                            '''UPDATE jobs SET last_status_update=? WHERE id IN (%s)'''
+                            '''UPDATE jobs SET last_status_update=? '
+                            'WHERE id IN (%s)'''
                             % ','.join(['?'] * n),
-                            [now] + date_to_update[chunk * nmax:chunk * nmax + n])
+                            [now] + date_to_update[chunk * nmax:
+                                                   chunk * nmax + n])
             except Exception as e:
                 connection.rollback()
                 cursor.close()
