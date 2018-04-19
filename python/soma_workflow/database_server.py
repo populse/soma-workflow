@@ -2321,8 +2321,8 @@ class WorkflowDatabaseServer(object):
                         else:
                             n = len(date_to_update) - chunk * nmax
                         cursor.execute(
-                            '''UPDATE jobs SET last_status_update=? '
-                            'WHERE id IN (%s)'''
+                            'UPDATE jobs SET last_status_update=? '
+                            'WHERE id IN (%s)'
                             % ','.join(['?'] * n),
                             [now] + date_to_update[chunk * nmax:
                                                    chunk * nmax + n])
