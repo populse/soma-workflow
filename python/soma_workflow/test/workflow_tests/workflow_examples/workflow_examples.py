@@ -332,13 +332,13 @@ class WorkflowExamples(object):
             job13.name = "test 3"
             jobs.append(job13)
 
-            job2 = self.job_sleep(5)
+            job2 = self.job_sleep(2)
             job2.name = "Gray/white segmentation"
             jobs.append(job2)
-            job3 = self.job_sleep(5)
+            job3 = self.job_sleep(2)
             job3.name = "Left hemisphere sulci recognition"
             jobs.append(job3)
-            job4 = self.job_sleep(5)
+            job4 = self.job_sleep(2)
             job4.name = "Right hemisphere sulci recognition"
             jobs.append(job4)
 

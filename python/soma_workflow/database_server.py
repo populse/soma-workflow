@@ -1,14 +1,19 @@
 from __future__ import with_statement, print_function
 
 '''
-@author: Soizic Laguitton
+author: Soizic Laguitton
 
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
+organization: I2BM, Neurospin, Gif-sur-Yvette, France
+organization: CATI, France
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+license: `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html>`_
 '''
+
+# TODO:
+# clean() is called way too often (for each workflow / job / file to be
+# removed), and too much power is probably taken in scanning obsolete items and
+# files. It should be actually done after a short time, combining several calls
+# to clean()
 
 
 #-------------------------------------------------------------------------------
@@ -25,6 +30,7 @@ from datetime import timedelta
 from datetime import datetime
 import socket
 import itertools
+import math
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -272,6 +278,45 @@ def create_database(database_file):
     connection.close()
 
 
+_sqlite3_max_variable_number = -1
+
+def sqlite3_max_variable_number():
+    ''' Get the max number of variables sqlite3 can accept in a query/insert
+    operation. This calls the C API using ctypes, and a temporary database,
+    since python sqlite3 module does not expose the sqlite3_limit() function.
+
+    Returns
+    -------
+    max_var: int
+        max variable number, or 0 if an error occurred.
+    '''
+    global _sqlite3_max_variable_number
+    if _sqlite3_max_variable_number != -1:
+        return _sqlite3_max_variable_number
+
+    try:
+        import ctypes
+        import tempfile
+
+        t = tempfile.mkstemp(suffix='.sqlite')
+        os.close(t[0])
+        dll = ctypes.CDLL(ctypes.util.find_library('sqlite3'))
+        if dll is not None:
+            try:
+                db = ctypes.c_void_p(None)
+                dll.sqlite3_open_v2(t[1], ctypes.byref(db), 2,
+                                    ctypes.c_void_p(None))
+                _sqlite3_max_variable_number = dll.sqlite3_limit(db, 9, -1)
+            finally:
+                dll.sqlite3_close(db)
+                os.unlink(t[1])
+    except:
+        pass
+    if _sqlite3_max_variable_number == -1:
+        _sqlite3_max_variable_number = 0
+    return _sqlite3_max_variable_number
+
+
 def print_job_status(database_file):
     connection = sqlite3.connect(
         database_file, timeout=5, isolation_level="EXCLUSIVE")
@@ -466,7 +511,9 @@ class WorkflowDatabaseServer(object):
                 except OSError:
                     pass
 
-            return user_id
+        self.remove_non_registered_files()
+
+        return user_id
 
     def clean(self):
         '''
@@ -488,22 +535,33 @@ class WorkflowDatabaseServer(object):
                         [date.today()]):
                     jobsToDelete.append(row[0])
 
-                job_str = ','.join(['?'] * len(jobsToDelete))
-                cursor.execute('DELETE FROM ios WHERE job_id IN (%s)'
-                               % job_str, jobsToDelete)
-                cursor.execute(
-                    'DELETE FROM ios_tmp WHERE job_id IN (%s)' % job_str,
-                    jobsToDelete)
+                maxv = sqlite3_max_variable_number()
+                nmax = maxv
+                if maxv == 0:
+                    nmax = len(jobsToDelete)
+                nchunks = int(math.ceil(float(len(jobsToDelete)) / nmax))
 
-                for stdof, stdef in cursor.execute(
-                        '''SELECT
-                        stdout_file,
-                        stderr_file
-                        FROM jobs
-                        WHERE id IN (%s) AND custom_submission''' % job_str,
-                        jobsToDelete):
-                    self.__removeFile(self._string_conversion(stdof))
-                    self.__removeFile(self._string_conversion(stdef))
+                for chunk in range(nchunks):
+                    if chunk < nchunks - 1:
+                        n = nmax
+                    else:
+                        n = len(jobsToDelete) - chunk * nmax
+                    job_str = ','.join(['?'] * n)
+                    cursor.execute('DELETE FROM ios WHERE job_id IN (%s)'
+                                   % job_str, jobsToDelete[chunk * nmax:chunk * nmax + n])
+                    cursor.execute(
+                        'DELETE FROM ios_tmp WHERE job_id IN (%s)' % job_str,
+                        jobsToDelete[chunk * nmax:chunk * nmax + n])
+
+                    for stdof, stdef in cursor.execute(
+                            '''SELECT
+                            stdout_file,
+                            stderr_file
+                            FROM jobs
+                            WHERE id IN (%s) AND custom_submission''' % job_str,
+                            jobsToDelete[chunk * nmax:chunk * nmax + n]):
+                        self.__removeFile(self._string_conversion(stdof))
+                        self.__removeFile(self._string_conversion(stdef))
 
                 cursor.execute(
                     'DELETE FROM jobs WHERE expiration_date < ?',
@@ -522,18 +580,42 @@ class WorkflowDatabaseServer(object):
                 # check that they are not currently used (as an input of output
                 # of a job)
                 if len(transfersToDelete) != 0:
-                    for engine_file_path in cursor.execute(
-                            'SELECT DISTINCT engine_file_path FROM ios WHERE engine_file_path IN (%s)'
-                            % ','.join(['?'] * len(transfersToDelete)),
-                            transfersToDelete):
-                        transfersToDelete.remove(engine_file_path)
+                    transfers_list = list(transfersToDelete)
+                    nmax = maxv
+                    if nmax == 0:
+                        nmax = len(transfersToDelete)
+                    nchunks = int(math.ceil(float(len(transfersToDelete))
+                                            / nmax))
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(transfersToDelete) - chunk * nmax
+                        for engine_file_path in cursor.execute(
+                                'SELECT DISTINCT engine_file_path FROM ios '
+                                'WHERE engine_file_path IN (%s)'
+                                % ','.join(['?'] * n),
+                                transfers_list[chunk * nmax:chunk * nmax + n]):
+                            transfersToDelete.remove(engine_file_path)
 
                 # delete transfers data and associated engine file
                 if len(transfersToDelete) != 0:
-                    cursor.execute(
-                        'DELETE FROM transfers WHERE engine_file_path IN (%s)'
-                        % ','.join(['?'] * len(transfersToDelete)),
-                        transfersToDelete)
+                    transfers_list = list(transfersToDelete)
+                    nmax = maxv
+                    if nmax == 0:
+                        nmax = len(transfersToDelete)
+                    nchunks = int(math.ceil(float(len(transfersToDelete))
+                                            / nmax))
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(transfersToDelete) - chunk * nmax
+                        cursor.execute(
+                            'DELETE FROM transfers '
+                            'WHERE engine_file_path IN (%s)'
+                            % ','.join(['?'] * n),
+                            transfers_list[chunk * nmax:chunk * nmax + n])
                     for engine_file_path in transfersToDelete:
                         self.__removeFile(engine_file_path)
 
@@ -543,25 +625,48 @@ class WorkflowDatabaseServer(object):
                 # get back the expired temp_path_id
                 tmpToDelete = {}
                 for row in cursor.execute(
-                        'SELECT temp_path_id, engine_file_path FROM temporary_paths WHERE expiration_date < ?',
+                        'SELECT temp_path_id, engine_file_path '
+                        'FROM temporary_paths WHERE expiration_date < ?',
                         [date.today()]):
                     tmpToDelete[row[0]] = row[1]
 
                 # check that they are not currently used (as an input of output
                 # of a job)
                 if len(tmpToDelete) != 0:
-                    for temp_path_id in cursor.execute(
-                            'SELECT DISTINCT temp_path_id FROM ios_tmp WHERE temp_path_id IN (%s)'
-                            % ','.join(['?'] * len(tmpToDelete)),
-                            keys(tmpToDelete)):
-                        tmpToDelete.remove(temp_path_id)
+                    nmax = maxv
+                    if nmax == 0:
+                        nmax = len(tmpToDelete)
+                    nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
+                    tkeys = keys(tmpToDelete)
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(tmpToDelete) - chunk * nmax
+                        for temp_path_id in cursor.execute(
+                                'SELECT DISTINCT temp_path_id FROM ios_tmp '
+                                'WHERE temp_path_id IN (%s)'
+                                % ','.join(['?'] * n),
+                                tkeys[chunk * nmax:chunk * nmax + n]):
+                            tmpToDelete.remove(temp_path_id)
 
                 # delete temporary_paths data and associated engine file
                 if len(tmpToDelete) != 0:
-                    cursor.execute(
-                        'DELETE FROM temporary_paths WHERE temp_path_id IN (%s)'
-                        % ','.join(['?'] * len(tmpToDelete)),
-                        keys(tmpToDelete))
+                    nmax = maxv
+                    if nmax == 0:
+                        nmax = len(tmpToDelete)
+                    nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
+                    tkeys = keys(tmpToDelete)
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(tmpToDelete) - chunk * nmax
+                        cursor.execute(
+                            'DELETE FROM temporary_paths '
+                            'WHERE temp_path_id IN (%s)'
+                            % ','.join(['?'] * n),
+                            tkeys[chunk * nmax:chunk * nmax + n])
                     for engine_file_path in six.itervalues(tmpToDelete):
                         self.__removeFile(engine_file_path)
 
@@ -576,7 +681,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.commit()
@@ -2139,26 +2244,36 @@ class WorkflowDatabaseServer(object):
 
             # execute all queries before writing in the database, it's
             # more efficient.
-            sel = connection.execute(
-                ''' SELECT id,
-                        status,
-                        last_status_update,
-                        execution_date,
-                        ending_date
-                FROM jobs WHERE id IN (%s)'''
-                % ','.join('?' * len(job_status)),
-                keys(job_status))
-            for (job_id, previous_status, last_update, execution_date,
-                 ending_date) in sel:
-                status = job_status[job_id]
-                previous_status = self._string_conversion(
-                    previous_status)
-                execution_date = self._str_to_date_conversion(
-                    execution_date)
-                ending_date = self._str_to_date_conversion(ending_date)
-                statuses.append((job_id, status, previous_status,
-                                  last_update, execution_date,
-                                  ending_date))
+            nmax = sqlite3_max_variable_number()
+            if nmax == 0:
+                nmax = len(job_status)
+            sel = []
+            nchunks = int(math.ceil(float(len(job_status)) / nmax))
+            jkeys = keys(job_status)
+            for chunk in range(nchunks):
+                if chunk < nchunks - 1:
+                    n = nmax
+                else:
+                    n = len(job_status) - chunk * nmax
+                sel = connection.execute(
+                    ''' SELECT id,
+                            status,
+                            last_status_update,
+                            execution_date,
+                            ending_date
+                    FROM jobs WHERE id IN (%s)'''
+                    % ','.join('?' * n), jkeys[chunk * nmax:chunk * nmax + n])
+                for (job_id, previous_status, last_update, execution_date,
+                     ending_date) in sel:
+                    status = job_status[job_id]
+                    previous_status = self._string_conversion(
+                        previous_status)
+                    execution_date = self._str_to_date_conversion(
+                        execution_date)
+                    ending_date = self._str_to_date_conversion(ending_date)
+                    statuses.append((job_id, status, previous_status,
+                                     last_update, execution_date,
+                                     ending_date))
 
             cursor = connection.cursor()
             now = datetime.now()
@@ -2198,15 +2313,24 @@ class WorkflowDatabaseServer(object):
                 if len(date_to_update) != 0:
                     # update last_status_update for all jobs which may
                     # become outdated
-                    cursor.execute(
-                        '''UPDATE jobs SET last_status_update=? WHERE id IN (%s)'''
-                        % ','.join(['?'] * len(date_to_update)),
-                        [now] + date_to_update)
+                    nmax -= 1
+                    nchunks = int(math.ceil(float(len(date_to_update)) / nmax))
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(date_to_update) - chunk * nmax
+                        cursor.execute(
+                            'UPDATE jobs SET last_status_update=? '
+                            'WHERE id IN (%s)'
+                            % ','.join(['?'] * n),
+                            [now] + date_to_update[chunk * nmax:
+                                                   chunk * nmax + n])
             except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
