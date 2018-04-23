@@ -482,11 +482,12 @@ class WorkflowEngineLoop(object):
         with self._lock:
             self._running_jobs_limits = running_jobs_limits
 
-    def add_job(self, client_job, queue):
+    def add_job(self, client_job, queue, container_command=None):
         # register
         engine_job = EngineJob(client_job=client_job,
                                queue=queue,
-                               path_translation=self._path_translation)
+                               path_translation=self._path_translation,
+                               container_command=container_command)
 
         engine_job = self._database_server.add_job(self._user_id, engine_job,
                                                    login=self._user_login)
@@ -586,12 +587,16 @@ class WorkflowEngineLoop(object):
         # self.logger.debug("to_run " + repr(to_run))
         return to_run
 
-    def add_workflow(self, client_workflow, expiration_date, name, queue):
+    def add_workflow(self, client_workflow, expiration_date, name, queue,
+                     container_command=None):
         '''
-        @type client_workflow: soma_workflow.client.Workflow
-        @type expiration_date: datetime.datetime
-        @type name: str
-        @type queue: str
+        Parameters
+        ----------
+        client_workflow: soma_workflow.client.Workflow
+        expiration_date: datetime.datetime
+        name: str
+        queue: str
+        container_command: list or None
         '''
         # register
         self.logger.debug("Within add_workflow")
@@ -599,7 +604,8 @@ class WorkflowEngineLoop(object):
                                          self._path_translation,
                                          queue,
                                          expiration_date,
-                                         name)
+                                         name,
+                                         container_command=container_command)
 
         engine_workflow = self._database_server.add_workflow(
             self._user_id, engine_workflow, login=self._user_login)
@@ -752,13 +758,15 @@ class WorkflowEngine(RemoteFileController):
     engine_loop_thread = None
     # id of the user on the database server
     _user_id = None
+    container_command = None
 
     def __init__(self,
                  database_server,
                  scheduler,
                  path_translation=None,
                  queue_limits={},
-                 running_jobs_limits={}):
+                 running_jobs_limits={},
+                 container_command=None):
         '''
         @type  database_server:
                L{soma_workflow.database_server.WorkflowDatabaseServer}
@@ -769,6 +777,8 @@ class WorkflowEngine(RemoteFileController):
         self.logger = logging.getLogger('engine.WorkflowEngine')
 
         self._database_server = database_server
+        self.container_command = container_command
+
         try:
             user_login = getpass.getuser()
         except Exception as e:
@@ -857,7 +867,8 @@ class WorkflowEngine(RemoteFileController):
         @type  job: L{soma_workflow.client.Job}
         @param job: job informations
         '''
-        engine_job = self.engine_loop.add_job(job, queue)
+        engine_job = self.engine_loop.add_job(
+            job, queue, container_command=self.container_command)
 
         return engine_job.job_id
 
@@ -900,6 +911,10 @@ class WorkflowEngine(RemoteFileController):
             logging.exception("ERROR: in submit_worflow, an exception occurred when calling engine_loop.add_workflow")
 
         logging.debug("Workflow identifier is: " + str(wf_id))
+        wf_id = self.engine_loop.add_workflow(
+            workflow, expiration_date, name, queue,
+            container_command=self.container_command)
+
         return wf_id
 
     def delete_workflow(self, workflow_id, force=True):
@@ -1281,7 +1296,8 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
             scheduler,
             path_translation=config.get_path_translation(),
             queue_limits=config.get_queue_limits(),
-            running_jobs_limits=config.get_running_jobs_limits())
+            running_jobs_limits=config.get_running_jobs_limits(),
+            container_command=config.get_container_command())
 
         self.config = config
 
