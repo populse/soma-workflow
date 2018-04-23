@@ -788,6 +788,8 @@ class WorkflowEngine(RemoteFileController):
         self.logger.debug("user_login: " + user_login)
         self._user_id = self._database_server.register_user(user_login)
         self.logger.debug("user_id : " + repr(self._user_id))
+        self.logger.debug("container_command : "
+                          + repr(self.container_command))
         self.engine_loop = WorkflowEngineLoop(database_server,
                                               scheduler,
                                               path_translation,
@@ -796,6 +798,7 @@ class WorkflowEngine(RemoteFileController):
         self.engine_loop_thread = EngineLoopThread(self.engine_loop)
         self.engine_loop_thread.setDaemon(True)
         self.engine_loop_thread.start()
+        self.logger.debug("WorkflowEngine init done.")
 
     def __del__(self):
         pass
@@ -1310,6 +1313,8 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         # set temp path in EngineTemporaryPath
         EngineTemporaryPath.temporary_directory \
             = config.get_shared_temporary_directory()
+        self.logger.debug('ConfiguredWorkflowEngine with container_command: %s'
+                          % repr(self.container_command))
 
     def get_configuration(self):
         return self.config
