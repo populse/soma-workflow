@@ -308,6 +308,10 @@ class EngineJob(Job):
             new_command = str(command)
         return new_command
 
+    @staticmethod
+    def escape_quotes(line):
+        return line.replace('"', '\\"')
+
     def plain_command(self):
         '''
         Compute the actual job command (sequence of string) from the command
