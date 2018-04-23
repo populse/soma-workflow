@@ -327,7 +327,7 @@ class EngineJob(Job):
                 for i in replaced:
                     command[i] \
                         = self.container_command[i].replace('{%command}',
-                                                            command)
+                                                            user_command)
         else:
             command = self.command
         return self.generate_command(command, mode="Command")
