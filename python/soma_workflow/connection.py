@@ -510,8 +510,7 @@ class RemoteConnection(object):
         logging.info("End of the initialisation of RemoteConnection.")
 
     def __del__(self):
-        if self.__tunnel is not None:
-            self.__tunnel.shutdown()
+        self.stop()
 
     def isValid(self):
         return self.__connection_holder.isAlive()
@@ -520,8 +519,9 @@ class RemoteConnection(object):
         '''
         For test purpose only !
         '''
-        self.__tunnel.shutdown()
-        del self.__tunnel
+        if self.__tunnel is not None:
+            self.__tunnel.shutdown()
+        self.__tunnel = None
         self.__connection_holder.stop()
         self.__transport.close()
 
@@ -754,6 +754,8 @@ class ConnectionChecker(object):
                     logging.debug("Delta is too large, the client is not connected anymore: ", delta)
                     self.disconnectionCallback()
                     self.connected = False
+                    logging.debug('ConnectionChecker: client disconnected.')
+                    break
                 else:
                     self.connected = True
                 logging.debug("Connected? :", self.connected)

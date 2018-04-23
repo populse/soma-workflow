@@ -206,6 +206,9 @@ class WorkflowController(object):
         self._transfer_monitoring = TransferMonitoring(self._engine_proxy)
         print("Workflow controller initialised")
 
+    def __del__(self):
+        self.disconnect()
+
     def disconnect(self):
         '''
         Simulates a disconnection for TEST PURPOSE ONLY.
