@@ -2029,11 +2029,16 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a job to the database and returns its identifier.
 
-        @type user_id: C{UserIdentifier}
-        @type engine_job: EngineJob
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        engine_job: EngineJob
 
-        @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
-        @return: the identifier of the job
+        Returns
+        -------
+        job_desc: tuple
+            the identifier of the job:
+            (JobIdentifier, stdout_file_path, stderr_file_path)
         '''
         expiration_date = expiration_date
         if expiration_date == None:
