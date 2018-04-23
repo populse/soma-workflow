@@ -1,6 +1,6 @@
 
 version_major = 2
-version_minor = 9
+version_minor = 10
 version_micro = 0
 version_extra = ''
 

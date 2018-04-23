@@ -129,6 +129,9 @@ PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 # Native_specification for all jobs
 OCFG_NATIVE_SPECIFICATION = 'NATIVE_SPECIFICATION'
 
+# Container (docker / singularity...) prefix prepended to all commands in jobs
+OCFG_CONTAINER_COMMAND = 'CONTAINER_COMMAND'
+
 # local sheduler configuration -------------------------------------------
 
 OCFG_SCDL_CPU_NB = "CPU_NB"
@@ -935,6 +938,18 @@ class Configuration(observer.Observable):
             return (server_log_file, server_log_format, server_log_level)
         else:
             return (None, None, None)
+
+    def get_container_command(self):
+        if self._config_parser is not None \
+                and self._config_parser.has_option(self._resource_id,
+                                                   OCFG_CONTAINER_COMMAND):
+            container_command = eval(self._config_parser.get(
+                self._resource_id, OCFG_CONTAINER_COMMAND))
+            container_command = [os.path.expandvars(item)
+                                 for item in container_command]
+            return container_command
+        else:
+            return None
 
     def make_dirs(self, anypath, is_file_path=False):
         '''

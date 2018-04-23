@@ -319,6 +319,39 @@ Configuration items optional on the server side:
   **SHARED_TEMPORARY_DIR**
     Directory where to generate temporary files used between jobs. The directory should be visible by all processing nodes (on a cluster), and the filesystem should be large enough to store temporary files during a whole workflow execution.
 
+  **CONTAINER_COMMAND**
+    This item is a prefix prepended to all jobs commands. It is typically used to drive execution through a container system such as `singularity <https://singularity.lbl.gov/>`_ or `docker <https://www.docker.com/>`_. In this situation, jobs commandlines have to specify the container command and options, for instance:
+
+    .. code-block:: bash
+
+        singularity exec --bind /data_dir /opt/singularity_images/appropriate_image.simg command_to_run arg1 arg2...
+
+    The **CONTAINER_COMMAND** parameter will allow to build the container-related beginning for jobs commandlines. It is actually a list, given in a python syntax. Shell Environment variables replacement is allowed, and a special pattern, ``{#command}`` allows to replace the actual job commanline at a given location.
+
+    This config variable has appeared in Soma-Workflow 2.10.
+
+    Let's take a simple example first::
+
+        container_command = ['singularity', 'exec', '--bind', '/data_dir', '--bind', '/software_dir', '/opt/singularity_images/appropriate_image.simg', 'entrypoint']
+
+    Here, the job command will be appended after the ``entrypoint`` program (if defined in the container image) which will run inside *singularity*. Let's suppose the job commandline is ``['ls', '/']``, the command which will be actually run is:
+
+    .. code-block:: bash
+
+        singularity exec --bind /data_dir --bind /software_dir /opt/singularity_images/appropriate_image.simg entrypoint ls /
+
+    Now if we need further customization, for instance to set a library path variable to access a library with custom installation, we will need to run a shell to setup the variable then run the program:
+
+    .. code-block::
+
+        sh -c 'LD_LIBRARY_PATH=/software_dir/lib:$"LD_LIBRARY_PATH" ls /'
+
+    Here the job command with arguments must be within the ``'`` quotes after ``sh -c`` to run in the shell command. Then the **CONTAINER_COMMAND** variable for Soma-Workflow has to be::
+
+        container_command = ['singularity', 'exec', '--bind', '/data_dir', '--bind', '/software_dir', '/opt/singularity_images/appropriate_image.simg', 'sh', '-c', 'LD_LIBRARY_PATH="/ software_dir/lib:$LD_LIBRARY_PATH" entrypoint {#command}']
+
+    This variable, being set only on server-side, allows to run workflows not aware of any container system on the computing resource, and can be set differently (or not set) on different computing resources.
+
 Logging configuration:
 
   **SERVER_LOG_FILE**

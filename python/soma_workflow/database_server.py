@@ -31,6 +31,10 @@ from datetime import datetime
 import socket
 import itertools
 import math
+import glob
+import ctypes
+import ctypes.util
+import tempfile
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -278,6 +282,66 @@ def create_database(database_file):
     connection.close()
 
 
+# -- this is a copy of the find_library in soma-base soma.utils.find_library
+ctypes_find_library = ctypes.util.find_library
+
+def find_library(name):
+    ''' :func:`ctypes.util.find_library` is broken on linux at least: it relies
+    on ``ldconfig``, which only searches system paths, not user paths nor
+    ``LD_LIBRARY_PATH``, or alternatively uses ``gcc``, which is not always
+    installed nor configured.
+
+    Here we are looking in ``[[DY]LD_LIBRARY_]PATH`` (depending on the system)
+    '''
+    def sorted_match(filenames):
+        return sorted(filenames)[-1] # probably not the best
+
+    exts = ['.so']
+    patterns = [ext + '.*' for ext in exts]
+    fname = 'lib' + name
+    if sys.platform.startswith('linux'):
+        envar = 'LD_LIBRARY_PATH'
+    elif sys.platform == 'darwin':
+        envar = 'DYLD_LIBRARY_PATH'
+        exts = ['.dylib']
+        patterns = ['.*' + ext for ext in exts]
+    elif sys.platform.startswith('win'):
+        envar = 'PATH'
+        exts = ['.dll', '.DLL']
+        patterns = ['.*' + ext for ext in exts]
+    else:
+        # other undetermined system (bsd, othe unix...?), assume ELF
+        envar = 'LD_LIBRARY_PATH'
+    paths = os.environ.get(envar)
+    if paths is None:
+        # no path: fallback to ctypes
+        return ctypes_find_library(name)
+
+    paths = paths.split(os.pathsep)
+    names = [fname + ext for ext in exts] + [name + ext for ext in exts]
+    patterns = [fname + pattern for pattern in patterns] \
+        + [name + pattern for pattern in patterns]
+    found = None
+    for path in paths:
+        for tname in names:
+            filename = os.path.join(path, tname)
+            if os.path.exists(filename):
+                found = filename
+                break
+        for tname in patterns:
+            filenames = glob.glob(os.path.join(path, tname))
+            if len(filenames) != 0:
+                found = sorted_match(filenames)
+                break
+
+    if found is not None:
+        return os.path.basename(os.path.realpath(found))
+
+    # not found: fallback to ctypes
+    return ctypes_find_library(name)
+#--
+
+
 _sqlite3_max_variable_number = -1
 
 def sqlite3_max_variable_number():
@@ -295,13 +359,15 @@ def sqlite3_max_variable_number():
         return _sqlite3_max_variable_number
 
     try:
-        import ctypes
-        import tempfile
 
-        t = tempfile.mkstemp(suffix='.sqlite')
-        os.close(t[0])
-        dll = ctypes.CDLL(ctypes.util.find_library('sqlite3'))
+        lib = find_library('sqlite3')
+        if lib is None and sys.platform.startswith('win'):
+            lib = find_library('sqlite3-0')
+        dll = ctypes.CDLL(lib)
+
         if dll is not None:
+            t = tempfile.mkstemp(suffix='.sqlite')
+            os.close(t[0])
             try:
                 db = ctypes.c_void_p(None)
                 dll.sqlite3_open_v2(t[1], ctypes.byref(db), 2,
@@ -464,8 +530,10 @@ class WorkflowDatabaseServer(object):
             connection = sqlite3.connect(
                 self._database_file, timeout=10, isolation_level="EXCLUSIVE")
         except Exception as e:
-            raise DatabaseError('On database file %s: %s: %s \n'
-                                % (self._database_file, type(e), e))
+            raise DatabaseError, \
+                  DatabaseError('On database file %s: %s: %s \n'
+                                % (self._database_file, type(e), e)), \
+                  sys.exc_info()[2]
         return connection
 
     def _user_transfer_dir_path(self, login, user_id):
@@ -498,7 +566,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -702,7 +770,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
 
@@ -734,7 +802,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
 
@@ -789,7 +857,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 if not external_cursor:
                     connection.rollback()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             finally:
                 if not external_cursor:
                     cursor.close()
@@ -875,7 +943,7 @@ class WorkflowDatabaseServer(object):
                     if not external_cursor:
                         connection.rollback()
                         connection.close()
-                    raise DatabaseError('%s: %s \n' % (type(e), e))
+                    raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             file_num = self.get_new_file_number(external_cursor)
             userDirPath = self._user_transfer_dir_path(login, user_id)
@@ -988,7 +1056,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             if not external_cursor:
                 cursor.close()
                 connection.commit()
@@ -1045,7 +1113,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             if not external_cursor:
                 cursor.close()
                 connection.commit()
@@ -1064,7 +1132,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise DatabaseError('%s: %s \n' % (type(e), e))
+            raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
         try:
             six.next(sel)
@@ -1084,7 +1152,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise DatabaseError('%s: %s \n' % (type(e), e))
+            raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
         try:
             six.next(sel)
@@ -1115,7 +1183,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1143,7 +1211,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1188,7 +1256,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             engine_file_path = self._string_conversion(engine_file_path)
             client_file_path = self._string_conversion(client_file_path)
@@ -1248,7 +1316,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             engine_file_path = self._string_conversion(engine_file_path)
             expiration_date = self._str_to_date_conversion(expiration_date)
@@ -1282,7 +1350,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             status = self._string_conversion(status)
             cursor.close()
             connection.close()
@@ -1305,7 +1373,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             status = self._string_conversion(status)
             cursor.close()
             connection.close()
@@ -1336,7 +1404,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1363,7 +1431,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1380,7 +1448,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1412,7 +1480,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1441,7 +1509,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1546,7 +1614,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1581,7 +1649,7 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
                 self.vacuum()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.commit()
@@ -1608,7 +1676,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1637,7 +1705,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
 
@@ -1690,7 +1758,7 @@ class WorkflowDatabaseServer(object):
                 self.logger.error(
                     "===> workflow_status update failed, error: %s, : %s"
                     % (str(type(e)), str(e)))
-                raise DatabaseError('%s: %s \n' % (str(type(e)), str(e)))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -1714,7 +1782,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             status = self._string_conversion(status)
             date = self._str_to_date_conversion(strdate)
             cursor.close()
@@ -1856,7 +1924,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
 
@@ -1891,7 +1959,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise DatabaseError('%s: %s \n' % (type(e), e))
+            raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
         try:
             six.next(sel)
@@ -1921,7 +1989,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
             last_status_update = self._str_to_date_conversion(
@@ -1945,7 +2013,7 @@ class WorkflowDatabaseServer(object):
             if not external_cursor:
                 connection.rollback()
                 connection.close()
-            raise DatabaseError('%s: %s \n' % (type(e), e))
+            raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
         if not external_cursor:
             connection.commit()
             connection.close()
@@ -1961,11 +2029,16 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a job to the database and returns its identifier.
 
-        @type user_id: C{UserIdentifier}
-        @type engine_job: EngineJob
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        engine_job: EngineJob
 
-        @rtype: tuple (C{JobIdentifier}, stdout_file_path, stderr_file_path)
-        @return: the identifier of the job
+        Returns
+        -------
+        job_desc: tuple
+            the identifier of the job:
+            (JobIdentifier, stdout_file_path, stderr_file_path)
         '''
         expiration_date = expiration_date
         if expiration_date == None:
@@ -2129,7 +2202,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             if not external_cursor:
                 connection.commit()
                 cursor.close()
@@ -2160,7 +2233,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
 
@@ -2196,7 +2269,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.commit()
@@ -2227,7 +2300,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -2389,7 +2462,7 @@ class WorkflowDatabaseServer(object):
                 except Exception as e:
                     connection.rollback()
                     connection.close()
-                    raise DatabaseError('%s: %s \n' % (type(e), e))
+                    raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             connection.close()
 
@@ -2416,7 +2489,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             status = self._string_conversion(status)
             date = self._str_to_date_conversion(strdate)
             cursor.close()
@@ -2466,7 +2539,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -2491,7 +2564,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             try:
                 drmaa_id = six.next(sel)[0]
@@ -2522,7 +2595,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             try:
                 result = six.next(sel)
@@ -2563,7 +2636,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
         exit_status = self._string_conversion(result[0])
@@ -2589,7 +2662,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             connection.commit()
             cursor.close()
             connection.close()
@@ -2645,7 +2718,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             if not external_cursor:
                 connection.commit()
                 cursor.close()
@@ -2714,7 +2787,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.close()
@@ -2802,7 +2875,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.close()
@@ -2836,7 +2909,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.close()
@@ -2893,7 +2966,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
         return result
@@ -2940,7 +3013,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
         return result
@@ -2957,7 +3030,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise DatabaseError('%s: %s \n' % (type(e), e))
+            raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
         try:
             six.next(sel)
@@ -2982,7 +3055,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             try:
                 last_status_update = six.next(sel)[0]
@@ -3030,7 +3103,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
             cursor.close()
             connection.close()
         return result
@@ -3063,7 +3136,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise DatabaseError('%s: %s \n' % (type(e), e))
+                raise DatabaseError, DatabaseError(e), sys.exc_info()[2]
 
             cursor.close()
             connection.close()
