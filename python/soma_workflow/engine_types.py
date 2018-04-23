@@ -67,6 +67,9 @@ class EngineJob(Job):
         (:obj:`EngineTransfer` and :obj:`EngineTemporaryPath`).
     parallel_job_submission_info
         Configuration of the prallel submission.
+    container_command: list or None
+        container (docker / singularity) command prefix to be prepended to
+        the commandline
     '''
 
     # job id
@@ -119,7 +122,8 @@ class EngineJob(Job):
                  workflow_id=-1,
                  path_translation=None,
                  transfer_mapping=None,
-                 parallel_job_submission_info=None):
+                 parallel_job_submission_info=None,
+                 container_command=None):
 
         super(EngineJob, self).__init__(client_job.command,
                                         client_job.referenced_input_files,
@@ -147,6 +151,7 @@ class EngineJob(Job):
         self.queue = queue
 
         self.path_translation = path_translation
+        self.container_command = container_command
 
         if not transfer_mapping:
             self.transfer_mapping = {}
@@ -310,7 +315,11 @@ class EngineJob(Job):
 
         returns: sequence of string
         '''
-        return self.generate_command(self.command, mode="Command")
+        if self.container_command is not None:
+            command = self.container_command + self.command
+        else:
+            command = self.command
+        return self.generate_command(command, mode="Command")
 
     def plain_stdin(self):
         return self.generate_command(self.stdin)
@@ -389,6 +398,10 @@ class EngineWorkflow(Workflow):
     # dictonary: tr_id -> EngineTransfer
     registered_tr = None
 
+    # docker / singularity prefix command, to be prepended to all jobs
+    # commandlines
+    container_command = None
+
     # for each job: list of all the jobs which have to end before a job can start
     # dictionary: job_id -> list of job id
     _dependency_dict = None
@@ -411,7 +424,8 @@ class EngineWorkflow(Workflow):
                  path_translation,
                  queue,
                  expiration_date,
-                 name):
+                 name,
+                 container_command=None):
 
         super(EngineWorkflow, self).__init__(client_workflow.jobs,
                                              client_workflow.dependencies,
@@ -429,6 +443,7 @@ class EngineWorkflow(Workflow):
 
         self.job_mapping = {}
         self.transfer_mapping = {}
+        self.container_command = container_command
         self._map()
 
         self.registered_tr = {}
@@ -458,7 +473,8 @@ class EngineWorkflow(Workflow):
                 ejob = EngineJob(client_job=job,
                                  queue=self.queue,
                                  path_translation=self._path_translation,
-                                 transfer_mapping=self.transfer_mapping)
+                                 transfer_mapping=self.transfer_mapping,
+                                 container_command=self.container_command)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[job] = ejob
 
@@ -475,7 +491,8 @@ class EngineWorkflow(Workflow):
                 ejob = EngineJob(client_job=dependency[0],
                                  queue=self.queue,
                                  path_translation=self._path_translation,
-                                 transfer_mapping=self.transfer_mapping)
+                                 transfer_mapping=self.transfer_mapping,
+                                 container_command=self.container_command)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[dependency[0]] = ejob
 
@@ -484,7 +501,8 @@ class EngineWorkflow(Workflow):
                 ejob = EngineJob(client_job=dependency[1],
                                  queue=self.queue,
                                  path_translation=self._path_translation,
-                                 transfer_mapping=self.transfer_mapping)
+                                 transfer_mapping=self.transfer_mapping,
+                                 container_command=self.container_command)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[dependency[1]] = ejob
 
@@ -495,10 +513,12 @@ class EngineWorkflow(Workflow):
                 if isinstance(elem, Job):
                     if elem not in self.job_mapping:
                         self.jobs.append(elem)
-                        ejob = EngineJob(client_job=elem,
-                                         queue=self.queue,
-                                         path_translation=self._path_translation,
-                                         transfer_mapping=self.transfer_mapping)
+                        ejob = EngineJob(
+                            client_job=elem,
+                            queue=self.queue,
+                            path_translation=self._path_translation,
+                            transfer_mapping=self.transfer_mapping,
+                            container_command=self.container_command)
                         self.transfer_mapping.update(ejob.transfer_mapping)
                         self.job_mapping[elem] = ejob
                 elif not isinstance(elem, Group):
@@ -514,7 +534,8 @@ class EngineWorkflow(Workflow):
                     ejob = EngineJob(client_job=elem,
                                      queue=self.queue,
                                      path_translation=self._path_translation,
-                                     transfer_mapping=self.transfer_mapping)
+                                     transfer_mapping=self.transfer_mapping,
+                                     container_command=self.container_command)
                     self.transfer_mapping.update(ejob.transfer_mapping)
                     self.job_mapping[elem] = ejob
             elif not isinstance(elem, Group):
