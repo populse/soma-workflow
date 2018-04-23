@@ -943,9 +943,10 @@ class Configuration(observer.Observable):
         if self._config_parser is not None \
                 and self._config_parser.has_option(self._resource_id,
                                                    OCFG_CONTAINER_COMMAND):
-            container_command = self._config_parser.get(self._resource_id,
-                                                        OCFG_CONTAINER_COMMAND)
-            container_command = os.path.expandvars(container_command)
+            container_command = eval(self._config_parser.get(
+                self._resource_id, OCFG_CONTAINER_COMMAND))
+            container_command = [os.path.expandvars(item)
+                                 for item in container_command]
             return container_command
         else:
             return None
