@@ -321,14 +321,17 @@ class EngineJob(Job):
             if len(replaced) == 0:
                 command = self.container_command + self.command
             else:
-                user_command = '"' \
-                    + '" "'.join(self.generate_command(self.command,
-                                                       mode="Command")) + '"'
+                user_command = self.generate_command(self.command,
+                                                     mode="Command")
+                user_command = [self.escape_quotes(item)
+                                for item in user_command]
+                user_command = '"' + '" "'.join(user_command) + '"'
                 command = list(self.container_command)
                 for i in replaced:
                     command[i] \
                         = self.container_command[i].replace('{%command}',
                                                             user_command)
+                return command # no need to replace again
         else:
             command = self.command
         return self.generate_command(command, mode="Command")
