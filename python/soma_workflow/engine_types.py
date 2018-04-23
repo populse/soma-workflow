@@ -323,7 +323,7 @@ class EngineJob(Job):
             else:
                 user_command = '"' \
                     + '" "'.join(self.generate_command(self.command,
-                                                       mode="Command") + '"'
+                                                       mode="Command")) + '"'
                 command = list(self.container_command)
                 for i in replaced:
                     command[i] \
