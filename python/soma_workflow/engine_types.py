@@ -316,7 +316,17 @@ class EngineJob(Job):
         returns: sequence of string
         '''
         if self.container_command is not None:
-            command = self.container_command + self.command
+            replaced = [i for i in range(len(self.container_command))
+                        if '%(command)s' in self.container_command[i]]
+            if len(replaced) == 0:
+                command = self.container_command + self.command
+            else:
+                user_command = self.generate_command(self.command,
+                                                     mode="Command")
+                command = list(self.container_command)
+                repl_dict = {'command': command}
+                for i in replaced:
+                    command[i] = self.container_command[i] % repl_dict
         else:
             command = self.command
         return self.generate_command(command, mode="Command")
