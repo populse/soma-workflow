@@ -939,7 +939,7 @@ class Configuration(observer.Observable):
         else:
             return (None, None, None)
 
-    def get_containter_command(self):
+    def get_container_command(self):
         if self._config_parser is not None \
                 and self._config_parser.has_option(self._resource_id,
                                                    OCFG_CONTAINER_COMMAND):
