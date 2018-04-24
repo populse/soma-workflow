@@ -106,7 +106,7 @@ class ObjectServer:
                 self.socket.send(pickle.dumps(result))
             except:
                 print("An exception occurred in the server of the remote object")
-                traceback.print_last()
+                traceback.print_exc()
 
 class Proxy(object):
     """

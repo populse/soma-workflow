@@ -617,6 +617,7 @@ class WorkflowEngineLoop(object):
                 self.logger.debug("OK we have checked the directory can be written.")
                 break # OK we have checked the directory can be written.
             except Exception as e:
+                self.logger.exception(e)
                 self._database_server.delete_workflow(engine_workflow.wf_id)
                 raise JobError("Could not create the standard output file "
                                "%s %s: %s \n" %
@@ -900,23 +901,22 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
-        logging.debug("Receiving a workflow to treat: " + repr(workflow))
+        logging.info("Receiving a workflow to treat: " + repr(workflow))
         if not expiration_date:
             logging.debug("No expiration date")
             expiration_date = datetime.now() + timedelta(days=7)
         logging.debug("Going to add a workflow")
         try:
-            wf_id = self.engine_loop.add_workflow(workflow,
-                                                  expiration_date,
-                                                  name,
-                                                  queue)
+            wf_id = self.engine_loop.add_workflow(
+                workflow,
+                expiration_date,
+                name,
+                queue,
+                container_command=self.container_command)
         except Exception as e:
             logging.exception("ERROR: in submit_worflow, an exception occurred when calling engine_loop.add_workflow")
 
         logging.debug("Workflow identifier is: " + str(wf_id))
-        wf_id = self.engine_loop.add_workflow(
-            workflow, expiration_date, name, queue,
-            container_command=self.container_command)
 
         return wf_id
 

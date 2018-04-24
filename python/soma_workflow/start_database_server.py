@@ -117,4 +117,8 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
     # Enter the server loop.
-    obj_serv.serve_forever()
+    try:
+        obj_serv.serve_forever()
+    except Exception as e:
+        logging.exception(e)
+

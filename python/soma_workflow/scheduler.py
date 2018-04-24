@@ -329,8 +329,8 @@ if DRMAA_LIB_FOUND == True:
             else:
                 command = job_command
 
-            self.logger.debug("command: " + repr(command))
-            self.logger.debug("job.name=" + repr(job.name))
+            self.logger.info("command: " + repr(command))
+            self.logger.info("job.name=" + repr(job.name))
 
             stdout_file = job.plain_stdout()
             stderr_file = job.plain_stderr()

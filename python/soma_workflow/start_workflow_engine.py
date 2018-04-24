@@ -314,40 +314,43 @@ if __name__ == "__main__":
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
 
-        logging.debug("Thread object server principale (obj_serv): " + str(daemon_request_loop_thread))
+        logging.debug("Thread object server (obj_serv): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
         timeout = 40
-        while not client_connected and timeout > 0:
-            client_connected = connection_checker.isConnected()
-            logger.debug("Client connection status: " + repr(client_connected))
-            timeout = timeout - 1
-            time.sleep(1)
+        try:
+            while not client_connected and timeout > 0:
+                client_connected = connection_checker.isConnected()
+                logger.debug("Client connection status: " + repr(client_connected))
+                timeout = timeout - 1
+                time.sleep(1)
 
-        logger.info("******** first mode: client connection *************")
-        while client_connected:
-            logger.debug("client is connected we sleep multiple times one second")
-            client_connected = connection_checker.isConnected()
-            time.sleep(1)
+            logger.info("******** first mode: client connection *************")
+            while client_connected:
+                logger.debug("client is connected we sleep multiple times one second")
+                client_connected = connection_checker.isConnected()
+                time.sleep(1)
 
-        logger.info("******** client disconnection **********************")
+            logger.info("******** client disconnection **********************")
 
-        # obj_serv.sock.close()  # free the port
+            # obj_serv.sock.close()  # free the port
 
 
-        # TODO add a destructor if necessary.
-        # del (daemon)
+            # TODO add a destructor if necessary.
+            # del (daemon)
 
-        logger.info("******** second mode: wait for jobs to finish ********")
-        jobs_running = True
-        while jobs_running:
-            jobs_running = not workflow_engine.engine_loop.are_jobs_and_workflow_done(
+            logger.info("******** second mode: wait for jobs to finish ********")
+            jobs_running = True
+            while jobs_running:
+                jobs_running = not workflow_engine.engine_loop.are_jobs_and_workflow_done(
                          )
-            time.sleep(1)
+                time.sleep(1)
 
-        logger.info("******** jobs are done ! Shuting down workflow engine ***************************")
-        workflow_engine.engine_loop_thread.stop()
+            logger.info("******** jobs are done ! Shuting down workflow engine ***************************")
+            workflow_engine.engine_loop_thread.stop()
+        except Exception as e:
+            logger.exception(e)
 
         sch.clean()
         sys.exit()
