@@ -749,7 +749,7 @@ class ConnectionChecker(object):
         self.lock = threading.RLock()
         self.interval = timedelta(seconds=interval)
         self.controlInterval = controlInterval
-        self.lastSignal = datetime.now() - timedelta(days=15)
+        self.lastSignal = datetime.now()
 
         def controlLoop(self, control_interval):
             logger = logging.getLogger('engine.ConnectionChecker')
