@@ -23,9 +23,6 @@ import sys
 import socket
 from contextlib import closing
 
-DEBUG = False # we print in debug_file
-debug_file = '/tmp/zro'
-
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
