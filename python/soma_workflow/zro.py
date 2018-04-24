@@ -62,9 +62,8 @@ class ObjectServer:
         #else:
         self.socket.bind("tcp://*:" + str(port))
         self.port = port
-        if DEBUG:
-            print("Initialising object server on port: " + repr(self.port),
-                  file=open(debug_file,'a'))
+        logger = logging.getLogger('database.ObjectServer')
+        logger.debug("Initialising object server on port: " + repr(self.port))
 
     def register(self, object):
         """The full socket adress should be provided
@@ -75,22 +74,24 @@ class ObjectServer:
             self.objects[object.__class__.__name__] = {}
         self.objects[object.__class__.__name__][str(id(object))] = object
 
-        if DEBUG:
-            print("The oject server is registering a " + repr(object.__class__.__name__) +
-                  "object, on ", repr(self.port), file=open(debug_file,'a'))
+        logger = logging.getLogger('database.ObjectServer')
+        logger.debug("The oject server is registering a "
+                     + repr(object.__class__.__name__)
+                     + "object, on ", repr(self.port))
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
     def serve_forever(self):
+        logger = logging.getLogger('database.ObjectServer')
         while True:
             #  Wait for next request from client
-            if DEBUG:
-                print("ObS0:" + str(self.port)[-3:] + ":Waiting for incoming data", file=open(debug_file,'a'))
+            logger.debug("ObS0:" + str(self.port)[-3:]
+                         + ":Waiting for incoming data")
             message = self.socket.recv()
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
-                if DEBUG:
-                    print("ObS1:" + str(self.port)[-3:] + ":calling ", classname, object_id, method, args, file=open(debug_file,'a'))
+                logger.debug("ObS1:" + str(self.port)[-3:] + ":calling ",
+                             classname, object_id, method, args)
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -98,11 +99,11 @@ class ObjectServer:
                         pass #TODO
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
-                    print("An exception occurred", file=open(debug_file,'a'))
+                    logger.exception(e)
                     #result = e
                     result = ReturnException(e, sys.exc_info())
-                if DEBUG:
-                    print("ObS2:" + str(self.port)[-3:] + ":result is: ", repr(result), file=open(debug_file,'a'))
+                logger.debug("ObS2:" + str(self.port)[-3:] + ":result is: ",
+                             repr(result))
                 self.socket.send(pickle.dumps(result))
             except:
                 print("An exception occurred in the server of the remote object")
@@ -146,15 +147,16 @@ class Proxy(object):
         else:
             print("Issue in zro: the uri is not taken into account, "
                   "this is probably due to its type")
-        if DEBUG:
-            print("Proxy: ", str(self.classname), str(self.object_id), str(self._port), file=open(debug_file,'a'))
+        logger = logging.getLogger('database.ObjectServer')
+        logger.debug("Proxy: ", str(self.classname), str(self.object_id),
+                     str(self._port))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
     def __getattr__(self, method_name):
-        if DEBUG:
-            print("On class:               ", self.classname, file=open(debug_file,'a'))
-            print("method called:          ", method_name, file=open(debug_file,'a'))
+        logger = logging.getLogger('database.ObjectServer')
+        logger.debug("On class:               ", self.classname)
+        logger.debug("method called:          ", method_name)
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -170,21 +172,12 @@ class ProxyMethod(object):
             print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
-        if DEBUG:
-            print("remote call result:     ", result, file=open(debug_file,'a'))
+        logger = logging.getLogger('database.ObjectServer')
+        logger.debug("remote call result:     ", result)
         self.proxy.lock.release()
 
-        # if isinstance(result, Exception):
-        #     print(result, file=open(debug_file,'a'))
-        #     raise result
-
         if isinstance(result, ReturnException):
-            if DEBUG:
-                traceback.print_exception(result.exc_info[0],
-                                          result.exc_info[1],
-                                          result.exc_info[2],
-                                          limit=3,
-                                          file=open(debug_file,'a'))
+            logger.exception(result, exc_info=result)
             raise result.exc_info[1]
 
         return result

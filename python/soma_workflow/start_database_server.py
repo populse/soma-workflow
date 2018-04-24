@@ -65,6 +65,7 @@ if __name__ == '__main__':
             filename=server_log_file,
             format=server_log_format,
             level=eval("logging." + server_log_level))
+    logger = logging.getLogger('database.ObjectServer')
 
     obj_serv = zro.ObjectServer()
 
