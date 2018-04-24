@@ -736,6 +736,13 @@ class LocalConnection(object):
         return self.configuration
 
 class ConnectionChecker(object):
+    ''' ConnectionChecker runs on server side. It runs a thread which listens
+        to "life signals" emitted from the client (using a ConnectionHolder
+        object).
+
+        ConnectionChecker should be contacted through the network from the
+        client, so should have a network proxy.
+    '''
 
     def __init__(self, interval=2, controlInterval=3):
         self.connected = False
@@ -745,20 +752,21 @@ class ConnectionChecker(object):
         self.lastSignal = datetime.now() - timedelta(days=15)
 
         def controlLoop(self, control_interval):
+            logger = logging.getLogger('engine.ConnectionChecker')
             while True:
                 with self.lock:#Pourquoi un verrou?
                     last_signal = self.lastSignal
                     # print(ls)
                 delta = datetime.now() - last_signal
                 if delta > self.interval * 12:
-                    logging.debug("Delta is too large, the client is not connected anymore: ", delta)
+                    logger.debug("Delta is too large, the client is not connected anymore: ", delta)
                     self.disconnectionCallback()
                     self.connected = False
-                    logging.debug('ConnectionChecker: client disconnected.')
+                    logger.debug('ConnectionChecker: client disconnected.')
                     break
                 else:
                     self.connected = True
-                logging.debug("Connected? :", self.connected)
+                logger.debug("Connected? :", self.connected)
                 time.sleep(control_interval)
 
         self.controlThread = threading.Thread(name="connectionControlThread",
@@ -773,6 +781,8 @@ class ConnectionChecker(object):
     def signalConnectionExist(self):
         with self.lock:
             # print("ConnectionChecker <= a signal was received")
+            logger = logging.getLogger('engine.ConnectionChecker')
+            logger.debug("ConnectionChecker <= a signal was received")
             self.lastSignal = datetime.now()
 
     def isConnected(self):
@@ -781,7 +791,12 @@ class ConnectionChecker(object):
     def disconnectionCallback(self):
         pass
 
+
 class ConnectionHolder(threading.Thread):
+    ''' ConnectionHolder runs on client side, it runs a thread which emits a
+        signal to the server every time interval, using a ConnectionChecker
+        proxy.
+    '''
 
     def __init__(self, connectionChecker):
         threading.Thread.__init__(self)
@@ -790,19 +805,25 @@ class ConnectionHolder(threading.Thread):
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
 
+    def __del__(self):
+        self.stop()
+
     def run(self):
         self.stopped = False
         while not self.stopped:
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
+                print('life signal emitted')
             except ConnectionClosedError as e: # TBC Apparently the exception is not defined anymore
                 print("Connection closed")
                 break
             time.sleep(self.interval)
+        print('ConnectionHolder stopped.')
 
     def stop(self):
         self.stopped = True
+
 
 class Tunnel(threading.Thread):
 
