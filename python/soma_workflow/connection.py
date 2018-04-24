@@ -753,21 +753,27 @@ class ConnectionChecker(object):
 
         def controlLoop(self, control_interval):
             logger = logging.getLogger('engine.ConnectionChecker')
+            logger.debug('ConnectionChecker: start controlLoop')
             while True:
-                with self.lock:#Pourquoi un verrou?
+                with self.lock:
                     last_signal = self.lastSignal
                     # print(ls)
                 delta = datetime.now() - last_signal
                 if delta > self.interval * 12:
                     logger.debug("Delta is too large, the client is not connected anymore: ", delta)
                     self.disconnectionCallback()
-                    self.connected = False
+                    with self.lock:
+                        self.connected = False
                     logger.debug('ConnectionChecker: client disconnected.')
                     break
                 else:
-                    self.connected = True
-                logger.debug("Connected? :", self.connected)
+                    with self.lock:
+                        self.connected = True
+                with self.lock:
+                    logger.debug("ConnectionChecker: Connected? :",
+                                 self.connected)
                 time.sleep(control_interval)
+            logger.debug('ConnectionChecker: exit controlLoop')
 
         self.controlThread = threading.Thread(name="connectionControlThread",
                                               target=controlLoop,
@@ -786,7 +792,8 @@ class ConnectionChecker(object):
             self.lastSignal = datetime.now()
 
     def isConnected(self):
-        return self.connected
+        with self.lock:
+            return self.connected
 
     def disconnectionCallback(self):
         pass
