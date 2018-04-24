@@ -2795,10 +2795,11 @@ class WorkflowElementInfo(QtGui.QWidget):
             current = self.proxy_model.mapToSource(current)
         item = current.internalPointer()
         if isinstance(item, GuiJob):
-            self.infoWidget = JobInfoWidget(item,
-                                            self.model.current_connection,
-                                            self.job_info_current_tab,
-                                            self)
+            self.infoWidget \
+                = JobInfoWidget(item,
+                                weakref.proxy(self.model.current_connection),
+                                self.job_info_current_tab,
+                                self)
         elif isinstance(item, GuiTransfer):
             self.infoWidget = TransferInfoWidget(item, self)
         elif isinstance(item, GuiGroup):
@@ -3653,7 +3654,9 @@ class ComputingResourcePool(object):
         self._connection_locks[resource_id] = threading.RLock()
 
     def delete_connection(self, resource_id):
+        print('ComputingResourcePool delete_connection:', resource_id)
         if resource_id in self._connections:
+            print('del WFC')
             del self._connections[resource_id]
         if resource_id in self._connection_locks:
             del self._connection_locks[resource_id]
@@ -3986,6 +3989,7 @@ class ApplicationModel(QtCore.QObject):
         If not the current connection is set to None.
         '''
         with self._lock:
+            #ref = self.resource_pool._connections[resource_id]
             self.resource_pool.delete_connection(resource_id)
             del self._workflows[resource_id]
             del self._expiration_dates[resource_id]
@@ -4001,8 +4005,8 @@ class ApplicationModel(QtCore.QObject):
                 self.workflow_name = None
                 resource_ids = self.resource_pool.resource_ids()
                 if resource_ids:
-                    self.current_resource_id = self.resource_pool.resource_ids()[
-                        0]
+                    self.current_resource_id \
+                        = self.resource_pool.resource_ids()[0]
                 else:
                     self.current_resource_id = None
                 if self.current_resource_id != None:
@@ -4010,6 +4014,19 @@ class ApplicationModel(QtCore.QObject):
                         self.current_resource_id)
                 self.current_connection_changed.emit()
             self.global_workflow_state_changed.emit()
+
+            #ref.disconnect() # should be done by WorkflowController.__del__
+            #import objgraph
+            #objgraph.show_backrefs(ref, refcounts=True, max_depth=10)
+
+            # we need to use gc.collect() here to make sure the
+            # WorkflowController actually gets destroyed. It seems that there
+            # are some internal references (that I could not find) that prevent
+            # automatic refcount deletion.
+            import gc
+            #print('ref:', gc.get_referrers(ref))
+            #del ref
+            gc.collect()
 
     def set_current_connection(self, resource_id):
         if resource_id != self.current_resource_id:
