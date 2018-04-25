@@ -29,7 +29,7 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-class ReturnException(Exception):
+class ReturnException(object):
     def __init__(self, e, exc_info):
         self.exc = e
         self.exc_info = exc_info # a tuple (exc_type, exc_value, traceback)
@@ -80,15 +80,21 @@ class ObjectServer:
 
     def serve_forever(self):
         logger = logging.getLogger('database.ObjectServer')
+        logger.setLevel(logging.DEBUG)
         while True:
             #  Wait for next request from client
             logger.debug("ObS0:" + str(self.port)[-3:]
                          + ":Waiting for incoming data")
-            message = self.socket.recv()
+            try:
+                message = self.socket.recv()
+            except Exception as e:
+                logger.exception(e)
+                raise # communication error, exit loop
             try:
                 classname, object_id, method, args, kwargs = pickle.loads(message)
-                logger.debug("ObS1:" + str(self.port)[-3:] + ":calling ",
-                             classname, object_id, method, args)
+                logger.debug("ObS1:" + str(self.port)[-3:] + ":calling "
+                             + classname + " " + object_id + " " + method 
+                             + " " + repr(args))
                 try:
                     if self.objects[classname][object_id]:
                         result = getattr(self.objects[classname][object_id], method)(*args, **kwargs)
@@ -98,13 +104,15 @@ class ObjectServer:
                 except Exception as e:
                     logger.exception(e)
                     #result = e
-                    result = ReturnException(e, sys.exc_info())
-                logger.debug("ObS2:" + str(self.port)[-3:] + ":result is: ",
-                             repr(result))
+                    etype, evalue, etb = sys.exc_info()
+                    result = ReturnException(e, (etype, evalue, traceback.format_exc()))
+                logger.debug("ObS2:" + str(self.port)[-3:] + ":result is: "
+                             + repr(result))
                 self.socket.send(pickle.dumps(result))
-            except:
-                print("An exception occurred in the server of the remote object")
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception(e)
+                # print("An exception occurred in the server of the remote object")
+                # traceback.print_exc()
 
 class Proxy(object):
     """
@@ -162,14 +170,15 @@ class ProxyMethod(object):
         self.method = method
 
     def __call__(self, *args, **kwargs):
+        logger = logging.getLogger('database.ObjectServer')
         self.proxy.lock.acquire()
         try:
             self.proxy.socket.send(pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
         except Exception as e:
+            logger.exception(e)
             print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
-        logger = logging.getLogger('database.ObjectServer')
         logger.debug("remote call result:     ", result)
         self.proxy.lock.release()
 
