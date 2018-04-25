@@ -112,10 +112,13 @@ class ObjectServer:
                         #logging.debug("object not in the list of objects")
                 except Exception as e:
                     logger.exception(e)
-                    #result = e
                     etype, evalue, etb = sys.exc_info()
-                    evalue.message = evalue.message + '\n' \
-                        + traceback.format_exc()
+                    if hasattr(e, 'server_traceback'):
+                        logger.error('server-side traceback:\n' + e.server_traceback)
+                        evalue.server_traceback = sys.exc_info() \
+                            + '\nremote server traceback:\n' + e.server_traceback
+                    else:
+                        evalue.server_traceback = traceback.format_exc()
                     result = ReturnException(e, (etype, evalue,
                                                  traceback.format_exc()))
                 logger.debug("ObS2:" + str(self.port)[-3:] + ":result is: "
