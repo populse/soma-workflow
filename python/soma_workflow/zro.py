@@ -89,7 +89,7 @@ class ObjectServer:
 
     def serve_forever(self):
         logger = logging.getLogger('database.ObjectServer')
-        logger.setLevel(logging.DEBUG)
+        #logger.setLevel(logging.DEBUG)
         while True:
             #  Wait for next request from client
             logger.debug("ObS0:" + str(self.port)[-3:]
