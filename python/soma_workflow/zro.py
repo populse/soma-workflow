@@ -30,6 +30,15 @@ def find_free_port():
 
 
 class ReturnException(object):
+    ''' Fake exception, wraps an exception occuring during server-side
+        execution.
+
+        ReturnException cannot be an Exception subclass because it causes
+        problems in pickling (in unpickling, actually). In the same idea,
+        the exception traceback cannot be a "real" traceback because a
+        traceback cannot be pickled. We use a string representation of it
+        instead (using traceback.format_exc()).
+    '''
     def __init__(self, e, exc_info):
         self.exc = e
         self.exc_info = exc_info # a tuple (exc_type, exc_value, traceback)
@@ -105,7 +114,10 @@ class ObjectServer:
                     logger.exception(e)
                     #result = e
                     etype, evalue, etb = sys.exc_info()
-                    result = ReturnException(e, (etype, evalue, traceback.format_exc()))
+                    evalue.message = evalue.message + '\n' \
+                        + traceback.format_exc()
+                    result = ReturnException(e, (etype, evalue,
+                                                 traceback.format_exc()))
                 logger.debug("ObS2:" + str(self.port)[-3:] + ":result is: "
                              + repr(result))
                 self.socket.send(pickle.dumps(result))
@@ -183,7 +195,8 @@ class ProxyMethod(object):
         self.proxy.lock.release()
 
         if isinstance(result, ReturnException):
-            logger.exception(result, exc_info=result)
+            logger.exception(result.exc, exc_info=result.exc_info)
+            logger.error('exception traceback: ' + str(result.exc_info[2]))
             raise result.exc_info[1]
 
         return result
