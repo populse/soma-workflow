@@ -115,7 +115,7 @@ class ObjectServer:
                     etype, evalue, etb = sys.exc_info()
                     if hasattr(e, 'server_traceback'):
                         logger.error('server-side traceback:\n' + e.server_traceback)
-                        evalue.server_traceback = sys.exc_info() \
+                        evalue.server_traceback = traceback.format_exc() \
                             + '\nremote server traceback:\n' + e.server_traceback
                     else:
                         evalue.server_traceback = traceback.format_exc()
