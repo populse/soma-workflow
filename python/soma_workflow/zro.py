@@ -200,12 +200,15 @@ class ProxyMethod(object):
         self.proxy.lock.release()
 
         if isinstance(result, ReturnException):
-            logger.exception(result.exc)
+            logger.error('ZRO proxy returned an exception: '
+                         + str(result.exc_info[1]))
+            logger.error(''.join(traceback.format_stack()))
             if hasattr(result.exc_info[1], 'server_traceback'):
                 logger.error('exception remote traceback:'
-                             + result.exc_info[1].server_traceback)
+                            + result.exc_info[1].server_traceback)
             else:
-                logger.error('exception traceback: ' + str(result.exc_info[2]))
+                logger.error('exception traceback: '
+                              + str(result.exc_info[2]))
             raise result.exc_info[1]
 
         return result
