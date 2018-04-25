@@ -114,9 +114,11 @@ class ObjectServer:
                     logger.exception(e)
                     etype, evalue, etb = sys.exc_info()
                     if hasattr(e, 'server_traceback'):
-                        logger.error('server-side traceback:\n' + e.server_traceback)
+                        logger.error('server-side traceback:\n'
+                                     + e.server_traceback)
                         evalue.server_traceback = traceback.format_exc() \
-                            + '\nremote server traceback:\n' + e.server_traceback
+                            + '\nremote server traceback:\n' \
+                            + e.server_traceback
                     else:
                         evalue.server_traceback = traceback.format_exc()
                     result = ReturnException(e, (etype, evalue,
@@ -198,8 +200,12 @@ class ProxyMethod(object):
         self.proxy.lock.release()
 
         if isinstance(result, ReturnException):
-            logger.exception(result.exc, exc_info=result.exc_info)
-            logger.error('exception traceback: ' + str(result.exc_info[2]))
+            logger.exception(result.exc)
+            if hasattr(result.exc_info[1], 'server_traceback'):
+                logger.error('exception remote traceback:'
+                             + result.exc_info[1].server_traceback)
+            else:
+                logger.error('exception traceback: ' + str(result.exc_info[2]))
             raise result.exc_info[1]
 
         return result
