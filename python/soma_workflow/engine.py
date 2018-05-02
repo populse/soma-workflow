@@ -358,10 +358,13 @@ class WorkflowEngineLoop(object):
 
                 # --- 3. Get back transfered status ---------------------------
                 for engine_path, transfer in six.iteritems(wf_transfers):
-                    status = self._database_server.get_transfer_status(
-                        engine_path,
-                        self._user_id)
-                    transfer.status = status
+                    try:
+                        status = self._database_server.get_transfer_status(
+                            engine_path,
+                            self._user_id)
+                        transfer.status = status
+                    except:
+                        logger.exception()
 
                 for wf_id in six.iterkeys(self._workflows):
                     if self._database_server.pop_workflow_ended_transfer(wf_id):
