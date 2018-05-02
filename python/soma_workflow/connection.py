@@ -221,7 +221,7 @@ def check_if_somawfdb_on_server(
     userpw='',
         sshport=22):
 
-    command = "ps -ef | grep 'python -m soma_workflow.start_database_server'"\
+    command = "ps -ef | grep 'python. -m soma_workflow\.start_database_server'"\
         " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
     std_out_lines = SSH_exec_cmd(
@@ -291,6 +291,9 @@ class RemoteConnection(object):
 
         if not login:
             raise ConnectionError("Remote connection requires a login")
+
+        if not isinstance(login, str):
+            login = login.decode()
 
         remote_workflow_engine_name = "workflow_engine_" + login
 
@@ -378,9 +381,10 @@ class RemoteConnection(object):
                     # print("DEBUG same version of ZMQ on both sides")
                     pass
 
-        logging.debug("workflow_engine_uri: " +  workflow_engine_uri)
-        logging.debug("connection_checker_uri: " +  connection_checker_uri)
-        logging.debug("configuration_uri: " + configuration_uri)
+        logging.debug("workflow_engine_uri: " +  str(workflow_engine_uri))
+        logging.debug("connection_checker_uri: "
+                      +  str(connection_checker_uri))
+        logging.debug("configuration_uri: " + str(configuration_uri))
 
         if (not configuration_uri or
             not connection_checker_uri or
@@ -510,6 +514,7 @@ class RemoteConnection(object):
         logging.info("End of the initialisation of RemoteConnection.")
 
     def __del__(self):
+        print('del RemoteConnection')
         self.stop()
 
     def isValid(self):
@@ -519,6 +524,7 @@ class RemoteConnection(object):
         '''
         For test purpose only !
         '''
+        print('RemoteConnection.stop')
         if self.__tunnel is not None:
             self.__tunnel.shutdown()
         self.__tunnel = None
@@ -813,6 +819,7 @@ class ConnectionHolder(threading.Thread):
         self.interval = self.connectionChecker.get_interval()
 
     def __del__(self):
+        print('del ConnectionHolder')
         self.stop()
 
     def run(self):
@@ -922,6 +929,7 @@ class Tunnel(threading.Thread):
         self.setDaemon(True)
 
     def __del__(self):
+        print('del Tunnel')
         self.shutdown()
 
     def run(self):

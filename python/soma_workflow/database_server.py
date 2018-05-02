@@ -1743,6 +1743,8 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_workflow:
+            if not isinstance(pickled_workflow, str):
+                pickled_workflow = pickled_workflow.decode() # py3 bytes
             pickled_workflow = pickled_workflow.encode('utf-8')
             workflow = pickle.loads(pickled_workflow)
         else:

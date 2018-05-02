@@ -26,8 +26,8 @@ import weakref
 import subprocess
 from soma_workflow import connection
 import sys
+import traceback
 # import cProfile
-# import traceback
 # import pdb
 
 PYQT4 = "pyqt4"
@@ -360,21 +360,48 @@ def workflow_status_icon(status=None):
     return file_path
 
 
+class QResizeMessageBox(QtGui.QMessageBox):
+    def __init__(self, *args, **kwargs):
+        QtGui.QMessageBox.__init__(self, *args, **kwargs)
+        self.setSizeGripEnabled(True)
+
+    def event(self, e):
+        result = QtGui.QMessageBox.event(self, e)
+
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(16777215)
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(16777215)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+        textEdit = self.findChild(QtGui.QTextEdit)
+        if textEdit != None :
+            textEdit.setMinimumHeight(0)
+            textEdit.setMaximumHeight(16777215)
+            textEdit.setMinimumWidth(0)
+            textEdit.setMaximumWidth(16777215)
+            textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+        return result
+
+
 def detailed_critical_message_box(msg, title, parent):
     long_msg_indic = "**More details:**"
     if long_msg_indic in msg:
         indic_index = msg.index(long_msg_indic)
         long_msg = msg[indic_index + len(long_msg_indic):]
         short_msg = msg[:indic_index]
-        message_box = QtGui.QMessageBox(parent)
+        message_box = QResizeMessageBox(parent)
         message_box.setIcon(QtGui.QMessageBox.Critical)
         message_box.setWindowTitle(title)
         message_box.setText(short_msg)
         message_box.setDetailedText(long_msg)
         message_box.setSizeGripEnabled(True)
+        message_box.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                                  QtGui.QSizePolicy.Expanding)
         message_box.exec_()
     else:
-        QtGui.QMessageBox.critical(parent, "error", "%s" % (msg))
+        QResizeMessageBox.critical(parent, "error", "%s" % (msg))
 
 
 #-----------------------------------------------------------------------------
@@ -597,12 +624,12 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             if rid and rid != "None":
                 resources.append(rid)
         if len(resources) >= len(self.resource_ids):
-            QtGui.QMessageBox.warning(
+            QResizeMessageBox.warning(
                 self, "Cannot disconnect all resources",
                 "We must keep at least one valid resource.")
             return
         if len(resources) != 0:
-            resp = QtGui.QMessageBox.question(
+            resp = QResizeMessageBox.question(
                 self, "Disconnect the following resources ?",
                 "\n".join(resources),
                 QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
@@ -737,7 +764,9 @@ class WorkflowEngineConfigController(QtGui.QWidget):
         self.queue_limits = self.engine_config.get_queue_limits()
         self.running_jobs_limits = self.engine_config.get_running_jobs_limits()
 
-        queues = ['default'] + sorted(self.engine_config.get_queues())
+        queues = ['default'] + sorted([x
+                                       for x in self.engine_config.get_queues()
+                                       if x is not None])
         if 'default' in queues[1:]:
             del queues[queues.index('default', 1)]
 
@@ -1296,7 +1325,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.connection_dlg.show()
         except Exception as e:
             QtGui.QApplication.restoreOverrideCursor()
-            detailed_critical_message_box(msg=e.__str__(),
+            msg = str(e) + '\n**More details:**\n' + traceback.format_exc()
+            detailed_critical_message_box(msg=msg,
                                           title="Connection failed",
                                           parent=self)
             self.connection_dlg.ui.lineEdit_password.clear()
@@ -1737,7 +1767,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 return (resource_id, None)
             except Exception as e:
                 QtGui.QApplication.restoreOverrideCursor()
-                detailed_critical_message_box(msg=e.__str__(),
+                msg = str(e) + '\n**More details:**\n' + traceback.format_exc()
+                detailed_critical_message_box(msg=msg,
                                               title="Connection failed",
                                               parent=self)
             else:
@@ -4713,6 +4744,9 @@ class GuiJob(GuiWorkflowItem):
         self.tmp_stderrout_dir = tmp_stderrout_dir
 
         cmd_seq = []
+        unic_t = str
+        if sys.version_info[0] < 3:
+            unic_t = unicode
         for command_el in command:
             if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
                 cmd_seq.append(
@@ -4725,7 +4759,8 @@ class GuiJob(GuiWorkflowItem):
                                " " + command_el.uuid + " " + command_el.relative_path + " >")
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
-            elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
+            elif isinstance(command_el, unic_t) \
+                    or isinstance(command_el, unic_t):
                 cmd_seq.append(utf8(command_el))
             else:
                 cmd_seq.append(repr(command_el))
