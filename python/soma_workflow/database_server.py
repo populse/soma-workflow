@@ -652,8 +652,9 @@ class WorkflowDatabaseServer(object):
                             stdout_file,
                             stderr_file
                             FROM jobs
-                            WHERE id IN (%s) AND custom_submission''' % job_str,
-                            jobsToDelete[chunk * nmax:chunk * nmax + n]):
+                            WHERE id IN (%s) AND NOT custom_submission''' % job_str,
+                            jobsToDelete[chunk * nmax:chunk * nmax + n])
+                        logger.info('remove stdout/stderr: %s / %s' % (self._string_conversion(stdof), self._string_conversion(stdef)))
                         self.__removeFile(self._string_conversion(stdof))
                         self.__removeFile(self._string_conversion(stdef))
 
