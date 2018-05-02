@@ -207,7 +207,10 @@ class WorkflowController(object):
         print("Workflow controller initialised")
 
     def __del__(self):
+        print('del WorkflowController')
         self.disconnect()
+        import gc
+        gc.collect()
 
     def disconnect(self):
         '''

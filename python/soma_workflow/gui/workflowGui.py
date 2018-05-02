@@ -2245,10 +2245,13 @@ class MainWindow(QtGui.QMainWindow):
 
     def canExit(self):
         for res_id in self.model.resource_pool.resource_ids():
+            connection = self.model.resource_pool.connection(res_id)
             for workflow_id in self.model.workflows(res_id):
-                wf_elements_status \
-                    = self.model.current_connection.workflow_elements_status(
+                try:
+                    wf_elements_status = connection.workflow_elements_status(
                         workflow_id)
+                except:
+                    continue # workflow deleted
                 for transfer_info in wf_elements_status[1]:
                     status = transfer_info[1][0]
                     if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
@@ -2279,6 +2282,7 @@ class MainWindow(QtGui.QMainWindow):
                 # do stuff
         if self.canExit():
             event.accept()  # let the window close
+            self.model.resource_pool.delete_all()
         else:
             event.ignore()
 
@@ -3644,6 +3648,9 @@ class ComputingResourcePool(object):
         self._connections = {}
         self._connection_locks = {}
 
+    def __del__(self):
+        self.delete_all()
+
     def add_default_connection(self):
         resource_id = socket.gethostname()
         if resource_id not in self._connections.keys():
@@ -3660,6 +3667,13 @@ class ComputingResourcePool(object):
             del self._connections[resource_id]
         if resource_id in self._connection_locks:
             del self._connection_locks[resource_id]
+
+    def delete_all(self):
+        resource_ids = list(self._connections.keys())
+        for resource_id in resource_ids:
+            self.delete_connection(resource_id)
+        import gc
+        gc.collect()
 
     def reinit_connection(self, resource_id, workflow_controller):
         with self._connection_locks[resource_id]:
