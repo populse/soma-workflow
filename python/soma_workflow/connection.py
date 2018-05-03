@@ -140,6 +140,15 @@ def SSH_exec_cmd(sshcommand,
         return std_out_lines
 
 
+def server_python_interpreter():
+    ''' python command to run on server side '''
+    python_interpreter = os.path.basename(sys.executable)
+    if sys.version_info[0] >= 3 and python_interpreter == 'python':
+        # force the use of python3 if we use it on client side
+        python_interpreter = 'python%d' % sys.version_info[0]
+    return python_interpreter
+
+
 def check_if_soma_wf_cr_on_server(
     userid,
     ip_address_or_domain,
@@ -147,7 +156,7 @@ def check_if_soma_wf_cr_on_server(
         sshport=22):
     """ Check if the check_requirement module exists
     """
-    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    python_interpreter = server_python_interpreter()
     command = python_interpreter + " -c 'import soma_workflow.check_requirement'"
     print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
@@ -170,7 +179,7 @@ def check_if_ctype_drmaa_on_server(
     ip_address_or_domain,
     userpw='',
         sshport=22):
-    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    python_interpreter = server_python_interpreter()
     command = python_interpreter + " -m 'soma_workflow.check_requirement.drmaa'"
     print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
@@ -196,7 +205,7 @@ def check_if_somawf_on_server(
         sshport=22):
     """ Check if the soma_workflow module exists
     """
-    (local_dir, python_interpreter) = os.path.split(sys.executable)
+    python_interpreter = server_python_interpreter()
     command = python_interpreter + " -c 'import soma_workflow'"
     print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
@@ -332,10 +341,7 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        (local_dir, python_interpreter) = os.path.split(sys.executable)
-        if python_interpreter == 'python' and sys.version_info[0] >= 3:
-            # force the use of python3 if we use it on client side
-            python_interpreter = 'python%d' % sys.version_info[0]
+        python_interpreter = server_python_interpreter()
         command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
