@@ -602,9 +602,13 @@ class RemoteConnection(object):
 
         if clear_db:
             print('clearing database')
-            cmd = '''. $HOME/.bashrc && python -c 'from __future__ import print_function; from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print(config.get_database_file())\'''' % resource_id
+            python_interpreter = server_python_interpreter()
+            cmd = '''. $HOME/.bashrc && %s -c 'from __future__ import print_function; from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print(config.get_database_file())\'''' \
+                % (python_interpreter, resource_id)
             stdin, stdout, stderr = ssh.exec_command(cmd)
             db_file = stdout.read().strip()
+            if not isinstance(db_file, str):
+                db_file = db_file.decode()
             if db_file:
                 print('remove:', db_file)
                 cmd = 'rm %s' % db_file
