@@ -333,6 +333,9 @@ class RemoteConnection(object):
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
         (local_dir, python_interpreter) = os.path.split(sys.executable)
+        if python_interpreter == 'python' and sys.version_info[0] >= 3:
+            # force the use of python3 if we use it on client side
+            python_interpreter = 'python%d' % sys.version_info[0]
         command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
                   " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 

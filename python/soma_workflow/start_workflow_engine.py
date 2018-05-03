@@ -118,7 +118,7 @@ if __name__ == "__main__":
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
             logger.debug(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server' + resource_id)
-        python_interpreter = os.path.basename(sys.executable)
+        python_interpreter = sys.executable # os.path.basename(sys.executable)
         return subprocess.Popen([python_interpreter,
                                  '-m',
                                  'soma_workflow.start_database_server',
