@@ -573,8 +573,10 @@ class WorkflowDatabaseServer(object):
         '''
         Register a user so that he can submit job.
 
-        @rtype: C{UserIdentifier}
-        @return: user identifier
+        Returns
+        -------
+        user_id: UserIdentifier
+            user identifier
         '''
         self.logger.debug("=> register_user")
         with self._lock:
@@ -1027,10 +1029,11 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a transfer to the database.
 
-        @engine_transfer: EngineTransfer or EngineTemporaryPath
-        @type expiration_date: date
-        @type user_id:  C{UserIdentifier}
-        @type  workflow_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        engine_transfer: EngineTransfer or EngineTemporaryPath
+        expiration_date: date
+        user_id:  UserIdentifier
         '''
 
         if isinstance(engine_transfer, TemporaryPath):
@@ -1103,10 +1106,11 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a temporary file to the database.
 
-        @engine_temp: EngineTemporaryPath
-        @type expiration_date: date
-        @type user_id:  C{UserIdentifier}
-        @type  workflow_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        engine_temp: EngineTemporaryPath
+        expiration_date: date
+        user_id:  UserIdentifier
         '''
 
         if expiration_date == None:
@@ -1657,7 +1661,9 @@ class WorkflowDatabaseServer(object):
         '''
         Remove the workflow from the database. Remove all associated jobs and transfers.
 
-        @type wf_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        wf_id: int
         '''
         self.logger.debug("=> delete_workflow")
         self.logger.debug("wf_id is: ", wf_id)
@@ -1694,7 +1700,7 @@ class WorkflowDatabaseServer(object):
         '''
         Change the workflow expiration date.
 
-        @type wf_id: C{WorflowIdentifier}
+        @type wf_id: int
         @type new_date: datetime.datetime
         '''
         self.logger.debug("=> change_workflow_expiration_date")
@@ -1719,9 +1725,14 @@ class WorkflowDatabaseServer(object):
         Returns a EngineWorkflow object.
         The wf_id must be valid.
 
-        @type wf_id: C{WorflowIdentifier}
-        @rtype: C{EngineWorkflow}
-        @return: workflow object
+        Parameters
+        ----------
+        wf_id: int
+
+        Returns
+        -------
+        engine: EngineWorkflow
+            workflow object
         '''
         self.logger.debug("=> get_engine_workflow")
         with self._lock:
@@ -1758,8 +1769,11 @@ class WorkflowDatabaseServer(object):
         The status must be valid (ie a string among the workflow status
         string defined in constants.WORKFLOW_STATUS)
 
-        @type  status: string
-        @param status: workflow status as defined in constants.WORKFLOW_STATUS
+        Parameters
+        ----------
+        wf_id: int
+        status: str
+            workflow status as defined in constants.WORKFLOW_STATUS
         '''
         self.logger.debug("=> set_workflow_status, wf_id: %s, status: %s"
                           % (wf_id, status))
@@ -1834,7 +1848,7 @@ class WorkflowDatabaseServer(object):
 
         Parameters
         ----------
-        wf_id: WorflowIdentifier
+        wf_id: int
         check_status: bool (optional, default=False)
             if True, check that a workflow with status RUNNING has actually
             some running or pending jobs. If not, set the state to DONE. It
@@ -3157,9 +3171,14 @@ class WorkflowDatabaseServer(object):
         '''
         Returns the id of the workfows with the status constants.DELETE_PENDING
 
-        @type user_id: C{UserIdentifier}
-        @rtype: sequence of C{WorkflowIdentifier}
-        @returns: workflows with status constants.DELETE_PENDING
+        Parameters
+        ----------
+        user_id: UserIdentifier
+
+        Returns
+        -------
+        workflows: sequence of int
+            workflows with status constants.DELETE_PENDING
         '''
         self.logger.debug("=> workflows_to_delete_and_kill")
         with self._lock:
