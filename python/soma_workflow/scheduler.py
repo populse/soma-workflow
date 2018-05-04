@@ -412,7 +412,7 @@ if DRMAA_LIB_FOUND == True:
                 drmaaSubmittedJobId = self._drmaa.runJob(jobTemplateId)
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
-            except DrmaaException as e:
+            except Exception as e:
                 try:
                     f = open(stderr_file, "wa")
                     f.write("Error in job submission: %s" % (e))
