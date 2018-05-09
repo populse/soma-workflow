@@ -3700,7 +3700,7 @@ class ComputingResourcePool(object):
             del self._connection_locks[resource_id]
 
     def delete_all(self):
-        resource_ids = list(self._connections.keys())
+        resource_ids = list(six.iterkeys(self._connections))
         for resource_id in resource_ids:
             self.delete_connection(resource_id)
         import gc
@@ -3720,7 +3720,7 @@ class ComputingResourcePool(object):
         return resource_id in self._connections.keys()
 
     def resource_ids(self):
-        return self._connections.keys()
+        return list(six.iterkeys(self._connections))
 
 
 class ApplicationModel(QtCore.QObject):
