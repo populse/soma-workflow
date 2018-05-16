@@ -4051,7 +4051,7 @@ class ApplicationModel(QtCore.QObject):
                 resource_ids = self.resource_pool.resource_ids()
                 if resource_ids:
                     self.current_resource_id \
-                        = self.resource_pool.resource_ids()[0]
+                        = next(iter(self.resource_pool.resource_ids()))
                 else:
                     self.current_resource_id = None
                 if self.current_resource_id != None:
