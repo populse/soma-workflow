@@ -1538,6 +1538,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 qtdt.date().year(), qtdt.date().month(), qtdt.date().day(),
                 qtdt.time().hour(), qtdt.time().minute(), qtdt.time().second())
 
+        done = False
         try:
             done = Controller.restart_workflow(self.model.current_wf_id,
                                                queue,
