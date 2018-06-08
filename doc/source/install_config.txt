@@ -311,7 +311,7 @@ Configuration items optional on the server side:
 
       **drmaa**: cluster or grid scheduler, based on DRMAA. This is the scheduler used normally on servers, and is the default in such a case.
 
-      **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters` (light) mode.
+      **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters <light_mode_config>` (light) mode.
 
   **SHARED_TEMPORARY_DIR**
     Directory where to generate temporary files used between jobs. The directory should be visible by all processing nodes (on a cluster), and the filesystem should be large enough to store temporary files during a whole workflow execution.
@@ -339,7 +339,7 @@ Configuration items optional on the server side:
 
     Now if we need further customization, for instance to set a library path variable to access a library with custom installation, we will need to run a shell to setup the variable then run the program:
 
-    .. code-block::
+    .. code-block:: bash
 
         sh -c 'LD_LIBRARY_PATH=/software_dir/lib:$"LD_LIBRARY_PATH" ls /'
 
