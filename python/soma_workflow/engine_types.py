@@ -115,6 +115,10 @@ class EngineJob(Job):
 
     logger = None
 
+    # docker / singularity prefix command, to be prepended to all jobs
+    # commandlines
+    container_command = None
+
     def __init__(self,
                  client_job,
                  queue,
