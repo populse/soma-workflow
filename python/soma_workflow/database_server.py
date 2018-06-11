@@ -41,7 +41,7 @@ import tempfile
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
-from soma_workflow.info import DB_VERSION
+from soma_workflow.info import DB_VERSION, DB_PICKLE_PROTOCOL
 
 # python 2/3 compatibility
 import sys
@@ -1638,7 +1638,8 @@ class WorkflowDatabaseServer(object):
                         (job.job_id, job.stdout_file, job.stderr_file))
                     engine_workflow.registered_jobs[job.job_id] = job
 
-                pickled_workflow = pickle.dumps(engine_workflow)
+                pickled_workflow = pickle.dumps(engine_workflow,
+                                                protocol=DB_PICKLE_PROTOCOL)
 
                 cursor.execute('''UPDATE workflows
                           SET pickled_engine_workflow=?
@@ -2214,7 +2215,8 @@ class WorkflowDatabaseServer(object):
                 job_id = cursor.lastrowid
                 engine_job.job_id = job_id
                 if not engine_job.workflow_id or engine_job.workflow_id == -1:
-                    pickled_engine_job = pickle.dumps(engine_job)
+                    pickled_engine_job = pickle.dumps(
+                        engine_job, protocol=DB_PICKLE_PROTOCOL)
                     cursor.execute(
                         'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
                                   (pickled_engine_job, job_id))
@@ -2288,7 +2290,8 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_job:
-            pickled_job = pickled_job.encode('utf-8')
+            if sys.version_info[0] < 3:
+                pickled_job = pickled_job.encode('utf-8')
             job = pickle.loads(pickled_job)
             job.job_id = job_id
         else:
