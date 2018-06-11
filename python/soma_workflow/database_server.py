@@ -1755,8 +1755,6 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_workflow:
-            if sys.version_info[0] < 3:
-                pickled_workflow = pickled_workflow.encode('utf-8')
             workflow = pickle.loads(pickled_workflow)
         else:
             workflow = None
@@ -2290,8 +2288,6 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_job:
-            if sys.version_info[0] < 3:
-                pickled_job = pickled_job.encode('utf-8')
             job = pickle.loads(pickled_job)
             job.job_id = job_id
         else:
