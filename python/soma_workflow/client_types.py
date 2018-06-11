@@ -756,7 +756,6 @@ class Workflow(object):
         '''
         The keys must be string to serialize with JSON.
         '''
-        # TODO user_storage
         id_generator = IdGenerator()
         job_ids = {}  # Job -> id
 
@@ -847,6 +846,11 @@ class Workflow(object):
                                                 option_ids)
         wf_dict["serialized_option_paths"] = ser_opt
 
+        # user_storage
+        user_storage = self.user_storage
+        if hasattr(user_storage, 'to_dict'):
+            user_storage = user_storage.to_dict()
+
         return wf_dict
 
     @classmethod
@@ -932,10 +936,13 @@ class Workflow(object):
             dep = (job_from_ids[id_dep[0]], job_from_ids[id_dep[1]])
             dependencies.append(dep)
 
+        # user storage, TODO: handle objects in it
+        user_storage = d.get('user_storage', None)
+
         workflow = cls(jobs,
                        dependencies,
                        root_group=root_group,
-                       user_storage=None,
+                       user_storage=user_storage,
                        name=name)
 
         return workflow

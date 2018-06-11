@@ -24,6 +24,7 @@ import tempfile
 import weakref
 import six
 import time
+import datetime
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
@@ -434,9 +435,40 @@ class EngineWorkflow(Workflow):
 
     logger = None
 
+    def to_dict(self):
+        wf_dict = super(EngineWorkflow, self).to_dict()
+
+        # path_translation
+        # queue
+        # expiration_date
+        # container_command
+        wf_dict["container_command"] = self.container_command
+
+        return wf_dict
+
     @classmethod
     def from_dict(cls, d):
-        pass
+        client_workflow = Workflow.from_dict(d)
+
+        # path_translation
+        path_translation = {}
+
+        # queue
+        queue = d.get('queue', None)
+
+        # expiration_date
+        expiration_date = d.get('expiration_date')
+        if expiration_date is not None:
+            expiration_date = datetime.datetime(*expiration_date)
+
+        # name
+        name = client_workflow.name
+
+        # container_command
+        container_command = d.get('container_command')
+
+        return cls(client_workflow, path_translation, queue, expiration_date,
+                   name, container_command=container_command)
 
     class WorkflowCache(object):
 
