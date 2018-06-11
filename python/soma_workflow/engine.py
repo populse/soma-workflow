@@ -917,7 +917,10 @@ class WorkflowEngine(RemoteFileController):
                 queue,
                 container_command=self.container_command)
         except Exception as e:
-            logging.exception("ERROR: in submit_worflow, an exception occurred when calling engine_loop.add_workflow")
+            logging.exception(
+                "ERROR: in submit_worflow, an exception occurred when calling "
+                "engine_loop.add_workflow")
+            raise
 
         logging.debug("Workflow identifier is: " + str(wf_id))
 
