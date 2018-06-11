@@ -1644,7 +1644,7 @@ class WorkflowDatabaseServer(object):
                 cursor.execute('''UPDATE workflows
                           SET pickled_engine_workflow=?
                           WHERE id=?''',
-                              (pickled_workflow,
+                              (sqlite3.Binary(pickled_workflow),
                                engine_workflow.wf_id))
             except Exception as e:
                 connection.rollback()
@@ -2219,7 +2219,7 @@ class WorkflowDatabaseServer(object):
                         engine_job, protocol=DB_PICKLE_PROTOCOL)
                     cursor.execute(
                         'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
-                                  (pickled_engine_job, job_id))
+                                  (sqlite3.Binary(pickled_engine_job), job_id))
 
                 for engine_path in referenced_input_files:
                     cursor.execute('''INSERT INTO ios (job_id,
