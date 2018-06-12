@@ -4388,25 +4388,19 @@ class GuiWorkflow(object):
                         self.items[item.parent].children[item.row] = item.it_id
 
         # processing the file transfers
-        def compFileTransfers(ft1, ft2):
-            if isinstance(ft1, FileTransfer):
-                str1 = ft1.name
-            else:
-                str1 = ft1
-            if isinstance(ft2, FileTransfer):
-                str2 = ft2.name
-            else:
-                str2 = ft2
-            return cmp(str1, str2)
+        def file_transfer_key(ft):
+            if isinstance(ft, FileTransfer):
+                return ft.name
+            return ft
 
         for ft in w_fts:
             # print(" ft " + repr(ft))
             ids[ft] = []
             for job in w_js:
                 ref_in = list(job.referenced_input_files)
-                ref_in.sort(compFileTransfers)
+                ref_in.sort(key=file_transfer_key)
                 ref_out = list(job.referenced_output_files)
-                ref_out.sort(compFileTransfers)
+                ref_out.sort(key=file_transfer_key)
                 if ft in ref_in:
                     item_id = id_cnt
                     id_cnt = id_cnt + 1

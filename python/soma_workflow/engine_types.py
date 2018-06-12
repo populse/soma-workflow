@@ -244,11 +244,18 @@ class EngineJob(Job):
                         self.referenced_output_files.append(true_file)
                     if not true_file in self.path_mapping:
                         self.path_mapping[true_file] = self.transfer_mapping[true_file]
-                elif isinstance(true_file, SharedResourcePath) and not true_file in self.path_mapping:
-                    self.path_mapping[true_file] = EngineSharedResourcePath(true_file, path_translation=self.path_translation)
+                elif isinstance(true_file, SharedResourcePath) \
+                        and not true_file in self.path_mapping:
+                    self.path_mapping[true_file] \
+                        = EngineSharedResourcePath(
+                            true_file, path_translation=self.path_translation)
                 else:
-                    if not isinstance(true_file, basestring):
-                        raise JobError("Wrong type: %s" % (repr(true_file)))
+                    if six.PY3 and isinstance(true_file, bytes):
+                        true_file = true_file.decode('utf-8')
+                    if not isinstance(true_file, six.string_types):
+                        raise JobError(
+                            "Wrong argument type in job %s: %s\ncommand:\n%s"
+                            % (self.name, repr(true_file), repr(self.command)))
                     if mode == "File":
                         true_file = os.path.abspath(true_file)
                 if not isinstance(file, OptionPath):
