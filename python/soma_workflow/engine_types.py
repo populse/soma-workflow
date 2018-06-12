@@ -295,7 +295,11 @@ class EngineJob(Job):
         elif isinstance(command, tuple):
             # If the entry si a tuple, we use 'first' to recover the directory
             # and 'second' to get the filename
-            new_command = os.path.join(self.generate_command(command[0], mode="Tuple"), command[1])
+            c1 = command[1]
+            if six.PY3 and isinstance(c1, bytes):
+                c1 = c1.decode()
+            new_command = os.path.join(
+                self.generate_command(command[0], mode="Tuple"), c1)
         elif isinstance(command, list):
             # If the entry is a list, we convert all its elements. If the
             # parent call was done on the full command (mode=="Command"),
