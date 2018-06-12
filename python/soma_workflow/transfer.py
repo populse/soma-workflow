@@ -206,12 +206,24 @@ class TransferSCP(Transfer):
         # print("SCP transfer")
 
     def transfer_to_remote(self, path, remote_path):
+        username = self.username
+        hostname = self.hostname
+        if six.PY3:
+            # args should be strings
+            if isinstance(username, bytes):
+                username = username.decode()
+            if isinstance(hostname, bytes):
+                hostname = hostname.decode()
+            if isinstance(remote_path, bytes):
+                remote_path = remote_path.decode()
+            if isinstance(path, bytes):
+                path = path.decode()
         if os.path.isfile(path):
             self.remote_file_controller.create_dirs(remote_path)
             if self.username != None and self.hostname != None:
                 scp_cmd = 'scp -qp %s "%s@%s:%s"' % (path,
-                                                     self.username,
-                                                     self.hostname,
+                                                     username,
+                                                     hostname,
                                                      remote_path)
             else:
                 scp_cmd = 'scp -qp %s %s' % (path, remote_path)
@@ -222,9 +234,10 @@ class TransferSCP(Transfer):
             self.remote_file_controller.create_dirs(remote_path)
             if self.remote_file_controller.is_dir(remote_path):
                 if self.username != None and self.hostname != None:
-                    scp_cmd = 'scp -Cqpr %s "%s@%s:%s"' % (os.path.join(path, "*"),
-                                                           self.username,
-                                                           self.hostname,
+                    scp_cmd = 'scp -Cqpr %s "%s@%s:%s"' % (os.path.join(path,
+                                                                        "*"),
+                                                           username,
+                                                           hostname,
                                                            remote_path)
                 else:
                     scp_cmd = 'scp -Cqpr %s %s' % (
@@ -232,8 +245,8 @@ class TransferSCP(Transfer):
             else:
                 if self.username != None and self.hostname != None:
                     scp_cmd = 'scp -Cqpr %s "%s@%s:%s"' % (path,
-                                                           self.username,
-                                                           self.hostname,
+                                                           username,
+                                                           hostname,
                                                            remote_path)
                 else:
                     scp_cmd = 'scp -Cqpr %s %s' % (path, remote_path)
@@ -241,12 +254,24 @@ class TransferSCP(Transfer):
             os.system(scp_cmd)
 
     def transfer_from_remote(self, remote_path, path):
+        username = self.username
+        hostname = self.hostname
+        if six.PY3:
+            # args should be strings
+            if isinstance(username, bytes):
+                username = username.decode()
+            if isinstance(hostname, bytes):
+                hostname = hostname.decode()
+            if isinstance(remote_path, bytes):
+                remote_path = remote_path.decode()
+            if isinstance(path, bytes):
+                path = path.decode()
         if self.remote_file_controller.is_file(remote_path):
             if not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             if self.username != None and self.hostname != None:
-                scp_cmd = 'scp -qp "%s@%s:%s" %s ' % (self.username,
-                                                      self.hostname,
+                scp_cmd = 'scp -qp "%s@%s:%s" %s ' % (username,
+                                                      hostname,
                                                       remote_path,
                                                       path)
             else:
@@ -259,8 +284,8 @@ class TransferSCP(Transfer):
                 os.makedirs(os.path.dirname(path))
             if os.path.isdir(path):
                 if self.username != None and self.hostname != None:
-                    scp_cmd = 'scp -Cqpr "%s@%s:%s" %s ' % (self.username,
-                                                            self.hostname,
+                    scp_cmd = 'scp -Cqpr "%s@%s:%s" %s ' % (username,
+                                                            hostname,
                                                             os.path.join(
                                                             remote_path, "*"),
                                                             path)
@@ -269,8 +294,8 @@ class TransferSCP(Transfer):
                         os.path.join(remote_path, "*"), path)
             else:
                 if self.username != None and self.hostname != None:
-                    scp_cmd = 'scp -Cqpr "%s@%s:%s" %s ' % (self.username,
-                                                            self.hostname,
+                    scp_cmd = 'scp -Cqpr "%s@%s:%s" %s ' % (username,
+                                                            hostname,
                                                             remote_path,
                                                             path)
                 else:
@@ -293,12 +318,24 @@ class TransferRsync(Transfer):
         # print("Rsync transfer")
 
     def transfer_to_remote(self, path, remote_path):
+        username = self.username
+        hostname = self.hostname
+        if six.PY3:
+            # args should be strings
+            if isinstance(username, bytes):
+                username = username.decode()
+            if isinstance(hostname, bytes):
+                hostname = hostname.decode()
+            if isinstance(remote_path, bytes):
+                remote_path = remote_path.decode()
+            if isinstance(path, bytes):
+                path = path.decode()
         if os.path.isfile(path):
             self.remote_file_controller.create_dirs(remote_path)
             if self.username != None and self.hostname != None:
                 rsync_cmd = 'rsync -qp %s "%s@%s:%s"' % (path,
-                                                         self.username,
-                                                         self.hostname,
+                                                         username,
+                                                         hostname,
                                                          remote_path)
             else:
                 rsync_cmd = 'rsync -qp %s %s' % (path, remote_path)
@@ -308,9 +345,10 @@ class TransferRsync(Transfer):
         if os.path.isdir(path):
             self.remote_file_controller.create_dirs(remote_path)
             if self.username != None and self.hostname != None:
-                rsync_cmd = 'rsync -qpr %s "%s@%s:%s"' % (os.path.join(path, "*"),
-                                                          self.username,
-                                                          self.hostname,
+                rsync_cmd = 'rsync -qpr %s "%s@%s:%s"' % (os.path.join(path,
+                                                                       "*"),
+                                                          username,
+                                                          hostname,
                                                           remote_path)
             else:
                 rsync_cmd = 'rsync -qpr %s %s' % (os.path.join(path, "*"),
@@ -319,12 +357,24 @@ class TransferRsync(Transfer):
             os.system(rsync_cmd)
 
     def transfer_from_remote(self, remote_path, path):
+        username = self.username
+        hostname = self.hostname
+        if six.PY3:
+            # args should be strings
+            if isinstance(username, bytes):
+                username = username.decode()
+            if isinstance(hostname, bytes):
+                hostname = hostname.decode()
+            if isinstance(remote_path, bytes):
+                remote_path = remote_path.decode()
+            if isinstance(path, bytes):
+                path = path.decode()
         if self.remote_file_controller.is_file(remote_path):
             if not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             if self.username != None and self.hostname != None:
-                rsync_cmd = 'rsync -qp "%s@%s:%s" %s ' % (self.username,
-                                                          self.hostname,
+                rsync_cmd = 'rsync -qp "%s@%s:%s" %s ' % (username,
+                                                          hostname,
                                                           remote_path,
                                                           path)
             else:
@@ -336,8 +386,8 @@ class TransferRsync(Transfer):
             if not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             if self.username != None and self.hostname != None:
-                rsync_cmd = 'rsync -qpr "%s@%s:%s" %s ' % (self.username,
-                                                           self.hostname,
+                rsync_cmd = 'rsync -qpr "%s@%s:%s" %s ' % (username,
+                                                           hostname,
                                                            os.path.join(
                                                            remote_path, "*"),
                                                            path)
