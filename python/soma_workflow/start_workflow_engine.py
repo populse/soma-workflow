@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 '''
 author: Soizic Laguitton
@@ -29,6 +28,7 @@ if __name__ == "__main__":
     import time
     import signal
     import subprocess
+    import json
 
 
     class VersionError(Exception):
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
-            logger.debug(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server' + resource_id)
+            logger.info(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server ' + resource_id)
         python_interpreter = sys.executable # os.path.basename(sys.executable)
         return subprocess.Popen([python_interpreter,
                                  '-m',
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     def get_database_server_proxy(config, logger):
         name_server_host = config.get_name_server_host()
-        logger.debug("Debug: name_server_host: {}".format(name_server_host))
+        logger.info("Debug: name_server_host: {}".format(name_server_host))
 
         # Checking if the database server is running
         # if it is running we get its uri
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         path = os.path.split(config.get_server_log_info()[0])[0]
         # get URI filename with python version suffix
         full_file_name = os.path.join(path, "database_server_uri.py.txt")
-        logger.debug("DEBUG full file name: " + full_file_name)
+        logger.info("DEBUG full file name: " + full_file_name)
         if os.path.exists(full_file_name):
             try:
                 with open(full_file_name, 'r') as f:
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
                     command='ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
                     try:
-                        output = subprocess.check_output(command, shell=True)
+                        output = subprocess.check_output(command, shell=True).decode()
                         output = output.strip().split('\n')
                     except subprocess.CalledProcessError:
                         output = []
@@ -209,7 +209,7 @@ if __name__ == "__main__":
         subprocess_db_server_handle = start_database_server(resource_id, logger)
         logger.debug('Waiting for the database server process to write something')
         output = subprocess_db_server_handle.stdout.readline()
-        output = output.strip()
+        output = output.strip().decode()
 
         (db_name, uri) = output.split(': ')
 
