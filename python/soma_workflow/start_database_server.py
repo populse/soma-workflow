@@ -87,8 +87,7 @@ if __name__ == '__main__':
     logging.debug("server_uri: " + str(server_uri))
     # Write the uri into a file
     (dir, file) = os.path.split(server_log_file)
-    file_path = os.path.join(dir, "database_server_uri.py%d.txt"
-                             % sys.version_info[0])
+    file_path = os.path.join(dir, "database_server_uri.py.txt")
     logging.debug(file_path)
 
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
@@ -115,6 +114,7 @@ if __name__ == '__main__':
         'hostname': socket.gethostname(),
         'pid': os.getpid(),
         'server_uri': str(server_uri),
+        'python_version': '%d.%d.%d' % sys.version_info[:3]
     }
     with open(file_path, 'w') as f:
         json.dump(uri_dict, f)

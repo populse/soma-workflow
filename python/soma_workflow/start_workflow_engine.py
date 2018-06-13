@@ -30,6 +30,13 @@ if __name__ == "__main__":
     import signal
     import subprocess
 
+
+    class VersionError(Exception):
+
+        def __init__(self, msg, py_ver):
+            super(VersionError, self).__init__(msg)
+            self.python_version = py_ver
+
     class Timeout():
         """Timeout class using ALARM signal."""
 
@@ -134,51 +141,67 @@ if __name__ == "__main__":
         # if it is running we get its uri
         # else we launch it and get its uri
 
-        try:
-            path = os.path.split(config.get_server_log_info()[0])[0]
-            # get URI filename with python version suffix
-            full_file_name = os.path.join(path,
-                                          "database_server_uri.py%d.txt"
-                                          % sys.version_info[0])
-            logger.debug("DEBUG full file name: " + full_file_name)
-            with open(full_file_name, 'r') as f:
-                uri_dict = json.load(f)
-            uri = uri_dict.get('server_uri')
-            logger.debug(uri)
-            hotname = uri_dict.get('hostname') # currently unused
-            pid = uri_dict.get('pid')
-            if uri:
-                # Check that the database is running
-                # and add not been killed with a -9 signal for instance
-                # without removing the .txt file containing its uri
-                logger.info("Using the file to find the database server that "
-                            "is running if it hasn't been stopped in the "
-                            "meantime.")
+        path = os.path.split(config.get_server_log_info()[0])[0]
+        # get URI filename with python version suffix
+        full_file_name = os.path.join(path, "database_server_uri.py.txt")
+        logger.debug("DEBUG full file name: " + full_file_name)
+        if os.path.exists(full_file_name):
+            try:
+                with open(full_file_name, 'r') as f:
+                    uri_dict = json.load(f)
+                uri = uri_dict.get('server_uri')
+                logger.debug(uri)
+                hotname = uri_dict.get('hostname') # currently unused
+                pid = uri_dict.get('pid')
+                py_ver = [int(x)
+                          for x in uri_dict.get('python_version').split('.')]
 
-                command='ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
-                try:
-                    output = subprocess.check_output(command, shell=True)
-                    output = output.strip().split('\n')
-                except subprocess.CalledProcessError:
-                    output = []
+                if uri:
+                    # Check that the database is running
+                    # and add not been killed with a -9 signal for instance
+                    # without removing the .txt file containing its uri
+                    logger.info("Using the file to find the database server "
+                                "that is running if it hasn't been stopped in "
+                                "the meantime.")
 
-                output = [o for o in output if o.split()[1] == str(pid)]
-                logger.debug("Output of grep is: " + repr(output))
-                #will always be true anyway since grep exit status is 1 when
-                #there is no matching pattern and therefore check_output raises
-                #an exception.
-                if len(output) > 1:
-                    logger.info("Warning: several database server processes "
-                                "match the pid (should not happen...)")
-                if len(output) != 0:
-                    logger.info("Connection to an already opened database")
-                    data_base_proxy = zro.Proxy(uri)
-                    return data_base_proxy
-        except Exception as e:
-            logger.exception("Note that when you have shut down the database"
-                             " server engine and the file "
-                             "database_server_uri.py%d.txt"
-                             " was not removed." % sys.version_info[0])
+                    command='ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
+                    try:
+                        output = subprocess.check_output(command, shell=True)
+                        output = output.strip().split('\n')
+                    except subprocess.CalledProcessError:
+                        output = []
+
+                    output = [o for o in output if o.split()[1] == str(pid)]
+                    logger.debug("Output of grep is: " + repr(output))
+                    #will always be true anyway since grep exit status is 1
+                    #when there is no matching pattern and therefore
+                    #check_output raises an exception.
+                    if len(output) > 1:
+                        logger.warning("Warning: several database server "
+                                       "processes match the pid (should not "
+                                       "happen...)")
+                    if len(output) != 0:
+                        if py_ver[0] != sys.version_info[0]:
+                            raise VersionError('version mismatch', py_ver)
+                        logger.info("Connection to an already opened database")
+                        data_base_proxy = zro.Proxy(uri)
+                        return data_base_proxy
+            except VersionError as e:
+                logger.exception("A database server is already running with "
+                                 "a different version of Python (%d), which "
+                                 "is not allowed. You should shut the running "
+                                 "server down before using this version of "
+                                 "python (%d). If you need to run both, "
+                                 "please setup and use a different "
+                                 "configuration directory, using a different "
+                                 "computing resource name."
+                                 % (e.python_version[0], sys.version_info[0]))
+                raise
+            except Exception:
+                logger.exception("Warning: the database server has been shut "
+                                 "down or died and the "
+                                 "database_server_uri.py.txt file has not "
+                                 "been removed.")
 
         logger.info('Launching database server and getting a proxy object on it')
         # We don't need the handle since the database server will continue
@@ -188,7 +211,7 @@ if __name__ == "__main__":
         output = subprocess_db_server_handle.stdout.readline()
         output = output.strip()
 
-        (db_name, uri) = output.split(b': ')
+        (db_name, uri) = output.split(': ')
 
         logger.debug('Name of the database server is: ' + repr(db_name))
         logger.debug('Server URI: ' + repr(uri))
