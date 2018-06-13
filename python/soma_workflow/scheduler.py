@@ -482,22 +482,23 @@ if DRMAA_LIB_FOUND == True:
                 self.logger.debug(
                     "  ==> resource_usage=" + repr(resource_usage))
 
-                if aborted == 1:
+                if aborted:
                     res_status = constants.EXIT_ABORTED
                 else:
-                    if exit_value == 1:
+                    if exit_value:
                         res_status = constants.FINISHED_REGULARLY
                         res_exitValue = exit_status
                     else:
-                        if signaled == 1:
+                        if signaled:
                             res_status = constants.FINISHED_TERM_SIG
                             res_termSignal = term_sig
                         else:
                             res_status = constants.FINISHED_UNCLEAR_CONDITIONS
 
-                res_resourceUsage = ''
+                self.logger.debug("  ==> res_status=" + repr(res_status))
+                res_resourceUsage = b''
                 for k, v in six.iteritems(resource_usage):
-                    res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
+                    res_resourceUsage = res_resourceUsage + k + b'=' + v + b' '
 
             except ExitTimeoutException:
                 res_status = constants.EXIT_UNDETERMINED
