@@ -64,12 +64,5 @@ EXTRA_REQUIRES = {
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-try:
-    import sys
-    pyver = '.py%d' % sys.version_info[0]
-except:
-    pyver = ''
-# DB_VERSION now suffixed by python version, both are incompatible due to
-# pickes stored in the database. We could not make those work for both versions
-DB_VERSION = '2.0%s' % pyver
+DB_VERSION = '2.0'
 DB_PICKLE_PROTOCOL = 2 # python 2/3 compatible (should be, but is not)

@@ -281,8 +281,11 @@ def create_database(database_file):
                                            last_status_update DATE NOT NULL,
                                            queue              TEXT) ''')
 
-    cursor.execute('''CREATE TABLE db_version (version TEXT NOT NULL)''')
-    cursor.execute('INSERT INTO db_version (version) VALUES (?)', [DB_VERSION])
+    cursor.execute('''CREATE TABLE db_version (
+        version TEXT NOT NULL,
+        python_version TEXT NOT NULL)''')
+    cursor.execute('''INSERT INTO db_version (version, python_version)
+      VALUES (?, ?)''', [DB_VERSION, '%d.%d.%d' % sys.version_info[:3]])
 
     cursor.close()
     connection.commit()
@@ -514,11 +517,9 @@ class WorkflowDatabaseServer(object):
                 connection = self._connect()
                 cursor = connection.cursor()
                 version = None
-                try:
-                    for row in cursor.execute("SELECT * FROM db_version"):
-                        version = row[0]
-                except Exception as e:
-                    pass
+                for row in cursor.execute("SELECT * FROM db_version"):
+                    version, py_ver = row
+                    break
 
                 try:
                     if version == None:
@@ -527,6 +528,15 @@ class WorkflowDatabaseServer(object):
                             "queue=?", ["default queue"]))[0]
                     elif unicode(version) != unicode(DB_VERSION):
                         raise Exception('Wrong db version')
+                    if py_ver is None:
+                        py_ver0 = 2
+                    else:
+                        py_ver0 = int(py_ver.split('.')[0])
+                    if py_ver0 != sys.version_info[0]:
+                        raise Exception('Mismatching python version, the '
+                                        'database works with python %d and we '
+                                        'are using python %d'
+                                        % (py_ver0, sys.version_info[0]))
                 except Exception as e:
                     cursor.close()
                     connection.close()
