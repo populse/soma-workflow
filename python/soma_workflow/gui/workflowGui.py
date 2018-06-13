@@ -2892,6 +2892,8 @@ class JobInfoWidget(QtGui.QTabWidget):
         setLabelFromString(self.ui.queue, self.job_item.queue)
 
         if resource_usage:
+            if six.PY3:
+                resource_usage = resource_usage.decode()
             self.ui.resource_usage.insertItems(0, resource_usage.split())
         else:
             self.ui.resource_usage.clear()
@@ -4777,6 +4779,9 @@ class GuiJob(GuiWorkflowItem):
         if self.exit_info:
             exit_status, exit_value, term_signal, resource_usage = self.exit_info
             if resource_usage:
+                if six.PY3:
+                    # in py3 RU is bytes, we want unicode/str
+                    resource_usage = resource_usage.decode()
                 ru = resource_usage.split()
                 for ruel in ru:
                     ruel = ruel.split("=")
