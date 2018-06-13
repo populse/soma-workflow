@@ -53,7 +53,8 @@ AUTHOR = "Soma-Workflow developers"
 AUTHOR_EMAIL = "support@brainvisa.info"
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
-REQUIRES = ["six"]
+REQUIRES = ["six",
+            "json"]
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
     "client": ["zmq", "paramiko"],

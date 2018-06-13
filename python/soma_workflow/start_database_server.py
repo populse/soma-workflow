@@ -15,6 +15,7 @@ import os
 import signal
 import sys
 import logging
+import json
 import soma_workflow.zro as zro
 # import soma_workflow.sro as zro
 
@@ -86,7 +87,8 @@ if __name__ == '__main__':
     logging.debug("server_uri: " + str(server_uri))
     # Write the uri into a file
     (dir, file) = os.path.split(server_log_file)
-    file_path = os.path.join(dir, "database_server_uri.txt")
+    file_path = os.path.join(dir, "database_server_uri.py%d.txt"
+                             % sys.version_info[0])
     logging.debug(file_path)
 
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
@@ -109,9 +111,13 @@ if __name__ == '__main__':
     # signal.signal(signal.SIGKILL, handler)
     # signal.signal(signal.SIGINT, handler)
 
-
+    uri_dict = {
+        'hostname': socket.gethostname(),
+        'pid': os.getpid(),
+        'server_uri': str(server_uri),
+    }
     with open(file_path, 'w') as f:
-        f.write(str(server_uri) + "\n")
+        json.dump(uri_dict, f)
 
     logging.info("Writting the uri of the database server.")
     sys.stdout.write(str(server_name) + ": " + str(server_uri) + '\n')
