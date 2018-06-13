@@ -49,7 +49,7 @@ class BoolConverter(object):
 
     """Helper class to convert to/from bool attributes."""
 
-    def __init__(self, true='y', false='n'):
+    def __init__(self, true=b'y', false=b'n'):
         self.true = true
         self.false = false
 
@@ -187,11 +187,11 @@ To be managed with vector C DRMAA attribute management functions."""
         self.name = c_str(name)
 
     def __set__(self, instance, value):
-        v = ["%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
+        v = [b"%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
         c(drmaa_set_vector_attribute, instance, self.name, string_vector(v))
 
     def __get__(self, instance, _):
-        x = [i.split('=', 1) for i in list(vector_attribute_iterator(
+        x = [i.split(b'=', 1) for i in list(vector_attribute_iterator(
             instance, self.name))]
         return dict(x)
 
@@ -213,7 +213,7 @@ def adapt_rusage(rusage):
     "transform a rusage data structure into a dict"
     rv = dict()
     for attr in attributes_iterator(rusage.contents):
-        k, v = attr.split('=')
+        k, v = attr.split(b'=')
         rv[k] = v
     return rv
 
