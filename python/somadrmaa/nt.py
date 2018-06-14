@@ -102,7 +102,7 @@ def namedtuple(typename, field_names, verbose=False):
     namespace = dict(itemgetter=_itemgetter)
     try:
         six.exec_(template, namespace)
-    except SyntaxError, e:
+    except SyntaxError as e:
         raise (SyntaxError, SyntaxError(e.message + ':\n' + template),
                _sys.exc_info[2])
     result = namespace[typename]
