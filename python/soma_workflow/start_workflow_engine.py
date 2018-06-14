@@ -187,14 +187,13 @@ if __name__ == "__main__":
                         data_base_proxy = zro.Proxy(uri)
                         return data_base_proxy
             except VersionError as e:
-                msg = "A database server is already running with " \
-                      "a different version of Python (%d), which " \
-                      "is not allowed. You should shut the running " \
-                      "server down before using this version of " \
-                      "python (%d). If you need to run both, " \
-                      "please setup and use a different " \
-                      "configuration directory, using a different " \
-                      "computing resource name." \
+                msg = "A database server has already been running with a " \
+                      "different version of Python (%d), which is not " \
+                      "allowed. You should shut the running server down, " \
+                      "and remove the database file, before using this " \
+                      "version of python (%d). If you need to run both, " \
+                      "please setup and use a different configuration " \
+                      "directory, using a different computing resource name." \
                       % (e.python_version[0], sys.version_info[0])
                 logger.exception(msg)
                 # also print on stdout, which the client will capture

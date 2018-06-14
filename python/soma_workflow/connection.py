@@ -402,7 +402,10 @@ class RemoteConnection(object):
             short_msg = "A problem occured while starting the engine " \
                 "process on the remote machine " \
                 + str(cluster_address) + "\n"
-            if 'already running with a different version of Python' in stdout:
+            if 'already been running with a different version of Python' \
+                    in stdout:
+                # in case of thie specific error, display it in the short
+                # message to be immediately visible in the GUI
                 short_msg += '\n' + stdout
             raise ConnectionError(
                 short_msg +
