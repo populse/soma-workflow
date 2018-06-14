@@ -398,15 +398,19 @@ class RemoteConnection(object):
         if (not configuration_uri or
             not connection_checker_uri or
             not workflow_engine_uri):
+            stdout = '\n'.join(std_out_lines)
+            short_msg = "A problem occured while starting the engine " \
+                "process on the remote machine " \
+                + str(cluster_address) + "\n"
+            if 'already running with a different version of Python' in stdout:
+                short_msg += '\n' + stdout
             raise ConnectionError(
-                "A problem occured while starting the engine "
-                "process on the remote machine " +
-                repr(cluster_address) + "\n"
+                short_msg +
                 "**More details:**\n"
                 "**Start engine process command line:** \n"
                 "\n" + command + "\n\n"
                 "**Engine process standard output:** \n"
-                "\n" + repr(std_out_lines))
+                "\n" + stdout)
 
 
         whole_uri = str(workflow_engine_uri)
