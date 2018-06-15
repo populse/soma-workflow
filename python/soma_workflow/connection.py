@@ -661,17 +661,17 @@ class LocalConnection(object):
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
 
-        line = engine_process.stdout.readline()
+        line = engine_process.stdout.readline().decode()
         stdout_content = line
         while line and line.split()[0] != remote_workflow_engine_name:
-            line = engine_process.stdout.readline()
+            line = engine_process.stdout.readline().decode()
             stdout_content = stdout_content + "\n" + line
 
         if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline()
+            line = engine_process.stderr.readline().decode()
             stderr_content = line
             while line:
-                line = engine_process.stderr.readline()
+                line = engine_process.stderr.readline().decode()
                 stderr_content = stderr_content + "\n" + line
             raise ConnectionError("A problem occured while starting the engine "
                                   "process on the local machine. \n"
@@ -683,17 +683,17 @@ class LocalConnection(object):
                                   "**Engine process standard error:** \n"
                                   "\n" + stderr_content)
         workflow_engine_uri = line.split()[1]
-        line = engine_process.stdout.readline()
+        line = engine_process.stdout.readline().decode()
         stdout_content = stdout_content + "\n" + line
         while line and line.split()[0] != "connection_checker":
-            line = engine_process.stdout.readline()
+            line = engine_process.stdout.readline().decode()
             stdout_content = stdout_content + "\n" + line
 
         if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline()
+            line = engine_process.stderr.readline().decode()
             stderr_content = line
             while line:
-                line = engine_process.stderr.readline()
+                line = engine_process.stderr.readline().decode()
                 #TODO TBC
                 print("this should contain the uri of the connection checker in 2nd position" +line)
                 stderr_content = stderr_content + "\n" + line
@@ -708,17 +708,17 @@ class LocalConnection(object):
                                   "\n" + stderr_content)
 
         connection_checker_uri = line.split()[1]
-        line = engine_process.stdout.readline()
+        line = engine_process.stdout.readline().decode()
         stdout_content = stdout_content + "\n" + line
         while line and line.split()[0] != "configuration":
-            line = engine_process.stdout.readline()
+            line = engine_process.stdout.readline().decode()
             stdout_content = stdout_content + "\n" + line
 
         if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline()
+            line = engine_process.stderr.readline().decode()
             stderr_content = line
             while line:
-                line = engine_process.stderr.readline()
+                line = engine_process.stderr.readline().decode()
                 stderr_content = stderr_content + "\n" + line
             raise ConnectionError("A problem occured while starting the engine "
                                   "process on the local machine. \n"
