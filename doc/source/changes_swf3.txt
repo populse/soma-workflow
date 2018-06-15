@@ -46,7 +46,11 @@ However it is possible to setup two computing resources configurations, to be us
 
 Both servers can run on the same machine at the same time: the client will take care of taking to the right one (which was not done in previous versions of SWF). Note however that the "kill servers" option in the connection dialog in the GUI will kill all of them.
 
-On a local machine, it is also possible to use two different configurations. But one of them will not be the default one, so you will have to specify it (when running ``soma_workflow_gui`` or connecting via the client API). The configuration has to be created "by hand" in the config file (``$HOME/.soma-workflow.cfg`` by default), and must specify that it is a "light mode' server with a ``local_basic`` scheduler. Ex:
+On a local machine, it is also possible to use two different configurations. But one of them will not be the default one, so you will have to specify it (when running ``soma_workflow_gui`` or connecting via the client API). The configuration has to be created "by hand" in the config file (``$HOME/.soma-workflow.cfg`` by default), and must specify that it is a "light mode' server with a ``local_basic`` scheduler.
+
+Moreover a new configuration option ``ALLOWED_PYTHON_VERSIONS`` (on client side) allows to mark some resources with some versions of python. Non-matching versions will be discarded, and will not be displayed in the GUI. Connection to the default local resource will also try to use a matching one.
+
+Ex:
 
 .. code-block:: ini
 
@@ -60,4 +64,5 @@ On a local machine, it is also possible to use two different configurations. But
     transfered_files_dir = /home/someone/.soma-workflow/py3/transfered_files
     light_mode = 1
     scheduler_type = local_basic
+    allowed_python_versions = 3
 
