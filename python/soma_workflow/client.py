@@ -142,6 +142,9 @@ class WorkflowController(object):
             if engine_log_dir:
                 logfilepath = os.path.join(
                     os.path.abspath(engine_log_dir), "log_local_mode")
+                log_dir = os.path.dirname(logfilepath)
+                if not os.path.exists(log_dir):
+                    os.makedirs(log_dir)
                 logging.basicConfig(
                     filename=logfilepath,
                     format=engine_log_format,
