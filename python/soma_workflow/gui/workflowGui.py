@@ -1191,6 +1191,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.reconnectAfterConnectionClosed)
         self.model.global_workflow_state_changed.connect(
             self.update_workflow_status_icons)
+        self.config_file_path = config_file
 
         self.UpdateLocalparameters()
 
@@ -1239,14 +1240,18 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connection_dlg.accepted.connect(self.firstConnection)
         self.connection_dlg.rejected.connect(self.close)
 
-        self.config_file_path = config_file
         self.db_file = db_file
 
         # First connection:
         # Try to connect directly:
+        if computing_resource is None and self.config_file_path is not None:
+            computing_resource \
+                = configuration.Configuration.get_local_resource_id(
+                    config=None, config_file_path=self.config_file_path)
         if computing_resource:
+            print('connect to computing resource:', computing_resource)
             self.connect_to_controller(computing_resource, user)
-        elif auto_connect or self.config_file_path == None:
+        elif auto_connect and computing_resource is None:
             if user is not None and len(self.resource_list) > 0:
                 self.connect_to_controller(self.resource_list[0], user)
             else:
@@ -1302,12 +1307,16 @@ class SomaWorkflowWidget(QtGui.QWidget):
         wf_ctrl = None
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         config = None
+        local_resource_id = configuration.Configuration.get_local_resource_id(
+            None, config_file_path=self.config_file_path)
         if self.config_file_path is not None \
-                or (resource_id in ('localhost', socket.gethostname())
+                or (resource_id in ('localhost', socket.gethostname(),
+                                    local_resource_id)
                     and self.db_file is not None):
             config = configuration.Configuration.load_from_file(
                 config_file_path=self.config_file_path)
-            if resource_id in ('localhost', socket.gethostname()) \
+            if resource_id in ('localhost', socket.gethostname(),
+                               local_resource_id) \
                     and self.db_file is not None:
                 config._database_file = self.db_file
         try:

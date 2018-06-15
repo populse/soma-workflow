@@ -66,7 +66,7 @@ if __name__=="__main__":
     if i == 1:
 
         if options.computing_resource is None and options.database is not None:
-            options.computing_resource = 'localhost'
+            options.computing_resource = None
         sw_main_window = MainWindow(model,
                                     options.user,
                                     options.auto_connect,

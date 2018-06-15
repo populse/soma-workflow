@@ -123,6 +123,10 @@ class WorkflowController(object):
         else:
             self.config = config
 
+        if resource_id is None:
+            resource_id \
+                = configuration.Configuration.get_local_resource_id(config)
+
         if password == '':
             password = None
 
