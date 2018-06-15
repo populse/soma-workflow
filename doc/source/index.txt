@@ -21,6 +21,7 @@ Contents
    :maxdepth: 1
 
    concepts.txt
+   changes_swf3.txt
    gui.txt
    examples.txt
    MPI_workflow_runner.txt
