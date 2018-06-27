@@ -603,7 +603,7 @@ class Configuration(observer.Observable):
         if config is None:
             config_parser = configparser.ConfigParser()
             if config_file_path == None:
-                return [socket.gethostname()]
+                return socket.gethostname()
             config_parser.read(config_file_path)
         else:
             config_parser = config._config_parser
