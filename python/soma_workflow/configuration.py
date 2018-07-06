@@ -577,9 +577,14 @@ class Configuration(observer.Observable):
                 # remove this one
                 continue
             new_resource_ids.append(resource_id)
-            machines = config_parser.get(resource_id,
-                                         CFG_SUBMITTING_MACHINES,
-                                         fallback=None)
+            
+            try:
+                machines = config_parser.get(resource_id,
+                                            CFG_SUBMITTING_MACHINES)
+            except ConfigParser.NoOptionError:
+                machines = None
+                
+                
             if (machines is None or local_machine in machines
                 or 'localhost' in machines) \
                     and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
@@ -614,9 +619,13 @@ class Configuration(observer.Observable):
                         config_parser, resource_id):
                 # remove this one
                 continue
-            machines = config_parser.get(resource_id,
-                                         CFG_SUBMITTING_MACHINES,
-                                         fallback=None)
+
+            try:
+                machines = config_parser.get(resource_id,
+                                            CFG_SUBMITTING_MACHINES)
+            except ConfigParser.NoOptionError:
+                machines = None
+                
             if (machines is None or local_machine in machines
                 or 'localhost' in machines) \
                     and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
