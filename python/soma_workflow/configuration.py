@@ -581,7 +581,7 @@ class Configuration(observer.Observable):
             try:
                 machines = config_parser.get(resource_id,
                                             CFG_SUBMITTING_MACHINES)
-            except ConfigParser.NoOptionError:
+            except configparser.NoOptionError:
                 machines = None
                 
                 
@@ -623,7 +623,7 @@ class Configuration(observer.Observable):
             try:
                 machines = config_parser.get(resource_id,
                                             CFG_SUBMITTING_MACHINES)
-            except ConfigParser.NoOptionError:
+            except configparser.NoOptionError:
                 machines = None
                 
             if (machines is None or local_machine in machines
