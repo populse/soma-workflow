@@ -606,12 +606,19 @@ class Configuration(observer.Observable):
         * the resource mode is ``LIGHT_MODE``
         '''
         if config is None:
-            config_parser = configparser.ConfigParser()
             if config_file_path == None:
                 return socket.gethostname()
+            config_parser = configparser.ConfigParser()
             config_parser.read(config_file_path)
         else:
             config_parser = config._config_parser
+            if config_parser is None:
+                if config._config_path is None:
+                    return socket.gethostname()
+                config_parser = configparser.ConfigParser()
+                config_parser.read(config._config_path)
+                config._config_parser = config_parser
+
         local_machine = socket.gethostname()
         for resource_id in config_parser.sections():
             if filtered \
