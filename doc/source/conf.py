@@ -27,15 +27,15 @@ sys.path.insert(0,os.path.abspath("../../python/soma_workflow/"))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode', napoleon]
 try:
     # try napoleon which replaces numpydoc (and googledoc),
     # comes with sphinx 1.2
     import sphinx.ext.napoleon
-    napoleon = 'sphinx.ext.napoleon'
+    extensions.append('sphinx.ext.napoleon')
 except ImportError:
-    # not available, fallback to numpydoc
-    napoleon = 'numpy_ext.numpydoc'
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode', napoleon]
+    # not available, too bad...
+    pass
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'soma-workflow'
-copyright = u'2011 CEA, Neurospin, France, CATI, France'
+copyright = u'2011-2018 CEA, Neurospin, France, CATI, France'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
