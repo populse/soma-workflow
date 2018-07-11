@@ -1314,6 +1314,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                     local_resource_id)
                     and self.db_file is not None):
             config = configuration.Configuration.load_from_file(
+                resource_id=resource_id,
                 config_file_path=self.config_file_path)
             if resource_id in ('localhost', socket.gethostname(),
                                local_resource_id) \
