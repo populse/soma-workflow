@@ -26,8 +26,6 @@ import re
 import random
 import errno
 import logging
-import soma_workflow.zro as zro
-import zmq
 import sys
 import io
 import traceback
@@ -294,6 +292,7 @@ class RemoteConnection(object):
 
 
         import soma_workflow.zro as zro
+        import zmq
 
         # required in the remote connection mode
         # from paramiko.file import BufferedFile
@@ -636,6 +635,7 @@ class LocalConnection(object):
 
         # required in the local connection mode
 
+        import soma_workflow.zro as zro
         try:
             import subprocess32 as subprocess
         except ImportError:
