@@ -636,8 +636,11 @@ class LocalConnection(object):
         # required in the local connection mode
 
         import soma_workflow.zro as zro
+        import sys
         try:
             import subprocess32 as subprocess
+            import sys
+            sys.modules['subprocess'] = sys.modules['subprocess32']
         except ImportError:
             import subprocess
 
