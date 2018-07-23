@@ -556,6 +556,13 @@ class LocalConnection(object):
         from Pyro.errors import ConnectionClosedError
         try:
             import subprocess32 as subprocess
+            import subprocess as _subprocess
+            if hasattr(_subprocess, '_args_from_interpreter_flags'):
+                # get this private function which is used somewhere in
+                # multiprocessing
+                subprocess._args_from_interpreter_flags \
+                    = _subprocess._args_from_interpreter_flags
+            del _subprocess
         except ImportError:
             import subprocess
 
