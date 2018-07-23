@@ -639,6 +639,13 @@ class LocalConnection(object):
         import sys
         try:
             import subprocess32 as subprocess
+            import subprocess as _subprocess
+            if hasattr(_subprocess, '_args_from_interpreter_flags'):
+                # get this private function which is used somewhere in
+                # multiprocessing
+                subprocess._args_from_interpreter_flags \
+                    = _subprocess._args_from_interpreter_flags
+            del _subprocess
             import sys
             sys.modules['subprocess'] = sys.modules['subprocess32']
         except ImportError:
