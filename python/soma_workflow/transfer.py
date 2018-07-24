@@ -560,6 +560,10 @@ class PortableRemoteTransfer(Transfer):
                     self.transfer_from_remote(r_file_path,
                                               file_path,
                                               buffer_size=buffer_size)
+        else:
+            print('warning: remote file %s does not exist' % repr(remote_path))
+            # create or erase file to get an empty file
+            open(path, 'w').write('')
 
     def top_down_dir_list(self, path):
         return Transfer.top_down_dir_list(path)
