@@ -362,6 +362,9 @@ if DRMAA_LIB_FOUND == True:
                     command[0]) + " command[1:]=" + repr(command[1:]))
                 self.logger.info(
                     "hostname and stdout_file= [%s]:%s" % (self.hostname, stdout_file))
+                # ensure there is a directory for stdout
+                if not os.path.exists(os.path.dirname(stdout_file)):
+                    os.makedirs(os.path.dirname(stdout_file))
 
                 jobTemplateId.outputPath = "%s:%s" % (
                     self.hostname, stdout_file)
@@ -372,6 +375,9 @@ if DRMAA_LIB_FOUND == True:
                     if stderr_file:
                         jobTemplateId.errorPath = "%s:%s" % (
                             self.hostname, stderr_file)
+                        # ensure there is a directory for stderr
+                        if not os.path.exists(os.path.dirname(stderr_file)):
+                            os.makedirs(os.path.dirname(stderr_file))
 
                 if job.stdin:
                     # self.logger.debug("stdin: " + repr(stdin))
