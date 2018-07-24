@@ -172,7 +172,10 @@ if DRMAA_LIB_FOUND == True:
 
             self.wake()
 
-            self.hostname = socket.gethostname()
+            # self.hostname = socket.gethostname()
+            # use full qualified hostname, because of a probable bug on our
+            # cluster.
+            self.hostname = socket.getfqdn()
 
             self._drmaa_implementation = drmaa_implementation
 
