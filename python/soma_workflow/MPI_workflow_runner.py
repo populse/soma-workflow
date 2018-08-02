@@ -112,7 +112,7 @@ def slave_loop(communicator,
                                             # None, None))
                 # normally a barrier job
                 ended_jobs_info[job_id] = (constants.DONE,
-                                           (constants.FINISHED_REGULARLY, None,
+                                           (constants.FINISHED_REGULARLY, 0,
                                             None, None))
             else:
 
@@ -418,7 +418,7 @@ if __name__ == '__main__':
             for slave in range(1, comm.size):
                 logger.debug("STOP !!!  slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-            logger.debug("######### master ends #############")
+            logger.debug("######### MASTER ENDS #############")
             raise Exception("Mandatory argument: resource id. \n")
 
         resource_id = args[1]
