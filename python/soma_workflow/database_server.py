@@ -518,7 +518,16 @@ class WorkflowDatabaseServer(object):
                 cursor = connection.cursor()
                 version = None
                 for row in cursor.execute("SELECT * FROM db_version"):
-                    version, py_ver = row
+                    try:
+                        version, py_ver = row
+                    except ValueError:
+                        # row has not 2 values, the database is older than 2.0
+                        # (and is incompatible)
+                        raise ValueError(
+                            "The database table db_version does not have the "
+                            "expected 2 columns, meaning that the database is "
+                            "incompatible. Please erase the file %s and run "
+                            "again" % database_file)
                     break
 
                 try:
