@@ -17,6 +17,17 @@ from __future__ import with_statement
 import os
 import re
 import logging
+try:
+    import subprocess32 as subprocess
+    import subprocess as _subprocess
+    if hasattr(_subprocess, '_args_from_interpreter_flags'):
+        # get this private function which is used somewhere in
+        # multiprocessing
+        subprocess._args_from_interpreter_flags \
+            = _subprocess._args_from_interpreter_flags
+    del _subprocess
+except ImportError:
+    import subprocess
 from ConfigParser import SafeConfigParser
 
 # Soma Workflow import
@@ -316,7 +327,8 @@ def InstallSomaWF2Server(userid,
                          configuration_item_name,
                          userpw=None,
                          install_swf_path_server=None,
-                         sshport=22):
+                         sshport=22,
+                         config_options={}):
     """ Procedure to install the client somaworklow install on the server
     side.
 
@@ -347,13 +359,22 @@ def InstallSomaWF2Server(userid,
                                   "setup_server.py")
     command = "python '{0}' -r {1} ".format(script2install,
                                             configuration_item_name)
+    if config_options:
+        command += ' ' + ' '.join(['%s=\'%s\'' % (n, v)
+                                   for n, v in config_options.items()])
     logging.info("ssh command = {0}".format(command))
+    print('install command:', command)
 
     (std_out_lines, std_err_lines) = SSH_exec_cmd(command, userid,
-                                                  ip_address_or_domain, userpw, wait_output=False, isNeedErr=True,
+                                                  ip_address_or_domain, 
+                                                  userpw,
+                                                  wait_output=False,
+                                                  isNeedErr=True,
                                                   sshport=sshport)
     if len(std_err_lines) > 0:
-        logging.error("Enable to configure the server: {0}".format(
+        logging.error("Unable to configure the server: {0}".format(
+                      std_err_lines))
+        raise OSError("Unable to configure the server:  {0}".format(
                       std_err_lines))
 
     # Create a update the configuration file on the client side
@@ -401,7 +422,8 @@ def CopySomaWF2Server(userid,
     # Create install directory if necessary
     std_out_lines = SSH_exec_cmd(
         "mkdir -p '{0}'".format(install_swf_path_server),
-        userid, ip_address_or_domain, userpw, sshport=sshport)
+        userid, ip_address_or_domain, userpw, sshport=sshport,
+        exit_status='raise')
     logging.info("Install soma workflow on server attempt to create server "
                  "project directory. Command return {0}".format(std_out_lines))
 
@@ -410,20 +432,22 @@ def CopySomaWF2Server(userid,
     path2drmaa = os.path.join(path2somawf, os.pardir, "somadrmaa")
 
     # Sync soma workflow to server
-    sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
-                  "{1}@{2}:'{3}'").format(path2somawf, userid,
-                                          ip_address_or_domain, install_swf_path_server)
+    sshcommand = ("rsync", "-e", "ssh", "-a", "--copy-unsafe-links",
+                  "--delete-after", path2somawf,
+                  "{0}@{1}:'{2}'".format(userid, ip_address_or_domain,
+                                         install_swf_path_server))
     logging.info("Attempt to copy soma workflow: sshcommand = "
                  " {0}".format(sshcommand))
-    os.system(sshcommand)
+    subprocess.check_call(sshcommand)
 
     # Sync drmaa patching to server
-    sshcommand = ("rsync -e ssh -av --delete-after '{0}' "
-                  "{1}@{2}:'{3}'").format(path2drmaa, userid,
-                                          ip_address_or_domain, install_swf_path_server)
+    sshcommand = ("rsync", "-e", "ssh", "-a", "--copy-unsafe-links",
+                  "--delete-after", path2drmaa,
+                  "{0}@{1}:'{2}'".format(userid, ip_address_or_domain,
+                                         install_swf_path_server))
     logging.info("Attempt to copy drmaa patching: sshcommand = "
                  " {0}".format(sshcommand))
-    os.system(sshcommand)
+    subprocess.check_call(sshcommand)
 
     return install_swf_path_server
 

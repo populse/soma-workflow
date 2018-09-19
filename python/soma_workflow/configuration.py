@@ -1415,7 +1415,7 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
         raise
 
     for i in range(len(content)):
-        content[i] = content[i].strip()
+        content[i] = content[i].rstrip()
 
     # try to find the duplicated paths and remove them
     for line2add in lines2add:

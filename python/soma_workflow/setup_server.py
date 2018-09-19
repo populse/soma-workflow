@@ -32,9 +32,10 @@ from ConfigParser import SafeConfigParser
 #
 
 path2somawf_setup_server = os.path.realpath(__file__)
-cuurent_dir = os.path.dirname(os.path.realpath(__file__))
-path2somawf = os.path.join(cuurent_dir, os.pardir)
-path2resources = "/i2bm/brainvisa/CentOS-5.3-x86_64/python-2.7.3/"
+current_dir = os.path.dirname(os.path.realpath(__file__))
+path2somawf = os.path.normpath(os.path.abspath(os.path.join(current_dir,
+                                                            os.pardir)))
+path2resources = "/i2bm/brainvisa/CentOS-5.11-x86_64/python"
 
 req_version = (2, 7)
 
@@ -114,13 +115,13 @@ def SetupServerEnvVar(path2somawf):
             os.path.join(path2resources, "lib")))
         envlines2add.append(AddPathToEnvVar(
             "LD_LIBRARY_PATH",
-            "/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib"))
+            "/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib"))
         envlines2add.append(AddPathToEnvVar(
             "LD_LIBRARY_PATH",
             "/usr/lib64/openmpi/lib"))
         envlines2add.append(SetPathToEnvVar(
             "DRMAA_LIBRARY_PATH",
-            "/i2bm/brainvisa/CentOS-5.3-x86_64/pbs_drmaa-1.0.13/lib/libdrmaa.so"))
+            "/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib/libdrmaa.so"))
 
     return envlines2add
 
@@ -171,7 +172,7 @@ def GetQueueNamesOnPBSTORQUEServer():
 
 def SetupConfigurationFileOnServer(userid,
                                    ip_address_or_domain,
-                                   resource_id=None):
+                                   resource_id=None, options={}):
     """ Create a configuration file on the server side
 
 
@@ -186,6 +187,8 @@ def SetupConfigurationFileOnServer(userid,
         the ip address or the domain of the server
     resource_id: str
         the name of the configuration component
+    options: dict
+        config options to set in the configuration
 
     .. note::
        Raises IOError, ValueError when the procedure fails
@@ -242,13 +245,18 @@ def SetupConfigurationFileOnServer(userid,
         config_parser.set(resource_id, configuration.OCFG_ENGINE_LOG_LEVEL,
                           "ERROR")
 
-        info_queue = GetQueueNamesOnPBSTORQUEServer()
-        info_queue.insert(0, "")
-        info_queue = "{15} ".join(info_queue)
-        info_queue += "{15}"
+        if 'scheduler_type' not in options \
+                or options['scheduler_type'] == 'drmaa':
+            info_queue = GetQueueNamesOnPBSTORQUEServer()
+            info_queue.insert(0, "")
+            info_queue = "{15} ".join(info_queue)
+            info_queue += "{15}"
 
-        config_parser.set(resource_id, configuration.OCFG_MAX_JOB_IN_QUEUE,
+            config_parser.set(resource_id, configuration.OCFG_MAX_JOB_IN_QUEUE,
                           info_queue)
+
+        for opt, value in options.items():
+            config_parser.set(resource_id, opt, value)
 
         WriteOutConfiguration(config_parser, config_file_path)
 
@@ -299,6 +307,8 @@ AddLineDefintions2BashrcFile(envlines2add)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", help="resource id")
+parser.add_argument("options", nargs="+", default=[],
+                    help="config options, in the shape option=value")
 
 args = parser.parse_args()
 if not args.r or args.r == "":
@@ -306,10 +316,17 @@ if not args.r or args.r == "":
     sys.exit(0)
 
 resource_id = args.r
+options = {}
+
+if len(args.options) != 0:
+    for arg in args.options:
+        opt, val = arg.split('=')
+        options[opt] = val
 
 userid = getpass.getuser()
 ip_address_or_domain = socket.gethostname()
-SetupConfigurationFileOnServer(userid, ip_address_or_domain, resource_id)
+SetupConfigurationFileOnServer(userid, ip_address_or_domain, resource_id,
+                               options=options)
 
 # Stop running database and start the new one
 lines2cmd = [

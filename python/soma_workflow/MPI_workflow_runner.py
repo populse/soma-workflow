@@ -60,7 +60,8 @@ def slave_loop(communicator,
         ended_jobs_info = {}  # job_id -> (job_status, job_exit_status)
         t = None
         if len(commands) < max_nb_jobs:
-            communicator.send(dest=0,
+            communicator.send('Requesting a job', 
+                              dest=0,
                               tag=MPIScheduler.JOB_REQUEST)
 
             # logger.debug("Slave " + repr(rank) + " job request")

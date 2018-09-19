@@ -75,7 +75,8 @@ def SSH_exec_cmd(sshcommand,
                  sshport=22,
                  isNeedErr=False,
                  num_line_stdout=-1,  # How many stdout or stderr lines to read
-               num_line_stderr=-1):  # -1 means unlimited
+               num_line_stderr=-1,  # -1 means unlimited
+               exit_status=None):   # None, 'return' or 'raise'
 
     if wait_output:
         tag = '----xxxx=====start to exec=====xxxxx----'
@@ -104,11 +105,14 @@ def SSH_exec_cmd(sshcommand,
         client.load_system_host_keys()
 
         client.connect(hostname=ip_address_or_domain,
-                       port=sshport,
-                       username=userid,
-                       password=userpw)
-
-        stdin, stdout, stderr = client.exec_command(sshcommand)
+                      port=sshport,
+                      username=userid,
+                      password=userpw)
+        try:
+            stdin, stdout, stderr = client.exec_command(sshcommand)
+            status = stdout.channel.recv_exit_status()
+        finally:
+            client.close()
 
     except paramiko.AuthenticationException as e:
         print("The authentification failed. %s. "
@@ -130,7 +134,19 @@ def SSH_exec_cmd(sshcommand,
         if isNeedErr:
             std_err_lines = read_output(stderr, None, num_line_stderr)
 
-    client.close()
+    if exit_status is not None:
+        if status != 0:
+            if exit_status == 'raise':
+                raise OSError('SSH command failed with exit status %d: %s'
+                              % (status, sshcommand))
+            elif exit_status == 'return':
+                if isNeedErr:
+                    return (std_out_lines, std_err_lines, exit_status)
+                else:
+                    return (std_out_lines, exit_status)
+            else:
+                raise ValueError('unknown exit_status value: %s'
+                                 % str(exit_status))
 
     if isNeedErr:
         return (std_out_lines, std_err_lines)

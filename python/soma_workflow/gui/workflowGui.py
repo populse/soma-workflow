@@ -894,6 +894,15 @@ class NewServerDialog(QtGui.QDialog):
         strInstallPath = self.ui.lineEdit_InstallPath.text()
         strInstallPath = utf8(strInstallPath)
 
+        options = {}
+
+        scheduler_type = self.ui.comboBox_schedulerType.currentText()
+        scheduler_type = utf8(scheduler_type).lower()
+        if scheduler_type == 'local basic (SWF)':
+            options['scheduler_type'] = 'local_basic'
+        elif scheduler_type != 'drmaa':
+            options['scheduler_type'] = scheduler_type
+
         if check_if_somawfdb_on_server(ResName, strLogin, strAdd, userpw=strPW, sshport=intPort):
             reply = QtGui.QMessageBox.question(self, 'Message',
                                                "Soma-workflow is running on your server. Are you sure to remove it and install it ?",
@@ -904,10 +913,17 @@ class NewServerDialog(QtGui.QDialog):
 
         try:
             InstallSomaWF2Server(
-                strInstallPath, ResName, strLogin, strAdd, userpw=strPW, sshport=intPort)
-        except:
+                strLogin, strAdd, ResName, userpw=strPW,
+                install_swf_path_server=strInstallPath, sshport=intPort,
+                config_options=options)
+        except Exception as e:
+            import traceback
+            tb = traceback.format_tb(sys.exc_info()[2])
+            tb = '\n'.join(tb)
             QtGui.QMessageBox.critical(
-                self, "Oops...", "Oops...Fail to install soma-workflow. Please check the message in the terminal")
+                self, "Oops...", "Oops...Failed to install soma-workflow.\n"
+                "%s:\n%s\n\n"
+                "traceback:\n%s" % (str(type(e)), str(e), tb))
             self.is_install = False
         else:
             self.is_install = True
@@ -1225,6 +1241,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
         self.ui.actionServer_Management.triggered.connect(
             self.openServerManagement)
+        # disable server management until it is fixed
+        #self.ui.actionServer_Management.setEnabled(False)
+        #self.ui.actionServer_Management.setVisible(False)
 
         self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(
             self.workflowSelectionChanged)
