@@ -1192,6 +1192,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.action_stop_wf.triggered.connect(self.stop_workflow)
         self.ui.actionServer_Management.triggered.connect(
             self.openServerManagement)
+        # disable server management until it is fixed
+        self.ui.actionServer_Management.setEnabled(False)
+        self.ui.actionServer_Management.setVisible(False)
 
         self.ui.list_widget_submitted_wfs.itemSelectionChanged.connect(
             self.workflowSelectionChanged)
