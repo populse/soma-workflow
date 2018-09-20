@@ -168,14 +168,11 @@ def SetupConfigurationFileOnClient(configuration_item_name,
         # First read the configuration file
         config_parser = read_configuration_file(config_file_path)
 
-        # Then check if configuration item is already created
-        sections = config_parser.sections()
-        if not configuration_item_name in sections:
-            # Add client config
-            config_parser = ConfiguratePaser(configuration_item_name, userid,
-                                             ip_address_or_domain, userpw, install_swf_path_server,
-                                             sshport, config_parser)
-            WriteOutConfiguration(config_parser, config_file_path)
+        # Add client config
+        config_parser = ConfiguratePaser(configuration_item_name, userid,
+                                          ip_address_or_domain, userpw, install_swf_path_server,
+                                          sshport, config_parser)
+        WriteOutConfiguration(config_parser, config_file_path)
 
 
 def read_configuration_file(config_file_path):
@@ -250,7 +247,8 @@ def ConfiguratePaser(configuration_item_name,
                                           userpw)
 
     # Add section
-    config_parser.add_section(configuration_item_name)
+    if configuration_item_name not in config_parser.sections():
+        config_parser.add_section(configuration_item_name)
 
     # Fill section
     config_parser.set(configuration_item_name,
@@ -272,6 +270,9 @@ def ConfiguratePaser(configuration_item_name,
         config_parser.set(configuration_item_name,
                           configuration.OCFG_INSTALLPATH,
                           installpath)
+    config_parser.set(configuration_item_name,
+                      configuration.OCFG_ALLOWED_PYTHON_VERSIONS,
+                      str(sys.version_info[0]))
 
     return config_parser
 
