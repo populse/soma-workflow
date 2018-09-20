@@ -5,9 +5,9 @@ Changelog
 Version 2.10 (2018/09/21)
 =========================
 
-* In Soma-Workflow 2.10, the "server management" options have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.
+* In Soma-Workflow 2.10, the **"server management" options** have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.
 
-* Soma-Workflow allows a new server config option, :ref:`CONTAINER_COMMAND <container_command>`, which allows to run jobs through a container (typically `Docker <https://www.docker.com/>`_ or `Singularity <https://www.sylabs.io/singularity/>`_)
+* Soma-Workflow allows a new server config option, :ref:`CONTAINER_COMMAND <container_command>`, which allows to **run jobs through a container** (typically `Docker <https://www.docker.com/>`_ or `Singularity <https://www.sylabs.io/singularity/>`_)
 
 
 Version 2.9 (sept. 2017)
