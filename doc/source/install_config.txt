@@ -113,6 +113,8 @@ Configuration file example (2 computing resources are configured): ::
 
 *Configuration items optional on the client side:*
 
+.. _allowed_python_versions:
+
   **ALLOWED_PYTHON_VERSIONS**
     *Added in Soma-Workflow 3.0*
 

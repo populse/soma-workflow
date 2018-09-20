@@ -2,6 +2,16 @@
 Changelog
 =========
 
+Version 3.0 (2018/09/21)
+========================
+
+* Pyro is gone, Soma-Workflow is now using `ZMQ <http://zeromq.org/>`_ and `PyZmq <https://pyzmq.readthedocs.io/en/latest/>`_.
+
+  As a consequence, all the client/server communication layer has been made completely incompatible with soma-workflow 2.9 and earlier. Client and server should always be the same version anyway. The client/server API has not changed fundamentally however.
+
+* Porting to Python3: Pyro3 having been dropped, all the requirements for porting to Python3 have now been met, and Soma-Workflow can entirely wotk using Python3. However it is not possible to run different versions of Python on the client and the server: read :doc:`changes_swf3` for details.
+
+
 Version 2.10 (2018/09/21)
 =========================
 
