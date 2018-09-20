@@ -319,8 +319,10 @@ Configuration items optional on the server side:
   **SHARED_TEMPORARY_DIR**
     Directory where to generate temporary files used between jobs. The directory should be visible by all processing nodes (on a cluster), and the filesystem should be large enough to store temporary files during a whole workflow execution.
 
+  .. _container_command:
+
   **CONTAINER_COMMAND**
-    This item is a prefix prepended to all jobs commands. It is typically used to drive execution through a container system such as `singularity <https://singularity.lbl.gov/>`_ or `docker <https://www.docker.com/>`_. In this situation, jobs commandlines have to specify the container command and options, for instance:
+    This item is a prefix prepended to all jobs commands. It is typically used to drive execution through a container system such as `singularity <https://www.sylabs.io/singularity/>`_ or `docker <https://www.docker.com/>`_. In this situation, jobs commandlines have to specify the container command and options, for instance:
 
     .. code-block:: bash
 
@@ -342,7 +344,7 @@ Configuration items optional on the server side:
 
     Now if we need further customization, for instance to set a library path variable to access a library with custom installation, we will need to run a shell to setup the variable then run the program:
 
-    .. code-block::
+    .. code-block:: bash
 
         sh -c 'LD_LIBRARY_PATH=/software_dir/lib:$"LD_LIBRARY_PATH" ls /'
 
