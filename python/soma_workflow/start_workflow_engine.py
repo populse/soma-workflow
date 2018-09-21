@@ -257,41 +257,18 @@ if __name__ == "__main__":
         else:
             logger = None
 
+        sch = scheduler.build_scheduler(config.get_scheduler_type(), config)
+
         if config.get_scheduler_type() \
-                == soma_workflow.configuration.DRMAA_SCHEDULER:
-            logger.info("using DRMAA_SCHEDULER")
-            if not soma_workflow.scheduler.DRMAA_LIB_FOUND:
-                raise NoDrmaaLibError
-
-            sch = soma_workflow.scheduler.DrmaaCTypes(
-                config.get_drmaa_implementation(),
-                config.get_parallel_job_config(),
-                os.path.expanduser("~"),
-                configured_native_spec=config.get_native_specification())
-            database_server = get_database_server_proxy(config, logger)
-            logger.debug("database_server launched")
-
-        elif config.get_scheduler_type() \
-                == soma_workflow.configuration.LOCAL_SCHEDULER:
-            logger.info("using LOCAL_SCHEDULER")
-            local_scheduler_cfg_file_path \
-                = LocalSchedulerCfg.search_config_path()
-            if local_scheduler_cfg_file_path:
-                local_scheduler_config = LocalSchedulerCfg.load_from_file(
-                    local_scheduler_cfg_file_path)
-            else:
-                local_scheduler_config = LocalSchedulerCfg()
-            sch = ConfiguredLocalScheduler(local_scheduler_config)
-            database_server = get_database_server_proxy(config, logger)
-            config.set_scheduler_config(local_scheduler_config)
-
-        elif config.get_scheduler_type() \
                 == soma_workflow.configuration.MPI_SCHEDULER:
             logger.info("using MPI_SCHEDULER")
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
                 config.get_transfered_file_dir())
+        else:
+            database_server = get_database_server_proxy(config, logger)
+            logger.debug("database_server launched")
 
         # initialisation of the zro object server.
         logger.info("Starting object server for the workflow engine")

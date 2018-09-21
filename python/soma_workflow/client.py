@@ -57,6 +57,7 @@ from soma_workflow.client_types import SharedResourcePath
 from soma_workflow.client_types import TemporaryPath
 from soma_workflow.client_types import SpecialPath
 from soma_workflow.client_types import OptionPath
+from soma_workflow import scheduler
 
 class WorkflowController(object):
 
@@ -1156,24 +1157,9 @@ def _embedded_engine_and_server(config, local_scheduler_config=None):
     database_server = WorkflowDatabaseServer(config.get_database_file(),
                                              config.get_transfered_file_dir())
 
-    if config.get_scheduler_type() == configuration.DRMAA_SCHEDULER:
-        from soma_workflow.scheduler import DrmaaCTypes
-        # print("scheduler type: drmaa")
-        scheduler = DrmaaCTypes(config.get_drmaa_implementation(),
-                                config.get_parallel_job_config(),
-                                configured_native_spec
-                                    =config.get_native_specification())
-
-    elif config.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-        from soma_workflow.scheduler import ConfiguredLocalScheduler
-        if local_scheduler_config == None:
-            local_scheduler_config = LocalSchedulerCfg()
-        # print("scheduler type: basic, number of cpu: " +
-        # repr(local_scheduler_config.get_proc_nb()))
-        scheduler = ConfiguredLocalScheduler(local_scheduler_config)
-
+    sch = scheduler.build_scheduler(config.get_scheduler_type(), config)
     workflow_engine = ConfiguredWorkflowEngine(database_server,
-                                               scheduler,
+                                               sch,
                                                config)
 
     return workflow_engine
