@@ -1,10 +1,9 @@
-=============
 Soma-workflow
 =============
 
 
 Main Features
-=============
+-------------
 
   **Unified interface to multiple computing resources:** 
     Submission of jobs or workflows with a unique interface to various 
@@ -40,7 +39,7 @@ Main Features
     path name matchings.
 
 Documentation
-=============
+-------------
 
   Visit Soma-workflow (http://www.brainvisa.info/soma-workflow) main page!
 
@@ -49,14 +48,14 @@ Documentation
 
 
 Download
-========
+--------
 
   Soma-workflow is available on pypi to download: https://pypi.python.org/pypi/soma-workflow.
 
 
 
 Installation
-=============
+------------
 
   Qt version 4.6.2 or more, PyQt version 4.7.2 or more or PySide version 1.1.1 or
   more are required if you want to use the graphical interface. 
@@ -131,6 +130,3 @@ Installation
   3) Try soma-workflow in terminal with:
 
     $ soma_workflow_gui 
-
-
-

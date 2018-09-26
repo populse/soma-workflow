@@ -1039,9 +1039,12 @@ def cpu_count():
         try:
             import multiprocessing
             return multiprocessing.cpu_count()
-        except:  # sometimes happens on MacOS... ?
+        except Exception as e:  # sometimes happens on MacOS... ?
             print('Warning: CPU count detection failed. Using default (2)',
                   file=sys.stderr)
+            #print(e)
+            #import traceback
+            #traceback.print_exc()
             return 2
     # Linux, Unix and MacOS:
     if hasattr(os, "sysconf"):
@@ -1051,6 +1054,7 @@ def cpu_count():
             if isinstance(ncpus, int) and ncpus > 0:
                 return ncpus
         else:  # OSX:
+            import subprocess
             return int(subprocess.Popen(
                 ["sysctl", "-n", "hw.ncpu"],
                 stdout=subprocess.PIPE).stdout.read())
@@ -1308,7 +1312,7 @@ def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
         raise
 
     for i in range(len(content)):
-        content[i] = content[i].strip()
+        content[i] = content[i].rstrip()
 
     # try to find the duplicated paths and remove them
     for line2add in lines2add:
