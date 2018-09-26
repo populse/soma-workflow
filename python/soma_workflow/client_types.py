@@ -119,10 +119,14 @@ class Job(object):
         The computing resources must be configured explicitly to use this feature.
 
     **user_storage**: *picklable object*
-      For the user needs, any small and picklable object can be stored here.
+      Should have been any small and picklable object for user need but was never
+      fully implemented. This parameter is simply ignored.
+
+    **env**: *dict(string, string)*
+      Environment variables to use when the job gets executed.
 
     ..
-      **disposal_time_out**: int
+      **disposal_timeout**: int
       Only requiered outside of a workflow
     '''
 
@@ -170,6 +174,9 @@ class Job(object):
 
     # any small and picklable object needed by the user
     user_storage = None
+    
+    # dict (name -> value)
+    env = None
 
     def __init__(self,
                  command,
@@ -185,7 +192,8 @@ class Job(object):
                  parallel_job_info=None,
                  priority=0,
                  native_specification=None,
-                 user_storage=None):
+                 user_storage=None,
+                 env=None):
         if not name and len(command) != 0:
             self.name = command[0]
         else:
@@ -208,6 +216,7 @@ class Job(object):
         self.parallel_job_info = parallel_job_info
         self.priority = priority
         self.native_specification = native_specification
+        self.env = env
 
         for command_elem in self.command:
             if isinstance(command_elem, basestring):
@@ -270,6 +279,7 @@ class Job(object):
             "native_specification",
             "parallel_job_info",
             "disposal_timeout",
+            "env",
         ]
         for attr_name in attributs:
             attr = getattr(self, attr_name)
@@ -376,6 +386,7 @@ class Job(object):
             "native_specification",
             "parallel_job_info",
             "disposal_timeout",
+            "env",
         ]
 
         for attr_name in attributs:
@@ -650,7 +661,7 @@ class Workflow(object):
             self.dependencies = dependencies
         else:
             self.dependencies = []
-        self.disposal_timeout = 168
+        self.disposal_timeout = disposal_timeout
 
         # Groups
         if root_group:

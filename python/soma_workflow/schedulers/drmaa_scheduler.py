@@ -180,14 +180,18 @@ if DRMAA_LIB_FOUND:
             The configuration file must provide the parallel job submission
             information specific to the cluster in use.
 
-            @type  drmaa_job_template_id: string
-            @param drmaa_job_template_id: id of drmaa job template
-            @type  parallel_job_info: tuple (string, int)
-            @param parallel_job_info: (configuration_name, max_node_num)
-            configuration_name: type of parallel job as defined in soma_workflow.constants
-            (eg MPI, OpenMP...)
-            max_node_num: maximum node number the job requests (on a unique machine or
-            separated machine depending on the parallel configuration)
+            Parameters
+            ----------
+            drmaa_job_template_id: str
+                id of drmaa job template
+            parallel_job_info: tuple (str, int)
+                parallel_job_info: (configuration_name, max_node_num)
+            configuration_name: str
+                type of parallel job as defined in soma_workflow.constants
+                (eg MPI, OpenMP...)
+            max_node_num: int
+                maximum node number the job requests (on a unique machine or
+                separated machine depending on the parallel configuration)
             '''
             if self.is_sleeping:
                 self.wake()
@@ -326,6 +330,8 @@ if DRMAA_LIB_FOUND:
                     self.logger.debug(
                         "NATIVE specification " + str(native_spec))
 
+                jobTemplateId.jobEnvironment = {}
+
                 if job.parallel_job_info:
                     parallel_config_name, max_node_number = job.parallel_job_info
                     jobTemplateId = self._setDrmaaParallelJob(jobTemplateId,
@@ -338,9 +344,12 @@ if DRMAA_LIB_FOUND:
                 # job_env.append(var_name+"="+os.environ[var_name])
                         job_env.append((var_name, os.environ[var_name]))
                     jobTemplateId.jobEnvironment = dict(job_env)
+                if isinstance(job.env, dict):
+                    jobTemplateId.jobEnvironment.update(job.env)
 
                 self.logger.debug("before submit command: " + repr(command))
                 self.logger.debug("before submit job.name=" + repr(job.name))
+                self.logger.debug("before submit job.env=" + repr(job.env))
                 drmaaSubmittedJobId = self._drmaa.runJob(jobTemplateId)
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 

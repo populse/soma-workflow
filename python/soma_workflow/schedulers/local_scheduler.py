@@ -244,6 +244,7 @@ class LocalScheduler(Scheduler):
         '''
 
         command = engine_job.plain_command()
+        env = engine_job.env
 
         stdout = engine_job.plain_stdout()
         stdout_file = None
@@ -294,6 +295,7 @@ class LocalScheduler(Scheduler):
                                        stdout=stdout_file,
                                        stderr=stderr_file,
                                        cwd=working_directory,
+                                       env=env,
                                        **kwargs)
 
         except Exception as e:
