@@ -73,6 +73,8 @@ if DRMAA_LIB_FOUND:
                       tmp_file_path=None,
                       configured_native_spec=None):
 
+            super(DrmaaScheduler, self).__init__()
+
             import somadrmaa
 
             self.logger = logging.getLogger('ljp.drmaajs')
