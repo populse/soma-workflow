@@ -67,6 +67,8 @@ if DRMAA2_LIB_FOUND:
                       tmp_file_path=None,
                       configured_native_spec=None):
 
+            super(Drmaa2Scheduler, self).__init__()
+
             import somadrmaa2
 
             self.logger = logging.getLogger('ljp.drmaajs')
@@ -127,16 +129,16 @@ if DRMAA2_LIB_FOUND:
             '''
             Creates a fresh Drmaa session.
             '''
-            import somadrmaa
+            import somadrmaa2
 
             self.is_sleeping = False
 
             if not self._drmaa:
-                self._drmaa = somadrmaa.Session()
+                self._drmaa = somadrmaa2.Session()
                 self._drmaa.initialize()
 
         def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
-            import somadrmaa
+            import somadrmaa2
             # patch for the PBS-torque DRMAA implementation
             if self._drmaa_implementation == "PBS":
 
