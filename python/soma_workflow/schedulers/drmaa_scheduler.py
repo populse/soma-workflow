@@ -463,7 +463,7 @@ if DRMAA_LIB_FOUND:
 
         @classmethod
         def build_scheduler(cls, config):
-            if not scheduler.DRMAA_LIB_FOUND:
+            if not DRMAA_LIB_FOUND:
                 raise NoDrmaaLibError
             sch = DrmaaScheduler(
                 config.get_drmaa_implementation(),
