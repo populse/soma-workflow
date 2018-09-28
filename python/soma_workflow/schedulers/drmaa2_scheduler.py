@@ -24,7 +24,7 @@ from soma_workflow.utils import DetectFindLib
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
 try:
-    (DRMAA2_LIB_FOUND, _lib) = DetectFindLib(_drmaa_lib_env_name, 'drmaa2')
+    (DRMAA2_LIB_FOUND, _lib) = DetectFindLib(_drmaa_lib_env_name, 'drmaav2')
 except:
     # an exception occurs when drmaa lib is detected but cannot be loaded
     # because of a failed dependency (torque, grid engine etc)
@@ -129,38 +129,37 @@ if DRMAA2_LIB_FOUND:
             '''
             Creates a fresh Drmaa session.
             '''
-            import somadrmaa2
+            import somadrmaa2.wrappers as drmaa2
 
             self.is_sleeping = False
 
             if not self._drmaa:
-                self._drmaa = somadrmaa2.Session()
-                self._drmaa.initialize()
+                self._drmaa = drmaa2.init(name='soma_workflow')
 
         def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
-            import somadrmaa2
+            import somadrmaa2.wrappers as drmaa2
             # patch for the PBS-torque DRMAA implementation
             if self._drmaa_implementation == "PBS":
 
                 '''
                 Create a job to test
                 '''
-                jobTemplateId = self._drmaa.createJobTemplate()
-                jobTemplateId.remoteCommand = 'echo'
-                jobTemplateId.args = ["%s" % (outstr)]
-                jobTemplateId.outputPath = "%s:%s" % (
+                jobTemplate = drmaa2.drmaa2_jtemplate_create()
+                jobTemplate.contents.remoteCommand = 'echo'
+                jobTemplate.contents.args = ["%s" % (outstr)]
+                jobTemplate.contents.outputPath = "%s:%s" % (
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
-                jobTemplateId.errorPath = "%s:%s" % (
+                jobTemplate.contents.errorPath = "%s:%s" % (
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
 
-                # print("jobTemplateId="+repr(jobTemplateId))
-                # print("jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand))
-                # print("jobTemplateId.args="+repr(jobTemplateId.args))
-                # print("jobTemplateId.outputPath="+repr(jobTemplateId.outputPath))
+                # print("jobTemplate="+repr(jobTemplate))
+                # print("jobTemplate.remoteCommand="+repr(jobTemplate.contents.remoteCommand))
+                # print("jobTemplate.args="+repr(jobTemplate.contents.args))
+                # print("jobTemplate.outputPath="+repr(jobTemplate.contents.outputPath))
                 # print(
-                # "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath))
+                # "jobTemplate.errorPath="+repr(jobTemplate.contents.errorPath))
 
-                jobid = self._drmaa.runJob(jobTemplateId)
+                jobid = drmaa2.runJob(jobTemplateId)
                 # print("jobid="+jobid)
                 retval = self._drmaa.wait(
                     jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)

@@ -81,7 +81,7 @@ class drmaa2_jtemplate_s(Structure):
         ('candidateMachines', drmaa2_string_list),
         ('minPhysMemory', c_longlong),
         ('machineOS', c_void_p), ## TODO drmaa2_os
-        ('machineArch', c_void_p), ## TODO drmaa2_cpu
+        ('machineArch', c_void_p), ## TODO drmaa2_cpu
         ('startTime', c_void_p), ## TODO time_t
         ('deadlineTime', c_void_p), ## TODO time_t
         ('stageInFiles', drmaa2_dict),
@@ -105,7 +105,7 @@ drmaa2_close_jsession = _lib.drmaa2_close_jsession
 drmaa2_close_jsession.argtypes = [drmaa2_jsession]
 drmaa2_close_jsession.restype = error_check
 
-def init(contact=None, name=None):
+def init(contact='', name=''):
     session = drmaa2_create_jsession(name, contact)
     err = drmaa2_lasterror()
     if err != 0:
@@ -129,4 +129,9 @@ drmaa2_jtemplate_create.restype = drmaa2_jtemplate
 drmaa2_jsession_run_job = _lib.drmaa2_jsession_run_job
 drmaa2_jsession_run_job.argtypes = [drmaa2_jsession, drmaa2_jtemplate]
 drmaa2_jsession_run_job.restype = drmaa2_j
+drmaa2_j_wait_terminated = _lib.drmaa2_j_wait_terminated
+drmaa2_j_wait_terminated.argtypes = [drmaa2_j, c_int]
+drmaa2_j_wait_terminated.restype = error_check
+
+
 
