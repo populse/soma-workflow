@@ -83,7 +83,7 @@ class ObjectServer:
         logger = logging.getLogger('database.ObjectServer')
         logger.debug("The oject server is registering a "
                      + repr(object.__class__.__name__)
-                     + "object, on ", repr(self.port))
+                     + "object, on " + repr(self.port))
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
@@ -170,15 +170,15 @@ class Proxy(object):
             print("Issue in zro: the uri is not taken into account, "
                   "this is probably due to its type")
         logger = logging.getLogger('database.ObjectServer')
-        logger.debug("Proxy: ", str(self.classname), str(self.object_id),
-                     str(self._port))
+        logger.debug("Proxy: " + str(self.classname) + str(self.object_id)
+                      + str(self._port))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
 
     def __getattr__(self, method_name):
         logger = logging.getLogger('database.ObjectServer')
-        logger.debug("On class:               ", self.classname)
-        logger.debug("method called:          ", method_name)
+        logger.debug("On class:               " + self.classname)
+        logger.debug("method called:          " + method_name)
         return ProxyMethod(self, method_name)
 
 class ProxyMethod(object):
@@ -196,7 +196,7 @@ class ProxyMethod(object):
             print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
-        logger.debug("remote call result:     ", result)
+        logger.debug("remote call result:     " + result)
         self.proxy.lock.release()
 
         if isinstance(result, ReturnException):

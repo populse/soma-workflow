@@ -823,8 +823,8 @@ class ConnectionChecker(object):
                     with self.lock:
                         self.connected = True
                 with self.lock:
-                    logger.debug("ConnectionChecker: Connected? :",
-                                 self.connected)
+                    logger.debug("ConnectionChecker: Connected? :"
+                                 + self.connected)
                 time.sleep(control_interval)
             logger.debug('ConnectionChecker: exit controlLoop')
 
