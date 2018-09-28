@@ -196,7 +196,7 @@ class ProxyMethod(object):
             print("Exception occurred while calling a remote object!")
             print(e)
         result = pickle.loads(self.proxy.socket.recv())
-        logger.debug("remote call result:     " + result)
+        logger.debug("remote call result:     " + str(result))
         self.proxy.lock.release()
 
         if isinstance(result, ReturnException):

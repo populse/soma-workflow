@@ -813,7 +813,7 @@ class ConnectionChecker(object):
                     # print(ls)
                 delta = datetime.now() - last_signal
                 if delta > self.interval * 12:
-                    logger.debug("Delta is too large, the client is not connected anymore: ", delta)
+                    logger.debug("Delta is too large, the client is not connected anymore: " + str(delta))
                     self.disconnectionCallback()
                     with self.lock:
                         self.connected = False
@@ -824,7 +824,7 @@ class ConnectionChecker(object):
                         self.connected = True
                 with self.lock:
                     logger.debug("ConnectionChecker: Connected? :"
-                                 + self.connected)
+                                 + str(self.connected))
                 time.sleep(control_interval)
             logger.debug('ConnectionChecker: exit controlLoop')
 
