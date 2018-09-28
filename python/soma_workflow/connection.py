@@ -103,14 +103,11 @@ def SSHExecCmd(sshcommand,
         client.load_system_host_keys()
 
         client.connect(hostname=ip_address_or_domain,
-                      port=sshport,
-                      username=userid,
-                      password=userpw)
-        try:
-            stdin, stdout, stderr = client.exec_command(sshcommand)
-            status = stdout.channel.recv_exit_status()
-        finally:
-            client.close()
+                       port=sshport,
+                       username=userid,
+                       password=userpw)
+
+        stdin, stdout, stderr = client.exec_command(sshcommand)
 
     except paramiko.AuthenticationException as e:
         print("The authentification failed. %s. "
@@ -118,7 +115,7 @@ def SSHExecCmd(sshcommand,
               "You can test the connection in terminal with "
               "command: ssh -p %s %s@%s"
               % (e, sshport, userid, ip_address_or_domain))
-        raise e
+        raise
     except Exception as e:
         print("Can not use ssh to log on the remote machine. "
               "Please Make sure your network can be connected %s. "
@@ -131,6 +128,10 @@ def SSHExecCmd(sshcommand,
         std_out_lines = ReadOutput(stdout, tag, num_line_stdout)
         if isNeedErr:
             std_err_lines = ReadOutput(stderr, None, num_line_stderr)
+
+    if exit_status is not  None:
+        status = stdout.channel.recv_exit_status()
+    client.close()
 
     if exit_status is not None:
         if status != 0:
