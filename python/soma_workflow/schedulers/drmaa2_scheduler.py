@@ -146,7 +146,7 @@ if DRMAA2_LIB_FOUND:
                 '''
                 jobTemplate = drmaa2.drmaa2_jtemplate_create()
                 jobTemplate.contents.remoteCommand = 'echo'
-                jobTemplate.contents.args = ["%s" % (outstr)]
+                jobTemplate.contents.args = drmaa2.drmaa2_make_string_list(["%s" % (outstr)])
                 jobTemplate.contents.outputPath = "%s:%s" % (
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
                 jobTemplate.contents.errorPath = "%s:%s" % (
@@ -159,7 +159,7 @@ if DRMAA2_LIB_FOUND:
                 # print(
                 # "jobTemplate.errorPath="+repr(jobTemplate.contents.errorPath))
 
-                jobid = drmaa2.runJob(jobTemplateId)
+                jobid = drmaa2.drmaa2_jsession_run_job(self._drmaa, jobTemplateId)
                 # print("jobid="+jobid)
                 retval = self._drmaa.wait(
                     jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)

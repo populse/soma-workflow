@@ -29,14 +29,26 @@ def error_check(code):
         raise DrmaaException("code %s: %s" % (code, drmaa2_lasterror_text()))
 
 
+drmaa2_list_entryfree = CFUNCTYPE(None, POINTER(c_void_p))
+
 class drmaa2_list_s(Structure):
     _fields_ = [
-        ('free_callback', c_void_p),
+        ('free_callback', drmaa2_list_entryfree),
         ('type', c_int),
         ('size', c_long),
         ('head', c_void_p),
       ]
-drmaa2_string_list = POINTER(drmaa2_list_s)
+drmaa2_list = POINTER(drmaa2_list_s)
+drmaa2_string_list = drmaa2_list
+
+# list types
+DRMAA2_UNSET_LISTTYPE = -1
+DRMAA2_STRINGLIST = 0
+DRMAA2_JOBLIST = 1
+DRMAA2_QUEUEINFOLIST = 2
+DRMAA2_MACHINEINFOLIST = 3
+DRMAA2_SLOTINFOLIST = 4
+DRMAA2_RESERVATIONLIST = 5
 
 class drmaa2_dict_s(Structure):
     _fields_ = [
@@ -132,6 +144,48 @@ drmaa2_jsession_run_job.restype = drmaa2_j
 drmaa2_j_wait_terminated = _lib.drmaa2_j_wait_terminated
 drmaa2_j_wait_terminated.argtypes = [drmaa2_j, c_int]
 drmaa2_j_wait_terminated.restype = error_check
+drmaa2_list_create = _lib.drmaa2_list_create
+drmaa2_list_create.argtypes = [c_int, drmaa2_list_entryfree]
+drmaa2_list_create.restype = drmaa2_list
+drmaa2_list_add = _lib.drmaa2_list_add
+drmaa2_list_add.argtypes = [drmaa2_list, STRING] ## WARNING: using STRING, should be c_void_p
+drmaa2_list_add.restype = error_check
+drmaa2_string_list_default_callback = _lib.drmaa2_string_list_default_callback
+drmaa2_string_list_default_callback.argtypes = [POINTER(c_void_p)]
+drmaa2_string_list_default_callback.restype = None
+def drmaa2_string_list_default_callback_py(item):
+  drmaa2_string_list_default_callback(item)
+drmaa2_string_list_default_callback_c = drmaa2_list_entryfree(drmaa2_string_list_default_callback_py)
+drmaa2_list_size = _lib.drmaa2_list_size
+drmaa2_list_size.argtypes = [drmaa2_list]
+drmaa2_list_size.restype = c_long
+drmaa2_list_free = _lib.drmaa2_list_free
+drmaa2_list_free.argtypes = [POINTER(drmaa2_list)] ## FIXME: causes segfault
+drmaa2_list_free.restype = None
+drmaa2_list_get = _lib.drmaa2_list_get
+drmaa2_list_get.argtypes = [drmaa2_list, c_long]
+drmaa2_list_get.restype = c_void_p
+drmaa2_string_list_get = _lib.drmaa2_list_get
+drmaa2_string_list_get.argtypes = [drmaa2_list, c_long]
+drmaa2_string_list_get.restype = STRING
 
+def drmaa2_make_string_list(str_list):
+    dlist = drmaa2_list_create(DRMAA2_STRINGLIST, drmaa2_string_list_default_callback_c)
+    for i in range(len(str_list)):
+        item = str_list[-i - 1]
+        print('insert item:', item)
+        # insertion is at the beginning of the list
+        drmaa2_list_add(dlist, item)
+    return dlist
+
+def drmaa2_list_from_string_list(drmaa2_str_list):
+    pylist = []
+    for i in range(drmaa2_list_size(drmaa2_str_list)):
+        if drmaa2_str_list.contents.type == DRMAA2_STRINGLIST:
+            item = drmaa2_string_list_get(drmaa2_str_list, i)
+        else:
+            item = drmaa2_list_get(drmaa2_str_list, i)
+        pylist.append(item)
+    return pylist
 
 
