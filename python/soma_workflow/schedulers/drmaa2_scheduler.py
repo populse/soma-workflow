@@ -9,6 +9,9 @@ organization: IFR 49
 license:CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 
+raise NotImplementedError('DRMAA2 support is not finished and not working. Not sure it will be supported at all.')
+
+
 from ..scheduler import Scheduler
 import sys
 import logging
