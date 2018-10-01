@@ -101,3 +101,11 @@ class NoDrmaaLibError(Exception):
     Raised if no drmaa libary is found
     '''
     pass
+
+class ExitTimeoutException(Exception):
+    
+    '''
+    Raised if a DRMS command reaches a timeout before returning
+    '''
+    pass
+

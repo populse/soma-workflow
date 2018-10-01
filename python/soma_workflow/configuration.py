@@ -44,9 +44,6 @@ MODES = [LIGHT_MODE,
 LOCAL_SCHEDULER = 'local_basic'
 DRMAA_SCHEDULER = 'drmaa'
 MPI_SCHEDULER = 'mpi'
-SCHEDULER_TYPES = [LOCAL_SCHEDULER,
-                   DRMAA_SCHEDULER,
-                   MPI_SCHEDULER]
 
 # configuration variables ------------------------------------------------
 
@@ -226,7 +223,8 @@ class Configuration(observer.Observable):
           A mode among the existing modes defined in configuration.MODES
 
         * scheduler_type *string*
-          A scheduler type among the existing schedulers defined in SCHEDULER_TYPES
+          A scheduler type among the existing schedulers defined in the 
+          schedulers submodules
 
         * database_file *string*
           Path of the database_file.
@@ -461,11 +459,14 @@ class Configuration(observer.Observable):
             if config_parser.has_option(resource_id, OCFG_SCHEDULER_TYPE):
                 scheduler_type = config_parser.get(
                     resource_id, OCFG_SCHEDULER_TYPE)
-                if scheduler_type not in SCHEDULER_TYPES:
+                from soma_workflow import scheduler
+                try:
+                    sched_impl \
+                        = scheduler.get_scheduler_implementation(
+                            scheduler_type)
+                except:
                     raise ConfigurationError("Unknown scheduler type:"
-                                             " " + repr(scheduler_type) +
-                                             "Scheduler type must be one of the "
-                                             "following:" + repr(SCHEDULER_TYPES))
+                                             " " + repr(scheduler_type))
             else:
                 scheduler_type = DRMAA_SCHEDULER
 

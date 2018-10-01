@@ -297,7 +297,7 @@ class WorkflowEngineLoop(object):
                             job.status = self._scheduler.get_job_status(
                                 job.drmaa_id)
                         except DRMError as e:
-                            self.logger.debug(
+                            self.logger.info(
                                 "!!!ERROR!!! get_job_status %s: %s" % (type(e), e))
                             job.status = constants.FAILED
                             job.exit_status = constants.EXIT_ABORTED
@@ -313,12 +313,16 @@ class WorkflowEngineLoop(object):
                             self.logger.debug(
                                 "End of job %s, drmaaJobId = %s, status= %s",
                                 job.job_id, job.drmaa_id, repr(job.status))
-                            (job.exit_status,
-                             job.exit_value,
-                             job.terminating_signal,
-                             job.str_rusage) \
-                                = self._scheduler.get_job_exit_info(
-                                    job.drmaa_id)
+                            try:
+                                (job.exit_status,
+                                 job.exit_value,
+                                 job.terminating_signal,
+                                 job.str_rusage) \
+                                    = self._scheduler.get_job_exit_info(
+                                        job.drmaa_id)
+                            except Exception as e:
+                                self.logger.error('exception in get_job_exit_info: %s' % repr(e))
+                                raise
 
                             self.logger.debug("  after get_job_exit_info ")
                             self.logger.debug(
