@@ -168,11 +168,14 @@ def check_if_soma_wf_cr_on_server(
     userid,
     ip_address_or_domain,
     userpw='',
-        sshport=22):
+    sshport=22,
+    resource_id=None):
     """ Check if the check_requirement module exists
     """
     python_interpreter = server_python_interpreter()
-    command = python_interpreter + " -c 'import soma_workflow.check_requirement'"
+    command = python_interpreter + " -m soma_workflow.check_requirement"
+    if resource_id:
+        command += ' ' + resource_id
     print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
         command,
@@ -187,30 +190,6 @@ def check_if_soma_wf_cr_on_server(
         return False
 
     return True
-
-
-def check_if_ctype_drmaa_on_server(
-    userid,
-    ip_address_or_domain,
-    userpw='',
-        sshport=22):
-    python_interpreter = server_python_interpreter()
-    command = python_interpreter + " -m 'soma_workflow.check_requirement.drmaa'"
-    print(command)
-    (std_out_lines, std_err_lines) = SSH_exec_cmd(
-        command,
-        userid,
-        ip_address_or_domain,
-        userpw,
-        wait_output=True,
-        isNeedErr=True,
-        sshport=sshport)
-
-    if len(std_out_lines) == 1:
-        if std_out_lines[0] == "True":
-            return True
-
-    return False
 
 
 def check_if_somawf_on_server(
@@ -328,20 +307,12 @@ class RemoteConnection(object):
                                   "includes the soma-workflow."
                                   % (cluster_address))
 
-        if not check_if_soma_wf_cr_on_server(login, cluster_address, password):
+        if not check_if_soma_wf_cr_on_server(login, cluster_address, password,
+                                             resource_id=resource_id):
             raise ConnectionError("Cannot find "
                                   "soma_workflow.check_requirement on %s. "
                                   "Please update your soma-workflow on %s."
                                   % (cluster_address, cluster_address))
-        if config:
-            if config.get_scheduler_type() != 'local_basic':
-                if not check_if_ctype_drmaa_on_server(login, cluster_address,
-                                                      password):
-                    raise ConnectionError("Cannot find "
-                                          "drmaa libary on %s. "
-                                          "Please verify your drmaa libary on %s. "
-                                          "Or setup up enviroment variable DRMAA_LIBRARY_PATH."
-                                          % (cluster_address, cluster_address))
 
         # start_workflow_engine will run the database server
         #if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
