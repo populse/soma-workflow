@@ -18,8 +18,12 @@ This is the generic, abstract API.
     :members:
 
 
+.. _pbspro:
+
 PBS Pro implementation
 ----------------------
+
+The PBS Pro scheduler is not using the DRMAA library, we had to design it because the DRMAA implementation was not working any longer on our cluster. This implementation is a very simple (and probably sub-optimal) wrapping around PBS commandlines (``qsub``, ``qstat``, ``qdel``).
 
 To use the PBS Pro scheduler, specify in the server config file:
 

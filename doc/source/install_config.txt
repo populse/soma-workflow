@@ -164,16 +164,22 @@ Here is the list of the server dependencies:
 
 The implementations of DRMAA tested successfully with Soma-workflow:
 
-  ===================  ==========================
+  ===================  ===========================================
   DRMS                 DRMAA implementation
-  ===================  ==========================
+  ===================  ===========================================
   Torque 2.0.0         `PBS DRMAA 1.0.13 <http://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/>`_ from http://apps.man.poznan.pl/trac/pbs-drmaa
   LSF 7.0              FedStage LSF DRMAA 1.0.3
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
-  PBSPro 18.1.2        DRMAA is failing, use the PBSPro scheduler
-  ===================  ==========================
+  ===================  ===========================================
 
+On the contrary, we had problems with the following implementations:
+
+  ===================  ===========================================
+  DRMS                 DRMAA implementation
+  ===================  ===========================================
+  PBSPro 18.1.2        DRMAA is failing, use the :ref:`PBSPro scheduler <pbspro>`
+  ===================  ===========================================
 
 .. _server_management:
 
