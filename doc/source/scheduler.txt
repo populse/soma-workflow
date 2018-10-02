@@ -23,7 +23,7 @@ This is the generic, abstract API.
 PBS Pro implementation
 ----------------------
 
-The PBS Pro scheduler is not using the DRMAA library, we had to design it because the DRMAA implementation was not working any longer on our cluster. This implementation is a very simple (and probably sub-optimal) wrapping around PBS commandlines (``qsub``, ``qstat``, ``qdel``).
+The PBS Pro scheduler is not using the DRMAA library, we had to design it because the DRMAA implementation was not working any longer on our cluster. This implementation is a very simple (and probably sub-optimal) wrapping around PBS commandlines (``qsub``, ``qstat``, ``qdel``). It should also reasonably work using Torque/PBS 2.5 but has not been extensively tested this way (since DRMAA works for it).
 
 To use the PBS Pro scheduler, specify in the server config file:
 
@@ -38,7 +38,7 @@ To use the PBS Pro scheduler, specify in the server config file:
 Local implementation
 --------------------
 
-To use the PBS Pro scheduler, specify in the server config file:
+To use the local scheduler, specify in the server config file:
 
 .. code-block:: ini
 
@@ -51,7 +51,7 @@ To use the PBS Pro scheduler, specify in the server config file:
 DRMAA implementation
 --------------------
 
-To use the PBS Pro scheduler, specify in the server config file (this is the default on a server actually so it is not mandatory to specify it):
+To use the DRMAA scheduler, specify in the server config file (this is the default on a server actually so it is not mandatory to specify it):
 
 .. code-block:: ini
 
