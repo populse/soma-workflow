@@ -140,6 +140,7 @@ class PBSProScheduler(Scheduler):
             self.tmp_file_path = os.path.abspath("tmp")
         else:
             self.tmp_file_path = os.path.abspath(tmp_file_path)
+        self.setup_pbs_variant()
 
     def __del__(self):
         self.clean()
@@ -164,6 +165,35 @@ class PBSProScheduler(Scheduler):
         # print("jobid="+jobid)
         retval = self.wait_job(jobid)
         # print("retval="+repr(retval))
+
+    def get_pbs_version(self):
+        '''
+        get PBS implementation and version. May be PBS Pro or Torque/PBS
+
+        Returns
+        -------
+        pbs_version: tuple (2 strings)
+            (implementation, version)
+        '''
+        cmd = ['qstat', '--version']
+        verstr = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        if verstr.startswith('pbs_version ='):
+            impl = 'pbspro'
+            ver = verstr.split('=')[1].strip()
+        else:
+            impl = 'torque'
+            ver = verstr.split(':')[1].strip()
+        return (impl, ver)
+
+    def setup_pbs_variant(self):
+        '''
+        determine PBS implementation / version and set internal behaviour accordingly
+        '''
+        impl, ver = self.get_pbs_version()
+        self._pbs_impl = impl
+        self._pbs_version = [int(x) for x in ver.split('.')]
+        self.logger.info('PBS implementation: %s' % self._pbs_impl)
+        self.logger.info('PBS version: %s' % repr(self._pbs_version))
 
     def _setParallelJob(self,
                         job_template,
@@ -361,14 +391,70 @@ class PBSProScheduler(Scheduler):
             # a barrier job is done as soon as it is started.
             return constants.DONE
         try:
-            cmd = ['qstat', '-x', '-f', '-F', 'json', scheduler_job_id]
-            json_str = subprocess.check_output(cmd)
-            super_status = json.loads(json_str)
-            status = super_status['Jobs'][scheduler_job_id]
+            if self._pbs_impl == 'pbspro':
+                cmd = ['qstat', '-x', '-f', '-F', 'json', scheduler_job_id]
+                json_str = subprocess.check_output(cmd)
+                super_status = json.loads(json_str)
+
+            else: # torque/pbs
+                import xml.etree.cElementTree as ET
+                cmd = ['qstat', '-x', scheduler_job_id]
+                xml_str = subprocess.check_output(cmd)
+                super_status = {}
+                s_xml = ET.fromstring(xml_str)
+                xjob = s_xml[0]
+                job = {}
+                parsing = [(xjob, job)]
+                while parsing:
+                    element, parent = parsing.pop(0)
+                    for child in element:
+                        tag = child.tag
+                        if tag == 'Job_Id':
+                            super_status['Jobs'] = {child.text: job}
+                        else:
+                            if len(child) != 0:
+                                current = {}
+                                parsing.append((child, current))
+                            else:
+                                current = child.text
+                            parent[tag] = current
+                    current = None
         except Exception as e:
             self.logger.critical("%s: %s" % (type(e), e))
             raise
+        status = super_status['Jobs'][scheduler_job_id]
         return status
+
+    def get_pbs_status_codes(self):
+        if self._pbs_impl == 'pbspro':
+            class codes:
+                ARRAY_STARTED = 'B'
+                EXITING = 'E'
+                FINISHED = 'F'
+                HELD = 'H'
+                MOVED = 'M'
+                QUEUED = 'Q'
+                RUNNING = 'R'
+                SUSPENDED = 'S'
+                MOVING = 'T'
+                SUSPEND_KB = 'U'
+                WAITING = 'W'
+                SUBJOB_COMPLETE = 'X'
+        else: # torque/pbs
+            class codes:
+                ARRAY_STARTED = 'B' # unused
+                EXITING = 'E'
+                FINISHED = 'C'
+                HELD = 'H'
+                MOVED = 'M' # unused
+                QUEUED = 'Q'
+                RUNNING = 'R'
+                SUSPENDED = 'S'
+                MOVING = 'T'
+                SUSPEND_KB = 'U' # unused
+                WAITING = 'W'
+                SUBJOB_COMPLETE = 'X' # unused
+        return codes
 
     def get_job_status(self, scheduler_job_id):
         '''
@@ -382,37 +468,38 @@ class PBSProScheduler(Scheduler):
         status: string
             Job status as defined in constants.JOB_STATUS
         '''
+        codes = self.get_pbs_status_codes()
         try:
             status = self.get_job_extended_status(scheduler_job_id)
             state = status['job_state']
         except:
             return constants.UNDETERMINED
-        if state == 'B':
+        if state == codes.ARRAY_STARTED:
             return constants.RUNNING
-        elif state == 'E':
+        elif state == codes.EXITING:
             return constants.RUNNING ## FIXME not exactly that
-        elif state == 'F':
-            exit_value = status['Exit_status']
+        elif state == codes.FINISHED:
+            exit_value = status.get('Exit_status', -1)
             if exit_value != 0:
                 return constants.FAILED
             return constants.DONE
-        elif state == 'H':
+        elif state == codes.HELD:
             return constants.USER_SYSTEM_ON_HOLD ## FIXME or USER_ON_HOLD ?
-        elif state == 'M':
+        elif state == codes.MOVED:
             return constants.USER_SYSTEM_SUSPENDED ## FIXME not exactly that
-        elif state == 'Q':
+        elif state == codes.QUEUED:
             return constants.QUEUED_ACTIVE
-        elif state == 'R':
+        elif state == codes.RUNNING:
             return constants.RUNNING
-        elif state == 'S':
+        elif state == codes.SUSPENDED:
             return constants.USER_SYSTEM_SUSPENDED ## FIXME or SYSTEM_SUSPENDED ?
-        elif state == 'T':
+        elif state == codes.MOVING:
             return constants.USER_SUSPENDED ## FIXME not exactly that
-        elif state == 'U':
+        elif state == codes.SUSPEND_KB:
             return constants.USER_SYSTEM_SUSPENDED ## is it that ?
-        elif state == 'W':
+        elif state == codes.WAITING:
             return constants.QUEUED_ACTIVE ## FIXME not exactly that
-        elif state == 'X':
+        elif state == codes.SUBJOB_COMPLETE:
             return DELETE_PENDING ## is it that ?
         else:
             return constants.UNDETERMINED
@@ -468,7 +555,7 @@ class PBSProScheduler(Scheduler):
                 "  ==> Start to find info of job %s" % (scheduler_job_id))
             status = self.get_job_extended_status(scheduler_job_id)
             jid_out = status['Output_Path']
-            exit_value = status['Exit_status']
+            exit_value = status.get('Exit_status', -1)
             signaled = False
             term_sig = 0
             if exit_value >= 256:
@@ -477,7 +564,7 @@ class PBSProScheduler(Scheduler):
             coredumped = (term_sig == 2)
             aborted = (exit_value <= -4 and exit_value >= -6)
             exit_status = exit_value
-            resource_usage = status['resources_used']
+            resource_usage = status.get('resources_used', {})
             # jid_out, exit_value, signaled, term_sig, coredumped, aborted, exit_status, resource_usage = self._drmaa.wait(
             #     scheduler_job_id, self._drmaa.TIMEOUT_NO_WAIT)
 
