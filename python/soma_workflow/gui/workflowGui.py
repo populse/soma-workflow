@@ -840,6 +840,7 @@ class NewServerDialog(QtGui.QDialog):
         super(NewServerDialog, self).__init__(parent=parent)
         self.ui = Ui_NewServer()
         self.ui.setupUi(self)
+        self.update_schedulers()
         self.ui.lineEdit_login.textChanged.connect(self.EventLoginTextChanged)
         self.ui.lineEdit_cluster_add.textChanged.connect(self.UpdateResName)
 
@@ -868,6 +869,14 @@ class NewServerDialog(QtGui.QDialog):
         strLogin = utf8(strLogin)
         self.ui.lineEdit_InstallPath.setText(
             "/home/" + strLogin + "/.soma-workflow")
+
+    def update_schedulers(self):
+        from soma_workflow import scheduler
+        schedulers = scheduler.get_schedulers_list()
+        for scheduler in schedulers:
+            # add only non-builtin
+            if scheduler[0] not in ('local_basic', 'mpi', 'drmaa'):
+                self.ui.comboBox_schedulerType.addItem(scheduler[0])
 
     def InstallServer(self):
         from soma_workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server

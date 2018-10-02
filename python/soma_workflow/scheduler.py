@@ -197,3 +197,33 @@ def build_scheduler(scheduler_type, config):
     return scheduler
 
 
+def get_schedulers_list():
+    '''
+    List all available installed schedulers
+
+    Returns
+    -------
+    schedulers: list
+        schedulers list. Each item is a tuple (name, enabled)
+    '''
+    from . import schedulers
+    dirname = os.path.dirname(schedulers.__file__)
+    sched_files = os.listdir(dirname)
+    schedulers = []
+    for sched_file in sched_files:
+        if sched_file.endswith('_scheduler.py'):
+            sched_mod = sched_file[:-3]
+            enabled = True
+            try:
+                module = importlib.import_module('.%s' % sched_mod,
+                                                 'soma_workflow.schedulers')
+            except NotImplementedError:
+                continue # skip not implemented / unfinished ones
+            except:
+                enabled = False
+            if sched_mod == 'local_scheduler':
+                sched_mod = 'local_basic_scheduler'
+            sched = sched_mod[:-10]
+            schedulers.append((sched, enabled))
+    return schedulers
+
