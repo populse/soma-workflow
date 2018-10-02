@@ -28,7 +28,7 @@ This page describes the installation and configuration of the Soma-workflow clie
 Requirements
 ------------
 
-* Python *version 2.5 or more*
+* Python *version 2.6 or more*
 * `ZeroMQ <http://zeromq.org>`_ 
 * `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in
   only required if the computing resource is remote.
@@ -157,8 +157,8 @@ Here is the list of the server dependencies:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
-* Python *version 2.5 or more*
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* Python *version 2.6 or more*
 * `zmq <http:/zeromq.org>`_ 
 * `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
@@ -442,8 +442,8 @@ The requirements are thus:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
-* Python *version 2.5 or more*
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* Python *version 2.6 or more*
 * SQLite *version 3 or more*
 * For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 
