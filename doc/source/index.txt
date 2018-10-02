@@ -41,6 +41,7 @@ Contents
    status_list.txt
    workflow_creation.txt
    client_API.txt
+   scheduler.txt
    install_config.txt
    changelog.txt
 
@@ -166,6 +167,9 @@ In version 3.0:
   As a consequence, all the client/server communication layer has been made completely incompatible with soma-workflow 2.9 and earlier. Client and server should always be the same version anyway. The client/server API has not changed fundamentally however.
 
 * Porting to Python3: Pyro3 having been dropped, all the requirements for porting to Python3 have now been met, and Soma-Workflow can entirely wotk using Python3. However it is not possible to run different versions of Python on the client and the server: read :doc:`changes_swf3` for details.
+
+* New PBSPro scheduler type, to be used when DRMAA is not available, or doesn't work (like on our new cluster): use ``scheduler_type = pbspro`` in the server config file. It might also work on PBS/Torque, we have not tried yet.
+
 
 In version 2.9:
 ---------------

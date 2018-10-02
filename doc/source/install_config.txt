@@ -171,6 +171,7 @@ The implementations of DRMAA tested successfully with Soma-workflow:
   LSF 7.0              FedStage LSF DRMAA 1.0.3
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
+  PBSPro 18.1.2        DRMAA is failing, use the PBSPro scheduler
   ===================  ==========================
 
 

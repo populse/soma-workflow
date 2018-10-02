@@ -9,6 +9,19 @@ class Scheduler(object):
 
     '''
     Allow to submit, kill and get the status of jobs.
+
+    The Scheduler class is an abstract class which specifies the jobs
+    management API. It has several implementations, located in
+    ``soma_workflow.schedulers.*_scheduler``.
+
+    A scheduler implementation class can be retrived using the global function
+    :func:`get_scheduler_implementation`, or instantiated using
+    :func:`build_scheduler`.
+
+    New schedulers can be written to support computing resources types that are
+    currently not supported (a cluster with a DRMS which has no DRMAA
+    implementation typicalyly). The various methods of the Scheduler API have
+    to be overloaded in this case.
     '''
     parallel_job_submission_info = None
 
@@ -31,33 +44,72 @@ class Scheduler(object):
 
     def job_submission(self, job):
         '''
-        * job *EngineJob*
-        * return: *string*
-            Job id for the scheduling system (DRMAA for example)
+        Submit a Soma-Workflow job
+
+        Parameters
+        ----------
+        job: EngineJob
+            Job to be submitted
+
+        Returns
+        -------
+        job_id: string
+            Job id for the scheduling system (DRMAA for example, or native DRMS
+            identifier)
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def get_job_status(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
-        * return: *string*
+
+        Returns
+        -------
+        status: string
             Job status as defined in constants.JOB_STATUS
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def get_job_exit_info(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        The exit info consists of 4 values returned in a tuple:
+        **exit_status**: string
+            one of the constants.JOB_EXIT_STATUS values
+        **exit_value**: int
+            exit code of the command (normally 0 in case of success)
+        **term_sig**: int
+            termination signal, 0 IF ok
+        **resource_usage**: bytes
+            bytes string in the shape
+            ``b'cpupercent=60 mem=13530kb cput=00:00:12'`` etc. Items may include:
+
+            * cpupercent
+            * cput
+            * mem
+            * vmem
+            * ncpus
+            * walltime
+
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
-        * return: *tuple*
+
+        Returns
+        -------
+        exit_info: tuple
             exit_status, exit_value, term_sig, resource_usage
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def kill_job(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
         '''
         raise Exception("Scheduler is an abstract class!")
@@ -66,6 +118,11 @@ class Scheduler(object):
     def build_scheduler(cls, config):
         ''' Create a scheduler of the expected type, using configuration to
         parameterize it.
+
+        Parameters
+        ----------
+        config: Configuration
+            configuration object instance
         '''
         raise Exception("Scheduler is an abstract class!")
 
@@ -122,6 +179,18 @@ def get_scheduler_implementation(scheduler_type):
 def build_scheduler(scheduler_type, config):
     ''' Create a scheduler of the expected type, using configuration to
     parameterize it.
+
+    Parameters
+    ----------
+    scheduler_type: string
+        type of scheduler to be built
+    config: Configuration
+        configuration object
+
+    Returns
+    -------
+    scheduler: Scheduler
+        Scheduler instance
     '''
     scheduler_class = get_scheduler_implementation(scheduler_type)
     scheduler = scheduler_class.build_scheduler(config)

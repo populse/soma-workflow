@@ -141,21 +141,8 @@ class PBSProScheduler(Scheduler):
         else:
             self.tmp_file_path = os.path.abspath(tmp_file_path)
 
-    def clean(self):
-        pass
-
     def __del__(self):
         self.clean()
-
-    def sleep(self):
-        '''
-        '''
-        self.is_sleeping = True
-
-    def wake(self):
-        '''
-        '''
-        self.is_sleeping = False
 
     def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
         '''
@@ -344,6 +331,12 @@ class PBSProScheduler(Scheduler):
         return job_id
 
     def kill_job(self, scheduler_job_id):
+        '''
+        Parameters
+        ----------
+        scheduler_job_id: string
+            Job id for the scheduling system (DRMAA for example)
+        '''
         if self.is_sleeping:
             self.wake()
         if scheduler_job_id == self.FAKE_JOB:
@@ -359,6 +352,9 @@ class PBSProScheduler(Scheduler):
             # raise
 
     def get_job_extended_status(self, scheduler_job_id):
+        '''
+        Get job full status in a dictionary (from qstat in json format)
+        '''
         if self.is_sleeping:
             self.wake()
         if scheduler_job_id == self.FAKE_JOB:
@@ -375,6 +371,17 @@ class PBSProScheduler(Scheduler):
         return status
 
     def get_job_status(self, scheduler_job_id):
+        '''
+        Parameters
+        ----------
+        scheduler_job_id: string
+            Job id for the scheduling system (DRMAA for example)
+
+        Returns
+        -------
+        status: string
+            Job status as defined in constants.JOB_STATUS
+        '''
         try:
             status = self.get_job_extended_status(scheduler_job_id)
             state = status['job_state']
@@ -411,6 +418,35 @@ class PBSProScheduler(Scheduler):
             return constants.UNDETERMINED
 
     def get_job_exit_info(self, scheduler_job_id):
+        '''
+        The exit info consists of 4 values returned in a tuple:
+        **exit_status**: string
+            one of the constants.JOB_EXIT_STATUS values
+        **exit_value**: int
+            exit code of the command (normally 0 in case of success)
+        **term_sig**: int
+            termination signal, 0 IF ok
+        **resource_usage**: bytes
+            bytes string in the shape
+            ``b'cpupercent=60 mem=13530kb cput=00:00:12'`` etc. Items may include:
+
+            * cpupercent
+            * cput
+            * mem
+            * vmem
+            * ncpus
+            * walltime
+
+        Parameters
+        ----------
+        scheduler_job_id: string
+            Job id for the scheduling system (DRMAA for example)
+
+        Returns
+        -------
+        exit_info: tuple
+            exit_status, exit_value, term_sig, resource_usage
+        '''
         if self.is_sleeping:
             self.wake()
 
@@ -481,6 +517,9 @@ class PBSProScheduler(Scheduler):
         return (res_status, res_exitValue, res_termSignal, res_resourceUsage)
 
     def wait_job(self, job_id, timeout=0, poll_interval=0.3):
+        '''
+        Wait for a specific job to be terminated.
+        '''
         status = self.get_job_extended_status(job_id)
         stime = time.time()
         while status['job_state'] not in ('F', ):
@@ -492,6 +531,9 @@ class PBSProScheduler(Scheduler):
 
     @classmethod
     def build_scheduler(cls, config):
+        '''
+        Build an instance of PBSProScheduler
+        '''
         sch = PBSProScheduler(
             config.get_parallel_job_config(),
             os.path.expanduser("~"),
