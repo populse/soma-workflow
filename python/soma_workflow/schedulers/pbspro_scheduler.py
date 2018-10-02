@@ -66,7 +66,8 @@ class JobTemplate(object):
             if self.workingDirectory:
                 f.write('cd "%s"\n' % self.workingDirectory)
             # commandline
-            f.write('"' + '" "'.join(self.remoteCommand) + '"\n')
+            f.write('"' + '" "'.join(self.remoteCommand.replace('"', '\\"'))
+                    + '"\n')
         logger = logging.getLogger('ljp.pbspro_scheduler')
         logger.debug('build_pbs_script: %s' % script_file)
         return script_file
