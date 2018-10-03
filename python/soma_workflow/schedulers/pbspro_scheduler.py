@@ -81,18 +81,20 @@ class JobTemplate(object):
         cmd.append(script_file)
         return cmd
 
-    def run_job(self, script_file=None):
+    def run_job(self, script_file=None, keep_script_file=False):
         rm_script = False
         if not script_file:
             rm_script = True
             script_file = self.build_pbs_script()
-        cmd = self.qsub_command(script_file)
-        logger = logging.getLogger('ljp.pbspro_scheduler')
-        logger.debug('run job: %s' % repr(cmd))
-        job_id = subprocess.check_output(cmd).strip()
-        if rm_script:
-            os.unlink(script_file)
-        return job_id
+        try:
+            cmd = self.qsub_command(script_file)
+            logger = logging.getLogger('ljp.pbspro_scheduler')
+            logger.debug('run job: %s' % repr(cmd))
+            job_id = subprocess.check_output(cmd).strip()
+            return job_id
+        finally:
+            if rm_script and not keep_script_file:
+                os.unlink(script_file)
 
 
 class PBSProScheduler(Scheduler):
