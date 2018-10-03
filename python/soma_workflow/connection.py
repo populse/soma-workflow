@@ -867,6 +867,8 @@ class Tunnel(threading.Thread):
 
         def setup(self):
             logging.info('Setup : %d' %(self.channel_end_port))
+            if not self.ssh_transport.is_active():
+                raise ConnectionError('ssh transport is closed.')
             logging.debug("Tunnel::Handler::Beginning of setup")
             try:
                 # There has been quite lot of tweaks around this function
@@ -880,11 +882,13 @@ class Tunnel(threading.Thread):
                     ('localhost', self.channel_end_port), #destination address
                     self.request.getpeername())#source address (from the Proxy object)
             except Exception as e:
-                logging.exception("Hey here is an exception!")
+                logging.exception("Hey here is an exception!: %s" % repr(e))
+                self.shutdown_server()
                 raise ConnectionError('Incoming request to %d failed: %s'
                     % (self.channel_end_port, repr(e)))
 
             if self.__chan is None:
+                self.shutdown_server()
                 raise ConnectionError(
                     'Incoming request to %s:%d was rejected by the SSH server.'
                     % ('localhost', self.channel_end_port))
@@ -896,47 +900,71 @@ class Tunnel(threading.Thread):
 
         def handle(self):
             # print("Beginning of handle")
-            logging.info('Handle : %s %d' %('localhost', self.channel_end_port))
-            while True:
-                try:
-                    r, w, x = select.select([self.request, self.__chan], [],
-                                            [])
-                except Exception as e:
-                    if e.args[0] == errno.EINTR:
-                        # Qt modal dialogs event loop (at least in QFileDialog)
-                        # can cause an interrupted system call here.
-                        # It seems not to completely break the connection,
-                        # we can go on.
-                        continue
-                    else:
-                        raise
-                if self.request in r:
-                    # print("Transfering from the local server handling the channel "
-                    #      "to the original object")
-                    data = self.request.recv(12000)
+            logging.info('Handle : %s %d' %('localhost',
+                                            self.channel_end_port))
+            if not self.ssh_transport.is_active():
+                return
+            try:
+                while True:
+                    try:
+                        r, w, x = select.select([self.request, self.__chan], [],
+                                                [])
+                    except Exception as e:
+                        if e.args[0] == errno.EINTR:
+                            # Qt modal dialogs event loop (at least in
+                            # QFileDialog)
+                            # can cause an interrupted system call here.
+                            # It seems not to completely break the connection,
+                            # we can go on.
+                            continue
+                        else:
+                            raise
+                    if self.request in r:
+                        # print("Transfering from the local server handling the channel "
+                        #      "to the original object")
+                        data = self.request.recv(12000)
 
-                    if len(data) == 0:
-                        break
-                    if len(data) == 12000:
-                        logging.debug("Network data too small")
-                        logging.info("Tunnel.Handler.handle: multiple receive to transfert"
-                                 " the data, could potentially be a problem")
-                    self.__chan.send(data)
-                if self.__chan in r:
-                    # print('Transfering from the channel to the proxy')
-                    data = self.__chan.recv(12000)
-                    if len(data) == 0:
-                        break
-                    if len(data) == 12000:
-                        logging.debug("Network data too small 2")
-                        logging.info("Tunnel.Handler.handle: multiple receive to transfert"
-                                 "the data, could potentially be a problem")
-                    self.request.send(data)
+                        if len(data) == 0:
+                            break
+                        if len(data) == 12000:
+                            logging.debug("Network data too small")
+                            logging.info("Tunnel.Handler.handle: multiple receive to transfert"
+                                    " the data, could potentially be a problem")
+                        self.__chan.send(data)
+                    if self.__chan in r:
+                        # print('Transfering from the channel to the proxy')
+                        data = self.__chan.recv(12000)
+                        if len(data) == 0:
+                            break
+                        if len(data) == 12000:
+                            logging.debug("Network data too small 2")
+                            logging.info("Tunnel.Handler.handle: multiple receive to transfert"
+                                    "the data, could potentially be a problem")
+                        self.request.send(data)
+            except:
+                self.shutdown_server()
 
         def finish(self):
             print('Channel closed from %r' % (self.request.getpeername(),))
             self.__chan.close()
             self.request.close()
+            del self.__chan
+            self.shutdown_server()
+
+        def shutdown_server(self):
+            #Tunnel.server_instance.shutdown()
+            # try to determine which socket server has called us,
+            # and shut it down
+            import gc
+            import inspect
+            frames = [x.f_back for x in gc.get_referrers(self)
+                      if inspect.isframe(x)]
+            servers = [x.f_locals['self'] for x in frames
+                       if 'self' in x.f_locals
+                          and isinstance(x.f_locals['self'],
+                                         Tunnel.ForwardServer)]
+            for server in servers:
+                server.shutdown()
 
     def __init__(self, localport, hostport, transport):
         threading.Thread.__init__(self)
@@ -946,8 +974,15 @@ class Tunnel(threading.Thread):
         self.__server = None
         self.setDaemon(True)
 
+    def serve_forever(self):
+        try:
+            super(Tunnel, self).serve_forever()
+        except:
+            print('EXCEPT')
+            self.shutdown()
+
     def __del__(self):
-        print('del Tunnel')
+        logging.info('del Tunnel')
         self.shutdown()
 
     def run(self):
@@ -957,18 +992,19 @@ class Tunnel(threading.Thread):
 
         logging.debug("local server port: " + str(local_port) )
 
-        class SubHandler (Tunnel.Handler):
+        class SubHandler(Tunnel.Handler):
             channel_end_port = hostport
             ssh_transport = transport
 
         try:
             self.__server = Tunnel.ForwardServer(('', local_port), SubHandler)
+            Tunnel.server_instance = self.__server
             self.__server.serve_forever()
         except KeyboardInterrupt:
-            print('tunnel from local_port %d to port %d stopped !' % (local_port, hostport))
+            logging.error('tunnel from local_port %d to port %d stopped !' % (local_port, hostport))
         except Exception as e:
-            print('Tunnel Error. %s: %s' % (type(e), e))
-        print('Tunnel stopped.')
+            logging.error('Tunnel Error. %s: %s' % (type(e), e))
+        logging.warning('Tunnel stopped.')
 
     def shutdown(self):
         if self.__server is not None:
