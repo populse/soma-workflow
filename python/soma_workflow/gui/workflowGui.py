@@ -3213,7 +3213,6 @@ class PlotView(QtGui.QWidget):
             if self.plot_type == 2:
                 if job_item.parallel_job_info:
                     ncpu = job_item.parallel_job_info.get('cpu_per_node', 1)
-                    print('parallel job:', ncpu)
             if job_item.execution_date:
                 infos.append((job_item, True, job_item.execution_date, ncpu))
             if job_item.ending_date:
