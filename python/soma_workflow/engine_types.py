@@ -65,8 +65,6 @@ class EngineJob(Job):
         Mapping between client side objects (:obj:`FileTransfer` and
         :obj:`TemporaryPath`) and their server side equivalent
         (:obj:`EngineTransfer` and :obj:`EngineTemporaryPath`).
-    parallel_job_info
-        Configuration of the parallel submission.
     container_command: list or None
         container (docker / singularity) command prefix to be prepended to
         the commandline
@@ -126,7 +124,6 @@ class EngineJob(Job):
                  workflow_id=-1,
                  path_translation=None,
                  transfer_mapping=None,
-                 parallel_job_info=None,
                  container_command=None):
 
         super(EngineJob, self).__init__(client_job.command,
@@ -168,9 +165,9 @@ class EngineJob(Job):
         else:
             self.is_barrier = False
 
-        self._map(parallel_job_info)
+        self._map()
 
-    def _map(self, parallel_job_submission_info):
+    def _map(self):
         '''
         Fill the transfer_mapping and srp_mapping attributes.
         + check the types of the Job arguments.
@@ -179,25 +176,25 @@ class EngineJob(Job):
             raise JobError("The command attribute is the only required "
                            "attribute of Job.")
 
-        if self.parallel_job_info:
-            parallel_config_name = self.parallel_job_info.get('config_name')
-            nodes_number = self.parallel_job_info.get('nodes_number', 1)
-            cpu_per_node = self.parallel_job_info.get('cpu_per_node', 1)
-            if not parallel_job_submission_info:
-                raise JobError(
-                    "No parallel information was registered for the "
-                    " current resource. A parallel job can not be submitted")
-            if parallel_config_name not in parallel_job_submission_info:
-                raise JobError(
-                    "The parallel job can not be submitted because the "
-                    "parallel configuration %s is missing."
-                    % (configuration_name))
-                # potential bug should configuration_name be parallel_config_name
+        #if self.parallel_job_info:
+            #parallel_config_name = self.parallel_job_info.get('config_name')
+            #nodes_number = self.parallel_job_info.get('nodes_number', 1)
+            #cpu_per_node = self.parallel_job_info.get('cpu_per_node', 1)
+            #if not parallel_job_submission_info:
+                #raise JobError(
+                    #"No parallel information was registered for the "
+                    #" current resource. A parallel job can not be submitted")
+            #if parallel_config_name not in parallel_job_submission_info:
+                #raise JobError(
+                    #"The parallel job can not be submitted because the "
+                    #"parallel configuration %s is missing."
+                    #% (configuration_name))
+                ## potential bug should configuration_name be parallel_config_name
 
         def map_and_register(file, mode=None, addTo=[]):
             '''
             Helper function to register SpecialPath objects and map them
-            to teir engine representation.
+            to their engine representation.
 
             Args:
                 file (:obj:`list` or :obj:`tuple` or :obj:`str` or
