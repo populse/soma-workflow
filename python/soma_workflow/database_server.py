@@ -2207,7 +2207,7 @@ class WorkflowDatabaseServer(object):
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?)''',
+                                  ?, ?, ?, ?, ?, ?)''',
                               (user_id,
 
                                   None,  # drmaa_id
