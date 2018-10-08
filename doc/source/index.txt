@@ -170,9 +170,12 @@ In version 3.0:
 
 * New PBSPro scheduler type, to be used when DRMAA is not available, or doesn't work (like on our new cluster): use ``scheduler_type = pbspro`` in the server config file. It might also work on PBS/Torque, we have not tried yet.
 
+* A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
 
-In version 2.9:
----------------
+
+
+In version 2.10:
+----------------
 
 * In Soma-Workflow 2.10, the **"server management" options** have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.
 
