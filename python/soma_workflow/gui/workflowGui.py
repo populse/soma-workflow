@@ -3071,7 +3071,9 @@ class PlotView(QtGui.QWidget):
         self.vlayout = QtGui.QVBoxLayout()
         self.ui.frame_plot.setLayout(self.vlayout)
 
-        self.ui.combo_plot_type.addItems(["jobs fct time", "nb jobs fct time",
+        self.ui.combo_plot_type.addItems(["jobs fct time",
+                                          "jobs+cpu fct time",
+                                          "nb jobs fct time",
                                           "nb cpu fct time"])
         self.ui.combo_plot_type.setCurrentIndex(0)
         self.plot_type = 0
@@ -3120,9 +3122,9 @@ class PlotView(QtGui.QWidget):
     def updatePlot(self):
         if not self.isVisible():
             return
-        if self.plot_type == 0:
+        if self.plot_type in (0, 1):
             self.jobsFctTime()
-        if self.plot_type in (1, 2):
+        if self.plot_type in (2, 3):
             self.nbProcFctTime()
 
     def jobsFctTime(self):
@@ -3160,25 +3162,60 @@ class PlotView(QtGui.QWidget):
         nb_jobs = 0
         x_min = datetime.max
         x_max = datetime.min
-        for j in self.jobs:
+        for n, j in enumerate(self.jobs):
+            print('nb_jobs:', nb_jobs)
+            ncpu = 1
+            if self.plot_type == 1 and j.parallel_job_info:
+                ncpu = j.parallel_job_info.get('cpu_per_node', 1)
+                print('parallel job:', ncpu)
             if j.execution_date:
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
                     x_min = j.execution_date
                 if j.ending_date:
-                    self.axes.plot(
-                        [j.execution_date, j.ending_date], [nb_jobs, nb_jobs])
+                    if ncpu == 1:
+                        self.axes.plot(
+                            [j.execution_date, j.ending_date],
+                            [nb_jobs, nb_jobs])
+                    else:
+                        cols = matplotlib.rcParams['axes.prop_cycle']
+                        nc = len(cols)
+                        for c in cols[n % nc:(n+1) % nc]:
+                            col = c['color']
+                            break
+                        self.axes.fill(
+                            [j.execution_date, j.ending_date,
+                             j.ending_date, j.execution_date],
+                            [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
+                             nb_jobs + ncpu - 1], color=col)
                     if j.ending_date > x_max:
                         x_max = j.ending_date
                 else:
-                    self.axes.plot(
-                        [j.execution_date, datetime.now()], [nb_jobs, nb_jobs])
+                    if ncpu == 1:
+                        self.axes.plot(
+                            [j.execution_date, datetime.now()],
+                            [nb_jobs, nb_jobs])
+                    else:
+                        cols = matplotlib.rcParams['axes.prop_cycle']
+                        nc = len(cols)
+                        for c in cols[n % nc:(n+1) % nc]:
+                            col = c['color']
+                            break
+                        now = datetime.now()
+                        self.axes.fill(
+                            [j.execution_date, now, now, j.execution_date],
+                            [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
+                             nb_jobs + ncpu - 1], color=col)
+                nb_jobs += ncpu - 1
 
         if nb_jobs:
             self.axes.set_ylim(0, nb_jobs + 1)
 
         self.axes.set_xlabel("Time")
-        self.axes.set_ylabel("Jobs")
+        if self.plot_type == 1:
+            self.axes.set_ylabel("CPUs")
+        else:
+            self.axes.set_ylabel("Jobs")
         self.figure.autofmt_xdate(rotation=80)
 
         self.canvas.draw()
@@ -3210,8 +3247,7 @@ class PlotView(QtGui.QWidget):
 
         for job_item in self.jobs:
             ncpu = 1
-            if self.plot_type == 2:
-                if job_item.parallel_job_info:
+            if self.plot_type == 3 and job_item.parallel_job_info:
                     ncpu = job_item.parallel_job_info.get('cpu_per_node', 1)
             if job_item.execution_date:
                 infos.append((job_item, True, job_item.execution_date, ncpu))
@@ -3252,7 +3288,7 @@ class PlotView(QtGui.QWidget):
             self.axes.set_ylim(0, nb_proc_max + 1)
 
         self.axes.set_xlabel("Time")
-        if self.plot_type == 2:
+        if self.plot_type == 3:
             self.axes.set_ylabel("Nb of CPU")
         else:
             self.axes.set_ylabel("Nb of jobs")
