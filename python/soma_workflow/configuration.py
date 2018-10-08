@@ -116,7 +116,9 @@ PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
 # kinds of parallel jobs (items can be added by administrator)
 OCFG_PARALLEL_PC_MPI = "MPI"
 OCFG_PARALLEL_PC_OPEN_MP = "OpenMP"
-PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
+OCFG_PARALLEL_PC_NATIVE = "native"
+PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP,
+                           OCFG_PARALLEL_PC_NATIVE]
 # parallel job environment variables for the execution machine (items can
 # be added by administrators)
 OCFG_PARALLEL_ENV_MPI_BIN = 'PARALLEL_ENV_MPI_BIN'
@@ -774,9 +776,11 @@ class Configuration(observer.Observable):
         for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
             PARALLEL_JOB_ENV + \
                 PARALLEL_CONFIGURATIONS:
-            if self._config_parser.has_option(self._resource_id, parallel_config_info):
-                self.parallel_job_config[parallel_config_info] = self._config_parser.get(
-                    self._resource_id, parallel_config_info)
+            if self._config_parser.has_option(self._resource_id,
+                                              parallel_config_info):
+                self.parallel_job_config[parallel_config_info] = \
+                    self._config_parser.get(self._resource_id,
+                                            parallel_config_info)
 
         return self.parallel_job_config
 

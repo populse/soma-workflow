@@ -174,9 +174,9 @@ if DRMAA_LIB_FOUND:
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
         def _setDrmaaParallelJob(self,
-                                  drmaa_job_template_id,
+                                  drmaa_job_template,
                                   configuration_name,
-                                  max_num_node):
+                                  parallel_job_info):
             '''
             Set the DRMAA job template information for a parallel job submission.
             The configuration file must provide the parallel job submission
@@ -184,16 +184,14 @@ if DRMAA_LIB_FOUND:
 
             Parameters
             ----------
-            drmaa_job_template_id: str
+            drmaa_job_template: JobTemplate
                 id of drmaa job template
-            parallel_job_info: tuple (str, int)
-                parallel_job_info: (configuration_name, max_node_num)
+            parallel_job_info: dict
+                parallel_job_info: (configuration_name, nodes_number,
+                cpu_per_node)
             configuration_name: str
                 type of parallel job as defined in soma_workflow.constants
-                (eg MPI, OpenMP...)
-            max_node_num: int
-                maximum node number the job requests (on a unique machine or
-                separated machine depending on the parallel configuration)
+                (eg native, MPI, OpenMP...)
             '''
             if self.is_sleeping:
                 self.wake()
@@ -207,13 +205,26 @@ if DRMAA_LIB_FOUND:
                 if value:
                     value = value.replace(
                         "{config_name}", cluster_specific_cfg_name)
-                    value = value.replace("{max_node}", repr(max_num_node))
+                    value = value.replace("{nodes_number}",
+                                          repr(parallel_job_info.get(
+                                              'nodes_number', 1)))
 
-                    setattr(drmaa_job_template_id, drmaa_attribute, value)
+                    setattr(drmaa_job_template, drmaa_attribute, value)
 
                     self.logger.debug(
                         "Parallel job, drmaa attribute = %s, value = %s ",
                         drmaa_attribute, value)
+
+            if parallel_job_info:
+                native_spec = drmaa_job_template.native_specification
+                if native_spec is None:
+                    native_spec = []
+                elif isinstance(native_spec, str):
+                    native_spec = [native_spec]
+                native_spec.append(
+                    '-l nodes=%(nodes_number)s:ppn=%(cpu_per_node)s'
+                    % parallel_job_info)
+                drmaa_job_template.native_specification = native_spec
 
             job_env = []
             for parallel_env_v in constants.PARALLEL_JOB_ENV:
@@ -221,12 +232,12 @@ if DRMAA_LIB_FOUND:
                 if value:
                     job_env.append((parallel_env_v, value.rstrip()))
 
-            drmaa_job_template_id.jobEnvironment = dict(job_env)
+            drmaa_job_template.jobEnvironment = dict(job_env)
 
             self.logger.debug("Parallel job environment : " + repr(job_env))
             self.logger.debug("<< _setDrmaaParallelJob")
 
-            return drmaa_job_template_id
+            return drmaa_job_template
 
         def job_submission(self, job):
             '''

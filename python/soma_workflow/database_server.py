@@ -144,9 +144,11 @@ Job server database tables:
       parallel_config_name : string, optional
                              if the job is made to run on several nodes:
                              name of the parallel configuration as defined
-                                 in constants.PARALLEL_CONFIGURATIONS.
-      max_node_number      : int, optional
-                             maximum of node requested by the job to run
+                             in configuration.PARALLEL_CONFIGURATIONS.
+      nodes_number         : int, optional
+                             number of nodes requested by the job to run
+      cpu_per_node         : int, optional
+                             number of CPU/cores needed for each node
       queue                : string, optional
                              name of the queue used to submit the job.
 
@@ -221,7 +223,8 @@ def create_database(database_file):
                                        working_directory    TEXT,
                                        custom_submission    BOOLEAN NOT NULL,
                                        parallel_config_name TEXT,
-                                       max_node_number      INTEGER,
+                                       nodes_number         INTEGER,
+                                       cpu_per_node         INTEGER,
                                        queue                TEXT,
 
                                        name                 TEXT,
@@ -2118,9 +2121,12 @@ class WorkflowDatabaseServer(object):
 
         parallel_config_name = None
         max_node_number = 1
+        cpu_per_node = 1
         if engine_job.parallel_job_info:
-            parallel_config_name, max_node_number \
-                = engine_job.parallel_job_info
+            parallel_config_name \
+                = engine_job.parallel_job_info.get('config_name')
+            nodes_number = engine_job.parallel_job_info.get('nodes_number', 1)
+            cpu_per_node = engine_job.parallel_job_info.get('cpu_per_node', 1)
         command_info = ""
         for command_element in engine_job.plain_command():
             command_info = command_info + " " + repr(command_element)
@@ -2182,7 +2188,8 @@ class WorkflowDatabaseServer(object):
                           working_directory,
                           custom_submission,
                           parallel_config_name,
-                          max_node_number,
+                          nodes_number,
+                          cpu_per_node,
                           queue,
 
                           name,
@@ -2217,7 +2224,8 @@ class WorkflowDatabaseServer(object):
                                   engine_job.plain_working_directory(),
                                   custom_submission,
                                   parallel_config_name,
-                                  max_node_number,
+                                  nodes_number,
+                                  cpu_per_node,
                                   engine_job.queue,
 
                                   engine_job.name,

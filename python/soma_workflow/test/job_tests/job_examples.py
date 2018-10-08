@@ -341,7 +341,11 @@ class JobExamples(object):
             join_stderrout=False,
             disposal_timeout=self.jobs_timeout,
             name="parallel job mpi",
-            parallel_job_info=(configuration.OCFG_PARALLEL_PC_MPI, node_num)))
+            parallel_job_info={
+                'parallel_config_name': configuration.OCFG_PARALLEL_PC_MPI,
+                'nodes_number': node_num,
+                'cpu_per_node': 1}
+        ))
 
         self.wf_ctrl.delete_job(compil1job_id)
         self.wf_ctrl.delete_job(compil2job_id)

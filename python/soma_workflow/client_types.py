@@ -108,11 +108,13 @@ class Job(object):
         * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
         * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
-    **parallel_job_info**: *tuple(string, int)*
+    **parallel_job_info**: *dict*
       The parallel job information must be set if the Job is parallel (ie. made to
       run on several CPU).
-      The parallel job information is a tuple: (name of the configuration,
-      maximum number of CPU used by the Job).
+      The parallel job information is a dict, with the following supported items:
+          * config_name: name of the configuration,
+          * nodes_number: number of computing nodes used by the Job,
+          * cpu_per_node: number of CPU or cores needed for each node
       The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
       .. warning::
