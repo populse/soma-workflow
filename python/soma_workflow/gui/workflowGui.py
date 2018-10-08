@@ -3071,7 +3071,8 @@ class PlotView(QtGui.QWidget):
         self.vlayout = QtGui.QVBoxLayout()
         self.ui.frame_plot.setLayout(self.vlayout)
 
-        self.ui.combo_plot_type.addItems(["jobs fct time", "nb proc fct time"])
+        self.ui.combo_plot_type.addItems(["jobs fct time", "nb jobs fct time",
+                                          "nb cpu fct time"])
         self.ui.combo_plot_type.setCurrentIndex(0)
         self.plot_type = 0
 
@@ -3121,7 +3122,7 @@ class PlotView(QtGui.QWidget):
             return
         if self.plot_type == 0:
             self.jobsFctTime()
-        if self.plot_type == 1:
+        if self.plot_type in (1, 2):
             self.nbProcFctTime()
 
     def jobsFctTime(self):
@@ -3202,36 +3203,42 @@ class PlotView(QtGui.QWidget):
 
         dates = []
         nb_process_running = []
-        infos = []  # sequence of tuple (job_item, start, date)
+        infos = []  # sequence of tuple (job_item, start, date, ncpu)
                    # start is a bolean
                    # if start then date is the execution date
                    # else date is the ending date
 
         for job_item in self.jobs:
+            ncpu = 1
+            if self.plot_type == 2:
+                if job_item.parallel_job_info:
+                    ncpu = job_item.parallel_job_info.get('cpu_per_node', 1)
+                    print('parallel job:', ncpu)
             if job_item.execution_date:
-                infos.append((job_item, True, job_item.execution_date))
+                infos.append((job_item, True, job_item.execution_date, ncpu))
             if job_item.ending_date:
-                infos.append((job_item, False, job_item.ending_date))
+                infos.append((job_item, False, job_item.ending_date, ncpu))
             else:
-                infos.append((job_item, False, datetime.now()))
+                infos.append((job_item, False, datetime.now(), ncpu))
 
         infos = sorted(infos, key=lambda info_elem: info_elem[2])
 
         nb_process = 0
         previous = None
         for info_elem in infos:
+            ncpu = info_elem[3]
             if previous and info_elem[2] == previous[2]:
                 if info_elem[1]:
-                    nb_process = nb_process + 1
+                    nb_process = nb_process + ncpu
                 else:
-                    nb_process = nb_process - 1
+                    nb_process = nb_process - ncpu
                 nb_process_running[len(nb_process_running) - 1] = nb_process
             else:
                 dates.append(info_elem[2])
                 if info_elem[1]:
-                    nb_process = nb_process + 1
+                    nb_process = nb_process + ncpu
                 else:
-                    nb_process = nb_process - 1
+                    nb_process = nb_process - ncpu
                 nb_process_running.append(nb_process)
             previous = info_elem
 
@@ -3246,7 +3253,10 @@ class PlotView(QtGui.QWidget):
             self.axes.set_ylim(0, nb_proc_max + 1)
 
         self.axes.set_xlabel("Time")
-        self.axes.set_ylabel("Nb of proc")
+        if self.plot_type == 2:
+            self.axes.set_ylabel("Nb of CPU")
+        else:
+            self.axes.set_ylabel("Nb of jobs")
         self.figure.autofmt_xdate(rotation=80)
 
         self.canvas.draw()
@@ -4385,7 +4395,8 @@ class GuiWorkflow(object):
                                  job.referenced_output_files),
                              name=job.name,
                              job_id=job_id,
-                             priority=job.priority)
+                             priority=job.priority,
+                             parallel_job_info=job.parallel_job_info)
             ids[job] = item_id
             self.items[item_id] = gui_job
             self.server_jobs[gui_job.job_id] = item_id
@@ -4760,7 +4771,8 @@ class GuiJob(GuiWorkflowItem):
                  children_nb=0,
                  name="no name",
                  job_id=NOT_SUBMITTED_JOB_ID,
-                 priority=None):
+                 priority=None,
+                 parallel_job_info=None):
         super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
 
         self.status = "not submitted"
@@ -4777,6 +4789,7 @@ class GuiJob(GuiWorkflowItem):
         self.job_id = job_id
 
         self.tmp_stderrout_dir = tmp_stderrout_dir
+        self.parallel_job_info = parallel_job_info
 
         cmd_seq = []
         unic_t = str
