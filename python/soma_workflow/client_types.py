@@ -41,6 +41,16 @@ class Job(object):
       The command is the only argument required to create a Job.
       It is also useful to fill the job name for the workflow display in the GUI.
 
+    **Parallel jobs**
+
+    When a job is designed to run on multiple processors, cluster managements systems normally do the necessary work to run or duplicate the job processes on multiple computing nodes. There are basically 3 classical ways to do it:
+
+      * use MPI (whatever implementation): job commands are run through a launcher program (``mpirun``) which will run the processes and establish inter-process communications.
+      * use OpenMP: this threading-based system allows to use several cores on the same computing node (using shared memory). The OpenMP allows to use the required nuber of threads.
+      * manual threading or forking ("native" mode).
+
+    In all cases one job runs on several processors/cores. The MPI variant additionally allows to run the same job on several computing nodes (which do not share memory), the others should run on the same node (as far as I know - I'm not an expert of OpenMP). The job specifications should then precise which kind of parallelism they are using, the number of nodes the job should run on, and the number of CPU cores which should be allocated on each node. Thus the **parallel_job_info** variable of a job is a dictionary giving these 3 information, under the respective keys `config_name`, `nodes_number` and `cpu_per_node`. In OpenMP and native modes, the nodes_number should be 1.
+
     **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and TemporaryPath or/and tuple (FileTransfer, relative_path) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (FileTransfer, relative_path)*
 
       The command to execute. It can not be empty. In case of a shared file system
@@ -112,7 +122,7 @@ class Job(object):
       The parallel job information must be set if the Job is parallel (ie. made to
       run on several CPU).
       The parallel job information is a dict, with the following supported items:
-          * config_name: name of the configuration,
+          * config_name: name of the configuration (native, MPI, OpenMP)
           * nodes_number: number of computing nodes used by the Job,
           * cpu_per_node: number of CPU or cores needed for each node
       The configuration name is the type of parallel Job. Example: MPI or OpenMP.
