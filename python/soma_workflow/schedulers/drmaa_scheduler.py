@@ -175,7 +175,6 @@ if DRMAA_LIB_FOUND:
 
         def _setDrmaaParallelJob(self,
                                   drmaa_job_template,
-                                  configuration_name,
                                   parallel_job_info):
             '''
             Set the DRMAA job template information for a parallel job submission.
@@ -189,14 +188,12 @@ if DRMAA_LIB_FOUND:
             parallel_job_info: dict
                 parallel_job_info: (configuration_name, nodes_number,
                 cpu_per_node)
-            configuration_name: str
-                type of parallel job as defined in soma_workflow.constants
-                (eg native, MPI, OpenMP...)
             '''
             if self.is_sleeping:
                 self.wake()
 
             self.logger.debug(">> _setDrmaaParallelJob")
+            configuration_name = parallel_job_info.et('config_name', 'native')
             cluster_specific_cfg_name = self.parallel_job_submission_info[
                 configuration_name]
 
@@ -346,10 +343,8 @@ if DRMAA_LIB_FOUND:
                 jobTemplateId.jobEnvironment = {}
 
                 if job.parallel_job_info:
-                    parallel_config_name, max_node_number = job.parallel_job_info
-                    jobTemplateId = self._setDrmaaParallelJob(jobTemplateId,
-                                                              parallel_config_name,
-                                                              max_node_number)
+                    jobTemplateId = self._setDrmaaParallelJob(
+                        jobTemplateId, job.parallel_job_info)
 
                 if self._drmaa_implementation == "PBS":
                     job_env = []

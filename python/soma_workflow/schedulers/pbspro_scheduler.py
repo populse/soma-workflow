@@ -212,9 +212,6 @@ class PBSProScheduler(Scheduler):
             job template instance
         parallel_job_info: dict
             parallel info dict, containing:
-            configuration_name: str
-                type of parallel job as defined in soma_workflow.constants
-                (eg MPI, OpenMP...)
             nodes_number: int
                 maximum node number the job requests (on a unique machine or
                 separated machine depending on the parallel configuration)
@@ -225,6 +222,7 @@ class PBSProScheduler(Scheduler):
             self.wake()
 
         self.logger.debug(">> _setParallelJob")
+        configuration_name = parallel_job_info.get('config_name', 'native')
         cluster_specific_cfg_name = self.parallel_job_submission_info[
             configuration_name]
 

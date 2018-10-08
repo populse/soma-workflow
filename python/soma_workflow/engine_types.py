@@ -188,7 +188,7 @@ class EngineJob(Job):
                 #raise JobError(
                     #"The parallel job can not be submitted because the "
                     #"parallel configuration %s is missing."
-                    #% (configuration_name))
+                    #% (parallel_config_name))
                 ## potential bug should configuration_name be parallel_config_name
 
         def map_and_register(file, mode=None, addTo=[]):
