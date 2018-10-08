@@ -3163,11 +3163,10 @@ class PlotView(QtGui.QWidget):
         x_min = datetime.max
         x_max = datetime.min
         for n, j in enumerate(self.jobs):
-            print('nb_jobs:', nb_jobs)
             ncpu = 1
             if self.plot_type == 1 and j.parallel_job_info:
-                ncpu = j.parallel_job_info.get('cpu_per_node', 1)
-                print('parallel job:', ncpu)
+                ncpu = j.parallel_job_info.get('cpu_per_node', 1) \
+                    * j.parallel_job_info.get('nodes_number', 1)
             if j.execution_date:
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
@@ -3248,7 +3247,8 @@ class PlotView(QtGui.QWidget):
         for job_item in self.jobs:
             ncpu = 1
             if self.plot_type == 3 and job_item.parallel_job_info:
-                    ncpu = job_item.parallel_job_info.get('cpu_per_node', 1)
+                ncpu = job_item.parallel_job_info.get('cpu_per_node', 1) \
+                    * job_item.parallel_job_info.get('nodes_number', 1)
             if job_item.execution_date:
                 infos.append((job_item, True, job_item.execution_date, ncpu))
             if job_item.ending_date:
