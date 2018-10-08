@@ -3080,12 +3080,6 @@ class PlotView(QtGui.QWidget):
 
         self.canvas = None
         self.group_item = group_item
-        self.jobs = self.group_item.done
-        self.jobs.extend(self.group_item.failed)
-        self.jobs.extend(self.group_item.running)
-        self.jobs.extend(self.group_item.not_sub)
-        self.jobs = sorted(self.jobs, key=self.sortkey)
-
         self.updatePlot()
 
         self.ui.combo_plot_type.currentIndexChanged.connect(
@@ -3098,6 +3092,13 @@ class PlotView(QtGui.QWidget):
             matplotlib.pyplot.close(self.figure)
             self.canvas.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
             self.canvas.close()
+
+    def update_jobs(self):
+        self.jobs = list(self.group_item.done)
+        self.jobs.extend(self.group_item.failed)
+        self.jobs.extend(self.group_item.running)
+        self.jobs.extend(self.group_item.not_sub)
+        self.jobs = sorted(self.jobs, key=self.sortkey)
 
     def sortkey(self, j):
         if j.execution_date:
@@ -3122,6 +3123,7 @@ class PlotView(QtGui.QWidget):
     def updatePlot(self):
         if not self.isVisible():
             return
+        self.update_jobs()
         if self.plot_type in (0, 1):
             self.jobsFctTime()
         if self.plot_type in (2, 3):
@@ -3157,17 +3159,24 @@ class PlotView(QtGui.QWidget):
             else:
                 return datetime.max
 
-        self.jobs = sorted(self.jobs, key=self.sortkey)
+        #self.jobs = sorted(self.jobs, key=self.sortkey)
 
         nb_jobs = 0
         x_min = datetime.max
         x_max = datetime.min
-        for n, j in enumerate(self.jobs):
+        n = 0
+        for j in self.jobs:
             ncpu = 1
             if self.plot_type == 1 and j.parallel_job_info:
                 ncpu = j.parallel_job_info.get('cpu_per_node', 1) \
                     * j.parallel_job_info.get('nodes_number', 1)
             if j.execution_date:
+                cols = matplotlib.rcParams['axes.prop_cycle']
+                nc = len(cols)
+                for c in cols[n % nc:(n % nc) + 1]:
+                    col = c['color']
+                    break
+                n += 1
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
                     x_min = j.execution_date
@@ -3175,13 +3184,8 @@ class PlotView(QtGui.QWidget):
                     if ncpu == 1:
                         self.axes.plot(
                             [j.execution_date, j.ending_date],
-                            [nb_jobs, nb_jobs])
+                            [nb_jobs, nb_jobs], color=col)
                     else:
-                        cols = matplotlib.rcParams['axes.prop_cycle']
-                        nc = len(cols)
-                        for c in cols[n % nc:(n+1) % nc]:
-                            col = c['color']
-                            break
                         self.axes.fill(
                             [j.execution_date, j.ending_date,
                              j.ending_date, j.execution_date],
@@ -3193,19 +3197,15 @@ class PlotView(QtGui.QWidget):
                     if ncpu == 1:
                         self.axes.plot(
                             [j.execution_date, datetime.now()],
-                            [nb_jobs, nb_jobs])
+                            [nb_jobs, nb_jobs], color=col)
                     else:
-                        cols = matplotlib.rcParams['axes.prop_cycle']
-                        nc = len(cols)
-                        for c in cols[n % nc:(n+1) % nc]:
-                            col = c['color']
-                            break
                         now = datetime.now()
                         self.axes.fill(
                             [j.execution_date, now, now, j.execution_date],
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
                              nb_jobs + ncpu - 1], color=col)
                 nb_jobs += ncpu - 1
+        #print('njobs:', n, 'nb_jobs:', nb_jobs)
 
         if nb_jobs:
             self.axes.set_ylim(0, nb_jobs + 1)
