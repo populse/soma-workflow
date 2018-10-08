@@ -2120,7 +2120,7 @@ class WorkflowDatabaseServer(object):
                 hours=engine_job.disposal_timeout)
 
         parallel_config_name = None
-        max_node_number = 1
+        nodes_number = 1
         cpu_per_node = 1
         if engine_job.parallel_job_info:
             parallel_config_name \
