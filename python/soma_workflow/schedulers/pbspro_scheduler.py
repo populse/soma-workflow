@@ -223,23 +223,24 @@ class PBSProScheduler(Scheduler):
 
         self.logger.debug(">> _setParallelJob")
         configuration_name = parallel_job_info.get('config_name', 'native')
-        cluster_specific_cfg_name = self.parallel_job_submission_info[
-            configuration_name]
+        cluster_specific_cfg_name = self.parallel_job_submission_info.get(
+            configuration_name)
 
-        for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
-            value = self.parallel_job_submission_info.get(drmaa_attribute)
-            if value:
-                value = value.replace(
-                    "{config_name}", cluster_specific_cfg_name)
-                value = value.replace("{nodes_number}",
-                                      repr(parallel_job_info.get(
-                                          'nodes_number', 1)))
+        if cluster_specific_cfg_name:
+            for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
+                value = self.parallel_job_submission_info.get(drmaa_attribute)
+                if value:
+                    value = value.replace(
+                        "{config_name}", cluster_specific_cfg_name)
+                    value = value.replace("{nodes_number}",
+                                          repr(parallel_job_info.get(
+                                              'nodes_number', 1)))
 
-                setattr(drmaa_job_template, drmaa_attribute, value)
+                    setattr(drmaa_job_template, drmaa_attribute, value)
 
-                self.logger.debug(
-                    "Parallel job, drmaa attribute = %s, value = %s ",
-                    drmaa_attribute, value)
+                    self.logger.debug(
+                        "Parallel job, drmaa attribute = %s, value = %s ",
+                        drmaa_attribute, value)
 
         if parallel_job_info:
             native_spec = drmaa_job_template.native_specification
@@ -364,12 +365,13 @@ class PBSProScheduler(Scheduler):
         except Exception as e:
             try:
                 f = open(stderr_file, "wa")
-                f.write("Error in job submission: %s" % (e))
+                f.write("Error in job submission: %s: %s" % (type(e), e))
                 f.close()
             except IOError as ioe:
                 pass
-            self.logger.error("Error in job submission: %s" % (e))
-            raise DRMError("Job submission error: %s" % (e))
+            self.logger.error("Error in job submission: %s: %s" % (type(e), e),
+                              exc_info = sys.exc_info())
+            raise DRMError("Job submission error: %s: %s" % (type(e), e))
 
         return job_id
 
