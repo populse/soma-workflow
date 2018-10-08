@@ -197,7 +197,7 @@ if DRMAA_LIB_FOUND:
             cluster_specific_cfg_name = self.parallel_job_submission_info[
                 configuration_name]
 
-            for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
+            for drmaa_attribute in configuration.PARALLEL_DRMAA_ATTRIBUTES:
                 value = self.parallel_job_submission_info.get(drmaa_attribute)
                 if value:
                     value = value.replace(
@@ -213,7 +213,7 @@ if DRMAA_LIB_FOUND:
                         drmaa_attribute, value)
 
             if parallel_job_info:
-                native_spec = drmaa_job_template.native_specification
+                native_spec = drmaa_job_template.nativeSpecification
                 if native_spec is None:
                     native_spec = []
                 elif isinstance(native_spec, str):
@@ -221,10 +221,10 @@ if DRMAA_LIB_FOUND:
                 native_spec.append(
                     '-l nodes=%(nodes_number)s:ppn=%(cpu_per_node)s'
                     % parallel_job_info)
-                drmaa_job_template.native_specification = native_spec
+                drmaa_job_template.nativeSpecification = native_spec
 
             job_env = []
-            for parallel_env_v in constants.PARALLEL_JOB_ENV:
+            for parallel_env_v in configuration.PARALLEL_JOB_ENV:
                 value = self.parallel_job_submission_info.get(parallel_env_v)
                 if value:
                     job_env.append((parallel_env_v, value.rstrip()))
