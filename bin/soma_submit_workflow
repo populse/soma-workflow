@@ -17,16 +17,29 @@ from soma_workflow.client import WorkflowController, Helper
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 3:
-       raise Exception("The program takes exactly 2 parameter: \n"
-                       "    * the workflow file \n"
-                       "    * the computing resource id \n")
+    import argparse
 
-    workflow = Helper.unserialize(sys.argv[1])
+    parser = argparse.ArgumentParser(description='Submit a workflow file to a computing resource')
+    parser.add_argument('workflow', metavar='WORKFLOW', type=str, 
+                        help='a workflow file to submit')
+    parser.add_argument('resource', metavar='RESOURCE', type=str, 
+                        help='the computing resource to process the workflow')
+    parser.add_argument('--queue', dest='queue', type=str, default=None,
+                        help='queue to use on the destination resource')
+    parser.add_argument('--name', dest='name', type=str, default=None,
+                        help='name of submitted workflow')
+    args = parser.parse_args()
 
-    wfc = WorkflowController(sys.argv[2])
+    #if len(sys.argv) != 3:
+       #raise Exception("The program takes exactly 2 parameter: \n"
+                       #"    * the workflow file \n"
+                       #"    * the computing resource id \n")
+    
+    workflow = Helper.unserialize(args.workflow)
 
-    wfc.submit_workflow(workflow)
+    wfc = WorkflowController(args.resource)
+
+    wfc.submit_workflow(workflow, name = args.name, queue = args.queue)
 
 
 
