@@ -456,7 +456,7 @@ class ConfiguredLocalScheduler(LocalScheduler):
     def update_from_config(self, observable, event, msg):
         if event == LocalSchedulerCfg.PROC_NB_CHANGED:
             self.change_proc_nb(self._config.get_proc_nb())
-        elif event == LocalSchedulerCfg.PROC_NB_CHANGED:
+        elif event == LocalSchedulerCfg.INTERVAL_CHANGED:
             self.change_interval(self._config.get_interval())
         elif event == LocalSchedulerCfg.MAX_PROC_NB_CHANGED:
             self.change_max_proc_nb(self._config.get_max_proc_nb())
@@ -464,15 +464,18 @@ class ConfiguredLocalScheduler(LocalScheduler):
 
     @classmethod
     def build_scheduler(cls, config):
-        local_scheduler_cfg_file_path \
-            = LocalSchedulerCfg.search_config_path()
-        if local_scheduler_cfg_file_path:
-            local_scheduler_config = LocalSchedulerCfg.load_from_file(
-                local_scheduler_cfg_file_path)
-        else:
-            local_scheduler_config = LocalSchedulerCfg()
+        local_scheduler_config = config.get_scheduler_config()
+        if local_scheduler_config is None:
+            local_scheduler_cfg_file_path \
+                = LocalSchedulerCfg.search_config_path()
+            if local_scheduler_cfg_file_path:
+                local_scheduler_config = LocalSchedulerCfg.load_from_file(
+                    local_scheduler_cfg_file_path)
+            else:
+                local_scheduler_config = LocalSchedulerCfg()
+            config.set_scheduler_config(local_scheduler_config)
+            
         sch = ConfiguredLocalScheduler(local_scheduler_config)
-        config.set_scheduler_config(local_scheduler_config)
         return sch
 
 

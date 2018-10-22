@@ -206,8 +206,9 @@ class WorkflowController(object):
                 self.scheduler_config \
                     = configuration.LocalSchedulerCfg.load_from_file(
                         local_scdl_cfg_path)
-            self._engine_proxy = _embedded_engine_and_server(
-                self.config, self.scheduler_config)
+
+            self.config.set_scheduler_config(self.scheduler_config)
+            self._engine_proxy = _embedded_engine_and_server(self.config)
             self.engine_config_proxy = self.config
             self._connection = None
             self._transfer = TransferLocal(self._engine_proxy)
@@ -1059,7 +1060,7 @@ class WorkflowController(object):
         return progression
 
 
-def _embedded_engine_and_server(config, local_scheduler_config=None):
+def _embedded_engine_and_server(config):
     '''
     Creates the workflow engine and workflow database server in the client
     process.
