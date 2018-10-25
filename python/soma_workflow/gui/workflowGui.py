@@ -2606,7 +2606,7 @@ class WorkflowTree(QtGui.QWidget):
 
     assigned_wf_id = None
 
-    selection_model_changed = QtCore.Signal('QItemSelectionModel')
+    selection_model_changed = QtCore.Signal(QtGui.QItemSelectionModel)
 
     tree_view = None
 
