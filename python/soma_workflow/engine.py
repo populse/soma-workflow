@@ -1051,7 +1051,7 @@ class WorkflowEngine(RemoteFileController):
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
-        self.logger.debug("!Getting workflow status: ", repr(status))
+        self.logger.debug("!Getting workflow status: %s" % repr(status))
         if status and \
            not status == constants.WORKFLOW_DONE and \
            _out_to_date(last_status_update):
@@ -1068,7 +1068,8 @@ class WorkflowEngine(RemoteFileController):
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
 
-        self.logger.debug("!Getting workflow elements status: ", repr(status))
+        self.logger.debug("!Getting workflow elements status: %s"
+                          % repr(status))
 
         wf_status = self._database_server.get_detailed_workflow_status(wf_id)
         if status and \
