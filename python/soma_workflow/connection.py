@@ -846,7 +846,7 @@ class ConnectionHolder(threading.Thread):
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
-                print('life signal emitted')
+                #print('life signal emitted')
             except ConnectionClosedError as e: # TBC Apparently the exception is not defined anymore
                 print("Connection closed")
                 break
