@@ -2948,8 +2948,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                     self.job_item.submission_date
                 setLabelFromTimeDelta(self.ui.time_in_queue, time_in_queue)
                 if self.job_item.ending_date:
-                    execution_time = self.job_item.ending_date - \
-                        self.job_item.execution_date
+                    execution_time = self.job_item.serial_duration
                     setLabelFromTimeDelta(
                         self.ui.execution_time, execution_time)
 
@@ -4624,6 +4623,7 @@ class GuiWorkflow(object):
                 item.submission_date = None
                 item.execution_date = None
                 item.ending_date = None
+                item.serial_duration = None
 
 
 class GuiWorkflowItem(object):
@@ -4743,9 +4743,9 @@ class GuiGroup(GuiWorkflowItem):
                     self.queued.append(item)
                 else:
                     self.running.append(item)
-                if item.ending_date:
-                    self.theoretical_serial_time = self.theoretical_serial_time + \
-                        (item.ending_date - item.execution_date)
+                if item.serial_duration:
+                    self.theoretical_serial_time \
+                        = self.theoretical_serial_time + item.serial_duration
                     if item.ending_date > self.last_end_date:
                         self.last_end_date = item.ending_date
                 if item.submission_date and item.submission_date < self.first_sub_date:
@@ -4819,6 +4819,7 @@ class GuiJob(GuiWorkflowItem):
         self.ending_date = None
         self.priority = priority
         self.queue = None
+        self.serial_duration = None
 
         self.name = name
         self.job_id = job_id
@@ -4869,8 +4870,10 @@ class GuiJob(GuiWorkflowItem):
                     # in py3 RU is bytes, we want unicode/str
                     resource_usage = resource_usage.decode()
                 ru = resource_usage.split()
+                rud = {}
                 for ruel in ru:
                     ruel = ruel.split("=")
+                    rud[ruel[0]] = ruel[1]
                     if ruel[0] == "start_time" and ruel[1] != "0":
                         t = time.localtime(float(ruel[1].replace(',', '.')))
                         self.execution_date = datetime(year=t[0], month=t[
@@ -4883,6 +4886,22 @@ class GuiJob(GuiWorkflowItem):
                         t = time.localtime(float(ruel[1].replace(',', '.')))
                         self.submission_date = datetime(year=t[0], month=t[
                                                         1], day=t[2], hour=t[3], minute=t[4], second=t[5])
+                if self.ending_date:
+                    self.serial_duration \
+                        = self.ending_date - self.execution_date
+                    if "cput" in rud:
+                        t = datetime.strptime(rud["cput"], "%H:%M:%S")
+                        t0 = datetime.strptime("00:00:00", "%H:%M:%S")
+                        self.serial_duration = t - t0
+                    elif "cpupercent" in rud:
+                        duration = self.serial_duration.total_seconds() \
+                            * float(rud["cpupercent"]) / 100.
+                        self.serial_duration = timedelta(seconds=duration)
+                    elif 'ncpus' in rud:
+                        duration = self.serial_duration.total_seconds() \
+                            * int(rud["ncpus"])
+                        self.serial_duration = timedelta(seconds=duration)
+
 
         return state_changed
 
