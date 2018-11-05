@@ -1,0 +1,36 @@
+sudo: false
+
+matrix:
+  include:
+    - os: osx
+      language: generic
+    - os: linux
+      language: python
+      python:
+        - 2.6
+    - os: linux
+      language: python
+      python:
+        - 2.7
+    - os: linux
+      language: python
+      python:
+        - 3.5
+
+before_install:
+    # osx deps
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew uninstall --ignore-dependencies python; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python3; fi
+
+install:
+    - pip install six
+    - pip install codecov;
+    # to test notebooks
+    - python setup.py install
+
+script:
+    - coverage run -m soma_workflow.test
+
+after_success:
+    - codecov
