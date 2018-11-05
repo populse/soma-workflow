@@ -17,7 +17,7 @@ import soma_workflow.test.workflow_tests.test_multiple
 res &= soma_workflow.test.workflow_tests.test_multiple.test()
 
 import soma_workflow.test.workflow_tests.test_native_spec
-rs &= soma_workflow.test.workflow_tests.test_native_spec.test()
+res &= soma_workflow.test.workflow_tests.test_native_spec.test()
 
 import soma_workflow.test.workflow_tests.test_njobs
 res &= soma_workflow.test.workflow_tests.test_njobs.test()
