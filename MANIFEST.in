@@ -2,3 +2,5 @@ include ez_setup.py
 include LICENSE
 include python/soma_workflow/gui/*ui
 include python/soma_workflow/gui/icon/*png
+recursive-include python/soma_workflow/test/data *
+recursive-exclude python/soma_workflow/test/data *.*~

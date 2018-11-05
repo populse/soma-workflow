@@ -33,7 +33,12 @@ setup(
     url=release_info["URL"],
     package_dir={'': 'python'},
     packages=find_packages(python_dir),
-    package_data={'soma_workflow.gui': ['*ui', 'icon/*png']},
+    package_data={'soma_workflow.gui': ['*ui', 'icon/*png'],
+                  'soma_workflow.test.data.jobExamples':
+                      ['complete/file*', 'complete/stdin*',
+                       'complete/output_models/*', 'mpi/*',
+                       'special_transfers/*'],
+                  },
     platforms=release_info["PLATFORMS"],
     extras_require=release_info["EXTRA_REQUIRES"],
     install_requires=release_info["REQUIRES"],

@@ -170,6 +170,19 @@ class WorkflowTest(unittest.TestCase):
                         print('databse file:', config._database_file)
                         print('transfers:', config._transfered_file_dir)
 
+    @classmethod
+    def run_test_function(cls, debug=False, interactive=False, **kwargs):
+        ''' Same as run_test() but returns True in case of success and False
+        in case of failure instead of raising an exception
+        '''
+        try:
+            cls.run_test(debug=debug, interactive=interactive, **kwargs)
+            return True
+        except:
+            import traceback
+            traceback.print_exc()
+            return False
+
     @staticmethod
     def print_help(argv):
         print(argv[0],

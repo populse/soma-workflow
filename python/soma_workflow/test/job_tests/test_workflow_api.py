@@ -69,8 +69,12 @@ class WorkflowApiTests(unittest.TestCase):
         self.assertTrue(len(workflow3.groups) == 2)
         self.assertTrue(len(workflow3.dependencies) == 17)
 
-if __name__ == '__main__':
+def test():
     suite = unittest.TestLoader().loadTestsFromTestCase(WorkflowApiTests)
     runtime = unittest.TextTestRunner(verbosity=2).run(suite)
     res = runtime.wasSuccessful()
+    return res
+
+if __name__ == '__main__':
+    res = test()
     sys.exit(int(not res))

@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 09:28:55 2013
@@ -126,6 +126,10 @@ class Exception1Test(WorkflowTest):
 
         del self.tested_job
 
+
+def test():
+    return Exception1Test.run_test_function(
+        **WorkflowTest.parse_args(sys.argv))
 
 if __name__ == '__main__':
     Exception1Test.run_test(**WorkflowTest.parse_args(sys.argv))

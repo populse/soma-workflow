@@ -183,5 +183,9 @@ class Exception2Test(WorkflowTest):
         del self.tested_job
 
 
+def test():
+    return Exception2Test.run_test_function(
+        **WorkflowTest.parse_args(sys.argv))
+
 if __name__ == '__main__':
     Exception2Test.run_test(**WorkflowTest.parse_args(sys.argv))

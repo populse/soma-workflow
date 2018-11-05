@@ -88,5 +88,9 @@ class WrongNativeSpecPbsTest(WorkflowTest):
                             "Expected : %i" % (nb_failed_aborted_jobs, 1))
 
 
+def test():
+    return WrongNativeSpecPbsTest.run_test_function(
+        **WorkflowTest.parse_args(sys.argv))
+
 if __name__ == '__main__':
     WrongNativeSpecPbsTest.run_test(**WorkflowTest.parse_args(sys.argv))
