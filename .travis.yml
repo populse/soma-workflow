@@ -25,7 +25,8 @@ before_install:
 
 install:
     - pip install six
-    - pip install codecov;
+    - pip install importlib
+    - pip install codecov
     # to test notebooks
     - python setup.py install
 
