@@ -1,30 +1,7 @@
 Soma-workflow
 =============
 
-.. image:: https://travis-ci.org/populse/soma-workflow.svg?branch=master
-    :target: https://api.travis-ci.org/populse/soma-workflow
-
-.. image:: https://pypip.in/version/soma-workflow/badge.png
-    :target: https://pypi.python.org/pypi/soma-workflow/
-    :alt: Latest Version
-
-.. image:: https://pypip.in/status/soma-workflow/badge.png
-    :target: https://pypi.python.org/pypi/soma-workflow/
-    :alt: Development Status
-
-.. image:: https://pypip.in/license/soma-workflow/badge.png
-    :target: https://pypi.python.org/pypi/soma-workflow/
-    :alt: License
-
-.. image:: https://codecov.io/github/populse/soma-workflow/coverage.svg?branch=master
-    :target: https://codecov.io/github/populse/soma-workflow
-    :alt: Coverage
-
-.. image:: https://img.shields.io/badge/python-2.6%2C%202.7%2C%203.5-yellow.svg
-    :target: http://github.com/populse/soma-workflow
-
-.. image:: https://img.shields.io/badge/platform-Linux%2C%20OSX%2C%20Windows-orange.svg
-    :target: http://github.com/populse/soma-workflow
+[![](https://travis-ci.org/populse/soma-workflow.svg?branch=master)](https://travis-ci.org/populse/soma-workflow) [![](https://codecov.io/github/populse/soma-workflow/coverage.svg?branch=master)](https://codecov.io/github/populse/soma-workflow) [![](https://img.shields.io/badge/license-CeCILL--B-blue.svg)](https://github.com/populse/soma-workflow/blob/master/LICENSE.en) [![](https://img.shields.io/pypi/v/soma-workflow.svg)](https://pypi.python.org/pypi/soma-workflow/)                                           [![](https://img.shields.io/badge/python-2.6%2C%202.7%2C%203.3%2C%203.4%2C%203.5%2C%203.6%2C%203.7-yellow.svg)](#)                                                                      [![](https://img.shields.io/badge/platform-Linux%2C%20OSX%2C%20Windows-orange.svg)](#)
 
 
 Main Features
