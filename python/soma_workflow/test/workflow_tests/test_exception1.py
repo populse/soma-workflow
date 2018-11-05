@@ -72,6 +72,7 @@ class Exception1Test(WorkflowTest):
                                                      self.wf_ctrl))
         print('nb_failed_jobs:', nb_failed_jobs, file=sys.stderr)
         print('jobs status:', self.wf_ctrl.workflow_elements_status(self.wf_id), file=sys.stderr)
+        print('commandlines:', [j.command for j in workflow.jobs], file=sys.stderr)
         self.assertTrue(nb_failed_jobs == 1,
                         "nb failed jobs : %i. Expected : %i" %
                         (nb_failed_jobs, 1))
