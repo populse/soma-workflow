@@ -125,5 +125,8 @@ class NJobsTest(WorkflowTest):
         del self.tested_job
 
 
+def test():
+    return NJobsTest.run_test_function(**WorkflowTest.parse_args(sys.argv))
+
 if __name__ == '__main__':
     NJobsTest.run_test(**WorkflowTest.parse_args(sys.argv))
