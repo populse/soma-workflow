@@ -191,7 +191,8 @@ Job server database tables:
 
 def create_database(database_file):
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
     cursor.execute(
         '''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -385,7 +386,8 @@ def sqlite3_max_variable_number():
 
 def print_job_status(database_file):
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
 
     for row in cursor.execute('SELECT id, status, queue FROM jobs'):
@@ -400,7 +402,8 @@ def print_job_status(database_file):
 def print_tables(database_file):
 
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
 
     print("==== users table: ========")
@@ -528,7 +531,8 @@ class WorkflowDatabaseServer(object):
     def _connect(self):
         try:
             connection = sqlite3.connect(
-                self._database_file, timeout=10, isolation_level="EXCLUSIVE")
+                self._database_file, timeout=10, isolation_level="EXCLUSIVE",
+                check_same_thread=False)
         except Exception as e:
             raise (DatabaseError,
                    DatabaseError('On database file %s: %s: %s \n'
