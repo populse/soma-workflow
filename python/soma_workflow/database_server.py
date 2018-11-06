@@ -2413,15 +2413,15 @@ class WorkflowDatabaseServer(object):
                 connection.commit()
             except:
                 print('DB error on file:', self._database_file, file=sys.stderr)
-                print(os.stat(self._database_file))
+                print(os.stat(self._database_file), file=sys.stderr)
                 try:
                     import subprocess32 as subprocess
                 except:
                     import subprocess
-                print('filesystems:')
-                print(subprocess.check_output(['df', '-h']))
-                import traceback
-                traceback.print_exc()
+                print('filesystems:', file=sys.stderr)
+                print(subprocess.check_output(['df', '-h']), file=sys.stderr)
+                #import traceback
+                #traceback.print_exc()
                 raise
             cursor.close()
             connection.close()
