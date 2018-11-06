@@ -110,7 +110,7 @@ class SpecialCommandTest(WorkflowTest):
                 job_stderr_file = tempfile.mkstemp(
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id))
-                os.close(job_stderr_file)
+                os.close(job_stderr_file[0])
                 job_stderr_file = job_stderr_file[1]
 
                 try:
