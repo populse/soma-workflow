@@ -2420,8 +2420,7 @@ class WorkflowDatabaseServer(object):
                     import subprocess
                 print('filesystems:', file=sys.stderr)
                 print(subprocess.check_output(['df', '-h']), file=sys.stderr)
-                #import traceback
-                #traceback.print_exc()
+                print('from thread:', threading.current_thread(), file=sys.stderr)
                 raise
             cursor.close()
             connection.close()
