@@ -165,7 +165,7 @@ def slave_loop(communicator,
                                 % (repr(rank), repr(job_id), ret_value,
                                    plain_stdout, plain_stderr))
                             
-                except Exception, e:
+                except Exception as e:
                     ret_value = None
                     #import traceback
                     #exc_type, exc_value, exc_traceback = sys.exc_info()

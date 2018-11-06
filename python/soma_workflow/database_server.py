@@ -200,7 +200,8 @@ Job server database tables:
 
 def create_database(database_file):
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
     cursor.execute(
         '''CREATE TABLE users (id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -398,7 +399,8 @@ def sqlite3_max_variable_number():
 
 def print_job_status(database_file):
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
 
     for row in cursor.execute('SELECT id, status, queue FROM jobs'):
@@ -413,7 +415,8 @@ def print_job_status(database_file):
 def print_tables(database_file):
 
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE")
+        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        check_same_thread=False)
     cursor = connection.cursor()
 
     print("==== users table: ========")
@@ -576,7 +579,8 @@ class WorkflowDatabaseServer(object):
     def _connect(self):
         try:
             connection = sqlite3.connect(
-                self._database_file, timeout=10, isolation_level="EXCLUSIVE")
+                self._database_file, timeout=10, isolation_level="EXCLUSIVE",
+                check_same_thread=False)
         except Exception as e:
             six.reraise(DatabaseError,
                         DatabaseError('On database file %s: %s: %s \n'
@@ -2486,7 +2490,20 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
                 six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
-            connection.commit()
+            #connection.commit()
+            try:
+                connection.commit()
+            except:
+                print('DB error on file:', self._database_file, file=sys.stderr)
+                print(os.stat(self._database_file), file=sys.stderr)
+                try:
+                    import subprocess32 as subprocess
+                except:
+                    import subprocess
+                print('filesystems:', file=sys.stderr)
+                print(subprocess.check_output(['df', '-h']), file=sys.stderr)
+                print('from thread:', threading.current_thread(), file=sys.stderr)
+                raise
             cursor.close()
             connection.close()
 

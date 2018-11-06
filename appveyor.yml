@@ -1,0 +1,27 @@
+environment:
+
+  matrix:
+
+    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python35"
+
+build: off
+
+install:
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "python -m pip install --upgrade pip"
+  - "pip install six"
+  - "python setup.py install"
+  #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
+
+test_script:
+  - "python --version"
+  - "python -m soma_workflow.test"
+
+notifications:
+  - provider: Email
+    to:
+      - '{{commitAuthorEmail}}'
+    on_build_failure: true
+    on_build_success: false
+    on_build_status_changed: true
