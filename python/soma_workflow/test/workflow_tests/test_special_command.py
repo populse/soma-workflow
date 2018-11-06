@@ -104,14 +104,12 @@ class SpecialCommandTest(WorkflowTest):
                 # To check job standard out and standard err
                 job_stdout_file = tempfile.mkstemp(
                     prefix="job_soma_out_log_",
-                    suffix=repr(job_id),
-                    delete=False)
+                    suffix=repr(job_id))
                 os.close(job_stdout_file[0])
                 job_stdout_file = job_stdout_file[1]
                 job_stderr_file = tempfile.mkstemp(
                     prefix="job_soma_outerr_log_",
-                    suffix=repr(job_id),
-                    delete=False)
+                    suffix=repr(job_id))
                 os.close(job_stderr_file)
                 job_stderr_file = job_stderr_file[1]
 
