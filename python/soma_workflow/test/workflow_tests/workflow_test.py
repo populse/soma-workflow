@@ -22,6 +22,10 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests import WorkflowExamplesShared
 from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
+if sys.version_info[0] >= 3:
+    import io as StringIO
+else:
+    import StringIO
 
 
 class WorkflowTest(unittest.TestCase):
@@ -48,6 +52,15 @@ class WorkflowTest(unittest.TestCase):
         cls.path_management = path_management
 
     def setUp(self):
+        # use a custom temporary soma-workflow dir to avoid concurrent
+        # access problems
+        tmpdb = tempfile.mkdtemp('', prefix='soma_workflow')
+        self.soma_workflow_temp_dir = tmpdb
+        swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
+            % (socket.gethostname(), tmpdb)
+        Configuration.search_config_path \
+            = staticmethod(lambda : StringIO.StringIO(swf_conf))
+
         if self.path_management == self.LOCAL_PATH:
             workflow_examples = WorkflowExamplesLocal()
         elif self.path_management == self.FILE_TRANSFER:
@@ -59,6 +72,7 @@ class WorkflowTest(unittest.TestCase):
         self.wf_examples = workflow_examples
 
     def tearDown(self):
+        shutil.rmtree(self.soma_workflow_temp_dir)
         if self.wf_id:
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
         if os.path.isdir(self.wf_examples.output_dir):
