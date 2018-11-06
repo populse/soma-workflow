@@ -102,16 +102,18 @@ class SpecialCommandTest(WorkflowTest):
 
             if exit_info[0] == constants.FINISHED_REGULARLY:
                 # To check job standard out and standard err
-                job_stdout_file = tempfile.NamedTemporaryFile(
+                job_stdout_file = tempfile.mkstemp(
                     prefix="job_soma_out_log_",
                     suffix=repr(job_id),
                     delete=False)
-                job_stdout_file = job_stdout_file.name
-                job_stderr_file = tempfile.NamedTemporaryFile(
+                os.close(job_stdout_file[0])
+                job_stdout_file = job_stdout_file[1]
+                job_stderr_file = tempfile.mkstemp(
                     prefix="job_soma_outerr_log_",
                     suffix=repr(job_id),
                     delete=False)
-                job_stderr_file = job_stderr_file.name
+                os.close(job_stderr_file)
+                job_stderr_file = job_stderr_file[1]
 
                 try:
                     self.wf_ctrl.retrieve_job_stdouterr(job_id,
