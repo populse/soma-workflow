@@ -581,6 +581,12 @@ class WorkflowDatabaseServer(object):
             connection = sqlite3.connect(
                 self._database_file, timeout=10, isolation_level="EXCLUSIVE",
                 check_same_thread=False)
+            # set journal_mode to TRUNCATE mode. On some systems / filesystems
+            # / python versions (3), using the default DELETE mode can
+            # cause some OperationalError : IO failure when commiting
+            # transactions.
+            cursor = connection.cursor()
+            cursor.execute("PRAGMA journal_mode = TRUNCATE")
         except Exception as e:
             six.reraise(DatabaseError,
                         DatabaseError('On database file %s: %s: %s \n'
@@ -2077,25 +2083,26 @@ class WorkflowDatabaseServer(object):
 
     def get_user_login(self, user_id, external_cursor=None):
         self.logger.debug("=> get_user_login")
-        if not external_cursor:
-            connection = self._connect()
-            cursor = connection
-        else:
-            cursor = external_cursor
-        try:
-            login = six.next(cursor.execute(
-                'SELECT login FROM users WHERE id=?', [user_id]))[0]
-            # supposes that the user_id is valid
-            login = self._string_conversion(login)
-        except Exception as e:
+        with self._lock:
             if not external_cursor:
-                connection.rollback()
+                connection = self._connect()
+                cursor = connection
+            else:
+                cursor = external_cursor
+            try:
+                login = six.next(cursor.execute(
+                    'SELECT login FROM users WHERE id=?', [user_id]))[0]
+                # supposes that the user_id is valid
+                login = self._string_conversion(login)
+            except Exception as e:
+                if not external_cursor:
+                    connection.rollback()
+                    connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            if not external_cursor:
+                connection.commit()
                 connection.close()
-            six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
-        if not external_cursor:
-            connection.commit()
-            connection.close()
-        return login
+            return login
 
 
     def add_job(self,
@@ -2495,14 +2502,8 @@ class WorkflowDatabaseServer(object):
                 connection.commit()
             except:
                 print('DB error on file:', self._database_file, file=sys.stderr)
-                print(os.stat(self._database_file), file=sys.stderr)
-                try:
-                    import subprocess32 as subprocess
-                except:
-                    import subprocess
-                print('filesystems:', file=sys.stderr)
-                print(subprocess.check_output(['df', '-h']), file=sys.stderr)
-                print('from thread:', threading.current_thread(), file=sys.stderr)
+                cursor.close()
+                connection.close()
                 raise
             cursor.close()
             connection.close()

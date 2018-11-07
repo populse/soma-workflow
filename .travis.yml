@@ -16,6 +16,10 @@ matrix:
       language: python
       python:
         - 3.5
+    - os: linux
+      language: python
+      python:
+        - 3.6
 
 before_install:
     # osx deps
@@ -25,9 +29,10 @@ before_install:
 
 install:
     - pip install six
-    - pip install importlib
+    ## must upgrade pip/setuptools otherwise the install of importlib breaks
+    #- if [ ${TRAVIS_PYTHON_VERSION} != "2.6" ]; then pip install -U "pip==18.1" "setuptools==40.5.0"; fi
+    #- pip install importlib
     - pip install codecov
-    # to test notebooks
     - python setup.py install
 
 script:

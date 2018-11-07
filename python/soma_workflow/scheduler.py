@@ -226,4 +226,6 @@ def get_schedulers_list():
             sched = sched_mod[:-10]
             schedulers.append((sched, enabled))
     return schedulers
+            stdout_file.close()
+            stderr_file.close()
 

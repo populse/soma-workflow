@@ -97,21 +97,21 @@ def list_contents(path_seq, dir_contents):
 
 
 def identical_files(filepath1, filepath2):
-    file1 = open(filepath1)
-    file2 = open(filepath2)
-    lineNb = 1
-    line1 = file1.readline()
-    line2 = file2.readline()
-    identical = (line1 == line2)
+    with open(filepath1) as file1:
+        with open(filepath2) as file2:
+            lineNb = 1
+            line1 = file1.readline()
+            line2 = file2.readline()
+            identical = (line1 == line2)
 
-    while identical and line1:
-        line1 = file1.readline()
-        line2 = file2.readline()
-        lineNb = lineNb + 1
-        identical = (line1 == line2)
+            while identical and line1:
+                line1 = file1.readline()
+                line2 = file2.readline()
+                lineNb = lineNb + 1
+                identical = (line1 == line2)
 
-    if identical:
-        identical = (line1 == line2)
+            if identical:
+                identical = (line1 == line2)
     if not identical:
         return (
             (False, "Files are different, line %d: \n file1: %s\n"
