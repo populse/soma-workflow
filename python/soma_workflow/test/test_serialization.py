@@ -8,9 +8,10 @@ from __future__ import print_function
 
 import os
 
-from soma_workflow.test import workflow_local
-from soma_workflow.test import workflow_shared
-from soma_workflow.test import workflow_transfer
+from soma_workflow.test.workflow_tests.workflow_examples import workflow_local
+from soma_workflow.test.workflow_tests.workflow_examples import workflow_shared
+from soma_workflow.test.workflow_tests.workflow_examples \
+    import workflow_transfer
 from soma_workflow.client import Helper
 import unittest
 
@@ -57,6 +58,11 @@ class SerializationTest(unittest.TestCase):
             except IOError:
                 pass
 
+
+def test():
+    suite = unittest.TestLoader().loadTestsFromTestCase(SerializationTest)
+    runtime = unittest.TextTestRunner(verbosity=2).run(suite)
+    return runtime.wasSuccessful()
 
 if __name__ == '__main__':
     unittest.main()

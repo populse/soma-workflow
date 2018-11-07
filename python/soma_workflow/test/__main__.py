@@ -1,8 +1,11 @@
 
 import sys
 
+import soma_workflow.test.test_serialization
+res = soma_workflow.test.test_serialization.test()
+
 import soma_workflow.test.job_tests.test_workflow_api
-res = soma_workflow.test.job_tests.test_workflow_api.test()
+res &= soma_workflow.test.job_tests.test_workflow_api.test()
 
 import soma_workflow.test.workflow_tests.test_exception1
 res &= soma_workflow.test.workflow_tests.test_exception1.test()
