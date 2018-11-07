@@ -911,7 +911,7 @@ class Workflow(object):
         # groups
         serialized_groups = d.get("serialized_groups", {})
         group_from_ids = {}
-        to_convert = serialized_groups.keys()
+        to_convert = list(serialized_groups.keys())
         converted_or_stuck = False
         while not converted_or_stuck:
             new_converted = []
