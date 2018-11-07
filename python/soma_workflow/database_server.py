@@ -533,7 +533,7 @@ class WorkflowDatabaseServer(object):
             connection = sqlite3.connect(
                 self._database_file, timeout=10, isolation_level="EXCLUSIVE",
                 check_same_thread=False)
-            curor = connection.cursor()
+            cursor = connection.cursor()
             cursor.execute("PRAGMA journal_mode = TRUNCATE")
         except Exception as e:
             raise (DatabaseError,
