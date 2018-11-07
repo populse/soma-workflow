@@ -25,9 +25,11 @@ before_install:
 
 install:
     - pip install six
-    - pip install codecov;
-    # to test notebooks
-    - python setup.py install
+    # must upgrade pip/setuptools otherwise the install of importlib breaks
+    - pip install -U "pip==18.1" "setuptools==40.5.0"
+    - pip install importlib
+    - pip install codecov
+    #- python setup.py install
 
 script:
     - coverage run -m soma_workflow.test
