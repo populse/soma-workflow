@@ -178,6 +178,8 @@ class WorkflowTest(unittest.TestCase):
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
                         os.unlink(config._database_file)
+                        if os.path.exists(config._database_file + '-journal'):
+                            os.unlink(config._database_file + '-journal')
                         shutil.rmtree(config._transfered_file_dir)
                     else:
                         print('temporary files kept:')
