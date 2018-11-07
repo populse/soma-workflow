@@ -752,12 +752,12 @@ class LocalScheduler(Scheduler):
                 stdin_file = open(stdin, "rb")
             except Exception as e:
                 if stderr:
-                    stderr_file = open(stderr, "wb")
+                    #stderr_file = open(stderr, "wb") # already open
                     s = '%s: %s \n' % (type(e), e)
                     stderr_file.write(s)
                     stderr_file.close()
                 else:
-                    stdout_file = open(stdout, "wb")
+                    #stdout_file = open(stdout, "wb") # already open
                     s = '%s: %s \n' % (type(e), e)
                     stdout_file.write(s)
                     stdout_file.close()
@@ -780,6 +780,8 @@ class LocalScheduler(Scheduler):
                                        cwd=working_directory,
                                        env=env,
                                        **kwargs)
+            stdout_file.close()
+            stderr_file.close()
 
         except Exception as e:
             if stderr:
