@@ -283,45 +283,6 @@ class WorkflowController(object):
                                                    queue)
         return wf_id
 
-    def submit_job(self, job, queue=None):
-        '''
-        **deprecated since version 2.4:** Use submit_workflow instead.
-
-        Submits a job which is not part of a workflow.
-        Returns a job identifier.
-
-        If the job used transfered files the list of involved file transfer
-        **must be** specified setting the arguments: *referenced_input_files*
-        and *referenced_output_files*.
-
-        Each path must be reachable from the computing resource.
-
-        Raises *JobError* if the job is not correct.
-
-        Parameters
-        ----------
-        job: client.Job
-
-        queue: str
-            Name of the queue where to submit the jobs. If it is not
-            specified the job will be submitted to the default queue.
-
-        Returns
-        -------
-        Job_identifier: str
-        '''
-        print("The method submit_job is deprecated since version 2.4. " \
-              "Use submit_workflow instead.")
-        if self.engine_config_proxy.get_scheduler_type() \
-                == configuration.MPI_SCHEDULER:
-            raise SomaWorkflowError(
-                "The MPI scheduler is configured for this resource. "
-                "Use soma_workflow.MPI_workflow_runner to submit a workflow "
-                "using the MPI scheduler.")
-
-        job_id = self._engine_proxy.submit_job(job, queue)
-        return job_id
-
     def register_transfer(self, file_transfer):
         '''
         Registers a file transfer which is not part of a workflow and returns a
@@ -730,64 +691,6 @@ class WorkflowController(object):
             A negative value means that the method will wait indefinetely.
         '''
         self._engine_proxy.wait_workflow(workflow_id, timeout)
-
-    def kill_job(self, job_id):
-        '''
-        **deprecated since version 2.4:** Use stop_workflow instead.
-
-        Kills a running job. The job will not be deleted from the system (the
-        job identifier remains valid).
-        Use the restart_job method to restart the job.
-
-        Raises *UnknownObjectError* if the job_id is not valid
-        '''
-        print("The method kill_job is deprecated since version 2.4. "
-              "Use stop_workflow instead.")
-
-        self._engine_proxy.kill_job(job_id)
-
-    def restart_job(self, job_id):
-        '''
-        **deprecated since version 2.4:** Use restart_workflow instead.
-
-        Restarts a job which status is constants.FAILED or constants.WARNING.
-
-        Parameters
-        ----------
-        job_id: job identifier
-
-        Returns
-        -------
-        success: bool
-            True if the job was restarted.
-
-        Raises *UnknownObjectError* if the job_id is not valid
-        '''
-        print("The method restart_job is deprecated since version 2.4. "
-              "Use submit_workflow instead.")
-        self._engine_proxy.restart_job(job_id)
-
-    def delete_job(self, job_id, force=True):
-        '''
-        **deprecated since version 2.4:** Use delete_workflow instead.
-
-        Deletes a job which is not part of a workflow.
-        The job_id will become invalid and can not be used anymore.
-        The job is killed if it is running.
-
-        Raises *UnknownObjectError* if the job_id is not valid
-
-        Returns
-        -------
-        status: bool
-            If force is True: return True if the running jobs were killed and
-            False if some jobs are possibly still running on the computing
-            resource despite the workflow doesn't exist.
-        '''
-        print("The method delete_job is deprecated since version 2.4. "
-              "Use delete_workflow instead.")
-
-        return self._engine_proxy.delete_job(job_id, force)
 
     # FILE TRANSFER CONTROL #######################################
     def transfer_files(self, transfer_ids, buffer_size=512 ** 2):
