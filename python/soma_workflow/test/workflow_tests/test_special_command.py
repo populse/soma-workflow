@@ -49,6 +49,7 @@ class SpecialCommandTest(WorkflowTest):
 
     def test_result(self):
         # Cause all warnings to always be triggered.
+        warnings.resetwarnings()
         warnings.simplefilter("always")
         with warnings.catch_warnings(record=True) as w:
             # Trigger a warning.

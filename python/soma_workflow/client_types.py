@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 
 '''
-@author: Soizic Laguitton
+author: Soizic Laguitton
 
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
+organization: I2BM, Neurospin, Gif-sur-Yvette, France
+organization: CATI, France
+organization: U{IFR 49
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+license: CeCILL version: 2 http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 
 
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------
+
+from __future__ import print_function
 
 import warnings
 import sys

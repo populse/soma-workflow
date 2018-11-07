@@ -1,8 +1,7 @@
 
 import sys
 
-import soma_workflow.test.test_serialization
-res = soma_workflow.test.test_serialization.test()
+res = True
 
 import soma_workflow.test.job_tests.test_workflow_api
 res &= soma_workflow.test.job_tests.test_workflow_api.test()
@@ -42,6 +41,16 @@ res &= soma_workflow.test.workflow_tests.test_special_transfer.test()
 
 import soma_workflow.test.workflow_tests.test_wrong_native_spec
 res &= soma_workflow.test.workflow_tests.test_wrong_native_spec.test()
+
+# this test needs to be called *after* test_special_command because it triggers
+# a warning and, for an unknown reason, later warnings do not fire any longer
+# later on, even after calling warnings.resetwarnings()
+# and warnings.simplefilter('always').
+# It seems that another solution is to set warnings.simplefilter('always')
+# first, then run test_special_command - then warnings will always fire
+# whatever later settings for warnings. Something is broken there.
+import soma_workflow.test.test_serialization
+res &= soma_workflow.test.test_serialization.test()
 
 if res:
     print('All tests OK')
