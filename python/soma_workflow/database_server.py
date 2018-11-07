@@ -2003,25 +2003,26 @@ class WorkflowDatabaseServer(object):
 
     def get_user_login(self, user_id, external_cursor=None):
         self.logger.debug("=> get_user_login")
-        if not external_cursor:
-            connection = self._connect()
-            cursor = connection
-        else:
-            cursor = external_cursor
-        try:
-            login = six.next(cursor.execute(
-                'SELECT login FROM users WHERE id=?', [user_id]))[0]
-            # supposes that the user_id is valid
-            login = self._string_conversion(login)
-        except Exception as e:
+        with self._lock:
             if not external_cursor:
-                connection.rollback()
+                connection = self._connect()
+                cursor = connection
+            else:
+                cursor = external_cursor
+            try:
+                login = six.next(cursor.execute(
+                    'SELECT login FROM users WHERE id=?', [user_id]))[0]
+                # supposes that the user_id is valid
+                login = self._string_conversion(login)
+            except Exception as e:
+                if not external_cursor:
+                    connection.rollback()
+                    connection.close()
+                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            if not external_cursor:
+                connection.commit()
                 connection.close()
-            raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
-        if not external_cursor:
-            connection.commit()
-            connection.close()
-        return login
+            return login
 
 
     def add_job(self,
@@ -2416,8 +2417,6 @@ class WorkflowDatabaseServer(object):
                 print(os.stat(self._database_file), file=sys.stderr)
                 cursor.close()
                 connection.close()
-                x = open(self._database_file, 'rb').read()
-                open(self._database_file, 'wb').write(x)
                 raise
             cursor.close()
             connection.close()
