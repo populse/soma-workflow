@@ -533,6 +533,10 @@ class WorkflowDatabaseServer(object):
             connection = sqlite3.connect(
                 self._database_file, timeout=10, isolation_level="EXCLUSIVE",
                 check_same_thread=False)
+            # set journal_mode to TRUNCATE mode. On some systems / filesystems
+            # / python versions (3), using the default DELETE mode can
+            # cause some OperationalError : IO failure when commiting
+            # transactions.
             cursor = connection.cursor()
             cursor.execute("PRAGMA journal_mode = TRUNCATE")
         except Exception as e:
@@ -2416,7 +2420,6 @@ class WorkflowDatabaseServer(object):
                 connection.commit()
             except:
                 print('DB error on file:', self._database_file, file=sys.stderr)
-                print(os.stat(self._database_file), file=sys.stderr)
                 cursor.close()
                 connection.close()
                 raise
