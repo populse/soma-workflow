@@ -1,12 +1,13 @@
 '''
-@author: laure.hugo@cea.fr
-@author: Soizic Laguitton
-@organization: U{IFR 49<http://www.ifr49.org>}
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+author: laure.hugo@cea.fr
+author: Soizic Laguitton
+organization: IFR 49<http://www.ifr49.org
+license: CeCILL B http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 from __future__ import print_function
 
 import os
+import tempfile
 
 from soma_workflow.test.workflow_tests.workflow_examples import workflow_local
 from soma_workflow.test.workflow_tests.workflow_examples import workflow_shared
@@ -19,8 +20,6 @@ import unittest
 class SerializationTest(unittest.TestCase):
 
     def test_serialization(self):
-        directory = "/tmp/"
-
         simple_wf_examples = workflow_local.WorkflowExamplesLocal()
         tr_wf_examples = workflow_transfer.WorkflowExamplesTransfer()
         srp_wf_examples = workflow_shared.WorkflowExamplesShared()
@@ -43,8 +42,10 @@ class SerializationTest(unittest.TestCase):
         for workflow_name, workflow in workflows:
             print("Testing", workflow_name)
 
-            file_path = os.path.join(directory,
-                                     "json_" + workflow_name + ".wf")
+            file_path = tempfile.mkstemp(prefix="json_",
+                                         suffix=workflow_name + ".wf")
+            os.close(file_path[0])
+            file_path = file_path[1]
             Helper.serialize(file_path, workflow)
 
             new_workflow = Helper.unserialize(file_path)
