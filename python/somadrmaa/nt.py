@@ -5,6 +5,7 @@ from __future__ import print_function
 from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
+import six
 
 # python 2/3 compatibility
 if _sys.version_info[0] >= 3:
@@ -100,9 +101,10 @@ def namedtuple(typename, field_names, verbose=False):
     # Execute the template string in a temporary namespace
     namespace = dict(itemgetter=_itemgetter)
     try:
-        exec(template, namespace)
-    except SyntaxError, e:
-        raise SyntaxError(e.message + ':\n' + template)
+        six.exec_(template, namespace)
+    except SyntaxError as e:
+        raise (SyntaxError, SyntaxError(e.message + ':\n' + template),
+               _sys.exc_info[2])
     result = namespace[typename]
 
     # For pickling to work, the __module__ variable needs to be set to the frame
