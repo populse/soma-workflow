@@ -53,7 +53,10 @@ AUTHOR = "Soma-Workflow developers"
 AUTHOR_EMAIL = ""
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
-REQUIRES = []
+REQUIRES = [
+    "six",
+    "argparse",
+]
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
     "client": ["Pyro", "paramiko"],
