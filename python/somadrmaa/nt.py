@@ -100,7 +100,7 @@ def namedtuple(typename, field_names, verbose=False):
     # Execute the template string in a temporary namespace
     namespace = dict(itemgetter=_itemgetter)
     try:
-        exec template in namespace
+        exec(template, namespace)
     except SyntaxError, e:
         raise SyntaxError(e.message + ':\n' + template)
     result = namespace[typename]
