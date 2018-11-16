@@ -3152,6 +3152,9 @@ class PlotView(QtGui.QWidget):
             self.canvas.updateGeometry()
             self.vlayout.addWidget(self.canvas)
 
+            self._pick = self.canvas.mpl_connect('pick_event',
+                                                 self._jobs_mouse_press)
+
         def key(j):
             if j.execution_date:
                 return j.execution_date
@@ -3184,12 +3187,16 @@ class PlotView(QtGui.QWidget):
                         self.axes.plot(
                             [j.execution_date, j.ending_date],
                             [nb_jobs, nb_jobs], color=col)
+                        # link to job
+                        self.axes.lines[-1].job = j
                     else:
                         self.axes.fill(
                             [j.execution_date, j.ending_date,
                              j.ending_date, j.execution_date],
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
                              nb_jobs + ncpu - 1], color=col)
+                        # link to job
+                        self.axes.patches[-1].job = j
                     if j.ending_date > x_max:
                         x_max = j.ending_date
                 else:
@@ -3197,12 +3204,16 @@ class PlotView(QtGui.QWidget):
                         self.axes.plot(
                             [j.execution_date, datetime.now()],
                             [nb_jobs, nb_jobs], color=col)
+                        # link to job
+                        self.axes.lines[-1].job = j
                     else:
                         now = datetime.now()
                         self.axes.fill(
                             [j.execution_date, now, now, j.execution_date],
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
                              nb_jobs + ncpu - 1], color=col)
+                        # link to job
+                        self.axes.patches[-1].job = j
                 nb_jobs += ncpu - 1
         #print('njobs:', n, 'nb_jobs:', nb_jobs)
 
@@ -3215,6 +3226,13 @@ class PlotView(QtGui.QWidget):
         else:
             self.axes.set_ylabel("Jobs")
         self.figure.autofmt_xdate(rotation=80)
+
+        # set picker callback and activate interactive objects
+        tolerance = 2.  # could become configurable.
+        # tolerence seems to work only on line artists anyway.
+        for p in self.axes.lines + self.axes.patches:
+            if p is not None:
+                p.set_picker(tolerance)
 
         self.canvas.draw()
 
@@ -3295,6 +3313,16 @@ class PlotView(QtGui.QWidget):
 
         self.canvas.draw()
         self.update()
+
+    def _jobs_mouse_press(self, event):
+        '''matplotlib callback for picker event
+        '''
+        fig = event.canvas.figure
+        artist = event.artist
+        print('job click, artist:', artist)
+        job = getattr(artist, 'job', None)
+        print('job:', job)
+
 
 
 class WorkflowGraphView(QtGui.QWidget):
