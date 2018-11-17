@@ -2266,6 +2266,8 @@ class MainWindow(QtGui.QMainWindow):
         plotLayout.setContentsMargins(2, 2, 2, 2)
         plotLayout.addWidget(self.workflowPlotWidget)
         self.ui.dockWidgetContents_plot.setLayout(plotLayout)
+        self.workflowPlotWidget.job_selected.connect(
+            self.treeWidget.select_job)
 
         if not MATPLOTLIB:
             self.ui.dock_plot.hide()
@@ -2703,6 +2705,30 @@ class WorkflowTree(QtGui.QWidget):
             elif self.assigned_wf_id != None:
                 self.setEnabled(False)
 
+    def select_job(self, job_id):
+        selection_model = self.tree_view.selectionModel()
+        model = self.tree_view.model()
+        found_item = None
+        item_lists = [QtCore.QModelIndex()]
+        while item_lists and found_item is None:
+            parent = item_lists.pop(0)
+            rows = model.rowCount(parent)
+            for row in range(rows):
+                index = model.index(row, 0, parent)
+                source_index = index
+                if self.proxy_model is not None:
+                    source_index = model.mapToSource(index)
+                data = source_index.internalPointer()
+                if isinstance(data, GuiJob):
+                    if data.job_id == job_id:
+                        found_item = index
+                        break
+                elif isinstance(data, GuiGroup):
+                    item_lists.append(index)
+        if found_item is not None:
+            selection_model.setCurrentIndex(
+                found_item, QtGui.QItemSelectionModel.SelectCurrent)
+
 
 class WorkflowGroupInfo(QtGui.QWidget):
 
@@ -2746,6 +2772,8 @@ class WorkflowGroupInfo(QtGui.QWidget):
 
 
 class WorkflowPlot(QtGui.QWidget):
+
+    job_selected = QtCore.Signal(int)
 
     def __init__(self,
                  model,
@@ -2793,6 +2821,7 @@ class WorkflowPlot(QtGui.QWidget):
             if self.model.current_workflow():
                 self.plotWidget = PlotView(
                     self.model.current_workflow().root_item, self)
+                self.plotWidget.job_selected.connect(self.job_selected)
             if self.plotWidget:
                 self.vLayout.addWidget(self.plotWidget)
             self.update()
@@ -3062,6 +3091,8 @@ class GroupInfoWidget(QtGui.QWidget):
 
 class PlotView(QtGui.QWidget):
 
+    job_selected = QtCore.Signal(int)
+
     def __init__(self, group_item, parent=None):
         super(PlotView, self).__init__(parent)
 
@@ -3188,7 +3219,7 @@ class PlotView(QtGui.QWidget):
                             [j.execution_date, j.ending_date],
                             [nb_jobs, nb_jobs], color=col)
                         # link to job
-                        self.axes.lines[-1].job = j
+                        self.axes.lines[-1].job = j.job_id
                     else:
                         self.axes.fill(
                             [j.execution_date, j.ending_date,
@@ -3196,7 +3227,7 @@ class PlotView(QtGui.QWidget):
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
                              nb_jobs + ncpu - 1], color=col)
                         # link to job
-                        self.axes.patches[-1].job = j
+                        self.axes.patches[-1].job = j.job_id
                     if j.ending_date > x_max:
                         x_max = j.ending_date
                 else:
@@ -3205,7 +3236,7 @@ class PlotView(QtGui.QWidget):
                             [j.execution_date, datetime.now()],
                             [nb_jobs, nb_jobs], color=col)
                         # link to job
-                        self.axes.lines[-1].job = j
+                        self.axes.lines[-1].job = j.job_id
                     else:
                         now = datetime.now()
                         self.axes.fill(
@@ -3213,7 +3244,7 @@ class PlotView(QtGui.QWidget):
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
                              nb_jobs + ncpu - 1], color=col)
                         # link to job
-                        self.axes.patches[-1].job = j
+                        self.axes.patches[-1].job = j.job_id
                 nb_jobs += ncpu - 1
         #print('njobs:', n, 'nb_jobs:', nb_jobs)
 
@@ -3319,9 +3350,9 @@ class PlotView(QtGui.QWidget):
         '''
         fig = event.canvas.figure
         artist = event.artist
-        print('job click, artist:', artist)
         job = getattr(artist, 'job', None)
-        print('job:', job)
+        if job is not None:
+          self.job_selected.emit(job)
 
 
 
