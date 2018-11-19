@@ -217,6 +217,8 @@ class LocalScheduler(Scheduler):
 
     def _cpu_for_job(self, job):
         parallel_job_info = job.parallel_job_info
+        if parallel_job_info is None:
+            return 1
         ncpu = parallel_job_info.get('nodes_number', 1) \
             * parallel_job_info.get('cpu_per_node', 1)
         return ncpu
