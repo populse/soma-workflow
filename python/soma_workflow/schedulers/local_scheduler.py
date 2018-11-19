@@ -180,9 +180,12 @@ class LocalScheduler(Scheduler):
             del self._processes[job_id]
 
         # run new jobs
-        while (self._queue and self._can_submit_new_job()):
-            job_id = self._queue.pop(0)
+        new_queue = []
+        for i, job_id in enumerate(self._queue):
             job = self._jobs[job_id]
+        #while (self._queue and self._can_submit_new_job()):
+            #job_id = self._queue.pop(0)
+            #job = self._jobs[job_id]
             # print("new job " + repr(job.job_id))
             if job.is_barrier:
                 # barrier jobs are not actually run using Popen:
@@ -193,6 +196,14 @@ class LocalScheduler(Scheduler):
                                                None)
                 self._status[job.job_id] = constants.DONE
             else:
+                ncpu = self._cpu_for_job(job)
+                if not self._can_submit_new_job(ncpu):
+                    if ncpu == 1: # no other job will be able to run now
+                        new.queue += self._queue[i+1:]
+                        break
+                    else:
+                        new_queue.append(job_id) # postponed
+                        continue
                 process = LocalScheduler.create_process(job)
                 if process == None:
                     self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
@@ -204,9 +215,17 @@ class LocalScheduler(Scheduler):
                     self._processes[job.job_id] = process
                     self._status[job.job_id] = constants.RUNNING
 
-    def _can_submit_new_job(self):
-        n = len(self._processes)
-        if n < self._proc_nb:
+    def _cpu_for_job(self, job):
+        parallel_job_info = job.parallel_job_info
+        ncpu = parallel_job_info.get('nodes_number', 1) \
+            * parallel_job_info.get('cpu_per_node', 1)
+        return ncpu
+
+    def _can_submit_new_job(self, ncpu=1):
+        n = sum([self._cpu_for_job(self._jobs[j])
+                 for j in self._processes])
+        n += ncpu
+        if n <= self._proc_nb:
             return True
         max_proc_nb = self._max_proc_nb
         if max_proc_nb == 0:
@@ -214,22 +233,33 @@ class LocalScheduler(Scheduler):
                 max_proc_nb = cpu_count()
             else:
                 max_proc_nb = cpu_count() - 1
-        if n < max_proc_nb and self.is_available_cpu():
+        if n <= max_proc_nb and self.is_available_cpu(ncpu):
             return True
         return False
 
     @staticmethod
-    def is_available_cpu():
+    def is_available_cpu(ncpu=1):
         # OK if there is at least one half CPU left idle
         if have_psutil:
-            if LocalScheduler._lasttime is None or time.time() - LocalScheduler._lasttime > 0.1:
+            if LocalScheduler._lasttime is None \
+                    or time.time() - LocalScheduler._lasttime > 0.1:
                 LocalScheduler._lasttime = time.time()
-                LocalScheduler._lastidle = psutil.cpu_times_percent().idle * psutil.cpu_count()
-            if LocalScheduler._lastidle > 20.:
-                # decrease artificially idle because we will sublit a job,
+                LocalScheduler._lastidle = psutil.cpu_times_percent().idle \
+                    * psutil.cpu_count() * 0.01
+            # we allow to run a new job if:
+            # * the job is monocore and there is 20% of a CPU left
+            # * there is at least 80% of a CPU. This is arbitrary and needs
+            #   tweaking but it's not so easy since if the job asks for more
+            #   CPU than there are actually, it must not be stuck forever
+            #   anyway, and we can't really forecast if the machine load will
+            #   actually decrease in the future. But it can certainly be better
+            #   than this...
+            if (ncpu == 1 and LocalScheduler._lastidle > 0.2) \
+                    or (LocalScheduler._lastidle > 0.8):
+                # decrease artificially idle because we will submit a job,
                 # and next calls should take it into account
                 # until another measurement is done.
-                LocalScheduler._lastidle -= 100. # increase artificially
+                LocalScheduler._lastidle -= ncpu # increase load artificially
                 return True
             return False
         # no psutil: get to the upper limit.
