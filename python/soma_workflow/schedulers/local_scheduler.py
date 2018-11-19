@@ -180,12 +180,11 @@ class LocalScheduler(Scheduler):
             del self._processes[job_id]
 
         # run new jobs
-        new_queue = []
-        for i, job_id in enumerate(self._queue):
+        skipped_jobs = []
+        print('processing queue:', len(self._queue), file=sys.stderr)
+        while self._queue:
+            job_id = self._queue.pop(0)
             job = self._jobs[job_id]
-        #while (self._queue and self._can_submit_new_job()):
-            #job_id = self._queue.pop(0)
-            #job = self._jobs[job_id]
             # print("new job " + repr(job.job_id))
             if job.is_barrier:
                 # barrier jobs are not actually run using Popen:
@@ -197,13 +196,15 @@ class LocalScheduler(Scheduler):
                 self._status[job.job_id] = constants.DONE
             else:
                 ncpu = self._cpu_for_job(job)
+                print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
                 if not self._can_submit_new_job(ncpu):
+                    print('cannot submit.', file=sys.stderr)
+                    skipped_jobs.append(job_id) # postponed
                     if ncpu == 1: # no other job will be able to run now
-                        new.queue += self._queue[i+1:]
                         break
                     else:
-                        new_queue.append(job_id) # postponed
                         continue
+                print('submitting.', file=sys.stderr)
                 process = LocalScheduler.create_process(job)
                 if process == None:
                     self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
@@ -214,6 +215,7 @@ class LocalScheduler(Scheduler):
                 else:
                     self._processes[job.job_id] = process
                     self._status[job.job_id] = constants.RUNNING
+        self._queue = skipped_jobs + self._queue
 
     def _cpu_for_job(self, job):
         parallel_job_info = job.parallel_job_info
