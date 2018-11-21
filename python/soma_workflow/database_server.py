@@ -1887,6 +1887,8 @@ class WorkflowDatabaseServer(object):
             some running or pending jobs. If not, set the state to DONE. It
             should not happen, and if it does, it's a bug (which has actually
             happened in Soma-Workflow <= 2.8.0)
+        with_drms_id: if True the DRMS id (drmaa_id) is also included in the
+        returned tuple for each job
 
         Returns
         -------
@@ -1896,7 +1898,8 @@ class WorkflowDatabaseServer(object):
                                   exit_info,
                                   (submission_date,
                                     execution_date,
-                                    ending_date)),
+                                    ending_date),
+                                  [drmaa_id]),
                 sequence of tuple (transfer_id,
                                   client_file_path,
                                   client_paths,
@@ -1934,12 +1937,13 @@ class WorkflowDatabaseServer(object):
                                             submission_date,
                                             execution_date,
                                             ending_date,
-                                            queue
+                                            queue,
+                                            drmaa_id
                                      FROM jobs WHERE workflow_id=?''',
                                      [wf_id]):
                     job_id, status, exit_status, exit_value, term_signal, \
                     resource_usage, submission_date, execution_date, \
-                    ending_date, queue = row
+                    ending_date, queue, drmaa_id = row
 
                     submission_date = self._str_to_date_conversion(
                         submission_date)
@@ -1950,10 +1954,11 @@ class WorkflowDatabaseServer(object):
 
                     workflow_status[0].append(
                         (job_id, status, queue,
-                         (exit_status, exit_value, term_signal,
+                          (exit_status, exit_value, term_signal,
                           resource_usage),
-                         (submission_date, execution_date, ending_date,
-                          queue)))
+                          (submission_date, execution_date, ending_date,
+                          queue),
+                          drmaa_id))
 
                 # transfers
                 for row in cursor.execute('''SELECT engine_file_path,

@@ -754,6 +754,16 @@ class WorkflowEngineLoop(object):
             pass
             # TBI
 
+    def drms_job_id(self, wf_id, job_id):
+        engine_wf = self._workflows.get(wf_id)
+        if engine_wf is None:
+            return None
+        engine_job = engine_wf.registered_jobs.get(job_id)
+        if engine_job is None:
+            return None
+        return engine_job.drmaa_id
+
+
 class WorkflowEngine(RemoteFileController):
     '''
     '''
@@ -1059,14 +1069,14 @@ class WorkflowEngine(RemoteFileController):
 
         return status
 
-    def workflow_elements_status(self, wf_id, groupe=None):
+    def workflow_elements_status(self, wf_id):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
         self.logger.debug("! Entering workflow_elements_status")
         (status,
-         last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                                         self._user_id)
+         last_status_update) = self._database_server.get_workflow_status(
+            wf_id, self._user_id)
 
         self.logger.debug("!Getting workflow elements status: %s"
                           % repr(status))
@@ -1289,6 +1299,10 @@ class WorkflowEngine(RemoteFileController):
         if _out_to_date(last_status_update):
             return False
         return True
+
+    def drms_job_id(self, wf_id, job_id):
+        return self.engine_loop.drms_job_id(wf_id, job_id)
+
 
 class ConfiguredWorkflowEngine(WorkflowEngine):
 

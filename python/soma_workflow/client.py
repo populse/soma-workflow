@@ -399,6 +399,9 @@ class WorkflowController(object):
         the communication with the server and request to the database.
         TO DO => make it more user friendly.
 
+        Note: in Soma-Workflow 3.0, the last job info (drmaa_id) has been added
+        to job status tuple.
+
         Parameters
         ----------
         workflow_id: workflow_identifier
@@ -408,7 +411,7 @@ class WorkflowController(object):
         status: tuple:
             * sequence of tuple
                 (job_id, status, queue, exit_info,
-                    (submission_date, execution_date, ending_date)),
+                    (submission_date, execution_date, ending_date, drmaa_id)),
             * sequence of tuple
                 (transfer_id, (status, progression_info)),
             * workflow_status,
@@ -451,6 +454,9 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the job_id is not valid
         '''
         return self._engine_proxy.job_status(job_id)
+
+    def drms_job_id(self, wf_id, job_id):
+        return self._engine_proxy.drms_job_id(wf_id, job_id)
 
     def job_termination_status(self, job_id):
         '''
@@ -1108,7 +1114,7 @@ class Helper(object):
          workflow_queue,
          transfers_temp_info) = wf_ctrl.workflow_elements_status(workflow_id)
         failed_job_ids = []
-        for (job_id, status, queue, exit_info, dates) in jobs_info:
+        for (job_id, status, queue, exit_info, dates, drmaa_id) in jobs_info:
             if(status == constants.DONE and exit_info[1] != 0) or \
               (status == constants.FAILED and
                (include_aborted_jobs

@@ -2961,6 +2961,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         if resource_usage:
             if six.PY3:
                 resource_usage = resource_usage.decode()
+            self.ui.resource_usage.clear()
             self.ui.resource_usage.insertItems(0, resource_usage.split())
         else:
             self.ui.resource_usage.clear()
@@ -2971,6 +2972,7 @@ class JobInfoWidget(QtGui.QTabWidget):
             self.ui.execution_date, self.job_item.execution_date)
         setLabelFromDateTime(self.ui.ending_date, self.job_item.ending_date)
         setLabelFromInt(self.ui.job_id, self.job_item.job_id)
+        setLabelFromString(self.ui.drms_job_id, self.job_item.drmaa_id)
         if self.job_item.submission_date:
             if self.job_item.execution_date:
                 time_in_queue = self.job_item.execution_date - \
@@ -3198,17 +3200,43 @@ class PlotView(QtGui.QWidget):
         x_min = datetime.max
         x_max = datetime.min
         n = 0
+        #cols = matplotlib.rcParams['axes.prop_cycle']
+        cols = [[0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.5],
+                [0.0, 0.36470588235294116, 0.7725490196078432],
+                [0.0, 0.18235294117647058, 0.3862745098039216],
+                [0.0, 0.7098039215686275, 0.5529411764705883],
+                [0.0, 0.35490196078431374, 0.27647058823529413],
+                [0.0, 0.9803921568627451, 0.35294117647058826],
+                [0.0, 0.49019607843137253, 0.17647058823529413],
+                [0.23529411764705882, 1.0, 0.21568627450980393],
+                [0.11764705882352941, 0.5, 0.10784313725490197],
+                [0.5725490196078431, 1.0, 0.11764705882352941],
+                [0.28627450980392155, 0.5, 0.058823529411764705],
+                [0.8901960784313725, 1.0, 0.0392156862745098],
+                [0.44509803921568625, 0.5, 0.0196078431372549],
+                [1.0, 0.9882352941176471, 0.0],
+                [0.5, 0.49411764705882355, 0.0],
+                [1.0, 0.7294117647058823, 0.0],
+                [0.5, 0.36470588235294116, 0.0],
+                [1.0, 0.38823529411764707, 0.0],
+                [0.5, 0.19411764705882353, 0.0],
+                [1.0, 0.00392156862745098, 0.0],
+                [0.5, 0.00196078431372549, 0.0]]
+        # darken a bit
+        cols = [[x*0.75 for x in c] for c in cols]
+
         for j in self.jobs:
             ncpu = 1
             if self.plot_type == 1 and j.parallel_job_info:
                 ncpu = j.parallel_job_info.get('cpu_per_node', 1) \
                     * j.parallel_job_info.get('nodes_number', 1)
             if j.execution_date:
-                cols = matplotlib.rcParams['axes.prop_cycle']
                 nc = len(cols)
-                for c in cols[n % nc:(n % nc) + 1]:
-                    col = c['color']
-                    break
+                #for c in cols[n % nc:(n % nc) + 1]:
+                    #col = c['color']
+                    #break
+                col = cols[n % nc]
                 n += 1
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
@@ -4047,7 +4075,8 @@ class ApplicationModel(QtCore.QObject):
                         return
                     else:
                         if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:
-                            if self._current_workflow.updateState(wf_complete_status):
+                            if self._current_workflow.updateState(
+                                    wf_complete_status):
                                 self.workflow_state_changed.emit()
                         if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
                             self.workflow_status = wf_status
@@ -4631,12 +4660,12 @@ class GuiWorkflow(object):
             return False
         # updating jobs:
         for job_info in wf_status[0]:
-            job_id, status, queue, exit_info, date_info = job_info
+            job_id, status, queue, exit_info, date_info, drmaa_id = job_info
             # date_info = (None, None, None) # (submission_date,
             # execution_date, ending_date)
             item = self.items[self.server_jobs[job_id]]
             data_changed = item.updateState(
-                status, queue, exit_info, date_info) or data_changed
+                status, queue, exit_info, date_info, drmaa_id) or data_changed
 
         # end = datetime.now() - begining
         # print(" <== end updating jobs" + repr(self.wf_id) + " : " +
@@ -4882,6 +4911,7 @@ class GuiJob(GuiWorkflowItem):
 
         self.name = name
         self.job_id = job_id
+        self.drmaa_id = None
 
         self.tmp_stderrout_dir = tmp_stderrout_dir
         self.parallel_job_info = parallel_job_info
@@ -4910,7 +4940,7 @@ class GuiJob(GuiWorkflowItem):
         separator = " "
         self.command = separator.join(cmd_seq)
 
-    def updateState(self, status, queue, exit_info, date_info):
+    def updateState(self, status, queue, exit_info, date_info, drmaa_id):
         self.initiated = True
         state_changed = False
         state_changed = self.status != status or state_changed
@@ -4920,6 +4950,7 @@ class GuiJob(GuiWorkflowItem):
         self.submission_date = date_info[0]
         self.execution_date = date_info[1]
         self.ending_date = date_info[2]
+        self.drmaa_id = drmaa_id
         state_changed = self.queue != queue or state_changed
         self.queue = queue
         if self.exit_info:
