@@ -986,6 +986,29 @@ class WorkflowEngine(RemoteFileController):
 
         return True
 
+    def stop_jobs(self, workflow_id, job_ids):
+        (status, last_status_update) \
+            = self._database_server.get_workflow_status(
+                workflow_id, self._user_id)
+
+        if status != constants.WORKFLOW_DONE:
+            self._database_server.set_jobs_status(
+                dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+
+        return True
+
+    def restart_jobs(self, workflow_id, job_ids):
+        (status, last_status_update) \
+            = self._database_server.get_workflow_status(
+                workflow_id, self._user_id)
+
+        # TODO: unfinished
+        #if status != constants.WORKFLOW_DONE:
+            #self._database_server.set_jobs_status(
+                #dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+
+        return True
+
     def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
         '''
         Implementation of soma_workflow.client.WorkflowController API

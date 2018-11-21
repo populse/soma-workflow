@@ -2646,6 +2646,10 @@ class WorkflowTree(QtGui.QWidget):
         self.model.current_workflow_changed.connect(
             self.current_workflow_changed)
         self.model.workflow_state_changed.connect(self.dataChanged)
+        # enable customContextMenuRequested signal to be emited
+        self.tree_view.setContextMenuPolicy(
+            QtCore.Qt.CustomContextMenu)
+        self.tree_view.customContextMenuRequested.connect(self.openContextMenu)
 
     def check_workflow(self):
         return self.assigned_wf_id == None or \
@@ -2728,6 +2732,49 @@ class WorkflowTree(QtGui.QWidget):
         if found_item is not None:
             selection_model.setCurrentIndex(
                 found_item, QtGui.QItemSelectionModel.SelectCurrent)
+
+    def selected_jobs(self, include_groups=True):
+        selected_items = self.tree_view.selectedIndexes()
+        if selected_items:
+            if self.proxy_model is not None:
+                model = self.tree_view.model()
+                selected_items = [model.mapToSource(item)
+                                  for item in selected_items]
+            selected_items = [item.internalPointer() for item in selected_items]
+            if include_groups:
+                classes = (GuiJob, GuiGroup)
+            else:
+                classes = GuiJob
+            selected_jobs = [item for item in selected_items
+                             if isinstance(item, classes)]
+            return selected_jobs
+        return []
+
+    def openContextMenu(self, point):
+        # check that the workflow is running (or stopped?)
+        wf_status = self.model.get_workflow_status(
+            self.model.current_resource_id, self.model.current_wf_id)
+        if wf_status != constants.WORKFLOW_IN_PROGRESS:
+            print('workflow not running.')
+            return
+
+        selected_jobs = self.selected_jobs()
+        if selected_jobs:
+            popup = QtGui.QMenu()
+            stop = popup.addAction('Stop jobs', self.stop_selected_jobs)
+            restart = popup.addAction('Restart jobs',
+                                      self.restart_selected_jobs)
+            popup.exec_(QtGui.QCursor.pos())
+
+    def stop_selected_jobs(self):
+        selected_jobs = self.selected_jobs()
+        if selected_jobs:
+            print('stop_selected_jobs')
+
+    def restart_selected_jobs(self):
+        selected_jobs = self.selected_jobs()
+        if selected_jobs:
+            print('restart_selected_jobs')
 
 
 class WorkflowGroupInfo(QtGui.QWidget):
