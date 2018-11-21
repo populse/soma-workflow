@@ -956,14 +956,14 @@ class EngineWorkflow(Workflow):
         wf_status = database_server.get_detailed_workflow_status(self.wf_id)
 
         for job_info in wf_status[0]:
-            job_id, status, queue, exit_info, date_info, dmraa_id = job_info
+            job_id, status, queue, exit_info, date_info, drmaa_id = job_info
             self.registered_jobs[job_id].status = status
             exit_status, exit_value, term_signal, resource_usage = exit_info
             self.registered_jobs[job_id].exit_status = exit_status
             self.registered_jobs[job_id].exit_value = exit_value
             self.registered_jobs[job_id].str_rusage = resource_usage
             self.registered_jobs[job_id].terminating_signal = term_signal
-            self.registered_jobs[job_id].drmaa_is = drmaa_id
+            self.registered_jobs[job_id].drmaa_id = drmaa_id
 
         for ft_info in wf_status[1]:
             (engine_path,
