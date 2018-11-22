@@ -181,7 +181,7 @@ class LocalScheduler(Scheduler):
 
         # run new jobs
         skipped_jobs = []
-        print('processing queue:', len(self._queue), file=sys.stderr)
+        #print('processing queue:', len(self._queue), file=sys.stderr)
         while self._queue:
             job_id = self._queue.pop(0)
             job = self._jobs[job_id]
@@ -196,15 +196,15 @@ class LocalScheduler(Scheduler):
                 self._status[job.job_id] = constants.DONE
             else:
                 ncpu = self._cpu_for_job(job)
-                print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
+                #print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
                 if not self._can_submit_new_job(ncpu):
-                    print('cannot submit.', file=sys.stderr)
+                    #print('cannot submit.', file=sys.stderr)
                     skipped_jobs.append(job_id) # postponed
                     if ncpu == 1: # no other job will be able to run now
                         break
                     else:
                         continue
-                print('submitting.', file=sys.stderr)
+                #print('submitting.', file=sys.stderr)
                 process = LocalScheduler.create_process(job)
                 if process == None:
                     self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
