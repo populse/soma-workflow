@@ -54,6 +54,10 @@ from soma_workflow.configuration import LocalSchedulerCfg
 from soma_workflow.configuration import default_cpu_number, cpu_count
 
 
+class LocalSchedulerError(Exception):
+    pass
+
+
 class LocalScheduler(Scheduler):
 
     '''
@@ -189,11 +193,11 @@ class LocalScheduler(Scheduler):
             if job.is_barrier:
                 # barrier jobs are not actually run using Popen:
                 # they succeed immediately.
-                self._exit_info[job.job_id] = (constants.FINISHED_REGULARLY,
+                self._exit_info[job.drmaa_id] = (constants.FINISHED_REGULARLY,
                                                0,
                                                None,
                                                None)
-                self._status[job.job_id] = constants.DONE
+                self._status[job.drmaa_id] = constants.DONE
             else:
                 ncpu = self._cpu_for_job(job)
                 #print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
@@ -207,14 +211,14 @@ class LocalScheduler(Scheduler):
                 #print('submitting.', file=sys.stderr)
                 process = LocalScheduler.create_process(job)
                 if process == None:
-                    self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
+                    self._exit_info[job.drmaa_id] = (constants.EXIT_ABORTED,
                                                    None,
                                                    None,
                                                    None)
-                    self._status[job.job_id] = constants.FAILED
+                    self._status[job.drmaa_id] = constants.FAILED
                 else:
-                    self._processes[job.job_id] = process
-                    self._status[job.job_id] = constants.RUNNING
+                    self._processes[job.drmaa_id] = process
+                    self._status[job.drmaa_id] = constants.RUNNING
         self._queue = skipped_jobs + self._queue
 
     def _cpu_for_job(self, job):
@@ -363,12 +367,13 @@ class LocalScheduler(Scheduler):
             raise LocalSchedulerError("Invalid job: no id")
         with self._lock:
             # print("job submission " + repr(job.job_id))
-            self._queue.append(job.job_id)
-            self._jobs[job.job_id] = job
-            self._status[job.job_id] = constants.QUEUED_ACTIVE
+            drmaa_id = str(job.job_id)
+            self._queue.append(drmaa_id)
+            self._jobs[drmaa_id] = job
+            self._status[drmaa_id] = constants.QUEUED_ACTIVE
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
-        return job.job_id
+        return drmaa_id
 
     def get_job_status(self, scheduler_job_id):
         '''
@@ -378,7 +383,7 @@ class LocalScheduler(Scheduler):
             Job status as defined in constants.JOB_STATUS
         '''
         if not scheduler_job_id in self._status:
-            raise LocalSchedulerError("Unknown job.")
+            raise LocalSchedulerError("Unknown job %s." % scheduler_job_id)
 
         status = self._status[scheduler_job_id]
         return status
