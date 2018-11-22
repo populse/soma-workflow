@@ -230,10 +230,9 @@ class WorkflowEngineLoop(object):
                 # and KILL_PENDING
                 jobs_to_delete = []
                 jobs_to_kill = []
-                if self._jobs:
-                    (jobs_to_delete, jobs_to_kill) \
-                        = self._database_server.jobs_to_delete_and_kill(
-                            self._user_id)
+                (jobs_to_delete, jobs_to_kill) \
+                    = self._database_server.jobs_to_delete_and_kill(
+                        self._user_id)
                 wf_to_delete = []
                 wf_to_kill = []
                 if self._workflows:
@@ -243,26 +242,36 @@ class WorkflowEngineLoop(object):
                 # Delete and kill properly the jobs and workflows in _jobs and
                 # _workflows
                 for job_id in jobs_to_kill + jobs_to_delete:
-                    if job_id in self._jobs:
+                    job = self._jobs.get(job_id)
+                    if job is None:
+                        # look in workflows
+                        for wf in six.itervalues(self._workflows):
+                            jobs = [j
+                                    for jid, j
+                                        in six.iteritems(wf.registered_jobs)
+                                    if jid == job_id]
+                            if len(jobs) == 1:
+                                job = jobs[0]
+                                break
+                    if job is not None:
+                    #if job_id in self._jobs:
                         self.logger.debug(" stop job " + repr(job_id))
                         try:
-                            stopped = self._stop_job(
-                                job_id,  self._jobs[job_id])
+                            stopped = self._stop_job(job_id,  job)
                         except DRMError as e:
                             # TBI how to communicate the error ?
                             self.logger.error(
                                 "!!!ERROR!!! stop job %s :%s" % (type(e), e))
-                        if job_id in jobs_to_delete:
+                        if job_id in jobs_to_delete and job_id in self._jobs:
                             self.logger.debug("Delete job : " + repr(job_id))
                             self._database_server.delete_job(job_id)
                             del self._jobs[job_id]
                         else:
-                            job = self._jobs[job_id]
                             self._database_server.set_job_status(job_id,
                                                                  job.status,
                                                                  force=True)
                             if stopped:
-                                ended_jobs[job_id] = self._jobs[job_id]
+                                ended_jobs[job_id] = job
                                 if job.workflow_id != -1:
                                     wf_to_inspect.add(job.workflow_id)
 
@@ -751,8 +760,19 @@ class WorkflowEngineLoop(object):
             with self._lock:
                 self._jobs[job.job_id] = job
         else:
-            pass
-            # TBI
+            self._database_server.set_job_status(
+                job_id, constants.NOT_SUBMITTED)
+
+    def restart_jobs(self, wf_id, job_ids):
+        with self._lock:
+            if wf_id in self._workflows:
+                workflow = self._workflows[wf_id]
+                jobs_to_run = workflow.restart_jobs(self._database_server,
+                                                    job_ids)
+                print('can re-run immediately:', [j.job_id for j in jobs_to_run])
+                for job in jobs_to_run:
+                    self._pend_for_submission(job)
+
 
     def drms_job_id(self, wf_id, job_id):
         engine_wf = self._workflows.get(wf_id)
@@ -995,17 +1015,21 @@ class WorkflowEngine(RemoteFileController):
             self._database_server.set_jobs_status(
                 dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
 
+        self._wait_jobs_status_update(job_ids)
         return True
 
     def restart_jobs(self, workflow_id, job_ids):
+        print('restarting jobs:', job_ids)
+        self.stop_jobs(workflow_id, job_ids) # stop before re-running
         (status, last_status_update) \
             = self._database_server.get_workflow_status(
                 workflow_id, self._user_id)
 
-        # TODO: unfinished
-        #if status != constants.WORKFLOW_DONE:
-            #self._database_server.set_jobs_status(
-                #dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+        self.engine_loop.restart_jobs(workflow_id, job_ids)
+        #self._wait_jobs_status_update(
+            #job_ids,
+            #statuses=(constants.DONE, constants.FAILED, constants.RUNNING,
+                       #constants.QUEUED, constants.))
 
         return True
 
@@ -1248,21 +1272,24 @@ class WorkflowEngine(RemoteFileController):
             self._wait_job_status_update(job_id)
 
     def _wait_job_status_update(self, job_id):
-        self.logger.debug(">> _wait_job_status_update")
+        return self._wait_jobs_status_update([job_ids])
+
+    def _wait_jobs_status_update(self, job_ids,
+                                 statuses=(constants.DONE, constants.FAILED)):
+        self.logger.debug(">> _wait_jobs_status_update")
         try:
-            (status,
-             last_status_update) = self._database_server.get_job_status(job_id,
-                                                                        self._user_id)
-            while status and not status == constants.DONE and \
-                not status == constants.FAILED and \
-                    not _out_to_date(last_status_update):
+            status_date = self._database_server.get_jobs_status(
+                job_ids, self._user_id)
+            while not all([not status
+                           or status in statuses
+                           or _out_to_date(last_status_update)
+                           for status, last_status_update in status_date]):
                 time.sleep(refreshment_interval)
-                (status,
-                 last_status_update) = self._database_server.get_job_status(job_id,
-                                                      self._user_id)
+                status_date = self._database_server.get_jobs_status(
+                    job_ids, self._user_id)
         except UnknownObjectError as e:
             pass
-        self.logger.debug("<< _wait_job_status_update")
+        self.logger.debug("<< _wait_jobs_status_update")
 
     def _wait_for_job_deletion(self, job_id):
         self.logger.debug(">> _wait_for_job_deletion")

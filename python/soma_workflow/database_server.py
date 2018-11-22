@@ -2038,24 +2038,40 @@ class WorkflowDatabaseServer(object):
     #
     # JOBS
     def _check_job(self, connection, cursor, job_id, user_id):
-        try:
-            sel = cursor.execute(
-                '''SELECT id
-                FROM jobs
-                WHERE id=? and
-                      user_id=? LIMIT 1''',
-                [job_id, user_id])
-        except Exception as e:
-            cursor.close()
-            connection.close()
-            six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+        return self._check_jobs(connection, cursor, [job_id], user_id)
 
-        try:
-            six.next(sel)
-        except StopIteration:
-            raise UnknownObjectError("The job id " + repr(job_id) + " is not "
-                                     "valid or does not belong to "
-                                     "user " + repr(user_id))
+    def _check_jobs(self, connection, cursor, job_ids, user_id):
+        maxv = sqlite3_max_variable_number()
+        nmax = maxv
+        if maxv == 0:
+            nmax = len(job_ids)
+        nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+
+        for chunk in range(nchunks):
+            if chunk < nchunks - 1:
+                n = nmax
+            else:
+                n = len(job_ids) - chunk * nmax
+            job_str = ','.join(['?'] * n)
+            try:
+                sel = cursor.execute(
+                    '''SELECT id FROM jobs WHERE id IN (%s) and user_id=?'''
+                    % job_str,
+                    job_ids[chunk * nmax:chunk * nmax + n] + [user_id])
+            except Exception as e:
+                cursor.close()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+
+        ids = set()
+        for job_id in sel:
+            ids.add(int(job_id[0]))
+        if len(ids) != len(job_ids):
+            missing = [j for j in job_ids if j not in ids]
+            raise UnknownObjectError(
+                "The job ids " + ','.join([str(j) for j in missing])
+                + " are not valid or do not belong to the user "
+                + repr(user_id))
 
         return True
 
@@ -2578,29 +2594,51 @@ class WorkflowDatabaseServer(object):
         Raise UnknownObjectError if the job_id is not valid or belongs to an
         other user.
         '''
-        self.logger.debug("=> get_job_status")
+        return self.get_jobs_status([job_id], user_id)[0]
+
+    def get_jobs_status(self, job_ids, user_id):
+        '''
+        Returns the jobs status stored in the database and
+        the date of their last update.
+        Raise UnknownObjectError if a job_id is not valid or belongs to an
+        other user.
+        '''
+        self.logger.debug("=> get_jobs_status")
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
-            self._check_job(connection, cursor, job_id, user_id)
-            try:
-                (status,
-                 strdate) = six.next(cursor.execute(
-                    '''SELECT status, last_status_update
-                    FROM jobs
-                    WHERE id=?''',
-                    [job_id]))
+            self._check_jobs(connection, cursor, job_ids, user_id)
 
-            except Exception as e:
-                cursor.close()
-                connection.close()
-                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
-            status = self._string_conversion(status)
-            date = self._str_to_date_conversion(strdate)
+            maxv = sqlite3_max_variable_number()
+            nmax = maxv
+            if maxv == 0:
+                nmax = len(job_ids)
+            nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+            for chunk in range(nchunks):
+                if chunk < nchunks - 1:
+                    n = nmax
+                else:
+                    n = len(job_ids) - chunk * nmax
+
+                status = []
+                try:
+                    for s, strdate in cursor.execute(
+                            '''SELECT status, last_status_update
+                            FROM jobs
+                            WHERE id IN (%s)''' % ','.join(['?'] * n),
+                            job_ids[chunk * nmax:chunk * nmax + n]):
+                        s = self._string_conversion(s)
+                        date = self._str_to_date_conversion(strdate)
+                        status.append((s, date))
+                except Exception as e:
+                    cursor.close()
+                    connection.close()
+                    six.reraise(DatabaseError, DatabaseError(e),
+                                sys.exc_info()[2])
             cursor.close()
             connection.close()
 
-        return (status, date)
+        return status
 
     def set_submission_information(self, drmaa_ids, submission_date):
         '''

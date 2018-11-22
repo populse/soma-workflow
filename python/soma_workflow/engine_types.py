@@ -1076,6 +1076,88 @@ class EngineWorkflow(Workflow):
 
         return (to_run, status)
 
+    def _job_ids_which_can_rerun(self, job_ids):
+        ext_job_ids = set(job_ids)
+        to_test = []
+        jobsdeps_f = {}
+        jobsdeps_t = {}
+        for dep in self.dependencies:
+            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j2 = self.job_mapping[dep[1]]
+            #if j2.status == constants.FAILED \
+                    #and j2.job_id not in ext_job_ids:
+            if j2.job_id not in ext_job_ids:
+                # dep[1] may change state
+                jobsdeps_f.setdefault(j2, set()).add(j1)
+                if j1.job_id in ext_job_ids \
+                        and j2.job_id not in ext_job_ids:
+                    to_test.append(j2)
+            #if j1.status == constants.FAILED \
+                    #and j1.job_id not in ext_job_ids:
+            if j1.job_id not in ext_job_ids:
+                jobsdeps_t.setdefault(j1, set()).add(j2)
+        #print('deps for failed jobs:', {j.job_id: [k.job_id for k in jv] for j, jv in six.iteritems(jobsdeps_f)})
+        #print('deps from failed jobs:', {j.job_id: [k.job_id for k in jv] for j, jv in six.iteritems(jobsdeps_t)})
+        while to_test:
+            job = to_test.pop(0)
+            if job.job_id in ext_job_ids:
+                continue
+            if all([j.status != constants.FAILED or j.job_id in ext_job_ids
+                    for j in jobsdeps_f[job]]):
+                ext_job_ids.add(job.job_id)
+                to_test += [j for j in jobsdeps_t.get(job, set())
+                            if j not in to_test]
+        return ext_job_ids
+
+    def restart_jobs(self, database_server, job_ids):
+        self._update_state_from_database_server(database_server)
+
+        extended_job_ids = self._job_ids_which_can_rerun(job_ids)
+        print('restart_jobs:', extended_job_ids)
+        sub_info_to_resert = {}
+        new_status = {}
+        for client_job in self.jobs:
+            job = self.job_mapping[client_job]
+            job_id = job.job_id
+            if job_id not in extended_job_ids:
+                continue
+            if job.status not in (constants.DONE, constants.FAILED):
+                print('job', job_id, 'is not ready for restart:', job.status)
+                continue
+
+            # clear all the information related to the previous job
+            # submission
+            job.status = constants.NOT_SUBMITTED
+            job.exit_status = None
+            job.exit_value = None
+            job.terminating_signal = None
+            job.drmaa_id = None
+            job.queue = self.queue
+            stdout = open(job.stdout_file, "w")
+            stdout.close()
+            stderr = open(job.stderr_file, "w")
+            stderr.close()
+
+            sub_info_to_resert[job.job_id] = None
+            new_status[job_id] = constants.NOT_SUBMITTED
+
+        database_server.set_submission_information(sub_info_to_resert, None)
+        database_server.set_jobs_status(new_status)
+
+        jobs_to_hold = set()
+        jobs = set()
+        for dep in self.dependencies:
+            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j2 = self.job_mapping[dep[1]]
+            if j2.job_id in job_ids:
+                if not j2 in jobs_to_hold:
+                    if j1.status != constants.DONE:
+                        jobs_to_hold.add(j2)
+                    else:
+                        jobs.add(j2)
+
+        return [j for j in jobs if j not in jobs_to_hold]
+
 
 class EngineTransfer(FileTransfer):
 
