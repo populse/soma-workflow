@@ -642,6 +642,12 @@ class WorkflowController(object):
 
         return self._engine_proxy.stop_workflow(workflow_id)
 
+    def stop_jobs(self, workflow_id, job_ids):
+        return self._engine_proxy.stop_jobs(workflow_id, job_ids)
+
+    def restart_jobs(self, workflow_id, job_ids):
+        return self._engine_proxy.restart_jobs(workflow_id, job_ids)
+
     def change_workflow_expiration_date(self, workflow_id,
                                         new_expiration_date):
         '''

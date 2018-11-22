@@ -443,6 +443,14 @@ class Controller(object):
         return wf_ctrl.restart_workflow(workflow_id, queue)
 
     @staticmethod
+    def stop_jobs(wf_id, job_ids, wf_ctrl):
+        return wf_ctrl.stop_jobs(wf_id, job_ids)
+
+    @staticmethod
+    def restart_jobs(wf_id, job_ids, wf_ctrl):
+        return wf_ctrl.restart_jobs(wf_id, job_ids)
+
+    @staticmethod
     def get_connection(resource_id,
                        login,
                        password,
@@ -2766,15 +2774,33 @@ class WorkflowTree(QtGui.QWidget):
                                       self.restart_selected_jobs)
             popup.exec_(QtGui.QCursor.pos())
 
+    def _expand_groups(self, jobs_groups):
+        expanded = []
+        todo = list(jobs_groups)
+        while todo:
+            item = todo.pop(0)
+            if isinstance(item, GuiJob):
+                expanded.append(item)
+            elif isinstance(item, GuiGroup):
+                todo += [item.gui_workflow.items[child]
+                         for child in item.children]
+        return expanded
+
     def stop_selected_jobs(self):
-        selected_jobs = self.selected_jobs()
+        selected_jobs = self._expand_groups(self.selected_jobs())
         if selected_jobs:
             print('stop_selected_jobs')
+            Controller.stop_jobs(self.model.current_wf_id,
+                                 [j.job_id for j in selected_jobs],
+                                 self.model.current_connection)
 
     def restart_selected_jobs(self):
-        selected_jobs = self.selected_jobs()
+        selected_jobs = self._expand_groups(self.selected_jobs())
         if selected_jobs:
             print('restart_selected_jobs')
+            Controller.restart_jobs(self.model.current_wf_id,
+                                    [j.job_id for j in selected_jobs],
+                                    self.model.current_connection)
 
 
 class WorkflowGroupInfo(QtGui.QWidget):
