@@ -516,7 +516,6 @@ class WorkflowDatabaseServer(object):
 
         with self._lock:
             if not os.path.isfile(database_file):
-                print("Database creation " + database_file, file=sys.stderr)
                 self.logger.info("Database creation " + database_file)
                 create_database(database_file)
             else:
@@ -3057,13 +3056,6 @@ class WorkflowDatabaseServer(object):
                     job_to_kill_ids.append(jid)
             except Exception as e:
                 cursor.close()
-                # DEBUG
-                print('### database error, file: ', self._database_file, file=sys.stderr)
-                cursor = connection.cursor()
-                for row in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'"):
-                    print('table:', row, file=sys.stderr)
-                cursor.close()
-                # END DEBUG
                 connection.close()
                 six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
