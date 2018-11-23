@@ -119,6 +119,7 @@ class WorkflowTest(unittest.TestCase):
                 config._database_file = tmpdb[1]
                 config._transfered_file_dir = tmptrans
 
+            wf_controller = None
             try:
 
                 with suppress_stdout(debug):
@@ -175,10 +176,15 @@ class WorkflowTest(unittest.TestCase):
                         raise RuntimeError("tests failed.")
 
             finally:
+                print('deleting WFC for test', cls.__name__, file=sys.stderr)
+                del wf_controller
                 cls.setup_wf_controller(None) # del WorkflowController
+                print('deleted WFC for test', cls.__name__, file=sys.stderr)
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
+                        print('deleting DB file',  config._database_file, 'for test', cls.__name__, file=sys.stderr)
                         os.unlink(config._database_file)
+                        print('DB file',  config._database_file, 'for test', cls.__name__, 'removed.', file=sys.stderr)
                         if os.path.exists(config._database_file + '-journal'):
                             os.unlink(config._database_file + '-journal')
                         shutil.rmtree(config._transfered_file_dir)
