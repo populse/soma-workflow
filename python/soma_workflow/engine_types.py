@@ -658,7 +658,7 @@ class EngineWorkflow(Workflow):
 
         @rtype: tuple (sequence of EngineJob,
                        sequence of EngineJob,
-                       constanst.WORKFLOW_STATUS)
+                       constants.WORKFLOW_STATUS)
         @return: (jobs to run,
                   ended jobs
                   workflow status)
@@ -837,7 +837,7 @@ class EngineWorkflow(Workflow):
 
         @rtype: tuple (sequence of EngineJob,
                        sequence of EngineJob,
-                       constanst.WORKFLOW_STATUS)
+                       constants.WORKFLOW_STATUS)
         @return: (jobs to run,
                   ended jobs
                   workflow status)
@@ -1008,15 +1008,14 @@ class EngineWorkflow(Workflow):
         self._update_state_from_database_server(database_server)
 
         self.queue = queue
-        to_restart = False
         undone_jobs = []
-        done = True
         sub_info_to_resert = {}
         new_status = {}
         jobs_queue_changed = []
         self.cache = None
         for client_job in self.jobs:
             job = self.job_mapping[client_job]
+            undone = False
             if job.failed():
                 # clear all the information related to the previous job
                 # submission
@@ -1034,8 +1033,10 @@ class EngineWorkflow(Workflow):
 
                 sub_info_to_resert[job.job_id] = None
                 new_status[job.job_id] = constants.NOT_SUBMITTED
+                undone = True
 
-            if not job.ended_with_success():
+            if undone or (self.status != constants.WORKFLOW_IN_PROGRESS
+                          and not job.ended_with_success()):
                 undone_jobs.append(job)
                 job.queue = self.queue
                 jobs_queue_changed.append(job.job_id)
@@ -1072,11 +1073,14 @@ class EngineWorkflow(Workflow):
         if to_run:
             status = constants.WORKFLOW_IN_PROGRESS
         else:
-            status = constants.WORKFLOW_DONE
+            status = self.status
 
         return (to_run, status)
 
-    def _job_ids_which_can_rerun(self, job_ids):
+    def job_ids_which_can_rerun(self, job_ids):
+        ''' Check jobs depending on jobs from the job_ids list, and include
+        them in an extended list if they should re-run if job_ids are restarted.
+        '''
         ext_job_ids = set(job_ids)
         to_test = []
         jobsdeps_f = {}
@@ -1096,8 +1100,6 @@ class EngineWorkflow(Workflow):
                     #and j1.job_id not in ext_job_ids:
             if j1.job_id not in ext_job_ids:
                 jobsdeps_t.setdefault(j1, set()).add(j2)
-        #print('deps for failed jobs:', {j.job_id: [k.job_id for k in jv] for j, jv in six.iteritems(jobsdeps_f)})
-        #print('deps from failed jobs:', {j.job_id: [k.job_id for k in jv] for j, jv in six.iteritems(jobsdeps_t)})
         while to_test:
             job = to_test.pop(0)
             if job.job_id in ext_job_ids:
@@ -1109,13 +1111,37 @@ class EngineWorkflow(Workflow):
                             if j not in to_test]
         return ext_job_ids
 
-    def restart_jobs(self, database_server, job_ids):
+    def restart_jobs(self, database_server, job_ids, check_deps=True):
+        ''' Restart jobs in a running workflow. Jobs should have been stopped
+        previously, otherwise they will probably be duplicated and run
+        concurrently. Dependent jobs can also be restarted.
+
+        Parameters
+        ----------
+        database_server:
+            database server object
+        job_ids: list of int
+            list of job_ids to be restarted
+        check_deps: bool
+            if True, dependent jobs are looked for and also reset to be
+            restarted. They also should have been stopped previously.
+
+        Returns
+        -------
+        jobs_to_run: list of EngineJob
+            jobs which can re-run immediately. These jobs can be submitted
+            directly in the engine.
+        '''
         self._update_state_from_database_server(database_server)
 
-        extended_job_ids = self._job_ids_which_can_rerun(job_ids)
+        if check_deps:
+            extended_job_ids = self.job_ids_which_can_rerun(job_ids)
+        else:
+            extended_job_ids = job_ids
         print('restart_jobs:', extended_job_ids)
         sub_info_to_resert = {}
         new_status = {}
+        jobs_to_run = set()
         for client_job in self.jobs:
             job = self.job_mapping[client_job]
             job_id = job.job_id
@@ -1125,6 +1151,7 @@ class EngineWorkflow(Workflow):
                 print('job', job_id, 'is not ready for restart:', job.status)
                 continue
 
+            jobs_to_run.add(job)
             # clear all the information related to the previous job
             # submission
             job.status = constants.NOT_SUBMITTED
@@ -1144,19 +1171,15 @@ class EngineWorkflow(Workflow):
         database_server.set_submission_information(sub_info_to_resert, None)
         database_server.set_jobs_status(new_status)
 
-        jobs_to_hold = set()
-        jobs = set()
+        extended_jobs = set(jobs_to_run)
+        # look for jobs which can restart immediately (all deps met)
         for dep in self.dependencies:
             j1 = self.job_mapping[dep[0]] # get engine jobs
             j2 = self.job_mapping[dep[1]]
-            if j2.job_id in job_ids:
-                if not j2 in jobs_to_hold:
-                    if j1.status != constants.DONE:
-                        jobs_to_hold.add(j2)
-                    else:
-                        jobs.add(j2)
+            if j2 in jobs_to_run and j1.status != constants.DONE:
+                jobs_to_run.remove(j2)
 
-        return [j for j in jobs if j not in jobs_to_hold]
+        return jobs_to_run
 
 
 class EngineTransfer(FileTransfer):

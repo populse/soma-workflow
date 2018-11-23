@@ -185,6 +185,8 @@ class WorkflowEngineLoop(object):
         self._j_wf_ended = True
 
         self._lock = threading.RLock()
+        # counter which may be used to synchronize things
+        self._loop_count = 0
 
     def are_jobs_and_workflow_done(self):
         with self._lock:
@@ -484,11 +486,32 @@ class WorkflowEngineLoop(object):
 
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
+            self._loop_count += 1
             time.sleep(time_interval)
 
     def stop_loop(self):
         with self._lock:
             self._running = False
+
+    def wait_one_loop(self):
+        # wait one full loop. The counter is incremented at the end of
+        # each loop, so we must wait for the current one to finish, then
+        # increment, then do another one, and when it has incremented again
+        # (current + 2) we can be sure a full loop has run
+        time_interval = 0.1
+        with self._lock:
+            running = self._running
+            current_count = self._loop_count
+        if not running:
+            # if the loop is not running, return immediately, otherwise we will
+            # wait indefinitely.
+            return
+        next_count = current_count
+        while next_count < current_count + 2:
+            with self._lock:
+                next_count = self._loop_count
+            if next_count < current_count + 2:
+                time.sleep(time_interval)
 
     def set_queue_limits(self, queue_limits):
         with self._lock:
@@ -719,25 +742,28 @@ class WorkflowEngineLoop(object):
         wf.status = constants.WORKFLOW_DONE
         return ended_jobs
 
-    def restart_workflow(self, wf_id, status, queue):
-        if wf_id in self._workflows:
-            workflow = self._workflows[wf_id]
-            workflow.queue = queue
-            (jobs_to_run,
-             workflow.status) = workflow.restart(self._database_server, queue)
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
-        else:
-            workflow = self._database_server.get_engine_workflow(
-                wf_id, self._user_id)
-            workflow.status = status
-            (jobs_to_run, workflow.status) = workflow.restart(
-                self._database_server, queue)
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
-            # add to the engine managed workflow list
-            with self._lock:
-                self._workflows[wf_id] = workflow
+    def restart_workflow(self, wf_id, queue):
+        with self._lock:
+            if wf_id in self._workflows:
+                workflow = self._workflows[wf_id]
+                workflow.queue = queue
+                (jobs_to_run, status) \
+                    = workflow.restart(self._database_server, queue)
+                workflow.status = status
+                for job in jobs_to_run:
+                    self._pend_for_submission(job)
+            else:
+                workflow = self._database_server.get_engine_workflow(
+                    wf_id, self._user_id)
+                (jobs_to_run, status) = workflow.restart(
+                    self._database_server, queue)
+                workflow.status = status
+                for job in jobs_to_run:
+                    self._pend_for_submission(job)
+                # add to the engine managed workflow list
+                with self._lock:
+                    self._workflows[wf_id] = workflow
+            return status
 
     def force_stop(self, wf_id):
         if wf_id in self._workflows:
@@ -763,15 +789,34 @@ class WorkflowEngineLoop(object):
             self._database_server.set_job_status(
                 job_id, constants.NOT_SUBMITTED)
 
+    def stop_jobs(self, workflow_id, job_ids):
+        (status, last_status_update) \
+            = self._database_server.get_workflow_status(
+                workflow_id, self._user_id)
+
+        if status != constants.WORKFLOW_DONE:
+            self._database_server.set_jobs_status(
+                dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+
+
     def restart_jobs(self, wf_id, job_ids):
         with self._lock:
-            if wf_id in self._workflows:
-                workflow = self._workflows[wf_id]
-                jobs_to_run = workflow.restart_jobs(self._database_server,
-                                                    job_ids)
-                print('can re-run immediately:', [j.job_id for j in jobs_to_run])
-                for job in jobs_to_run:
-                    self._pend_for_submission(job)
+            if wf_id not in self._workflows:
+                return
+
+        with self._lock:
+            workflow = self._workflows[wf_id]
+        extended_job_ids = workflow.job_ids_which_can_rerun(job_ids)
+        self.stop_jobs(wf_id, extended_job_ids)
+        # wait for the loop to process KILL_PENDING demands and actually
+        # kill jobs
+        self.wait_one_loop()
+        with self._lock:
+            jobs_to_run = workflow.restart_jobs(
+                self._database_server, extended_job_ids, check_deps=False)
+            print('can re-run immediately:', [j.job_id for j in jobs_to_run])
+            for job in jobs_to_run:
+                self._pend_for_submission(job)
 
 
     def drms_job_id(self, wf_id, job_id):
@@ -1007,14 +1052,7 @@ class WorkflowEngine(RemoteFileController):
         return True
 
     def stop_jobs(self, workflow_id, job_ids):
-        (status, last_status_update) \
-            = self._database_server.get_workflow_status(
-                workflow_id, self._user_id)
-
-        if status != constants.WORKFLOW_DONE:
-            self._database_server.set_jobs_status(
-                dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
-
+        self.engine_loop.stop_jobs(workflow_id, job_ids)
         self._wait_jobs_status_update(job_ids)
         return True
 
@@ -1050,16 +1088,10 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
-        (status, last_status_update) = self._database_server.get_workflow_status(
-            workflow_id, self._user_id)
-
-        if status == constants.WORKFLOW_DONE:
-            self.engine_loop.restart_workflow(workflow_id, status, queue)
-            self._wait_wf_status_update(workflow_id,
-                                        expected_status=constants.WORKFLOW_IN_PROGRESS)
-            return True
-        else:
-            return False
+        expected_status = self.engine_loop.restart_workflow(workflow_id, queue)
+        self._wait_wf_status_update(workflow_id,
+                                    expected_status=expected_status)
+        return True
 
     # SERVER STATE MONITORING ########################################
     def jobs(self, job_ids=None):
