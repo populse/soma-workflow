@@ -80,7 +80,7 @@ class LocalScheduler(Scheduler):
 
     * _interval *int*
 
-    * _look *threading.RLock*
+    * _lock *threading.RLock*
     '''
     parallel_job_submission_info = None
 
@@ -371,7 +371,7 @@ class LocalScheduler(Scheduler):
             self._queue.append(drmaa_id)
             self._jobs[drmaa_id] = job
             self._status[drmaa_id] = constants.QUEUED_ACTIVE
-            self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
+            self._queue.sort(key=lambda job_id: self._jobs[drmaa_id].priority,
                              reverse=True)
         return drmaa_id
 
