@@ -2789,18 +2789,34 @@ class WorkflowTree(QtGui.QWidget):
     def stop_selected_jobs(self):
         selected_jobs = self._expand_groups(self.selected_jobs())
         if selected_jobs:
-            print('stop_selected_jobs')
-            Controller.stop_jobs(self.model.current_wf_id,
-                                 [j.job_id for j in selected_jobs],
-                                 self.model.current_connection)
+            reply = QtGui.QMessageBox.question(
+                None,
+                'Warning!!',
+                "Stop selected jobs and dependencies ?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                Controller.stop_jobs(self.model.current_wf_id,
+                                     [j.job_id for j in selected_jobs],
+                                     self.model.current_connection)
+                return True
+            else:
+                return False
 
     def restart_selected_jobs(self):
         selected_jobs = self._expand_groups(self.selected_jobs())
         if selected_jobs:
-            print('restart_selected_jobs')
-            Controller.restart_jobs(self.model.current_wf_id,
-                                    [j.job_id for j in selected_jobs],
-                                    self.model.current_connection)
+            reply = QtGui.QMessageBox.question(
+                None,
+                'Warning!!',
+                "Stop/restart selected jobs and dependencies ?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                Controller.restart_jobs(self.model.current_wf_id,
+                                        [j.job_id for j in selected_jobs],
+                                        self.model.current_connection)
+                return True
+            else:
+                return False
 
 
 class WorkflowGroupInfo(QtGui.QWidget):
