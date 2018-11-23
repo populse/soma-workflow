@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -27,6 +27,8 @@ import operator
 import itertools
 import atexit
 import six
+import weakref
+import sys
 
 # import cProfile
 # import traceback
@@ -72,7 +74,11 @@ class EngineLoopThread(threading.Thread):
         super(EngineLoopThread, self).__init__()
         self.engine_loop = engine_loop
         self.time_interval = refreshment_interval
-        atexit.register(EngineLoopThread.stop, self)
+        atexit.register(EngineLoopThread.stop_loop,
+                        weakref.ref(self.engine_loop))
+
+    def __del__(self):
+        self.stop()
 
     def run(self):
         # cProfile.runctx("self.engine_loop.start_loop(self.time_interval)",
@@ -83,6 +89,12 @@ class EngineLoopThread(threading.Thread):
         self.engine_loop.stop_loop()
         self.join()
         # print("Soma workflow engine thread ended nicely.")
+
+    @staticmethod
+    def stop_loop(loop_ref):
+        loop_thread = loop_ref()
+        if loop_thread is not None:
+            loop_thread.stop_loop()
 
 
 class WorkflowEngineLoop(object):
@@ -884,7 +896,7 @@ class WorkflowEngine(RemoteFileController):
         self.logger.debug("WorkflowEngine init done.")
 
     def __del__(self):
-        pass
+        self.engine_loop_thread.stop()
 
     # FILE TRANSFER ###############################################
 

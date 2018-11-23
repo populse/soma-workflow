@@ -77,6 +77,7 @@ class WorkflowTest(unittest.TestCase):
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
         if os.path.isdir(self.wf_examples.output_dir):
             shutil.rmtree(self.wf_examples.output_dir)
+        self.__class__.wf_ctrl = None # del WorkflowController
 
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
