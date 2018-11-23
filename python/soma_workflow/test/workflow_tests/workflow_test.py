@@ -77,11 +77,10 @@ class WorkflowTest(unittest.TestCase):
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
         if os.path.isdir(self.wf_examples.output_dir):
             shutil.rmtree(self.wf_examples.output_dir)
-        self.__class__.wf_ctrl = None # del WorkflowController
 
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
-        sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
+        sys.stdout.write("********* soma-workflow tests: %s *********\n" % cls.__name__)
 
         config_file_path = Configuration.search_config_path()
     #    sys.stdout.write("Configuration file: " + config_file_path + "\n")
@@ -176,6 +175,7 @@ class WorkflowTest(unittest.TestCase):
                         raise RuntimeError("tests failed.")
 
             finally:
+                self.setup_wf_controller(None) # del WorkflowController
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
                         os.unlink(config._database_file)
