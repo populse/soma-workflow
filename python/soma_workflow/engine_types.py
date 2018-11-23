@@ -1070,10 +1070,10 @@ class EngineWorkflow(Workflow):
                 if job_to_run:
                     to_run.append(job)
 
-        if to_run:
+        if to_run or self.status == constants.WORKFLOW_IN_PROGRESS:
             status = constants.WORKFLOW_IN_PROGRESS
         else:
-            status = self.status
+            status = constants.WORKFLOW_DONE
 
         return (to_run, status)
 
