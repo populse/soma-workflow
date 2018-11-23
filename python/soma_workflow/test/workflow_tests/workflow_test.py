@@ -175,7 +175,7 @@ class WorkflowTest(unittest.TestCase):
                         raise RuntimeError("tests failed.")
 
             finally:
-                self.setup_wf_controller(None) # del WorkflowController
+                cls.setup_wf_controller(None) # del WorkflowController
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
                         os.unlink(config._database_file)
