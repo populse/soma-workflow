@@ -70,13 +70,23 @@ class WorkflowTest(unittest.TestCase):
         elif self.path_management == self.SHARED_TRANSFER:
             workflow_examples = WorkflowExamplesSharedTransfer()
         self.wf_examples = workflow_examples
+        self.temporaries = [self.wf_examples.output_dir]
 
     def tearDown(self):
         shutil.rmtree(self.soma_workflow_temp_dir)
         if self.wf_id:
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
-        if os.path.isdir(self.wf_examples.output_dir):
-            shutil.rmtree(self.wf_examples.output_dir)
+        for t in self.temporaries:
+            if os.path.isdir(t):
+                try:
+                    shutil.rmtree(t)
+                except:
+                    pass
+            elif os.path.exists(t):
+                try:
+                    os.unkink(t)
+                except:
+                    pass
 
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
