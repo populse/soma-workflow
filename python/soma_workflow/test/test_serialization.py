@@ -15,14 +15,34 @@ from soma_workflow.test.workflow_tests.workflow_examples \
     import workflow_transfer
 from soma_workflow.client import Helper
 import unittest
+import shutil
 
 
 class SerializationTest(unittest.TestCase):
+
+    def setUp(self):
+        self.temporaries = []
+
+    def tearDown(self):
+        for t in self.temporaries:
+            if os.path.isdir(t):
+                try:
+                    shutil.rmtree(t)
+                except:
+                    pass
+            elif os.path.exists(t):
+                try:
+                    os.unkink(t)
+                except:
+                    pass
 
     def test_serialization(self):
         simple_wf_examples = workflow_local.WorkflowExamplesLocal()
         tr_wf_examples = workflow_transfer.WorkflowExamplesTransfer()
         srp_wf_examples = workflow_shared.WorkflowExamplesShared()
+        self.temporaries += [simple_wf_examples.output_dir,
+                             tr_wf_examples.output_dir,
+                             srp_wf_examples.output_dir]
         workflows = []
         workflows.append(("multiple", simple_wf_examples.example_multiple()))
         workflows.append(("special_command",
