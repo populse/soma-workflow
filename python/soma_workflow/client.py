@@ -213,6 +213,10 @@ class WorkflowController(object):
         if self._connection:
             self._connection.stop()
 
+    def stop_engine(self):
+        self._engine_proxy.stop()
+        self.disconnect()
+
     # SUBMISSION / REGISTRATION ####################################
     def submit_workflow(self,
                         workflow,

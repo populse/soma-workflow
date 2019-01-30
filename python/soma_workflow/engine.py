@@ -800,6 +800,9 @@ class WorkflowEngine(RemoteFileController):
     def __del__(self):
         pass
 
+    def stop(self):
+        self.engine_loop_thread.stop()
+
     # FILE TRANSFER ###############################################
 
     def register_transfer(self,
