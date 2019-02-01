@@ -73,6 +73,10 @@ class WorkflowTest(unittest.TestCase):
         self.temporaries = [self.wf_examples.output_dir]
 
     def tearDown(self):
+        swc = self.__class__.wf_ctrl
+        if swc is not None:
+            # stop workflow controler and wait for thread termination
+            swc.stop_engine()
         shutil.rmtree(self.soma_workflow_temp_dir)
         if self.wf_id:
             self.__class__.wf_ctrl.delete_workflow(self.wf_id)
