@@ -16,6 +16,7 @@ import inspect
 from abc import abstractmethod
 from soma_workflow.client import Group
 from soma_workflow.client import Workflow
+from soma_workflow.client import BarrierJob
 from soma_workflow.errors import ConfigurationError
 import tempfile
 
@@ -359,6 +360,30 @@ class WorkflowExamples(object):
             root_group.append(group_subject)
         function_name = inspect.stack()[0][3]
         workflow = Workflow(jobs, dependencies, root_group, name=function_name)
+        return workflow
+
+    def example_barrier(self):
+        jobs = [self.job_sleep(2), self.job_sleep(2),
+                self.job_sleep(2), self.job_sleep(2),
+                self.job_sleep(2), self.job_sleep(2),
+                self.job_sleep(2)]
+        job_names = ['step1.1', 'step1.2',
+                     'step2.1.1', 'step2.1.2',  'step2.2.1', 'step2.2.2',
+                     'step3']
+        barriers = [BarrierJob(name='barrier1'),
+                    BarrierJob(name='barrier2.1'),
+                    BarrierJob(name='barrier2.2'),
+                    BarrierJob(name='barrier3')]
+        for j, n in zip(jobs, job_names):
+            j.name = n
+        dependencies = [(jobs[0], barriers[0]), (jobs[1], barriers[0]),
+                        (barriers[0], barriers[1]), (barriers[0], barriers[2]),
+                        (barriers[1], jobs[2]), (barriers[1], jobs[3]),
+                        (barriers[2], jobs[4]), (barriers[2], jobs[5]),
+                        (jobs[2], barriers[3]), (jobs[3], barriers[3]),
+                        (jobs[4], barriers[3]), (jobs[5], barriers[3]),
+                        (barriers[3], jobs[6])]
+        workflow = Workflow(jobs + barriers, dependencies)
         return workflow
 
 

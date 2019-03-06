@@ -42,6 +42,9 @@ res &= soma_workflow.test.workflow_tests.test_special_transfer.test()
 import soma_workflow.test.workflow_tests.test_wrong_native_spec
 res &= soma_workflow.test.workflow_tests.test_wrong_native_spec.test()
 
+import soma_workflow.test.workflow_tests.test_barrier_jobs
+res &= soma_workflow.test.workflow_tests.test_barrier_jobs.test()
+
 # this test needs to be called *after* test_special_command because it triggers
 # a warning and, for an unknown reason, later warnings do not fire any longer
 # later on, even after calling warnings.resetwarnings()
