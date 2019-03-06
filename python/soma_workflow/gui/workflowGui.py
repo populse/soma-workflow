@@ -43,6 +43,22 @@ elif 'PySide' in sys.modules:
     QT_BACKEND = PYSIDE
 
 if QT_BACKEND is None:
+    qt_api = os.environ.get('Qt_BACKEND')
+    if qt_api == 'pyqt5':
+        QT_BACKEND = PYQT5
+    elif qt_api in ('pyqt4', 'pyqt'):
+        QT_BACKEND = PYQT4
+    elif qt_api == 'pyside':
+        QT_BACKEND = PYSIDE
+
+if QT_BACKEND is None:
+    try:
+        from PyQt5 import QtGui, QtCore, QtWidgets
+        QT_BACKEND = PYQT5
+    except ImportError as e:
+        raise Exception("Soma-workflow Gui requires PyQt4, PyQt5 or PySide.")
+
+if QT_BACKEND is None:
     try:
         import sip
         sip_classes = ['QString', 'QVariant', 'QDate', 'QDateTime',
@@ -63,13 +79,6 @@ if QT_BACKEND is None:
         QT_BACKEND = PYSIDE
     except ImportError as e:
         pass
-
-if QT_BACKEND is None:
-    try:
-        from PyQt5 import QtGui, QtCore, QtWidgets
-        QT_BACKEND = PYQT5
-    except ImportError as e:
-        raise Exception("Soma-workflow Gui requires PyQt4, PyQt5 or PySide.")
 
 use_qvariant = False
 
