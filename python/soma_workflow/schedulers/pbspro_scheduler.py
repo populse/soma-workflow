@@ -483,6 +483,9 @@ class PBSProScheduler(Scheduler):
         status: string
             Job status as defined in constants.JOB_STATUS
         '''
+        if scheduler_job_id == self.FAKE_JOB:
+            # it's a barrier job, doesn't exist in DRMS, and it's always done.
+            return constants.DONE
         codes = self.get_pbs_status_codes()
         try:
             status = self.get_job_extended_status(scheduler_job_id)

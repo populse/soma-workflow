@@ -445,7 +445,12 @@ class WorkflowEngineLoop(object):
                         drms_error_jobs[job.job_id] = job
                     else:
                         drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-                        job.status = constants.UNDETERMINED
+                        if job.is_barrier:
+                            # barrier jobs immediately get the status DONE
+                            # to avoid losing one time cycle
+                            job.status = constants.DONE
+                        else:
+                            job.status = constants.UNDETERMINED
 
                 if drmaa_id_for_db_up:
                     self._database_server.set_submission_information(
