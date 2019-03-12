@@ -1168,9 +1168,19 @@ class WorkflowEngine(RemoteFileController):
 
         return status
 
-    def workflow_elements_status(self, wf_id):
+    def workflow_elements_status(self, wf_id, with_drms_id=True):
         '''
         Implementation of soma_workflow.client.WorkflowController API
+
+        Parameters
+        ----------
+        wf_id: int
+            workflow id
+        with_drms_id: bool (optional, default=False)
+            if True the DRMS id (drmaa_id) is also included in the returned
+            tuple for each job. This info has been added in soma_workflow 3.0
+            and is thus optional to avoid breaking compatibility with earlier
+            versions.
         '''
         self.logger.debug("! Entering workflow_elements_status")
         (status,
@@ -1180,12 +1190,12 @@ class WorkflowEngine(RemoteFileController):
         self.logger.debug("!Getting workflow elements status: %s"
                           % repr(status))
 
-        wf_status = self._database_server.get_detailed_workflow_status(wf_id)
+        wf_status = self._database_server.get_detailed_workflow_status(
+            wf_id, with_drms_id=with_drms_id)
         if status and \
-           not status == constants.WORKFLOW_DONE and \
-           _out_to_date(last_status_update):
-            wf_status = (wf_status[0], wf_status[
-                         1], constants.WARNING, wf_status[3], wf_status[4])
+                status != constants.WORKFLOW_DONE and \
+                _out_to_date(last_status_update):
+            wf_status = wf_status[:2] + (constants.WARNING, ) + wf_status[3:]
 
         return wf_status
 

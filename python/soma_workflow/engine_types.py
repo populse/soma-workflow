@@ -953,7 +953,8 @@ class EngineWorkflow(Workflow):
         return (list(to_run), ended_jobs, status)
 
     def _update_state_from_database_server(self, database_server):
-        wf_status = database_server.get_detailed_workflow_status(self.wf_id)
+        wf_status = database_server.get_detailed_workflow_status(
+            self.wf_id, with_drms_id=True)
 
         for job_info in wf_status[0]:
             job_id, status, queue, exit_info, date_info, drmaa_id = job_info

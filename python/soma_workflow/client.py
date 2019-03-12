@@ -397,7 +397,7 @@ class WorkflowController(object):
         '''
         return self._engine_proxy.workflow_status(workflow_id)
 
-    def workflow_elements_status(self, workflow_id):
+    def workflow_elements_status(self, workflow_id, with_drms_id=True):
         '''
         Gets back the status of all the workflow elements at once, minimizing
         the communication with the server and request to the database.
@@ -409,13 +409,19 @@ class WorkflowController(object):
         Parameters
         ----------
         workflow_id: workflow_identifier
+        with_drms_id: bool (optional, default=True)
+            if True the DRMS id (drmaa_id) is also included in the returned
+            tuple for each job. This info has been added in soma_workflow 3.0
+            and is thus optional to avoid breaking compatibility with earlier
+            versions.
 
         Returns
         -------
         status: tuple:
             * sequence of tuple
                 (job_id, status, queue, exit_info,
-                    (submission_date, execution_date, ending_date, drmaa_id)),
+                    (submission_date, execution_date, ending_date, drmaa_id),
+                    [drms_id]),
             * sequence of tuple
                 (transfer_id, (status, progression_info)),
             * workflow_status,
@@ -424,7 +430,8 @@ class WorkflowController(object):
 
         Raises *UnknownObjectError* if the workflow_id is not valid
         '''
-        wf_status = self._engine_proxy.workflow_elements_status(workflow_id)
+        wf_status = self._engine_proxy.workflow_elements_status(
+            workflow_id, with_drms_id=with_drms_id)
         # special processing for transfer status:
         new_transfer_status = []
         for engine_path, client_path, client_paths, status, transfer_type \
@@ -1122,7 +1129,8 @@ class Helper(object):
          transfers_info,
          workflow_status,
          workflow_queue,
-         transfers_temp_info) = wf_ctrl.workflow_elements_status(workflow_id)
+         transfers_temp_info) = wf_ctrl.workflow_elements_status(
+            workflow_id, with_drms_id=True)
         failed_job_ids = []
         for (job_id, status, queue, exit_info, dates, drmaa_id) in jobs_info:
             if(status == constants.DONE and exit_info[1] != 0) or \

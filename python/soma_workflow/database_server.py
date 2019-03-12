@@ -1873,7 +1873,8 @@ class WorkflowDatabaseServer(object):
         self.logger.debug("===> status: %s, date: %s" % (status, repr(date)))
         return status, date
 
-    def get_detailed_workflow_status(self, wf_id, check_status=False):
+    def get_detailed_workflow_status(self, wf_id, check_status=False,
+                                     with_drms_id=True):
         '''
         Gets back the status of all the workflow elements at once, minimizing
         the requests to the database.
@@ -1886,8 +1887,11 @@ class WorkflowDatabaseServer(object):
             some running or pending jobs. If not, set the state to DONE. It
             should not happen, and if it does, it's a bug (which has actually
             happened in Soma-Workflow <= 2.8.0)
-        with_drms_id: if True the DRMS id (drmaa_id) is also included in the
-        returned tuple for each job
+        with_drms_id: bool (optional, default=False)
+            if True the DRMS id (drmaa_id) is also included in the returned
+            tuple for each job. This info has been added in soma_workflow 3.0
+            and is thus optional to avoid breaking compatibility with earlier
+            versions.
 
         Returns
         -------
@@ -1951,13 +1955,21 @@ class WorkflowDatabaseServer(object):
                     ending_date = self._str_to_date_conversion(ending_date)
                     queue = self._string_conversion(queue)
 
-                    workflow_status[0].append(
-                        (job_id, status, queue,
-                          (exit_status, exit_value, term_signal,
-                          resource_usage),
-                          (submission_date, execution_date, ending_date,
-                          queue),
-                          drmaa_id))
+                    if with_drms_id:
+                        workflow_status[0].append(
+                            (job_id, status, queue,
+                              (exit_status, exit_value, term_signal,
+                              resource_usage),
+                              (submission_date, execution_date, ending_date,
+                              queue),
+                              drmaa_id))
+                    else:
+                        workflow_status[0].append(
+                            (job_id, status, queue,
+                              (exit_status, exit_value, term_signal,
+                              resource_usage),
+                              (submission_date, execution_date, ending_date,
+                              queue)))
 
                 # transfers
                 for row in cursor.execute('''SELECT engine_file_path,
