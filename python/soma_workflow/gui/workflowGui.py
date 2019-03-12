@@ -3273,7 +3273,8 @@ class PlotView(QtGui.QWidget):
         else:
             self.figure = Figure()
             self.axes = self.figure.add_subplot(111)
-            self.axes.hold(True)
+            if int(matplotlib.__version__.split('.')[0]) <= 2:
+                self.axes.hold(True)
             self.canvas = FigureCanvas(self.figure)
             try:
                 self.canvas.setParent(self)
@@ -3405,7 +3406,8 @@ class PlotView(QtGui.QWidget):
         else:
             self.figure = Figure()
             self.axes = self.figure.add_subplot(111)
-            self.axes.hold(True)
+            if int(matplotlib.__version__.split('.')[0]) <= 2:
+                self.axes.hold(True)
             self.canvas = FigureCanvas(self.figure)
             self.canvas.setParent(self)
             self.canvas.updateGeometry()
@@ -3955,7 +3957,11 @@ class ComputingResourcePool(object):
     def add_default_connection(self):
         resource_id = socket.gethostname()
         if resource_id not in self._connections.keys():
-            self.add_connection(resource_id, WorkflowController())
+            try:
+                self.add_connection(resource_id, WorkflowController())
+            except:
+                print('could not connect to the default connection %s'
+                      % resource_id)
 
     def add_connection(self, resource_id, workflow_controller):
         self._connections[resource_id] = workflow_controller
