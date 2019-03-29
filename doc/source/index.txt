@@ -170,6 +170,8 @@ In version 3.0:
 
 * New PBSPro scheduler type, to be used when DRMAA is not available, or doesn't work (like on our new cluster): use ``scheduler_type = pbspro`` in the server config file. It might also work on PBS/Torque, we have not tried yet.
 
+* It is now possible to restart a workflow which is still running: running / pending jobs will go on, and only failed jobs will be restarted.
+
 * A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
 
 
