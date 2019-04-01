@@ -608,6 +608,8 @@ class Configuration(observer.Observable):
           "localhost"
         * the resource mode is ``LIGHT_MODE``
         '''
+        if config_file_path is None:
+            config_file_path = Configuration.search_config_path()
         if config is None:
             if config_file_path == None:
                 return socket.gethostname()
