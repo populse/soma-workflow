@@ -5084,8 +5084,14 @@ class GuiJob(GuiWorkflowItem):
                     self.serial_duration \
                         = self.ending_date - self.execution_date
                     if "cput" in rud:
-                        t = datetime.strptime(rud["cput"], "%H:%M:%S")
-                        t0 = datetime.strptime("00:00:00", "%H:%M:%S")
+                        tlist = [int(x) for x in rud["cput"].split(':')]
+                        t = time.struct_time([0] * (6 - len(tlist)) 
+                                                 + tlist + [0, 0, 0])
+                        t = datetime.fromtimestamp(time.mktime(t))
+                        t0 = datetime.fromtimestamp(time.mktime(
+                            time.struct_time([0] * 9)))
+                        #t = datetime.strptime(rud["cput"], "%H:%M:%S")
+                        #t0 = datetime.strptime("00:00:00", "%H:%M:%S")
                         self.serial_duration = t - t0
                     elif "cpupercent" in rud:
                         duration = self.serial_duration.total_seconds() \
