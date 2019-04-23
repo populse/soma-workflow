@@ -43,7 +43,7 @@ elif 'PySide' in sys.modules:
     QT_BACKEND = PYSIDE
 
 if QT_BACKEND is None:
-    qt_api = os.environ.get('Qt_BACKEND')
+    qt_api = os.environ.get('QT_API')
     if qt_api == 'pyqt5':
         QT_BACKEND = PYQT5
     elif qt_api in ('pyqt4', 'pyqt'):
