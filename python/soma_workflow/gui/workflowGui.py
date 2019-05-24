@@ -1371,7 +1371,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             file_path = file_path[0]
         else: # PyQt4
             file_path = QtGui.QFileDialog.getOpenFileName(
-                self, "Open a workflow", "", "", filedialog_options)
+                self, "Open a workflow", "", "", None, filedialog_options)
         if file_path:
             try:
                 workflow = Controller.unserialize_workflow(file_path)
