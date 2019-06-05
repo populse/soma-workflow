@@ -90,7 +90,8 @@ class NJobsWithDependenciesTest(WorkflowTest):
         (jobs_info, transfers_info, workflow_status, workflow_queue,
             tmp_paths) = self.wf_ctrl.workflow_elements_status(self.wf_id)
 
-        for (job_id, tmp_status, queue, exit_info, dates) in jobs_info:
+        for (job_id, tmp_status, queue, exit_info, dates, dmraa_id) \
+                in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
             job_name, job_command, job_submission_date = job_list[job_id]
 

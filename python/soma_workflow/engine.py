@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 '''
 @author: Soizic Laguitton
@@ -27,6 +27,8 @@ import operator
 import itertools
 import atexit
 import six
+import weakref
+import sys
 
 # import cProfile
 # import traceback
@@ -72,7 +74,11 @@ class EngineLoopThread(threading.Thread):
         super(EngineLoopThread, self).__init__()
         self.engine_loop = engine_loop
         self.time_interval = refreshment_interval
-        atexit.register(EngineLoopThread.stop, self)
+        atexit.register(EngineLoopThread.stop_loop,
+                        weakref.ref(self.engine_loop))
+
+    def __del__(self):
+        self.stop()
 
     def run(self):
         # cProfile.runctx("self.engine_loop.start_loop(self.time_interval)",
@@ -83,6 +89,12 @@ class EngineLoopThread(threading.Thread):
         self.engine_loop.stop_loop()
         self.join()
         # print("Soma workflow engine thread ended nicely.")
+
+    @staticmethod
+    def stop_loop(loop_ref):
+        loop_thread = loop_ref()
+        if loop_thread is not None:
+            loop_thread.stop_loop()
 
 
 class WorkflowEngineLoop(object):
@@ -185,6 +197,8 @@ class WorkflowEngineLoop(object):
         self._j_wf_ended = True
 
         self._lock = threading.RLock()
+        # counter which may be used to synchronize things
+        self._loop_count = 0
 
     def are_jobs_and_workflow_done(self):
         with self._lock:
@@ -230,10 +244,9 @@ class WorkflowEngineLoop(object):
                 # and KILL_PENDING
                 jobs_to_delete = []
                 jobs_to_kill = []
-                if self._jobs:
-                    (jobs_to_delete, jobs_to_kill) \
-                        = self._database_server.jobs_to_delete_and_kill(
-                            self._user_id)
+                (jobs_to_delete, jobs_to_kill) \
+                    = self._database_server.jobs_to_delete_and_kill(
+                        self._user_id)
                 wf_to_delete = []
                 wf_to_kill = []
                 if self._workflows:
@@ -243,26 +256,36 @@ class WorkflowEngineLoop(object):
                 # Delete and kill properly the jobs and workflows in _jobs and
                 # _workflows
                 for job_id in jobs_to_kill + jobs_to_delete:
-                    if job_id in self._jobs:
+                    job = self._jobs.get(job_id)
+                    if job is None:
+                        # look in workflows
+                        for wf in six.itervalues(self._workflows):
+                            jobs = [j
+                                    for jid, j
+                                        in six.iteritems(wf.registered_jobs)
+                                    if jid == job_id]
+                            if len(jobs) == 1:
+                                job = jobs[0]
+                                break
+                    if job is not None:
+                    #if job_id in self._jobs:
                         self.logger.debug(" stop job " + repr(job_id))
                         try:
-                            stopped = self._stop_job(
-                                job_id,  self._jobs[job_id])
+                            stopped = self._stop_job(job_id,  job)
                         except DRMError as e:
                             # TBI how to communicate the error ?
                             self.logger.error(
                                 "!!!ERROR!!! stop job %s :%s" % (type(e), e))
-                        if job_id in jobs_to_delete:
+                        if job_id in jobs_to_delete and job_id in self._jobs:
                             self.logger.debug("Delete job : " + repr(job_id))
                             self._database_server.delete_job(job_id)
                             del self._jobs[job_id]
                         else:
-                            job = self._jobs[job_id]
                             self._database_server.set_job_status(job_id,
                                                                  job.status,
                                                                  force=True)
                             if stopped:
-                                ended_jobs[job_id] = self._jobs[job_id]
+                                ended_jobs[job_id] = job
                                 if job.workflow_id != -1:
                                     wf_to_inspect.add(job.workflow_id)
 
@@ -297,7 +320,7 @@ class WorkflowEngineLoop(object):
                             job.status = self._scheduler.get_job_status(
                                 job.drmaa_id)
                         except DRMError as e:
-                            self.logger.debug(
+                            self.logger.info(
                                 "!!!ERROR!!! get_job_status %s: %s" % (type(e), e))
                             job.status = constants.FAILED
                             job.exit_status = constants.EXIT_ABORTED
@@ -313,12 +336,16 @@ class WorkflowEngineLoop(object):
                             self.logger.debug(
                                 "End of job %s, drmaaJobId = %s, status= %s",
                                 job.job_id, job.drmaa_id, repr(job.status))
-                            (job.exit_status,
-                             job.exit_value,
-                             job.terminating_signal,
-                             job.str_rusage) \
-                                = self._scheduler.get_job_exit_info(
-                                    job.drmaa_id)
+                            try:
+                                (job.exit_status,
+                                 job.exit_value,
+                                 job.terminating_signal,
+                                 job.str_rusage) \
+                                    = self._scheduler.get_job_exit_info(
+                                        job.drmaa_id)
+                            except Exception as e:
+                                self.logger.error('exception in get_job_exit_info: %s' % repr(e))
+                                raise
 
                             self.logger.debug("  after get_job_exit_info ")
                             self.logger.debug(
@@ -358,10 +385,13 @@ class WorkflowEngineLoop(object):
 
                 # --- 3. Get back transfered status ---------------------------
                 for engine_path, transfer in six.iteritems(wf_transfers):
-                    status = self._database_server.get_transfer_status(
-                        engine_path,
-                        self._user_id)
-                    transfer.status = status
+                    try:
+                        status = self._database_server.get_transfer_status(
+                            engine_path,
+                            self._user_id)
+                        transfer.status = status
+                    except:
+                        logger.exception()
 
                 for wf_id in six.iterkeys(self._workflows):
                     if self._database_server.pop_workflow_ended_transfer(wf_id):
@@ -415,7 +445,12 @@ class WorkflowEngineLoop(object):
                         drms_error_jobs[job.job_id] = job
                     else:
                         drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-                        job.status = constants.UNDETERMINED
+                        if job.is_barrier:
+                            # barrier jobs immediately get the status DONE
+                            # to avoid losing one time cycle
+                            job.status = constants.DONE
+                        else:
+                            job.status = constants.UNDETERMINED
 
                 if drmaa_id_for_db_up:
                     self._database_server.set_submission_information(
@@ -468,11 +503,32 @@ class WorkflowEngineLoop(object):
 
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
+            self._loop_count += 1
             time.sleep(time_interval)
 
     def stop_loop(self):
         with self._lock:
             self._running = False
+
+    def wait_one_loop(self):
+        # wait one full loop. The counter is incremented at the end of
+        # each loop, so we must wait for the current one to finish, then
+        # increment, then do another one, and when it has incremented again
+        # (current + 2) we can be sure a full loop has run
+        time_interval = 0.1
+        with self._lock:
+            running = self._running
+            current_count = self._loop_count
+        if not running:
+            # if the loop is not running, return immediately, otherwise we will
+            # wait indefinitely.
+            return
+        next_count = current_count
+        while next_count < current_count + 2:
+            with self._lock:
+                next_count = self._loop_count
+            if next_count < current_count + 2:
+                time.sleep(time_interval)
 
     def set_queue_limits(self, queue_limits):
         with self._lock:
@@ -599,6 +655,7 @@ class WorkflowEngineLoop(object):
         container_command: list or None
         '''
         # register
+        self.logger.debug("Within add_workflow")
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
@@ -613,8 +670,10 @@ class WorkflowEngineLoop(object):
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
-                break # OK we have checked the directory can be witten.
+                self.logger.debug("OK we have checked the directory can be written.")
+                break # OK we have checked the directory can be written.
             except Exception as e:
+                self.logger.exception(e)
                 self._database_server.delete_workflow(engine_workflow.wf_id)
                 raise JobError("Could not create the standard output file "
                                "%s %s: %s \n" %
@@ -630,13 +689,15 @@ class WorkflowEngineLoop(object):
                     #raise JobError("Could not create the standard error file "
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
-
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:
-                    os.mkdir(transfer.engine_path)
+                    # self.logger.debug("Try to create directory: %s \n" % transfer.engine_path)
+                    os.makedirs(transfer.engine_path)
                 except Exception as e:
+                    self.logger.debug("WARNING: could not create directory %s: \n" % transfer.engine_path)
+                    self.logger.debug("You might not have enough space available.")
                     self._database_server.delete_workflow(
                         engine_workflow.wf_id)
                     raise JobError("Could not create the directory %s %s: %s \n" %
@@ -698,25 +759,28 @@ class WorkflowEngineLoop(object):
         wf.status = constants.WORKFLOW_DONE
         return ended_jobs
 
-    def restart_workflow(self, wf_id, status, queue):
-        if wf_id in self._workflows:
-            workflow = self._workflows[wf_id]
-            workflow.queue = queue
-            (jobs_to_run,
-             workflow.status) = workflow.restart(self._database_server, queue)
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
-        else:
-            workflow = self._database_server.get_engine_workflow(
-                wf_id, self._user_id)
-            workflow.status = status
-            (jobs_to_run, workflow.status) = workflow.restart(
-                self._database_server, queue)
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
-            # add to the engine managed workflow list
-            with self._lock:
-                self._workflows[wf_id] = workflow
+    def restart_workflow(self, wf_id, queue):
+        with self._lock:
+            if wf_id in self._workflows:
+                workflow = self._workflows[wf_id]
+                workflow.queue = queue
+                (jobs_to_run, status) \
+                    = workflow.restart(self._database_server, queue)
+                workflow.status = status
+                for job in jobs_to_run:
+                    self._pend_for_submission(job)
+            else:
+                workflow = self._database_server.get_engine_workflow(
+                    wf_id, self._user_id)
+                (jobs_to_run, status) = workflow.restart(
+                    self._database_server, queue)
+                workflow.status = status
+                for job in jobs_to_run:
+                    self._pend_for_submission(job)
+                # add to the engine managed workflow list
+                with self._lock:
+                    self._workflows[wf_id] = workflow
+            return status
 
     def force_stop(self, wf_id):
         if wf_id in self._workflows:
@@ -739,13 +803,50 @@ class WorkflowEngineLoop(object):
             with self._lock:
                 self._jobs[job.job_id] = job
         else:
+            self._database_server.set_job_status(
+                job_id, constants.NOT_SUBMITTED)
 
-            pass
-            # TBI
+    def stop_jobs(self, workflow_id, job_ids):
+        (status, last_status_update) \
+            = self._database_server.get_workflow_status(
+                workflow_id, self._user_id)
+
+        if status != constants.WORKFLOW_DONE:
+            self._database_server.set_jobs_status(
+                dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+
+
+    def restart_jobs(self, wf_id, job_ids):
+        with self._lock:
+            if wf_id not in self._workflows:
+                return
+
+        with self._lock:
+            workflow = self._workflows[wf_id]
+        extended_job_ids = workflow.job_ids_which_can_rerun(job_ids)
+        self.stop_jobs(wf_id, extended_job_ids)
+        # wait for the loop to process KILL_PENDING demands and actually
+        # kill jobs
+        self.wait_one_loop()
+        with self._lock:
+            jobs_to_run = workflow.restart_jobs(
+                self._database_server, extended_job_ids, check_deps=False)
+            print('can re-run immediately:', [j.job_id for j in jobs_to_run])
+            for job in jobs_to_run:
+                self._pend_for_submission(job)
+
+
+    def drms_job_id(self, wf_id, job_id):
+        engine_wf = self._workflows.get(wf_id)
+        if engine_wf is None:
+            return None
+        engine_job = engine_wf.registered_jobs.get(job_id)
+        if engine_job is None:
+            return None
+        return engine_job.drmaa_id
 
 
 class WorkflowEngine(RemoteFileController):
-
     '''
     '''
     # database server
@@ -771,7 +872,8 @@ class WorkflowEngine(RemoteFileController):
                L{soma_workflow.database_server.WorkflowDatabaseServer}
         @type  engine_loop: L{WorkflowEngineLoop}
         '''
-
+        # TODO harmoniser les loggings que l'on ait
+        # une logique coherente transverse au projet
         self.logger = logging.getLogger('engine.WorkflowEngine')
 
         self._database_server = database_server
@@ -783,6 +885,7 @@ class WorkflowEngine(RemoteFileController):
             raise EngineError(
                 "Couldn't identify user %s: %s \n" % (type(e), e))
 
+        self.logger.debug("user_login: " + user_login)
         self._user_id = self._database_server.register_user(user_login)
         self.logger.debug("user_id : " + repr(self._user_id))
         self.logger.debug("container_command : "
@@ -798,7 +901,7 @@ class WorkflowEngine(RemoteFileController):
         self.logger.debug("WorkflowEngine init done.")
 
     def __del__(self):
-        pass
+        self.engine_loop_thread.stop()
 
     def stop(self):
         self.engine_loop_thread.stop()
@@ -900,12 +1003,25 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        logging.info("Receiving a workflow to treat: " + repr(workflow))
         if not expiration_date:
+            logging.debug("No expiration date")
             expiration_date = datetime.now() + timedelta(days=7)
+        logging.debug("Going to add a workflow")
+        try:
+            wf_id = self.engine_loop.add_workflow(
+                workflow,
+                expiration_date,
+                name,
+                queue,
+                container_command=self.container_command)
+        except Exception as e:
+            logging.exception(
+                "ERROR: in submit_worflow, an exception occurred when calling "
+                "engine_loop.add_workflow")
+            raise
 
-        wf_id = self.engine_loop.add_workflow(
-            workflow, expiration_date, name, queue,
-            container_command=self.container_command)
+        logging.debug("Workflow identifier is: " + str(wf_id))
 
         return wf_id
 
@@ -955,6 +1071,26 @@ class WorkflowEngine(RemoteFileController):
 
         return True
 
+    def stop_jobs(self, workflow_id, job_ids):
+        self.engine_loop.stop_jobs(workflow_id, job_ids)
+        self._wait_jobs_status_update(job_ids)
+        return True
+
+    def restart_jobs(self, workflow_id, job_ids):
+        print('restarting jobs:', job_ids)
+        self.stop_jobs(workflow_id, job_ids) # stop before re-running
+        (status, last_status_update) \
+            = self._database_server.get_workflow_status(
+                workflow_id, self._user_id)
+
+        self.engine_loop.restart_jobs(workflow_id, job_ids)
+        #self._wait_jobs_status_update(
+            #job_ids,
+            #statuses=(constants.DONE, constants.FAILED, constants.RUNNING,
+                       #constants.QUEUED, constants.))
+
+        return True
+
     def change_workflow_expiration_date(self, workflow_id, new_expiration_date):
         '''
         Implementation of soma_workflow.client.WorkflowController API
@@ -972,16 +1108,10 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
-        (status, last_status_update) = self._database_server.get_workflow_status(
-            workflow_id, self._user_id)
-
-        if status == constants.WORKFLOW_DONE:
-            self.engine_loop.restart_workflow(workflow_id, status, queue)
-            self._wait_wf_status_update(workflow_id,
-                                        expected_status=constants.WORKFLOW_IN_PROGRESS)
-            return True
-        else:
-            return False
+        expected_status = self.engine_loop.restart_workflow(workflow_id, queue)
+        self._wait_wf_status_update(workflow_id,
+                                    expected_status=expected_status)
+        return True
 
     # SERVER STATE MONITORING ########################################
     def jobs(self, job_ids=None):
@@ -1026,10 +1156,11 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
+        self.logger.debug("! Entering workflow_status")
         (status,
          last_status_update) = self._database_server.get_workflow_status(wf_id,
                                                                          self._user_id)
-
+        self.logger.debug("!Getting workflow status: %s" % repr(status))
         if status and \
            not status == constants.WORKFLOW_DONE and \
            _out_to_date(last_status_update):
@@ -1037,20 +1168,34 @@ class WorkflowEngine(RemoteFileController):
 
         return status
 
-    def workflow_elements_status(self, wf_id, groupe=None):
+    def workflow_elements_status(self, wf_id, with_drms_id=True):
         '''
         Implementation of soma_workflow.client.WorkflowController API
-        '''
-        (status,
-         last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                                         self._user_id)
 
-        wf_status = self._database_server.get_detailed_workflow_status(wf_id)
+        Parameters
+        ----------
+        wf_id: int
+            workflow id
+        with_drms_id: bool (optional, default=False)
+            if True the DRMS id (drmaa_id) is also included in the returned
+            tuple for each job. This info has been added in soma_workflow 3.0
+            and is thus optional to avoid breaking compatibility with earlier
+            versions.
+        '''
+        self.logger.debug("! Entering workflow_elements_status")
+        (status,
+         last_status_update) = self._database_server.get_workflow_status(
+            wf_id, self._user_id)
+
+        self.logger.debug("!Getting workflow elements status: %s"
+                          % repr(status))
+
+        wf_status = self._database_server.get_detailed_workflow_status(
+            wf_id, with_drms_id=with_drms_id)
         if status and \
-           not status == constants.WORKFLOW_DONE and \
-           _out_to_date(last_status_update):
-            wf_status = (wf_status[0], wf_status[
-                         1], constants.WARNING, wf_status[3], wf_status[4])
+                status != constants.WORKFLOW_DONE and \
+                _out_to_date(last_status_update):
+            wf_status = wf_status[:2] + (constants.WARNING, ) + wf_status[3:]
 
         return wf_status
 
@@ -1189,21 +1334,24 @@ class WorkflowEngine(RemoteFileController):
             self._wait_job_status_update(job_id)
 
     def _wait_job_status_update(self, job_id):
-        self.logger.debug(">> _wait_job_status_update")
+        return self._wait_jobs_status_update([job_ids])
+
+    def _wait_jobs_status_update(self, job_ids,
+                                 statuses=(constants.DONE, constants.FAILED)):
+        self.logger.debug(">> _wait_jobs_status_update")
         try:
-            (status,
-             last_status_update) = self._database_server.get_job_status(job_id,
-                                                                        self._user_id)
-            while status and not status == constants.DONE and \
-                not status == constants.FAILED and \
-                    not _out_to_date(last_status_update):
+            status_date = self._database_server.get_jobs_status(
+                job_ids, self._user_id)
+            while not all([not status
+                           or status in statuses
+                           or _out_to_date(last_status_update)
+                           for status, last_status_update in status_date]):
                 time.sleep(refreshment_interval)
-                (status,
-                 last_status_update) = self._database_server.get_job_status(job_id,
-                                                      self._user_id)
+                status_date = self._database_server.get_jobs_status(
+                    job_ids, self._user_id)
         except UnknownObjectError as e:
             pass
-        self.logger.debug("<< _wait_job_status_update")
+        self.logger.debug("<< _wait_jobs_status_update")
 
     def _wait_for_job_deletion(self, job_id):
         self.logger.debug(">> _wait_for_job_deletion")
@@ -1263,6 +1411,9 @@ class WorkflowEngine(RemoteFileController):
         if _out_to_date(last_status_update):
             return False
         return True
+
+    def drms_job_id(self, wf_id, job_id):
+        return self.engine_loop.drms_job_id(wf_id, job_id)
 
 
 class ConfiguredWorkflowEngine(WorkflowEngine):

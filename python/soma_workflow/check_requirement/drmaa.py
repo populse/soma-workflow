@@ -14,17 +14,20 @@ Created on Mon May 13 10:48:02 2013
 
 from __future__ import print_function
 
-if __name__ == "__main__":
-    try:
-        import soma_workflow.scheduler
-        from soma_workflow import configuration
-        c = configuration.Configuration.load_from_file()
-        if c.get_scheduler_type() == configuration.LOCAL_SCHEDULER:
-            # local mode on a remote server
-            print("True")
-        elif soma_workflow.scheduler.DRMAA_LIB_FOUND:
-            print("True")
+def test_drmaa():
+    import soma_workflow.scheduler
+    from soma_workflow import configuration
+    c = configuration.Configuration.load_from_file()
+    if c.get_scheduler_type() != configuration.DRMAA_SCHEDULER:
+        # local or custom mode on a remote server
+        return True
+    else:
+        from soma_workflow.schedulers import drmaa_scheduler
+        if drmaa_scheduler.DRMAA_LIB_FOUND:
+            return True
         else:
-            print("False")
-    except:
-        print("False")
+            raise NotImplementedError('DRMAA library not found')
+
+if __name__ == "__main__":
+    test_drmaa()
+

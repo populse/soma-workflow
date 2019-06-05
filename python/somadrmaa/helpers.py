@@ -26,6 +26,7 @@ from somadrmaa.wrappers import *
 from somadrmaa.errors import error_buffer
 import somadrmaa.const as const
 import six
+import sys
 
 _BUFLEN = const.ATTR_BUFFER
 
@@ -34,12 +35,21 @@ try:
 except ImportError:  # pre 2.6 behaviour
     from somadrmaa import nt as _nt
 
+if sys.version_info[0] < 3:
+    def c_str(s):
+        return s
+else:
+    def c_str(s):
+        if isinstance(s, str):
+            return s.encode()
+        return s
+  
 
 class BoolConverter(object):
 
     """Helper class to convert to/from bool attributes."""
 
-    def __init__(self, true='y', false='n'):
+    def __init__(self, true=b'y', false=b'n'):
         self.true = true
         self.false = false
 
@@ -61,11 +71,23 @@ class IntConverter(object):
     """Helper class to convert to/from float attributes."""
     @staticmethod
     def to_drmaa(value):
-        return str(value)
+        return c_str(value)
 
     @staticmethod
     def from_drmaa(value):
         return int(value)
+
+
+class StringConverter(object):
+
+    """Helper class to convert to/from string attributes."""
+    @staticmethod
+    def to_drmaa(value):
+        return c_str(value)
+
+    @staticmethod
+    def from_drmaa(value):
+        return value.decode()
 
 
 class SessionStringAttribute(object):
@@ -113,7 +135,9 @@ Attribute constructor.
    a converter to translate attribute values to/from the underlying
    implementation. See BoolConverter for an example.
 """
-        self.name = name
+        self.name = c_str(name)
+        if type_converter is None and sys.version_info[0] >= 3:
+            type_converter = StringConverter
         self.converter = type_converter
 
     def __set__(self, instance, value):
@@ -141,7 +165,7 @@ A DRMAA attribute representing a list.
 To be managed with vector C DRMAA attribute management functions."""
 
     def __init__(self, name):
-        self.name = name
+        self.name = c_str(name)
 
     def __set__(self, instance, value):
         c(drmaa_set_vector_attribute, instance,
@@ -160,14 +184,14 @@ A DRMAA attribute representing a python dict.
 To be managed with vector C DRMAA attribute management functions."""
 
     def __init__(self, name):
-        self.name = name
+        self.name = c_str(name)
 
     def __set__(self, instance, value):
-        v = ["%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
+        v = [b"%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
         c(drmaa_set_vector_attribute, instance, self.name, string_vector(v))
 
     def __get__(self, instance, _):
-        x = [i.split('=', 1) for i in list(vector_attribute_iterator(
+        x = [i.split(b'=', 1) for i in list(vector_attribute_iterator(
             instance, self.name))]
         return dict(x)
 
@@ -189,7 +213,7 @@ def adapt_rusage(rusage):
     "transform a rusage data structure into a dict"
     rv = dict()
     for attr in attributes_iterator(rusage.contents):
-        k, v = attr.split('=')
+        k, v = attr.split(b'=')
         rv[k] = v
     return rv
 
@@ -254,7 +278,7 @@ def string_vector(v):
     vlen = len(v)
     values = (STRING * (vlen + 1))()
     for i, el in enumerate(v):
-        values[i] = STRING(el)
+        values[i] = STRING(c_str(el))
     values[vlen] = STRING()
     return values
 

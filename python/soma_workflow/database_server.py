@@ -30,6 +30,8 @@ from datetime import timedelta
 from datetime import datetime
 import socket
 import itertools
+import io
+import traceback
 import math
 import glob
 import ctypes
@@ -39,13 +41,15 @@ import tempfile
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
-from soma_workflow.info import DB_VERSION
+from soma_workflow.info import DB_VERSION, DB_PICKLE_PROTOCOL
 
 # python 2/3 compatibility
 import sys
 import six
 
 if sys.version_info[0] >= 3:
+    StringIO = io.StringIO
+
     def unicode(string):
         if isinstance(string, bytes):
             return string.decode('utf-8')
@@ -55,6 +59,9 @@ if sys.version_info[0] >= 3:
         return list(thing.keys())
 
 else:
+    import StringIO
+    StringIO = StringIO.StringIO
+
     def keys(thing):
         return thing.keys()
 
@@ -137,9 +144,11 @@ Job server database tables:
       parallel_config_name : string, optional
                              if the job is made to run on several nodes:
                              name of the parallel configuration as defined
-                                 in constants.PARALLEL_CONFIGURATIONS.
-      max_node_number      : int, optional
-                             maximum of node requested by the job to run
+                             in configuration.PARALLEL_CONFIGURATIONS.
+      nodes_number         : int, optional
+                             number of nodes requested by the job to run
+      cpu_per_node         : int, optional
+                             number of CPU/cores needed for each node
       queue                : string, optional
                              name of the queue used to submit the job.
 
@@ -215,7 +224,8 @@ def create_database(database_file):
                                        working_directory    TEXT,
                                        custom_submission    BOOLEAN NOT NULL,
                                        parallel_config_name TEXT,
-                                       max_node_number      INTEGER,
+                                       nodes_number         INTEGER,
+                                       cpu_per_node         INTEGER,
                                        queue                TEXT,
 
                                        name                 TEXT,
@@ -275,8 +285,11 @@ def create_database(database_file):
                                            last_status_update DATE NOT NULL,
                                            queue              TEXT) ''')
 
-    cursor.execute('''CREATE TABLE db_version (version TEXT NOT NULL)''')
-    cursor.execute('INSERT INTO db_version (version) VALUES (?)', [DB_VERSION])
+    cursor.execute('''CREATE TABLE db_version (
+        version TEXT NOT NULL,
+        python_version TEXT NOT NULL)''')
+    cursor.execute('''INSERT INTO db_version (version, python_version)
+      VALUES (?, ?)''', [DB_VERSION, '%d.%d.%d' % sys.version_info[:3]])
 
     cursor.close()
     connection.commit()
@@ -458,10 +471,13 @@ def print_tables(database_file):
     cursor.close()
     connection.close()
 
-
 class WorkflowDatabaseServer(object):
 
-    def __init__(self, database_file, tmp_file_dir_path, shared_tmp_dir=None):
+    def __init__(self,
+                 database_file,
+                 tmp_file_dir_path,
+                 shared_tmp_dir=None,
+                 logging_configuration=None):
         '''
         The constructor gets as parameter the database information.
 
@@ -485,23 +501,39 @@ class WorkflowDatabaseServer(object):
         self._lock = threading.RLock()
 
         self.logger = logging.getLogger('jobServer')
-        self.logger.debug("=> starting database server")
+        self.logger.debug("=> starting database server, within the constructor")
         self._free_file_counters = []
+
+        # For some reason logger does not work so we log using logging
+        if logging_configuration:
+            (server_log_file,
+             server_log_format,
+             server_log_level) = logging_configuration
+
+            logging.basicConfig(filename=server_log_file,
+                                format=server_log_format,
+                                level=eval("logging." + server_log_level))
 
         with self._lock:
             if not os.path.isfile(database_file):
-                print("Database creation " + database_file)
                 self.logger.info("Database creation " + database_file)
                 create_database(database_file)
             else:
                 connection = self._connect()
                 cursor = connection.cursor()
                 version = None
-                try:
-                    for row in cursor.execute("SELECT * FROM db_version"):
-                        version = row[0]
-                except Exception as e:
-                    pass
+                for row in cursor.execute("SELECT * FROM db_version"):
+                    try:
+                        version, py_ver = row
+                    except ValueError:
+                        # row has not 2 values, the database is older than 2.0
+                        # (and is incompatible)
+                        raise ValueError(
+                            "The database table db_version does not have the "
+                            "expected 2 columns, meaning that the database is "
+                            "incompatible. Please erase the file %s and run "
+                            "again" % database_file)
+                    break
 
                 try:
                     if version == None:
@@ -510,6 +542,15 @@ class WorkflowDatabaseServer(object):
                             "queue=?", ["default queue"]))[0]
                     elif unicode(version) != unicode(DB_VERSION):
                         raise Exception('Wrong db version')
+                    if py_ver is None:
+                        py_ver0 = 2
+                    else:
+                        py_ver0 = int(py_ver.split('.')[0])
+                    if py_ver0 != sys.version_info[0]:
+                        raise Exception('Mismatching python version, the '
+                                        'database works with python %d and we '
+                                        'are using python %d'
+                                        % (py_ver0, sys.version_info[0]))
                 except Exception as e:
                     cursor.close()
                     connection.close()
@@ -528,6 +569,12 @@ class WorkflowDatabaseServer(object):
         # send VACUUM command ?
         pass
 
+    def test(self):
+        self.logger.debug("=======>Dans test")
+        logging.info("Testing that the database_server is reachable as a remote object")
+        return True
+
+
     def _connect(self):
         try:
             connection = sqlite3.connect(
@@ -540,10 +587,10 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             cursor.execute("PRAGMA journal_mode = TRUNCATE")
         except Exception as e:
-            raise (DatabaseError,
-                   DatabaseError('On database file %s: %s: %s \n'
-                                 % (self._database_file, type(e), e)),
-                   sys.exc_info()[2])
+            six.reraise(DatabaseError,
+                        DatabaseError('On database file %s: %s: %s \n'
+                                      % (self._database_file, type(e), e)),
+                        sys.exc_info()[2])
         return connection
 
     def _user_transfer_dir_path(self, login, user_id):
@@ -557,8 +604,10 @@ class WorkflowDatabaseServer(object):
         '''
         Register a user so that he can submit job.
 
-        @rtype: C{UserIdentifier}
-        @return: user identifier
+        Returns
+        -------
+        user_id: UserIdentifier
+            user identifier
         '''
         self.logger.debug("=> register_user")
         with self._lock:
@@ -576,7 +625,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -636,7 +685,8 @@ class WorkflowDatabaseServer(object):
                             stdout_file,
                             stderr_file
                             FROM jobs
-                            WHERE id IN (%s) AND custom_submission''' % job_str,
+                            WHERE id IN (%s) AND NOT custom_submission'''
+                            % job_str,
                             jobsToDelete[chunk * nmax:chunk * nmax + n]):
                         self.__removeFile(self._string_conversion(stdof))
                         self.__removeFile(self._string_conversion(stdef))
@@ -759,7 +809,11 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                self.logger.error('%s: %s \n' % (str(type(e)), str(e)))
+                tb = StringIO()
+                traceback.print_exc(file=tb)
+                self.logger.error(tb.getvalue())
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.commit()
@@ -780,7 +834,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
 
@@ -812,7 +866,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
 
@@ -867,7 +921,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 if not external_cursor:
                     connection.rollback()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             finally:
                 if not external_cursor:
                     cursor.close()
@@ -953,7 +1007,7 @@ class WorkflowDatabaseServer(object):
                     if not external_cursor:
                         connection.rollback()
                         connection.close()
-                    raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                    six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             file_num = self.get_new_file_number(external_cursor)
             userDirPath = self._user_transfer_dir_path(login, user_id)
@@ -1006,10 +1060,11 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a transfer to the database.
 
-        @engine_transfer: EngineTransfer or EngineTemporaryPath
-        @type expiration_date: date
-        @type user_id:  C{UserIdentifier}
-        @type  workflow_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        engine_transfer: EngineTransfer or EngineTemporaryPath
+        expiration_date: date
+        user_id:  UserIdentifier
         '''
 
         if isinstance(engine_transfer, TemporaryPath):
@@ -1066,7 +1121,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             if not external_cursor:
                 cursor.close()
                 connection.commit()
@@ -1082,10 +1137,11 @@ class WorkflowDatabaseServer(object):
         '''
         Adds a temporary file to the database.
 
-        @engine_temp: EngineTemporaryPath
-        @type expiration_date: date
-        @type user_id:  C{UserIdentifier}
-        @type  workflow_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        engine_temp: EngineTemporaryPath
+        expiration_date: date
+        user_id:  UserIdentifier
         '''
 
         if expiration_date == None:
@@ -1123,7 +1179,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             if not external_cursor:
                 cursor.close()
                 connection.commit()
@@ -1142,7 +1198,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
         try:
             six.next(sel)
@@ -1162,7 +1218,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
         try:
             six.next(sel)
@@ -1193,7 +1249,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1221,7 +1277,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1266,7 +1322,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             engine_file_path = self._string_conversion(engine_file_path)
             client_file_path = self._string_conversion(client_file_path)
@@ -1326,7 +1382,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             engine_file_path = self._string_conversion(engine_file_path)
             expiration_date = self._str_to_date_conversion(expiration_date)
@@ -1360,7 +1416,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             status = self._string_conversion(status)
             cursor.close()
             connection.close()
@@ -1383,7 +1439,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             status = self._string_conversion(status)
             cursor.close()
             connection.close()
@@ -1414,7 +1470,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1441,7 +1497,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1458,7 +1514,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1490,7 +1546,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1519,7 +1575,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1613,31 +1669,36 @@ class WorkflowDatabaseServer(object):
                         (job.job_id, job.stdout_file, job.stderr_file))
                     engine_workflow.registered_jobs[job.job_id] = job
 
-                pickled_workflow = pickle.dumps(engine_workflow)
+                pickled_workflow = pickle.dumps(engine_workflow,
+                                                protocol=DB_PICKLE_PROTOCOL)
 
                 cursor.execute('''UPDATE workflows
                           SET pickled_engine_workflow=?
                           WHERE id=?''',
-                              (pickled_workflow,
+                              (sqlite3.Binary(pickled_workflow),
                                engine_workflow.wf_id))
             except Exception as e:
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
 
+        self.logger.debug("==>end of add_workflow")
         return engine_workflow
 
     def delete_workflow(self, wf_id):
         '''
         Remove the workflow from the database. Remove all associated jobs and transfers.
 
-        @type wf_id: C{WorkflowIdentifier}
+        Parameters
+        ----------
+        wf_id: int
         '''
         self.logger.debug("=> delete_workflow")
+        self.logger.debug("wf_id is: ", wf_id)
         with self._lock:
             # set expiration date to yesterday + clean() ?
             connection = self._connect()
@@ -1659,7 +1720,7 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
                 self.vacuum()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.commit()
@@ -1671,7 +1732,7 @@ class WorkflowDatabaseServer(object):
         '''
         Change the workflow expiration date.
 
-        @type wf_id: C{WorflowIdentifier}
+        @type wf_id: int
         @type new_date: datetime.datetime
         '''
         self.logger.debug("=> change_workflow_expiration_date")
@@ -1686,7 +1747,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1696,9 +1757,14 @@ class WorkflowDatabaseServer(object):
         Returns a EngineWorkflow object.
         The wf_id must be valid.
 
-        @type wf_id: C{WorflowIdentifier}
-        @rtype: C{EngineWorkflow}
-        @return: workflow object
+        Parameters
+        ----------
+        wf_id: int
+
+        Returns
+        -------
+        engine: EngineWorkflow
+            workflow object
         '''
         self.logger.debug("=> get_engine_workflow")
         with self._lock:
@@ -1715,13 +1781,15 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
 
         if pickled_workflow:
-            pickled_workflow = pickled_workflow.encode('utf-8')
-            workflow = pickle.loads(pickled_workflow)
+            if sys.version_info[0] >= 3:
+                workflow = pickle.loads(pickled_workflow, encoding='latin1')
+            else:
+                workflow = pickle.loads(pickled_workflow)
         else:
             workflow = None
 
@@ -1733,8 +1801,11 @@ class WorkflowDatabaseServer(object):
         The status must be valid (ie a string among the workflow status
         string defined in constants.WORKFLOW_STATUS)
 
-        @type  status: string
-        @param status: workflow status as defined in constants.WORKFLOW_STATUS
+        Parameters
+        ----------
+        wf_id: int
+        status: str
+            workflow status as defined in constants.WORKFLOW_STATUS
         '''
         self.logger.debug("=> set_workflow_status, wf_id: %s, status: %s"
                           % (wf_id, status))
@@ -1768,7 +1839,7 @@ class WorkflowDatabaseServer(object):
                 self.logger.error(
                     "===> workflow_status update failed, error: %s, : %s"
                     % (str(type(e)), str(e)))
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -1790,29 +1861,37 @@ class WorkflowDatabaseServer(object):
                     FROM workflows WHERE id=?''',
                     [wf_id]))
             except Exception as e:
+                self.logger.exception("In get_workflow_status")
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             status = self._string_conversion(status)
             date = self._str_to_date_conversion(strdate)
             cursor.close()
             connection.close()
         self.logger.debug("===> status: %s, date: %s" % (status, strdate))
-        return (status, date)
+        self.logger.debug("===> status: %s, date: %s" % (status, repr(date)))
+        return status, date
 
-    def get_detailed_workflow_status(self, wf_id, check_status=False):
+    def get_detailed_workflow_status(self, wf_id, check_status=False,
+                                     with_drms_id=True):
         '''
         Gets back the status of all the workflow elements at once, minimizing
         the requests to the database.
 
         Parameters
         ----------
-        wf_id: WorflowIdentifier
+        wf_id: int
         check_status: bool (optional, default=False)
             if True, check that a workflow with status RUNNING has actually
             some running or pending jobs. If not, set the state to DONE. It
             should not happen, and if it does, it's a bug (which has actually
             happened in Soma-Workflow <= 2.8.0)
+        with_drms_id: bool (optional, default=False)
+            if True the DRMS id (drmaa_id) is also included in the returned
+            tuple for each job. This info has been added in soma_workflow 3.0
+            and is thus optional to avoid breaking compatibility with earlier
+            versions.
 
         Returns
         -------
@@ -1822,7 +1901,8 @@ class WorkflowDatabaseServer(object):
                                   exit_info,
                                   (submission_date,
                                     execution_date,
-                                    ending_date)),
+                                    ending_date),
+                                  [drmaa_id]),
                 sequence of tuple (transfer_id,
                                   client_file_path,
                                   client_paths,
@@ -1860,12 +1940,13 @@ class WorkflowDatabaseServer(object):
                                             submission_date,
                                             execution_date,
                                             ending_date,
-                                            queue
+                                            queue,
+                                            drmaa_id
                                      FROM jobs WHERE workflow_id=?''',
                                      [wf_id]):
                     job_id, status, exit_status, exit_value, term_signal, \
                     resource_usage, submission_date, execution_date, \
-                    ending_date, queue = row
+                    ending_date, queue, drmaa_id = row
 
                     submission_date = self._str_to_date_conversion(
                         submission_date)
@@ -1874,12 +1955,21 @@ class WorkflowDatabaseServer(object):
                     ending_date = self._str_to_date_conversion(ending_date)
                     queue = self._string_conversion(queue)
 
-                    workflow_status[0].append(
-                        (job_id, status, queue,
-                         (exit_status, exit_value, term_signal,
-                          resource_usage),
-                         (submission_date, execution_date, ending_date,
-                          queue)))
+                    if with_drms_id:
+                        workflow_status[0].append(
+                            (job_id, status, queue,
+                              (exit_status, exit_value, term_signal,
+                              resource_usage),
+                              (submission_date, execution_date, ending_date,
+                              queue),
+                              drmaa_id))
+                    else:
+                        workflow_status[0].append(
+                            (job_id, status, queue,
+                              (exit_status, exit_value, term_signal,
+                              resource_usage),
+                              (submission_date, execution_date, ending_date,
+                              queue)))
 
                 # transfers
                 for row in cursor.execute('''SELECT engine_file_path,
@@ -1934,7 +2024,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
 
@@ -1959,24 +2049,40 @@ class WorkflowDatabaseServer(object):
     #
     # JOBS
     def _check_job(self, connection, cursor, job_id, user_id):
-        try:
-            sel = cursor.execute(
-                '''SELECT id
-                FROM jobs
-                WHERE id=? and
-                      user_id=? LIMIT 1''',
-                [job_id, user_id])
-        except Exception as e:
-            cursor.close()
-            connection.close()
-            raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+        return self._check_jobs(connection, cursor, [job_id], user_id)
 
-        try:
-            six.next(sel)
-        except StopIteration:
-            raise UnknownObjectError("The job id " + repr(job_id) + " is not "
-                                     "valid or does not belong to "
-                                     "user " + repr(user_id))
+    def _check_jobs(self, connection, cursor, job_ids, user_id):
+        maxv = sqlite3_max_variable_number()
+        nmax = maxv
+        if maxv == 0:
+            nmax = len(job_ids)
+        nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+
+        for chunk in range(nchunks):
+            if chunk < nchunks - 1:
+                n = nmax
+            else:
+                n = len(job_ids) - chunk * nmax
+            job_str = ','.join(['?'] * n)
+            try:
+                sel = cursor.execute(
+                    '''SELECT id FROM jobs WHERE id IN (%s) and user_id=?'''
+                    % job_str,
+                    job_ids[chunk * nmax:chunk * nmax + n] + [user_id])
+            except Exception as e:
+                cursor.close()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+
+        ids = set()
+        for job_id in sel:
+            ids.add(int(job_id[0]))
+        if len(ids) != len(job_ids):
+            missing = [j for j in job_ids if j not in ids]
+            raise UnknownObjectError(
+                "The job ids " + ','.join([str(j) for j in missing])
+                + " are not valid or do not belong to the user "
+                + repr(user_id))
 
         return True
 
@@ -1999,7 +2105,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
             last_status_update = self._str_to_date_conversion(
@@ -2024,7 +2130,7 @@ class WorkflowDatabaseServer(object):
                 if not external_cursor:
                     connection.rollback()
                     connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             if not external_cursor:
                 connection.commit()
                 connection.close()
@@ -2057,10 +2163,13 @@ class WorkflowDatabaseServer(object):
                 hours=engine_job.disposal_timeout)
 
         parallel_config_name = None
-        max_node_number = 1
+        nodes_number = 1
+        cpu_per_node = 1
         if engine_job.parallel_job_info:
-            parallel_config_name, max_node_number \
-                = engine_job.parallel_job_info
+            parallel_config_name \
+                = engine_job.parallel_job_info.get('config_name')
+            nodes_number = engine_job.parallel_job_info.get('nodes_number', 1)
+            cpu_per_node = engine_job.parallel_job_info.get('cpu_per_node', 1)
         command_info = ""
         for command_element in engine_job.plain_command():
             command_info = command_info + " " + repr(command_element)
@@ -2122,7 +2231,8 @@ class WorkflowDatabaseServer(object):
                           working_directory,
                           custom_submission,
                           parallel_config_name,
-                          max_node_number,
+                          nodes_number,
+                          cpu_per_node,
                           queue,
 
                           name,
@@ -2140,7 +2250,7 @@ class WorkflowDatabaseServer(object):
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?)''',
+                                  ?, ?, ?, ?, ?, ?)''',
                               (user_id,
 
                                   None,  # drmaa_id
@@ -2157,7 +2267,8 @@ class WorkflowDatabaseServer(object):
                                   engine_job.plain_working_directory(),
                                   custom_submission,
                                   parallel_config_name,
-                                  max_node_number,
+                                  nodes_number,
+                                  cpu_per_node,
                                   engine_job.queue,
 
                                   engine_job.name,
@@ -2175,10 +2286,11 @@ class WorkflowDatabaseServer(object):
                 job_id = cursor.lastrowid
                 engine_job.job_id = job_id
                 if not engine_job.workflow_id or engine_job.workflow_id == -1:
-                    pickled_engine_job = pickle.dumps(engine_job)
+                    pickled_engine_job = pickle.dumps(
+                        engine_job, protocol=DB_PICKLE_PROTOCOL)
                     cursor.execute(
                         'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
-                                  (pickled_engine_job, job_id))
+                                  (sqlite3.Binary(pickled_engine_job), job_id))
 
                 for engine_path in referenced_input_files:
                     cursor.execute('''INSERT INTO ios (job_id,
@@ -2213,7 +2325,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             if not external_cursor:
                 connection.commit()
                 cursor.close()
@@ -2244,13 +2356,15 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
 
         if pickled_job:
-            pickled_job = pickled_job.encode('utf-8')
-            job = pickle.loads(pickled_job)
+            if sys.version_info[0] >= 3:
+                job = pickle.loads(pickled_job, encoding='latin1')
+            else:
+                job = pickle.loads(pickled_job)
             job.job_id = job_id
         else:
             job = None
@@ -2280,7 +2394,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.commit()
@@ -2311,7 +2425,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -2414,7 +2528,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             #connection.commit()
             try:
                 connection.commit()
@@ -2480,7 +2594,7 @@ class WorkflowDatabaseServer(object):
                 except Exception as e:
                     connection.rollback()
                     connection.close()
-                    raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                    six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             connection.close()
 
@@ -2491,29 +2605,51 @@ class WorkflowDatabaseServer(object):
         Raise UnknownObjectError if the job_id is not valid or belongs to an
         other user.
         '''
-        self.logger.debug("=> get_job_status")
+        return self.get_jobs_status([job_id], user_id)[0]
+
+    def get_jobs_status(self, job_ids, user_id):
+        '''
+        Returns the jobs status stored in the database and
+        the date of their last update.
+        Raise UnknownObjectError if a job_id is not valid or belongs to an
+        other user.
+        '''
+        self.logger.debug("=> get_jobs_status")
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
-            self._check_job(connection, cursor, job_id, user_id)
-            try:
-                (status,
-                 strdate) = six.next(cursor.execute(
-                    '''SELECT status, last_status_update
-                    FROM jobs
-                    WHERE id=?''',
-                    [job_id]))
+            self._check_jobs(connection, cursor, job_ids, user_id)
 
-            except Exception as e:
-                cursor.close()
-                connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
-            status = self._string_conversion(status)
-            date = self._str_to_date_conversion(strdate)
+            maxv = sqlite3_max_variable_number()
+            nmax = maxv
+            if maxv == 0:
+                nmax = len(job_ids)
+            nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+            for chunk in range(nchunks):
+                if chunk < nchunks - 1:
+                    n = nmax
+                else:
+                    n = len(job_ids) - chunk * nmax
+
+                status = []
+                try:
+                    for s, strdate in cursor.execute(
+                            '''SELECT status, last_status_update
+                            FROM jobs
+                            WHERE id IN (%s)''' % ','.join(['?'] * n),
+                            job_ids[chunk * nmax:chunk * nmax + n]):
+                        s = self._string_conversion(s)
+                        date = self._str_to_date_conversion(strdate)
+                        status.append((s, date))
+                except Exception as e:
+                    cursor.close()
+                    connection.close()
+                    six.reraise(DatabaseError, DatabaseError(e),
+                                sys.exc_info()[2])
             cursor.close()
             connection.close()
 
-        return (status, date)
+        return status
 
     def set_submission_information(self, drmaa_ids, submission_date):
         '''
@@ -2557,7 +2693,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -2582,7 +2718,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             try:
                 drmaa_id = six.next(sel)[0]
@@ -2613,7 +2749,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             try:
                 result = six.next(sel)
@@ -2654,7 +2790,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
         exit_status = self._string_conversion(result[0])
@@ -2680,7 +2816,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             connection.commit()
             cursor.close()
             connection.close()
@@ -2736,7 +2872,7 @@ class WorkflowDatabaseServer(object):
                     connection.rollback()
                     cursor.close()
                     connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             if not external_cursor:
                 connection.commit()
                 cursor.close()
@@ -2756,7 +2892,13 @@ class WorkflowDatabaseServer(object):
         if strdate:
             if sys.version_info[0] < 3:
                 strdate = strdate.encode('utf-8')
-            date = datetime.strptime(strdate, strtime_format)
+            # this is a hack to avoid issues because
+            # for an undetermined reason the date may be stored in
+            # a different format in the database.
+            try:
+                date = datetime.strptime(strdate, strtime_format)
+            except ValueError:
+                date = datetime.strptime(strdate, '%Y-%m-%d')
         else:
             date = None
         return date
@@ -2805,7 +2947,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.close()
@@ -2893,7 +3035,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.close()
@@ -2927,7 +3069,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.close()
@@ -2984,7 +3126,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
         return result
@@ -3031,7 +3173,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
         return result
@@ -3048,7 +3190,7 @@ class WorkflowDatabaseServer(object):
         except Exception as e:
             cursor.close()
             connection.close()
-            raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
         try:
             six.next(sel)
@@ -3073,7 +3215,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             try:
                 last_status_update = six.next(sel)[0]
@@ -3109,6 +3251,7 @@ class WorkflowDatabaseServer(object):
             argument = workflow_ids
 
         with self._lock:
+            self.logger.debug("=> get_workflows, within lock")
             connection = self._connect()
             cursor = connection.cursor()
             result = {}
@@ -3119,9 +3262,10 @@ class WorkflowDatabaseServer(object):
                     result[wf_id] = (self._string_conversion(name),
                                      self._str_to_date_conversion(expiration_date))
             except Exception as e:
+                self.logger.exception("=> get_workflows, an exception occurred!")
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
             cursor.close()
             connection.close()
         return result
@@ -3130,9 +3274,14 @@ class WorkflowDatabaseServer(object):
         '''
         Returns the id of the workfows with the status constants.DELETE_PENDING
 
-        @type user_id: C{UserIdentifier}
-        @rtype: sequence of C{WorkflowIdentifier}
-        @returns: workflows with status constants.DELETE_PENDING
+        Parameters
+        ----------
+        user_id: UserIdentifier
+
+        Returns
+        -------
+        workflows: sequence of int
+            workflows with status constants.DELETE_PENDING
         '''
         self.logger.debug("=> workflows_to_delete_and_kill")
         with self._lock:
@@ -3154,7 +3303,7 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 cursor.close()
                 connection.close()
-                raise (DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             cursor.close()
             connection.close()

@@ -1,72 +1,27 @@
-from __future__ import with_statement, print_function
 
-'''
-@author: Soizic Laguitton
-
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
-
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-'''
-
-
-try:
-    import subprocess32 as subprocess
-    import subprocess as _subprocess
-    if hasattr(_subprocess, '_args_from_interpreter_flags'):
-        # get this private function which is used somewhere in
-        # multiprocessing
-        subprocess._args_from_interpreter_flags \
-            = _subprocess._args_from_interpreter_flags
-    del _subprocess
-#    print('using subprocess32')
-except ImportError:
-#    print('subprocess32 could not be loaded - processes may hangup')
-    import subprocess
-import threading
-import time
-import logging
-import os
-import sys
-import signal
-import ctypes
-import atexit
-import os.path
-import socket
 import six
-
-try:
-    # psutil is used to correctly kill a job with its children processes
-    import psutil
-    have_psutil = True
-except ImportError:
-    have_psutil = False
-
-import soma_workflow.constants as constants
-from soma_workflow.errors import DRMError
-from soma_workflow.configuration import LocalSchedulerCfg, Configuration
-from soma_workflow.utils import DetectFindLib
-from soma_workflow.configuration import default_cpu_number, cpu_count
-
-_drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
-
-try:
-    (DRMAA_LIB_FOUND, _lib) = DetectFindLib(_drmaa_lib_env_name, 'drmaa')
-except:
-    # an exception occurs when drmaa lib is detected but cannot be loaded
-    # because of a failed dependency (torque, grid engine etc)
-    DRMAA_LIB_FOUND = False
-
-if DRMAA_LIB_FOUND == True:
-    from somadrmaa.errors import *
-    from somadrmaa.const import JobControlAction
+import os
+import inspect
+import importlib
 
 
 class Scheduler(object):
 
     '''
     Allow to submit, kill and get the status of jobs.
+
+    The Scheduler class is an abstract class which specifies the jobs
+    management API. It has several implementations, located in
+    ``soma_workflow.schedulers.*_scheduler``.
+
+    A scheduler implementation class can be retrived using the global function
+    :func:`get_scheduler_implementation`, or instantiated using
+    :func:`build_scheduler`.
+
+    New schedulers can be written to support computing resources types that are
+    currently not supported (a cluster with a DRMS which has no DRMAA
+    implementation typicalyly). The various methods of the Scheduler API have
+    to be overloaded in this case.
     '''
     parallel_job_submission_info = None
 
@@ -89,868 +44,186 @@ class Scheduler(object):
 
     def job_submission(self, job):
         '''
-        * job *EngineJob*
-        * return: *string*
-            Job id for the scheduling system (DRMAA for example)
+        Submit a Soma-Workflow job
+
+        Parameters
+        ----------
+        job: EngineJob
+            Job to be submitted
+
+        Returns
+        -------
+        job_id: string
+            Job id for the scheduling system (DRMAA for example, or native DRMS
+            identifier)
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def get_job_status(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
-        * return: *string*
+
+        Returns
+        -------
+        status: string
             Job status as defined in constants.JOB_STATUS
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def get_job_exit_info(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        The exit info consists of 4 values returned in a tuple:
+        **exit_status**: string
+            one of the constants.JOB_EXIT_STATUS values
+        **exit_value**: int
+            exit code of the command (normally 0 in case of success)
+        **term_sig**: int
+            termination signal, 0 IF ok
+        **resource_usage**: bytes
+            bytes string in the shape
+            ``b'cpupercent=60 mem=13530kb cput=00:00:12'`` etc. Items may include:
+
+            * cpupercent
+            * cput
+            * mem
+            * vmem
+            * ncpus
+            * walltime
+
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
-        * return: *tuple*
+
+        Returns
+        -------
+        exit_info: tuple
             exit_status, exit_value, term_sig, resource_usage
         '''
         raise Exception("Scheduler is an abstract class!")
 
     def kill_job(self, scheduler_job_id):
         '''
-        * scheduler_job_id *string*
+        Parameters
+        ----------
+        scheduler_job_id: string
             Job id for the scheduling system (DRMAA for example)
         '''
         raise Exception("Scheduler is an abstract class!")
 
-if DRMAA_LIB_FOUND == True:
+    @classmethod
+    def build_scheduler(cls, config):
+        ''' Create a scheduler of the expected type, using configuration to
+        parameterize it.
 
-    class DrmaaCTypes(Scheduler):
-
+        Parameters
+        ----------
+        config: Configuration
+            configuration object instance
         '''
-        Scheduling using a Drmaa session.
-        Contains possible patch depending on the DRMAA impementation.
-        '''
+        raise Exception("Scheduler is an abstract class!")
 
-        # DRMAA session. DrmaaJobs
-        _drmaa = None
-        # string
-        _drmaa_implementation = None
-        # DRMAA doesn't provide an unified way of submitting
-        # parallel jobs. The value of parallel_job_submission is cluster dependant.
-        # The keys are:
-        #      -Drmaa job template attributes
-        #      -parallel configuration name as defined in soma_workflow.constants
-        # dict
-        parallel_job_submission_info = None
 
-        logger = None
+def get_scheduler_implementation(scheduler_type):
+    ''' Get the scheduler class implementation corresponding to the expected
+        one.
 
-        _configured_native_spec = None
+        Parameters
+        ----------
+        scheduler_type: str
+            scheduler type: 'drmaa', 'drmaa2', 'local_basic', 'mpi', or other
+            custom scheduler
 
-        tmp_file_path = None
-
-        is_sleeping = False
-        FAKE_JOB = -167
-
-        def __init__(self,
-                     drmaa_implementation,
-                     parallel_job_submission_info,
-                     tmp_file_path=None,
-                     configured_native_spec=None):
-
-            import somadrmaa
-
-            self.logger = logging.getLogger('ljp.drmaajs')
-
-            self.wake()
-
-            self.hostname = socket.gethostname()
-
-            self._drmaa_implementation = drmaa_implementation
-
-            self.parallel_job_submission_info = parallel_job_submission_info
-
-            self._configured_native_spec = configured_native_spec
-
-            self.logger.debug("Parallel job submission info: %s",
-                              repr(parallel_job_submission_info))
-
-            if tmp_file_path == None:
-                self.tmp_file_path = os.path.abspath("tmp")
-            else:
-                self.tmp_file_path = os.path.abspath(tmp_file_path)
-
-        def clean(self):
-            if self._drmaa_implementation == "PBS":
-                tmp_out = os.path.join(
-                    self.tmp_file_path, "soma-workflow-empty-job-patch-torque.o")
-                tmp_err = os.path.join(
-                    self.tmp_file_path, "soma-workflow-empty-job-patch-torque.e")
-
-                # print("tmp_out="+tmp_out)
-                # print("tmp_err="+tmp_err)
-
-                if os.path.isfile(tmp_out):
-                    os.remove(tmp_out)
-                if os.path.isfile(tmp_err):
-                    os.remove(tmp_err)
-
-        def close_drmaa_session(self):
-            if self._drmaa:
-                self._drmaa.exit()
-                self._drmaa = None
-
-        def __del__(self):
-            self.clean()
-            self.close_drmaa_session()
-
-        def sleep(self):
-            '''
-            Some Drmaa sessions expire if they idle too long.
-            '''
-            self.close_drmaa_session()
-            self.is_sleeping = True
-
-        def wake(self):
-            '''
-            Creates a fresh Drmaa session.
-            '''
-            import somadrmaa
-
-            self.is_sleeping = False
-
-            if not self._drmaa:
-                self._drmaa = somadrmaa.Session()
-                self._drmaa.initialize()
-
-        def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
-            import somadrmaa
-            # patch for the PBS-torque DRMAA implementation
-            if self._drmaa_implementation == "PBS":
-
-                '''
-                Create a job to test
-                '''
-                jobTemplateId = self._drmaa.createJobTemplate()
-                jobTemplateId.remoteCommand = 'echo'
-                jobTemplateId.args = ["%s" % (outstr)]
-                jobTemplateId.outputPath = "%s:%s" % (
-                    self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
-                jobTemplateId.errorPath = "%s:%s" % (
-                    self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
-
-                # print("jobTemplateId="+repr(jobTemplateId))
-                # print("jobTemplateId.remoteCommand="+repr(jobTemplateId.remoteCommand))
-                # print("jobTemplateId.args="+repr(jobTemplateId.args))
-                # print("jobTemplateId.outputPath="+repr(jobTemplateId.outputPath))
-                # print(
-                # "jobTemplateId.errorPath="+repr(jobTemplateId.errorPath))
-
-                jobid = self._drmaa.runJob(jobTemplateId)
-                # print("jobid="+jobid)
-                retval = self._drmaa.wait(
-                    jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-                # print("retval="+repr(retval))
-                self._drmaa.deleteJobTemplate(jobTemplateId)
-
-        def _setDrmaaParallelJob(self,
-                                 drmaa_job_template_id,
-                                 configuration_name,
-                                 max_num_node):
-            '''
-            Set the DRMAA job template information for a parallel job submission.
-            The configuration file must provide the parallel job submission
-            information specific to the cluster in use.
-
-            Parameters
-            ----------
-            drmaa_job_template_id: str
-                id of drmaa job template
-            parallel_job_info: tuple (str, int)
-                parallel_job_info: (configuration_name, max_node_num)
-            configuration_name: str
-                type of parallel job as defined in soma_workflow.constants
-                (eg MPI, OpenMP...)
-            max_node_num: int
-                maximum node number the job requests (on a unique machine or
-                separated machine depending on the parallel configuration)
-            '''
-            if self.is_sleeping:
-                self.wake()
-
-            self.logger.debug(">> _setDrmaaParallelJob")
-            cluster_specific_cfg_name = self.parallel_job_submission_info[
-                configuration_name]
-
-            for drmaa_attribute in constants.PARALLEL_DRMAA_ATTRIBUTES:
-                value = self.parallel_job_submission_info.get(drmaa_attribute)
-                if value:
-                    value = value.replace(
-                        "{config_name}", cluster_specific_cfg_name)
-                    value = value.replace("{max_node}", repr(max_num_node))
-
-                    setattr(drmaa_job_template_id, drmaa_attribute, value)
-
-                    self.logger.debug(
-                        "Parallel job, drmaa attribute = %s, value = %s ",
-                        drmaa_attribute, value)
-
-            job_env = []
-            for parallel_env_v in constants.PARALLEL_JOB_ENV:
-                value = self.parallel_job_submission_info.get(parallel_env_v)
-                if value:
-                    job_env.append((parallel_env_v, value.rstrip()))
-
-            drmaa_job_template_id.jobEnvironment = dict(job_env)
-
-            self.logger.debug("Parallel job environment : " + repr(job_env))
-            self.logger.debug("<< _setDrmaaParallelJob")
-
-            return drmaa_job_template_id
-
-        def job_submission(self, job):
-            '''
-            @type  job: soma_workflow.client.Job
-            @param job: job to be submitted
-            @rtype: string
-            @return: drmaa job id
-            '''
-
-            if self.is_sleeping:
-                self.wake()
-            # patch for the PBS-torque DRMAA implementation
-            command = []
-            if job.is_barrier:
-                # barrier jobs don't actually go through DRMAA.
-                self.logger.debug('job_submission, DRMAA - barrier job.')
-                job.status = constants.DONE
-                return self.FAKE_JOB
-
-            job_command = job.plain_command()
-
-            # This is only for the old drmaa version
-            # Now it is not necessary anymore
-            # if self._drmaa_implementation == "PBS":
-            if False:
-                if job_command[0] == 'python':
-                    job_command[0] = sys.executable
-                for command_el in job_command:
-                    command_el = command_el.replace('"', '\\\"')
-                    command.append("\"" + command_el + "\"")
-                self.logger.debug("PBS case, new command:" + repr(command))
-            else:
-                command = job_command
-
-            self.logger.debug("command: " + repr(command))
-            self.logger.debug("job.name=" + repr(job.name))
-
-            stdout_file = job.plain_stdout()
-            stderr_file = job.plain_stderr()
-            stdin = job.plain_stdin()
-
-            try:
-                jobTemplateId = self._drmaa.createJobTemplate()
-                jobTemplateId.remoteCommand = command[0]
-                jobTemplateId.args = command[1:]
-                jobTemplateId.jobName = job.name
-
-                self.logger.info("jobTemplateId=" + repr(jobTemplateId) + " command[0]=" + repr(
-                    command[0]) + " command[1:]=" + repr(command[1:]))
-                self.logger.info(
-                    "hostname and stdout_file= [%s]:%s" % (self.hostname, stdout_file))
-
-                jobTemplateId.outputPath = "%s:%s" % (
-                    self.hostname, stdout_file)
-
-                if job.join_stderrout:
-                    jobTemplateId.joinFiles = "y"
-                else:
-                    if stderr_file:
-                        jobTemplateId.errorPath = "%s:%s" % (
-                            self.hostname, stderr_file)
-
-                if job.stdin:
-                    # self.logger.debug("stdin: " + repr(stdin))
-                    # self._drmaa.setAttribute(drmaaJobId,
-                    #                        "drmaa_input_path",
-                    #                        "%s:%s" %(self.hostname, stdin))
-                    self.logger.debug("stdin: " + repr(stdin))
-                    jobTemplateId.inputPath = stdin
-
-                working_directory = job.plain_working_directory()
-                if working_directory:
-                    jobTemplateId.workingDirectory = working_directory
-
-                self.logger.debug(
-                    "JOB NATIVE_SPEC " + repr(job.native_specification))
-                self.logger.debug(
-                    "CONFIGURED NATIVE SPEC " + repr(self._configured_native_spec))
-                native_spec = None
-
-                if job.native_specification:
-                    native_spec = job.native_specification
-                elif self._configured_native_spec:
-                    native_spec = self._configured_native_spec
-
-                if job.queue and native_spec:
-                    jobTemplateId.nativeSpecification = "-q " + \
-                        str(job.queue) + " " + str(native_spec)
-                    self.logger.debug(
-                        "NATIVE specification " + "-q " + str(job.queue) + " " + str(native_spec))
-                elif job.queue:
-                    jobTemplateId.nativeSpecification = "-q " + str(job.queue)
-                    self.logger.debug(
-                        "NATIVE specification " + "-q " + str(job.queue))
-                elif native_spec:
-                    jobTemplateId.nativeSpecification = str(native_spec)
-                    self.logger.debug(
-                        "NATIVE specification " + str(native_spec))
-
-                jobTemplateId.jobEnvironment = {}
-
-                if job.parallel_job_info:
-                    parallel_config_name, max_node_number = job.parallel_job_info
-                    jobTemplateId = self._setDrmaaParallelJob(jobTemplateId,
-                                                              parallel_config_name,
-                                                              max_node_number)
-
-                if self._drmaa_implementation == "PBS":
-                    job_env = []
-                    for var_name in os.environ.keys():
-                # job_env.append(var_name+"="+os.environ[var_name])
-                        job_env.append((var_name, os.environ[var_name]))
-                    jobTemplateId.jobEnvironment = dict(job_env)
-                if isinstance(job.env, dict):
-                    jobTemplateId.jobEnvironment.update(job.env)
-
-                self.logger.debug("before submit command: " + repr(command))
-                self.logger.debug("before submit job.name=" + repr(job.name))
-                self.logger.debug("before submit job.env=" + repr(job.env))
-                drmaaSubmittedJobId = self._drmaa.runJob(jobTemplateId)
-                self._drmaa.deleteJobTemplate(jobTemplateId)
-
-            except DrmaaException as e:
-                try:
-                    f = open(stderr_file, "wa")
-                    f.write("Error in job submission: %s" % (e))
-                    f.close()
-                except IOError as ioe:
-                    pass
-                self.logger.error("Error in job submission: %s" % (e))
-                raise DRMError("Job submission error: %s" % (e))
-
-            return drmaaSubmittedJobId
-
-        def kill_job(self, scheduler_job_id):
-            if self.is_sleeping:
-                self.wake()
-            if scheduler_job_id == self.FAKE_JOB:
-                return  # barriers are not run, thus cannot be killed.
-            try:
-                self._drmaa.control(
-                    scheduler_job_id, JobControlAction.TERMINATE)
-            except DrmaaException as e:
-                self.logger.critical("%s" % e)
-                raise e
-
-        def get_job_status(self, scheduler_job_id):
-            if self.is_sleeping:
-                self.wake()
-            if scheduler_job_id == self.FAKE_JOB:
-                # a barrier job is done as soon as it is started.
-                return constants.DONE
-            try:
-                status = self._drmaa.jobStatus(scheduler_job_id)
-            except DrmaaException as e:
-                self.logger.error("%s" % (e))
-                raise DRMError("%s" % (e))
-            return status
-
-        def get_job_exit_info(self, scheduler_job_id):
-            if self.is_sleeping:
-                self.wake()
-
-            if scheduler_job_id == self.FAKE_JOB:
-                res_resourceUsage = ''
-                res_status = constants.FINISHED_REGULARLY
-                res_exitValue = 0
-                res_termSignal = None
-                return (res_status, res_exitValue, res_termSignal,
-                        res_resourceUsage)
-
-            res_resourceUsage = []
-            res_status = constants.EXIT_UNDETERMINED
-            res_exitValue = 0
-            res_termSignal = None
-
-            try:
-                self.logger.debug(
-                    "  ==> Start to find info of job %s" % (scheduler_job_id))
-                jid_out, exit_value, signaled, term_sig, coredumped, aborted, exit_status, resource_usage = self._drmaa.wait(
-                    scheduler_job_id, self._drmaa.TIMEOUT_NO_WAIT)
-
-                self.logger.debug("  ==> jid_out=" + repr(jid_out))
-                self.logger.debug("  ==> exit_value=" + repr(exit_value))
-                self.logger.debug("  ==> signaled=" + repr(signaled))
-                self.logger.debug("  ==> term_sig=" + repr(term_sig))
-                self.logger.debug("  ==> coredumped=" + repr(coredumped))
-                self.logger.debug("  ==> aborted=" + repr(aborted))
-                self.logger.debug("  ==> exit_status=" + repr(exit_status))
-                self.logger.debug(
-                    "  ==> resource_usage=" + repr(resource_usage))
-
-                if aborted == 1:
-                    res_status = constants.EXIT_ABORTED
-                else:
-                    if exit_value == 1:
-                        res_status = constants.FINISHED_REGULARLY
-                        res_exitValue = exit_status
-                    else:
-                        if signaled == 1:
-                            res_status = constants.FINISHED_TERM_SIG
-                            res_termSignal = term_sig
-                        else:
-                            res_status = constants.FINISHED_UNCLEAR_CONDITIONS
-
-                res_resourceUsage = ''
-                for k, v in six.iteritems(resource_usage):
-                    res_resourceUsage = res_resourceUsage + k + '=' + v + ' '
-
-            except ExitTimeoutException:
-                res_status = constants.EXIT_UNDETERMINED
-                self.logger.debug("  ==> self._drmaa.wait time out")
-
-            # DRMAA may leave files in ~/.drmaa
-            self.cleanup_drmaa_files(scheduler_job_id)
-
-            return (res_status, res_exitValue, res_termSignal, res_resourceUsage)
-
-        def cleanup_drmaa_files(self, scheduler_job_id):
-            filename = os.path.join(Configuration.get_home_dir(),
-                                    '.drmaa', str(scheduler_job_id))
-            startfile = '%s.started' % filename
-            endfile = '%s.exitcode' % filename
-            for f in (startfile, endfile):
-                if os.path.exists(f):
-                    os.unlink(f)
-else:
-
-    class DrmaaCTypes(Scheduler):
-        pass
-
-
-class LocalScheduler(Scheduler):
-
+        Returns
+        -------
+        scheduler_class: Scheduler subclass
     '''
-    Allow to submit, kill and get the status of jobs.
-    Run on one machine without dependencies.
+    from . import schedulers
+    if scheduler_type == 'local_basic':
+        scheduler_type = 'local'
+    sched_dir = os.path.dirname(schedulers.__file__)
+    if os.path.exists(os.path.join(sched_dir,
+                                   '%s_scheduler.py' % scheduler_type)):
+        sched_mod = '%s_scheduler' % scheduler_type
+        #try:
+        module = importlib.import_module('.%s' % sched_mod,
+                                         'soma_workflow.schedulers')
+        schedulers = []
+        # if there is a __main_scheduler__, just use it
+        scheduler = getattr(module, '__main_scheduler__', None)
+        if scheduler is not None:
+            return scheduler
+        for element in six.itervalues(module.__dict__):
+            if element in schedulers:
+                continue # avoid duplicates
+            if inspect.isclass(element) and element is not Scheduler \
+                    and issubclass(element, Scheduler):
+                schedulers.append(element)
+                if element.__name__.lower() == ('%sscheduler'
+                                                % scheduler_type).lower():
+                    # fully matching
+                    return element
+        if len(schedulers) == 1:
+            # unambiguous
+            return schedulers[0]
+        print('Warning: module soma_workflow.schedulers.%s contains '
+              'several schedulers:' % sched_mod)
+        print([s.__name__ for s in schedulers])
+        #except ImportError:
+    raise NameError('scheduler type %s is not found' % scheduler_type)
 
-    * _proc_nb *int*
 
-    * _queue *list of scheduler jobs ids*
+def build_scheduler(scheduler_type, config):
+    ''' Create a scheduler of the expected type, using configuration to
+    parameterize it.
 
-    * _jobs *dictionary job_id -> soma_workflow.engine_types.EngineJob*
+    Parameters
+    ----------
+    scheduler_type: string
+        type of scheduler to be built
+    config: Configuration
+        configuration object
 
-    * _processes *dictionary job_id -> subprocess.Popen*
-
-    * _status *dictionary job_id -> job status as defined in constants*
-
-    * _exit_info * dictionay job_id -> exit info*
-
-    * _loop *thread*
-
-    * _interval *int*
-
-    * _look *threading.RLock*
+    Returns
+    -------
+    scheduler: Scheduler
+        Scheduler instance
     '''
-    parallel_job_submission_info = None
-
-    logger = None
-
-    _proc_nb = None
-
-    _max_proc_nb = None
-
-    _queue = None
-
-    _jobs = None
-
-    _processes = None
-
-    _status = None
-
-    _exit_info = None
-
-    _loop = None
-
-    _interval = None
-
-    _lock = None
-
-    _lasttime = None
-    _lastidle = None
-
-    def __init__(self, proc_nb=default_cpu_number(), interval=1,
-                 max_proc_nb=0):
-        super(LocalScheduler, self).__init__()
-
-        self.parallel_job_submission_info = None
-
-        self._proc_nb = proc_nb
-        self._max_proc_nb = max_proc_nb
-        self._interval = interval
-        self._queue = []
-        self._jobs = {}
-        self._processes = {}
-        self._status = {}
-        self._exit_info = {}
-
-        self._lock = threading.RLock()
-
-        self.stop_thread_loop = False
-
-        def loop(self):
-            while not self.stop_thread_loop:
-                with self._lock:
-                    self._iterate()
-                time.sleep(self._interval)
-
-        self._loop = threading.Thread(name="scheduler_loop",
-                                      target=loop,
-                                      args=[self])
-        self._loop.setDaemon(True)
-        self._loop.start()
-
-        atexit.register(LocalScheduler.end_scheduler_thread, self)
-
-    def change_proc_nb(self, proc_nb):
-        with self._lock:
-            self._proc_nb = proc_nb
-
-    def change_max_proc_nb(self, proc_nb):
-        with self._lock:
-            self._max_proc_nb = proc_nb
-
-    def change_interval(self, interval):
-        with self._lock:
-            self._interval = interval
-
-    def end_scheduler_thread(self):
-        with self._lock:
-            self.stop_thread_loop = True
-            self._loop.join()
-            # print("Soma scheduler thread ended nicely.")
-
-    def _iterate(self):
-        # Nothing to do if the queue is empty and nothing is running
-        if not self._queue and not self._processes:
-            return
-        # print("#############################")
-        # Control the running jobs
-        ended_jobs = []
-        for job_id, process in six.iteritems(self._processes):
-            ret_value = process.poll()
-            # print("job_id " + repr(job_id) + " ret_value " + repr(ret_value))
-            if ret_value != None:
-                ended_jobs.append(job_id)
-                self._exit_info[job_id] = (constants.FINISHED_REGULARLY,
-                                           ret_value,
-                                           None,
-                                           None)
-
-        # update for the ended job
-        for job_id in ended_jobs:
-            # print("updated job_id " + repr(job_id) + " status DONE")
-            self._status[job_id] = constants.DONE
-            del self._processes[job_id]
-
-        # run new jobs
-        while (self._queue and self._can_submit_new_job()):
-            job_id = self._queue.pop(0)
-            job = self._jobs[job_id]
-            # print("new job " + repr(job.job_id))
-            if job.is_barrier:
-                # barrier jobs are not actually run using Popen:
-                # they succeed immediately.
-                self._exit_info[job.job_id] = (constants.FINISHED_REGULARLY,
-                                               0,
-                                               None,
-                                               None)
-                self._status[job.job_id] = constants.DONE
-            else:
-                process = LocalScheduler.create_process(job)
-                if process == None:
-                    self._exit_info[job.job_id] = (constants.EXIT_ABORTED,
-                                                   None,
-                                                   None,
-                                                   None)
-                    self._status[job.job_id] = constants.FAILED
-                else:
-                    self._processes[job.job_id] = process
-                    self._status[job.job_id] = constants.RUNNING
-
-    def _can_submit_new_job(self):
-        n = len(self._processes)
-        if n < self._proc_nb:
-            return True
-        max_proc_nb = self._max_proc_nb
-        if max_proc_nb == 0:
-            if have_psutil:
-                max_proc_nb = cpu_count()
-            else:
-                max_proc_nb = cpu_count() - 1
-        if n < max_proc_nb and self.is_available_cpu():
-            return True
-        return False
-
-    @staticmethod
-    def is_available_cpu():
-        # OK if there is at least one half CPU left idle
-        if have_psutil:
-            if LocalScheduler._lasttime is None or time.time() - LocalScheduler._lasttime > 0.1:
-                LocalScheduler._lasttime = time.time()
-                LocalScheduler._lastidle = psutil.cpu_times_percent().idle * psutil.cpu_count()
-            if LocalScheduler._lastidle > 20.:
-                # decrease artificially idle because we will sublit a job,
-                # and next calls should take it into account
-                # until another measurement is done.
-                LocalScheduler._lastidle -= 100. # increase artificially
-                return True
-            return False
-        # no psutil: get to the upper limit.
-        return True
-
-    @staticmethod
-    def create_process(engine_job):
-        '''
-        * engine_job *EngineJob*
-
-        * returns: *Subprocess process*
-        '''
-
-        command = engine_job.plain_command()
-        env = engine_job.env
-
-        stdout = engine_job.plain_stdout()
-        stdout_file = None
-        if stdout:
-            try:
-                stdout_file = open(stdout, "wb")
-            except Exception as e:
-                return None
-
-        stderr = engine_job.plain_stderr()
-        stderr_file = None
-        if stderr:
-            try:
-                stderr_file = open(stderr, "wb")
-            except Exception as e:
-                if stdout_file:
-                    stdout_file.close()
-                return None
-
-        stdin = engine_job.plain_stdin()
-        stdin_file = None
-        if stdin:
-            try:
-                stdin_file = open(stdin, "rb")
-            except Exception as e:
-                if stderr:
-                    #stderr_file = open(stderr, "wb") # already open
-                    s = '%s: %s \n' % (type(e), e)
-                    stderr_file.write(s)
-                elif stdout:
-                    #stdout_file = open(stdout, "wb") # already open
-                    s = '%s: %s \n' % (type(e), e)
-                    stdout_file.write(s)
-                if stderr_file:
-                    stderr_file.close()
-                if stdout_file:
-                    stdout_file.close()
-                return None
-
-        working_directory = engine_job.plain_working_directory()
-
-        try:
-            if not have_psutil and sys.platform != 'win32':
-                # if psutil is not here, use process group/session, to allow killing
-                # children processes as well. see
-                # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
-                kwargs = {'preexec_fn': os.setsid}
-            else:
-                kwargs = {}
-            process = subprocess.Popen(command,
-                                       stdin=stdin_file,
-                                       stdout=stdout_file,
-                                       stderr=stderr_file,
-                                       cwd=working_directory,
-                                       env=env,
-                                       **kwargs)
-            if stderr_file:
-                stderr_file.close()
-            if stdout_file:
-                stdout_file.close()
-
-        except Exception as e:
-            if stderr:
-                stderr_file = open(stderr, "wb")
-                s = '%s: %s \n' % (type(e), e)
-                stderr_file.write(s)
-            else:
-                stdout_file = open(stdout, "wb")
-                s = '%s: %s \n' % (type(e), e)
-                stdout_file.write(s)
-            if stderr_file:
-                stderr_file.close()
-            if stdout_file:
-                stdout_file.close()
-            return None
-
-        return process
-
-    def job_submission(self, job):
-        '''
-        * job *EngineJob*
-        * return: *string*
-            Job id for the scheduling system (DRMAA for example)
-        '''
-        if not job.job_id or job.job_id == -1:
-            raise LocalSchedulerError("Invalid job: no id")
-        with self._lock:
-            # print("job submission " + repr(job.job_id))
-            self._queue.append(job.job_id)
-            self._jobs[job.job_id] = job
-            self._status[job.job_id] = constants.QUEUED_ACTIVE
-            self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
-                             reverse=True)
-        return job.job_id
-
-    def get_job_status(self, scheduler_job_id):
-        '''
-        * scheduler_job_id *string*
-            Job id for the scheduling system (DRMAA for example)
-        * return: *string*
-            Job status as defined in constants.JOB_STATUS
-        '''
-        if not scheduler_job_id in self._status:
-            raise LocalSchedulerError("Unknown job.")
-
-        status = self._status[scheduler_job_id]
-        return status
-
-    def get_job_exit_info(self, scheduler_job_id):
-        '''
-        * scheduler_job_id *string*
-            Job id for the scheduling system (DRMAA for example)
-        * return: *tuple*
-            exit_status, exit_value, term_sig, resource_usage
-        '''
-        # TBI errors
-        with self._lock:
-            exit_info = self._exit_info[scheduler_job_id]
-            del self._exit_info[scheduler_job_id]
-        return exit_info
-
-    def kill_job(self, scheduler_job_id):
-        '''
-        * scheduler_job_id *string*
-            Job id for the scheduling system (DRMAA for example)
-        '''
-        # TBI Errors
-
-        with self._lock:
-            if scheduler_job_id in self._processes:
-                # print("    => kill the process ")
-                process = self._processes[scheduler_job_id]
-                if have_psutil:
-                    kill_process_tree(process.pid)
-                    # wait for actual termination, to avoid process writing files after
-                    # we return from here.
-                    process.communicate()
-                else:
-                    # psutil not available
-                    if sys.version_info < (2, 6):
-                        if sys.platform == 'win32':
-                            PROCESS_TERMINATE = 1
-                            handle = ctypes.windll.kernel32.OpenProcess(
-                                PROCESS_TERMINATE,
-                                False,
-                                process.pid)
-                            ctypes.windll.kernel32.TerminateProcess(handle, -1)
-                            ctypes.windll.kernel32.CloseHandle(handle)
-                        else:
-                            os.kill(process.pid, signal.SIGKILL)
-                            os.wait()
-                    else:
-                        if sys.platform == 'win32':
-                            # children processes will probably not be killed
-                            # immediately.
-                            process.kill()
-                        else:
-                            # kill process group, to kill children processes as well
-                            # see
-                            # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
-                            os.killpg(process.pid, signal.SIGKILL)
-
-                    # wait for actual termination, to avoid process writing files after
-                    # we return from here.
-                    process.communicate()
-
-                del self._processes[scheduler_job_id]
-                self._status[scheduler_job_id] = constants.FAILED
-                self._exit_info[scheduler_job_id] = (constants.USER_KILLED,
-                                                     None,
-                                                     None,
-                                                     None)
-            elif scheduler_job_id in self._queue:
-                # print("    => removed from queue ")
-                self._queue.remove(scheduler_job_id)
-                del self._jobs[scheduler_job_id]
-                self._status[scheduler_job_id] = constants.FAILED
-                self._exit_info[scheduler_job_id] = (constants.EXIT_ABORTED,
-                                                     None,
-                                                     None,
-                                                     None)
+    scheduler_class = get_scheduler_implementation(scheduler_type)
+    scheduler = scheduler_class.build_scheduler(config)
+    return scheduler
 
 
-def kill_process_tree(pid):
-    """
-    Kill a process with its children.
-    Needs psutil to get children list
-    """
-    process = psutil.Process(pid)
-    for proc in process.children(recursive=True):
-        proc.kill()
-    process.kill()
-
-
-class ConfiguredLocalScheduler(LocalScheduler):
-
+def get_schedulers_list():
     '''
-    Local scheduler synchronized with a configuration object.
+    List all available installed schedulers
+
+    Returns
+    -------
+    schedulers: list
+        schedulers list. Each item is a tuple (name, enabled)
     '''
+    from . import schedulers
+    dirname = os.path.dirname(schedulers.__file__)
+    sched_files = os.listdir(dirname)
+    schedulers = []
+    for sched_file in sched_files:
+        if sched_file.endswith('_scheduler.py'):
+            sched_mod = sched_file[:-3]
+            enabled = True
+            try:
+                module = importlib.import_module('.%s' % sched_mod,
+                                                 'soma_workflow.schedulers')
+            except NotImplementedError:
+                continue # skip not implemented / unfinished ones
+            except:
+                enabled = False
+            if sched_mod == 'local_scheduler':
+                sched_mod = 'local_basic_scheduler'
+            sched = sched_mod[:-10]
+            schedulers.append((sched, enabled))
+    return schedulers
 
-    _config = None
-
-    def __init__(self, config):
-        '''
-        * config *LocalSchedulerCfg*
-        '''
-        super(ConfiguredLocalScheduler, self).__init__(
-            config.get_proc_nb(),
-            config.get_interval(),
-            config.get_max_proc_nb())
-        self._config = config
-
-        self._config.addObserver(self,
-                                 "update_from_config",
-                                 [LocalSchedulerCfg.PROC_NB_CHANGED,
-                                  LocalSchedulerCfg.INTERVAL_CHANGED,
-                                  LocalSchedulerCfg.MAX_PROC_NB_CHANGED,])
-
-    def update_from_config(self, observable, event, msg):
-        if event == LocalSchedulerCfg.PROC_NB_CHANGED:
-            self.change_proc_nb(self._config.get_proc_nb())
-        elif event == LocalSchedulerCfg.PROC_NB_CHANGED:
-            self.change_interval(self._config.get_interval())
-        elif event == LocalSchedulerCfg.MAX_PROC_NB_CHANGED:
-            self.change_max_proc_nb(self._config.get_max_proc_nb())
-        self._config.save_to_file()

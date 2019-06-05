@@ -99,6 +99,8 @@ Workflows
 
 .. automethod:: WorkflowController.change_workflow_expiration_date
 
+.. automethod:: WorkflowController.wait_workflow
+
 
 Jobs
 ----

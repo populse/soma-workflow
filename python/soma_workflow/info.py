@@ -1,6 +1,6 @@
 
-version_major = 2
-version_minor = 10
+version_major = 3
+version_minor = 0
 version_micro = 1
 version_extra = ''
 
@@ -39,17 +39,17 @@ SPHINX_MIN_VERSION = '1.0'
 # Main setup parameters
 NAME = 'soma-workflow'
 PROJECT = 'soma'
-ORGANISATION = "CEA"
-MAINTAINER = "CEA"
-MAINTAINER_EMAIL = ""
+ORGANISATION = "Populse"
+MAINTAINER = "Populse"
+MAINTAINER_EMAIL = "support@brainvisa.info"
 DESCRIPTION = description
 LONG_DESCRIPTION = long_description
 URL = "http://brainvisa.info/soma-workflow"
-DOWNLOAD_URL = "http://brainvisa.info/soma-workflow"
+DOWNLOAD_URL = "https://github.com/neurospin/soma-workflow"
 LICENSE = "CeCILL-B"
 CLASSIFIERS = CLASSIFIERS
 AUTHOR = "Soma-Workflow developers"
-AUTHOR_EMAIL = ""
+AUTHOR_EMAIL = "support@brainvisa.info"
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
 REQUIRES = [
@@ -58,11 +58,12 @@ REQUIRES = [
 ]
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
-    "client": ["Pyro", "paramiko"],
+    "client": ["zmq", "paramiko"],
     "doc": ["sphinx>=" + SPHINX_MIN_VERSION]}
 
 #-----------------------------------------------------------------------------
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-DB_VERSION = '1.1'
+DB_VERSION = '2.0'
+DB_PICKLE_PROTOCOL = 2 # python 2/3 compatible (should be, but is not)

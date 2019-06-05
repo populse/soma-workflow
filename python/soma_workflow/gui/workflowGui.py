@@ -26,8 +26,8 @@ import weakref
 import subprocess
 from soma_workflow import connection
 import sys
+import traceback
 # import cProfile
-# import traceback
 # import pdb
 
 PYQT4 = "pyqt4"
@@ -369,21 +369,48 @@ def workflow_status_icon(status=None):
     return file_path
 
 
+class QResizeMessageBox(QtGui.QMessageBox):
+    def __init__(self, *args, **kwargs):
+        QtGui.QMessageBox.__init__(self, *args, **kwargs)
+        self.setSizeGripEnabled(True)
+
+    def event(self, e):
+        result = QtGui.QMessageBox.event(self, e)
+
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(16777215)
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(16777215)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+        textEdit = self.findChild(QtGui.QTextEdit)
+        if textEdit != None :
+            textEdit.setMinimumHeight(0)
+            textEdit.setMaximumHeight(16777215)
+            textEdit.setMinimumWidth(0)
+            textEdit.setMaximumWidth(16777215)
+            textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+        return result
+
+
 def detailed_critical_message_box(msg, title, parent):
     long_msg_indic = "**More details:**"
     if long_msg_indic in msg:
         indic_index = msg.index(long_msg_indic)
         long_msg = msg[indic_index + len(long_msg_indic):]
         short_msg = msg[:indic_index]
-        message_box = QtGui.QMessageBox(parent)
+        message_box = QResizeMessageBox(parent)
         message_box.setIcon(QtGui.QMessageBox.Critical)
         message_box.setWindowTitle(title)
         message_box.setText(short_msg)
         message_box.setDetailedText(long_msg)
         message_box.setSizeGripEnabled(True)
+        message_box.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                                  QtGui.QSizePolicy.Expanding)
         message_box.exec_()
     else:
-        QtGui.QMessageBox.critical(parent, "error", "%s" % (msg))
+        QResizeMessageBox.critical(parent, "error", "%s" % (msg))
 
 
 #-----------------------------------------------------------------------------
@@ -425,11 +452,20 @@ class Controller(object):
         return wf_ctrl.restart_workflow(workflow_id, queue)
 
     @staticmethod
+    def stop_jobs(wf_id, job_ids, wf_ctrl):
+        return wf_ctrl.stop_jobs(wf_id, job_ids)
+
+    @staticmethod
+    def restart_jobs(wf_id, job_ids, wf_ctrl):
+        return wf_ctrl.restart_jobs(wf_id, job_ids)
+
+    @staticmethod
     def get_connection(resource_id,
                        login,
                        password,
                        rsa_key_pass,
                        config=None):
+        print("Lauching workflow controller")
         wf_ctrl = WorkflowController(resource_id=resource_id,
                                      login=login,
                                      password=password,
@@ -461,6 +497,8 @@ class Controller(object):
             expiration_date=expiration_date,
             name=name,
             queue=queue)
+        # TEST
+        # return wf_id
         workflow = wf_ctrl.workflow(wf_id)
         return workflow
 
@@ -603,12 +641,12 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             if rid and rid != "None":
                 resources.append(rid)
         if len(resources) >= len(self.resource_ids):
-            QtGui.QMessageBox.warning(
+            QResizeMessageBox.warning(
                 self, "Cannot disconnect all resources",
                 "We must keep at least one valid resource.")
             return
         if len(resources) != 0:
-            resp = QtGui.QMessageBox.question(
+            resp = QResizeMessageBox.question(
                 self, "Disconnect the following resources ?",
                 "\n".join(resources),
                 QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
@@ -743,7 +781,9 @@ class WorkflowEngineConfigController(QtGui.QWidget):
         self.queue_limits = self.engine_config.get_queue_limits()
         self.running_jobs_limits = self.engine_config.get_running_jobs_limits()
 
-        queues = ['default'] + sorted(self.engine_config.get_queues())
+        queues = ['default'] + sorted([x
+                                       for x in self.engine_config.get_queues()
+                                       if x is not None])
         if 'default' in queues[1:]:
             del queues[queues.index('default', 1)]
 
@@ -817,6 +857,7 @@ class NewServerDialog(QtGui.QDialog):
         super(NewServerDialog, self).__init__(parent=parent)
         self.ui = Ui_NewServer()
         self.ui.setupUi(self)
+        self.update_schedulers()
         self.ui.lineEdit_login.textChanged.connect(self.EventLoginTextChanged)
         self.ui.lineEdit_cluster_add.textChanged.connect(self.UpdateResName)
 
@@ -845,6 +886,14 @@ class NewServerDialog(QtGui.QDialog):
         strLogin = utf8(strLogin)
         self.ui.lineEdit_InstallPath.setText(
             "/home/" + strLogin + "/.soma-workflow")
+
+    def update_schedulers(self):
+        from soma_workflow import scheduler
+        schedulers = scheduler.get_schedulers_list()
+        for scheduler in schedulers:
+            # add only non-builtin
+            if scheduler[0] not in ('local_basic', 'mpi', 'drmaa'):
+                self.ui.comboBox_schedulerType.addItem(scheduler[0])
 
     def InstallServer(self):
         from soma_workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
@@ -1184,6 +1233,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.reconnectAfterConnectionClosed)
         self.model.global_workflow_state_changed.connect(
             self.update_workflow_status_icons)
+        self.config_file_path = config_file
 
         self.UpdateLocalparameters()
 
@@ -1235,14 +1285,18 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connection_dlg.accepted.connect(self.firstConnection)
         self.connection_dlg.rejected.connect(self.close)
 
-        self.config_file_path = config_file
         self.db_file = db_file
 
         # First connection:
         # Try to connect directly:
+        if computing_resource is None and self.config_file_path is not None:
+            computing_resource \
+                = configuration.Configuration.get_local_resource_id(
+                    config=None, config_file_path=self.config_file_path)
         if computing_resource:
+            print('connect to computing resource:', computing_resource)
             self.connect_to_controller(computing_resource, user)
-        elif auto_connect or self.config_file_path == None:
+        elif auto_connect and computing_resource is None:
             if user is not None and len(self.resource_list) > 0:
                 self.connect_to_controller(self.resource_list[0], user)
             else:
@@ -1298,12 +1352,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
         wf_ctrl = None
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         config = None
+        local_resource_id = configuration.Configuration.get_local_resource_id(
+            None, config_file_path=self.config_file_path)
         if self.config_file_path is not None \
-                or (resource_id in ('localhost', socket.gethostname())
+                or (resource_id in ('localhost', socket.gethostname(),
+                                    local_resource_id)
                     and self.db_file is not None):
             config = configuration.Configuration.load_from_file(
+                resource_id=resource_id,
                 config_file_path=self.config_file_path)
-            if resource_id in ('localhost', socket.gethostname()) \
+            if resource_id in ('localhost', socket.gethostname(),
+                               local_resource_id) \
                     and self.db_file is not None:
                 config._database_file = self.db_file
         try:
@@ -1321,7 +1380,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.connection_dlg.show()
         except Exception as e:
             QtGui.QApplication.restoreOverrideCursor()
-            detailed_critical_message_box(msg=e.__str__(),
+            msg = str(e) + '\n**More details:**\n' + traceback.format_exc()
+            detailed_critical_message_box(msg=msg,
                                           title="Connection failed",
                                           parent=self)
             self.connection_dlg.ui.lineEdit_password.clear()
@@ -1497,6 +1557,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         while True:
             try:
                 workflow = Controller.submit_workflow(
+                # TEST
+                # workflow_id = Controller.submit_workflow(
                     self.model.current_workflow(
                     ).server_workflow,
                     date,
@@ -1518,13 +1580,20 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     return (None, None)
             else:
                 break
-
+        # TEST
+        # self.model.add_workflow(workflow_id,
+        #                        date,
+        #                        name,
+        #                        constants.WORKFLOW_NOT_STARTED,
+        #                        self.model.current_workflow().server_workflow)
         self.model.add_workflow(workflow.wf_id,
                                 date,
                                 workflow.name,
                                 constants.WORKFLOW_NOT_STARTED,
                                 workflow)
         self.updateWorkflowList()
+        # TEST
+        # return (workflow_id, self.model.current_resource_id)
         return (workflow.wf_id, self.model.current_resource_id)
 
     @QtCore.Slot()
@@ -1754,7 +1823,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 return (resource_id, None)
             except Exception as e:
                 QtGui.QApplication.restoreOverrideCursor()
-                detailed_critical_message_box(msg=e.__str__(),
+                msg = str(e) + '\n**More details:**\n' + traceback.format_exc()
+                detailed_critical_message_box(msg=msg,
                                               title="Connection failed",
                                               parent=self)
             else:
@@ -2213,6 +2283,8 @@ class MainWindow(QtGui.QMainWindow):
         plotLayout.setContentsMargins(2, 2, 2, 2)
         plotLayout.addWidget(self.workflowPlotWidget)
         self.ui.dockWidgetContents_plot.setLayout(plotLayout)
+        self.workflowPlotWidget.job_selected.connect(
+            self.treeWidget.select_job)
 
         if not MATPLOTLIB:
             self.ui.dock_plot.hide()
@@ -2262,10 +2334,13 @@ class MainWindow(QtGui.QMainWindow):
 
     def canExit(self):
         for res_id in self.model.resource_pool.resource_ids():
+            connection = self.model.resource_pool.connection(res_id)
             for workflow_id in self.model.workflows(res_id):
-                wf_elements_status \
-                    = self.model.current_connection.workflow_elements_status(
+                try:
+                    wf_elements_status = connection.workflow_elements_status(
                         workflow_id)
+                except:
+                    continue # workflow deleted
                 for transfer_info in wf_elements_status[1]:
                     status = transfer_info[1][0]
                     if status == constants.TRANSFERING_FROM_CR_TO_CLIENT or \
@@ -2296,6 +2371,7 @@ class MainWindow(QtGui.QMainWindow):
                 # do stuff
         if self.canExit():
             event.accept()  # let the window close
+            self.model.resource_pool.delete_all()
         else:
             event.ignore()
 
@@ -2587,6 +2663,10 @@ class WorkflowTree(QtGui.QWidget):
         self.model.current_workflow_changed.connect(
             self.current_workflow_changed)
         self.model.workflow_state_changed.connect(self.dataChanged)
+        # enable customContextMenuRequested signal to be emited
+        self.tree_view.setContextMenuPolicy(
+            QtCore.Qt.CustomContextMenu)
+        self.tree_view.customContextMenuRequested.connect(self.openContextMenu)
 
     def check_workflow(self):
         return self.assigned_wf_id == None or \
@@ -2646,6 +2726,107 @@ class WorkflowTree(QtGui.QWidget):
             elif self.assigned_wf_id != None:
                 self.setEnabled(False)
 
+    def select_job(self, job_id):
+        selection_model = self.tree_view.selectionModel()
+        model = self.tree_view.model()
+        found_item = None
+        item_lists = [QtCore.QModelIndex()]
+        while item_lists and found_item is None:
+            parent = item_lists.pop(0)
+            rows = model.rowCount(parent)
+            for row in range(rows):
+                index = model.index(row, 0, parent)
+                source_index = index
+                if self.proxy_model is not None:
+                    source_index = model.mapToSource(index)
+                data = source_index.internalPointer()
+                if isinstance(data, GuiJob):
+                    if data.job_id == job_id:
+                        found_item = index
+                        break
+                elif isinstance(data, GuiGroup):
+                    item_lists.append(index)
+        if found_item is not None:
+            selection_model.setCurrentIndex(
+                found_item, QtGui.QItemSelectionModel.SelectCurrent)
+
+    def selected_jobs(self, include_groups=True):
+        selected_items = self.tree_view.selectedIndexes()
+        if selected_items:
+            if self.proxy_model is not None:
+                model = self.tree_view.model()
+                selected_items = [model.mapToSource(item)
+                                  for item in selected_items]
+            selected_items = [item.internalPointer() for item in selected_items]
+            if include_groups:
+                classes = (GuiJob, GuiGroup)
+            else:
+                classes = GuiJob
+            selected_jobs = [item for item in selected_items
+                             if isinstance(item, classes)]
+            return selected_jobs
+        return []
+
+    def openContextMenu(self, point):
+        # check that the workflow is running (or stopped?)
+        wf_status = self.model.get_workflow_status(
+            self.model.current_resource_id, self.model.current_wf_id)
+        if wf_status != constants.WORKFLOW_IN_PROGRESS:
+            print('workflow not running.')
+            return
+
+        selected_jobs = self.selected_jobs()
+        if selected_jobs:
+            popup = QtGui.QMenu()
+            stop = popup.addAction('Stop jobs', self.stop_selected_jobs)
+            restart = popup.addAction('Restart jobs',
+                                      self.restart_selected_jobs)
+            popup.exec_(QtGui.QCursor.pos())
+
+    def _expand_groups(self, jobs_groups):
+        expanded = []
+        todo = list(jobs_groups)
+        while todo:
+            item = todo.pop(0)
+            if isinstance(item, GuiJob):
+                expanded.append(item)
+            elif isinstance(item, GuiGroup):
+                todo += [item.gui_workflow.items[child]
+                         for child in item.children]
+        return expanded
+
+    def stop_selected_jobs(self):
+        selected_jobs = self._expand_groups(self.selected_jobs())
+        if selected_jobs:
+            reply = QtGui.QMessageBox.question(
+                None,
+                'Warning!!',
+                "Stop selected jobs and dependencies ?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                Controller.stop_jobs(self.model.current_wf_id,
+                                     [j.job_id for j in selected_jobs],
+                                     self.model.current_connection)
+                return True
+            else:
+                return False
+
+    def restart_selected_jobs(self):
+        selected_jobs = self._expand_groups(self.selected_jobs())
+        if selected_jobs:
+            reply = QtGui.QMessageBox.question(
+                None,
+                'Warning!!',
+                "Stop/restart selected jobs and dependencies ?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                Controller.restart_jobs(self.model.current_wf_id,
+                                        [j.job_id for j in selected_jobs],
+                                        self.model.current_connection)
+                return True
+            else:
+                return False
+
 
 class WorkflowGroupInfo(QtGui.QWidget):
 
@@ -2689,6 +2870,8 @@ class WorkflowGroupInfo(QtGui.QWidget):
 
 
 class WorkflowPlot(QtGui.QWidget):
+
+    job_selected = QtCore.Signal(int)
 
     def __init__(self,
                  model,
@@ -2736,6 +2919,7 @@ class WorkflowPlot(QtGui.QWidget):
             if self.model.current_workflow():
                 self.plotWidget = PlotView(
                     self.model.current_workflow().root_item, self)
+                self.plotWidget.job_selected.connect(self.job_selected)
             if self.plotWidget:
                 self.vLayout.addWidget(self.plotWidget)
             self.update()
@@ -2812,10 +2996,11 @@ class WorkflowElementInfo(QtGui.QWidget):
             current = self.proxy_model.mapToSource(current)
         item = current.internalPointer()
         if isinstance(item, GuiJob):
-            self.infoWidget = JobInfoWidget(item,
-                                            self.model.current_connection,
-                                            self.job_info_current_tab,
-                                            self)
+            self.infoWidget \
+                = JobInfoWidget(item,
+                                weakref.proxy(self.model.current_connection),
+                                self.job_info_current_tab,
+                                self)
         elif isinstance(item, GuiTransfer):
             self.infoWidget = TransferInfoWidget(item, self)
         elif isinstance(item, GuiGroup):
@@ -2872,6 +3057,9 @@ class JobInfoWidget(QtGui.QTabWidget):
         setLabelFromString(self.ui.queue, self.job_item.queue)
 
         if resource_usage:
+            if six.PY3:
+                resource_usage = resource_usage.decode()
+            self.ui.resource_usage.clear()
             self.ui.resource_usage.insertItems(0, resource_usage.split())
         else:
             self.ui.resource_usage.clear()
@@ -2882,14 +3070,14 @@ class JobInfoWidget(QtGui.QTabWidget):
             self.ui.execution_date, self.job_item.execution_date)
         setLabelFromDateTime(self.ui.ending_date, self.job_item.ending_date)
         setLabelFromInt(self.ui.job_id, self.job_item.job_id)
+        setLabelFromString(self.ui.drms_job_id, self.job_item.drmaa_id)
         if self.job_item.submission_date:
             if self.job_item.execution_date:
                 time_in_queue = self.job_item.execution_date - \
                     self.job_item.submission_date
                 setLabelFromTimeDelta(self.ui.time_in_queue, time_in_queue)
                 if self.job_item.ending_date:
-                    execution_time = self.job_item.ending_date - \
-                        self.job_item.execution_date
+                    execution_time = self.job_item.serial_duration
                     setLabelFromTimeDelta(
                         self.ui.execution_time, execution_time)
 
@@ -3003,6 +3191,8 @@ class GroupInfoWidget(QtGui.QWidget):
 
 class PlotView(QtGui.QWidget):
 
+    job_selected = QtCore.Signal(int)
+
     def __init__(self, group_item, parent=None):
         super(PlotView, self).__init__(parent)
 
@@ -3011,18 +3201,15 @@ class PlotView(QtGui.QWidget):
         self.vlayout = QtGui.QVBoxLayout()
         self.ui.frame_plot.setLayout(self.vlayout)
 
-        self.ui.combo_plot_type.addItems(["jobs fct time", "nb proc fct time"])
+        self.ui.combo_plot_type.addItems(["jobs fct time",
+                                          "jobs+cpu fct time",
+                                          "nb jobs fct time",
+                                          "nb cpu fct time"])
         self.ui.combo_plot_type.setCurrentIndex(0)
         self.plot_type = 0
 
         self.canvas = None
         self.group_item = group_item
-        self.jobs = self.group_item.done
-        self.jobs.extend(self.group_item.failed)
-        self.jobs.extend(self.group_item.running)
-        self.jobs.extend(self.group_item.not_sub)
-        self.jobs = sorted(self.jobs, key=self.sortkey)
-
         self.updatePlot()
 
         self.ui.combo_plot_type.currentIndexChanged.connect(
@@ -3035,6 +3222,13 @@ class PlotView(QtGui.QWidget):
             matplotlib.pyplot.close(self.figure)
             self.canvas.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
             self.canvas.close()
+
+    def update_jobs(self):
+        self.jobs = list(self.group_item.done)
+        self.jobs.extend(self.group_item.failed)
+        self.jobs.extend(self.group_item.running)
+        self.jobs.extend(self.group_item.not_sub)
+        self.jobs = sorted(self.jobs, key=self.sortkey)
 
     def sortkey(self, j):
         if j.execution_date:
@@ -3059,9 +3253,10 @@ class PlotView(QtGui.QWidget):
     def updatePlot(self):
         if not self.isVisible():
             return
-        if self.plot_type == 0:
+        self.update_jobs()
+        if self.plot_type in (0, 1):
             self.jobsFctTime()
-        if self.plot_type == 1:
+        if self.plot_type in (2, 3):
             self.nbProcFctTime()
 
     def jobsFctTime(self):
@@ -3089,37 +3284,113 @@ class PlotView(QtGui.QWidget):
             self.canvas.updateGeometry()
             self.vlayout.addWidget(self.canvas)
 
+            self._pick = self.canvas.mpl_connect('pick_event',
+                                                 self._jobs_mouse_press)
+
         def key(j):
             if j.execution_date:
                 return j.execution_date
             else:
                 return datetime.max
 
-        self.jobs = sorted(self.jobs, key=self.sortkey)
+        #self.jobs = sorted(self.jobs, key=self.sortkey)
 
         nb_jobs = 0
         x_min = datetime.max
         x_max = datetime.min
+        n = 0
+        #cols = matplotlib.rcParams['axes.prop_cycle']
+        cols = [[0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.5],
+                [0.0, 0.36470588235294116, 0.7725490196078432],
+                [0.0, 0.18235294117647058, 0.3862745098039216],
+                [0.0, 0.7098039215686275, 0.5529411764705883],
+                [0.0, 0.35490196078431374, 0.27647058823529413],
+                [0.0, 0.9803921568627451, 0.35294117647058826],
+                [0.0, 0.49019607843137253, 0.17647058823529413],
+                [0.23529411764705882, 1.0, 0.21568627450980393],
+                [0.11764705882352941, 0.5, 0.10784313725490197],
+                [0.5725490196078431, 1.0, 0.11764705882352941],
+                [0.28627450980392155, 0.5, 0.058823529411764705],
+                [0.8901960784313725, 1.0, 0.0392156862745098],
+                [0.44509803921568625, 0.5, 0.0196078431372549],
+                [1.0, 0.9882352941176471, 0.0],
+                [0.5, 0.49411764705882355, 0.0],
+                [1.0, 0.7294117647058823, 0.0],
+                [0.5, 0.36470588235294116, 0.0],
+                [1.0, 0.38823529411764707, 0.0],
+                [0.5, 0.19411764705882353, 0.0],
+                [1.0, 0.00392156862745098, 0.0],
+                [0.5, 0.00196078431372549, 0.0]]
+        # darken a bit
+        cols = [[x*0.75 for x in c] for c in cols]
+
         for j in self.jobs:
+            ncpu = 1
+            if self.plot_type == 1 and j.parallel_job_info:
+                ncpu = j.parallel_job_info.get('cpu_per_node', 1) \
+                    * j.parallel_job_info.get('nodes_number', 1)
             if j.execution_date:
+                nc = len(cols)
+                #for c in cols[n % nc:(n % nc) + 1]:
+                    #col = c['color']
+                    #break
+                col = cols[n % nc]
+                n += 1
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
                     x_min = j.execution_date
                 if j.ending_date:
-                    self.axes.plot(
-                        [j.execution_date, j.ending_date], [nb_jobs, nb_jobs])
+                    if ncpu == 1:
+                        self.axes.plot(
+                            [j.execution_date, j.ending_date],
+                            [nb_jobs, nb_jobs], color=col)
+                        # link to job
+                        self.axes.lines[-1].job = j.job_id
+                    else:
+                        self.axes.fill(
+                            [j.execution_date, j.ending_date,
+                             j.ending_date, j.execution_date],
+                            [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
+                             nb_jobs + ncpu - 1], color=col)
+                        # link to job
+                        self.axes.patches[-1].job = j.job_id
                     if j.ending_date > x_max:
                         x_max = j.ending_date
                 else:
-                    self.axes.plot(
-                        [j.execution_date, datetime.now()], [nb_jobs, nb_jobs])
+                    if ncpu == 1:
+                        self.axes.plot(
+                            [j.execution_date, datetime.now()],
+                            [nb_jobs, nb_jobs], color=col)
+                        # link to job
+                        self.axes.lines[-1].job = j.job_id
+                    else:
+                        now = datetime.now()
+                        self.axes.fill(
+                            [j.execution_date, now, now, j.execution_date],
+                            [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
+                             nb_jobs + ncpu - 1], color=col)
+                        # link to job
+                        self.axes.patches[-1].job = j.job_id
+                nb_jobs += ncpu - 1
+        #print('njobs:', n, 'nb_jobs:', nb_jobs)
 
         if nb_jobs:
             self.axes.set_ylim(0, nb_jobs + 1)
 
         self.axes.set_xlabel("Time")
-        self.axes.set_ylabel("Jobs")
+        if self.plot_type == 1:
+            self.axes.set_ylabel("CPUs")
+        else:
+            self.axes.set_ylabel("Jobs")
         self.figure.autofmt_xdate(rotation=80)
+
+        # set picker callback and activate interactive objects
+        tolerance = 2.  # could become configurable.
+        # tolerence seems to work only on line artists anyway.
+        for p in self.axes.lines + self.axes.patches:
+            if p is not None:
+                p.set_picker(tolerance)
 
         self.canvas.draw()
 
@@ -3144,36 +3415,41 @@ class PlotView(QtGui.QWidget):
 
         dates = []
         nb_process_running = []
-        infos = []  # sequence of tuple (job_item, start, date)
+        infos = []  # sequence of tuple (job_item, start, date, ncpu)
                    # start is a bolean
                    # if start then date is the execution date
                    # else date is the ending date
 
         for job_item in self.jobs:
+            ncpu = 1
+            if self.plot_type == 3 and job_item.parallel_job_info:
+                ncpu = job_item.parallel_job_info.get('cpu_per_node', 1) \
+                    * job_item.parallel_job_info.get('nodes_number', 1)
             if job_item.execution_date:
-                infos.append((job_item, True, job_item.execution_date))
+                infos.append((job_item, True, job_item.execution_date, ncpu))
             if job_item.ending_date:
-                infos.append((job_item, False, job_item.ending_date))
+                infos.append((job_item, False, job_item.ending_date, ncpu))
             else:
-                infos.append((job_item, False, datetime.now()))
+                infos.append((job_item, False, datetime.now(), ncpu))
 
         infos = sorted(infos, key=lambda info_elem: info_elem[2])
 
         nb_process = 0
         previous = None
         for info_elem in infos:
+            ncpu = info_elem[3]
             if previous and info_elem[2] == previous[2]:
                 if info_elem[1]:
-                    nb_process = nb_process + 1
+                    nb_process = nb_process + ncpu
                 else:
-                    nb_process = nb_process - 1
+                    nb_process = nb_process - ncpu
                 nb_process_running[len(nb_process_running) - 1] = nb_process
             else:
                 dates.append(info_elem[2])
                 if info_elem[1]:
-                    nb_process = nb_process + 1
+                    nb_process = nb_process + ncpu
                 else:
-                    nb_process = nb_process - 1
+                    nb_process = nb_process - ncpu
                 nb_process_running.append(nb_process)
             previous = info_elem
 
@@ -3188,11 +3464,24 @@ class PlotView(QtGui.QWidget):
             self.axes.set_ylim(0, nb_proc_max + 1)
 
         self.axes.set_xlabel("Time")
-        self.axes.set_ylabel("Nb of proc")
+        if self.plot_type == 3:
+            self.axes.set_ylabel("Nb of CPU")
+        else:
+            self.axes.set_ylabel("Nb of jobs")
         self.figure.autofmt_xdate(rotation=80)
 
         self.canvas.draw()
         self.update()
+
+    def _jobs_mouse_press(self, event):
+        '''matplotlib callback for picker event
+        '''
+        fig = event.canvas.figure
+        artist = event.artist
+        job = getattr(artist, 'job', None)
+        if job is not None:
+          self.job_selected.emit(job)
+
 
 
 class WorkflowGraphView(QtGui.QWidget):
@@ -3662,6 +3951,9 @@ class ComputingResourcePool(object):
         self._connections = {}
         self._connection_locks = {}
 
+    def __del__(self):
+        self.delete_all()
+
     def add_default_connection(self):
         resource_id = socket.gethostname()
         if resource_id not in self._connections.keys():
@@ -3676,10 +3968,19 @@ class ComputingResourcePool(object):
         self._connection_locks[resource_id] = threading.RLock()
 
     def delete_connection(self, resource_id):
+        print('ComputingResourcePool delete_connection:', resource_id)
         if resource_id in self._connections:
+            print('del WFC')
             del self._connections[resource_id]
         if resource_id in self._connection_locks:
             del self._connection_locks[resource_id]
+
+    def delete_all(self):
+        resource_ids = list(six.iterkeys(self._connections))
+        for resource_id in resource_ids:
+            self.delete_connection(resource_id)
+        import gc
+        gc.collect()
 
     def reinit_connection(self, resource_id, workflow_controller):
         with self._connection_locks[resource_id]:
@@ -3695,7 +3996,7 @@ class ComputingResourcePool(object):
         return resource_id in self._connections.keys()
 
     def resource_ids(self):
-        return self._connections.keys()
+        return list(six.iterkeys(self._connections))
 
 
 class ApplicationModel(QtCore.QObject):
@@ -3878,7 +4179,8 @@ class ApplicationModel(QtCore.QObject):
                         return
                     else:
                         if self._current_workflow and self.current_wf_id != NOT_SUBMITTED_WF_ID:
-                            if self._current_workflow.updateState(wf_complete_status):
+                            if self._current_workflow.updateState(
+                                    wf_complete_status):
                                 self.workflow_state_changed.emit()
                         if self.current_wf_id != NOT_SUBMITTED_WF_ID and self.workflow_status != wf_status:
                             self.workflow_status = wf_status
@@ -4009,6 +4311,7 @@ class ApplicationModel(QtCore.QObject):
         If not the current connection is set to None.
         '''
         with self._lock:
+            #ref = self.resource_pool._connections[resource_id]
             self.resource_pool.delete_connection(resource_id)
             del self._workflows[resource_id]
             del self._expiration_dates[resource_id]
@@ -4024,8 +4327,8 @@ class ApplicationModel(QtCore.QObject):
                 self.workflow_name = None
                 resource_ids = self.resource_pool.resource_ids()
                 if resource_ids:
-                    self.current_resource_id = self.resource_pool.resource_ids()[
-                        0]
+                    self.current_resource_id \
+                        = next(iter(self.resource_pool.resource_ids()))
                 else:
                     self.current_resource_id = None
                 if self.current_resource_id != None:
@@ -4033,6 +4336,19 @@ class ApplicationModel(QtCore.QObject):
                         self.current_resource_id)
                 self.current_connection_changed.emit()
             self.global_workflow_state_changed.emit()
+
+            #ref.disconnect() # should be done by WorkflowController.__del__
+            #import objgraph
+            #objgraph.show_backrefs(ref, refcounts=True, max_depth=10)
+
+            # we need to use gc.collect() here to make sure the
+            # WorkflowController actually gets destroyed. It seems that there
+            # are some internal references (that I could not find) that prevent
+            # automatic refcount deletion.
+            import gc
+            #print('ref:', gc.get_referrers(ref))
+            #del ref
+            gc.collect()
 
     def set_current_connection(self, resource_id):
         if resource_id != self.current_resource_id:
@@ -4305,7 +4621,8 @@ class GuiWorkflow(object):
                                  job.referenced_output_files),
                              name=job.name,
                              job_id=job_id,
-                             priority=job.priority)
+                             priority=job.priority,
+                             parallel_job_info=job.parallel_job_info)
             ids[job] = item_id
             self.items[item_id] = gui_job
             self.server_jobs[gui_job.job_id] = item_id
@@ -4348,25 +4665,19 @@ class GuiWorkflow(object):
                         self.items[item.parent].children[item.row] = item.it_id
 
         # processing the file transfers
-        def compFileTransfers(ft1, ft2):
-            if isinstance(ft1, FileTransfer):
-                str1 = ft1.name
-            else:
-                str1 = ft1
-            if isinstance(ft2, FileTransfer):
-                str2 = ft2.name
-            else:
-                str2 = ft2
-            return cmp(str1, str2)
+        def file_transfer_key(ft):
+            if isinstance(ft, FileTransfer):
+                return ft.name
+            return ft
 
         for ft in w_fts:
             # print(" ft " + repr(ft))
             ids[ft] = []
             for job in w_js:
                 ref_in = list(job.referenced_input_files)
-                ref_in.sort(compFileTransfers)
+                ref_in.sort(key=file_transfer_key)
                 ref_out = list(job.referenced_output_files)
-                ref_out.sort(compFileTransfers)
+                ref_out.sort(key=file_transfer_key)
                 if ft in ref_in:
                     item_id = id_cnt
                     id_cnt = id_cnt + 1
@@ -4453,12 +4764,12 @@ class GuiWorkflow(object):
             return False
         # updating jobs:
         for job_info in wf_status[0]:
-            job_id, status, queue, exit_info, date_info = job_info
+            job_id, status, queue, exit_info, date_info, drmaa_id = job_info
             # date_info = (None, None, None) # (submission_date,
             # execution_date, ending_date)
             item = self.items[self.server_jobs[job_id]]
             data_changed = item.updateState(
-                status, queue, exit_info, date_info) or data_changed
+                status, queue, exit_info, date_info, drmaa_id) or data_changed
 
         # end = datetime.now() - begining
         # print(" <== end updating jobs" + repr(self.wf_id) + " : " +
@@ -4504,6 +4815,7 @@ class GuiWorkflow(object):
                 item.submission_date = None
                 item.execution_date = None
                 item.ending_date = None
+                item.serial_duration = None
 
 
 class GuiWorkflowItem(object):
@@ -4623,9 +4935,9 @@ class GuiGroup(GuiWorkflowItem):
                     self.queued.append(item)
                 else:
                     self.running.append(item)
-                if item.ending_date:
-                    self.theoretical_serial_time = self.theoretical_serial_time + \
-                        (item.ending_date - item.execution_date)
+                if item.serial_duration:
+                    self.theoretical_serial_time \
+                        = self.theoretical_serial_time + item.serial_duration
                     if item.ending_date > self.last_end_date:
                         self.last_end_date = item.ending_date
                 if item.submission_date and item.submission_date < self.first_sub_date:
@@ -4686,7 +4998,8 @@ class GuiJob(GuiWorkflowItem):
                  children_nb=0,
                  name="no name",
                  job_id=NOT_SUBMITTED_JOB_ID,
-                 priority=None):
+                 priority=None,
+                 parallel_job_info=None):
         super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
 
         self.status = "not submitted"
@@ -4698,13 +5011,19 @@ class GuiJob(GuiWorkflowItem):
         self.ending_date = None
         self.priority = priority
         self.queue = None
+        self.serial_duration = None
 
         self.name = name
         self.job_id = job_id
+        self.drmaa_id = None
 
         self.tmp_stderrout_dir = tmp_stderrout_dir
+        self.parallel_job_info = parallel_job_info
 
         cmd_seq = []
+        unic_t = str
+        if sys.version_info[0] < 3:
+            unic_t = unicode
         for command_el in command:
             if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
                 cmd_seq.append(
@@ -4717,14 +5036,15 @@ class GuiJob(GuiWorkflowItem):
                                " " + command_el.uuid + " " + command_el.relative_path + " >")
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
-            elif isinstance(command_el, unicode) or isinstance(command_el, unicode):
+            elif isinstance(command_el, unic_t) \
+                    or isinstance(command_el, unic_t):
                 cmd_seq.append(utf8(command_el))
             else:
                 cmd_seq.append(repr(command_el))
         separator = " "
         self.command = separator.join(cmd_seq)
 
-    def updateState(self, status, queue, exit_info, date_info):
+    def updateState(self, status, queue, exit_info, date_info, drmaa_id):
         self.initiated = True
         state_changed = False
         state_changed = self.status != status or state_changed
@@ -4734,14 +5054,20 @@ class GuiJob(GuiWorkflowItem):
         self.submission_date = date_info[0]
         self.execution_date = date_info[1]
         self.ending_date = date_info[2]
+        self.drmaa_id = drmaa_id
         state_changed = self.queue != queue or state_changed
         self.queue = queue
         if self.exit_info:
             exit_status, exit_value, term_signal, resource_usage = self.exit_info
             if resource_usage:
+                if six.PY3:
+                    # in py3 RU is bytes, we want unicode/str
+                    resource_usage = resource_usage.decode()
                 ru = resource_usage.split()
+                rud = {}
                 for ruel in ru:
                     ruel = ruel.split("=")
+                    rud[ruel[0]] = ruel[1]
                     if ruel[0] == "start_time" and ruel[1] != "0":
                         t = time.localtime(float(ruel[1].replace(',', '.')))
                         self.execution_date = datetime(year=t[0], month=t[
@@ -4754,6 +5080,28 @@ class GuiJob(GuiWorkflowItem):
                         t = time.localtime(float(ruel[1].replace(',', '.')))
                         self.submission_date = datetime(year=t[0], month=t[
                                                         1], day=t[2], hour=t[3], minute=t[4], second=t[5])
+                if self.ending_date:
+                    self.serial_duration \
+                        = self.ending_date - self.execution_date
+                    if "cput" in rud:
+                        tlist = [int(x) for x in rud["cput"].split(':')]
+                        t = time.struct_time([0] * (6 - len(tlist)) 
+                                                 + tlist + [0, 0, 0])
+                        t = datetime.fromtimestamp(time.mktime(t))
+                        t0 = datetime.fromtimestamp(time.mktime(
+                            time.struct_time([0] * 9)))
+                        #t = datetime.strptime(rud["cput"], "%H:%M:%S")
+                        #t0 = datetime.strptime("00:00:00", "%H:%M:%S")
+                        self.serial_duration = t - t0
+                    elif "cpupercent" in rud:
+                        duration = self.serial_duration.total_seconds() \
+                            * float(rud["cpupercent"]) / 100.
+                        self.serial_duration = timedelta(seconds=duration)
+                    elif 'ncpus' in rud:
+                        duration = self.serial_duration.total_seconds() \
+                            * int(rud["ncpus"])
+                        self.serial_duration = timedelta(seconds=duration)
+
 
         return state_changed
 

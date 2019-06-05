@@ -28,8 +28,8 @@ This page describes the installation and configuration of the Soma-workflow clie
 Requirements
 ------------
 
-* Python *version 2.5 or more*
-* `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
+* Python *version 2.6 or more*
+* `ZeroMQ <http://zeromq.org>`_ 
 * `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in
   only required if the computing resource is remote.
 * For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
@@ -103,7 +103,7 @@ Configuration file example (2 computing resources are configured): ::
     Address of the host which has to be used to access the cluster remotely.
 
   **SUBMITTING_MACHINES**
-    Address of the submitting hosts, that is the hosts from which the jobs
+    Address of the submitting hosts, that are the hosts from which the jobs
     are supposed to be submitted. In most of the cases, there is only one
     submitting host. The addresses are local on the cluster.
     Syntax: "host1 host2 host3"
@@ -113,13 +113,23 @@ Configuration file example (2 computing resources are configured): ::
 
 *Configuration items optional on the client side:*
 
+.. _allowed_python_versions:
+
+  **ALLOWED_PYTHON_VERSIONS**
+    *Added in Soma-Workflow 3.0*
+
+    a coma-separated list of major python versions that can be used with the
+    resource. It can be used to filter out unmatching versions so that the
+    GUI automatically connects to a matching one, and does not allow to connect
+    to others.
+
+  **LOGIN**
+    To pre-fill the login field in the GUI when login to the resource.
+
   **QUEUES**
     List of the available queues. This item is only used in the GUI to make
     easier the selection of the queue when submitting a workflow.
     Syntax: "queue1 queue2 queue3"
-
-  **LOGIN**
-    To pre-fill the login field in the GUI when login to the resource.
 
 
 
@@ -133,9 +143,7 @@ This page explains how to configure, install and run the Soma-workflow
 database server.
 
 In the client-server mode the communication between the processes is done using
-`Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_. The server is registered on a Pyro
-name server. The Workflow Engines query the Pyro name server for the
-location the database server.
+the module zro which is included in the soma_workflow package and is inspired on `Pyro4 <https://pythonhosted.org/Pyro4/>`_ syntax and uses the zmq package. In principle object are registered to the zro object server. At registration an uri is produced which can be used by other programs to instanciation proxy objects.A method call on a proxy object will contact the remote object and return its answer. For instance, the Workflow Engines query a proxy object of the database server to call its method.
 
 .. _server_requirements:
 
@@ -149,22 +157,29 @@ Here is the list of the server dependencies:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
-* Python *version 2.5 or more*
-* `Pyro <http://www.xs4all.nl/~irmen/pyro3/>`_ *version 3.10 or more*
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* Python *version 2.6 or more*
+* `zmq <http:/zeromq.org>`_ 
 * `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
 The implementations of DRMAA tested successfully with Soma-workflow:
 
-  ===================  ==========================
+  ===================  ===========================================
   DRMS                 DRMAA implementation
-  ===================  ==========================
+  ===================  ===========================================
   Torque 2.0.0         `PBS DRMAA 1.0.13 <http://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/>`_ from http://apps.man.poznan.pl/trac/pbs-drmaa
   LSF 7.0              FedStage LSF DRMAA 1.0.3
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
-  ===================  ==========================
+  ===================  ===========================================
 
+On the contrary, we had problems with the following implementations:
+
+  ===================  ===========================================
+  DRMS                 DRMAA implementation
+  ===================  ===========================================
+  PBSPro 18.1.2        DRMAA is failing, use the :ref:`PBSPro scheduler <pbspro>`
+  ===================  ===========================================
 
 .. _server_management:
 
@@ -246,11 +261,10 @@ Configuration items required on the server side:
       Do not copy any file in this directory. Soma_workflow manages the
       entire directory and might delete any external file.
 
-  **NAME_SERVER_HOST**
-    Host where the Pyro name server runs.
+  **NAME_SERVER_HOST** legacy to be removed.
 
-  **SERVER_NAME**
-    Name of the database server regitered on the Pyro name server.
+  **SERVER_NAME** (to be replace with DB_SERVER_NAME, will be clearer)
+    Name of the database server.
 
 .. _conf_server_option:
 
@@ -314,7 +328,7 @@ Configuration items optional on the server side:
 
       **drmaa**: cluster or grid scheduler, based on DRMAA. This is the scheduler used normally on servers, and is the default in such a case.
 
-      **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters` (light) mode.
+      **mpi**: mono-process scheduler using MPI for the :ref:`Mono process application on clusters <light_mode_config>` (light) mode.
 
   **SHARED_TEMPORARY_DIR**
     Directory where to generate temporary files used between jobs. The directory should be visible by all processing nodes (on a cluster), and the filesystem should be large enough to store temporary files during a whole workflow execution.
@@ -422,14 +436,14 @@ Requirements
 
 The requirements are identical to the server installation requirements.
 If you do not intend to access an other computing resource with the remote
-access feature, the installation of Pyro can be skipped.
+access feature, the installation of zmq can be skipped.
 
 The requirements are thus:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C
-* Python *version 2.5 or more*
+* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* Python *version 2.6 or more*
 * SQLite *version 3 or more*
 * For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
 

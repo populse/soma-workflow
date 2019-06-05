@@ -31,7 +31,7 @@ except ImportError:
 from ConfigParser import SafeConfigParser
 
 # Soma Workflow import
-from soma_workflow.connection import SSHExecCmd, check_if_somawfdb_on_server
+from soma_workflow.connection import SSH_exec_cmd, check_if_somawfdb_on_server
 import soma_workflow.configuration as configuration
 from soma_workflow.configuration import WriteOutConfiguration
 from soma_workflow.client import Job, Workflow, WorkflowController
@@ -65,7 +65,7 @@ def GetHostNameOnPBSTORQUE(userid,
         Raises paramiko.AuthenticationException when the authetification
         fails.
     """
-    return SSHExecCmd("hostname", userid, ip_address_or_domain, userpw)[0]
+    return SSH_exec_cmd("hostname", userid, ip_address_or_domain, userpw)[0]
 
 
 def GetQueueNamesOnPBSTORQUE(userid,
@@ -92,8 +92,8 @@ def GetQueueNamesOnPBSTORQUE(userid,
         Raises paramiko.AuthenticationException when the authetification
         fails.
     """
-    std_out_lines = SSHExecCmd("qstat -Q", userid, ip_address_or_domain,
-                               userpw)
+    std_out_lines = SSH_exec_cmd("qstat -Q", userid, ip_address_or_domain,
+                                 userpw)
 
     info_queue = []
     # Skip the first line since it is the header
@@ -168,14 +168,11 @@ def SetupConfigurationFileOnClient(configuration_item_name,
         # First read the configuration file
         config_parser = read_configuration_file(config_file_path)
 
-        # Then check if configuration item is already created
-        sections = config_parser.sections()
-        if not configuration_item_name in sections:
-            # Add client config
-            config_parser = ConfiguratePaser(configuration_item_name, userid,
-                                             ip_address_or_domain, userpw, install_swf_path_server,
-                                             sshport, config_parser)
-            WriteOutConfiguration(config_parser, config_file_path)
+        # Add client config
+        config_parser = ConfiguratePaser(configuration_item_name, userid,
+                                          ip_address_or_domain, userpw, install_swf_path_server,
+                                          sshport, config_parser)
+        WriteOutConfiguration(config_parser, config_file_path)
 
 
 def read_configuration_file(config_file_path):
@@ -250,7 +247,8 @@ def ConfiguratePaser(configuration_item_name,
                                           userpw)
 
     # Add section
-    config_parser.add_section(configuration_item_name)
+    if configuration_item_name not in config_parser.sections():
+        config_parser.add_section(configuration_item_name)
 
     # Fill section
     config_parser.set(configuration_item_name,
@@ -272,6 +270,9 @@ def ConfiguratePaser(configuration_item_name,
         config_parser.set(configuration_item_name,
                           configuration.OCFG_INSTALLPATH,
                           installpath)
+    config_parser.set(configuration_item_name,
+                      configuration.OCFG_ALLOWED_PYTHON_VERSIONS,
+                      str(sys.version_info[0]))
 
     return config_parser
 
@@ -365,11 +366,12 @@ def InstallSomaWF2Server(userid,
     logging.info("ssh command = {0}".format(command))
     print('install command:', command)
 
-    (std_out_lines, std_err_lines) = SSHExecCmd(command, userid,
-                                                ip_address_or_domain, userpw,
-                                                wait_output=False,
-                                                isNeedErr=True,
-                                                sshport=sshport)
+    (std_out_lines, std_err_lines) = SSH_exec_cmd(command, userid,
+                                                  ip_address_or_domain, 
+                                                  userpw,
+                                                  wait_output=False,
+                                                  isNeedErr=True,
+                                                  sshport=sshport)
     if len(std_err_lines) > 0:
         logging.error("Unable to configure the server: {0}".format(
                       std_err_lines))
@@ -419,7 +421,7 @@ def CopySomaWF2Server(userid,
     install_swf_path_server = os.path.join(install_swf_path_server,
                                            "soma_workflow_auto_remote_install")
     # Create install directory if necessary
-    std_out_lines = SSHExecCmd(
+    std_out_lines = SSH_exec_cmd(
         "mkdir -p '{0}'".format(install_swf_path_server),
         userid, ip_address_or_domain, userpw, sshport=sshport,
         exit_status='raise')
@@ -556,13 +558,13 @@ def RemoveSomaWF2Server(userid,
                                        "soma_workflow", "clean_server.py")
     command = "python '{0}' -r {1}".format(clean_script_server,
                                            configuration_item_name)
-    SSHExecCmd(command, userid, ip_address_or_domain,
-               userpw, wait_output=False, sshport=sshport)
+    SSH_exec_cmd(command, userid, ip_address_or_domain,
+                 userpw, wait_output=False, sshport=sshport)
 
     # Remove the source files on the server
     command = "rm -rf '{0}'".format(install_swf_path_server)
-    SSHExecCmd(command, userid, ip_address_or_domain,
-               userpw, wait_output=False, sshport=sshport)
+    SSH_exec_cmd(command, userid, ip_address_or_domain,
+                 userpw, wait_output=False, sshport=sshport)
 
     # remove the configuration on the client
     RemoveResNameOnConfigureFile(configuration_item_name)

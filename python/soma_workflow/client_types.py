@@ -43,6 +43,16 @@ class Job(object):
       The command is the only argument required to create a Job.
       It is also useful to fill the job name for the workflow display in the GUI.
 
+    **Parallel jobs**
+
+    When a job is designed to run on multiple processors, cluster managements systems normally do the necessary work to run or duplicate the job processes on multiple computing nodes. There are basically 3 classical ways to do it:
+
+      * use MPI (whatever implementation): job commands are run through a launcher program (``mpirun``) which will run the processes and establish inter-process communications.
+      * use OpenMP: this threading-based system allows to use several cores on the same computing node (using shared memory). The OpenMP allows to use the required nuber of threads.
+      * manual threading or forking ("native" mode).
+
+    In all cases one job runs on several processors/cores. The MPI variant additionally allows to run the same job on several computing nodes (which do not share memory), the others should run on the same node (as far as I know - I'm not an expert of OpenMP). The job specifications should then precise which kind of parallelism they are using, the number of nodes the job should run on, and the number of CPU cores which should be allocated on each node. Thus the **parallel_job_info** variable of a job is a dictionary giving these 3 information, under the respective keys `config_name`, `nodes_number` and `cpu_per_node`. In OpenMP and native modes, the nodes_number should be 1.
+
     **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and TemporaryPath or/and tuple (FileTransfer, relative_path) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (FileTransfer, relative_path)*
 
       The command to execute. It can not be empty. In case of a shared file system
@@ -110,11 +120,13 @@ class Job(object):
         * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
         * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
-    **parallel_job_info**: *tuple(string, int)*
+    **parallel_job_info**: *dict*
       The parallel job information must be set if the Job is parallel (ie. made to
       run on several CPU).
-      The parallel job information is a tuple: (name of the configuration,
-      maximum number of CPU used by the Job).
+      The parallel job information is a dict, with the following supported items:
+          * config_name: name of the configuration (native, MPI, OpenMP)
+          * nodes_number: number of computing nodes used by the Job,
+          * cpu_per_node: number of CPU or cores needed for each node
       The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
       .. warning::
@@ -654,6 +666,8 @@ class Workflow(object):
                  disposal_timeout=168,
                  user_storage=None,
                  name=None):
+        import logging
+        logging.debug("Within Workflow constructor")
 
         self.name = name
         self.jobs = jobs
@@ -767,7 +781,6 @@ class Workflow(object):
         '''
         The keys must be string to serialize with JSON.
         '''
-        # TODO user_storage
         id_generator = IdGenerator()
         job_ids = {}  # Job -> id
 
@@ -858,6 +871,11 @@ class Workflow(object):
                                                 option_ids)
         wf_dict["serialized_option_paths"] = ser_opt
 
+        # user_storage
+        user_storage = self.user_storage
+        if hasattr(user_storage, 'to_dict'):
+            user_storage = user_storage.to_dict()
+
         return wf_dict
 
     @classmethod
@@ -943,10 +961,13 @@ class Workflow(object):
             dep = (job_from_ids[id_dep[0]], job_from_ids[id_dep[1]])
             dependencies.append(dep)
 
+        # user storage, TODO: handle objects in it
+        user_storage = d.get('user_storage', None)
+
         workflow = cls(jobs,
                        dependencies,
                        root_group=root_group,
-                       user_storage=None,
+                       user_storage=user_storage,
                        name=name)
 
         return workflow
@@ -1978,3 +1999,6 @@ def list_from_serializable(list_to_convert,
                                        opt_from_ids)
         us_list.append(us_element)
     return us_list
+
+
+

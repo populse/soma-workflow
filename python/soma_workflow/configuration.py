@@ -44,9 +44,6 @@ MODES = [LIGHT_MODE,
 LOCAL_SCHEDULER = 'local_basic'
 DRMAA_SCHEDULER = 'drmaa'
 MPI_SCHEDULER = 'mpi'
-SCHEDULER_TYPES = [LOCAL_SCHEDULER,
-                   DRMAA_SCHEDULER,
-                   MPI_SCHEDULER]
 
 # configuration variables ------------------------------------------------
 
@@ -119,7 +116,9 @@ PARALLEL_DRMAA_ATTRIBUTES = [OCFG_PARALLEL_COMMAND, OCFG_PARALLEL_JOB_CATEGORY]
 # kinds of parallel jobs (items can be added by administrator)
 OCFG_PARALLEL_PC_MPI = "MPI"
 OCFG_PARALLEL_PC_OPEN_MP = "OpenMP"
-PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP]
+OCFG_PARALLEL_PC_NATIVE = "native"
+PARALLEL_CONFIGURATIONS = [OCFG_PARALLEL_PC_MPI, OCFG_PARALLEL_PC_OPEN_MP,
+                           OCFG_PARALLEL_PC_NATIVE]
 # parallel job environment variables for the execution machine (items can
 # be added by administrators)
 OCFG_PARALLEL_ENV_MPI_BIN = 'PARALLEL_ENV_MPI_BIN'
@@ -131,6 +130,9 @@ OCFG_NATIVE_SPECIFICATION = 'NATIVE_SPECIFICATION'
 
 # Container (docker / singularity...) prefix prepended to all commands in jobs
 OCFG_CONTAINER_COMMAND = 'CONTAINER_COMMAND'
+
+# Python version filtering
+OCFG_ALLOWED_PYTHON_VERSIONS = 'ALLOWED_PYTHON_VERSIONS'
 
 # local sheduler configuration -------------------------------------------
 
@@ -223,7 +225,8 @@ class Configuration(observer.Observable):
           A mode among the existing modes defined in configuration.MODES
 
         * scheduler_type *string*
-          A scheduler type among the existing schedulers defined in SCHEDULER_TYPES
+          A scheduler type among the existing schedulers defined in the 
+          schedulers submodules
 
         * database_file *string*
           Path of the database_file.
@@ -372,6 +375,9 @@ class Configuration(observer.Observable):
         config = None
         home_dir = Configuration.get_home_dir()
 
+        if resource_id is None:
+            resource_id = Configuration.get_local_resource_id(
+                config_file_path=config_file_path)
         if resource_id == None \
                 or resource_id in (socket.gethostname(), 
                                    socket.gethostname().split('.')[0]):
@@ -455,11 +461,14 @@ class Configuration(observer.Observable):
             if config_parser.has_option(resource_id, OCFG_SCHEDULER_TYPE):
                 scheduler_type = config_parser.get(
                     resource_id, OCFG_SCHEDULER_TYPE)
-                if scheduler_type not in SCHEDULER_TYPES:
+                from soma_workflow import scheduler
+                try:
+                    sched_impl \
+                        = scheduler.get_scheduler_implementation(
+                            scheduler_type)
+                except:
                     raise ConfigurationError("Unknown scheduler type:"
-                                             " " + repr(scheduler_type) +
-                                             "Scheduler type must be one of the "
-                                             "following:" + repr(SCHEDULER_TYPES))
+                                             " " + repr(scheduler_type))
             else:
                 scheduler_type = DRMAA_SCHEDULER
 
@@ -542,9 +551,17 @@ class Configuration(observer.Observable):
         return config_path
 
     @staticmethod
-    def get_configured_resources(config_file_path=None):
+    def get_configured_resources(config_file_path=None, filtered=True):
         '''
-        returns the list of resouce ids
+        returns the list of resource ids
+
+        Parameters
+        ----------
+        config_file_path: str
+            config file path, use default one if not specified
+        filtered: bool
+            if True, filter out non-matching resources (based on python
+            version)
         '''
         resource_ids = []
         if config_file_path == None:
@@ -553,15 +570,84 @@ class Configuration(observer.Observable):
         config_parser.read(config_file_path)
         for r_id in config_parser.sections():
             resource_ids.append(r_id)
-        local_resource_id = socket.gethostname()
-        if not local_resource_id in resource_ids:
-            resource_ids.append(local_resource_id)
-        return resource_ids
+        local_machine = socket.gethostname()
+        local_resource_id = local_machine
+        new_resource_ids = []
+        for resource_id in resource_ids:
+            if filtered \
+                    and not Configuration.is_python_version_matching(
+                        config_parser, resource_id):
+                # remove this one
+                continue
+            new_resource_ids.append(resource_id)
+            
+            try:
+                machines = config_parser.get(resource_id,
+                                            CFG_SUBMITTING_MACHINES)
+            except configparser.NoOptionError:
+                machines = None
+                
+                
+            if (machines is None or local_machine in machines
+                or 'localhost' in machines) \
+                    and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
+                local_resource_id = resource_id
+        if local_resource_id not in new_resource_ids:
+            new_resource_ids.append(local_resource_id)
+        return new_resource_ids
+
+    @staticmethod
+    def get_local_resource_id(config=None, config_file_path=None,
+                              filtered=True):
+        '''
+        Find a matching local resource configuration. A local resource
+        is identified by the following criterions:
+        * it is not filtered out is "filtered" is True
+        * the resource id matches the local machine name, or its
+          SUBMITTING_MACHINES section contains the local machine name, or
+          "localhost"
+        * the resource mode is ``LIGHT_MODE``
+        '''
+        if config_file_path is None:
+            config_file_path = Configuration.search_config_path()
+        if config is None:
+            if config_file_path == None:
+                return socket.gethostname()
+            config_parser = configparser.ConfigParser()
+            config_parser.read(config_file_path)
+        else:
+            config_parser = config._config_parser
+            if config_parser is None:
+                if config._config_path is None:
+                    return socket.gethostname()
+                config_parser = configparser.ConfigParser()
+                config_parser.read(config._config_path)
+                config._config_parser = config_parser
+
+        local_machine = socket.gethostname()
+        for resource_id in config_parser.sections():
+            if filtered \
+                    and not Configuration.is_python_version_matching(
+                        config_parser, resource_id):
+                # remove this one
+                continue
+
+            try:
+                machines = config_parser.get(resource_id,
+                                            CFG_SUBMITTING_MACHINES)
+            except configparser.NoOptionError:
+                machines = None
+                
+            if (machines is None or local_machine in machines
+                or 'localhost' in machines) \
+                    and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
+                return resource_id
+        return None
 
     @staticmethod
     def get_logins(config_file_path=None):
         '''
-        returns the dictionary resouce_id -> login
+        returns the dictionary resource_id -> login
         '''
         resource_ids = []
         if config_file_path == None:
@@ -692,9 +778,11 @@ class Configuration(observer.Observable):
         for parallel_config_info in PARALLEL_DRMAA_ATTRIBUTES + \
             PARALLEL_JOB_ENV + \
                 PARALLEL_CONFIGURATIONS:
-            if self._config_parser.has_option(self._resource_id, parallel_config_info):
-                self.parallel_job_config[parallel_config_info] = self._config_parser.get(
-                    self._resource_id, parallel_config_info)
+            if self._config_parser.has_option(self._resource_id,
+                                              parallel_config_info):
+                self.parallel_job_config[parallel_config_info] = \
+                    self._config_parser.get(self._resource_id,
+                                            parallel_config_info)
 
         return self.parallel_job_config
 
@@ -951,6 +1039,29 @@ class Configuration(observer.Observable):
         else:
             return None
 
+    @staticmethod
+    def get_allowed_python_versions(config_parser, resource_id):
+        if config_parser.has_option(resource_id, OCFG_ALLOWED_PYTHON_VERSIONS):
+            allowed_py_ver = config_parser.get(resource_id,
+                                               OCFG_ALLOWED_PYTHON_VERSIONS)
+            allowed_py_ver = [int(x.strip())
+                              for x in allowed_py_ver.split(',')]
+            return allowed_py_ver
+        else:
+            return None
+
+    @staticmethod
+    def is_python_version_matching(config_parser, resource_id):
+        '''
+        checks if the resource is configured for a python version which
+        matches the current interpreter. If not specified in the configuration
+        (see option ALLOWED_PYTHON_VERSIONS), then the resource is considered
+        matching in any case (which is probably wrong in practice).
+        '''
+        py_ver = Configuration.get_allowed_python_versions(
+            config_parser, resource_id=resource_id)
+        return py_ver is None or sys.version_info[0] in py_ver
+
     def make_dirs(self, anypath, is_file_path=False):
         '''
         Example
@@ -1077,7 +1188,6 @@ def default_cpu_number():
         #return cpu - 1
     #return cpu
     return 0
-
 
 class LocalSchedulerCfg(observer.Observable):
 

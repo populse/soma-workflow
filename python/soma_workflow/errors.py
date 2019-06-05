@@ -3,9 +3,8 @@
 
 @organization: I2BM, Neurospin, Gif-sur-Yvette, France
 @organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+@license: `CeCILL B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html`_
 '''
 
 
@@ -102,3 +101,11 @@ class NoDrmaaLibError(Exception):
     Raised if no drmaa libary is found
     '''
     pass
+
+class ExitTimeoutException(Exception):
+    
+    '''
+    Raised if a DRMS command reaches a timeout before returning
+    '''
+    pass
+

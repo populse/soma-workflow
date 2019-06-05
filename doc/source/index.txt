@@ -33,6 +33,7 @@ Contents
    :maxdepth: 1
 
    concepts.txt
+   changes_swf3.txt
    gui.txt
    examples.txt
    MPI_workflow_runner.txt
@@ -40,6 +41,7 @@ Contents
    status_list.txt
    workflow_creation.txt
    client_API.txt
+   scheduler.txt
    install_config.txt
    changelog.txt
 
@@ -156,6 +158,26 @@ Main Features
 
 New
 ===
+
+In version 3.0:
+---------------
+
+* Pyro is gone, Soma-Workflow is now using `ZMQ <http://zeromq.org/>`_ and `PyZmq <https://pyzmq.readthedocs.io/en/latest/>`_.
+
+  As a consequence, all the client/server communication layer has been made completely incompatible with soma-workflow 2.9 and earlier. Client and server should always be the same version anyway. The client/server API has not changed fundamentally however.
+
+* Porting to Python3: Pyro3 having been dropped, all the requirements for porting to Python3 have now been met, and Soma-Workflow can entirely wotk using Python3. However it is not possible to run different versions of Python on the client and the server: read :doc:`changes_swf3` for details.
+
+* New PBSPro scheduler type, to be used when DRMAA is not available, or doesn't work (like on our new cluster): use ``scheduler_type = pbspro`` in the server config file. It might also work on PBS/Torque, we have not tried yet.
+
+* It is now possible to restart a workflow which is still running: running / pending jobs will go on, and only failed jobs will be restarted.
+
+* A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
+
+
+
+In version 2.10:
+----------------
 
 * In Soma-Workflow 2.10, the **"server management" options** have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.
 

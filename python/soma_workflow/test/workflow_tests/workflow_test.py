@@ -94,7 +94,7 @@ class WorkflowTest(unittest.TestCase):
 
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
-        sys.stdout.write("********* soma-workflow tests: WORKFLOW *********\n")
+        sys.stdout.write("********* soma-workflow tests: %s *********\n" % cls.__name__)
 
         config_file_path = Configuration.search_config_path()
     #    sys.stdout.write("Configuration file: " + config_file_path + "\n")
@@ -133,6 +133,7 @@ class WorkflowTest(unittest.TestCase):
                 config._database_file = tmpdb[1]
                 config._transfered_file_dir = tmptrans
 
+            wf_controller = None
             try:
 
                 with suppress_stdout(debug):
@@ -189,6 +190,8 @@ class WorkflowTest(unittest.TestCase):
                         raise RuntimeError("tests failed.")
 
             finally:
+                del wf_controller
+                cls.setup_wf_controller(None) # del WorkflowController
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
                         os.unlink(config._database_file)

@@ -20,7 +20,7 @@
    <string>TabWidget</string>
   </property>
   <property name="currentIndex">
-   <number>0</number>
+   <number>3</number>
   </property>
   <widget class="QWidget" name="tab_job_info">
    <attribute name="title">
@@ -221,6 +221,16 @@
     <string>More</string>
    </attribute>
    <layout class="QGridLayout" name="gridLayout">
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="job_id">
+      <property name="frame">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="2" column="0">
      <widget class="QLabel" name="label_11">
       <property name="text">
@@ -254,6 +264,19 @@
        <bool>true</bool>
       </property>
      </widget>
+    </item>
+    <item row="10" column="1">
+     <spacer name="verticalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
     </item>
     <item row="4" column="0">
      <widget class="QLabel" name="label_4">
@@ -316,19 +339,6 @@
     <item row="7" column="1">
      <widget class="QComboBox" name="resource_usage"/>
     </item>
-    <item row="9" column="1">
-     <spacer name="verticalSpacer_2">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>40</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
     <item row="0" column="0">
      <widget class="QLabel" name="label_13">
       <property name="text">
@@ -367,13 +377,17 @@
       </property>
      </widget>
     </item>
-    <item row="8" column="1">
-     <widget class="QLineEdit" name="job_id">
+    <item row="9" column="1">
+     <widget class="QLineEdit" name="drms_job_id">
       <property name="frame">
        <bool>false</bool>
       </property>
-      <property name="readOnly">
-       <bool>true</bool>
+     </widget>
+    </item>
+    <item row="9" column="0">
+     <widget class="QLabel" name="label_16">
+      <property name="text">
+       <string>DRMS job id:</string>
       </property>
      </widget>
     </item>

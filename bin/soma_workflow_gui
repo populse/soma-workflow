@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python
 
 '''
 @author: Soizic Laguitton
@@ -55,36 +55,42 @@ from soma_workflow.gui.workflowGui import ApplicationModel, MainWindow, SomaWork
 
 if __name__=="__main__":
   
-  app = QtGui.QApplication(sys.argv)
-  
-  #QtCore.pyqtRemoveInputHook()
+    app = QtGui.QApplication(sys.argv)
 
-  model = ApplicationModel()
+    #QtCore.pyqtRemoveInputHook()
 
-  i = 1
+    model = ApplicationModel()
 
-  if i == 1:
-  
-    if options.computing_resource is None and options.database is not None:
-        options.computing_resource = 'localhost'
-    sw_main_window = MainWindow(model, 
-                                options.user, 
-                                options.auto_connect,
-                                options.computing_resource,
-                                config_file=options.config,
-                                db_file=options.database)
-    
-    sw_main_window.show()
+    i = 1
 
-  elif i == 2:
-    sw_widget = SomaWorkflowWidget(model, 
-                                  options.user, 
-                                  options.auto_connect,
-                                  options.computing_resource,
-                                  config_file=options.config,
-                                  db_file=options.database)
-    sw_widget.show()
-  
+    if i == 1:
 
-  app.exec_()
-    
+        if options.computing_resource is None and options.database is not None:
+            options.computing_resource = None
+        sw_main_window = MainWindow(model,
+                                    options.user,
+                                    options.auto_connect,
+                                    options.computing_resource,
+                                    config_file=options.config,
+                                    db_file=options.database)
+
+        sw_main_window.show()
+
+    elif i == 2:
+        sw_widget = SomaWorkflowWidget(model,
+                                      options.user,
+                                      options.auto_connect,
+                                      options.computing_resource,
+                                      config_file=options.config,
+                                      db_file=options.database)
+        sw_widget.show()
+
+
+    app.exec_()
+
+    if i == 1:
+        del sw_main_window
+    else:
+        del sw_widget
+
+    del model

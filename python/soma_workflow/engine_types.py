@@ -24,6 +24,7 @@ import tempfile
 import weakref
 import six
 import time
+import datetime
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
@@ -35,7 +36,6 @@ import sys
 if sys.version_info[0] >= 3:
     basestring = str
     unicode = str
-
 
 class EngineJob(Job):
     '''
@@ -65,8 +65,6 @@ class EngineJob(Job):
         Mapping between client side objects (:obj:`FileTransfer` and
         :obj:`TemporaryPath`) and their server side equivalent
         (:obj:`EngineTransfer` and :obj:`EngineTemporaryPath`).
-    parallel_job_submission_info
-        Configuration of the prallel submission.
     container_command: list or None
         container (docker / singularity) command prefix to be prepended to
         the commandline
@@ -126,7 +124,6 @@ class EngineJob(Job):
                  workflow_id=-1,
                  path_translation=None,
                  transfer_mapping=None,
-                 parallel_job_submission_info=None,
                  container_command=None):
 
         super(EngineJob, self).__init__(client_job.command,
@@ -168,9 +165,9 @@ class EngineJob(Job):
         else:
             self.is_barrier = False
 
-        self._map(parallel_job_submission_info)
+        self._map()
 
-    def _map(self, parallel_job_submission_info):
+    def _map(self):
         '''
         Fill the transfer_mapping and srp_mapping attributes.
         + check the types of the Job arguments.
@@ -179,19 +176,25 @@ class EngineJob(Job):
             raise JobError("The command attribute is the only required "
                            "attribute of Job.")
 
-        if self.parallel_job_info:
-            parallel_config_name, max_node_number = self.parallel_job_info
-            if not parallel_job_submission_info:
-                raise JobError("No parallel information was registered for the "
-                               " current resource. A parallel job can not be submitted")
-            if parallel_config_name not in parallel_job_submission_info:
-                raise JobError("The parallel job can not be submitted because the "
-                               "parallel configuration %s is missing." % (configuration_name))
+        #if self.parallel_job_info:
+            #parallel_config_name = self.parallel_job_info.get('config_name')
+            #nodes_number = self.parallel_job_info.get('nodes_number', 1)
+            #cpu_per_node = self.parallel_job_info.get('cpu_per_node', 1)
+            #if not parallel_job_submission_info:
+                #raise JobError(
+                    #"No parallel information was registered for the "
+                    #" current resource. A parallel job can not be submitted")
+            #if parallel_config_name not in parallel_job_submission_info:
+                #raise JobError(
+                    #"The parallel job can not be submitted because the "
+                    #"parallel configuration %s is missing."
+                    #% (parallel_config_name))
+                ## potential bug should configuration_name be parallel_config_name
 
         def map_and_register(file, mode=None, addTo=[]):
             '''
             Helper function to register SpecialPath objects and map them
-            to teir engine representation.
+            to their engine representation.
 
             Args:
                 file (:obj:`list` or :obj:`tuple` or :obj:`str` or
@@ -244,11 +247,18 @@ class EngineJob(Job):
                         self.referenced_output_files.append(true_file)
                     if not true_file in self.path_mapping:
                         self.path_mapping[true_file] = self.transfer_mapping[true_file]
-                elif isinstance(true_file, SharedResourcePath) and not true_file in self.path_mapping:
-                    self.path_mapping[true_file] = EngineSharedResourcePath(true_file, path_translation=self.path_translation)
+                elif isinstance(true_file, SharedResourcePath) \
+                        and not true_file in self.path_mapping:
+                    self.path_mapping[true_file] \
+                        = EngineSharedResourcePath(
+                            true_file, path_translation=self.path_translation)
                 else:
-                    if not isinstance(true_file, basestring):
-                        raise JobError("Wrong type: %s" % (repr(true_file)))
+                    if six.PY3 and isinstance(true_file, bytes):
+                        true_file = true_file.decode('utf-8')
+                    if not isinstance(true_file, six.string_types):
+                        raise JobError(
+                            "Wrong argument type in job %s: %s\ncommand:\n%s"
+                            % (self.name, repr(true_file), repr(self.command)))
                     if mode == "File":
                         true_file = os.path.abspath(true_file)
                 if not isinstance(file, OptionPath):
@@ -288,7 +298,11 @@ class EngineJob(Job):
         elif isinstance(command, tuple):
             # If the entry si a tuple, we use 'first' to recover the directory
             # and 'second' to get the filename
-            new_command = os.path.join(self.generate_command(command[0], mode="Tuple"), command[1])
+            c1 = command[1]
+            if six.PY3 and isinstance(c1, bytes):
+                c1 = c1.decode()
+            new_command = os.path.join(
+                self.generate_command(command[0], mode="Tuple"), c1)
         elif isinstance(command, list):
             # If the entry is a list, we convert all its elements. If the
             # parent call was done on the full command (mode=="Command"),
@@ -430,7 +444,45 @@ class EngineWorkflow(Workflow):
     # dictionary: job_id -> list of job id
     _dependency_dict = None
 
+    #A workflow object. For serialisation purposes with serpent
+    _client_workflow = None
+
     logger = None
+
+    def to_dict(self):
+        wf_dict = super(EngineWorkflow, self).to_dict()
+
+        # path_translation
+        # queue
+        # expiration_date
+        # container_command
+        wf_dict["container_command"] = self.container_command
+
+        return wf_dict
+
+    @classmethod
+    def from_dict(cls, d):
+        client_workflow = Workflow.from_dict(d)
+
+        # path_translation
+        path_translation = {}
+
+        # queue
+        queue = d.get('queue', None)
+
+        # expiration_date
+        expiration_date = d.get('expiration_date')
+        if expiration_date is not None:
+            expiration_date = datetime.datetime(*expiration_date)
+
+        # name
+        name = client_workflow.name
+
+        # container_command
+        container_command = d.get('container_command')
+
+        return cls(client_workflow, path_translation, queue, expiration_date,
+                   name, container_command=container_command)
 
     class WorkflowCache(object):
 
@@ -450,13 +502,19 @@ class EngineWorkflow(Workflow):
                  expiration_date,
                  name,
                  container_command=None):
+        logging.debug("Within Engine workflow constructor")
 
         super(EngineWorkflow, self).__init__(client_workflow.jobs,
                                              client_workflow.dependencies,
                                              client_workflow.root_group,
                                              client_workflow.groups)
+                                             # STRANGE: does not match Workflow constructor,
+                                             # ,client_workflow.groups)
         self.wf_id = -1
 
+        logging.debug("After call to parent constructor, if we change the "
+                      "prototype of the constructor suppressing the "
+                      "last parametre nothing seem to happen, see comment above")
         self.status = constants.WORKFLOW_NOT_STARTED
         self._path_translation = path_translation
         self.queue = queue
@@ -600,7 +658,7 @@ class EngineWorkflow(Workflow):
 
         @rtype: tuple (sequence of EngineJob,
                        sequence of EngineJob,
-                       constanst.WORKFLOW_STATUS)
+                       constants.WORKFLOW_STATUS)
         @return: (jobs to run,
                   ended jobs
                   workflow status)
@@ -779,7 +837,7 @@ class EngineWorkflow(Workflow):
 
         @rtype: tuple (sequence of EngineJob,
                        sequence of EngineJob,
-                       constanst.WORKFLOW_STATUS)
+                       constants.WORKFLOW_STATUS)
         @return: (jobs to run,
                   ended jobs
                   workflow status)
@@ -895,16 +953,18 @@ class EngineWorkflow(Workflow):
         return (list(to_run), ended_jobs, status)
 
     def _update_state_from_database_server(self, database_server):
-        wf_status = database_server.get_detailed_workflow_status(self.wf_id)
+        wf_status = database_server.get_detailed_workflow_status(
+            self.wf_id, with_drms_id=True)
 
         for job_info in wf_status[0]:
-            job_id, status, queue, exit_info, date_info = job_info
+            job_id, status, queue, exit_info, date_info, drmaa_id = job_info
             self.registered_jobs[job_id].status = status
             exit_status, exit_value, term_signal, resource_usage = exit_info
             self.registered_jobs[job_id].exit_status = exit_status
             self.registered_jobs[job_id].exit_value = exit_value
             self.registered_jobs[job_id].str_rusage = resource_usage
             self.registered_jobs[job_id].terminating_signal = term_signal
+            self.registered_jobs[job_id].drmaa_id = drmaa_id
 
         for ft_info in wf_status[1]:
             (engine_path,
@@ -949,15 +1009,14 @@ class EngineWorkflow(Workflow):
         self._update_state_from_database_server(database_server)
 
         self.queue = queue
-        to_restart = False
         undone_jobs = []
-        done = True
         sub_info_to_resert = {}
         new_status = {}
         jobs_queue_changed = []
         self.cache = None
         for client_job in self.jobs:
             job = self.job_mapping[client_job]
+            undone = False
             if job.failed():
                 # clear all the information related to the previous job
                 # submission
@@ -975,8 +1034,10 @@ class EngineWorkflow(Workflow):
 
                 sub_info_to_resert[job.job_id] = None
                 new_status[job.job_id] = constants.NOT_SUBMITTED
+                undone = True
 
-            if not job.ended_with_success():
+            if undone or (self.status != constants.WORKFLOW_IN_PROGRESS
+                          and not job.ended_with_success()):
                 undone_jobs.append(job)
                 job.queue = self.queue
                 jobs_queue_changed.append(job.job_id)
@@ -1010,12 +1071,116 @@ class EngineWorkflow(Workflow):
                 if job_to_run:
                     to_run.append(job)
 
-        if to_run:
+        if to_run or self.status == constants.WORKFLOW_IN_PROGRESS:
             status = constants.WORKFLOW_IN_PROGRESS
         else:
             status = constants.WORKFLOW_DONE
 
         return (to_run, status)
+
+    def job_ids_which_can_rerun(self, job_ids):
+        ''' Check jobs depending on jobs from the job_ids list, and include
+        them in an extended list if they should re-run if job_ids are restarted.
+        '''
+        ext_job_ids = set(job_ids)
+        to_test = []
+        jobsdeps_f = {}
+        jobsdeps_t = {}
+        for dep in self.dependencies:
+            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j2 = self.job_mapping[dep[1]]
+            #if j2.status == constants.FAILED \
+                    #and j2.job_id not in ext_job_ids:
+            if j2.job_id not in ext_job_ids:
+                # dep[1] may change state
+                jobsdeps_f.setdefault(j2, set()).add(j1)
+                if j1.job_id in ext_job_ids \
+                        and j2.job_id not in ext_job_ids:
+                    to_test.append(j2)
+            #if j1.status == constants.FAILED \
+                    #and j1.job_id not in ext_job_ids:
+            if j1.job_id not in ext_job_ids:
+                jobsdeps_t.setdefault(j1, set()).add(j2)
+        while to_test:
+            job = to_test.pop(0)
+            if job.job_id in ext_job_ids:
+                continue
+            if all([j.status != constants.FAILED or j.job_id in ext_job_ids
+                    for j in jobsdeps_f[job]]):
+                ext_job_ids.add(job.job_id)
+                to_test += [j for j in jobsdeps_t.get(job, set())
+                            if j not in to_test]
+        return ext_job_ids
+
+    def restart_jobs(self, database_server, job_ids, check_deps=True):
+        ''' Restart jobs in a running workflow. Jobs should have been stopped
+        previously, otherwise they will probably be duplicated and run
+        concurrently. Dependent jobs can also be restarted.
+
+        Parameters
+        ----------
+        database_server:
+            database server object
+        job_ids: list of int
+            list of job_ids to be restarted
+        check_deps: bool
+            if True, dependent jobs are looked for and also reset to be
+            restarted. They also should have been stopped previously.
+
+        Returns
+        -------
+        jobs_to_run: list of EngineJob
+            jobs which can re-run immediately. These jobs can be submitted
+            directly in the engine.
+        '''
+        self._update_state_from_database_server(database_server)
+
+        if check_deps:
+            extended_job_ids = self.job_ids_which_can_rerun(job_ids)
+        else:
+            extended_job_ids = job_ids
+        print('restart_jobs:', extended_job_ids)
+        sub_info_to_resert = {}
+        new_status = {}
+        jobs_to_run = set()
+        for client_job in self.jobs:
+            job = self.job_mapping[client_job]
+            job_id = job.job_id
+            if job_id not in extended_job_ids:
+                continue
+            if job.status not in (constants.DONE, constants.FAILED):
+                print('job', job_id, 'is not ready for restart:', job.status)
+                continue
+
+            jobs_to_run.add(job)
+            # clear all the information related to the previous job
+            # submission
+            job.status = constants.NOT_SUBMITTED
+            job.exit_status = None
+            job.exit_value = None
+            job.terminating_signal = None
+            job.drmaa_id = None
+            job.queue = self.queue
+            stdout = open(job.stdout_file, "w")
+            stdout.close()
+            stderr = open(job.stderr_file, "w")
+            stderr.close()
+
+            sub_info_to_resert[job.job_id] = None
+            new_status[job_id] = constants.NOT_SUBMITTED
+
+        database_server.set_submission_information(sub_info_to_resert, None)
+        database_server.set_jobs_status(new_status)
+
+        extended_jobs = set(jobs_to_run)
+        # look for jobs which can restart immediately (all deps met)
+        for dep in self.dependencies:
+            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j2 = self.job_mapping[dep[1]]
+            if j2 in jobs_to_run and j1.status != constants.DONE:
+                jobs_to_run.remove(j2)
+
+        return jobs_to_run
 
 
 class EngineTransfer(FileTransfer):
