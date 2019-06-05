@@ -51,10 +51,10 @@ class JobTemplate(object):
                 f.write('#PBS -N %s\n' % self.jobName.replace(' ', '_'))
             if self.queue:
                 f.write('#PBS -q %s\n' % self.queue)
-            if self.env:
-                var = ','.join(['"%s=%s"' % (k, v.replace('"', '\\"')) 
-                                for k, v in six.iteritems(self.env)])
-                f.write('#PBS -v %s\n' % var)
+            #if self.env:
+                #var = ','.join(['"%s=%s"' % (k, v.replace('"', '\\"'))
+                                #for k, v in six.iteritems(self.env)])
+                #f.write('#PBS -v %s\n' % var)
             if self.nativeSpecification:
                 native_spec = self.nativeSpecification
                 if not isinstance(native_spec, list):
@@ -63,9 +63,16 @@ class JobTemplate(object):
                     f.write('#PBS %s\n' % spec)
             if self.joinFiles:
                 f.write('#PBS -j oe\n')
+
+            # env variables
+            if self.env:
+                for var, value in self.env.items():
+                    f.write('export %s=%s\n' % var, value)
+
             # working directory
             if self.workingDirectory:
                 f.write('cd "%s"\n' % self.workingDirectory)
+
             # commandline
             escaped_command = [x.replace('"', '\\"') for x in self.remoteCommand]
             f.write('"' + '" "'.join(escaped_command) + '"\n')
