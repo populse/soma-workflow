@@ -577,7 +577,8 @@ class EngineWorkflow(Workflow):
                 f.write('\n')
                 f.close()
                 try:
-                    env_json = subprocess.check_output([sys.executable, t[1]])
+                    env_json = subprocess.check_output([sys.executable,
+                                                        t[1]]).decode('utf-8')
                     env = json.loads(env_json)
                 except Exception as e:
                     logging.error(
