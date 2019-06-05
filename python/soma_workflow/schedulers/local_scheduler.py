@@ -330,6 +330,10 @@ class LocalScheduler(Scheduler):
                 kwargs = {'preexec_fn': os.setsid}
             else:
                 kwargs = {}
+            if env is not None:
+                env2 = dict(os.environ)
+                env2.update(env)
+                env = env2
             process = subprocess.Popen(command,
                                        stdin=stdin_file,
                                        stdout=stdout_file,

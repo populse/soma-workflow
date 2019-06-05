@@ -53,91 +53,94 @@ class Job(object):
 
     In all cases one job runs on several processors/cores. The MPI variant additionally allows to run the same job on several computing nodes (which do not share memory), the others should run on the same node (as far as I know - I'm not an expert of OpenMP). The job specifications should then precise which kind of parallelism they are using, the number of nodes the job should run on, and the number of CPU cores which should be allocated on each node. Thus the **parallel_job_info** variable of a job is a dictionary giving these 3 information, under the respective keys `config_name`, `nodes_number` and `cpu_per_node`. In OpenMP and native modes, the nodes_number should be 1.
 
-    **command**: *sequence of string or/and FileTransfer or/and SharedResourcePath or/and TemporaryPath or/and tuple (FileTransfer, relative_path) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (FileTransfer, relative_path)*
+    Attributes
+    ----------
 
-      The command to execute. It can not be empty. In case of a shared file system
-      the command is a sequence of string.
+    command: sequence of string or/and FileTransfer or/and SharedResourcePath or/and TemporaryPath or/and tuple (FileTransfer, relative_path) or/and sequence of FileTransfer or/and sequence of SharedResourcePath or/and sequence of tuple (FileTransfer, relative_path)
+        The command to execute. It can not be empty. In case of a shared file system
+        the command is a sequence of string.
 
-      In the other cases, the FileTransfer, SharedResourcePath, and TemporaryPath
-      objects will be replaced by the appropriate path before the job execution.
+        In the other cases, the FileTransfer, SharedResourcePath, and TemporaryPath
+        objects will be replaced by the appropriate path before the job execution.
 
-      The tuples (FileTransfer, relative_path) can be used to refer to a file in a
-      transfered directory.
+        The tuples (FileTransfer, relative_path) can be used to refer to a file in a
+        transfered directory.
 
-      The sequences of FileTransfer, SharedResourcePath or tuple (FileTransfer,
-      relative_path) will be replaced by the string "['path1', 'path2', 'path3']"
-      before the job execution. The FileTransfer, SharedResourcePath or tuple
-      (FileTransfer, relative_path) are replaced by the appropriate path inside
-      the sequence.
+        The sequences of FileTransfer, SharedResourcePath or tuple (FileTransfer,
+        relative_path) will be replaced by the string "['path1', 'path2', 'path3']"
+        before the job execution. The FileTransfer, SharedResourcePath or tuple
+        (FileTransfer, relative_path) are replaced by the appropriate path inside
+        the sequence.
 
-    **name**: *string*
-      Name of the Job which will be displayed in the GUI
+    name: string
+        Name of the Job which will be displayed in the GUI
 
-    **referenced_input_files**: *sequence of FileTransfer*
-      List of the FileTransfer which are input of the Job. In other words,
-      FileTransfer which are requiered by the Job to run. It includes the
-      stdin if you use one.
+    referenced_input_files: sequence of FileTransfer
+        List of the FileTransfer which are input of the Job. In other words,
+        FileTransfer which are requiered by the Job to run. It includes the
+        stdin if you use one.
 
-    **referenced_output_files**: *sequence of FileTransfer*
-      List of the FileTransfer which are output of the Job. In other words, the
-      FileTransfer which will be created or modified by the Job.
+    referenced_output_files: sequence of FileTransfer
+        List of the FileTransfer which are output of the Job. In other words, the
+        FileTransfer which will be created or modified by the Job.
 
-    **stdin**: *string or FileTransfer or SharedResourcePath*
-      Path to the file which will be read as input stream by the Job.
+    stdin: string or FileTransfer or SharedResourcePath
+        Path to the file which will be read as input stream by the Job.
 
-    **join_stderrout**: *boolean*
-      Specifies whether the error stream should be mixed with the output stream.
+    join_stderrout: boolean
+        Specifies whether the error stream should be mixed with the output stream.
 
-    **stdout_file**: *string or FileTransfer or SharedResourcePath*
-      Path of the file where the standard output stream of the job will be
-      redirected.
+    stdout_file: string or FileTransfer or SharedResourcePath
+        Path of the file where the standard output stream of the job will be
+        redirected.
 
-    **stderr_file**: *string or FileTransfer or SharedResourcePath*
-      Path of the file where the standard error stream of the job will be
-      redirected.
+    stderr_file: string or FileTransfer or SharedResourcePath
+        Path of the file where the standard error stream of the job will be
+        redirected.
 
-    .. note::
-      Set stdout_file and stderr_file only if you need to redirect the standard
-      output to a specific file. Indeed, even if they are not set the standard
-      outputs will always be available through the WorklfowController API.
+        .. note::
+          Set stdout_file and stderr_file only if you need to redirect the
+          standard output to a specific file. Indeed, even if they are not set
+          the standard outputs will always be available through the
+          WorklfowController API.
 
-    **working_directory**: *string or FileTransfer or SharedResourcePath*
-      Path of the directory where the job will be executed. The working directory
-      is useful if your Job uses relative file path for example.
+    working_directory: string or FileTransfer or SharedResourcePath
+        Path of the directory where the job will be executed. The working directory
+        is useful if your Job uses relative file path for example.
 
-    **priority**: *int*
-      Job priority: 0 = low priority. If several Jobs are ready to run at the
-      same time the jobs with higher priority will be submitted first.
+    priority: int
+        Job priority: 0 = low priority. If several Jobs are ready to run at the
+        same time the jobs with higher priority will be submitted first.
 
-    **native_specification**: *string*
-      Some specific option/function of the computing resource you want to use
-      might not be available among the list of Soma-workflow Job attributes.
-      Use the native specification attribute to use these specific functionalities.
-      If a native_specification is defined here, the configured native
-      specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
+    native_specification: string
+        Some specific option/function of the computing resource you want to use
+        might not be available among the list of Soma-workflow Job attributes.
+        Use the native specification attribute to use these specific functionalities.
+        If a native_specification is defined here, the configured native
+        specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
 
-      *Example:* Specification of a job walltime and more:
-        * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
-        * using a SGE cluster: native_specification="-l h_rt=10:00:00"
+        *Example:* Specification of a job walltime and more:
+          * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
+          * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
-    **parallel_job_info**: *dict*
-      The parallel job information must be set if the Job is parallel (ie. made to
-      run on several CPU).
-      The parallel job information is a dict, with the following supported items:
-          * config_name: name of the configuration (native, MPI, OpenMP)
-          * nodes_number: number of computing nodes used by the Job,
-          * cpu_per_node: number of CPU or cores needed for each node
-      The configuration name is the type of parallel Job. Example: MPI or OpenMP.
+    parallel_job_info: dict
+        The parallel job information must be set if the Job is parallel (ie. made to
+        run on several CPU).
+        The parallel job information is a dict, with the following supported items:
+            * config_name: name of the configuration (native, MPI, OpenMP)
+            * nodes_number: number of computing nodes used by the Job,
+            * cpu_per_node: number of CPU or cores needed for each node
+        The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
-      .. warning::
-        The computing resources must be configured explicitly to use this feature.
+        .. warning::
+          The computing resources must be configured explicitly to use this feature.
 
-    **user_storage**: *picklable object*
-      Should have been any small and picklable object for user need but was never
-      fully implemented. This parameter is simply ignored.
+    user_storage: picklable object
+        Should have been any small and picklable object for user need but was never
+        fully implemented. This parameter is simply ignored.
 
-    **env**: *dict(string, string)*
-      Environment variables to use when the job gets executed.
+    env: dict(string, string)
+        Environment variables to use when the job gets executed.
 
     ..
       **disposal_timeout**: int
@@ -607,38 +610,51 @@ class Workflow(object):
     '''
     Workflow representation.
 
-    **name**: *string*
+    Attributes
+    ----------
 
-    **jobs**: *sequence of Job*
-      Workflow jobs.
+    name: string
+        Name of the workflow which will be displayed in the GUI.
+        Default: workflow_id once submitted
 
-    **dependencies**: *sequence of tuple (element, element), element being Job or Group*
-      Dependencies between the jobs of the workflow.
-      If a job_a needs to be executed before a job_b can run: the tuple
-      (job_a, job_b) must be added to the workflow dependencies. job_a and job_b
-      must belong to workflow.jobs.
+    jobs: sequence of Job
+        Workflow jobs.
 
-      In Soma-Workflow 2.7 or higher, dependencies may use groups. In this case,
-      dependencies are replaced internally to setup the groups jobs dependencies.
-      2 additional barrier jobs (see BarrierJob) are used for each group.
+    dependencies: sequence of tuple (element, element), element being Job or Group
+        Dependencies between the jobs of the workflow.
+        If a job_a needs to be executed before a job_b can run: the tuple
+        (job_a, job_b) must be added to the workflow dependencies. job_a and job_b
+        must belong to workflow.jobs.
 
-    **root_group**: *sequence of Job and/or Group*
-      Recursive description of the workflow hierarchical structure. For displaying
-      purpose only.
+        In Soma-Workflow 2.7 or higher, dependencies may use groups. In this case,
+        dependencies are replaced internally to setup the groups jobs dependencies.
+        2 additional barrier jobs (see BarrierJob) are used for each group.
 
-    .. note::
-      root_group is only used to display nicely the workflow in the GUI. It
-      does not have any impact on the workflow execution.
+    root_group: *sequence of Job and/or Group*
+        Recursive description of the workflow hierarchical structure. For displaying
+        purpose only.
 
-      If root_group is not set, all the jobs of the workflow will be
-      displayed at the root level in the GUI tree view.
+        .. note::
+          root_group is only used to display nicely the workflow in the GUI. It
+          does not have any impact on the workflow execution.
 
-    **user_storage**: *picklable object*
-      For the user needs, any small and picklable object can be stored here.
+          If root_group is not set, all the jobs of the workflow will be
+          displayed at the root level in the GUI tree view.
 
-    **name**: *string*
-      Name of the workflow which will be displayed in the GUI.
-      Default: workflow_id once submitted
+    user_storage: picklable object
+        For the user needs, any small and picklable object can be stored here.
+
+    env: dict(string, string)
+        Environment variables to use when the job gets executed. The workflow-
+        level env variables are set to all jobs.
+
+    env_builder_code: string
+        python source code. This code will be executed from the engine, on
+        server side, but not in a processing node (in a separate python process
+        in order not to pollute the engine process) when a workflow is
+        starting. The code should print on the standard output a json
+        dictionary of environment variables, which will be set into all jobs,
+        in addition to the *env* variable above.
 
     '''
     # string
@@ -659,13 +675,21 @@ class Workflow(object):
     # any small and picklable object needed by the user
     user_storage = None
 
+    # environment variables
+    env = {}
+
+    # environment builder code
+    env_builder_code = None
+
     def __init__(self,
                  jobs,
                  dependencies=None,
                  root_group=None,
                  disposal_timeout=168,
                  user_storage=None,
-                 name=None):
+                 name=None,
+                 env={},
+                 env_builder_code=None):
         import logging
         logging.debug("Within Workflow constructor")
 
@@ -702,6 +726,8 @@ class Workflow(object):
         self.__convert_group_dependencies()
         if not root_group:
             self.root_group = self.jobs
+        self.env = env
+        self.env_builder_code = env_builder_code
 
     def add_workflow(self, workflow, as_group=None):
         '''
@@ -734,6 +760,9 @@ class Workflow(object):
             group = None
             self.root_group += workflow.root_group
             self.groups += workflow.groups
+
+        self.env.update(workflow.env)
+        # self.env_builder_code ?
         return group
 
     def add_dependencies(self, dependencies):
@@ -775,7 +804,8 @@ class Workflow(object):
                         return False
                 elif not attr[i] == other_attr[i]:
                     return False
-        return self.name == other.name
+        return self.name == other.name and self.env == other.env \
+            and self.env_builder_code == other.env_builder_code
 
     def to_dict(self):
         '''
@@ -876,6 +906,11 @@ class Workflow(object):
         if hasattr(user_storage, 'to_dict'):
             user_storage = user_storage.to_dict()
 
+        if self.env:
+            wf_dict['env'] = self.env
+        if self.env_builder_code is not None:
+            wf_dict['env_builder_code'] = self.env_builder_code
+
         return wf_dict
 
     @classmethod
@@ -964,11 +999,16 @@ class Workflow(object):
         # user storage, TODO: handle objects in it
         user_storage = d.get('user_storage', None)
 
+        env = d.get('env', {})
+        env_builder_code = d.get('env_builder_code')
+
         workflow = cls(jobs,
                        dependencies,
                        root_group=root_group,
                        user_storage=user_storage,
-                       name=name)
+                       name=name,
+                       env=env,
+                       env_builder_code=env_builder_code)
 
         return workflow
 

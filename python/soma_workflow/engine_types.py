@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 '''
 @author: Soizic Laguitton
 
@@ -25,6 +27,8 @@ import weakref
 import six
 import time
 import datetime
+import subprocess
+import json
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
@@ -124,7 +128,8 @@ class EngineJob(Job):
                  workflow_id=-1,
                  path_translation=None,
                  transfer_mapping=None,
-                 container_command=None):
+                 container_command=None,
+                 wf_env=None):
 
         super(EngineJob, self).__init__(client_job.command,
                                         client_job.referenced_input_files,
@@ -164,6 +169,13 @@ class EngineJob(Job):
             self.is_barrier = True
         else:
             self.is_barrier = False
+
+        if wf_env:
+            # use workflow env, then update with self.env
+            env = dict(wf_env)
+            if self.env:
+                env.update(self.env)
+            self.env = env
 
         self._map()
 
@@ -504,12 +516,15 @@ class EngineWorkflow(Workflow):
                  container_command=None):
         logging.debug("Within Engine workflow constructor")
 
-        super(EngineWorkflow, self).__init__(client_workflow.jobs,
-                                             client_workflow.dependencies,
-                                             client_workflow.root_group,
-                                             client_workflow.groups)
-                                             # STRANGE: does not match Workflow constructor,
-                                             # ,client_workflow.groups)
+        super(EngineWorkflow, self).__init__(
+            client_workflow.jobs,
+            client_workflow.dependencies,
+            client_workflow.root_group,
+            client_workflow.groups,
+            env=client_workflow.env,
+            env_builder_code=client_workflow.env_builder_code)
+            # STRANGE: does not match Workflow constructor,
+            # ,client_workflow.groups)
         self.wf_id = -1
 
         logging.debug("After call to parent constructor, if we change the "
@@ -541,11 +556,46 @@ class EngineWorkflow(Workflow):
         # begin without cache because it also has an overhead
         self.use_cache = False
 
+    def get_environ(self):
+        ''' Get environment variables dict for the workflow. This environment
+        is applied to all engine jobs (and can be specialized on a per-job
+        basis if jobs also have an env variable).
+
+        Env variables are built from the env variable of the workflow, and by
+        the result of execution of the env_builder_code source code.
+        '''
+        env = {}
+        if self.env_builder_code:
+            t = tempfile.mkstemp(prefix='swf_', suffix='.py')
+            try:
+                os.close(t[0])
+                if sys.version_info[0] >= 3:
+                    f = open(t[1], 'w', encoding='utf-8')
+                else:
+                    f = open(t[1], 'w')
+                f.write(self.env_builder_code)
+                f.write('\n')
+                f.close()
+                try:
+                    env_json = subprocess.check_output([sys.executable, t[1]])
+                    env = json.loads(env_json)
+                except Exception as e:
+                    logging.error(
+                        'workflow env_builder_code could not be executed:\n' + repr(e) + '\ncode:\n' + self.env_builder_code)
+            finally:
+                os.unlink(t[1])
+        if self.env:
+            env.update(self.env)
+        return env
+
     def _map(self):
         '''
         Fill the job_mapping attributes.
         + type checking
         '''
+        # get workflow environment variables
+        env = self.get_environ()
+
         # jobs
         for job in self.jobs:
             if not isinstance(job, Job):
@@ -556,7 +606,8 @@ class EngineWorkflow(Workflow):
                                  queue=self.queue,
                                  path_translation=self._path_translation,
                                  transfer_mapping=self.transfer_mapping,
-                                 container_command=self.container_command)
+                                 container_command=self.container_command,
+                                 wf_env=env)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[job] = ejob
 
@@ -574,7 +625,8 @@ class EngineWorkflow(Workflow):
                                  queue=self.queue,
                                  path_translation=self._path_translation,
                                  transfer_mapping=self.transfer_mapping,
-                                 container_command=self.container_command)
+                                 container_command=self.container_command,
+                                 wf_env=env)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[dependency[0]] = ejob
 
@@ -584,7 +636,8 @@ class EngineWorkflow(Workflow):
                                  queue=self.queue,
                                  path_translation=self._path_translation,
                                  transfer_mapping=self.transfer_mapping,
-                                 container_command=self.container_command)
+                                 container_command=self.container_command,
+                                 wf_env=env)
                 self.transfer_mapping.update(ejob.transfer_mapping)
                 self.job_mapping[dependency[1]] = ejob
 
@@ -600,7 +653,8 @@ class EngineWorkflow(Workflow):
                             queue=self.queue,
                             path_translation=self._path_translation,
                             transfer_mapping=self.transfer_mapping,
-                            container_command=self.container_command)
+                            container_command=self.container_command,
+                            wf_env=env)
                         self.transfer_mapping.update(ejob.transfer_mapping)
                         self.job_mapping[elem] = ejob
                 elif not isinstance(elem, Group):
@@ -617,7 +671,8 @@ class EngineWorkflow(Workflow):
                                      queue=self.queue,
                                      path_translation=self._path_translation,
                                      transfer_mapping=self.transfer_mapping,
-                                     container_command=self.container_command)
+                                     container_command=self.container_command,
+                                     wf_env=env)
                     self.transfer_mapping.update(ejob.transfer_mapping)
                     self.job_mapping[elem] = ejob
             elif not isinstance(elem, Group):

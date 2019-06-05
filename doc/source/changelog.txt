@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 3.1 (2019/06/05)
+========================
+
+* workflows can get an "env" variable, like jobs do, and will apply their environment to all jobs
+* workflows can get an "env_builder_code" variable, which contains python source code which will be executed to build additional environment variables on the engine side when the workflow is submitted. This allows to handle client/server configurations, and partially some dynamic workflow tuning.
+* jobs env has been fixed in the local scheduler: it used to completely replace the env variables, now it just adds the new ones to the standard user variables.
+
+
 Version 3.0 (2019/02/04)
 ========================
 
@@ -17,6 +25,11 @@ Version 3.0 (2019/02/04)
 
 * A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
 
+
+Version 2.11 (2019/06/05)
+=========================
+
+bug fixes
 
 Version 2.10 (2019/02/04)
 =========================
