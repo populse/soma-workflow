@@ -43,8 +43,12 @@ class WorkflowEnvTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.LOCAL_PATH)]
 
     def test_result(self):
-        job1 = Job(name='job1', command=['env'], env={'JOB_ENV1': 'bidule'})
-        job2 = Job(name='job2', command=['env'])
+        env_cmd = ['env']
+        if sys.platform.startswith('win'):
+            env_cmd = ['cmd', '/C', 'set']
+        #env_cmd = [sys.executable, '-c', "print('\n'.join(['%s=%s' % (k, v) for k, v in os.environ.items()]))"]
+        job1 = Job(name='job1', command=env_cmd, env={'JOB_ENV1': 'bidule'})
+        job2 = Job(name='job2', command=env_cmd)
         expected_outputs = {
             'workflow_without_env': {
                 'job1': 'JOB_ENV1=bidule',
