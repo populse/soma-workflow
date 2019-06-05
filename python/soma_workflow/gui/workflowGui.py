@@ -23,7 +23,7 @@ from datetime import datetime
 from datetime import timedelta
 import socket
 import weakref
-import subprocess
+from soma_workflow import subprocess
 from soma_workflow import connection
 import sys
 import traceback

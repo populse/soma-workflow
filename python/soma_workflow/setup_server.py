@@ -22,7 +22,7 @@ import argparse
 import re
 import getpass
 import socket
-import subprocess
+from soma_workflow import subprocess
 import shutil
 from ConfigParser import SafeConfigParser
 

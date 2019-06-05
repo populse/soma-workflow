@@ -19,10 +19,7 @@ from soma_workflow.errors import DRMError, ExitTimeoutException
 from soma_workflow import configuration
 from soma_workflow.configuration import Configuration
 import tempfile
-try:
-    import subprocess32 as subprocess
-except ImportError:
-    import subprocess
+from soma_workflow import subprocess
 
 
 class JobTemplate(object):

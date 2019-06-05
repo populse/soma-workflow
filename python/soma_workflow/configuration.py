@@ -1165,7 +1165,7 @@ def cpu_count():
             if isinstance(ncpus, int) and ncpus > 0:
                 return ncpus
         else:  # OSX:
-            import subprocess
+            from soma_workflow import subprocess
             return int(subprocess.Popen(
                 ["sysctl", "-n", "hw.ncpu"],
                 stdout=subprocess.PIPE).stdout.read())

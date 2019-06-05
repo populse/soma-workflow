@@ -29,7 +29,7 @@ if __name__ == "__main__":
         import ConfiguredLocalScheduler
     import time
     import signal
-    import subprocess
+    from soma_workflow import subprocess
     import json
 
 

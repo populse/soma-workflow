@@ -27,7 +27,7 @@ import weakref
 import six
 import time
 import datetime
-import subprocess
+from soma_workflow import subprocess
 import json
 
 from soma_workflow.errors import JobError, WorkflowError
