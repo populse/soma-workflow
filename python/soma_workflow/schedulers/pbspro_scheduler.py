@@ -64,7 +64,7 @@ class JobTemplate(object):
             # env variables
             if self.env:
                 for var, value in self.env.items():
-                    f.write('export %s=%s\n' % var, value)
+                    f.write('export %s=%s\n' % (var, value))
 
             # working directory
             if self.workingDirectory:
@@ -100,6 +100,9 @@ class JobTemplate(object):
         finally:
             if rm_script and not keep_script_file:
                 os.unlink(script_file)
+            elif rm_script:
+                logger.info('job %s script file: %s' % (self.jobName, script_file))
+           
 
 
 class PBSProScheduler(Scheduler):
