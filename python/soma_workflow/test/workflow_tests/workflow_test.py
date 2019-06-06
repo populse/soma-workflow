@@ -75,11 +75,11 @@ class WorkflowTest(unittest.TestCase):
     def tearDown(self):
         swc = self.__class__.wf_ctrl
         if swc is not None:
+            if self.wf_id:
+                swc.delete_workflow(self.wf_id)
             # stop workflow controler and wait for thread termination
             swc.stop_engine()
         shutil.rmtree(self.soma_workflow_temp_dir)
-        if self.wf_id:
-            self.__class__.wf_ctrl.delete_workflow(self.wf_id)
         for t in self.temporaries:
             if os.path.isdir(t):
                 try:
@@ -185,13 +185,16 @@ class WorkflowTest(unittest.TestCase):
                         res = unittest.TextTestRunner(verbosity=2).run(
                             alltests)
                     sys.stdout.flush()
+                    sys.stdout.write("after test\n")
 
                     if len(res.errors) != 0 or len(res.failures) != 0:
                         raise RuntimeError("tests failed.")
 
             finally:
+                sys.stdout.write("del wf_controller")
                 del wf_controller
                 cls.setup_wf_controller(None) # del WorkflowController
+                sys.stdout.write("deleted.")
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
                         if os.path.exists(config._database_file):
