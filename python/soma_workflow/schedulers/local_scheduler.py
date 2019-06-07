@@ -84,7 +84,7 @@ class LocalScheduler(Scheduler):
     '''
     parallel_job_submission_info = None
 
-    logger = None
+    #logger = None
 
     _proc_nb = None
 
@@ -141,6 +141,8 @@ class LocalScheduler(Scheduler):
         self._loop.start()
 
         atexit.register(LocalScheduler.end_scheduler_thread, self)
+        if self.logger is None:
+            self.__class__.logger = logging.getLogger('engine.Scheduler')
 
     def change_proc_nb(self, proc_nb):
         with self._lock:
@@ -211,6 +213,7 @@ class LocalScheduler(Scheduler):
                 #print('submitting.', file=sys.stderr)
                 process = LocalScheduler.create_process(job)
                 if process == None:
+                    LocalScheduler.logger.error('command process is None:' + job.name)
                     self._exit_info[job.drmaa_id] = (constants.EXIT_ABORTED,
                                                    None,
                                                    None,
@@ -332,8 +335,12 @@ class LocalScheduler(Scheduler):
                 kwargs = {}
             if env is not None:
                 env2 = dict(os.environ)
-                env2.update(env)
+                if sys.platform.startswith('win') and sys.version_info[0] < 3:
+                    # windows cannot use unicode strings as env values
+                    env2.update([(k.encode('utf-8'), v.encode('utf-8')) for k, v in six.iteritems(env)])
                 env = env2
+            LocalScheduler.logger.debug('run command:' + repr(command))
+            LocalScheduler.logger.debug('with env:' + repr(env))
             process = subprocess.Popen(command,
                                        stdin=stdin_file,
                                        stdout=stdout_file,
@@ -347,6 +354,7 @@ class LocalScheduler(Scheduler):
                 stdout_file.close()
 
         except Exception as e:
+            LocalScheduler.logger.error('exception while running command:' + repr(e))
             if stderr:
                 s = '%s: %s \n' % (type(e), e)
                 stderr_file.write(s)

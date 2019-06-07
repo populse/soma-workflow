@@ -78,7 +78,7 @@ class WorkflowTest(unittest.TestCase):
             if self.wf_id:
                 swc.delete_workflow(self.wf_id)
             # stop workflow controler and wait for thread termination
-            swc.stop_engine()
+            #swc.stop_engine()
         shutil.rmtree(self.soma_workflow_temp_dir)
         for t in self.temporaries:
             if os.path.isdir(t):
@@ -192,6 +192,8 @@ class WorkflowTest(unittest.TestCase):
 
             finally:
                 sys.stdout.write("del wf_controller")
+                if wf_controller:
+                    wf_controller.stop_engine()
                 del wf_controller
                 cls.setup_wf_controller(None) # del WorkflowController
                 sys.stdout.write("deleted.")

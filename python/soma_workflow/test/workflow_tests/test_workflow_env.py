@@ -83,6 +83,7 @@ class WorkflowEnvTest(WorkflowTest):
                 '}\\n'
                 '\')')
         for workflow in (workflow1, workflow2, workflow3):
+            print('starting workflow:', workflow.name, file=sys.stderr)
             self.wf_id = self.wf_ctrl.submit_workflow(
                 workflow=workflow,
                 name=self.__class__.__name__)
@@ -92,23 +93,34 @@ class WorkflowEnvTest(WorkflowTest):
                 Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
             # Wait for the workflow to finish
             Helper.wait_workflow(self.wf_id, self.wf_ctrl)
+            print('workflow finished.', file=sys.stderr)
             status = self.wf_ctrl.workflow_status(self.wf_id)
             self.assertTrue(status == constants.WORKFLOW_DONE,
                             "workflow status : %s. Expected : %s" %
                             (status, constants.WORKFLOW_DONE))
 
             nb_failed_jobs = len(Helper.list_failed_jobs(self.wf_id,
-                                                        self.wf_ctrl))
-            self.assertTrue(nb_failed_jobs == 0,
-                            "nb failed jobs : %i. Expected : %i" %
-                            (nb_failed_jobs, 0))
+                                                         self.wf_ctrl))
+            try:
+                self.assertTrue(nb_failed_jobs == 0,
+                                "nb failed jobs : %i. Expected : %i" %
+                                (nb_failed_jobs, 0))
+            except:
+                print('jobs failed:', file=sys.stderr)
+                print(Helper.list_failed_jobs(self.wf_id, self.wf_ctrl), file=sys.stderr)
+                raise
             nb_failed_aborted_jobs = len(Helper.list_failed_jobs(
                 self.wf_id,
                 self.wf_ctrl,
                 include_aborted_jobs=True))
-            self.assertTrue(nb_failed_aborted_jobs == 0,
-                            "nb failed jobs including aborted : %i. Expected : %i"
-                            % (nb_failed_aborted_jobs, 0))
+            try:
+                self.assertTrue(nb_failed_aborted_jobs == 0,
+                                "nb failed jobs including aborted : %i. Expected : %i"
+                                % (nb_failed_aborted_jobs, 0))
+            except:
+                print('aborted jobs:', file=sys.stderr)
+                print(Helper.list_failed_jobs(self.wf_id, self.wf_ctrl, include_aborted_jobs=True), file=sys.stderr)
+                raise
 
             (jobs_info, transfers_info, workflow_status, workflow_queue,
                 tmp_files) = self.wf_ctrl.workflow_elements_status(self.wf_id)
