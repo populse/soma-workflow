@@ -83,7 +83,6 @@ class WorkflowEnvTest(WorkflowTest):
                 '}\\n'
                 '\')')
         for workflow in (workflow1, workflow2, workflow3):
-            print('starting workflow:', workflow.name, file=sys.stderr)
             self.wf_id = self.wf_ctrl.submit_workflow(
                 workflow=workflow,
                 name=self.__class__.__name__)
@@ -93,7 +92,6 @@ class WorkflowEnvTest(WorkflowTest):
                 Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
             # Wait for the workflow to finish
             Helper.wait_workflow(self.wf_id, self.wf_ctrl)
-            print('workflow finished.', file=sys.stderr)
             status = self.wf_ctrl.workflow_status(self.wf_id)
             self.assertTrue(status == constants.WORKFLOW_DONE,
                             "workflow status : %s. Expected : %s" %
