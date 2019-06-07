@@ -41,6 +41,7 @@ import signal
 import ctypes
 import atexit
 import six
+import logging
 
 try:
     # psutil is used to correctly kill a job with its children processes
@@ -141,8 +142,8 @@ class LocalScheduler(Scheduler):
         self._loop.start()
 
         atexit.register(LocalScheduler.end_scheduler_thread, self)
-        if self.logger is None:
-            self.__class__.logger = logging.getLogger('engine.Scheduler')
+        if LocalScheduler.logger is None:
+            LocalScheduler.logger = logging.getLogger('engine.Scheduler')
 
     def change_proc_nb(self, proc_nb):
         with self._lock:
