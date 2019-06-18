@@ -640,7 +640,11 @@ class Configuration(observer.Observable):
                 
             if (machines is None or local_machine in machines
                 or 'localhost' in machines) \
-                    and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
+                    and (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
+                         or (not config_parser.has_option(
+                                resource_id, CFG_SUBMITTING_MACHINES)
+                            and not config_parser.has_option(
+                                resource_id, CFG_CLUSTER_ADDRESS))):
                 return resource_id
         return None
 
