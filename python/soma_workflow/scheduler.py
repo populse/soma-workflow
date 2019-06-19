@@ -151,27 +151,31 @@ def get_scheduler_implementation(scheduler_type):
         #try:
         module = importlib.import_module('.%s' % sched_mod,
                                          'soma_workflow.schedulers')
-        schedulers = []
+        sched_list = []
         # if there is a __main_scheduler__, just use it
         scheduler = getattr(module, '__main_scheduler__', None)
         if scheduler is not None:
             return scheduler
         for element in six.itervalues(module.__dict__):
-            if element in schedulers:
+            if element in sched_list:
                 continue # avoid duplicates
             if inspect.isclass(element) and element is not Scheduler \
                     and issubclass(element, Scheduler):
-                schedulers.append(element)
+                sched_list.append(element)
                 if element.__name__.lower() == ('%sscheduler'
                                                 % scheduler_type).lower():
                     # fully matching
                     return element
-        if len(schedulers) == 1:
+        if len(sched_list) == 1:
             # unambiguous
-            return schedulers[0]
-        print('Warning: module soma_workflow.schedulers.%s contains '
-              'several schedulers:' % sched_mod)
-        print([s.__name__ for s in schedulers])
+            return sched_list[0]
+        if len(sched_list) == 0:
+            print('Warning: module soma_workflow.schedulers.%s contains '
+                  'no scheduler:' % sched_mod)
+        else:
+            print('Warning: module soma_workflow.schedulers.%s contains '
+                  'several schedulers:' % sched_mod)
+            print([s.__name__ for s in sched_list])
         #except ImportError:
     raise NameError('scheduler type %s is not found' % scheduler_type)
 
