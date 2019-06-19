@@ -378,12 +378,21 @@ class Configuration(observer.Observable):
         if resource_id is None:
             resource_id = Configuration.get_local_resource_id(
                 config_file_path=config_file_path)
-        if resource_id == None \
-                or resource_id in (socket.gethostname(), 
-                                   socket.gethostname().split('.')[0]):
+
+        config_parser = None
+        if config_path is not None:
+            config_parser = configparser.ConfigParser()
+            if hasattr(config_path, 'readline'):
+                config_parser.readfp(config_path)
+            else:
+                config_parser.read(config_path)
+
+        if config_path is None \
+                or Configuration.is_local_resource(config_parser, resource_id):
 
             # scheduler local on the local machine
-            resource_id = socket.gethostname()
+            if resource_id is None:
+                resource_id = socket.gethostname()
             mode = LIGHT_MODE
             scheduler_type = LOCAL_SCHEDULER
 
@@ -391,11 +400,6 @@ class Configuration(observer.Observable):
             database_file = None
             
             if config_path is not None:
-                config_parser = configparser.ConfigParser()
-                if hasattr(config_path, 'readline'):
-                    config_parser.readfp(config_path)
-                else:
-                    config_parser.read(config_path)
                 if config_parser.has_section(resource_id):
                     if config_parser.has_option(resource_id,
                                                 OCFG_SWF_DIR):
@@ -448,11 +452,6 @@ class Configuration(observer.Observable):
                                          "to " + repr(resource_id)
                                          + ": the soma-workflow "
                                          "configuration file could not be found.")
-            config_parser = configparser.ConfigParser()
-            if hasattr(config_path, 'readline'):
-                config_parser.readfp(config_path)
-            else:
-                config_parser.read(config_path)
             if not config_parser.has_section(resource_id):
                 raise ConfigurationError("Can not find section " + repr(resource_id) + " "
                                          "in configuration file: " + config_path)
@@ -597,6 +596,35 @@ class Configuration(observer.Observable):
         return new_resource_ids
 
     @staticmethod
+    def is_local_resource(config_parser, resource_id):
+        '''
+        Tells if the given resource id is a local resource or not.
+        Several criterions may apply:
+        * if resource_id is "localhost" or is the local machine name
+        * if the associated config specifies that the resource is in
+          "light mode"
+        * if the associated config has none of the options scheduler_type,
+          submitting_machines or cluster_address.
+        '''
+        if resource_id is None \
+                or resource_id in ('localhost',
+                                   socket.gethostname(),
+                                   socket.gethostname().split('.')[0]) \
+                or (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
+                    and bool(int(config_parser.get(
+                        resource_id, OCFG_LIGHT_MODE)))
+                   ) \
+                or (not config_parser.has_option(
+                        resource_id, OCFG_SCHEDULER_TYPE)
+                    and not config_parser.has_option(
+                        resource_id, CFG_SUBMITTING_MACHINES)
+                    and not config_parser.has_option(
+                        resource_id, CFG_CLUSTER_ADDRESS)
+                   ):
+            return True
+        return False
+
+    @staticmethod
     def get_local_resource_id(config=None, config_file_path=None,
                               filtered=True):
         '''
@@ -632,12 +660,15 @@ class Configuration(observer.Observable):
                 # remove this one
                 continue
 
+            if Configuration.is_local_resource(config_parser, resource_id):
+                return resource_id
+
             try:
                 machines = config_parser.get(resource_id,
-                                            CFG_SUBMITTING_MACHINES)
+                                             CFG_SUBMITTING_MACHINES)
             except configparser.NoOptionError:
                 machines = None
-                
+
             if (machines is None or local_machine in machines
                 or 'localhost' in machines) \
                     and (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
