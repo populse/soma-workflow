@@ -136,7 +136,22 @@ if sys.version_info[0] >= 3:
         return unicode(string)
 else:
     def utf8(string):
-        return unicode(string).encode('utf-8')
+        try:
+            return unicode(string).encode('utf-8')
+        except UnicodeDecodeError as e:
+            s1 = [string[:e.start - 1] + '?']
+            s2 = string[e.end:]
+            while s2:
+                try:
+                    x = unicode(s2)
+                    s1.append(x)
+                    s2 = ''
+                except UnicodeDecodeError as e:
+                    s1.append(s2[:e.start - 1] + '?')
+                    s2 = s2[e.end:]
+            return ''.join(s1).encode('utf-8')
+                
+            
 
 MATPLOTLIB = True
 try:
