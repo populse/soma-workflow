@@ -26,8 +26,11 @@ parser = optparse.OptionParser()
 
 parser.add_option('-u', '--user', help="User for logging in to server")
 parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
-                  action='store_true', help="Try to connect directly, " \
-                    "without displaying connection dialog.")
+                  action='store_true', help="Try to connect directly, "
+                  "without displaying connection dialog.")
+parser.add_option('-i', '--interactive', action='store_true',
+                  help='open connection dialog at startup. '
+                  'Incompatible with -a.')
 parser.add_option('-r', '--computing-resource', dest='computing_resource', 
                   help='computing resource identifier')
 parser.add_option('--database', dest='database',
@@ -72,7 +75,8 @@ if __name__=="__main__":
                                     options.auto_connect,
                                     options.computing_resource,
                                     config_file=options.config,
-                                    db_file=options.database)
+                                    db_file=options.database,
+                                    interactive=options.interactive)
 
         sw_main_window.show()
 
@@ -82,7 +86,8 @@ if __name__=="__main__":
                                       options.auto_connect,
                                       options.computing_resource,
                                       config_file=options.config,
-                                      db_file=options.database)
+                                      db_file=options.database,
+                                      interactive=options.interactive)
         sw_widget.show()
 
 

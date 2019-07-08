@@ -1209,7 +1209,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                  parent=None,
                  flags=0,
                  config_file=None,
-                 db_file=None):
+                 db_file=None,
+                 interactive=False):
 
         super(SomaWorkflowWidget, self).__init__(parent)
 
@@ -1293,18 +1294,27 @@ class SomaWorkflowWidget(QtGui.QWidget):
             computing_resource \
                 = configuration.Configuration.get_local_resource_id(
                     config=None, config_file_path=self.config_file_path)
-        if computing_resource:
-            print('connect to computing resource:', computing_resource)
-            self.connect_to_controller(computing_resource, user)
-        elif auto_connect and computing_resource is None:
-            if user is not None and len(self.resource_list) > 0:
-                self.connect_to_controller(self.resource_list[0], user)
-            else:
-                self.connect_to_controller(socket.gethostname())
-        else:  # Show connection dialog:
+        if interactive:
+            if computing_resource is not None:
+                print('interactive, resource:', computing_resource)
+                self.connection_dlg.ui.combo_resources.setCurrentText(
+                    computing_resource)
             if user is not None:
                 self.connection_dlg.ui.lineEdit_login.setText(user)
             self.connection_dlg.show()
+        else:
+            if computing_resource:
+                print('connect to computing resource:', computing_resource)
+                self.connect_to_controller(computing_resource, user)
+            else:
+                if auto_connect and user is not None \
+                        and len(self.resource_list) > 0:
+                    print('connect to computing resource:', resource_list[0])
+                    self.connect_to_controller(self.resource_list[0], user)
+                else:
+                    print('connect to computing resource:',
+                          socket.gethostname())
+                    self.connect_to_controller(socket.gethostname())
 
         if self.model.current_resource_id != None:
             self.currentConnectionChanged()
@@ -2191,7 +2201,8 @@ class MainWindow(QtGui.QMainWindow):
                  parent=None,
                  flags=0,
                  config_file=None,
-                 db_file=None):
+                 db_file=None,
+                 interactive=False):
 
         super(MainWindow, self).__init__(parent)
 
@@ -2222,7 +2233,8 @@ class MainWindow(QtGui.QMainWindow):
                                             self,
                                             flags,
                                             config_file=config_file,
-                                            db_file=db_file)
+                                            db_file=db_file,
+                                            interactive=interactive)
 
         if True:
             self.mini_widget = SomaWorkflowMiniWidget(self.model,
