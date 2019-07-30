@@ -186,7 +186,8 @@ class PBSProScheduler(Scheduler):
             (implementation, version)
         '''
         cmd = ['qstat', '--version']
-        verstr = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        verstr = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode(
+            'utf-8')
         if verstr.startswith('pbs_version ='):
             impl = 'pbspro'
             ver = verstr.split('=')[1].strip()

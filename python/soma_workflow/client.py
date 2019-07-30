@@ -171,9 +171,8 @@ class WorkflowController(object):
             cluster_address = self.config.get_cluster_address()
             if login is None:
                 login = self.config.get_login()
-            print('cluster address: ' + cluster_address
-                  + ', submission machine: ' + sub_machine
-                  + ', login: ' + login)
+            print('cluster address: %s, submission machine: %s, login: %s'
+                  % (cluster_address, sub_machine, login))
             self._connection = connection.RemoteConnection(login,
                                                            password,
                                                            cluster_address,
