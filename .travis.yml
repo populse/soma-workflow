@@ -8,6 +8,7 @@ matrix:
     - os: linux
       language: python
       name: python 2.6
+      dist: trusty
       python:
         - 2.6
     - os: linux
