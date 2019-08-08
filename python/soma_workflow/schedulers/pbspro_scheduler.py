@@ -95,7 +95,8 @@ class JobTemplate(object):
             cmd = self.qsub_command(script_file)
             logger = logging.getLogger('ljp.pbspro_scheduler')
             logger.debug('run job: %s' % repr(cmd))
-            job_id = subprocess.check_output(cmd).strip()
+            job_id = subprocess.check_output(cmd).decode('utf-8').strip()
+            logger.debug('job_id: ' + repr(job_id))
             return job_id
         finally:
             if rm_script and not keep_script_file:
@@ -416,13 +417,13 @@ class PBSProScheduler(Scheduler):
         try:
             if self._pbs_impl == 'pbspro':
                 cmd = ['qstat', '-x', '-f', '-F', 'json', scheduler_job_id]
-                json_str = subprocess.check_output(cmd)
+                json_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = json.loads(json_str)
 
             else: # torque/pbs
                 import xml.etree.cElementTree as ET
                 cmd = ['qstat', '-x', scheduler_job_id]
-                xml_str = subprocess.check_output(cmd)
+                xml_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = {}
                 s_xml = ET.fromstring(xml_str)
                 xjob = s_xml[0]
@@ -446,6 +447,8 @@ class PBSProScheduler(Scheduler):
             self.logger.critical("%s: %s" % (type(e), e))
             raise
         status = super_status['Jobs'][scheduler_job_id]
+        self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id) 
+                          + ': ' + repr(status))
         return status
 
     def get_pbs_status_codes(self):
@@ -498,6 +501,7 @@ class PBSProScheduler(Scheduler):
         try:
             status = self.get_job_extended_status(scheduler_job_id)
             state = status['job_state']
+            self.logger.debug('get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
         except:
             return constants.UNDETERMINED
         if state == codes.ARRAY_STARTED:
@@ -539,9 +543,9 @@ class PBSProScheduler(Scheduler):
             exit code of the command (normally 0 in case of success)
         **term_sig**: int
             termination signal, 0 IF ok
-        **resource_usage**: bytes
-            bytes string in the shape
-            ``b'cpupercent=60 mem=13530kb cput=00:00:12'`` etc. Items may include:
+        **resource_usage**: unicode
+            string in the shape
+            ``'cpupercent=60 mem=13530kb cput=00:00:12'`` etc. Items may include:
 
             * cpupercent
             * cput
@@ -616,12 +620,16 @@ class PBSProScheduler(Scheduler):
                         res_status = constants.FINISHED_TERM_SIG
                         res_termSignal = term_sig
                     else:
-                        res_status = constants.EXIT_ABORTED
+                        # in soma-workflow a job with a non-zero exit code
+                        # has still finished regularly (ran without being 
+                        # interrupted)
+                        # res_status = constants.EXIT_ABORTED
+                        res_status = constants.FINISHED_REGULARLY
 
             self.logger.info("  ==> res_status=" + repr(res_status))
-            res_resourceUsage = b''
+            res_resourceUsage = u''
             for k, v in six.iteritems(resource_usage):
-                res_resourceUsage = res_resourceUsage + k + b'=' + str(v) + b' '
+                res_resourceUsage = res_resourceUsage + k + u'=' + str(v) + u' '
 
         except ExitTimeoutException:
             res_status = constants.EXIT_UNDETERMINED

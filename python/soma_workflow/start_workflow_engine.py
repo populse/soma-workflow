@@ -257,7 +257,8 @@ if __name__ == "__main__":
             logger.info("****************************************************")
             logger.info("****************************************************")
         else:
-            logger = None
+            # logger = None
+            logger = logging.getLogger('engine')
 
         sch = scheduler.build_scheduler(config.get_scheduler_type(), config)
 

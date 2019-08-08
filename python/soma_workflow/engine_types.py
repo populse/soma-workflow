@@ -927,6 +927,7 @@ class EngineWorkflow(Workflow):
             elif job.status == constants.NOT_SUBMITTED:
                 job_to_run = True
                 job_to_abort = False
+                self.logger.debug("job not submitted, referenced_input_files: " + repr(job.referenced_input_files))
                 for ft in job.referenced_input_files:
                     #fcount += 1
                     eft = job.transfer_mapping[ft]
@@ -935,8 +936,12 @@ class EngineWorkflow(Workflow):
                                 == constants.TRANSFERING_FROM_CR_TO_CLIENT:
                             # TBI stop the transfer
                             pass
+                        self.logger.debug("Transfer not complete: %s / %s"
+                                          % (eft,  eft.engine_path) 
+                                          + ', status: ' + repr(eft.status))
                         job_to_run = False
                         break
+                self.logger.debug("job_to_run: " + repr(job_to_run))
                 if client_job in self._dependency_dict:
                     for dep_client_job in self._dependency_dict[client_job]:
                         #dcount += 1
