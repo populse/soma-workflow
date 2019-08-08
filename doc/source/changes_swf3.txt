@@ -26,7 +26,7 @@ Python 2 and Python 3
 
 Soma-Workflow 2 could only run using Python 2. The removal of Pyro3 has allowed to port to Python 3. Soma-Workflow 3 can be run using either Python 2 and 3.
 
-However SWF is using in its communications and database some picked objects, which could not be made compatible between python2 and 3, so it one now have the choice of python version, he has to be consistent with this choice:
+However SWF is using in its communications and database some picked objects, which could not be made compatible between python2 and 3, so if one now have the choice of python version, he has to be consistent with this choice:
 
 Client and server should use the same Python version
 ----------------------------------------------------
@@ -35,7 +35,7 @@ Client and server should use the same Python version
 
 * But the same version of python thus has to be installed on both client and server machines. Of course both versions can be installed.
 
-* Moreover if a server is run once using a given version of python, all client connections have to be made using the same version of python. An clear error message will be issued in case of mismatch.
+* Moreover if a server is run once using a given version of python, all client connections have to be made using the same version of python. A clear error message will be issued in case of mismatch.
 
 Playing with both python versions at the same time
 --------------------------------------------------
