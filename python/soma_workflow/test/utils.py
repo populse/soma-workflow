@@ -36,11 +36,14 @@ def get_user_id(resource_id, config):
         sys.stdout.write("Remote connection to %s\n" % resource_id)
         default_login = getpass.getuser()
         sys.stdout.write("Login (default: %s): " % default_login)
+        sys.stdout.flush()
         login = sys.stdin.readline()
         login = login.rstrip()
         if not login:
             login = default_login
-        password = getpass.getpass("Password (blank=ssh key): ")
+        sys.stdout.write("Password (blank=ssh key): ")
+        sys.stdout.flush()
+        password = getpass.getpass("")
         password = password.rstrip()
         sys.stdout.write("Login => " + repr(login) + "\n")
     else:
