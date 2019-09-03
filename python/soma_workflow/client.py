@@ -1165,7 +1165,7 @@ class Helper(object):
 
         deleted_properly = True
         while wf_ctrl.workflows():
-            wf_id = wf_ctrl.workflows().keys()[0]
+            wf_id = next(iter(wf_ctrl.workflows().keys()))
             deleted_properly = deleted_properly and wf_ctrl.delete_workflow(
                 wf_id, force)
         return deleted_properly
