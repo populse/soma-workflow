@@ -3,6 +3,7 @@ from __future__ import print_function
 from .. import scheduler
 import threading
 import logging
+import socket
 import six
 
 from mpi4py import MPI
