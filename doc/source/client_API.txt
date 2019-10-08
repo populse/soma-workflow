@@ -31,8 +31,6 @@ Submission / Registration
 
 .. automethod:: WorkflowController.submit_workflow
 
-.. automethod:: WorkflowController.submit_job
-
 .. automethod:: WorkflowController.register_transfer
 
 
@@ -109,11 +107,7 @@ Jobs
 
 .. automethod:: WorkflowController.wait_job
 
-.. automethod:: WorkflowController.kill_job
-
-.. automethod:: WorkflowController.restart_job
-
-.. automethod:: WorkflowController.delete_job
+.. automethod:: WorkflowController.restart_jobs
 
 
 File Transfers
