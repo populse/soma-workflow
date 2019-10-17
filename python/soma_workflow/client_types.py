@@ -320,7 +320,7 @@ class Job(object):
             else:
                 m = r.split(e)
                 t = False
-                for i in range(len(m) / 2):
+                for i in range(int(len(m) / 2)):
                     var = m[i * 2 + 1]
                     value = self.param_dict.get(var)
                     if value is not None:
