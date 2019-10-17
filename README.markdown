@@ -47,13 +47,14 @@ Documentation
 
   An extensive documentation (http://www.brainvisa.info/doc/soma-workflow/sphinx/index.html) is available,
   with ready to use examples (http://www.brainvisa.info/doc/soma-workflow/sphinx/examples.html).
+  
+  The git master branch doc is also updated on github: https://populse.github.io/soma-workflow/
 
 
 Download
 --------
 
   Soma-workflow is available on pypi to download: https://pypi.python.org/pypi/soma-workflow.
-
 
 
 Installation
@@ -70,16 +71,21 @@ Installation
   **Full installation in Ubuntu:**
   
   Installation required packages,
-  python-qt4 (graphical interface), 
+  python-qt4 or PyQt5 (graphical interface), 
   python-matplotlib (option), 
   python-paramiko (option: required to connect server), 
-  pyro (option: required to connect server) :
+  python-zmq (option: required to connect server) :
       
       $ sudo apt-get update
 
-      $ sudo apt-get install python-qt4 python-matplotlib python-paramiko pyro
+      $ sudo apt-get install python-qt4 python-matplotlib python-paramiko python-zmq
+      
+  Either:
+  * Users: install using pip:
+     
+      $ pip install soma-workflow
 
-  Download soma-workflow and go to soma-workflow directory:
+  * developers: Download soma-workflow and go to soma-workflow directory:
       
       $ sudo python setup.py install
 
@@ -114,10 +120,10 @@ Installation
   **Manually Installation (for all other systems)**
 
   Download and install those packages: 
-     python-qt4 (graphical interface), 
+     python-qt4 or PyQt5 (graphical interface), 
      python-matplotlib (option), 
      python-paramiko (required to connect server), 
-     pyro (required to connect server)   
+     python-zmq (required to connect server)   
   
   1) Download soma-workflow into soma-workflow-path
 
