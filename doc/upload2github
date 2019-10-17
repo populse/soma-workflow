@@ -1,11 +1,16 @@
 #!/bin/sh -e
 
+#
+# This script is not needed any longer, the github push automatically triggers
+# deploying docs on gh-pages (via travis-ci).
+#
+
 # clean build directory
 rm -rf ./build
 mkdir ./build
 
 # clone the repo into a dir called build/html
-git clone --branch gh-pages --no-checkout git@github.com:neurospin/soma-workflow.git ./build/html
+git clone --branch gh-pages --no-checkout git@github.com:populse/soma-workflow.git ./build/html
 
 # create sphinx documentation in clear directory
 make html

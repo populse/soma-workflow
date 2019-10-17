@@ -27,7 +27,12 @@ sys.path.insert(0,os.path.abspath("../../python/soma_workflow/"))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.ifconfig',
+              'sphinx.ext.viewcode']
 try:
     # try napoleon which replaces numpydoc (and googledoc),
     # comes with sphinx 1.2
@@ -231,8 +236,8 @@ man_pages = [
 # Bibliographic Dublin Core info.
 epub_title = u'soma-workflow'
 epub_author = u'Soizic Laguitton'
-epub_publisher = u'2011 CEA, Neurospin, France, CATI, France'
-epub_copyright = u'2011, '
+epub_publisher = u'2019 CEA, Neurospin, France, CATI, France'
+epub_copyright = u'2019, '
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
