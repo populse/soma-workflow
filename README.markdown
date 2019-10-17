@@ -43,7 +43,7 @@ Main Features
 Documentation
 -------------
 
-  Visit Soma-workflow (http://www.brainvisa.info/soma-workflow) main page!
+  Visit Soma-workflow (http://www.brainvisa.info/soma-workflow/sphinx/) main page!
 
   An extensive documentation (http://www.brainvisa.info/doc/soma-workflow/sphinx/index.html) is available,
   with ready to use examples (http://www.brainvisa.info/doc/soma-workflow/sphinx/examples.html).
