@@ -20,6 +20,7 @@ from __future__ import print_function
 import warnings
 import sys
 import soma_workflow.constants as constants
+import re
 
 # python2/3 compatibility
 
@@ -142,6 +143,27 @@ class Job(object):
     env: dict(string, string)
         Environment variables to use when the job gets executed.
 
+    param_dict: dict
+        New in 3.1.
+        Optional dictionary for job "parameters values". In case of dynamic
+        outputs from a job, downstream jobjs values have to be set accordingly
+        during the workflow execution. Thus we must be able to know how to
+        replace the parameters values in the commandline. To do so, jobs should
+        provide commandlines not with builtin values, but with replacement
+        strings, and a dict of parameters with names::
+
+            command = ['cp', '%(source)s', '%(dest)s']
+            param_dict = {'source': '/data/file1.txt',
+                          'dest': '/data/file2.txt'}
+
+        Parameters names can be linked in the workflow to some other jobs
+        outputs.
+
+    has_outputs: bool
+        New in 3.1.
+        Set if the job will write a special JSON file which contains output
+        parameters values, when the job is a process with outputs.
+
     ..
       **disposal_timeout**: int
       Only requiered outside of a workflow
@@ -195,6 +217,12 @@ class Job(object):
     # dict (name -> value)
     env = None
 
+    # dict (dst_job -> dict(dst_param_name: (src_job, src_param_name))
+    param_dict = {}
+
+    # bool
+    has_outputs = False
+
     def __init__(self,
                  command,
                  referenced_input_files=None,
@@ -210,7 +238,9 @@ class Job(object):
                  priority=0,
                  native_specification=None,
                  user_storage=None,
-                 env=None):
+                 env=None,
+                 param_dict=None,
+                 has_outputs=False):
         if not name and len(command) != 0:
             self.name = command[0]
         else:
@@ -234,6 +264,8 @@ class Job(object):
         self.priority = priority
         self.native_specification = native_specification
         self.env = env
+        self.param_dict = param_dict or dict()
+        self.has_outputs = has_outputs
 
         for command_elem in self.command:
             if isinstance(command_elem, basestring):
@@ -268,12 +300,57 @@ class Job(object):
                 return False
         return True
 
+    def get_commandline(self):
+        return self.commandline_repl(self.command)
+
+    def commandline_repl(self, command):
+        '''
+        Get "processed" commandline list. Each element in the commandline list
+        which contains a replacement string in the shame %(var)s is replaced
+        using the param_dict values.
+        '''
+        #return [x % self.param_dict for x in self.command]
+        if not self.param_dict:
+            return command
+        cmd = []
+        r = re.compile('%\((.+)\)[dsf]')
+        for e in command:
+            if isinstance(e, (list, tuple)):
+                cmd.append(self.commandline_repl(e))
+            else:
+                m = r.split(e)
+                t = False
+                for i in range(len(m) / 2):
+                    var = m[i * 2 + 1]
+                    value = self.param_dict.get(var)
+                    if value is not None:
+                        t = True
+                    else:
+                        value = '%%(%s)s' % var
+                    m[i * 2 + 1] = value
+                if not t:
+                    cmd.append(e)
+                else:
+                    if len(m) > 3 or m[0] != '' or m[2] != '':
+                        #if m[0] == '':
+                            #m = m[1:]
+                        #if m[-1] == '':
+                            #m = m[:-1]
+                        # WARNING: returns a string, losing
+                        # SpecialPath instances
+                        cmd.append(''.join(m))
+                    else:
+                        cmd.append(m[1])
+        return cmd
+
     def attributs_equal(self, other):
         # TODO a better solution would be to overload __eq__ and __neq__ operator
         # however these operators are used in soma-workflow to test if
         # two objects are the same instance. These tests have to be replaced
         # first using the id python function.
         if not isinstance(other, self.__class__):
+            return False
+        if self.has_outputs != other.has_outputs:
             return False
         seq_attributs = [
             "command",
@@ -297,6 +374,7 @@ class Job(object):
             "parallel_job_info",
             "disposal_timeout",
             "env",
+            "param_dict",
         ]
         for attr_name in attributs:
             attr = getattr(self, attr_name)
@@ -376,6 +454,12 @@ class Job(object):
                                                       srp_from_ids,
                                                       tmp_from_ids,
                                                       opt_from_ids)
+        job.param_dict = {}
+        for k, v in six.iteritems(job.param_dict):
+            job.param_dict[k] = from_serializable(v, tr_from_ids,
+                                                  srp_from_ids,
+                                                  tmp_from_ids,
+                                                  opt_from_ids)
 
         return job
 
@@ -404,6 +488,7 @@ class Job(object):
             "parallel_job_info",
             "disposal_timeout",
             "env",
+            "has_outputs"
         ]
 
         for attr_name in attributs:
@@ -475,6 +560,16 @@ class Job(object):
                                                        tmp_ids,
                                                        opt_ids)
 
+        if self.param_dict:
+            param_dict = {}
+            for k, v in six.iteritems(self.param_dict):
+                param_dict[k] = to_serializable(v, id_generator,
+                                                transfer_ids,
+                                                shared_res_path_id,
+                                                tmp_ids,
+                                                opt_ids)
+            job_dict['param_dict'] = param_dict
+
         return job_dict
 
 
@@ -492,10 +587,10 @@ class BarrierJob(Job):
       With a barrier: ::
 
         Job1              Job4
-              \        /
+              \         /
         Job2 -- Barrier -- Job5
-              /        \\
-        Job3             Job6
+              /         \
+        Job3              Job6
 
       needs 6 (2*N).
 
@@ -656,6 +751,16 @@ class Workflow(object):
         dictionary of environment variables, which will be set into all jobs,
         in addition to the *env* variable above.
 
+    param_links: dict
+        New in 3.1.
+        Job parameters links. Links are in the following shape:!
+
+            dest_job: {dest_param: (source_job, param)}
+
+        Links are used to get output values from jobs which have completed
+        their run, and to set them into downstream jobs inputs. This system
+        allows "dynamic outputs" in workflows.
+
     '''
     # string
     name = None
@@ -681,6 +786,8 @@ class Workflow(object):
     # environment builder code
     env_builder_code = None
 
+    param_links = {}
+
     def __init__(self,
                  jobs,
                  dependencies=None,
@@ -689,7 +796,30 @@ class Workflow(object):
                  user_storage=None,
                  name=None,
                  env={},
-                 env_builder_code=None):
+                 env_builder_code=None,
+                 param_links=None):
+        '''
+        In Soma-Workflow 3.1, some "jobs outputs" have been added. This concept
+        is somewhat contradictory with the commandline execution model, which
+        basically does not produce outputs other than files. To handle this,
+        jobs which actually produce "outputs" (names parameters with output
+        values) should write a JSON file containing the output values
+        dictionary.
+
+        Output values are then read by Soma-Workflow, and values are set in the
+        downstream jobs which depend on these values.
+
+        For this, "parameters links" have been added, to tell Soma-Workflow
+        which input parameters should be replaced by output parameter values
+        from an upstream job.
+
+        param_links is an (options) dict which specifies these links::
+
+            {dest_job: {dest_param: (source_job, param)}}
+
+        Such links de facto define new jobs dependencies, which are added to
+        the dependencies manually specified.
+        '''
         import logging
         logging.debug("Within Workflow constructor")
 
@@ -728,6 +858,8 @@ class Workflow(object):
             self.root_group = self.jobs
         self.env = env
         self.env_builder_code = env_builder_code
+        self.param_links = param_links or dict()
+        self.add_dependencies_from_links()
 
     def add_workflow(self, workflow, as_group=None):
         '''
@@ -761,6 +893,8 @@ class Workflow(object):
             self.root_group += workflow.root_group
             self.groups += workflow.groups
 
+        self.param_links.update(workflow.param_links)
+
         self.env.update(workflow.env)
         # self.env_builder_code ?
         return group
@@ -774,6 +908,22 @@ class Workflow(object):
         else: # assume set
             self.dependencies.update(dependencies)
         self.__convert_group_dependencies(dependencies)
+
+    def add_dependencies_from_links(self):
+        '''
+        Process parameters links and add missing jobs dependencies accordingly
+        '''
+        deps = set()
+        if isinstance(self.dependencies, set):
+            current_deps = self.dependencies
+        else:
+            current_deps = set(self.dependencies)
+        for dest_job, links in six.iteritems(self.param_links):
+            for p, link in six.iteritems(links):
+                deps.add((link[0], dest_job))
+        for dep in deps:
+            if dep not in current_deps:
+                self.dependencies.append(dep)
 
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
@@ -805,7 +955,8 @@ class Workflow(object):
                 elif not attr[i] == other_attr[i]:
                     return False
         return self.name == other.name and self.env == other.env \
-            and self.env_builder_code == other.env_builder_code
+            and self.env_builder_code == other.env_builder_code \
+            and self.param_links == other.param_links
 
     def to_dict(self):
         '''
@@ -831,6 +982,15 @@ class Workflow(object):
                 raise Exception("Unknown jobs in dependencies.")
             new_dependencies.append((job_ids[dep[0]], job_ids[dep[1]]))
         wf_dict["dependencies"] = new_dependencies
+
+        new_links = {}
+        for dest_job, links in six.iteritems(self.param_links):
+            wdjob = job_ids[dest_job]
+            wlinks = {}
+            for dest_par, link in six.iteritems(links):
+                wlinks[dest_par] = (job_ids[link[0]], link[1])
+            new_links[wdjob] = wlinks
+        wf_dict['param_links'] = new_links
 
         group_ids = {}
         new_groups = []
@@ -995,6 +1155,17 @@ class Workflow(object):
         for id_dep in id_dependencies:
             dep = (job_from_ids[id_dep[0]], job_from_ids[id_dep[1]])
             dependencies.append(dep)
+
+        # param links
+        param_links = []
+        id_links = d.get("param_links", {})
+        for dest_job, links in six.iteritems(id_links):
+            ddest_job = job_from_ids[dest_job]
+            dlinks = {}
+            for name, link in six.iteritems(links):
+                dsrc_job = job_from_ids[link[0]]
+                dlinks[name] = (dsrc_job, link[1])
+            param_links[ddest_job] = dlinks
 
         # user storage, TODO: handle objects in it
         user_storage = d.get('user_storage', None)

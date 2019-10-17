@@ -144,7 +144,9 @@ class EngineJob(Job):
                                         client_job.parallel_job_info,
                                         client_job.priority,
                                         client_job.native_specification,
-                                        env = client_job.env)
+                                        env=client_job.env,
+                                        param_dict=client_job.param_dict,
+                                        has_outputs=client_job.has_outputs)
 
         self.job_id = -1
 
@@ -358,6 +360,9 @@ class EngineJob(Job):
             else:
                 user_command = self.generate_command(self.command,
                                                      mode="Command")
+                for item in user_command:
+                    if isinstance(item, list):
+                        item = ''.join(item)
                 user_command = [self.escape_quotes(item)
                                 for item in user_command]
                 user_command = '"' + '" "'.join(user_command) + '"'
@@ -369,7 +374,8 @@ class EngineJob(Job):
                 return command # no need to replace again
         else:
             command = self.command
-        return self.generate_command(command, mode="Command")
+        return self.commandline_repl(
+            self.generate_command(command, mode="Command"))
 
     def plain_stdin(self):
         return self.generate_command(self.stdin)
