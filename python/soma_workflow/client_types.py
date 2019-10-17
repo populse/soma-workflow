@@ -352,15 +352,32 @@ class Job(object):
             return False
         if self.has_outputs != other.has_outputs:
             return False
-        seq_attributs = [
+        seq_attributes = [
             "command",
             "referenced_input_files",
-            "referenced_output_files"]
-        for attr_name in seq_attributs:
+            "referenced_output_files",
+        ]
+        for attr_name in seq_attributes:
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
             if not self._attributs_equal(attr, other_attr):
+                print(attr_name, 'differ')
                 return False
+
+        map_attributes = [
+            "param_dict",
+        ]
+        for attr_name in map_attributes:
+            attr = getattr(self, attr_name)
+            other_attr = getattr(other, attr_name)
+            if sorted(attr.keys()) != sorted(other_attr.keys()):
+                #print('keys dont match in', self.name, attr_name, ':', sorted(attr.keys()), sorted(other_attr.keys()))
+                return False
+            for key, value in six.iteritems(attr):
+                other_value = other_attr[key]
+                if not self._attributs_equal(value, other_value):
+                    #print(attr_name, 'differ in item', key)
+                    return False
 
         attributs = [
             "name",
@@ -374,7 +391,6 @@ class Job(object):
             "parallel_job_info",
             "disposal_timeout",
             "env",
-            "param_dict",
         ]
         for attr_name in attributs:
             attr = getattr(self, attr_name)
@@ -455,7 +471,7 @@ class Job(object):
                                                       tmp_from_ids,
                                                       opt_from_ids)
         job.param_dict = {}
-        for k, v in six.iteritems(job.param_dict):
+        for k, v in six.iteritems(d.get('param_dict', {})):
             job.param_dict[k] = from_serializable(v, tr_from_ids,
                                                   srp_from_ids,
                                                   tmp_from_ids,
@@ -928,13 +944,13 @@ class Workflow(object):
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
             return False
-        seq_attributs = [
+        seq_attributes = [
             "jobs",
             "dependencies",
             "root_group",
             "groups"
         ]
-        for attr_name in seq_attributs:
+        for attr_name in seq_attributes:
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
             if not len(attr) == len(other_attr):

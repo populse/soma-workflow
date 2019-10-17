@@ -81,32 +81,41 @@ class WorkflowExamplesLocal(WorkflowExamples):
         time_to_wait = 2
         job_name = "job2"
         job2 = Job(["python",
-                    self.lo_script[2], self.lo_file[11],
-                    self.lo_file[0], self.lo_file[2],
+                    '%(script)s', '%(file1)s',
+                    '%(file2)s', '%(file3)s',
                     repr(time_to_wait)],
                    None, None,
-                   self.lo_stdin[2], False, 168, job_name)
+                   self.lo_stdin[2], False, 168, job_name,
+                   param_dict={'script': self.lo_script[2],
+                               'file1': self.lo_file[11],
+                               'file2': self.lo_file[0],
+                               'file3': self.lo_file[2]})
         return job2
 
     def job3(self):
         time_to_wait = 2
         job_name = "job3"
         job3 = Job(["python",
-                    self.lo_script[3], self.lo_file[12],
+                    '%(script)s', self.lo_file[12],
                     self.lo_file[3], repr(time_to_wait)],
                    None, None,
-                   self.lo_stdin[3], False, 168, job_name)
+                   self.lo_stdin[3], False, 168, job_name,
+                   param_dict={'script': self.lo_script[3]})
         return job3
 
     def job4(self):
         time_to_wait = 10
         job_name = "job4"
         job4 = Job(["python",
-                    self.lo_script[4], self.lo_file[2],
-                    self.lo_file[3], self.lo_file[4],
+                    '%(script)s', '%(file1)s',
+                    '%(file2)s', '%(file3)s',
                     repr(time_to_wait)],
                    None, None,
-                   self.lo_stdin[4], False, 168, job_name)
+                   self.lo_stdin[4], False, 168, job_name,
+                   param_dict={'script': self.lo_script[4],
+                               'file1': self.lo_file[2],
+                               'file2': self.lo_file[3],
+                               'file3': self.lo_file[4]})
         return job4
 
     def job_test_command_1(self):
