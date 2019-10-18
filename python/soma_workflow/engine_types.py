@@ -179,6 +179,17 @@ class EngineJob(Job):
                 env.update(self.env)
             self.env = env
 
+        if has_outputs:
+            # if the process has outputs, it must write an additional .json
+            # temporary file
+            output_file = TemporaryPath(is_directory=False,
+                 name='output_params',
+                 suffix='.json')
+            # duplicate list to avoid modifying the input one
+            self.referenced_output_files \
+                = list(self.referenced_output_files) + [output_file]
+            self.output_params_file = output_file
+
         self._map()
 
     def _map(self):

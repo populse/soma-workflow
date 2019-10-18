@@ -390,6 +390,31 @@ class WorkflowExamples(object):
         workflow = Workflow(jobs + barriers, dependencies)
         return workflow
 
+    def example_dynamic_outputs(self):
+        # jobs
+        job1 = self.job1()
+        job2 = self.job_with_outputs1()
+        job4 = self.job4()
+        job3 = self.job3_exception()
+        jobs = [job1, job2, job3, job4]
+
+        dependencies = [(job1, job2),
+                        (job1, job3),
+                        (job2, job4),
+                        (job3, job4)]
+        links = {job4: {'file1': (job2, 'file3_out'),
+                        'file2': (job3, 'nothing')}}
+
+        group_1 = Group(name='group_1', elements=[job2, job3])
+        group_2 = Group(name='group_2', elements=[job1, group_1])
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[group_2, job4],
+                            name=function_name, param_links=links)
+        return workflow
+
 
 if __name__ == "__main__":
     print(WorkflowExamples.get_workflow_example_list())

@@ -342,6 +342,10 @@ class LocalScheduler(Scheduler):
                 else:
                   env2.update(env)
                 env = env2
+            else;
+                env = {}
+            if engine_job.has_outputs:
+                env['SOMAWF_OUTPUT_PARAMS'] = engine_job.output_params_file
             LocalScheduler.logger.debug('run command:' + repr(command))
             LocalScheduler.logger.debug('with env:' + repr(env))
             process = subprocess.Popen(command,

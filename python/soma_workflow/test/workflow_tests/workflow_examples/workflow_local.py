@@ -160,3 +160,17 @@ class WorkflowExamplesLocal(WorkflowExamples):
                   None,
                   self.lo_stdin[3], False, 168, "job3 with exception")
         return job
+
+    def job_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job_with_outputs1"
+        job2 = Job(["python",
+                    '%(script)s', '%(file1)s',
+                    '%(file2)s',
+                    repr(time_to_wait)],
+                   None, None,
+                   self.lo_stdin[2], False, 168, job_name,
+                   param_dict={'script': self.lo_script[2],
+                               'file1': self.lo_file[11],
+                               'file2': self.lo_file[0]},
+                   has_outputs=True)
