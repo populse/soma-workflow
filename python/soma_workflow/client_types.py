@@ -273,32 +273,38 @@ class Job(object):
                     warnings.warn("%s contains single quote. It could fail using DRMAA"
                                   % command_elem, UserWarning)
 
-    def _attributs_equal(self, el_list, other_el_list):
-        if not len(el_list) == len(other_el_list):
-            return False
-        for i in range(0, len(el_list)):
-            if isinstance(el_list[i], FileTransfer) or\
-                isinstance(el_list[i], SharedResourcePath) or\
-                    isinstance(el_list[i], TemporaryPath) or\
-                    isinstance(el_list[i], OptionPath):
-                if not el_list[i].attributs_equal(other_el_list[i]):
-                    return False
-            elif isinstance(el_list[i], tuple):
-                if not isinstance(other_el_list[i], tuple) or\
-                   not len(el_list[i]) == len(other_el_list[i]):
-                    return False
-                if not el_list[i][0].attributs_equal(other_el_list[i][0]):
-                    return False
-                if not el_list[i][1] == other_el_list[i][1]:
-                    return False
-            elif isinstance(el_list[i], list):
-                if not isinstance(other_el_list[i], list):
-                    return False
-                if not self._attributs_equal(el_list[i], other_el_list[i]):
-                    return False
-            elif not el_list[i] == other_el_list[i]:
+    def _attributes_equal(self, element, other_element):
+        if element.__class__ is not other_element.__class__:
+            # special case str / unicode
+            if not isinstance(element, basestring) or not isinstance(element, basestring):
+                #print('differ in class:', element.__class__, other_element.__class__)
                 return False
-        return True
+        if isinstance(element, FileTransfer) or \
+            isinstance(element, SharedResourcePath) or \
+                isinstance(element, TemporaryPath) or \
+                isinstance(element, OptionPath):
+            return element.attributs_equal(other_element)
+
+        if isinstance(element, (list, tuple)):
+            if len(element) != len(other_element):
+                #print('len differ:', len(element), '!=', len(other_element))
+                return False
+            for i in range(0, len(element)):
+                if not self._attributes_equal(element[i], other_element[i]):
+                    #print('list element differ:', element[i], '!=', other_element[i])
+                    return False
+            return True
+
+        if isinstance(element, dict):
+            if sorted(element.keys()) != sorted(other_element.keys()):
+                return False
+            for key, item in six.iteritems(element):
+                other_item = other_element[key]
+                if not self._attributes_equal(item, other_item):
+                    return False
+            return True
+
+        return element == other_element
 
     def get_commandline(self):
         return self.commandline_repl(self.command)
@@ -350,37 +356,10 @@ class Job(object):
         # first using the id python function.
         if not isinstance(other, self.__class__):
             return False
-        if self.has_outputs != other.has_outputs:
-            return False
-        seq_attributes = [
-            "command",
-            "referenced_input_files",
-            "referenced_output_files",
-        ]
-        for attr_name in seq_attributes:
-            attr = getattr(self, attr_name)
-            other_attr = getattr(other, attr_name)
-            if not self._attributs_equal(attr, other_attr):
-                print(attr_name, 'differ')
-                return False
 
-        map_attributes = [
-            "param_dict",
-        ]
-        for attr_name in map_attributes:
-            attr = getattr(self, attr_name)
-            other_attr = getattr(other, attr_name)
-            if sorted(attr.keys()) != sorted(other_attr.keys()):
-                #print('keys dont match in', self.name, attr_name, ':', sorted(attr.keys()), sorted(other_attr.keys()))
-                return False
-            for key, value in six.iteritems(attr):
-                other_value = other_attr[key]
-                if not self._attributs_equal(value, other_value):
-                    #print(attr_name, 'differ in item', key)
-                    return False
-
-        attributs = [
+        attributes = [
             "name",
+            "has_outputs",
             "stdin",
             "join_stderrout",
             "stdout_file",
@@ -391,17 +370,17 @@ class Job(object):
             "parallel_job_info",
             "disposal_timeout",
             "env",
+            "command",
+            "referenced_input_files",
+            "referenced_output_files",
+            "param_dict",
         ]
-        for attr_name in attributs:
+        for attr_name in attributes:
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
-            if isinstance(attr, FileTransfer) or\
-               isinstance(attr, SharedResourcePath) or\
-               isinstance(attr, TemporaryPath) or\
-               isinstance(attr, OptionPath):
-                if not attr.attributs_equal(other_attr):
-                    return False
-            elif not attr == other_attr:
+            if not self._attributes_equal(attr, other_attr):
+                #print('differ in:', attr_name)
+                #print(attr, '!=', other_attr)
                 return False
         return True
 
@@ -496,7 +475,7 @@ class Job(object):
         '''
         job_dict = {}
 
-        attributs = [
+        attributes = [
             "name",
             "join_stderrout",
             "priority",
@@ -507,7 +486,7 @@ class Job(object):
             "has_outputs"
         ]
 
-        for attr_name in attributs:
+        for attr_name in attributes:
             job_dict[attr_name] = getattr(self, attr_name)
 
         # command, referenced_input_files, referenced_output_files
@@ -681,12 +660,12 @@ class BarrierJob(Job):
         '''
         job_dict = {}
 
-        attributs = [
+        attributes = [
             "name",
             "disposal_timeout",
         ]
 
-        for attr_name in attributs:
+        for attr_name in attributes:
             job_dict[attr_name] = getattr(self, attr_name)
 
         # referenced_input_files, referenced_output_files
