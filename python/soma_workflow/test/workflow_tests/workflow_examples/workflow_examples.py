@@ -233,9 +233,13 @@ class WorkflowExamples(object):
         jobs.extend(workflow2.jobs)
         jobs.extend(workflow3.jobs)
 
-        dependencies = workflow1.dependencies
+        dependencies = list(workflow1.dependencies)
         dependencies.extend(workflow2.dependencies)
         dependencies.extend(workflow3.dependencies)
+
+        param_links = dict(workflow1.param_links)
+        param_links.update(workflow2.param_links)
+        param_links.update(workflow3.param_links)
 
         group1 = Group(name="simple example", elements=workflow1.root_group)
         group2 = Group(name="simple with exception in Job1",
