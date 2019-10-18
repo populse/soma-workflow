@@ -342,7 +342,7 @@ class LocalScheduler(Scheduler):
                 else:
                   env2.update(env)
                 env = env2
-            else;
+            else:
                 env = {}
             if engine_job.has_outputs:
                 env['SOMAWF_OUTPUT_PARAMS'] = engine_job.output_params_file
