@@ -3070,13 +3070,16 @@ class JobInfoWidget(QtGui.QTabWidget):
         self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
         self.ui.stdout_refresh_button.clicked.connect(self.refreshStdErrOut)
 
+        if not job_item.data or not job_item.data.has_outputs:
+            self.removeTab(4)
         self.setCurrentIndex(current_tab_index)
 
     def dataChanged(self):
 
         # reread command if needed
-        if self.ui.job_status.text() == constants.NOT_SUBMITTED \
-                and self.job_item.status != self.ui.job_status.text():
+        if self.ui.job_status.text() == '' \
+                or (self.ui.job_status.text() == constants.NOT_SUBMITTED
+                    and self.job_item.status != self.ui.job_status.text()):
             self.job_item.update_job_command(self.connection)
         setLabelFromString(self.ui.job_name, self.job_item.name)
         setLabelFromString(self.ui.job_status, self.job_item.status)
