@@ -238,7 +238,7 @@ if DRMAA_LIB_FOUND:
 
         def job_submission(self, job):
             '''
-            @type  job: soma_workflow.client.Job
+            @type  job: soma_workflow.engine_types.EngineJob
             @param job: job to be submitted
             @rtype: string
             @return: drmaa job id
@@ -349,11 +349,13 @@ if DRMAA_LIB_FOUND:
                 if self._drmaa_implementation == "PBS":
                     job_env = []
                     for var_name in os.environ.keys():
-                # job_env.append(var_name+"="+os.environ[var_name])
                         job_env.append((var_name, os.environ[var_name]))
                     jobTemplateId.jobEnvironment = dict(job_env)
                 if isinstance(job.env, dict):
                     jobTemplateId.jobEnvironment.update(job.env)
+                if job.has_outputs and job.output_params_file:
+                    jobTemplateId.jobEnvironment['SOMAWF_OUTPUT_PARAMS'] \
+                        = job.plain_output_params_file()
 
                 self.logger.debug("before submit command: " + repr(command))
                 self.logger.debug("before submit job.name=" + repr(job.name))
