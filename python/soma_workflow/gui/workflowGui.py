@@ -3014,7 +3014,7 @@ class WorkflowElementInfo(QtGui.QWidget):
 
     @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     def currentChanged(self, current, previous):
-        print('WorkflowElementInfo.currentChanged')
+        #print('WorkflowElementInfo.currentChanged')
         if self.infoWidget:
             if isinstance(self.infoWidget, JobInfoWidget):
                 self.job_info_current_tab = self.infoWidget.currentIndex()
@@ -3023,9 +3023,7 @@ class WorkflowElementInfo(QtGui.QWidget):
         if self.proxy_model != None:
             current = self.proxy_model.mapToSource(current)
         item = current.internalPointer()
-        print('item:', item)
         if isinstance(item, GuiJob):
-            print('GuiJob')
             self.infoWidget \
                 = JobInfoWidget(item,
                                 weakref.proxy(self.model.current_connection),
@@ -3076,6 +3074,10 @@ class JobInfoWidget(QtGui.QTabWidget):
 
     def dataChanged(self):
 
+        # reread command if needed
+        if self.ui.job_status.text() == constants.NOT_SUBMITTED \
+                and self.job_item.status != self.ui.job_status.text():
+            self.job_item.update_job_command(self.connection)
         setLabelFromString(self.ui.job_name, self.job_item.name)
         setLabelFromString(self.ui.job_status, self.job_item.status)
         exit_status, exit_value, term_signal, resource_usage = self.job_item.exit_info
@@ -3118,7 +3120,14 @@ class JobInfoWidget(QtGui.QTabWidget):
 
     @QtCore.Slot(int)
     def currentTabChanged(self, index):
-        if (index == 1 or index == 2) and self.job_item.stdout == "":
+        if index == 0:
+            try:
+                self.job_item.update_job_command(self.connection)
+            except ConnectionClosedError as e:
+                self.parent.connection_closed_error[()].emit()
+            else:
+                self.dataChanged()
+        elif (index == 1 or index == 2) and self.job_item.stdout == "":
             try:
                 self.job_item.updateStdOutErr(self.connection)
             except ConnectionClosedError as e:
@@ -5164,6 +5173,11 @@ class GuiJob(GuiWorkflowItem):
 
             os.chmod(stdout_path, 0o666)
             os.chmod(stderr_path, 0o666)
+
+    def update_job_command(self, connection):
+        if self.job_id != NOT_SUBMITTED_JOB_ID:
+            command = connection.get_job_command(self.job_id)
+            self.command = command
 
 
 class GuiTransfer(GuiWorkflowItem):

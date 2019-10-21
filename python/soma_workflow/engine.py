@@ -1175,6 +1175,9 @@ class WorkflowEngine(RemoteFileController):
 
         return status
 
+    def get_job_command(self, job_id):
+        return self._database_server.get_job_command(job_id)
+
     def workflow_status(self, wf_id):
         '''
         Implementation of soma_workflow.client.WorkflowController API

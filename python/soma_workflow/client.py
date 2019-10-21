@@ -465,6 +465,12 @@ class WorkflowController(object):
         '''
         return self._engine_proxy.job_status(job_id)
 
+    def get_job_command(self, job_id):
+        '''
+        Get a job commandline from the database
+        '''
+        return self._engine_proxy.get_job_command(job_id)
+
     def drms_job_id(self, wf_id, job_id):
         return self._engine_proxy.drms_job_id(wf_id, job_id)
 

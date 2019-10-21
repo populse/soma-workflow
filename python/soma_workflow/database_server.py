@@ -2407,6 +2407,22 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
 
+    def get_job_command(self, job_id):
+        self.logger.debug("=> get_job_command " + str(job_id))
+        with self._lock:
+            connection = self._connect()
+            cursor = connection.cursor()
+            try:
+                command = six.next(cursor.execute(
+                    'SELECT command FROM jobs WHERE id=?', [job_id]))
+            except Exception as e:
+                cursor.close()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            cursor.close()
+            connection.close()
+        return command[0]
+
     def get_engine_job(self, job_id, user_id):
         '''
         Returns a EngineJob object.
