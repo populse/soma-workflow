@@ -65,5 +65,5 @@ EXTRA_REQUIRES = {
 # Globals and constants
 #-----------------------------------------------------------------------------
 
-DB_VERSION = '2.0'
+DB_VERSION = '2.1'
 DB_PICKLE_PROTOCOL = 2 # python 2/3 compatible (should be, but is not)

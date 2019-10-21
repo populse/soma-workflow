@@ -29,6 +29,7 @@ import atexit
 import six
 import weakref
 import sys
+import json
 
 # import cProfile
 # import traceback
@@ -374,6 +375,7 @@ class WorkflowEngineLoop(object):
                                         self._database_server.set_temporary_status(
                                             temp_path_id,
                                             constants.FILES_ON_CR)
+                                self.read_job_output_dict(job)
 
                             ended_jobs[job.job_id] = job
                             self.logger.debug(
@@ -424,6 +426,8 @@ class WorkflowEngineLoop(object):
                 # --- 6. Submit jobs ------------------------------------------
                 drmaa_id_for_db_up = {}
                 for job in jobs_to_run:
+                    # set dynamic paramters from upstream outputs
+                    self.update_job_parameters(job)
                     try:
                         job.drmaa_id = self._scheduler.job_submission(job)
                     except DRMError as e:
@@ -505,6 +509,25 @@ class WorkflowEngineLoop(object):
             #  break
             self._loop_count += 1
             time.sleep(time_interval)
+
+    def read_job_output_dict(self, job):
+        if job.has_outputs and job.output_params_file \
+                is not None:
+            #print('Ended job with outputs:', job.job_id, job.output_params_file)
+            if os.path.exists(
+                    job.plain_output_params_file()):
+                output_dict = json.load(open(
+                  job.plain_output_params_file()))
+                print(output_dict)
+                self._database_server.set_job_output_params(job.job_id,
+                                                            output_dict)
+
+    def update_job_parameters(self, job):
+        u_param_dict = self._database_server.updated_job_parameters(job.job_id)
+        if u_param_dict:
+            job.param_dict.update(u_param_dict)
+            self._database_server.update_job_command(job.job_id,
+                                                     job.plain_command())
 
     def stop_loop(self):
         with self._lock:

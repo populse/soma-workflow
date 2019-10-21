@@ -334,18 +334,19 @@ class LocalScheduler(Scheduler):
                 kwargs = {'preexec_fn': os.setsid}
             else:
                 kwargs = {}
-            if env is not None:
+            if env is not None or engine_job.has_outputs:
                 env2 = dict(os.environ)
                 if sys.platform.startswith('win') and sys.version_info[0] < 3:
                     # windows cannot use unicode strings as env values
                     env2.update([(k.encode('utf-8'), v.encode('utf-8')) for k, v in six.iteritems(env)])
-                else:
-                  env2.update(env)
+                elif env is not None:
+                    env2.update(env)
                 env = env2
+                if engine_job.has_outputs:
+                    env['SOMAWF_OUTPUT_PARAMS'] \
+                        = engine_job.plain_output_params_file()
             else:
-                env = {}
-            if engine_job.has_outputs:
-                env['SOMAWF_OUTPUT_PARAMS'] = engine_job.output_params_file
+                env = None
             LocalScheduler.logger.debug('run command:' + repr(command))
             LocalScheduler.logger.debug('with env:' + repr(env))
             process = subprocess.Popen(command,

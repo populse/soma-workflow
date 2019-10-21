@@ -3014,6 +3014,7 @@ class WorkflowElementInfo(QtGui.QWidget):
 
     @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     def currentChanged(self, current, previous):
+        print('WorkflowElementInfo.currentChanged')
         if self.infoWidget:
             if isinstance(self.infoWidget, JobInfoWidget):
                 self.job_info_current_tab = self.infoWidget.currentIndex()
@@ -3022,7 +3023,9 @@ class WorkflowElementInfo(QtGui.QWidget):
         if self.proxy_model != None:
             current = self.proxy_model.mapToSource(current)
         item = current.internalPointer()
+        print('item:', item)
         if isinstance(item, GuiJob):
+            print('GuiJob')
             self.infoWidget \
                 = JobInfoWidget(item,
                                 weakref.proxy(self.model.current_connection),

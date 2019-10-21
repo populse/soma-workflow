@@ -37,6 +37,7 @@ import glob
 import ctypes
 import ctypes.util
 import tempfile
+import json
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -120,6 +121,7 @@ Job server database tables:
                            None if it doesn't belong to any.
       stdout_file        : file path
       stderr_file        : file path, optional
+      output_params_file : file path, optional
       pickled_engine_job
 
     => used to submit the job
@@ -227,6 +229,7 @@ def create_database(database_file):
                                        nodes_number         INTEGER,
                                        cpu_per_node         INTEGER,
                                        queue                TEXT,
+                                       output_params_file   TEXT,
 
                                        name                 TEXT,
                                        submission_date      DATE,
@@ -236,6 +239,7 @@ def create_database(database_file):
                                        exit_value           INTEGER,
                                        terminating_signal   VARCHAR(255),
                                        resource_usage       TEXT,
+                                       output_params        TEXT,
 
                                        pickled_engine_job   TEXT
                                        )''')
@@ -290,6 +294,18 @@ def create_database(database_file):
         python_version TEXT NOT NULL)''')
     cursor.execute('''INSERT INTO db_version (version, python_version)
       VALUES (?, ?)''', [DB_VERSION, '%d.%d.%d' % sys.version_info[:3]])
+
+    # parameters dependencies
+    cursor.execute('''CREATE TABLE param_links (
+        workflow_id   INTEGER NOT NULL,
+        dest_job_id   INTEGER NOT NULL,
+        dest_param    TEXT,
+        src_job_id    INTEGER NOT NULL,
+        src_param     TEXT,
+        FOREIGN KEY(workflow_id) REFERENCES workflows(id),
+        FOREIGN KEY(dest_job_id) REFERENCES jobs(id),
+        FOREIGN KEY(src_job_id) REFERENCES jobs(id)
+        )''')
 
     cursor.close()
     connection.commit()
@@ -680,16 +696,18 @@ class WorkflowDatabaseServer(object):
                         'DELETE FROM ios_tmp WHERE job_id IN (%s)' % job_str,
                         jobsToDelete[chunk * nmax:chunk * nmax + n])
 
-                    for stdof, stdef in cursor.execute(
+                    for stdof, stdef, opf in cursor.execute(
                             '''SELECT
                             stdout_file,
-                            stderr_file
+                            stderr_file,
+                            output_params_file
                             FROM jobs
                             WHERE id IN (%s) AND NOT custom_submission'''
                             % job_str,
                             jobsToDelete[chunk * nmax:chunk * nmax + n]):
                         self.__removeFile(self._string_conversion(stdof))
                         self.__removeFile(self._string_conversion(stdef))
+                        self.__removeFile(self._string_conversion(opf))
 
                 cursor.execute(
                     'DELETE FROM jobs WHERE expiration_date < ?',
@@ -860,6 +878,12 @@ class WorkflowDatabaseServer(object):
                     if stderr_file:
                         registered_engine_paths.append(
                             self._string_conversion(stderr_file))
+                for row in cursor.execute(
+                        'SELECT output_params_file FROM jobs'):
+                    output_params_file = row[0]
+                    if output_params_file:
+                        registered_engine_paths.append(
+                            self._string_conversion(output_params_file))
                 for row in cursor.execute('SELECT id, login FROM users'):
                     user_id, login = row
                     registered_users.append((user_id, login))
@@ -1677,6 +1701,25 @@ class WorkflowDatabaseServer(object):
                           WHERE id=?''',
                               (sqlite3.Binary(pickled_workflow),
                                engine_workflow.wf_id))
+
+                print('workflow links:', engine_workflow.param_links)
+                for dest_job, links \
+                        in six.iteritems(engine_workflow.param_links):
+                    edest_job = engine_workflow.job_mapping[dest_job]
+                    print('add param links:', links)
+                    for dest_param, link in six.iteritems(links):
+                        esrc_job = engine_workflow.job_mapping[link[0]]
+                        cursor.execute(
+                            '''INSERT INTO param_links
+                            (workflow_id,
+                            dest_job_id,
+                            dest_param,
+                            src_job_id,
+                            src_param)
+                            VALUES (?, ?, ?, ?, ?)''',
+                            (engine_workflow.wf_id, edest_job.job_id,
+                             dest_param, esrc_job.job_id, link[1]))
+
             except Exception as e:
                 connection.rollback()
                 cursor.close()
@@ -1698,7 +1741,7 @@ class WorkflowDatabaseServer(object):
         wf_id: int
         '''
         self.logger.debug("=> delete_workflow")
-        self.logger.debug("wf_id is: ", wf_id)
+        self.logger.debug("wf_id is: " + str(wf_id))
         with self._lock:
             # set expiration date to yesterday + clean() ?
             connection = self._connect()
@@ -2196,6 +2239,11 @@ class WorkflowDatabaseServer(object):
                 else:
                     custom_submission = True  # the std out and err file won't to be removed with the job
 
+                if engine_job.has_outputs \
+                        and not engine_job.plain_output_params_file():
+                    engine_job.output_params_file = self.generate_file_path(
+                        user_id, external_cursor=cursor, login=login)
+
                 referenced_input_files = []
                 referenced_input_temp = []
                 for ft in engine_job.referenced_input_files:
@@ -2214,6 +2262,7 @@ class WorkflowDatabaseServer(object):
                     else:
                         referenced_output_temp.append(eft.temp_path_id)
 
+                print('add_job!', command_info)
                 cursor.execute('''INSERT INTO jobs
                          (user_id,
 
@@ -2234,6 +2283,7 @@ class WorkflowDatabaseServer(object):
                           nodes_number,
                           cpu_per_node,
                           queue,
+                          output_params_file,
 
                           name,
                           submission_date,
@@ -2250,7 +2300,8 @@ class WorkflowDatabaseServer(object):
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?, ?)''',
+                                  ?, ?, ?, ?, ?,
+                                  ?, ?)''',
                               (user_id,
 
                                   None,  # drmaa_id
@@ -2270,6 +2321,7 @@ class WorkflowDatabaseServer(object):
                                   nodes_number,
                                   cpu_per_node,
                                   engine_job.queue,
+                                  engine_job.plain_output_params_file(),
 
                                   engine_job.name,
                                   None,  # submission_date,
@@ -2332,6 +2384,28 @@ class WorkflowDatabaseServer(object):
                 connection.close()
 
         return engine_job
+
+    def update_job_command(self, job_id, commandline):
+        self.logger.debug("=> update_job_command " + str(job_id) + ':'
+                          + repr(commandline))
+        command_info = ""
+        for command_element in commandline:
+            command_info = command_info + " " + repr(command_element)
+        with self._lock:
+            connection = self._connect()
+            cursor = connection.cursor()
+            try:
+                try:
+                    cursor.execute(
+                        'UPDATE jobs SET command=? WHERE id=?',
+                        (command_info, job_id))
+                    connection.commit()
+                except:
+                    connection.rollback()
+                    raise
+            finally:
+                cursor.close()
+                connection.close()
 
     def get_engine_job(self, job_id, user_id):
         '''
@@ -2698,6 +2772,73 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+    def set_job_output_params(self, job_id, param_dict):
+        '''
+        Updates the job output parameters dict.
+        '''
+        self.logger.debug("=> set_job_output_params")
+        with self._lock:
+            connection = self._connect()
+            try:
+                connection.execute(
+                    'UPDATE jobs SET output_params=? WHERE id=?',
+                    (json.dumps(param_dict),
+                     job_id))
+            except Exception as e:
+                connection.rollback()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            connection.commit()
+            connection.close()
+
+    def updated_job_parameters(self, job_id):
+        '''
+        '''
+        self.logger.debug("=> update_job_parameters")
+        # get job workflow id
+        with self._lock:
+            connection = self._connect()
+            cursor = connection.cursor()
+            try:
+                #try:
+                    #sel = cursor.execute(
+                        #'SELECT workflow_id FROM jobs WHERE id=?', [job_id])
+                #except Exception as e:
+                    #six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                #print('update_job_parameters sel wf_id:', job_id)
+                #wf_id = six.next(sel)
+
+                sel = cursor.execute(
+                    'SELECT dest_param, src_job_id, src_param '
+                    'FROM param_links WHERE dest_job_id=?', [job_id])
+
+                #job_sql = cursor.execute(
+                    #'SELECT pickled_job FROM jobs WHERE id=', [job_id])
+                #job = pickle.loads(six.next(job_sql))
+                #param_dict = job.param_dict
+
+                param_dict = {}
+                jsons = {}
+                for dst_param, src_job, src_param in sel:
+                    #if dest_param in param_dict:
+                    jdict = jsons.get(src_job)
+                    if jdict is None:
+                        json_sql = cursor.execute(
+                            'SELECT output_params FROM jobs WHERE id=?',
+                            [src_job])
+                        jstr = six.next(json_sql)[0]
+                        jdict = json.loads(jstr)
+                        jsons[src_job] = jdict
+                        if src_param in jdict:
+                            param_dict[dst_param] = jdict[src_param]
+
+            finally:
+                cursor.close()
+                connection.close()
+
+            return param_dict
+
+
     def get_drmaa_job_id(self, job_id):
         '''
         Returns the DRMAA job id associated with the job.
@@ -2734,9 +2875,14 @@ class WorkflowDatabaseServer(object):
         Returns the path of the standard output and error files.
         The job_id must be valid.
 
-        @type job_id: C{JobIdentifier}
-        @rtype: tuple
-        @return: (stdout_file_path, stderr_file_path)
+        Parameters
+        ----------
+        job_id: JobIdentifier
+
+        Returns
+        -------
+        paths: tuple
+            (stdout_file_path, stderr_file_path)
         '''
         self.logger.debug("=> get_std_out_err_file_path")
         with self._lock:
@@ -2765,6 +2911,38 @@ class WorkflowDatabaseServer(object):
         stdout_file_path = self._string_conversion(result[0])
         stderr_file_path = self._string_conversion(result[1])
         return (stdout_file_path, stderr_file_path)
+
+    def get_job_output_params_file_path(self, job_id, user_id):
+        '''
+        Returns the path of the output parameters file (if any).
+        The job_id must be valid.
+        '''
+        self.logger.debug("=> get_job_output_params_file_path")
+        with self._lock:
+            connection = self._connect()
+            cursor = connection.cursor()
+            try:
+                sel = cursor.execute(
+                    'SELECT output_params_file FROM jobs WHERE id=?',
+                    [job_id])
+            except Exception as e:
+                cursor.close()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+
+            try:
+                result = six.next(sel)
+            except StopIteration:
+                cursor.close()
+                connection.close()
+                raise UnknownObjectError("The job id " + repr(job_id)
+                                         + " is not valid or does not belong "
+                                         "to user " + repr(user_id))
+
+            cursor.close()
+            connection.close()
+        output_params_file = self._string_conversion(result[0])
+        return output_params_file
 
     def get_job_exit_info(self, job_id, user_id):
         '''

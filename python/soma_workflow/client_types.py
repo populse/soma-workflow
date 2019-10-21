@@ -164,6 +164,10 @@ class Job(object):
         Set if the job will write a special JSON file which contains output
         parameters values, when the job is a process with outputs.
 
+    output_params_file: string or FileTransfer or SharedResourcePath
+        Path to the file which will be written for output parameters of the
+        job.
+
     ..
       **disposal_timeout**: int
       Only requiered outside of a workflow
@@ -223,6 +227,9 @@ class Job(object):
     # bool
     has_outputs = False
 
+    # string (path)
+    output_params_file = None
+
     def __init__(self,
                  command,
                  referenced_input_files=None,
@@ -240,7 +247,8 @@ class Job(object):
                  user_storage=None,
                  env=None,
                  param_dict=None,
-                 has_outputs=False):
+                 has_outputs=False,
+                 output_params_file=None):
         if not name and len(command) != 0:
             self.name = command[0]
         else:
@@ -266,6 +274,7 @@ class Job(object):
         self.env = env
         self.param_dict = param_dict or dict()
         self.has_outputs = has_outputs
+        self.output_params_file = output_params_file
 
         for command_elem in self.command:
             if isinstance(command_elem, basestring):
@@ -374,6 +383,7 @@ class Job(object):
             "referenced_input_files",
             "referenced_output_files",
             "param_dict",
+            "output_params_file",
         ]
         for attr_name in attributes:
             attr = getattr(self, attr_name)
@@ -449,6 +459,12 @@ class Job(object):
                                                       srp_from_ids,
                                                       tmp_from_ids,
                                                       opt_from_ids)
+        if job.output_params_file:
+            job.output_params_file = from_serializable(job.output_params_file,
+                                                       tr_from_ids,
+                                                       srp_from_ids,
+                                                       tmp_from_ids,
+                                                       opt_from_ids)
         job.param_dict = {}
         for k, v in six.iteritems(d.get('param_dict', {})):
             job.param_dict[k] = from_serializable(v, tr_from_ids,
@@ -545,6 +561,15 @@ class Job(object):
                                                       shared_res_path_id,
                                                       tmp_ids,
                                                       opt_ids)
+
+        if self.output_params_file:
+            job_dict['output_params_file'] \
+                = to_serializable(self.output_params_file,
+                                  id_generator,
+                                  transfer_ids,
+                                  shared_res_path_id,
+                                  tmp_ids,
+                                  opt_ids)
 
         if self.working_directory:
             job_dict[

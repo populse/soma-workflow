@@ -131,22 +131,24 @@ class EngineJob(Job):
                  container_command=None,
                  wf_env=None):
 
-        super(EngineJob, self).__init__(client_job.command,
-                                        client_job.referenced_input_files,
-                                        client_job.referenced_output_files,
-                                        client_job.stdin,
-                                        client_job.join_stderrout,
-                                        client_job.disposal_timeout,
-                                        client_job.name,
-                                        client_job.stdout_file,
-                                        client_job.stderr_file,
-                                        client_job.working_directory,
-                                        client_job.parallel_job_info,
-                                        client_job.priority,
-                                        client_job.native_specification,
-                                        env=client_job.env,
-                                        param_dict=client_job.param_dict,
-                                        has_outputs=client_job.has_outputs)
+        super(EngineJob, self).__init__(
+            client_job.command,
+            client_job.referenced_input_files,
+            client_job.referenced_output_files,
+            client_job.stdin,
+            client_job.join_stderrout,
+            client_job.disposal_timeout,
+            client_job.name,
+            client_job.stdout_file,
+            client_job.stderr_file,
+            client_job.working_directory,
+            client_job.parallel_job_info,
+            client_job.priority,
+            client_job.native_specification,
+            env=client_job.env,
+            param_dict=client_job.param_dict,
+            has_outputs=client_job.has_outputs,
+            output_params_file=client_job.output_params_file)
 
         self.job_id = -1
 
@@ -178,17 +180,6 @@ class EngineJob(Job):
             if self.env:
                 env.update(self.env)
             self.env = env
-
-        if has_outputs:
-            # if the process has outputs, it must write an additional .json
-            # temporary file
-            output_file = TemporaryPath(is_directory=False,
-                 name='output_params',
-                 suffix='.json')
-            # duplicate list to avoid modifying the input one
-            self.referenced_output_files \
-                = list(self.referenced_output_files) + [output_file]
-            self.output_params_file = output_file
 
         self._map()
 
@@ -293,6 +284,8 @@ class EngineJob(Job):
         map_and_register(self.working_directory, mode="File", addTo=["Input", "Output"])
         map_and_register(self.stdout_file, mode="File", addTo=["Output"])
         map_and_register(self.stderr_file, mode="File", addTo=["Output"])
+        if self.has_outputs:
+            map_and_register(self.stderr_file, mode="File", addTo=["Output"])
         for ft in self.referenced_input_files:
             map_and_register(ft)
         for ft in self.referenced_output_files:
@@ -396,6 +389,9 @@ class EngineJob(Job):
 
     def plain_stderr(self):
         return self.generate_command(self.stderr_file)
+
+    def plain_output_params_file(self):
+        return self.generate_command(self.output_params_file)
 
     def plain_working_directory(self):
         return self.generate_command(self.working_directory)
@@ -539,7 +535,8 @@ class EngineWorkflow(Workflow):
             client_workflow.root_group,
             client_workflow.groups,
             env=client_workflow.env,
-            env_builder_code=client_workflow.env_builder_code)
+            env_builder_code=client_workflow.env_builder_code,
+            param_links=client_workflow.param_links)
             # STRANGE: does not match Workflow constructor,
             # ,client_workflow.groups)
         self.wf_id = -1
