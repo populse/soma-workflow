@@ -353,9 +353,6 @@ if DRMAA_LIB_FOUND:
                     jobTemplateId.jobEnvironment = dict(job_env)
                 if isinstance(job.env, dict):
                     jobTemplateId.jobEnvironment.update(job.env)
-                if job.has_outputs and job.output_params_file:
-                    jobTemplateId.jobEnvironment['SOMAWF_OUTPUT_PARAMS'] \
-                        = job.plain_output_params_file()
 
                 self.logger.debug("before submit command: " + repr(command))
                 self.logger.debug("before submit job.name=" + repr(job.name))

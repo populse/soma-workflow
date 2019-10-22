@@ -100,7 +100,7 @@ def slave_loop(communicator,
                     #logger.debug("[host: " + socket.gethostname() + "] "
                              #+ "Slave " + repr(rank) + " RUNS JOB" 
                              #+ repr(j.job_id) + " " + str(command))
-                    commands[j.job_id] = command
+                    commands[j.job_id] = (command, j.env)
             elif t == MPIScheduler.NO_JOB:
                 communicator.recv(source=0, tag=t)
                 # logger.debug("Slave " + repr(rank) + " "
@@ -121,7 +121,8 @@ def slave_loop(communicator,
 
             else:
                 raise Exception('Unknown tag')
-        for job_id, command in six.iteritems(commands):
+        for job_id, command_def in six.iteritems(commands):
+            command, env = command_def
             if command == None:
                 # ended_jobs_info[job_id] = (constants.FAILED,
                                            #(constants.EXIT_ABORTED, None,
@@ -153,11 +154,17 @@ def slave_loop(communicator,
                              "stdout: %s, stderr: %s" \
                             % (repr(rank), repr(job_id), plain_command, 
                                plain_stdout, plain_stderr))
-                            
+
+                if env is not None:
+                    env2 = dict(os.environ)
+                    env2.update(env)
+                    env = env2
+
                 try:
                     ret_value = subprocess.call(plain_command, 
                                                 stdout=cmd_stdout, 
-                                                stderr=cmd_stderr)
+                                                stderr=cmd_stderr,
+                                                env=env)
                     #ret_value = subprocess.call(plain_command)
                     logger.debug("[host: " + socket.gethostname() + "] "
                                + "Slave %s JOB%s ENDED REGULARLY " \

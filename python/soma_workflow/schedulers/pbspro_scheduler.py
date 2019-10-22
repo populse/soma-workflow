@@ -366,11 +366,6 @@ class PBSProScheduler(Scheduler):
 
             if job.env:
                 jobTemplate.env = dict(job.env)
-            if job.has_outputs and job.output_params_file:
-                if jobTemplate.env is None:
-                    jobTemplate.env = {}
-                jobTemplate.env['SOMAWF_OUTPUT_PARAMS'] \
-                    = job.plain_output_params_file()
 
             self.logger.debug("before submit command: " + repr(command))
             self.logger.debug("before submit job.name=" + repr(job.name))

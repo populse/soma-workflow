@@ -523,11 +523,19 @@ class WorkflowEngineLoop(object):
                                                             output_dict)
 
     def update_job_parameters(self, job):
+        '''
+        Set job parameters from upstream outputs, and sets the env variable
+        SOMAWF_OUTPUT_PARAMS if the job has output parameters
+        '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
             job.param_dict.update(u_param_dict)
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
+        if job.has_outputs and job.output_params_file:
+            if job.env is None:
+                job.env = {}
+            job.env['SOMAWF_OUTPUT_PARAMS'] = job.plain_output_params_file()
 
     def stop_loop(self):
         with self._lock:

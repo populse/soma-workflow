@@ -335,9 +335,6 @@ if DRMAA2_LIB_FOUND:
                     for var_name in os.environ.keys():
                         job_env.append((var_name, os.environ[var_name]))
                     jobTemplateId.jobEnvironment = dict(job_env)
-                if job.has_outputs and job.output_params_file:
-                    jobTemplateId.jobEnvironment['SOMAWF_OUTPUT_PARAMS'] \
-                        = job.plain_output_params_file()
 
                 self.logger.debug("before submit command: " + repr(command))
                 self.logger.debug("before submit job.name=" + repr(job.name))
