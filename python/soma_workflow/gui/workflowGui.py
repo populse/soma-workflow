@@ -3093,6 +3093,16 @@ class JobInfoWidget(QtGui.QTabWidget):
                     workflow = job_item.gui_workflow().server_workflow
                 else:
                     workflow = None
+                job_mapping = getattr(workflow, 'job_mapping', None)
+                engine_wf = True
+                if job_mapping is None:
+                    # workflow loaded but not submitted
+                    engine_wf = False
+                    job_mapping = {}
+                    for item_id, item \
+                            in six.iteritems(job_item.gui_workflow().items):
+                        if isinstance(item, GuiJob):
+                            job_mapping[item.data] = item.it_id
                 for i, param_name in \
                         enumerate(sorted(job_item.data.param_dict.keys())):
                     value = job_item.data.param_dict[param_name]
@@ -3105,8 +3115,13 @@ class JobInfoWidget(QtGui.QTabWidget):
                             if link:
                                 item = QtGui.QTableWidgetItem(
                                     '%s.%s' % (link[0].name, link[1]))
-                                item.job_id \
-                                    = workflow.job_mapping[link[0]].job_id
+                                if engine_wf:
+                                    item.job_id \
+                                        = job_mapping.get(
+                                            link[0], link[0]).job_id
+                                else:
+                                    item.job_id \
+                                        = job_mapping.get(link[0])
                                 table.setItem(i, 2, item)
                 table.cellDoubleClicked.connect(
                     self.input_param_double_clicked)
@@ -3216,7 +3231,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         if self.job_item.data.has_outputs:
             table = self.ui.output_params_contents
             table.clearContents()
-            output_params = self.job_item.output_params
+            output_params = getattr(self.job_item, 'output_params', None)
             if output_params is not None:
                 table.setRowCount(len(output_params))
                 if QT_BACKEND == PYQT5:
