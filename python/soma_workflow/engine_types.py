@@ -329,7 +329,7 @@ class EngineJob(Job):
             for c in command:
                 new_command += [self.generate_command(c)]
             if mode != "Command":
-                new_command = str(repr(new_command)).replace("'", "\"")
+                new_command = repr(new_command).encode('utf-8').replace("'", "\"")
         elif isinstance(command, SpecialPath):
             # If the entry is a SpecialPath, it is converted into the
             # corresponding path representation. If the parent call cas
@@ -337,9 +337,14 @@ class EngineJob(Job):
             # (get_engine_path), else we get the path to the main file
             # (get_engine_main_path)
             if mode == "Tuple":
-                new_command = command.pattern % self.path_mapping[command].get_engine_path()
+                new_command = (
+                    command.pattern
+                    % self.path_mapping[command].get_engine_path()
+                ).encode('utf-8')
             else:
-                new_command = command.pattern % self.path_mapping[command].get_engine_main_path()
+                new_command = (
+                    command.pattern % self.path_mapping[command].get_engine_main_path()
+                ).encode('utf-8')
         else:
             # If the entry is anything else, we return its string representation
             new_command = str(command)
