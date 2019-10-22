@@ -3155,7 +3155,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         setLabelFromString(self.ui.queue, self.job_item.queue)
 
         if resource_usage:
-            if six.PY3:
+            if six.PY3 and isinstance(resource_usage, bytes):
                 resource_usage = resource_usage.decode()
             self.ui.resource_usage.clear()
             self.ui.resource_usage.insertItems(0, resource_usage.split())
@@ -5216,7 +5216,7 @@ class GuiJob(GuiWorkflowItem):
         if self.exit_info:
             exit_status, exit_value, term_signal, resource_usage = self.exit_info
             if resource_usage:
-                if six.PY3:
+                if six.PY3 and isinstance(resource_usage, bytes):
                     # in py3 RU is bytes, we want unicode/str
                     resource_usage = resource_usage.decode()
                 ru = resource_usage.split()
@@ -5241,11 +5241,12 @@ class GuiJob(GuiWorkflowItem):
                         = self.ending_date - self.execution_date
                     if "cput" in rud:
                         tlist = [int(x) for x in rud["cput"].split(':')]
-                        t = time.struct_time([0] * (6 - len(tlist)) 
-                                                 + tlist + [0, 0, 0])
+                        tlist = [0] * (6 - len(tlist)) + tlist + [0, 0, 0]
+                        tlist[0] += 2000  # to avoid error about year range
+                        t = time.struct_time(tlist)
                         t = datetime.fromtimestamp(time.mktime(t))
                         t0 = datetime.fromtimestamp(time.mktime(
-                            time.struct_time([0] * 9)))
+                            time.struct_time([2000] + [0] * 8)))
                         #t = datetime.strptime(rud["cput"], "%H:%M:%S")
                         #t0 = datetime.strptime("00:00:00", "%H:%M:%S")
                         self.serial_duration = t - t0
