@@ -819,9 +819,18 @@ class WorkflowDatabaseServer(object):
                 #
                 # Workflows
 
-                cursor.execute(
-                    'DELETE FROM workflows WHERE expiration_date < ?',
+                wf = cursor.execute(
+                    'SELECT id FROM workflows WHERE expiration_date < ?',
                     [date.today()])
+                wf = [w[0] for w in wf]
+                cursor.execute(
+                    'DELETE FROM workflows WHERE id IN (%s)'
+                    % ','.join(['?'] * len(wf)),
+                    wf)
+                cursor.execute(
+                    'DELETE FROM param_links WHERE workflow_id IN (%s)'
+                    % ','.join(['?'] * len(wf)),
+                    wf)
 
             except Exception as e:
                 connection.rollback()
@@ -1702,11 +1711,9 @@ class WorkflowDatabaseServer(object):
                               (sqlite3.Binary(pickled_workflow),
                                engine_workflow.wf_id))
 
-                print('workflow links:', engine_workflow.param_links)
                 for dest_job, links \
                         in six.iteritems(engine_workflow.param_links):
                     edest_job = engine_workflow.job_mapping[dest_job]
-                    print('add param links:', links)
                     for dest_param, link in six.iteritems(links):
                         esrc_job = engine_workflow.job_mapping[link[0]]
                         cursor.execute(
@@ -2262,7 +2269,6 @@ class WorkflowDatabaseServer(object):
                     else:
                         referenced_output_temp.append(eft.temp_path_id)
 
-                print('add_job!', command_info)
                 cursor.execute('''INSERT INTO jobs
                          (user_id,
 
@@ -2807,6 +2813,26 @@ class WorkflowDatabaseServer(object):
             connection.commit()
             connection.close()
 
+    def get_job_output_params(self, job_id):
+        '''
+        Returns the job output parameters dict.
+        '''
+        self.logger.debug("=> get_job_output_params")
+        with self._lock:
+            connection = self._connect()
+            cursor = connection.cursor()
+            try:
+                json_sql = cursor.execute(
+                    'SELECT output_params FROM jobs WHERE id=?', [job_id])
+                jstr = six.next(json_sql)[0]
+                if jstr is None:
+                    return None
+                jdict = json.loads(jstr)
+                return jdict
+            finally:
+                cursor.close()
+                connection.close()
+
     def updated_job_parameters(self, job_id):
         '''
         '''
@@ -2843,10 +2869,13 @@ class WorkflowDatabaseServer(object):
                             'SELECT output_params FROM jobs WHERE id=?',
                             [src_job])
                         jstr = six.next(json_sql)[0]
-                        jdict = json.loads(jstr)
-                        jsons[src_job] = jdict
-                        if src_param in jdict:
-                            param_dict[dst_param] = jdict[src_param]
+                        if jstr is not None:
+                            jdict = json.loads(jstr)
+                            jsons[src_job] = jdict
+                            if src_param in jdict:
+                                param_dict[dst_param] = jdict[src_param]
+                        else:
+                            jsons[src_job] = {}
 
             finally:
                 cursor.close()
