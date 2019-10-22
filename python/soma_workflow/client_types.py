@@ -1177,10 +1177,10 @@ class Workflow(object):
             dependencies.append(dep)
 
         # param links
-        param_links = []
+        param_links = {}
         id_links = d.get("param_links", {})
         for dest_job, links in six.iteritems(id_links):
-            ddest_job = job_from_ids[dest_job]
+            ddest_job = job_from_ids[int(dest_job)]
             dlinks = {}
             for name, link in six.iteritems(links):
                 dsrc_job = job_from_ids[link[0]]
@@ -1199,7 +1199,8 @@ class Workflow(object):
                        user_storage=user_storage,
                        name=name,
                        env=env,
-                       env_builder_code=env_builder_code)
+                       env_builder_code=env_builder_code,
+                       param_links=param_links)
 
         return workflow
 
