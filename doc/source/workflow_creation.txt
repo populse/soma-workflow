@@ -4,6 +4,10 @@
 Workflow creation API
 =====================
 
+.. contents:: Workflow creation API
+   :local:
+
+
 The workflows are created using the soma_workflow.client API. This page presents 
 the documentation of the Workflow, Job, FileTransfer and SharedResourcePath 
 classes. 
@@ -47,3 +51,96 @@ SharedResourcePath
 
 .. autoclass:: client.SharedResourcePath
     :members:
+
+
+.. _dynamic_outputs:
+
+Dynamic output parameters values in Soma-Workflow
+=================================================
+
+This is a new feature in Soma-Workflow 3.1.
+
+It allows jobs to produce "output parameters", which will in turn be used as inputs in downstream jobs.
+
+As jobs are basically commandlines, they normally cannot have outputs other than files. Thus we manage the output parameters by allowing a job to write an additional file (JSON format) containing a dictionary of output parameters and values.
+
+Such a job will be "marked" as producing outputs (Job variable ``has_outputs``, and before running it, Soma-Workflow will set the environment variable ``SOMAWF_OUTPUT_PARAMS`` for it, with an output filename value. The job should write the output file at this location. The output parameters file will be read by Soma-Workflow once the job has successfully finished.
+
+Then when running later jobs, their input values will be changed accordingly. To allow this, we need a few things:
+
+* such jobs should declare a dictionary of input parameters (Job variable ``param_dict``)
+
+* the workflow should define some "parameters links" between jobs in order to connect output parameters values from one job to the input parameters values of downstream jobs: Workflow variable ``param_linnks``.
+
+* The input parameters dictionary of a job has to be used to re-build its commandline properly after their values have changed. To do so, the commandline arguments of such jobs can contain some substitution strings in the python style ``"%(param)s"``, where ``param`` is a named parameter in the dictionary.
+
+To put things togethr in an example::
+
+        from soma_workflow.client import Job, Workflow, WorkflowController
+
+        # workflow definition
+
+        job1 = Job(
+            command=['my_program', '%(in1)s'],
+            name='job1:cp',
+            param_dict={'in1': '/tmp/input_file'},
+            has_outputs=True)
+        job2 = Job(
+            command=['cat', '%(in1)s'],
+            name='job2:cat',
+            param_dict={'in1': 'undefined'})
+        workflow = Workflow(jobs=[job1, job2], name='test_workflow',
+                            param_links={job2: {'in1': (job1, 'out1')}})
+
+        # running it is the classical way
+        # (or using soma_workflow_gui)
+
+        wc = WorkflowController()
+        wf_id = wc.submit_workflow(workflow)
+        wc.wait_workflow(wf_id)
+
+Here, ``job1`` will run a program, ``my_program`` which will do its job, and write the output parameters file. The ``param_dict`` in job1 is not necessary here, since its parameters values will not change according to upstream operations, but if we want to allow job classes to be used in such "dynamic" workflows, we rather have to get used to name all their parameters.
+
+``job2`` input parameter ``in1`` will get its value from ``job1`` ouput named ``out1``. This is specified via the workflow ``param_links`` which is a dict associating to a destination job a set of parameters values, each coming from another job's parameter. For instance::
+
+    param_links = {
+        dest_job1: {
+            'dest_param1': (src_job1, 'src_output_param1'),
+            'dest_param2': (src_job2, 'src_output_param2'),
+        },
+        dest_job2: {
+            'dest_param3': (src_job3, 'src_output_param3'),
+            'dest_param4': (src_job4, 'src_output_param4'),
+        },
+    }
+
+Now the ``job1`` commandline program, if written in Python language, could look like this::
+
+    #!/usr/bin/env python
+
+    import os
+    import shutil
+    import json
+    import sys
+
+    # we have to write the output parameters values in this file:
+    output_param_file = os.environ.get('SOMAWF_OUTPUT_PARAMS')
+
+    # we impose a "hard-coded" output path, just because our programs
+    # works that way.
+    out_file = os.path.expanduser('~/bubulle.txt')
+
+    in_file = sys.argv[1]  # input given as parameter from the job
+    # let's say this is the "real" job of my_program
+    shutil.copy2(in_file, out_file)
+
+    # write output parameters (only one, in our case)
+    if output_param_file:
+        params = {
+            'out1': out_file,
+        }
+        json.dump(params, open(output_param_file, 'w'))
+
+
+As you can see, in a "classical" workflow, ``job2`` would not have known which file to print in its ``cat`` command. Using this "dynamic" parameters structure, it can work.
+

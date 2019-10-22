@@ -1,11 +1,31 @@
 .. _changes_3:
 
-======================================
-Important changes in Soma-Workflow 3.0
-======================================
+====================================
+Important changes in Soma-Workflow 3
+====================================
 
-.. contents:: Soma-workflow changes in 3.0
+.. contents:: Soma-workflow changes in 3
    :local:
+
+Important changes in Soma-Workflow 3.1
+++++++++++++++++++++++++++++++++++++++
+
+Database format has moved to version 3.0
+
+Dynamic parameters in workflows
+===============================
+
+Jobs may have "named parameters": a dictionary of parameters, which will be used to build the actual commandline, or pass parameters via a JSON file.
+
+Jobs may have "output parameters": also a dictionary of parameters, which may be written during a job execution as a JSON file, and which can be linked to input parameters of downstream jobs.
+
+Thus workflows may contain some "parameters links" to specify this.
+
+See the details in the :ref:`dynamic_outputs` section.
+
+
+Important changes in Soma-Workflow 3.0
+++++++++++++++++++++++++++++++++++++++
 
 Client-server communication
 ===========================
