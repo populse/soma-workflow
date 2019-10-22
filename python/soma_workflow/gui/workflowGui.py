@@ -2280,6 +2280,7 @@ class MainWindow(QtGui.QMainWindow):
         itemInfoLayout.setContentsMargins(2, 2, 2, 2)
         itemInfoLayout.addWidget(self.itemInfoWidget)
         self.ui.dockWidgetContents_intemInfo.setLayout(itemInfoLayout)
+        self.itemInfoWidget.job_selected.connect(self.treeWidget.select_job)
 
         self.treeWidget.selection_model_changed.connect(
             self.itemInfoWidget.setSelectionModel)
@@ -2970,6 +2971,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     proxy_model = None
     
     connection_closed_error = QtCore.Signal()
+    job_selected = QtCore.Signal(int)
 
     def __init__(self, model, proxy_model=None, parent=None):
         super(WorkflowElementInfo, self).__init__(parent)
@@ -3029,6 +3031,7 @@ class WorkflowElementInfo(QtGui.QWidget):
                                 weakref.proxy(self.model.current_connection),
                                 self.job_info_current_tab,
                                 self)
+            self.infoWidget.source_job_selected.connect(self.job_selected)
         elif isinstance(item, GuiTransfer):
             self.infoWidget = TransferInfoWidget(item, self)
         elif isinstance(item, GuiGroup):
@@ -3044,12 +3047,13 @@ class WorkflowElementInfo(QtGui.QWidget):
         if self.infoWidget:
             self.infoWidget.dataChanged()
 
-
 #
 # VIEWS   #########################
 #
 
 class JobInfoWidget(QtGui.QTabWidget):
+
+    source_job_selected = QtCore.Signal(int)
 
     def __init__(self,
                  job_item,
@@ -3064,15 +3068,59 @@ class JobInfoWidget(QtGui.QTabWidget):
         self.job_item = job_item
         self.connection = connection
 
+        if not job_item.data or (not job_item.data.has_outputs
+                                 and not job_item.data.param_dict):
+            self.removeTab(4)
+            if current_tab_index == 4:
+                current_tab_index = 0
+        else:
+            if not job_item.data.param_dict:
+                self.ui.input_params_contents.hide()
+                self.ui.input_params_label.hide()
+            elif not job_item.data.has_outputs:
+                self.ui.output_params_contents.hide()
+                self.ui.output_params_label.hide()
+            if job_item.data.param_dict:
+                table = self.ui.input_params_contents
+                table.setRowCount(len(job_item.data.param_dict))
+                if QT_BACKEND == PYQT5:
+                    table.horizontalHeader().setSectionResizeMode(
+                        QtGui.QHeaderView.ResizeToContents)
+                else:
+                    table.horizontalHeader().setResizeMode(
+                        QtGui.QHeaderView.ResizeToContents)
+                if job_item.gui_workflow:
+                    workflow = job_item.gui_workflow().server_workflow
+                else:
+                    workflow = None
+                for i, param_name in \
+                        enumerate(sorted(job_item.data.param_dict.keys())):
+                    value = job_item.data.param_dict[param_name]
+                    table.setItem(i, 0, QtGui.QTableWidgetItem(param_name))
+                    table.setItem(i, 1, QtGui.QTableWidgetItem(repr(value)))
+                    if workflow:
+                        links = workflow.param_links.get(job_item.data)
+                        if links:
+                            link = links.get(param_name)
+                            if link:
+                                item = QtGui.QTableWidgetItem(
+                                    '%s.%s' % (link[0].name, link[1]))
+                                item.job_id \
+                                    = workflow.job_mapping[link[0]].job_id
+                                table.setItem(i, 2, item)
+                table.cellDoubleClicked.connect(
+                    self.input_param_double_clicked)
+
+        self.setCurrentIndex(current_tab_index)
+
         self.dataChanged()
+        if current_tab_index == 4:
+            self.refresh_params()
 
         self.currentChanged.connect(self.currentTabChanged)
         self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
         self.ui.stdout_refresh_button.clicked.connect(self.refreshStdErrOut)
-
-        if not job_item.data or not job_item.data.has_outputs:
-            self.removeTab(4)
-        self.setCurrentIndex(current_tab_index)
+        self.ui.params_refresh_button.clicked.connect(self.refresh_params)
 
     def dataChanged(self):
 
@@ -3137,6 +3185,8 @@ class JobInfoWidget(QtGui.QTabWidget):
                 self.parent.connection_closed_error[()].emit()
             else:
                 self.dataChanged()
+        elif index == 4:
+            self.refresh_params()
 
     @QtCore.Slot()
     def refreshStdErrOut(self):
@@ -3145,6 +3195,48 @@ class JobInfoWidget(QtGui.QTabWidget):
         except ConnectionClosedError as e:
             self.parent().connection_closed_error[()].emit()
         self.dataChanged()
+
+    @QtCore.Slot()
+    def refresh_params(self):
+        if self.job_item.data is None:
+            return
+        try:
+            self.job_item.update_job_params(self.connection)
+        except ConnectionClosedError as e:
+            self.parent().connection_closed_error[()].emit()
+            return
+        if self.job_item.data.param_dict:
+            table = self.ui.input_params_contents
+            param_dict = self.job_item.data.param_dict
+            for row in range(table.rowCount()):
+                param_name = table.item(row, 0).text()
+                if param_name in param_dict:
+                    value = param_dict[param_name]
+                    table.setItem(row, 1, QtGui.QTableWidgetItem(repr(value)))
+        if self.job_item.data.has_outputs:
+            table = self.ui.output_params_contents
+            table.clearContents()
+            output_params = self.job_item.output_params
+            if output_params is not None:
+                table.setRowCount(len(output_params))
+                if QT_BACKEND == PYQT5:
+                    table.horizontalHeader().setSectionResizeMode(
+                        QtGui.QHeaderView.ResizeToContents)
+                else:
+                    table.horizontalHeader().setResizeMode(
+                        QtGui.QHeaderView.ResizeToContents)
+                for row, param_name in enumerate(sorted(output_params.keys())):
+                    value = output_params[param_name]
+                    table.setItem(row, 0, QtGui.QTableWidgetItem(param_name))
+                    table.setItem(row, 1, QtGui.QTableWidgetItem(repr(value)))
+
+    @QtCore.Slot(int, int)
+    def input_param_double_clicked(self, row, col):
+        if col == 2:
+            item = self.ui.input_params_contents.item(row, col)
+            job_id = getattr(item, 'job_id', None)
+            if job_id is not None:
+                self.source_job_selected.emit(job_id)
 
 
 class TransferInfoWidget(QtGui.QTabWidget):
@@ -3321,7 +3413,8 @@ class PlotView(QtGui.QWidget):
             try:
                 self.canvas.setParent(self)
             except TypeError as e:
-                print("WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.worklow " + repr(QT_BACKEND))
+                print("WARNING: The error might come from a mismatch between the matplotlib qt4 backend and the one used by soma.workflow "
+                      + repr(QT_BACKEND))
                 return
             self.canvas.updateGeometry()
             self.vlayout.addWidget(self.canvas)
@@ -4664,7 +4757,8 @@ class GuiWorkflow(object):
                              name=job.name,
                              job_id=job_id,
                              priority=job.priority,
-                             parallel_job_info=job.parallel_job_info)
+                             parallel_job_info=job.parallel_job_info,
+                             gui_workflow=self)
             ids[job] = item_id
             self.items[item_id] = gui_job
             self.server_jobs[gui_job.job_id] = item_id
@@ -5041,7 +5135,8 @@ class GuiJob(GuiWorkflowItem):
                  name="no name",
                  job_id=NOT_SUBMITTED_JOB_ID,
                  priority=None,
-                 parallel_job_info=None):
+                 parallel_job_info=None,
+                 gui_workflow=None):
         super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
 
         self.status = "not submitted"
@@ -5061,6 +5156,10 @@ class GuiJob(GuiWorkflowItem):
 
         self.tmp_stderrout_dir = tmp_stderrout_dir
         self.parallel_job_info = parallel_job_info
+        if gui_workflow is not None:
+            self.gui_workflow = weakref.ref(gui_workflow)
+        else:
+            self.gui_workflow = None
 
         cmd_seq = []
         unic_t = str
@@ -5181,6 +5280,14 @@ class GuiJob(GuiWorkflowItem):
         if self.job_id != NOT_SUBMITTED_JOB_ID:
             command = connection.get_job_command(self.job_id)
             self.command = command
+
+    def update_job_params(self, connection):
+        if self.job_id != NOT_SUBMITTED_JOB_ID:
+            in_params = connection.updated_job_parameters(self.job_id)
+            self.data.param_dict.update(in_params)
+            if self.data.has_outputs:
+                out_params = connection.get_job_output_params(self.job_id)
+                self.output_params = out_params
 
 
 class GuiTransfer(GuiWorkflowItem):

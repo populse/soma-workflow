@@ -395,16 +395,66 @@
   </widget>
   <widget class="QWidget" name="tab_output_params">
    <attribute name="title">
-    <string>Output parameters</string>
+    <string>Parameters</string>
    </attribute>
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
-     <widget class="QTableView" name="output_params_contents"/>
+     <widget class="QLabel" name="input_params_label">
+      <property name="text">
+       <string>Inputs:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTableWidget" name="input_params_contents">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <column>
+       <property name="text">
+        <string>parameter</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>value</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>linked from</string>
+       </property>
+      </column>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="output_params_label">
+      <property name="text">
+       <string>Outputs:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTableWidget" name="output_params_contents">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <column>
+       <property name="text">
+        <string>parameter</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>value</string>
+       </property>
+      </column>
+     </widget>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="output_params_refresh_button">
+       <widget class="QPushButton" name="params_refresh_button">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>

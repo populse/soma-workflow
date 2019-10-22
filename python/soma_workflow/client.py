@@ -471,6 +471,12 @@ class WorkflowController(object):
         '''
         return self._engine_proxy.get_job_command(job_id)
 
+    def updated_job_parameters(self, job_id):
+        return self._engine_proxy.updated_job_parameters(job_id)
+
+    def get_job_output_params(self, job_id):
+        return self._engine_proxy.get_job_output_params(job_id)
+
     def drms_job_id(self, wf_id, job_id):
         return self._engine_proxy.drms_job_id(wf_id, job_id)
 
