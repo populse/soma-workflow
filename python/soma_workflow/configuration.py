@@ -414,6 +414,10 @@ class Configuration(observer.Observable):
             if database_file is None:
                 database_file = os.path.join(
                     swf_dir, "soma_workflow-%s.db" % DB_VERSION)
+            else:
+                dot = database_file.rfind('.')
+                database_file = database_file[:dot] + ('-%s' % DB_VERSION) \
+                    + database_file[dot:]
 
             config = cls(resource_id=resource_id,
                          mode=mode,
