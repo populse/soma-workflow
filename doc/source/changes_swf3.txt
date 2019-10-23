@@ -23,6 +23,13 @@ Thus workflows may contain some "parameters links" to specify this.
 
 See the details in the :ref:`dynamic_outputs` section.
 
+Jobs parameters as files
+========================
+
+As Soma-Workflow now supports named parameters, the parameters set of a job may also be specified in an input JSON file, rather than on commandline arguments. This may prove useful when the parameters list is long.
+
+See the details in the :ref:`input_params_file` section.
+
 
 Important changes in Soma-Workflow 3.0
 ++++++++++++++++++++++++++++++++++++++

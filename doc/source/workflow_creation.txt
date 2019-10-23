@@ -76,28 +76,28 @@ Then when running later jobs, their input values will be changed accordingly. To
 
 To put things togethr in an example::
 
-        from soma_workflow.client import Job, Workflow, WorkflowController
+    from soma_workflow.client import Job, Workflow, WorkflowController
 
-        # workflow definition
+    # workflow definition
 
-        job1 = Job(
-            command=['my_program', '%(in1)s'],
-            name='job1:cp',
-            param_dict={'in1': '/tmp/input_file'},
-            has_outputs=True)
-        job2 = Job(
-            command=['cat', '%(in1)s'],
-            name='job2:cat',
-            param_dict={'in1': 'undefined'})
-        workflow = Workflow(jobs=[job1, job2], name='test_workflow',
-                            param_links={job2: {'in1': (job1, 'out1')}})
+    job1 = Job(
+        command=['my_program', '%(in1)s'],
+        name='job1:cp',
+        param_dict={'in1': '/tmp/input_file'},
+        has_outputs=True)
+    job2 = Job(
+        command=['cat', '%(in1)s'],
+        name='job2:cat',
+        param_dict={'in1': 'undefined'})
+    workflow = Workflow(jobs=[job1, job2], name='test_workflow',
+                        param_links={job2: {'in1': (job1, 'out1')}})
 
-        # running it is the classical way
-        # (or using soma_workflow_gui)
+    # running it is the classical way
+    # (or using soma_workflow_gui)
 
-        wc = WorkflowController()
-        wf_id = wc.submit_workflow(workflow)
-        wc.wait_workflow(wf_id)
+    wc = WorkflowController()
+    wf_id = wc.submit_workflow(workflow)
+    wc.wait_workflow(wf_id)
 
 Here, ``job1`` will run a program, ``my_program`` which will do its job, and write the output parameters file. The ``param_dict`` in job1 is not necessary here, since its parameters values will not change according to upstream operations, but if we want to allow job classes to be used in such "dynamic" workflows, we rather have to get used to name all their parameters.
 
@@ -113,6 +113,8 @@ Here, ``job1`` will run a program, ``my_program`` which will do its job, and wri
             'dest_param4': (src_job4, 'src_output_param4'),
         },
     }
+
+Note that ``param_links`` in the workflow implicitly add jobs dependencies. These new dependencies are automatically added to the "classical" jobs dependencies, and may completely replace them if parameters links are correctly specified and used all along the workflow.
 
 Now the ``job1`` commandline program, if written in Python language, could look like this::
 
@@ -143,4 +145,58 @@ Now the ``job1`` commandline program, if written in Python language, could look 
 
 
 As you can see, in a "classical" workflow, ``job2`` would not have known which file to print in its ``cat`` command. Using this "dynamic" parameters structure, it can work.
+
+
+.. _input_params_file:
+
+Job input parameters as file
+============================
+
+When job parameters are specified through a dictionary of named parameters, it is also possible to pass the parameters set as a JSON file, rather than on commandline arguments. This may prove useful when the parameters list is long.
+
+In this situation the job must declare it using the ``use_input_params_file`` variable in Job. Then a temporary file will be created before the job is run. The parameters file is a JSON file containing a dictionary. The first level of this dict currently only contains the key ``"parameters"``, but will be able to hold job configuration in the future. The ``parameters`` sub-dict is the input parameters of the job.
+
+The input parameters fils location is specified through an environment variable: ``SOMAWF_INPUT_PARAMS``, and the job program should read it to get its actual arguments.
+
+Ex::
+
+    from soma_workflow.client import Job, Workflow, WorkflowController
+
+    # workflow definition
+
+    job1 = Job(
+        command=['my_program', '%(in1)s'],
+        name='job1:cp',
+        param_dict={'in1': '/tmp/input_file'},
+        has_outputs=True)
+    job3 = Job(
+        command=['my_cat_program'],  # no parameters on the commandline
+        name='job2:cat',
+        param_dict={'in1': 'undefined'},
+        use_input_params_file=True)  # tell SWF to write the params file
+    workflow2 = Workflow(jobs=[job1, job3], name='test_workflow',
+                         param_links={job3: {'in1': (job1, 'out1')}})
+
+    # running it is the classical way
+    # (or using soma_workflow_gui)
+
+    wc = WorkflowController()
+    wf_id = wc.submit_workflow(workflow2)
+    wc.wait_workflow(wf_id)
+
+Here ``job3`` must be modified to make it able to read the parameters file. In this example we call a program named ``my_cat_program``, which, if written in Python language, could look like this::
+
+    #!/usr/bin/env python
+
+    import os
+    import json
+
+    # get the input pams file location from env variable
+    param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
+    # read it
+    params = json.load(open(param_file))
+    # now get our specific parameter(s)
+    in_file = params['parameters']['in1']
+    # now the "real" job code just prints the file:
+    print(open(in_file).read())
 
