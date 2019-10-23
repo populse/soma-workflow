@@ -4343,7 +4343,7 @@ class ApplicationModel(QtCore.QObject):
                     global_wf_state_changed = False
                     for rid in self.resource_pool.resource_ids():
                         if not self._hold[rid]:
-                            for wfid in self._workflows[rid].keys():
+                            for wfid in list(self._workflows[rid].keys()):
                                 if wfid != self.current_wf_id:
                                     try:
                                         connection = self.resource_pool.connection(
