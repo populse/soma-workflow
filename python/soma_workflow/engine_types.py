@@ -412,7 +412,8 @@ class EngineJob(Job):
 
     def write_input_params_file(self):
         if self.use_input_params_file and self.input_params_file:
-            json.dump(self.param_dict, open(self.input_params_file, 'w'))
+            param_dict = {'parameters': self.param_dict}
+            json.dump(param_dict, open(self.input_params_file, 'w'))
 
     def is_running(self):
         running = self.status != constants.NOT_SUBMITTED and \

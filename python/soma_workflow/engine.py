@@ -524,8 +524,9 @@ class WorkflowEngineLoop(object):
 
     def update_job_parameters(self, job):
         '''
-        Set job parameters from upstream outputs, and sets the env variable
-        SOMAWF_OUTPUT_PARAMS if the job has output parameters
+        Set job parameters from upstream outputs, set the env variables
+        SOMAWF_INPUT_PARAMS and / or SOMAWF_OUTPUT_PARAMS when they are used,
+        and write the input parameters file if needed.
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:

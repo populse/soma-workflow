@@ -121,6 +121,7 @@ Job server database tables:
                            None if it doesn't belong to any.
       stdout_file        : file path
       stderr_file        : file path, optional
+      input_params_file  : file path, optional
       output_params_file : file path, optional
       pickled_engine_job
 
@@ -229,6 +230,7 @@ def create_database(database_file):
                                        nodes_number         INTEGER,
                                        cpu_per_node         INTEGER,
                                        queue                TEXT,
+                                       input_params_file    TEXT,
                                        output_params_file   TEXT,
 
                                        name                 TEXT,
@@ -479,6 +481,14 @@ def print_tables(database_file):
               repr(engine_file_path).ljust(25), '| is_input=',
               repr(is_input).rjust(2), ' |')
 
+    print("==== param_links table: =========")
+    for row in cursor.execute('SELECT * FROM param_links'):
+        workflow_id, dest_job_id, dest_param, src_job_id, src_param = row
+        print('| workflow_id=', repr(workflow_id).rjust(2), '| dest_job_id=',
+              repr(dest_job_id).ljust(2), '| dest_param=',
+              repr(dest_param).rjust(25), ' | src_job_id=', repr(src_job_id).rjust(2), '| src_param=',
+              repr(src_param).rjust(25), ' |')
+
     # print("==== file counter table: =========")
     # for row in cursor.execute('SELECT * FROM fileCounter'):
         # count, foo = row
@@ -696,10 +706,11 @@ class WorkflowDatabaseServer(object):
                         'DELETE FROM ios_tmp WHERE job_id IN (%s)' % job_str,
                         jobsToDelete[chunk * nmax:chunk * nmax + n])
 
-                    for stdof, stdef, opf in cursor.execute(
+                    for stdof, stdef, ipf, opf in cursor.execute(
                             '''SELECT
                             stdout_file,
                             stderr_file,
+                            input_params_file,
                             output_params_file
                             FROM jobs
                             WHERE id IN (%s) AND NOT custom_submission'''
@@ -707,6 +718,7 @@ class WorkflowDatabaseServer(object):
                             jobsToDelete[chunk * nmax:chunk * nmax + n]):
                         self.__removeFile(self._string_conversion(stdof))
                         self.__removeFile(self._string_conversion(stdef))
+                        self.__removeFile(self._string_conversion(ipf))
                         self.__removeFile(self._string_conversion(opf))
 
                 cursor.execute(
@@ -887,6 +899,12 @@ class WorkflowDatabaseServer(object):
                     if stderr_file:
                         registered_engine_paths.append(
                             self._string_conversion(stderr_file))
+                for row in cursor.execute(
+                        'SELECT input_params_file FROM jobs'):
+                    input_params_file = row[0]
+                    if input_params_file:
+                        registered_engine_paths.append(
+                            self._string_conversion(input_params_file))
                 for row in cursor.execute(
                         'SELECT output_params_file FROM jobs'):
                     output_params_file = row[0]
@@ -2294,6 +2312,7 @@ class WorkflowDatabaseServer(object):
                           nodes_number,
                           cpu_per_node,
                           queue,
+                          input_params_file,
                           output_params_file,
 
                           name,
@@ -2312,7 +2331,7 @@ class WorkflowDatabaseServer(object):
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
                                   ?, ?, ?, ?, ?,
-                                  ?, ?)''',
+                                  ?, ?, ?)''',
                               (user_id,
 
                                   None,  # drmaa_id
@@ -2332,6 +2351,7 @@ class WorkflowDatabaseServer(object):
                                   nodes_number,
                                   cpu_per_node,
                                   engine_job.queue,
+                                  engine_job.plain_input_params_file(),
                                   engine_job.plain_output_params_file(),
 
                                   engine_job.name,
