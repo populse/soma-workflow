@@ -1212,9 +1212,9 @@ class Workflow(object):
         for dest_job, links in six.iteritems(id_links):
             ddest_job = job_from_ids[int(dest_job)]
             dlinks = {}
-            for name, link in six.iteritems(links):
+            for lname, link in six.iteritems(links):
                 dsrc_job = job_from_ids[link[0]]
-                dlinks[name] = (dsrc_job, link[1])
+                dlinks[lname] = (dsrc_job, link[1])
             param_links[ddest_job] = dlinks
 
         # user storage, TODO: handle objects in it
