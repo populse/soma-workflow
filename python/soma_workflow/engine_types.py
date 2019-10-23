@@ -147,7 +147,9 @@ class EngineJob(Job):
             client_job.native_specification,
             env=client_job.env,
             param_dict=client_job.param_dict,
+            use_input_params_file=client_job.use_input_params_file,
             has_outputs=client_job.has_outputs,
+            input_params_file=client_job.input_params_file,
             output_params_file=client_job.output_params_file)
 
         self.job_id = -1
@@ -284,8 +286,12 @@ class EngineJob(Job):
         map_and_register(self.working_directory, mode="File", addTo=["Input", "Output"])
         map_and_register(self.stdout_file, mode="File", addTo=["Output"])
         map_and_register(self.stderr_file, mode="File", addTo=["Output"])
+        if self.use_input_params_file:
+            map_and_register(self.input_params_file, mode="File",
+                             addTo=["Input"])
         if self.has_outputs:
-            map_and_register(self.stderr_file, mode="File", addTo=["Output"])
+            map_and_register(self.output_params_file, mode="File",
+                             addTo=["Output"])
         for ft in self.referenced_input_files:
             map_and_register(ft)
         for ft in self.referenced_output_files:
@@ -395,11 +401,18 @@ class EngineJob(Job):
     def plain_stderr(self):
         return self.generate_command(self.stderr_file)
 
+    def plain_input_params_file(self):
+        return self.generate_command(self.input_params_file)
+
     def plain_output_params_file(self):
         return self.generate_command(self.output_params_file)
 
     def plain_working_directory(self):
         return self.generate_command(self.working_directory)
+
+    def write_input_params_file(self):
+        if self.use_input_params_file and self.input_params_file:
+            json.dump(self.param_dict, open(self.input_params_file, 'w'))
 
     def is_running(self):
         running = self.status != constants.NOT_SUBMITTED and \

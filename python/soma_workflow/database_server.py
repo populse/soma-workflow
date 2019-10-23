@@ -2246,6 +2246,11 @@ class WorkflowDatabaseServer(object):
                 else:
                     custom_submission = True  # the std out and err file won't to be removed with the job
 
+                if engine_job.use_input_params_file \
+                        and not engine_job.plain_input_params_file():
+                    engine_job.input_params_file = self.generate_file_path(
+                        user_id, external_cursor=cursor, login=login)
+
                 if engine_job.has_outputs \
                         and not engine_job.plain_output_params_file():
                     engine_job.output_params_file = self.generate_file_path(

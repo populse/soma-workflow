@@ -159,10 +159,18 @@ class Job(object):
         Parameters names can be linked in the workflow to some other jobs
         outputs.
 
+    use_input_params_file: bool
+        if True, input parameters from the param_dict will not be passed using
+        substitutions in the commandline, but through a JSON file.
+
     has_outputs: bool
         New in 3.1.
         Set if the job will write a special JSON file which contains output
         parameters values, when the job is a process with outputs.
+
+    input_params_file: string or FileTransfer or SharedResourcePath
+        Path to the file which will contain input parameters of the
+        job.
 
     output_params_file: string or FileTransfer or SharedResourcePath
         Path to the file which will be written for output parameters of the
@@ -225,7 +233,13 @@ class Job(object):
     param_dict = {}
 
     # bool
+    use_input_params_file = False
+
+    # bool
     has_outputs = False
+
+    # string (path)
+    input_params_file = None
 
     # string (path)
     output_params_file = None
@@ -247,7 +261,9 @@ class Job(object):
                  user_storage=None,
                  env=None,
                  param_dict=None,
+                 use_input_params_file=False,
                  has_outputs=False,
+                 input_params_file=None,
                  output_params_file=None):
         if not name and len(command) != 0:
             self.name = command[0]
@@ -273,7 +289,9 @@ class Job(object):
         self.native_specification = native_specification
         self.env = env
         self.param_dict = param_dict or dict()
+        self.use_input_params_file = use_input_params_file
         self.has_outputs = has_outputs
+        self.input_params_file = input_params_file
         self.output_params_file = output_params_file
 
         for command_elem in self.command:
@@ -368,6 +386,7 @@ class Job(object):
 
         attributes = [
             "name",
+            "input_params_file",
             "has_outputs",
             "stdin",
             "join_stderrout",
@@ -383,6 +402,7 @@ class Job(object):
             "referenced_input_files",
             "referenced_output_files",
             "param_dict",
+            "input_params_file",
             "output_params_file",
         ]
         for attr_name in attributes:
@@ -499,6 +519,7 @@ class Job(object):
             "parallel_job_info",
             "disposal_timeout",
             "env",
+            "use_input_params_file",
             "has_outputs"
         ]
 
@@ -561,6 +582,15 @@ class Job(object):
                                                       shared_res_path_id,
                                                       tmp_ids,
                                                       opt_ids)
+
+        if self.input_params_file:
+            job_dict['input_params_file'] \
+                = to_serializable(self.input_params_file,
+                                  id_generator,
+                                  transfer_ids,
+                                  shared_res_path_id,
+                                  tmp_ids,
+                                  opt_ids)
 
         if self.output_params_file:
             job_dict['output_params_file'] \

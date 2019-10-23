@@ -532,6 +532,11 @@ class WorkflowEngineLoop(object):
             job.param_dict.update(u_param_dict)
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
+            if job.use_input_params_file and job.input_params_file:
+                if job.env is None:
+                    job.env = {}
+                job.env['SOMAWF_INPUT_PARAMS'] = job.plain_input_params_file()
+                job.write_input_params_file()
         if job.has_outputs and job.output_params_file:
             if job.env is None:
                 job.env = {}
