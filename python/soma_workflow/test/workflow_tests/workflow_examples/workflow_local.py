@@ -52,7 +52,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
         self.lo_stdout_command_local = os.path.join(
             self.models_path, "stdout_local_special_command")
 
-        for i in range(1, 5):
+        for i in range(1, 7):
             self.lo_script[i] = os.path.join(self.complete_path,
                                              "job" + str(i) + ".py")
             self.lo_stdin[i] = os.path.join(self.complete_path,
@@ -161,16 +161,29 @@ class WorkflowExamplesLocal(WorkflowExamples):
                   self.lo_stdin[3], False, 168, "job3 with exception")
         return job
 
-    def job_with_outputs1(self):
+    def job1_with_outputs1(self):
         time_to_wait = 2
-        job_name = "job_with_outputs1"
+        job_name = "job1_with_outputs"
+        job2 = Job(["python",
+                    '%(script)s',
+                    repr(time_to_wait)],
+                   None, None,
+                   self.lo_stdin[2], False, 168, job_name,
+                   param_dict={'script': self.lo_script[5],
+                               'filePathIn': self.lo_file[0],
+                               'filePathOut1': self.lo_file[11]},
+                   has_outputs=True)
+
+    def job2_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job2_with_outputs"
         job2 = Job(["python",
                     '%(script)s', '%(file1)s',
                     '%(file2)s',
                     repr(time_to_wait)],
                    None, None,
                    self.lo_stdin[2], False, 168, job_name,
-                   param_dict={'script': self.lo_script[2],
-                               'file1': self.lo_file[11],
-                               'file2': self.lo_file[0]},
+                   param_dict={'script': self.lo_script[6],
+                               'filePathIn1': self.lo_file[11],
+                               'filePathIn2': self.lo_file[0]},
                    has_outputs=True)
