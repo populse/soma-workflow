@@ -842,9 +842,12 @@ class Configuration(observer.Observable):
             return self._login
         self._login = None
         if self._config_parser != None:
-            self._login = os.path.expandvars(
-                self._config_parser.get(self._resource_id,
-                                        OCFG_LOGIN))
+            try:
+                self._login = os.path.expandvars(
+                    self._config_parser.get(self._resource_id,
+                                            OCFG_LOGIN))
+            except configparser.NoOptionError:
+                return None
         return self._login
 
     def get_native_specification(self):
