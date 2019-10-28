@@ -91,6 +91,9 @@ class SimpleTest(WorkflowTest):
         (jobs_info, transfers_info, workflow_status, workflow_queue,
             tmp_files) = self.wf_ctrl.workflow_elements_status(self.wf_id)
 
+        dyn_out_params = {1: 'filePathOut2',
+                          2: 'filePathOut'}
+
         for (job_id, tmp_status, queue, exit_info, dates, drmaa_id) \
                 in jobs_info:
             job_list = self.wf_ctrl.jobs([job_id])
@@ -174,9 +177,15 @@ class SimpleTest(WorkflowTest):
                                         job_stderr_file)
                         # Test output files
                         if self.path_management == self.LOCAL_PATH:
+                            out_file = self.wf_examples.lo_file[job_nb]
+                            if job_name.endswith('_with_outputs') \
+                                    and job_nb in dyn_out_params:
+                                out_params = \
+                                    self.wf_ctrl.get_job_output_params(job_id)
+                                out_file = out_params[dyn_out_params[job_nb]]
                             isSame, msg = identical_files(
                                 self.wf_examples.lo_out_model_file[job_nb],
-                                self.wf_examples.lo_file[job_nb])
+                                out_file)
                             self.assertTrue(isSame, msg)
                         if self.path_management == self.FILE_TRANSFER or \
                                 self.path_management == self.SHARED_TRANSFER:
