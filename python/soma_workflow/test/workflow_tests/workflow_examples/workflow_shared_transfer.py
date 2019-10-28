@@ -131,25 +131,6 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
                    native_specification=option)
         return job1
 
-    # --
-
-    def job4(self):
-        time_to_wait = 10
-        job_name = "job4"
-        job4 = Job(["python",
-                    '%(script)s', '%(file1)s',
-                    '%(file2)s', '%(file3)s',
-                    repr(time_to_wait)],
-                   None, None,
-                   self.lo_stdin[4], False, 168, job_name,
-                   param_dict={'script': self.lo_script[4],
-                               'file1': self.lo_file[2],
-                               'file2': self.lo_file[3],
-                               'file3': self.lo_file[4]})
-        return job4
-
-    # --
-
     def job2(self):
         time_to_wait = 2
         job_name = "job2"
@@ -169,11 +150,14 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
         time_to_wait = 2
         job_name = "job3"
         job3 = Job(["python",
-                    '%(script)s', self.sh_file[12],
-                    self.tr_file[3], repr(time_to_wait)],
+                    '%(script)s', '%(filePathIn)s',
+                    '%(filePathOut)s', '%(timeToSleep)s',
                    [], [self.tr_file[3]],
                    self.sh_stdin[3], False, 168, job_name,
-                   param_dict={'script': self.sh_script[3]})
+                   param_dict={'script': self.sh_script[3],
+                               'filePathIn': self.sh_file[12],
+                               'filePathOut': self.sh_file[3],
+                               'timeToSleep': str(time_to_wait)})
         return job3
 
     def job4(self):
@@ -241,3 +225,33 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
                   [], [self.tr_file[3]],
                   self.sh_stdin[3], False, 168, "job3 with exception")
         return job
+
+    def job1_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job1_with_outputs"
+        job1 = Job([sys.executable,
+                    '%(script)s', '%(filePathIn)s', '%(filePathOut1)s',
+                    '%(timeToSleep)s'],
+                   None, None,
+                   self.sh_stdin[1], False, 168, job_name,
+                   param_dict={'script': self.sh_script[5],
+                               'filePathIn': self.sh_file[0],
+                               'filePathOut1': self.sh_file[11],
+                               'timeToSleep': str(time_to_wait)},
+                   has_outputs=True)
+        return job1
+
+    def job2_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job2_with_outputs"
+        job2 = Job([sys.executable, '%(script)s'],
+                   None, None,
+                   self.sh_stdin[2], False, 168, job_name,
+                   param_dict={'script': self.sh_script[6],
+                               'filePathIn1': self.sh_file[11],
+                               'filePathIn2': self.sh_file[0],
+                               'timeToSleep': str(time_to_wait)},
+                   has_outputs=True,
+                   use_input_params_file=True)
+        return job2
+

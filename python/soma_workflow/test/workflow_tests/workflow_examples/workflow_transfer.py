@@ -137,12 +137,15 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         time_to_wait = 2
         job_name = "job3"
         job3 = Job(["python",
-                    '%(script)s', self.tr_file[12],
-                    self.tr_file[3], repr(time_to_wait)],
+                    '%(script)s', '%(filePathIn)s',
+                    '%(filePathOut)s', '%(timeToSleep)s'],
                    [self.tr_file[12], self.tr_script[3], self.tr_stdin[3]],
                    [self.tr_file[3]],
                    self.tr_stdin[3], False, 168, job_name,
-                   param_dict={'script': self.tr_script[3]})
+                   param_dict={'script': self.tr_script[3],
+                               'filePathIn': self.tr_file[12],
+                               'filePathOut': self.tr_file[3],
+                               'timeToSleep': str(time_to_wait)})
         return job3
 
     def job4(self):
@@ -219,3 +222,32 @@ class WorkflowExamplesTransfer(WorkflowExamples):
                   [self.tr_file[3]],
                   self.tr_stdin[3], False, 168, "job3 with exception")
         return job
+
+    def job1_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job1_with_outputs"
+        job1 = Job(["python",
+                    '%(script)s', '%(filePathIn)s', '%(filePathOut1)s',
+                    '%(timeToSleep)s'],
+                   None, None,
+                   self.tr_stdin[1], False, 168, job_name,
+                   param_dict={'script': self.tr_script[5],
+                               'filePathIn': self.tr_file[0],
+                               'filePathOut1': self.tr_file[11],
+                               'timeToSleep': str(time_to_wait)},
+                   has_outputs=True)
+        return job1
+
+    def job2_with_outputs1(self):
+        time_to_wait = 2
+        job_name = "job2_with_outputs"
+        job2 = Job(["python", '%(script)s'],
+                   None, None,
+                   self.tr_stdin[2], False, 168, job_name,
+                   param_dict={'script': self.tr_script[6],
+                               'filePathIn1': self.tr_file[11],
+                               'filePathIn2': self.tr_file[0],
+                               'timeToSleep': str(time_to_wait)},
+                   has_outputs=True,
+                   use_input_params_file=True)
+        return job2
