@@ -151,7 +151,7 @@ class WorkflowExamplesSharedTransfer(WorkflowExamples):
         job_name = "job3"
         job3 = Job(["python",
                     '%(script)s', '%(filePathIn)s',
-                    '%(filePathOut)s', '%(timeToSleep)s',
+                    '%(filePathOut)s', '%(timeToSleep)s'],
                    [], [self.tr_file[3]],
                    self.sh_stdin[3], False, 168, job_name,
                    param_dict={'script': self.sh_script[3],
