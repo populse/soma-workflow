@@ -10,16 +10,13 @@ from __future__ import print_function
 import os
 import json
 import subprocess
+import sys
 
-# get the input pams file location from env variable
-param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
-# read it
-params = json.load(open(param_file))
-parameters = params['parameters']
-# now get our specific parameter(s)
-filePathIn = parameters['filePathIn']
-filePathOut1 = parameters['filePathOut1']
-timeToSleep = parameters.get['timeToSleep']
+filePathIn = sys.argv[1]
+filePathOut1 = sys.argv[2]
+timeToSleep = None
+if len(sys.argv) > 3:
+    timeToSleep = sys.argv[3]
 
 my_dir = os.path.dirname(sys.argv[0])
 script = os.path.join(my_dir, 'job1.py')
@@ -31,10 +28,10 @@ cmd = [sys.executable, script, filePathIn, filePathOut1, filePathOut2]
 if timeToSleep is not None:
     cmd.append(timeToSleep)
 
-subprocess.check_call(cmd)
+subprocess.check_call(cmd, stdin=sys.stdin)
 
 # write output parameters
-out_param_file = os.environ.get('SOMAWF_OUTPUT_PARAMS')
+output_param_file = os.environ.get('SOMAWF_OUTPUT_PARAMS')
 
 if output_param_file:
     out_params = {

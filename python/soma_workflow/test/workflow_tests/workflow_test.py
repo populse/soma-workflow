@@ -92,6 +92,33 @@ class WorkflowTest(unittest.TestCase):
                 except:
                     pass
 
+    def print_jobs(self, jobs, title='Jobs', file=sys.stderr):
+        print('\n%s:' % title, self.wf_ctrl.jobs(jobs), file=file)
+        print(file=file)
+        for job_id in jobs:
+            print('job', job_id, self.wf_ctrl.jobs([job_id])[job_id],
+                  file=file)
+            job_stdout_file = tempfile.NamedTemporaryFile(
+                prefix="job_soma_out_log_",
+                suffix=repr(job_id),
+                delete=False)
+            job_stdout_file = job_stdout_file.name
+            job_stderr_file = tempfile.NamedTemporaryFile(
+                prefix="job_soma_outerr_log_",
+                suffix=repr(job_id),
+                delete=False)
+            job_stderr_file = job_stderr_file.name
+
+            try:
+                self.wf_ctrl.retrieve_job_stdouterr(job_id,
+                                                    job_stdout_file,
+                                                    job_stderr_file)
+                print('stdout:\n', open(job_stdout_file).read(), file=file)
+                print('stderr:\n', open(job_stderr_file).read(), file=file)
+            finally:
+                os.unlink(job_stdout_file)
+                os.unlink(job_stderr_file)
+
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
         sys.stdout.write("********* soma-workflow tests: %s *********\n" % cls.__name__)

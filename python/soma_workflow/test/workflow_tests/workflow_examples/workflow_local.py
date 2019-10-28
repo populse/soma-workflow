@@ -14,6 +14,7 @@ Created on Fri Oct 18 12:19:20 2013
 #-----------------------------------------------------------------------------
 
 import os
+import sys
 
 from soma_workflow.client import Job
 from soma_workflow.test.workflow_tests import WorkflowExamples
@@ -68,7 +69,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def job1(self, option=None):
         time_to_wait = 2
         job_name = "job1"
-        job1 = Job(["python",
+        job1 = Job([sys.executable,
                     self.lo_script[1], self.lo_file[0],
                     self.lo_file[11], self.lo_file[12],
                     repr(time_to_wait)],
@@ -80,7 +81,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def job2(self):
         time_to_wait = 2
         job_name = "job2"
-        job2 = Job(["python",
+        job2 = Job([sys.executable,
                     '%(script)s', '%(file1)s',
                     '%(file2)s', '%(file3)s',
                     repr(time_to_wait)],
@@ -95,18 +96,21 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def job3(self):
         time_to_wait = 2
         job_name = "job3"
-        job3 = Job(["python",
-                    '%(script)s', self.lo_file[12],
-                    self.lo_file[3], repr(time_to_wait)],
+        job3 = Job([sys.executable,
+                    '%(script)s', '%(filePathIn)s',
+                    '%(filePathOut)s', '%(timeToSleep)s'],
                    None, None,
                    self.lo_stdin[3], False, 168, job_name,
-                   param_dict={'script': self.lo_script[3]})
+                   param_dict={'script': self.lo_script[3],
+                               'filePathIn': self.lo_file[12],
+                               'filePathOut': self.lo_file[3],
+                               'timeToSleep': str(time_to_wait)})
         return job3
 
     def job4(self):
         time_to_wait = 10
         job_name = "job4"
-        job4 = Job(["python",
+        job4 = Job([sys.executable,
                     '%(script)s', '%(file1)s',
                     '%(file2)s', '%(file3)s',
                     repr(time_to_wait)],
@@ -119,7 +123,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
         return job4
 
     def job_test_command_1(self):
-        test_command = Job(["python", self.lo_cmd_check_script,
+        test_command = Job([sys.executable, self.lo_cmd_check_script,
                             "[13.5, 14.5, 15.0]", '[13.5, 14.5, 15.0]',
                             "['un', 'deux', 'trois']",
                             '["un", "deux", "trois"]'],
@@ -128,34 +132,34 @@ class WorkflowExamplesLocal(WorkflowExamples):
         return test_command
 
     def job_test_dir_contents(self):
-        job = Job(["python", self.lo_dir_contents_script,
+        job = Job([sys.executable, self.lo_dir_contents_script,
                   self.lo_in_dir, self.lo_out_dir],
                   None, None,
                   None, False, 168, "dir_contents")
         return job
 
     def job_test_multi_file_format(self):
-        job = Job(["python", self.lo_mff_script,
+        job = Job([sys.executable, self.lo_mff_script,
                    self.lo_img_file, self.lo_img_out_file],
                   None, None,
                   None, False, 168, "multi file format test")
         return job
 
     def job_sleep(self, period):
-        job = Job(["python", self.lo_sleep_script, repr(period)],
+        job = Job([sys.executable, self.lo_sleep_script, repr(period)],
                   None, None,
                   None, False, 168, "sleep " + repr(period) + " s")
         return job
 
     def job1_exception(self):
-        job = Job(["python", self.lo_exceptionJobScript],
+        job = Job([sys.executable, self.lo_exceptionJobScript],
                   None,
                   None,
                   self.lo_stdin[1], False, 168, "job1 with exception")
         return job
 
     def job3_exception(self):
-        job = Job(["python", self.lo_exceptionJobScript],
+        job = Job([sys.executable, self.lo_exceptionJobScript],
                   None,
                   None,
                   self.lo_stdin[3], False, 168, "job3 with exception")
@@ -164,26 +168,28 @@ class WorkflowExamplesLocal(WorkflowExamples):
     def job1_with_outputs1(self):
         time_to_wait = 2
         job_name = "job1_with_outputs"
-        job2 = Job(["python",
-                    '%(script)s',
-                    repr(time_to_wait)],
+        job1 = Job([sys.executable,
+                    '%(script)s', '%(filePathIn)s', '%(filePathOut1)s',
+                    '%(timeToSleep)s'],
                    None, None,
-                   self.lo_stdin[2], False, 168, job_name,
+                   self.lo_stdin[1], False, 168, job_name,
                    param_dict={'script': self.lo_script[5],
                                'filePathIn': self.lo_file[0],
-                               'filePathOut1': self.lo_file[11]},
+                               'filePathOut1': self.lo_file[11],
+                               'timeToSleep': str(time_to_wait)},
                    has_outputs=True)
+        return job1
 
     def job2_with_outputs1(self):
         time_to_wait = 2
         job_name = "job2_with_outputs"
-        job2 = Job(["python",
-                    '%(script)s', '%(file1)s',
-                    '%(file2)s',
-                    repr(time_to_wait)],
+        job2 = Job([sys.executable, '%(script)s'],
                    None, None,
                    self.lo_stdin[2], False, 168, job_name,
                    param_dict={'script': self.lo_script[6],
                                'filePathIn1': self.lo_file[11],
-                               'filePathIn2': self.lo_file[0]},
-                   has_outputs=True)
+                               'filePathIn2': self.lo_file[0],
+                               'timeToSleep': str(time_to_wait)},
+                   has_outputs=True,
+                   use_input_params_file=True)
+        return job2
