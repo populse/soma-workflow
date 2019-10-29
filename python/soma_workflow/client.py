@@ -433,15 +433,16 @@ class WorkflowController(object):
             workflow_id, with_drms_id=with_drms_id)
         # special processing for transfer status:
         new_transfer_status = []
-        for engine_path, client_path, client_paths, status, transfer_type \
-                in wf_status[1]:
+        for transfer_id, engine_path, client_path, client_paths, status, \
+                transfer_type in wf_status[1]:
             progression = self._transfer_progression(status,
                                                      transfer_type,
                                                      client_path,
                                                      client_paths,
                                                      engine_path)
 
-            new_transfer_status.append((engine_path, (status, progression)))
+            new_transfer_status.append((transfer_id, engine_path,
+                                        (status, progression)))
 
         new_wf_status = (
             wf_status[0], new_transfer_status, wf_status[2], wf_status[3],

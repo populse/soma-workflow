@@ -4712,6 +4712,8 @@ class GuiWorkflow(object):
     server_workflow = None
     # dict: FileTransfer id => sequence of gui item transfers id
     server_file_transfers = None
+    # dict: TemporaryPath id => sequence of gui item temporary id
+    server_temporary = None
     # dict: Job id => gui item job id
     server_jobs = None
 
@@ -4740,6 +4742,7 @@ class GuiWorkflow(object):
         self.server_workflow = workflow
         self.server_jobs = {}
         self.server_file_transfers = {}
+        self.server_temporary = {}
 
         # print(" ==> building the workflow ")
         # begining = datetime.now()
@@ -4848,12 +4851,12 @@ class GuiWorkflow(object):
                                                     engine_path=engine_path,
                                                     engine_id=engine_id)
                     self.items[item_id] = gui_transfer
-                    if gui_transfer.engine_id in self.server_file_transfers.keys():
-                        self.server_file_transfers[
-                            gui_transfer.engine_id].append(item_id)
+                    if isinstance(ft, TemporaryPath):
+                        self.server_temporary.setdefault(
+                            gui_transfer.engine_id, []).append(item_id)
                     else:
-                        self.server_file_transfers[
-                            gui_transfer.engine_id] = [item_id]
+                        self.server_file_transfers.setdefault(
+                            gui_transfer.engine_id, []).append(item_id)
                     self.items[ids[job]].children[row] = item_id
                     # print(repr(job.name) + " " +
                     # repr(self.items[ids[job]].children))
@@ -4876,12 +4879,12 @@ class GuiWorkflow(object):
                                                engine_path=engine_path,
                                                engine_id=engine_id)
                     self.items[item_id] = gui_ft
-                    if gui_ft.engine_id in self.server_file_transfers.keys():
-                        self.server_file_transfers[
-                            gui_ft.engine_id].append(item_id)
+                    if isinstance(ft, TemporaryPath):
+                        self.server_temporary.setdefault(
+                            gui_transfer.engine_id, []).append(item_id)
                     else:
-                        self.server_file_transfers[
-                            gui_ft.engine_id] = [item_id]
+                        self.server_file_transfers.setdefault(
+                            gui_transfer.engine_id, []).append(item_id)
 
                     self.items[ids[job]].children[row] = item_id
                     # print(repr(job.name) + " " +
@@ -4930,9 +4933,11 @@ class GuiWorkflow(object):
         # begining = datetime.now()
 
         # updating file transfer
+        print('server_file_transfers:', self.server_file_transfers)
         for transfer_info in wf_status[1]:
-            engine_file_path, complete_status = transfer_info
-            for item_id in self.server_file_transfers[engine_file_path]:
+            print('transfer_info:', transfer_info)
+            transfer_id, engine_file_path, complete_status = transfer_info
+            for item_id in self.server_file_transfers[transfer_id]:
                 item = self.items[item_id]
                 data_changed = item.updateState(
                     complete_status) or data_changed
@@ -4941,7 +4946,7 @@ class GuiWorkflow(object):
         for temp_info in wf_status[4]:
             temp_path_id, engine_file_path, status = temp_info
             complete_status = (status, None)
-            for item_id in self.server_file_transfers[temp_path_id]:
+            for item_id in self.server_temporary[temp_path_id]:
                 item = self.items[item_id]
                 data_changed = item.updateState(
                     complete_status) or data_changed

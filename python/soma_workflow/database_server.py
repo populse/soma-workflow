@@ -2304,7 +2304,7 @@ class WorkflowDatabaseServer(object):
                 for ft in engine_job.referenced_input_files:
                     eft = engine_job.transfer_mapping[ft]
                     if isinstance(eft, FileTransfer):
-                        referenced_input_files.append(eft.engine_path)
+                        referenced_input_files.append(eft.transfer_id)
                     else:
                         referenced_input_temp.append(eft.temp_path_id)
 
@@ -2400,19 +2400,19 @@ class WorkflowDatabaseServer(object):
                         'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
                                   (sqlite3.Binary(pickled_engine_job), job_id))
 
-                for engine_path in referenced_input_files:
+                for transfer_id in referenced_input_files:
                     cursor.execute('''INSERT INTO ios (job_id,
-                                             engine_file_path,
+                                             engine_file_id,
                                              is_input)
                              VALUES (?, ?, ?)''',
-                                  (job_id, engine_path, True))
+                                  (job_id, transfer_id, True))
 
-                for engine_path in referenced_output_files:
+                for transfer_id in referenced_output_files:
                     cursor.execute('''INSERT INTO ios (job_id,
-                                             engine_file_path,
+                                             engine_file_id,
                                              is_input)
                             VALUES (?, ?, ?)''',
-                                   (job_id, engine_path, False))
+                                   (job_id, transfer_id, False))
 
                 for temp_path_id in referenced_input_temp:
                     cursor.execute('''INSERT INTO ios_tmp (job_id,

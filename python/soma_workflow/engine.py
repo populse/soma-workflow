@@ -395,7 +395,7 @@ class WorkflowEngineLoop(object):
                             self._user_id)
                         transfer.status = status
                     except:
-                        logger.exception()
+                        self.logger.exception('WorkflowEngineLoop')
                 for tmp_id, tmp in six.iteritems(wf_tmp):
                     try:
                         status = self._database_server.get_temporary_status(
@@ -1260,6 +1260,7 @@ class WorkflowEngine(RemoteFileController):
                 _out_to_date(last_status_update):
             wf_status = wf_status[:2] + (constants.WARNING, ) + wf_status[3:]
 
+        print('workflow_elements_status transfers:', wf_status[1])
         return wf_status
 
     def transfer_status(self, transfer_id):

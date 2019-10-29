@@ -242,7 +242,8 @@ class EngineJob(Job):
                         return
                 else:
                     true_file = file
-                if isinstance(true_file, TemporaryPath) or isinstance(true_file, FileTransfer):
+                if isinstance(true_file, TemporaryPath) \
+                        or isinstance(true_file, FileTransfer):
                     if not true_file in self.transfer_mapping:
                         if mode=="Command" and \
                            not true_file in self.referenced_input_files and \
@@ -297,6 +298,8 @@ class EngineJob(Job):
         for ft in self.referenced_output_files:
             map_and_register(ft)
         map_and_register(self.command, mode="Command")
+        for item in self.param_dict.values():
+            map_and_register(item)
 
 
     def generate_command(self, command, mode=None):
@@ -389,8 +392,13 @@ class EngineJob(Job):
                 return command # no need to replace again
         else:
             command = self.command
-        return self.commandline_repl(
+        repl_command = self.commandline_repl(
             self.generate_command(command, mode="Command"))
+        # re-go through generate_command since repl_command leaves SpecialPath
+        # instances
+        res_command = [self.generate_command(x, mode='Command')
+                       for x in repl_command]
+        return res_command
 
     def plain_stdin(self):
         return self.generate_command(self.stdin)
