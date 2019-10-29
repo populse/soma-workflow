@@ -480,6 +480,11 @@ class EngineWorkflow(Workflow):
     # dictonary: tr_id -> EngineTransfer
     registered_tr = None
 
+    # Once registered on the database server each
+    # TemporaryPath has an id.
+    # dictonary: tr_id -> EngineTemporaryPath
+    registered_tmp = None
+
     # docker / singularity prefix command, to be prepended to all jobs
     # commandlines
     container_command = None
@@ -577,6 +582,7 @@ class EngineWorkflow(Workflow):
         self._map()
 
         self.registered_tr = {}
+        self.registered_tmp = {}
         self.registered_jobs = {}
 
         self._dependency_dict = {}
@@ -1061,14 +1067,24 @@ class EngineWorkflow(Workflow):
             self.registered_jobs[job_id].drmaa_id = drmaa_id
 
         for ft_info in wf_status[1]:
-            (engine_path,
+            (transfer_id,
+             engine_path,
              client_path,
              client_paths,
              status,
              transfer_type) = ft_info
-            self.registered_tr[engine_path].status = status
+            engine_transfer = self.registered_tr[transfer_id]
+            engine_transfer.status = status
+            engine_transfer.engine_path = engine_path
 
         self.queue = wf_status[3]
+
+        for ft_info in wf_status[4]:
+            (temp_path_id,
+             engine_path,
+             status) = ft_info
+            engine_temp = self.registered_tr[transfer_id]
+            engine_temp.status = status
 
     def force_stop(self, database_server):
         self._update_state_from_database_server(database_server)
@@ -1287,6 +1303,8 @@ class EngineTransfer(FileTransfer):
 
     workflow_id = None
 
+    transfer_id = None
+
     def __init__(self, client_file_transfer):
 
         exist_on_client = \
@@ -1312,6 +1330,10 @@ class EngineTransfer(FileTransfer):
     def get_engine_path(self):
         return self.engine_path
 
+    def set_engine_path(self, path):
+        self.engine_path = os.path.dirname(path)
+        self.client_path = os.path.basename(path)
+
     def get_engine_main_path(self):
         ''' main file (translated client_path) name '''
         if self.client_paths:
@@ -1321,7 +1343,7 @@ class EngineTransfer(FileTransfer):
             return self.get_engine_path()
 
     def get_id(self):
-        return self.engine_path
+        return self.transfer_id
 
 
 class EngineTemporaryPath(TemporaryPath):

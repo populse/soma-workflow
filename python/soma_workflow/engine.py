@@ -308,11 +308,13 @@ class WorkflowEngineLoop(object):
                 # ended
                 wf_jobs = {}
                 wf_transfers = {}
+                wf_tmp = {}
                 for wf in six.itervalues(self._workflows):
                     # one_wf_processed = True
                     # TBI add a condition on the workflow status
                     wf_jobs.update(wf.registered_jobs)
                     wf_transfers.update(wf.registered_tr)
+                    wf_tmp.update(wf.registered_tmp)
 
                 for job in itertools.chain(six.itervalues(self._jobs),
                                            six.itervalues(wf_jobs)):
@@ -363,10 +365,10 @@ class WorkflowEngineLoop(object):
                             if job.status == constants.DONE:
                                 for ft in job.referenced_output_files:
                                     if isinstance(ft, FileTransfer):
-                                        engine_path = job.transfer_mapping[
-                                            ft].engine_path
+                                        transfer_id = job.transfer_mapping[
+                                            ft].transfer_id
                                         self._database_server.set_transfer_status(
-                                            engine_path,
+                                            transfer_id,
                                             constants.FILES_ON_CR)
                                     else:
                                         # TemporaryPath
@@ -386,12 +388,20 @@ class WorkflowEngineLoop(object):
                                 "  => signal " + repr(job.terminating_signal))
 
                 # --- 3. Get back transfered status ---------------------------
-                for engine_path, transfer in six.iteritems(wf_transfers):
+                for transfer_id, transfer in six.iteritems(wf_transfers):
                     try:
                         status = self._database_server.get_transfer_status(
-                            engine_path,
+                            transfer_id,
                             self._user_id)
                         transfer.status = status
+                    except:
+                        logger.exception()
+                for tmp_id, tmp in six.iteritems(wf_tmp):
+                    try:
+                        status = self._database_server.get_temporary_status(
+                            tmp_id,
+                            self._user_id)
+                        tmp.status = status
                     except:
                         logger.exception()
 
@@ -533,8 +543,7 @@ class WorkflowEngineLoop(object):
             for param, value in six.iteritems(u_param_dict):
                 dval = job.param_dict.get(param)
                 if isinstance(dval, SpecialPath):
-                    # dval.set_engine_path(value)  # cannot do this yet.
-                    job.param_dict[param] = value
+                    dval.set_engine_path(value)
                 else:
                     job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,
@@ -610,7 +619,8 @@ class WorkflowEngineLoop(object):
                                "%s: %s \n" % (type(e), e))
 
         for transfer in six.itervalues(engine_job.transfer_mapping):
-            if transfer.client_paths and not os.path.isdir(transfer.engine_path):
+            if transfer.client_paths \
+                    and not os.path.isdir(transfer.engine_path):
                 try:
                     os.mkdir(transfer.engine_path)
                 except Exception as e:
@@ -965,7 +975,7 @@ class WorkflowEngine(RemoteFileController):
 
         return engine_transfer
 
-    def transfer_information(self, engine_path):
+    def transfer_information(self, transfer_id):
         '''
         @rtype: tuple (string, string, date, int, sequence)
         @return: (engine_file_path,
@@ -976,29 +986,30 @@ class WorkflowEngine(RemoteFileController):
                   transfer_type,
                   status)
         '''
-        return self._database_server.get_transfer_information(engine_path, self._user_id)
+        return self._database_server.get_transfer_information(transfer_id,
+                                                              self._user_id)
 
-    def set_transfer_type(self, engine_path, transfer_type):
+    def set_transfer_type(self, transfer_id, transfer_type):
 
-        self._database_server.set_transfer_type(engine_path,
+        self._database_server.set_transfer_type(transfer_id,
                                                 transfer_type,
                                                 self._user_id)
 
-    def set_transfer_status(self, engine_path, status):
+    def set_transfer_status(self, transfer_id, status):
         '''
         Set a transfer status.
         '''
-        self._database_server.set_transfer_status(engine_path, status)
+        self._database_server.set_transfer_status(transfer_id, status)
 
-    def delete_transfer(self, engine_path):
+    def delete_transfer(self, transfer_id):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
 
-        self._database_server.remove_transfer(engine_path, self._user_id)
+        self._database_server.remove_transfer(transfer_id, self._user_id)
 
     def signalTransferEnded(self,
-                            engine_path,
+                            transfer_id,
                             workflow_id):
         '''
         Has to be called each time a file transfer ends for the
@@ -1006,7 +1017,7 @@ class WorkflowEngine(RemoteFileController):
         '''
         if workflow_id != -1:
             self._database_server.add_workflow_ended_transfer(
-                workflow_id, engine_path)
+                workflow_id, transfer_id)
 
     # JOB SUBMISSION ##################################################
     def submit_job(self, job, queue):
@@ -1251,12 +1262,12 @@ class WorkflowEngine(RemoteFileController):
 
         return wf_status
 
-    def transfer_status(self, engine_path):
+    def transfer_status(self, transfer_id):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
         transfer_status = self._database_server.get_transfer_status(
-            engine_path,
+            transfer_id,
             self._user_id)
         return transfer_status
 
