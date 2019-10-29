@@ -530,7 +530,13 @@ class WorkflowEngineLoop(object):
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
-            job.param_dict.update(u_param_dict)
+            for param, value in six.iteritems(u_param_dict):
+                dval = job.param_dict.get(param)
+                if isinstance(dval, SpecialPath):
+                    # dval.set_engine_path(value)  # cannot do this yet.
+                    job.param_dict[param] = value
+                else:
+                    job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
         if job.use_input_params_file and job.input_params_file:
