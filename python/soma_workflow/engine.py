@@ -34,7 +34,7 @@ import json
 # import cProfile
 # import traceback
 
-from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer
+from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath
 import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
