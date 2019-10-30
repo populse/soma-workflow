@@ -4933,9 +4933,7 @@ class GuiWorkflow(object):
         # begining = datetime.now()
 
         # updating file transfer
-        print('server_file_transfers:', self.server_file_transfers)
         for transfer_info in wf_status[1]:
-            print('transfer_info:', transfer_info)
             transfer_id, complete_status = transfer_info
             for item_id in self.server_file_transfers[transfer_id]:
                 item = self.items[item_id]

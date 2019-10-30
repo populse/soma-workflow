@@ -1261,7 +1261,6 @@ class WorkflowEngine(RemoteFileController):
                 _out_to_date(last_status_update):
             wf_status = wf_status[:2] + (constants.WARNING, ) + wf_status[3:]
 
-        print('workflow_elements_status transfers:', wf_status[1])
         return wf_status
 
     def transfer_status(self, transfer_id):
