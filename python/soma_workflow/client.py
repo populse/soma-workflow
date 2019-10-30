@@ -441,8 +441,8 @@ class WorkflowController(object):
                                                      client_paths,
                                                      engine_path)
 
-            new_transfer_status.append((transfer_id, engine_path,
-                                        (status, progression)))
+            new_transfer_status.append((transfer_id,
+                                        (status, progression, engine_path)))
 
         new_wf_status = (
             wf_status[0], new_transfer_status, wf_status[2], wf_status[3],
@@ -569,6 +569,7 @@ class WorkflowController(object):
         '''
 
         (transfer_id,
+         engine_path,
          client_path,
          expiration_date,
          workflow_id,
@@ -579,7 +580,7 @@ class WorkflowController(object):
                                                  transfer_type,
                                                  client_path,
                                                  client_paths,
-                                                 transfer_id)
+                                                 engine_path)
 
         return (status, progression)
 
@@ -795,6 +796,7 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
         (transfer_id,
+         engine_path,
          client_path,
          expiration_date,
          workflow_id,
@@ -870,6 +872,7 @@ class WorkflowController(object):
     def _transfer_file(self, transfer_id, buffer_size):
 
         (transfer_id,
+         engine_path,
          client_path,
          expiration_date,
          workflow_id,
@@ -889,7 +892,7 @@ class WorkflowController(object):
                 # overwrite = True
             transfer_type = self._initialize_transfer(transfer_id)
 
-            remote_path = transfer_id
+            remote_path = engine_path
 
             if transfer_type == constants.TR_FILE_C_TO_CR or \
                transfer_type == constants.TR_DIR_C_TO_CR:
@@ -927,7 +930,7 @@ class WorkflowController(object):
                 # overwrite = True
             transfer_type = self._initialize_transfer(transfer_id)
 
-            remote_path = transfer_id
+            remote_path = engine_path
             if transfer_type == constants.TR_FILE_CR_TO_C or \
                transfer_type == constants.TR_DIR_CR_TO_C:
                 # file case

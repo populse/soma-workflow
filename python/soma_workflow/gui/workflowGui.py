@@ -4936,7 +4936,7 @@ class GuiWorkflow(object):
         print('server_file_transfers:', self.server_file_transfers)
         for transfer_info in wf_status[1]:
             print('transfer_info:', transfer_info)
-            transfer_id, engine_file_path, complete_status = transfer_info
+            transfer_id, complete_status = transfer_info
             for item_id in self.server_file_transfers[transfer_id]:
                 item = self.items[item_id]
                 data_changed = item.updateState(
@@ -4945,7 +4945,7 @@ class GuiWorkflow(object):
         # updating temp files
         for temp_info in wf_status[4]:
             temp_path_id, engine_file_path, status = temp_info
-            complete_status = (status, None)
+            complete_status = (status + (engine_file_path, ), None)
             for item_id in self.server_temporary[temp_path_id]:
                 item = self.items[item_id]
                 data_changed = item.updateState(

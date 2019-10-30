@@ -1250,7 +1250,7 @@ class WorkflowDatabaseServer(object):
             sel = cursor.execute(
                 '''SELECT id
                 FROM transfers
-                WHERE transfer_id=? and
+                WHERE id=? and
                       user_id=? LIMIT 1''',
                 [transfer_id, user_id])
         except Exception as e:

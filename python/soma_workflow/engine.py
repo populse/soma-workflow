@@ -978,7 +978,8 @@ class WorkflowEngine(RemoteFileController):
     def transfer_information(self, transfer_id):
         '''
         @rtype: tuple (string, string, date, int, sequence)
-        @return: (engine_file_path,
+        @return: (transfer_id,
+                  engine_file_path,
                   client_file_path,
                   expiration_date,
                   workflow_id,
