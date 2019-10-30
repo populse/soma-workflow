@@ -147,6 +147,40 @@ Now the ``job1`` commandline program, if written in Python language, could look 
 As you can see, in a "classical" workflow, ``job2`` would not have known which file to print in its ``cat`` command. Using this "dynamic" parameters structure, it can work.
 
 
+Dynamic outputs and file transfers
+==================================
+
+When a file name is an output of a job (the job decides where to write its output file), and this output file should be transfered from the computing resource to the client machine, then a FileTransfer object should be created (as usual), but with some little additional things to setup:
+
+* The FileTransfer object should be added both to the ``referenced_output_files`` parameter of jobs (as usual), and to the named parameters (``param_dict``) in order to tell how the FileTransfer object should be updated from the output JSON file of the job.
+* The FileTransfer cannot know its paths (both client and server side) before the job runs.
+* A client path has to be built after the job outputs tells which is the engine path. There is not absolute correct way to build it, it's a heuristic since we have no reference client directory in the general case.
+* To help this, we may use an additional job named parameter in the ``param_dict``: ``output_directory``, which will be used as a basis for client paths building.
+* Otherwise Soma-Workflow will try to guess a client directory from other job parameters. This will not work in all situations.
+
+Ex::
+
+    toutp = FileTransfer(False, 'job1_output')
+    job1 = Job(
+        command=['my_program', '%(in1)s'],
+        name='job1:cp',
+        param_dict={'in1': '/tmp/input_file',
+                    # this is an output FileTransfer param mathcing the
+                    # job ourput json dict
+                    'out1': toutp,
+                    # this is a hint to where to write the client output file
+                    'output_directory': '/tmp'},
+        has_outputs=True,
+        referenced_output_files=[toutp])
+    job2 = swc.Job(
+        command=[sys.executable, inp, 'job2_run', '%(in1)s'],
+        name='job2:cat',
+        param_dict={'in1': toutp},
+        referenced_input_files=ref_outp)
+    workflow = swc.Workflow(jobs=[job1, job2], name='test_out_wf',
+                            param_links={job2: {'in1': (job1, 'out1')}})
+
+
 .. _input_params_file:
 
 Job input parameters as file
