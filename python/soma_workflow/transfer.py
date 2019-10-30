@@ -427,7 +427,8 @@ class TransferLocal(Transfer):
         # print("copy " + repr(remote_path) + " to " + repr(path))
         # time.sleep(4)
         if os.path.isfile(remote_path):
-            if not os.path.isdir(os.path.dirname(path)):
+            if os.path.dirname(path) \
+                    and not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             shutil.copy(remote_path, path)
 

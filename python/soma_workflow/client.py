@@ -422,7 +422,8 @@ class WorkflowController(object):
                     (submission_date, execution_date, ending_date, drmaa_id),
                     [drms_id]),
             * sequence of tuple
-                (transfer_id, (status, progression_info)),
+                (transfer_id, (status, progression_info, engine_path,
+                 client_path, client_paths)),
             * workflow_status,
             * workflow_queue,
             * sequence of tuple (temp_path_id, engine_path, status)
@@ -442,7 +443,8 @@ class WorkflowController(object):
                                                      engine_path)
 
             new_transfer_status.append((transfer_id,
-                                        (status, progression, engine_path)))
+                                        (status, progression, engine_path,
+                                         client_path, client_paths)))
 
         new_wf_status = (
             wf_status[0], new_transfer_status, wf_status[2], wf_status[3],
@@ -844,13 +846,13 @@ class WorkflowController(object):
                                                    # client_paths,
                                                    # status)
             if not client_paths:
-                if self._engine_proxy.is_file(transfer_id):
+                if self._engine_proxy.is_file(engine_path):
                     transfer_type = constants.TR_FILE_CR_TO_C
-                elif self._engine_proxy.is_dir(transfer_id):
+                elif self._engine_proxy.is_dir(engine_path):
                     transfer_type = constants.TR_DIR_CR_TO_C
                 else:
                     print("WARNING: The file or directory %s doesn't exist "
-                          "on the computing resource side." % (transfer_id))
+                          "on the computing resource side." % (engine_path))
             else:  # client_paths
                 for path in client_paths:
                     relative_path = os.path.basename(path)

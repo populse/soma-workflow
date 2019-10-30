@@ -4881,10 +4881,10 @@ class GuiWorkflow(object):
                     self.items[item_id] = gui_ft
                     if isinstance(ft, TemporaryPath):
                         self.server_temporary.setdefault(
-                            gui_transfer.engine_id, []).append(item_id)
+                            gui_ft.engine_id, []).append(item_id)
                     else:
                         self.server_file_transfers.setdefault(
-                            gui_transfer.engine_id, []).append(item_id)
+                            gui_ft.engine_id, []).append(item_id)
 
                     self.items[ids[job]].children[row] = item_id
                     # print(repr(job.name) + " " +
@@ -5324,7 +5324,7 @@ class GuiTransfer(GuiWorkflowItem):
                  engine_path=None,
                  engine_id=None):
         super(GuiTransfer, self).__init__(
-            it_id, parent, row, data, children_nb)
+              it_id, parent, row, data, children_nb)
 
         self.transfer_status = " "
         self.size = None
@@ -5341,6 +5341,9 @@ class GuiTransfer(GuiWorkflowItem):
         self.initiated = True
         state_changed = False
         transfer_status = transfer_status_info[0]
+        engine_path = transfer_status_info[2]
+        client_path = transfer_status_info[3]
+        client_paths = transfer_status_info[4]
 
         if transfer_status_info[1]:
             if len(transfer_status_info[1]) == 2:
@@ -5363,11 +5366,17 @@ class GuiTransfer(GuiWorkflowItem):
         state_changed = state_changed or size != self.size
         state_changed = state_changed or transmitted != self.transmitted
         state_changed = state_changed or elements_status != self.elements_status
+        state_changed = state_changed or engine_path != self.engine_path
+        state_changed |= client_path != self.data.client_path
+        state_changed |= client_paths != self.data.client_paths
 
         self.transfer_status = transfer_status
         self.size = size
         self.transmitted = transmitted
         self.elements_status = elements_status
+        self.engine_path = engine_path
+        self.data.client_path = client_path
+        self.data.client_paths = client_paths
 
         return state_changed
 

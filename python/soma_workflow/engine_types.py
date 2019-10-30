@@ -1339,8 +1339,9 @@ class EngineTransfer(FileTransfer):
         return self.engine_path
 
     def set_engine_path(self, path):
-        self.engine_path = os.path.dirname(path)
-        self.client_path = os.path.basename(path)
+        self.engine_path = path
+        self.client_path = os.path.join(os.path.dirname(self.client_path),
+                                        os.path.basename(path))
 
     def get_engine_main_path(self):
         ''' main file (translated client_path) name '''

@@ -543,7 +543,13 @@ class WorkflowEngineLoop(object):
             for param, value in six.iteritems(u_param_dict):
                 dval = job.param_dict.get(param)
                 if isinstance(dval, SpecialPath):
-                    dval.set_engine_path(value)
+                    engine_transfer = job.transfer_mapping[dval]
+                    engine_transfer.set_engine_path(value)
+                    # update database with modified values
+                    self._database_server.set_transfer_paths(
+                        engine_transfer.transfer_id, value,
+                        engine_transfer.client_path,
+                        engine_transfer.client_paths)
                 else:
                     job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,

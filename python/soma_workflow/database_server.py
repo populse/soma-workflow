@@ -1525,8 +1525,12 @@ class WorkflowDatabaseServer(object):
         The status must be valid (ie a string among the transfer status
         string defined in constants.FILE_TRANSFER_STATUS
 
-        @type  status: string
-        @param status: transfer status as defined in constants.FILE_TRANSFER_STATUS
+        Parameters
+        ----------
+        transfer_id: int
+            transfer identifier
+        status: string
+            transfer status as defined in constants.FILE_TRANSFER_STATUS
         '''
         #if type(engine_file_path) is int:
             #return self.set_temporary_status(engine_file_path, status)
@@ -1539,6 +1543,49 @@ class WorkflowDatabaseServer(object):
                 cursor.execute(
                     'UPDATE transfers SET status=? WHERE id=?',
                     (status, transfer_id))
+            except Exception as e:
+                connection.rollback()
+                cursor.close()
+                connection.close()
+                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+            connection.commit()
+            cursor.close()
+            connection.close()
+
+    def set_transfer_paths(self, transfer_id, engine_path, client_path,
+                           client_paths):
+        '''
+        Updates the transfer paths in the database.
+
+        Parameters
+        ----------
+        transfer_id: int
+            transfer identifier
+        engine_path: str
+            path on engine side
+        client_path: str
+            path on client side
+        client_paths: list
+            filenales on client side
+        '''
+        #if type(engine_file_path) is int:
+            #return self.set_temporary_status(engine_file_path, status)
+        self.logger.debug("=> set_transfer_paths")
+        with self._lock:
+            # TBI if the status is not valid raise an exception ??
+            connection = self._connect()
+            cursor = connection.cursor()
+            if client_paths:
+                client_paths = file_separator.join(
+                    engine_transfer.client_paths)
+            try:
+                cursor.execute(
+                    '''UPDATE transfers SET
+                    engine_file_path=?,
+                    client_file_path=?,
+                    client_paths=?
+                    WHERE id=?''',
+                    (engine_path, client_path, client_paths, transfer_id))
             except Exception as e:
                 connection.rollback()
                 cursor.close()
