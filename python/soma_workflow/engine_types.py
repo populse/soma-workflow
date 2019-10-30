@@ -1338,10 +1338,59 @@ class EngineTransfer(FileTransfer):
     def get_engine_path(self):
         return self.engine_path
 
-    def set_engine_path(self, path):
+    def set_engine_path(self, path, client_path=None, client_paths=None):
+        '''
+        Set engine path (when it is output by a job), and client path if they
+        are given.
+        '''
         self.engine_path = path
-        self.client_path = os.path.join(os.path.dirname(self.client_path),
-                                        os.path.basename(path))
+        if client_path is None:
+            client_path = os.path.join(os.path.dirname(self.client_path),
+                                       os.path.basename(path))
+        self.client_path = client_path
+        if client_paths is not None:
+            self.client_paths = client_paths
+
+    def map_client_path_to_engine(self, engine_path, param_dict):
+        '''
+        Try to generate a client path[s] from an output engine path in a
+        consistent way with other job named parameters.
+        '''
+        eng_dir, rel_eng_path = os.path.split(engine_path)
+        out_dir = param_dict.get('output_directory')
+        if out_dir and isinstance(out_dir, FileTransfer):
+            eng_dir = out_dir.engine_path
+            out_dir = out_dir.client_path
+            rel_eng_path = os.path.relpath(engine_path, eng_dir)
+
+        if not out_dir:
+            for param, value in six.iteritems(param_dict):
+                if not isinstance(value, FileTransfer) \
+                        or not os.path.isabs(value.client_path):
+                    continue
+                common = os.path.commonprefix(engine_path,
+                                              value.engine_path)
+                if common:
+                    if engine_path[len(common)] != os.sep:
+                        common = os.path.dirname(common)
+                    if common and common != '/':
+                        eng_dir = common
+                        rel_eng_path = os.path.relpath(engine_path, common)
+                        out_dir = os.path.dirname(value.client_path)
+                        break
+        if out_dir:
+            rdir = os.path.dirname(rel_eng_path)
+            if rdir:
+                out_dir = os.path.join(out_dir, rdir)
+            client_path = os.path.join(out_dir, os.path.basename(rel_eng_path))
+            if self.client_paths:
+                client_paths = [os.path.join(out_dir, os.path.basename(p))
+                                for p in self.client_paths]
+            else:
+                client_paths = None
+            return (client_path, client_paths)
+        return (None, None)
+
 
     def get_engine_main_path(self):
         ''' main file (translated client_path) name '''

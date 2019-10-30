@@ -531,6 +531,21 @@ class WorkflowEngineLoop(object):
                 print(output_dict)
                 self._database_server.set_job_output_params(job.job_id,
                                                             output_dict)
+                for param, value in six.iteritems(output_dict):
+                    jvalue = job.param_dict.get(param)
+                    print(param, value, jvalue)
+                    if jvalue and isinstance(jvalue, FileTransfer):
+                        engine_transfer = job.transfer_mapping[jvalue]
+                        engine_transfer.set_engine_path(
+                            value,
+                            *engine_transfer.map_client_path_to_engine(
+                                value, job.param_dict))
+                        # update database with modified values
+                        self._database_server.set_transfer_paths(
+                            engine_transfer.transfer_id, value,
+                            engine_transfer.client_path,
+                            engine_transfer.client_paths)
+
 
     def update_job_parameters(self, job):
         '''
@@ -544,12 +559,17 @@ class WorkflowEngineLoop(object):
                 dval = job.param_dict.get(param)
                 if isinstance(dval, SpecialPath):
                     engine_transfer = job.transfer_mapping[dval]
-                    engine_transfer.set_engine_path(value)
-                    # update database with modified values
-                    self._database_server.set_transfer_paths(
-                        engine_transfer.transfer_id, value,
-                        engine_transfer.client_path,
-                        engine_transfer.client_paths)
+                    former_path = engine_transfer.engine_path
+                    if former_path != value:
+                        engine_transfer.set_engine_path(
+                            value,
+                            *engine_transfer.map_client_path_to_engine(
+                                value, job.param_dict))
+                        # update database with modified values
+                        self._database_server.set_transfer_paths(
+                            engine_transfer.transfer_id, value,
+                            engine_transfer.client_path,
+                            engine_transfer.client_paths)
                 else:
                     job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,
