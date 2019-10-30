@@ -344,8 +344,6 @@ class LocalScheduler(Scheduler):
                 env = env2
             LocalScheduler.logger.debug('run command:' + repr(command))
             LocalScheduler.logger.debug('with env:' + repr(env))
-            print('RUN:', command)
-            print([type(x) for x in command])
             process = subprocess.Popen(command,
                                        stdin=stdin_file,
                                        stdout=stdout_file,
