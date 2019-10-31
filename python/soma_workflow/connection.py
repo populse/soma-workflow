@@ -554,13 +554,14 @@ class RemoteConnection(object):
         computing resource.
         '''
         from soma_workflow import configuration
-        import paramiko
 
         config = configuration.Configuration.load_from_file(resource_id)
         if config.is_local_resource(config, resource_id):
             local = True
             print('local mode')
         else:
+            import paramiko
+
             local = False
             if login is None:
                 login = config.get_login()
