@@ -1091,7 +1091,7 @@ class EngineWorkflow(Workflow):
             (temp_path_id,
              engine_path,
              status) = ft_info
-            engine_temp = self.registered_tr[transfer_id]
+            engine_temp = self.registered_tmp[temp_path_id]
             engine_temp.status = status
 
     def force_stop(self, database_server):

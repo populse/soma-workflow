@@ -1261,9 +1261,12 @@ class WorkflowDatabaseServer(object):
         try:
             six.next(sel)
         except StopIteration:
-            raise UnknownObjectError("The transfer " + repr(transfer_id)
-                                     + " is not valid or does not belong to "
-                                     "user " + repr(user_id))
+            six.reraise(
+                UnknownObjectError,
+                UnknownObjectError("The transfer " + repr(transfer_id)
+                                   + " is not valid or does not belong to "
+                                   "user " + repr(user_id)),
+                sys.exc_info[2])
 
     def _check_temporary(self, connection, cursor, temp_path_id, user_id):
         try:
@@ -1281,9 +1284,12 @@ class WorkflowDatabaseServer(object):
         try:
             six.next(sel)
         except StopIteration:
-            raise UnknownObjectError("The temporary path " + repr(temp_path_id)
+            six.reraise(
+                UnknownObjectError,
+                UnknownObjectError("The temporary path " + repr(temp_path_id)
                                      + " is not valid or does not belong to "
-                                     "user " + repr(user_id))
+                                     "user " + repr(user_id)),
+                sys.exc_info[2])
 
     def remove_transfer(self, transfer_id, user_id):
         '''
@@ -1770,7 +1776,7 @@ class WorkflowDatabaseServer(object):
                         engine_workflow.registered_tr[
                             transfer.transfer_id] = transfer
                     else:
-                        engine_workflow.registered_tr[
+                        engine_workflow.registered_tmp[
                             transfer.temp_path_id] = transfer
 
                 job_info = []
