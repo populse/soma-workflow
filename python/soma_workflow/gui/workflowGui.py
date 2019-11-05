@@ -4943,7 +4943,7 @@ class GuiWorkflow(object):
         # updating temp files
         for temp_info in wf_status[4]:
             temp_path_id, engine_file_path, status = temp_info
-            complete_status = (status + (engine_file_path, ), None)
+            complete_status = (status, None, engine_file_path, None, None)
             for item_id in self.server_temporary[temp_path_id]:
                 item = self.items[item_id]
                 data_changed = item.updateState(
@@ -5367,16 +5367,19 @@ class GuiTransfer(GuiWorkflowItem):
         state_changed = state_changed or transmitted != self.transmitted
         state_changed = state_changed or elements_status != self.elements_status
         state_changed = state_changed or engine_path != self.engine_path
-        state_changed |= client_path != self.data.client_path
-        state_changed |= client_paths != self.data.client_paths
+        if hasattr(self.data, 'client_path'):
+            state_changed |= client_path != self.data.client_path
+        if hasattr(self.data, 'client_paths'):
+            state_changed |= client_paths != self.data.client_paths
 
         self.transfer_status = transfer_status
         self.size = size
         self.transmitted = transmitted
         self.elements_status = elements_status
         self.engine_path = engine_path
-        self.data.client_path = client_path
-        self.data.client_paths = client_paths
+        if hasattr(self.data, 'client_path'):
+            self.data.client_path = client_path
+            self.data.client_paths = client_paths
 
         return state_changed
 
