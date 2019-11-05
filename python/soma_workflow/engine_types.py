@@ -348,12 +348,15 @@ class EngineJob(Job):
             if mode == "Tuple":
                 new_command = (
                     command.pattern
-                    % self.path_mapping[command].get_engine_path()
-                ).encode('utf-8')
+                    % self.path_mapping[command].get_engine_path())
+                if sys.version_info[0] < 3:
+                    new_command = new_command.encode('utf-8')
             else:
                 new_command = (
-                    command.pattern % self.path_mapping[command].get_engine_main_path()
-                ).encode('utf-8')
+                    command.pattern 
+                    % self.path_mapping[command].get_engine_main_path())
+                if sys.version_info[0] < 3:
+                    new_command = new_command.encode('utf-8')
         else:
             # If the entry is anything else, we return its string representation
             new_command = str(command)
