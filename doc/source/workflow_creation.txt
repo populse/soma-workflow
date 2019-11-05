@@ -47,9 +47,18 @@ FileTransfer
 .. _shared-resource-path-api:
 
 SharedResourcePath
-====================
+==================
 
 .. autoclass:: client.SharedResourcePath
+    :members:
+
+
+.. _temporary-path-api:
+
+TemporaryPath
+=============
+
+.. autoclass:: client.TemporaryPath
     :members:
 
 

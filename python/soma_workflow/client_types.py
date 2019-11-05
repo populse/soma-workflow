@@ -76,14 +76,14 @@ class Job(object):
     name: string
         Name of the Job which will be displayed in the GUI
 
-    referenced_input_files: sequence of FileTransfer
+    referenced_input_files: sequence of SpecialPath (FileTransfer, TemporaryPath...)
         List of the FileTransfer which are input of the Job. In other words,
         FileTransfer which are requiered by the Job to run. It includes the
         stdin if you use one.
 
-    referenced_output_files: sequence of FileTransfer
-        List of the FileTransfer which are output of the Job. In other words, the
-        FileTransfer which will be created or modified by the Job.
+    referenced_output_files: sequence of SpecialPath (FileTransfer, TemporaryPath...)
+        List of the FileTransfer which are output of the Job. In other words,
+        the FileTransfer which will be created or modified by the Job.
 
     stdin: string or FileTransfer or SharedResourcePath
         Path to the file which will be read as input stream by the Job.
