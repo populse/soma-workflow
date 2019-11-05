@@ -275,13 +275,14 @@ class EngineJob(Job):
                     if six.PY3 and isinstance(true_file, bytes):
                         true_file = true_file.decode('utf-8')
                     if not isinstance(true_file, six.string_types):
-                        raise JobError(
-                            "Wrong argument type in job %s: %s\ncommand:\n%s"
-                            % (self.name, repr(true_file), repr(self.command)))
+                        return
+                        #raise JobError(
+                            #"Wrong argument type in job %s: %s\ncommand:\n%s"
+                            #% (self.name, repr(true_file), repr(self.command)))
                     if mode == "File":
                         true_file = os.path.abspath(true_file)
-                if not isinstance(file, OptionPath):
-                    file = true_file
+                #if not isinstance(file, OptionPath):
+                    #file = true_file
 
         map_and_register(self.stdin, mode="File", addTo=["Input"])
         map_and_register(self.working_directory, mode="File", addTo=["Input", "Output"])
@@ -298,7 +299,7 @@ class EngineJob(Job):
         for ft in self.referenced_output_files:
             map_and_register(ft)
         map_and_register(self.command, mode="Command")
-        for item in self.param_dict.values():
+        for param, item in self.param_dict.items():
             map_and_register(item)
 
 
@@ -359,7 +360,10 @@ class EngineJob(Job):
                     new_command = new_command.encode('utf-8')
         else:
             # If the entry is anything else, we return its string representation
-            new_command = str(command)
+            if mode != 'Command':
+                new_command = six.types.StringType(command)
+            else:
+                new_command = command
         return new_command
 
     @staticmethod
@@ -423,7 +427,10 @@ class EngineJob(Job):
 
     def write_input_params_file(self):
         if self.use_input_params_file and self.input_params_file:
-            param_dict = {'parameters': self.param_dict}
+            params = {}  # dict(self.param_dict)
+            param_dict = {'parameters': params}
+            for param, value in six.iteritems(self.param_dict):
+                params[param] = self.generate_command(value, mode='Command')
             json.dump(param_dict, open(self.input_params_file, 'w'))
 
     def is_running(self):
