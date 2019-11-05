@@ -1482,6 +1482,9 @@ class SpecialPath(object):
         if not isinstance(other, self.__class__):
             return False
         return self.referent() is other.referent()
+    
+    def __lt__(self, other):
+        return hash(self) < hash(other)
 
 
 class FileTransfer(SpecialPath):
