@@ -361,7 +361,7 @@ class EngineJob(Job):
         else:
             # If the entry is anything else, we return its string representation
             if mode != 'Command':
-                new_command = six.types.StringType(command)
+                new_command = unicode(command)
             else:
                 new_command = command
         return new_command
