@@ -622,6 +622,21 @@ class Job(object):
 
         return job_dict
 
+    def __getstate__(self):
+        # filter out some instance attributes which should / can not be pickled
+        no_picke = getattr(self, '_do_not_pickle', None)
+        state_dict = self.__dict__
+        if not no_picke:
+            return state_dict
+        copied = False
+        for attribute in no_picke:
+            if hasattr(self, attribute):
+                if not copied:
+                    state_dict = dict(state_dict)
+                    copied = True
+                del state_dict[attribute]
+        return state_dict
+
 
 class BarrierJob(Job):
 
@@ -971,9 +986,14 @@ class Workflow(object):
         for dest_job, links in six.iteritems(self.param_links):
             for p, link in six.iteritems(links):
                 deps.add((link[0], dest_job))
-        for dep in deps:
-            if dep not in current_deps:
-                self.dependencies.append(dep)
+        if isinstance(self.dependencies, list):
+            for dep in deps:
+                if dep not in current_deps:
+                    self.dependencies.append(dep)
+        else: # deps as set
+            for dep in deps:
+                if dep not in current_deps:
+                    self.dependencies.add(dep)
 
     def attributs_equal(self, other):
         if not isinstance(other, self.__class__):
@@ -1233,6 +1253,21 @@ class Workflow(object):
                        param_links=param_links)
 
         return workflow
+
+    def __getstate__(self):
+        # filter out some instance attributes which should / can not be pickled
+        no_picke = getattr(self, '_do_not_pickle', None)
+        state_dict = self.__dict__
+        if not no_picke:
+            return state_dict
+        copied = False
+        for attribute in no_picke:
+            if hasattr(self, attribute):
+                if not copied:
+                    state_dict = dict(state_dict)
+                    copied = True
+                del state_dict[attribute]
+        return state_dict
 
     def __group_hubs(self, group, group_to_hub):
         '''

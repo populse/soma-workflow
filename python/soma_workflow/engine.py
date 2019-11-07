@@ -528,12 +528,10 @@ class WorkflowEngineLoop(object):
                     job.plain_output_params_file()):
                 output_dict = json.load(open(
                   job.plain_output_params_file()))
-                print(output_dict)
                 self._database_server.set_job_output_params(job.job_id,
                                                             output_dict)
                 for param, value in six.iteritems(output_dict):
                     jvalue = job.param_dict.get(param)
-                    print(param, value, jvalue)
                     if jvalue and isinstance(jvalue, FileTransfer):
                         engine_transfer = job.transfer_mapping[jvalue]
                         engine_transfer.set_engine_path(
