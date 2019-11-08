@@ -485,6 +485,9 @@ class Configuration(observer.Observable):
 
             return config
 
+    def get_config_parser(self):
+        return self._config_parser
+
     def get_scheduler_type(self):
         return self._scheduler_type
 
