@@ -556,7 +556,7 @@ class RemoteConnection(object):
         from soma_workflow import configuration
 
         config = configuration.Configuration.load_from_file(resource_id)
-        if config.is_local_resource(config, resource_id):
+        if config.is_local_resource(config.get_config_parser(), resource_id):
             local = True
             print('local mode')
         else:
