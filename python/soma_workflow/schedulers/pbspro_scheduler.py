@@ -95,7 +95,8 @@ class JobTemplate(object):
             cmd = self.qsub_command(script_file)
             logger = logging.getLogger('ljp.pbspro_scheduler')
             logger.debug('run job: %s' % repr(cmd))
-            job_id = subprocess.check_output(cmd).decode('utf-8').strip()
+            job_id = subprocess.check_output(
+                cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
             logger.debug('job_id: ' + repr(job_id))
             return job_id
         finally:
@@ -371,12 +372,27 @@ class PBSProScheduler(Scheduler):
             self.logger.debug("before submit job.name=" + repr(job.name))
             job_id = jobTemplate.run_job()
 
+        except subprocess.CalledProcessError as e:
+            # try:  # this will be done in the engine
+            #     f = open(stderr_file, "a")
+            #     f.write("Error in job submission: %s: %s, output: %s" 
+            #             % (type(e), e, e.output))
+            #     f.close()
+            # except:
+            #     pass
+            self.logger.error("Error in job submission: %s: %s\nOutput:\n%s" 
+                              % (type(e), e, e.output.decode()),
+                              exc_info = sys.exc_info())
+            raise DRMError("Job submission error: %s:\n%s\nOutput:\n%s"
+                           % (type(e), e, e.output.decode()))
+
         except Exception as e:
+            self.logger.info('exception in PBS job submission:' + repr(e))
             try:
                 f = open(stderr_file, "wa")
                 f.write("Error in job submission: %s: %s" % (type(e), e))
                 f.close()
-            except IOError as ioe:
+            except:
                 pass
             self.logger.error("Error in job submission: %s: %s" % (type(e), e),
                               exc_info = sys.exc_info())

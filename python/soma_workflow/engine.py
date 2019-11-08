@@ -452,9 +452,11 @@ class WorkflowEngineLoop(object):
                                                            type(e), e))
                         job.status = constants.FAILED
                         job.exit_status = constants.EXIT_ABORTED
-                        stderr_file = open(job.stderr_file, "wa")
+                        stderr_file = open(job.stderr_file, "a")
+                        self.logger.debug('Job fail, stderr opened')
                         stderr_file.write(
-                            "Error while submitting the job %s: %s\n" % (type(e), e))
+                            "Error while submitting the job %s:\n%s\n" 
+                            % (type(e), e))
                         stderr_file.close()
                         drms_error_jobs[job.job_id] = job
                     else:
