@@ -65,6 +65,27 @@ def _out_to_date(last_status_update):
     return out_to_date
 
 
+def transformed_param_value(func, src_param, value, param, dval):
+    if func is None:
+        return value
+    if isinstance(func, tuple):
+        f = func[0]
+        params = func[1:]
+    else:
+        f = func
+        params = []
+    mod_func = f.rsplit('.', 1)
+    if len(mod_func) == 1:
+        module = sys.modules[__name__]
+        func_name = mod_func[0]
+    else:
+        mod_name, func_name = mod_func
+        module = __import__(mod_name)
+    func = getattr(module, func_name)
+    return func(*params, src_param=src_param, value=value,
+                dst_param=param, dst_value=dval)
+
+
 #-----------------------------------------------------------------------------
 # Classes and functions
 #-----------------------------------------------------------------------------
@@ -555,8 +576,11 @@ class WorkflowEngineLoop(object):
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
-            for param, value in six.iteritems(u_param_dict):
+            for param, value_t in six.iteritems(u_param_dict):
+                func, src_param, value = value_t
                 dval = job.param_dict.get(param)
+                value = transformed_param_value(func, src_param, value, param,
+                                                dval)
                 if isinstance(dval, SpecialPath):
                     engine_transfer = job.transfer_mapping[dval]
                     former_path = engine_transfer.engine_path
@@ -1237,7 +1261,19 @@ class WorkflowEngine(RemoteFileController):
         return self._database_server.get_job_command(job_id)
 
     def updated_job_parameters(self, job_id):
-        return self._database_server.updated_job_parameters(job_id)
+        job = self._database_server.get_engine_job(job_id)
+        u_param_dict = self._database_server.updated_job_parameters(job.job_id)
+        param_dict = None
+        if u_param_dict:
+            param_dict = {}
+            for param, value_t in six.iteritems(u_param_dict):
+                func, src_param, value = value_t
+                dval = job.param_dict.get(param)
+                value = transformed_param_value(func, src_param, value, param,
+                                                dval)
+                param_dict[param] = value
+
+        return param_dict
 
     def get_job_output_params(self, job_id):
         return self._database_server.get_job_output_params(job_id)

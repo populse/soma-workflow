@@ -820,11 +820,20 @@ class Workflow(object):
         New in 3.1.
         Job parameters links. Links are in the following shape:!
 
-            dest_job: {dest_param: (source_job, param)}
+            dest_job: {dest_param: (source_job, param, [function])}
 
         Links are used to get output values from jobs which have completed
         their run, and to set them into downstream jobs inputs. This system
         allows "dynamic outputs" in workflows.
+        The optional function item is the name of a function that will be
+        called to transform values from the source to the destination of the
+        link at runtime. It is basically a string "module.function", or a
+        tuple for passing some arguments (as in partial):
+        ("module.function", 12, "param"). The function is called with
+        additional arguments: parameter name, parameter value, destination
+        parameter name, destination parameter current value. The destination
+        parameter value is typically used to build / update a list in the
+        destination job from a series of values in source jobs.
 
     '''
     # string
@@ -878,12 +887,23 @@ class Workflow(object):
         which input parameters should be replaced by output parameter values
         from an upstream job.
 
-        param_links is an (options) dict which specifies these links::
+        param_links is an (optional) dict which specifies these links::
 
-            {dest_job: {dest_param: (source_job, param)}}
+            {dest_job: {dest_param: (source_job, param, [function])}}
 
         Such links de facto define new jobs dependencies, which are added to
         the dependencies manually specified.
+
+        The optional function item is the name of a function that will be
+        called to transform values from the source to the destination of the
+        link at runtime. It is basically a string "module.function", or a
+        tuple for passing some arguments (as in partial):
+        ("module.function", 12, "param"). The function is called with
+        additional arguments: parameter name, parameter value, destination
+        parameter name, destination parameter current value. The destination
+        parameter value is typically used to build / update a list in the
+        destination job from a series of values in source jobs.
+
         '''
         import logging
         logging.debug("Within Workflow constructor")
@@ -1058,7 +1078,7 @@ class Workflow(object):
             wdjob = job_ids[dest_job]
             wlinks = {}
             for dest_par, link in six.iteritems(links):
-                wlinks[dest_par] = (job_ids[link[0]], link[1])
+                wlinks[dest_par] = (job_ids[link[0]], ) + link[1:]
             new_links[wdjob] = wlinks
         wf_dict['param_links'] = new_links
 
@@ -1234,7 +1254,7 @@ class Workflow(object):
             dlinks = {}
             for lname, link in six.iteritems(links):
                 dsrc_job = job_from_ids[link[0]]
-                dlinks[lname] = (dsrc_job, link[1])
+                dlinks[lname] = (dsrc_job, ) + link[1:]
             param_links[ddest_job] = dlinks
 
         # user storage, TODO: handle objects in it
