@@ -17,7 +17,6 @@ param_json = json.load(open(param_file))
 parameters = param_json['parameters']
 # now get our specific parameter(s)
 filePathIn = parameters['input']
-timeToSleep = parameters.get('timeToSleep')
 
 in_dir = os.path.dirname(filePathIn)
 out_dir = os.path.join(in_dir, 'job8_output')

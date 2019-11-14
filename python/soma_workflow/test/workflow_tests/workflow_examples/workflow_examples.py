@@ -446,6 +446,58 @@ class WorkflowExamples(object):
                             name=function_name, param_links=links)
         return workflow
 
+    def example_dynamic_outputs_with_loo(self):
+        # small leave-one-out
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        job2_train = self.job_reduce_cat(14)
+        job2_train.name = 'train'
+        job2_test = self.job8_with_output()
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            job2_train: {'inputs': [(job1, 'outputs',
+                                     ('list_all_but_one', 2))]},
+            job2_test: {'input': [(job1, 'outputs', ('list_to_sequence', 2))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_cv(self):
+        # small 4-fold cross-validation
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        job2_train = self.job_reduce_cat(16)
+        job2_train.name = 'train'
+        job2_test = self.job_reduce_cat(17)
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            job2_train: {'inputs': [(job1, 'outputs',
+                                     ('list_cv_train_fold', 1, 4))]},
+            job2_test: {'inputs': [(job1, 'outputs',
+                                    ('list_cv_test_fold', 1, 4))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
 
 if __name__ == "__main__":
     print(WorkflowExamples.get_workflow_example_list())

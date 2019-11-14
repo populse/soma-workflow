@@ -20,3 +20,48 @@ def sequence_to_list(item, src_param, value, dst_param, dst_value):
     dst_value[item] = value
     return dst_value
 
+
+def list_all_but_one(item, src_param, value, dst_param, dst_value):
+    ''' remove item-th element from the input list.
+    Useful in a leave-one-out pattern
+    '''
+    return value[:item] + value[item+1:]
+
+
+def list_cv_train_fold(fold, nfolds, src_param, value, dst_param, dst_value):
+    ''' take all but fold-th division in a list divided into nfold folds.
+    Useful in a nfolds cross-validation pattern
+    '''
+    nitems = len(value)
+    fold_size = nitems // nfolds
+    nsupp = nitems % nfolds
+    begin = fold_size * fold
+    begin += min(begin, nsupp)
+    end = fold_size * (fold + 1)
+    end += min(end, nsupp)
+    return value[:begin] + value[end:]
+
+
+def list_cv_test_fold(fold, nfolds, src_param, value, dst_param, dst_value):
+    ''' take fold-th division in a list divided into nfold folds.
+    Useful in a nfolds cross-validation pattern
+    '''
+    nitems = len(value)
+    fold_size = nitems // nfolds
+    nsupp = nitems % nfolds
+    begin = fold_size * fold
+    begin += min(begin, nsupp)
+    end = fold_size * (fold + 1)
+    end += min(end, nsupp)
+    return value[begin:end]
+
+
+# this one cannot work by now because links order is not known.
+#def list_cat(item, src_param, value, dst_param, dst_value):
+    #''' concatenates lists: extend value (list) after dst_value
+    #'''
+    #if dst_value is None:
+        #dst_value = []
+    #dst_value += value
+    #return dst_value
+

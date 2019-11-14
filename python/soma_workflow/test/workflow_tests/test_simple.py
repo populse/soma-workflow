@@ -185,6 +185,16 @@ class SimpleTest(WorkflowTest):
         workflow = self.wf_examples.example_dynamic_outputs_with_mapreduce()
         return self.run_workflow(workflow, test_files=[13])
 
+    def test_workflow_loo(self):
+        workflow = self.wf_examples.example_dynamic_outputs_with_loo()
+        return self.run_workflow(
+            workflow, test_files=[14],
+            test_dyn_files={'test': {'output': 15}})
+
+    def test_workflow_cv(self):
+        workflow = self.wf_examples.example_dynamic_outputs_with_cv()
+        return self.run_workflow(workflow, test_files=[16, 17])
+
 
 def test():
     return SimpleTest.run_test_function(**WorkflowTest.parse_args(sys.argv))
