@@ -1,7 +1,11 @@
 
 from __future__ import print_function
 
-from traits.api import Undefined
+try:
+    from traits.api import Undefined
+except ImportError:
+    # no traits: use None
+    Undefined = None
 
 
 def list_to_sequence(item, src_param, value, dst_param, dst_value):
