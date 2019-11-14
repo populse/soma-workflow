@@ -820,7 +820,7 @@ class Workflow(object):
         New in 3.1.
         Job parameters links. Links are in the following shape:!
 
-            dest_job: {dest_param: (source_job, param, [function])}
+            dest_job: {dest_param: [(source_job, param, <function>), ...]}
 
         Links are used to get output values from jobs which have completed
         their run, and to set them into downstream jobs inputs. This system
@@ -889,7 +889,7 @@ class Workflow(object):
 
         param_links is an (optional) dict which specifies these links::
 
-            {dest_job: {dest_param: (source_job, param, [function])}}
+            {dest_job: {dest_param: [(source_job, param, <function>), ...]}}
 
         Such links de facto define new jobs dependencies, which are added to
         the dependencies manually specified.
@@ -1004,8 +1004,9 @@ class Workflow(object):
         else:
             current_deps = set(self.dependencies)
         for dest_job, links in six.iteritems(self.param_links):
-            for p, link in six.iteritems(links):
-                deps.add((link[0], dest_job))
+            for p, linkl in six.iteritems(links):
+                for link in linkl:
+                    deps.add((link[0], dest_job))
         if isinstance(self.dependencies, list):
             for dep in deps:
                 if dep not in current_deps:
@@ -1077,8 +1078,9 @@ class Workflow(object):
         for dest_job, links in six.iteritems(self.param_links):
             wdjob = job_ids[dest_job]
             wlinks = {}
-            for dest_par, link in six.iteritems(links):
-                wlinks[dest_par] = (job_ids[link[0]], ) + link[1:]
+            for dest_par, linkl in six.iteritems(links):
+                for link in linkl:
+                    wlinks[dest_par] = (job_ids[link[0]], ) + link[1:]
             new_links[wdjob] = wlinks
         wf_dict['param_links'] = new_links
 
@@ -1252,9 +1254,12 @@ class Workflow(object):
         for dest_job, links in six.iteritems(id_links):
             ddest_job = job_from_ids[int(dest_job)]
             dlinks = {}
-            for lname, link in six.iteritems(links):
-                dsrc_job = job_from_ids[link[0]]
-                dlinks[lname] = (dsrc_job, ) + link[1:]
+            for lname, linkl in six.iteritems(links):
+                dlinkl = []
+                for link in linkl:
+                    dsrc_job = job_from_ids[link[0]]
+                    dlinkl.append((dsrc_job, ) + link[1:])
+                dlinks[lname] = dlinkl
             param_links[ddest_job] = dlinks
 
         # user storage, TODO: handle objects in it

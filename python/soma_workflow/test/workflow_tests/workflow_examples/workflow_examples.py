@@ -33,12 +33,8 @@ class WorkflowExamples(object):
         module_path = os.path.dirname(module_file)
         self.examples_dir = os.path.join(module_path,
                                          "test", "data", "jobExamples")
-        tmp = tempfile.mkstemp('', prefix='swf_test_')
-        os.close(tmp[0])
-        os.unlink(tmp[1])
-        self.output_dir = tmp[1]
-        if not os.path.isdir(self.output_dir):
-            os.mkdir(self.output_dir)
+        tmp = tempfile.mkdtemp('', prefix='swf_test_')
+        self.output_dir = tmp
         if (not os.path.isdir(self.examples_dir) or
                 not os.path.isdir(self.output_dir)):
             raise ConfigurationError("%s or %s does not exist." % (
@@ -408,15 +404,45 @@ class WorkflowExamples(object):
         group_2 = Group(name='group_2', elements=[job1, group_1])
 
         links = {
-            job2: {'filePathIn1': (job1, 'filePathOut1')},
-            job3: {'filePathIn': (job1, 'filePathOut2')},
-            job4: {'file1': (job2, 'filePathOut')},
+            job2: {'filePathIn1': [(job1, 'filePathOut1')]},
+            job3: {'filePathIn': [(job1, 'filePathOut2')]},
+            job4: {'file1': [(job2, 'filePathOut')]},
         }
 
         function_name = inspect.stack()[0][3]
         workflow = Workflow(jobs,
                             dependencies,
                             root_group=[group_2, job4],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_mapreduce(self):
+        # small map/reduce
+        # jobs
+        job1 = self.job_list_with_outputs()
+        job2_0 = self.job8_with_output()
+        job2_0.name = 'job2_0'
+        job2_1 = self.job8_with_output()
+        job2_1.name = 'job2_1'
+        job3 = self.job_reduce_cat()
+        # building the workflow
+        jobs = [job1, job2_0, job2_1, job3]
+
+        dependencies = []
+
+        group_1 = Group(name='group_1', elements=[job2_0, job2_1])
+
+        links = {
+            job2_0: {'input': [(job1, 'outputs', ('list_to_sequence', 0))]},
+            job2_1: {'input': [(job1, 'outputs', ('list_to_sequence', 1))]},
+            job3: {'inputs': [(job2_0, 'output', ('sequence_to_list', 0)),
+                              (job2_1, 'output', ('sequence_to_list', 1))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, group_1, job3],
                             name=function_name, param_links=links)
         return workflow
 

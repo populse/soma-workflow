@@ -40,6 +40,7 @@ from soma_workflow.client import WorkflowController
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
+from soma_workflow.param_link_functions import *
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -576,26 +577,27 @@ class WorkflowEngineLoop(object):
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
-            for param, value_t in six.iteritems(u_param_dict):
-                func, src_param, value = value_t
-                dval = job.param_dict.get(param)
-                value = transformed_param_value(func, src_param, value, param,
-                                                dval)
-                if isinstance(dval, SpecialPath):
-                    engine_transfer = job.transfer_mapping[dval]
-                    former_path = engine_transfer.engine_path
-                    if former_path != value:
-                        engine_transfer.set_engine_path(
-                            value,
-                            *engine_transfer.map_client_path_to_engine(
-                                value, job.param_dict))
-                        # update database with modified values
-                        self._database_server.set_transfer_paths(
-                            engine_transfer.transfer_id, value,
-                            engine_transfer.client_path,
-                            engine_transfer.client_paths)
-                else:
-                    job.param_dict[param] = value
+            for param, value_tl in six.iteritems(u_param_dict):
+                for value_t in value_tl:
+                    func, src_param, value = value_t
+                    dval = job.param_dict.get(param)
+                    value = transformed_param_value(func, src_param, value,
+                                                    param, dval)
+                    if isinstance(dval, SpecialPath):
+                        engine_transfer = job.transfer_mapping[dval]
+                        former_path = engine_transfer.engine_path
+                        if former_path != value:
+                            engine_transfer.set_engine_path(
+                                value,
+                                *engine_transfer.map_client_path_to_engine(
+                                    value, job.param_dict))
+                            # update database with modified values
+                            self._database_server.set_transfer_paths(
+                                engine_transfer.transfer_id, value,
+                                engine_transfer.client_path,
+                                engine_transfer.client_paths)
+                    else:
+                        job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
         if job.use_input_params_file and job.input_params_file:
@@ -1261,17 +1263,18 @@ class WorkflowEngine(RemoteFileController):
         return self._database_server.get_job_command(job_id)
 
     def updated_job_parameters(self, job_id):
-        job = self._database_server.get_engine_job(job_id)
+        job = self._database_server.get_engine_job(job_id, self._user_id)[0]
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
-        param_dict = None
+        param_dict = {}
         if u_param_dict:
             param_dict = {}
-            for param, value_t in six.iteritems(u_param_dict):
-                func, src_param, value = value_t
-                dval = job.param_dict.get(param)
-                value = transformed_param_value(func, src_param, value, param,
-                                                dval)
-                param_dict[param] = value
+            for param, value_tl in six.iteritems(u_param_dict):
+                for value_t in value_tl:
+                    func, src_param, value = value_t
+                    dval = job.param_dict.get(param)
+                    value = transformed_param_value(func, src_param, value,
+                                                    param, dval)
+                    param_dict[param] = value
 
         return param_dict
 

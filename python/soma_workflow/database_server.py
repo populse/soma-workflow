@@ -312,7 +312,7 @@ def create_database(database_file):
             workflow_id       INTEGER NOT NULL CONSTRAINT known_worflow REFERENCES workflows (id),
             dest_job_id       INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs (id),
             dest_param        TEXT,
-          src_job_id          INTEGER NOT NULL CONSTRAINT known_job2 REFERENCES jobs (id),
+            src_job_id        INTEGER NOT NULL CONSTRAINT known_job2 REFERENCES jobs (id),
             src_param         TEXT,
             pickled_function  TEXT)''')
 
@@ -1815,22 +1815,23 @@ class WorkflowDatabaseServer(object):
                 for dest_job, links \
                         in six.iteritems(engine_workflow.param_links):
                     edest_job = engine_workflow.job_mapping[dest_job]
-                    for dest_param, link in six.iteritems(links):
-                        esrc_job = engine_workflow.job_mapping[link[0]]
-                        func = None
-                        if len(link) > 2:
-                            func = pickle.dumps(link[2])
-                        cursor.execute(
-                            '''INSERT INTO param_links
-                            (workflow_id,
-                            dest_job_id,
-                            dest_param,
-                            src_job_id,
-                            src_param,
-                            pickled_function)
-                            VALUES (?, ?, ?, ?, ?, ?)''',
-                            (engine_workflow.wf_id, edest_job.job_id,
-                             dest_param, esrc_job.job_id, link[1], func))
+                    for dest_param, linkl in six.iteritems(links):
+                        for link in linkl:
+                            esrc_job = engine_workflow.job_mapping[link[0]]
+                            func = None
+                            if len(link) > 2:
+                                func = pickle.dumps(link[2])
+                            cursor.execute(
+                                '''INSERT INTO param_links
+                                (workflow_id,
+                                dest_job_id,
+                                dest_param,
+                                src_job_id,
+                                src_param,
+                                pickled_function)
+                                VALUES (?, ?, ?, ?, ?, ?)''',
+                                (engine_workflow.wf_id, edest_job.job_id,
+                                dest_param, esrc_job.job_id, link[1], func))
 
             except Exception as e:
                 connection.rollback()
@@ -2553,7 +2554,7 @@ class WorkflowDatabaseServer(object):
         @rtype: C{EngineJob}
         @return: workflow object
         '''
-        self.logger.debug("=> get_engine_job")
+        self.logger.debug("=> get_engine_job %d" % job_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -2579,6 +2580,13 @@ class WorkflowDatabaseServer(object):
             job.job_id = job_id
         else:
             job = None
+            if workflow_id not in (None, -1):
+                # job is not pickled: get the whole workflow
+                workflow = self.get_engine_workflow(workflow_id, user_id)
+                jobs = [workflow.job_mapping[j] for j in workflow.jobs]
+                jobs = [j for j in jobs if j.job_id == job_id]
+                if len(jobs) != 0:
+                    job = jobs[0]
 
         return (job, workflow_id)
 
@@ -2951,11 +2959,13 @@ class WorkflowDatabaseServer(object):
     def updated_job_parameters(self, job_id):
         '''
         '''
-        self.logger.debug("=> update_job_parameters")
+        self.logger.debug("=> updated_job_parameters %d" % job_id)
         # get job workflow id
+        print('updated_job_parameters %d' % job_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
+            cursor2 = connection.cursor()
             try:
 
                 sel = cursor.execute(
@@ -2966,6 +2976,7 @@ class WorkflowDatabaseServer(object):
                 param_dict = {}
                 jsons = {}
                 for dst_param, src_job, src_param, func in sel:
+                    print(dst_param, src_job, src_param)
                     #if dest_param in param_dict:
                     if func:
                         if sys.version_info[0] >= 3:
@@ -2974,20 +2985,21 @@ class WorkflowDatabaseServer(object):
                             func = pickle.loads(func)
                     jdict = jsons.get(src_job)
                     if jdict is None:
-                        json_sql = cursor.execute(
+                        json_sql = cursor2.execute(
                             'SELECT output_params FROM jobs WHERE id=?',
                             [src_job])
                         jstr = six.next(json_sql)[0]
                         if jstr is not None:
                             jdict = json.loads(jstr)
-                            jsons[src_job] = jdict
-                            if src_param in jdict:
-                                param_dict[dst_param] = (func, src_param,
-                                                         jdict[src_param])
                         else:
-                            jsons[src_job] = {}
+                            jdict = {}
+                        jsons[src_job] = jdict
+                    if src_param in jdict:
+                        param_dict.setdefault(dst_param, []).append(
+                            (func, src_param, jdict[src_param]))
 
             finally:
+                cursor2.close()
                 cursor.close()
                 connection.close()
 

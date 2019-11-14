@@ -30,6 +30,7 @@ from __future__ import print_function
 import tempfile
 import os
 import sys
+import six
 
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -49,7 +50,7 @@ class SimpleTest(WorkflowTest):
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
                       (REMOTE_MODE, WorkflowTest.SHARED_TRANSFER)]
 
-    def run_workflow(self, workflow):
+    def run_workflow(self, workflow, test_files=[], test_dyn_files={}):
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
             name=self.__class__.__name__)
@@ -93,6 +94,7 @@ class SimpleTest(WorkflowTest):
 
         dyn_out_params = {1: 'filePathOut2',
                           2: 'filePathOut'}
+        dyn_out_params = {}
 
         for (job_id, tmp_status, queue, exit_info, dates, drmaa_id) \
                 in jobs_info:
@@ -130,82 +132,58 @@ class SimpleTest(WorkflowTest):
                             % (job_stderr_file, open(job_stderr_file).read())
                         self.assertTrue(os.stat(job_stderr_file).st_size == 0,
                                         msg)
-                        # Test output files
-                        if self.path_management == self.LOCAL_PATH:
-                            isSame, msg = identical_files(
-                                self.wf_examples.lo_out_model_file[11],
-                                self.wf_examples.lo_file[11])
-                            self.assertTrue(isSame, msg)
-                            if job_name == 'job1':
-                                isSame, msg = identical_files(
-                                    self.wf_examples.lo_out_model_file[12],
-                                    self.wf_examples.lo_file[12])
-                            else:
-                                out_params = \
-                                    self.wf_ctrl.get_job_output_params(job_id)
-                                isSame, msg = identical_files(
-                                    self.wf_examples.lo_out_model_file[12],
-                                    out_params['filePathOut2']
-                                )
-                            self.assertTrue(isSame, msg)
-                        if self.path_management == self.FILE_TRANSFER or \
-                                self.path_management == self.SHARED_TRANSFER:
-                            isSame, msg = identical_files(
-                                self.wf_examples.lo_out_model_file[11],
-                                self.wf_examples.tr_file[11].client_path)
-                            self.assertTrue(isSame, msg)
-                            isSame, msg = identical_files(
-                                self.wf_examples.lo_out_model_file[12],
-                                self.wf_examples.tr_file[12].client_path)
-                            self.assertTrue(isSame, msg)
-                            # For unknown reason, it raises some errors
-                            # http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running
-                            # isSame,	msg	= identical_files(job_stderr_file,self.wf_examples.lo_stderr[1])
-                            # self.failUnless(isSame == True)
 
-                    elif job_name in ['job2', 'job3', 'job4',
-                                      'job2_with_outputs']:
-                        job_nb = int(job_name[3])
-                        # Test stdout
-                        isSame, msg = identical_files(
-                            job_stdout_file,
-                            self.wf_examples.lo_stdout[job_nb])
-                        self.assertTrue(isSame, msg)
-                        # Test no stderr
-                        self.assertTrue(os.stat(job_stderr_file).st_size == 0,
-                                        "job stderr not empty : cf %s" %
-                                        job_stderr_file)
-                        # Test output files
-                        if self.path_management == self.LOCAL_PATH:
-                            out_file = self.wf_examples.lo_file[job_nb]
-                            if job_name.endswith('_with_outputs') \
-                                    and job_nb in dyn_out_params:
-                                out_params = \
-                                    self.wf_ctrl.get_job_output_params(job_id)
-                                out_file = out_params[dyn_out_params[job_nb]]
-                            isSame, msg = identical_files(
-                                self.wf_examples.lo_out_model_file[job_nb],
-                                out_file)
-                            self.assertTrue(isSame, msg)
-                        if self.path_management == self.FILE_TRANSFER or \
-                                self.path_management == self.SHARED_TRANSFER:
-                            isSame, msg = identical_files(
-                                self.wf_examples.lo_out_model_file[job_nb],
-                                self.wf_examples.tr_file[job_nb].client_path)
-                            self.assertTrue(isSame, msg)
+                    if job_name in test_dyn_files:
+                        out_params = self.wf_ctrl.get_job_output_params(job_id)
+                        dyn_out_params[job_name] = out_params
+
+                    # For unknown reason, it raises some errors
+                    # http://stackoverflow.com/questions/10496758/unexpected-end-of-file-and-error-importing-function-definition-error-running
+                    # isSame,	msg	= identical_files(job_stderr_file,self.wf_examples.lo_stderr[1])
+                    # self.failUnless(isSame == True)
+
                 finally:
                     os.unlink(job_stdout_file)
                     os.unlink(job_stderr_file)
+
+        for out_file_num in test_files:
+            # Test output files
+            if self.path_management == self.LOCAL_PATH:
+                out_file = self.wf_examples.lo_file[out_file_num]
+            elif self.path_management == self.FILE_TRANSFER or \
+                    self.path_management == self.SHARED_TRANSFER:
+                out_file = self.wf_examples.tr_file[out_file_num].client_path
+
+            isSame, msg = identical_files(
+                self.wf_examples.lo_out_model_file[out_file_num], out_file)
+            self.assertTrue(isSame, msg)
+
+        for job_name, ref_out_params in six.iteritems(test_dyn_files):
+            out_params = dyn_out_params[job_name]
+            for param, file_num in six.iteritems(ref_out_params):
+                isSame, msg = identical_files(
+                    self.wf_examples.lo_out_model_file[file_num],
+                    out_params[param])
+                self.assertTrue(isSame, msg)
+
 
         del self.tested_job
 
     def test_simple_workflow(self):
         workflow = self.wf_examples.example_simple()
-        return self.run_workflow(workflow)
+        return self.run_workflow(workflow, test_files=[11, 12, 2, 3, 4])
 
     def test_workflow_with_outputs(self):
         workflow = self.wf_examples.example_dynamic_outputs()
-        return self.run_workflow(workflow)
+        return self.run_workflow(
+            workflow, test_files=[11, 3, 4],
+            test_dyn_files={'job1_with_outputs': {'filePathOut2': 12},
+                            'job2_with_outputs': {'filePathOut': 2}
+                            })
+
+    def test_workflow_mapreduce_with_outputs(self):
+        workflow = self.wf_examples.example_dynamic_outputs_with_mapreduce()
+        return self.run_workflow(workflow, test_files=[13])
 
 
 def test():

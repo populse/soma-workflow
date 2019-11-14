@@ -39,6 +39,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
         # Complete path
         self.complete_path = os.path.join(self.examples_dir, "complete")
         self.lo_file[0] = os.path.join(self.complete_path, "file0")
+        self.lo_file[1] = os.path.join(self.complete_path, "file1")
         self.lo_exceptionJobScript = os.path.join(self.complete_path,
                                                   "exception_job.py")
         self.lo_sleep_script = os.path.join(self.complete_path,
@@ -53,7 +54,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
         self.lo_stdout_command_local = os.path.join(
             self.models_path, "stdout_local_special_command")
 
-        for i in range(1, 7):
+        for i in range(1, 10):
             self.lo_script[i] = os.path.join(self.complete_path,
                                              "job" + str(i) + ".py")
             self.lo_stdin[i] = os.path.join(self.complete_path,
@@ -61,7 +62,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
             self.lo_stdout[i] = os.path.join(self.models_path,
                                              "stdout_job" + str(i))
 
-        for i in [11, 12, 2, 3, 4]:
+        for i in [11, 12, 2, 3, 4, 13]:
             self.lo_file[i] = os.path.join(self.output_dir, "file" + str(i))
             self.lo_out_model_file[i] = os.path.join(self.models_path,
                                                      "file" + str(i))
@@ -193,3 +194,41 @@ class WorkflowExamplesLocal(WorkflowExamples):
                    has_outputs=True,
                    use_input_params_file=True)
         return job2
+
+    def job8_with_output(self):
+        time_to_wait = 1
+        job_name = 'job8_with_output'
+        job = Job([sys.executable, '%(script)s'],
+                  None, None,
+                  self.lo_stdin[2], False, 168, job_name,
+                  param_dict={'script': self.lo_script[8],
+                              'input': 'nothing',
+                              'timeToSleep': str(time_to_wait)},
+                   has_outputs=True,
+                   use_input_params_file=True)
+        return job
+
+    def job_list_with_outputs(self):
+        job_name = 'copy_files'
+        job = Job([sys.executable, '%(script)s'],
+                  None, None,
+                  self.lo_stdin[2], False, 168, job_name,
+                  param_dict={'script': self.lo_script[7],
+                              'inputs': [self.lo_file[0], self.lo_file[1]],
+                              'output_dir': os.path.join(
+                                  self.output_dir, 'intermediate_results')},
+                  has_outputs=True,
+                  use_input_params_file=True)
+        return job
+
+    def job_reduce_cat(self):
+        job_name = 'cat_files'
+        job = Job([sys.executable, '%(script)s'],
+                  None, None,
+                  self.lo_stdin[2], False, 168, job_name,
+                  param_dict={'script': self.lo_script[9],
+                              'inputs': [],
+                              'output': self.lo_file[13]},
+                  use_input_params_file=True)
+        return job
+
