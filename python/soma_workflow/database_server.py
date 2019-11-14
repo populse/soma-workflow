@@ -1820,7 +1820,7 @@ class WorkflowDatabaseServer(object):
                             esrc_job = engine_workflow.job_mapping[link[0]]
                             func = None
                             if len(link) > 2:
-                                func = pickle.dumps(link[2])
+                                func = sqlite3.Binary(pickle.dumps(link[2]))
                             cursor.execute(
                                 '''INSERT INTO param_links
                                 (workflow_id,
