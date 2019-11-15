@@ -578,9 +578,12 @@ class WorkflowEngineLoop(object):
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
             for param, value_tl in six.iteritems(u_param_dict):
+                dval = job.param_dict.get(param)
+                if isinstance(dval, list):
+                    # reset list parameters
+                    dval = []
                 for value_t in value_tl:
                     func, src_param, value = value_t
-                    dval = job.param_dict.get(param)
                     value = transformed_param_value(func, src_param, value,
                                                     param, dval)
                     if isinstance(dval, SpecialPath):
@@ -1269,9 +1272,12 @@ class WorkflowEngine(RemoteFileController):
         if u_param_dict:
             param_dict = {}
             for param, value_tl in six.iteritems(u_param_dict):
+                dval = job.param_dict.get(param)
+                if isinstance(dval, list):
+                    # reset lists
+                    dval = []
                 for value_t in value_tl:
                     func, src_param, value = value_t
-                    dval = job.param_dict.get(param)
                     value = transformed_param_value(func, src_param, value,
                                                     param, dval)
                     param_dict[param] = value
