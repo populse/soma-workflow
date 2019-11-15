@@ -121,16 +121,19 @@ class Job(object):
         specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
 
         *Example:* Specification of a job walltime and more:
-          * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
-          * using a SGE cluster: native_specification="-l h_rt=10:00:00"
+
+        * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
+        * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
     parallel_job_info: dict
         The parallel job information must be set if the Job is parallel (ie. made to
         run on several CPU).
         The parallel job information is a dict, with the following supported items:
-            * config_name: name of the configuration (native, MPI, OpenMP)
-            * nodes_number: number of computing nodes used by the Job,
-            * cpu_per_node: number of CPU or cores needed for each node
+
+        * config_name: name of the configuration (native, MPI, OpenMP)
+        * nodes_number: number of computing nodes used by the Job,
+        * cpu_per_node: number of CPU or cores needed for each node
+
         The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
         .. warning::
@@ -176,9 +179,8 @@ class Job(object):
         Path to the file which will be written for output parameters of the
         job.
 
-    ..
-      **disposal_timeout**: int
-      Only requiered outside of a workflow
+    disposal_timeout: int
+        Only requiered outside of a workflow
     '''
 
     # sequence of sequence of string or/and FileTransfer or/and
@@ -772,7 +774,6 @@ class Workflow(object):
 
     Attributes
     ----------
-
     name: string
         Name of the workflow which will be displayed in the GUI.
         Default: workflow_id once submitted
@@ -818,7 +819,7 @@ class Workflow(object):
 
     param_links: dict
         New in 3.1.
-        Job parameters links. Links are in the following shape:!
+        Job parameters links. Links are in the following shape::
 
             dest_job: {dest_param: [(source_job, param, <function>), ...]}
 
@@ -834,6 +835,8 @@ class Workflow(object):
         parameter name, destination parameter current value. The destination
         parameter value is typically used to build / update a list in the
         destination job from a series of values in source jobs.
+
+        See :ref:`params_link_functions` for details.
 
     '''
     # string
@@ -903,6 +906,18 @@ class Workflow(object):
         parameter name, destination parameter current value. The destination
         parameter value is typically used to build / update a list in the
         destination job from a series of values in source jobs.
+
+        Parameters
+        ----------
+        jobs
+        dependencies
+        root_group
+        disposal_timeout
+        user_storage
+        name
+        env
+        env_builder_code
+        param_links
 
         '''
         import logging

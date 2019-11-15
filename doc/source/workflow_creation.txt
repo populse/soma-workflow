@@ -248,6 +248,8 @@ Here ``job3`` must be modified to make it able to read the parameters file. In t
     print(open(in_file).read())
 
 
+.. _params_link_functions:
+
 Parameters link functions
 -------------------------
 
@@ -392,3 +394,11 @@ A map / reduce example::
                         root_group=[job1, group_1, reduce_job],
                         dependencies,
                         name='map-reduce', param_links=links)
+
+
+param_link_functions module
++++++++++++++++++++++++++++
+
+.. automodule:: param_link_functions
+    :members:
+

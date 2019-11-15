@@ -270,6 +270,7 @@ epub_copyright = u'2019, '
 # Allow duplicate toc entries.
 #epub_tocdup = True
 
+autoclass_content = "both"
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
