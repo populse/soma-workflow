@@ -19,7 +19,7 @@ Jobs may have "named parameters": a dictionary of parameters, which will be used
 
 Jobs may have "output parameters": also a dictionary of parameters, which may be written during a job execution as a JSON file, and which can be linked to input parameters of downstream jobs.
 
-Thus workflows may contain some "parameters links" to specify this.
+Thus workflows may contain some "parameters links" to specify this. Links can transform values to implement map/reduce or cross-validation pattens.
 
 See the details in the :ref:`dynamic_outputs` section.
 
