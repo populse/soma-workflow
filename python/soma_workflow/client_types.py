@@ -846,6 +846,9 @@ class MapJob(EngineExecutionJob):
             param_dict['input_names'] = ['inputs']
         if 'output_names' not in param_dict:
             param_dict['output_names'] = ['output_%d']
+        for inp in param_dict['input_names']:
+            if inp not in param_dict:
+                param_dict[inp] = []
         super(MapJob, self).__init__(
             command=[],
             referenced_input_files=referenced_input_files,

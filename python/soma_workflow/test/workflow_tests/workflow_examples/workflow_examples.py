@@ -535,7 +535,8 @@ class WorkflowExamples(object):
             + '.dynamic_outputs_with_mapreduce_jobs'
         workflow = Workflow(jobs,
                             dependencies,
-                            root_group=[job1, group_1, job3],
+                            root_group=[job1, map_job, group_1, reduce_job,
+                                        job3],
                             name=function_name, param_links=links)
         return workflow
 
