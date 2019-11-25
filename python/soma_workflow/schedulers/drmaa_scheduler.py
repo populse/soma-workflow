@@ -248,7 +248,7 @@ if DRMAA_LIB_FOUND:
                 self.wake()
             # patch for the PBS-torque DRMAA implementation
             command = []
-            if job.is_barrier:
+            if job.is_engine_execution:
                 # barrier jobs don't actually go through DRMAA.
                 self.logger.debug('job_submission, DRMAA - barrier job.')
                 job.status = constants.DONE

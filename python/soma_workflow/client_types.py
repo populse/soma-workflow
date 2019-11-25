@@ -21,6 +21,7 @@ import warnings
 import sys
 import soma_workflow.constants as constants
 import re
+import importlib
 
 # python2/3 compatibility
 
@@ -383,7 +384,7 @@ class Job(object):
         # however these operators are used in soma-workflow to test if
         # two objects are the same instance. These tests have to be replaced
         # first using the id python function.
-        if not isinstance(other, self.__class__):
+        if other.__class__ is not self.__class__:
             return False
 
         attributes = [
@@ -525,6 +526,9 @@ class Job(object):
             "has_outputs"
         ]
 
+        job_dict["class"] = '%s.%s' % (self.__class__.__module__,
+                                       self.__class__.__name__)
+
         for attr_name in attributes:
             job_dict[attr_name] = getattr(self, attr_name)
 
@@ -640,13 +644,49 @@ class Job(object):
         return state_dict
 
 
-class BarrierJob(Job):
+class EngineExecutionJob(Job):
+
+    '''
+    EngineExecutionJob: a lightweight job which will not run as a "real" job,
+    but as a python function, on the engine server side.
+
+    Such jobs are meant to perform fast, simple operations on their inputs in
+    order to produce modified inputs for other downstream jobs, such as string
+    substituitons, lists manipulations, etc. As they will run in the engine
+    process (generally the jobs submission machine) they should not perform
+    expensive processing (CPU or memory-consuming).
+
+    They are an alternative to link functions in Workflows.
+
+    The only method an EngineExecutionJob defines is :meth:`engine_execution`,
+    which will be able to use its parameters dict (as defined in its param_dict
+    as any other job), and will return an output parameters dict.
+
+    Warning: the :meth:`engine_execution` is actually a **class method**, not a
+    regular instance method. The reason for this is that it will be used with
+    an :class:`~soma_workflow.engine_types.EngineJob` instance, which inherits
+    :class:`Job`, but not the exact subclass. Thus in the method, ``self`` is
+    not a real instance of the class.
+
+    The default implementation does nothing. Subclasses define their own
+    :meth:`engine_execution` methods.
+    '''
+    @classmethod
+    def engine_execution(cls, self):
+        pass
+
+
+class BarrierJob(EngineExecutionJob):
 
     '''
     Barrier job: it is a "fake" job which does nothing (and will not become a
     real job on the DRMS) but has dependencies.
     It may be used to make a dependencies hub, to avoid too many dependencies
     with fully connected jobs sets.
+
+    BarrierJob is implemented as an EngineExecutionJob, and just differs in its
+    name, as its :meth:`~EngineExecutionJob.engine_execution` method does
+    nothing.
 
     Ex:
       (Job1, Job2, Job3) should be all connected to (Job4, Job5, Job6)
@@ -1129,20 +1169,12 @@ class Workflow(object):
         temporary_ids = {}  # TemporaryPath -> id
         option_ids = {} # OptionPath -> id
         for job, job_id in six.iteritems(job_ids):
-            if isinstance(job, BarrierJob):
-                ser_barriers[str(job_id)] = job.to_dict(id_generator,
-                                                        transfer_ids,
-                                                        shared_res_path_ids,
-                                                        temporary_ids,
-                                                        option_ids)
-            else:
-                ser_jobs[str(job_id)] = job.to_dict(id_generator,
-                                                    transfer_ids,
-                                                    shared_res_path_ids,
-                                                    temporary_ids,
-                                                    option_ids)
+            ser_jobs[str(job_id)] = job.to_dict(id_generator,
+                                                transfer_ids,
+                                                shared_res_path_ids,
+                                                temporary_ids,
+                                                option_ids)
         wf_dict["serialized_jobs"] = ser_jobs
-        wf_dict["serialized_barriers"] = ser_barriers
 
         ser_transfers = {}
         for file_transfer, transfer_id in six.iteritems(transfer_ids):
@@ -1216,10 +1248,20 @@ class Workflow(object):
         serialized_jobs = d.get("serialized_jobs", {})
         job_from_ids = {}
         for job_id, job_d in six.iteritems(serialized_jobs):
-            job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
+            cls_name = job_d.get("class", "soma_workflow.client_types.Job")
+            cls_mod = cls_name.rsplit('.', 1)
+            if len(cls_mod) == 1:
+                jcls = __dict__[cls_name]
+            else:
+                module = importlib.import_module(cls_mod[0])
+                jcls = getattr(module, cls_mod[1])
+            job = jcls.from_dict(job_d, tr_from_ids, srp_from_ids,
+                                 tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
 
         # barrier jobs
+        # obsolete: barriers are now part of jobs definitions, but this helps
+        # reloading older workflows.
         serialized_jobs = d.get("serialized_barriers", {})
         for job_id, job_d in six.iteritems(serialized_jobs):
             job = BarrierJob.from_dict(

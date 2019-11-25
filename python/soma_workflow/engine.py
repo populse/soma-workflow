@@ -30,6 +30,7 @@ import six
 import weakref
 import sys
 import json
+import importlib
 
 # import cProfile
 # import traceback
@@ -81,7 +82,7 @@ def transformed_param_value(func, src_param, value, param, dval):
         func_name = mod_func[0]
     else:
         mod_name, func_name = mod_func
-        module = __import__(mod_name)
+        module = importlib.import_modulle(mod_name)
     func = getattr(module, func_name)
     return func(*params, src_param=src_param, value=value,
                 dst_param=param, dst_value=dval)
@@ -483,9 +484,9 @@ class WorkflowEngineLoop(object):
                         drms_error_jobs[job.job_id] = job
                     else:
                         drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-                        if job.is_barrier:
-                            # barrier jobs immediately get the status DONE
-                            # to avoid losing one time cycle
+                        if job.is_engine_execution:
+                            # Engine execution jobs immediately get the status
+                            # DONE to avoid losing one time cycle
                             job.status = constants.DONE
                         else:
                             job.status = constants.UNDETERMINED
@@ -545,28 +546,33 @@ class WorkflowEngineLoop(object):
             time.sleep(time_interval)
 
     def read_job_output_dict(self, job):
-        if job.has_outputs and job.output_params_file \
-                is not None:
-            #print('Ended job with outputs:', job.job_id, job.output_params_file)
-            if os.path.exists(
-                    job.plain_output_params_file()):
-                output_dict = json.load(open(
-                  job.plain_output_params_file()))
-                self._database_server.set_job_output_params(job.job_id,
-                                                            output_dict)
-                for param, value in six.iteritems(output_dict):
-                    jvalue = job.param_dict.get(param)
-                    if jvalue and isinstance(jvalue, FileTransfer):
-                        engine_transfer = job.transfer_mapping[jvalue]
-                        engine_transfer.set_engine_path(
-                            value,
-                            *engine_transfer.map_client_path_to_engine(
-                                value, job.param_dict))
-                        # update database with modified values
-                        self._database_server.set_transfer_paths(
-                            engine_transfer.transfer_id, value,
-                            engine_transfer.client_path,
-                            engine_transfer.client_paths)
+        if job.has_outputs:
+            output_dict = None
+            if job.output_params_file is not None:
+                #print('Ended job with outputs:', job.job_id, job.output_params_file)
+                if os.path.exists(
+                        job.plain_output_params_file()):
+                    output_dict = json.load(open(
+                      job.plain_output_params_file()))
+            elif issubclass(job.job_type, EngineExecutionJob):
+                output_dict = job.engine_execution()
+            if not output_dict:
+                return
+            self._database_server.set_job_output_params(job.job_id,
+                                                        output_dict)
+            for param, value in six.iteritems(output_dict):
+                jvalue = job.param_dict.get(param)
+                if jvalue and isinstance(jvalue, FileTransfer):
+                    engine_transfer = job.transfer_mapping[jvalue]
+                    engine_transfer.set_engine_path(
+                        value,
+                        *engine_transfer.map_client_path_to_engine(
+                            value, job.param_dict))
+                    # update database with modified values
+                    self._database_server.set_transfer_paths(
+                        engine_transfer.transfer_id, value,
+                        engine_transfer.client_path,
+                        engine_transfer.client_paths)
 
 
     def update_job_parameters(self, job):
