@@ -30,10 +30,22 @@ Group
 Job
 ===
 
+.. inheritance-diagram:: client.Job client.EngineExecutionJob client.BarrierJob client.MapJob client.ReduceJob
+    :parts: 1
+
 .. autoclass:: client.Job
     :members:
 
+.. autoclass:: client.EngineExecutionJob
+    :members:
+
 .. autoclass:: client.BarrierJob
+    :members:
+
+.. autoclass:: client.MapJob
+    :members:
+
+.. autoclass:: client.ReduceJob
     :members:
 
 
@@ -275,6 +287,10 @@ Custom functions may be used, as long as their module is specified, with the add
 
 Note that this parameters links transformations are the reason why links are lists and not single values: intuitively one may think that a job parameter value is linked from a single job output value, but when dealing with lists, the situatioon may differ: a list can be built from several outputs.
 
+.. note:: aternative: Engine execution jobs
+
+    An alternative to parameters link functions ias also available in Soma-Workflow 3.1 and later: :ref:`engine_execution_job`. They are more convenient to use in some situations, and less in others, so a workflow developer may choose the implementation he prefers.
+
 A cross-validation pattern example::
 
     # let's say job1 inputs a list and outputs another list, 'outputs'
@@ -401,4 +417,24 @@ param_link_functions module
 
 .. automodule:: param_link_functions
     :members:
+
+
+.. _engine_execution_job:
+
+Engine execution jobs
+=====================
+
+Soma-Workflow 3.1 introduced :class:`~client.EngineExecutionJob`. This class is the base class for some special jobs which will actually not run as jobs, but as python functions executed inside the engine process. They should be lightweight in processing, since the engine server should not have a heavy CPU load: it runs on the computing resource submitting machine (a cluster frontal typically) which is not designed to perform actual processing.
+
+Such jobs are meant to perform simple parameters transformations, such as transforming lists into series of single parameter values, or the opposite (map/reduce pattern), or string transformation (get a dirnname for instance) etc.
+
+:class:`~client.BarrierJob` used to be the only "special job" class in Soma-Workflow 2.10. They are now a subclass of :class:`~client.EngineExecutionJob` with the particularity of *not* doing any processing even on engine side.
+
+A few engine execution jobs types have been defined and are available for workflow developers. Other subclasses can be written, but should be installed and available on engine side to work.
+
+* :class:`~client.BarrierJob`: just a dependency hub.
+* :class:`~client.MapJob`: *map* part of map/reduce pattern: transforms lists into series of single values parameters.
+* :class:`~client.ReduceJob`: *reduce* part of map/reduce pattern: transforms series of single values parameters into list parameters.
+
+Such jobs are alternatives to :ref:`params_link_functions` described above.
 

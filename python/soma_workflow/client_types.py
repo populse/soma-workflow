@@ -670,6 +670,8 @@ class EngineExecutionJob(Job):
 
     The default implementation does nothing. Subclasses define their own
     :meth:`engine_execution` methods.
+
+    See :ref:`engine_execution_job` for more details.
     '''
     @classmethod
     def engine_execution(cls, self):
@@ -696,18 +698,18 @@ class BarrierJob(EngineExecutionJob):
         Job1              Job4
               \         /
         Job2 -- Barrier -- Job5
-              /         \
+              /         \.
         Job3              Job6
 
       needs 6 (2*N).
 
-      BarrierJob constructor accepts only a subset of Job constructor parameter:
+    BarrierJob constructor accepts only a subset of Job constructor parameter:
 
-      **referenced_input_files**
+    **referenced_input_files**
 
-      **referenced_output_files**
+    **referenced_output_files**
 
-      **name**
+    **name**
     '''
 
     def __init__(self,
@@ -833,6 +835,7 @@ class MapJob(EngineExecutionJob):
     Each pattern will be used to replace items from the corresponding input in
     the same order. Thus ``input_names``  and ``output_names`` should be the
     same length.
+
     '''
     def __init__(self,
                  command=[],
@@ -889,6 +892,7 @@ class ReduceJob(EngineExecutionJob):
     the input number. The defaut value is ``['input_%d']``.
     * Output parameters names are given as the ``output_names`` parameter. The
     default is ``['outputs']``.
+
     '''
     def __init__(self,
                  command=[],
