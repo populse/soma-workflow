@@ -195,6 +195,12 @@ class SimpleTest(WorkflowTest):
         workflow = self.wf_examples.example_dynamic_outputs_with_cv()
         return self.run_workflow(workflow, test_files=[16, 17])
 
+    def test_workflow_mapreduce_with_jobs(self):
+        workflow \
+            = self.wf_examples.example_dynamic_outputs_with_mapreduce_jobs()
+        Helper.serialize('/tmp/workflow.workflow', workflow)
+        return self.run_workflow(workflow, test_files=[13])
+
 
 def test():
     return SimpleTest.run_test_function(**WorkflowTest.parse_args(sys.argv))

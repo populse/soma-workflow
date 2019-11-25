@@ -17,6 +17,8 @@ from abc import abstractmethod
 from soma_workflow.client import Group
 from soma_workflow.client import Workflow
 from soma_workflow.client import BarrierJob
+from soma_workflow.client import MapJob
+from soma_workflow.client import ReduceJob
 from soma_workflow.errors import ConfigurationError
 import tempfile
 
@@ -492,10 +494,48 @@ class WorkflowExamples(object):
                                     ('list_cv_test_fold', 1, 4))]},
         }
 
-        function_name = inspect.stack()[0][3]
+        function_name = inspect.stack()[0][3] \
+            + '.dynamic_outputs_with_mapreduce'
         workflow = Workflow(jobs,
                             dependencies,
                             root_group=[job1, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_mapreduce_jobs(self):
+        # small map/reduce using MapJob / ReduceJob
+        # jobs
+        job1 = self.job_list_with_outputs()
+        job2_0 = self.job8_with_output()
+        job2_0.name = 'job2_0'
+        job2_1 = self.job8_with_output()
+        job2_1.name = 'job2_1'
+        job3 = self.job_reduce_cat()
+        map_job = MapJob(referenced_input_files=job1.referenced_output_files,
+                         name='map')
+        reduce_job = ReduceJob()
+        # building the workflow
+        jobs = [job1, job2_0, job2_1, job3, map_job, reduce_job]
+
+        dependencies = []
+
+        group_1 = Group(name='group_1', elements=[job2_0, job2_1])
+
+        links = {
+            map_job: {'inputs': [(job1, 'outputs')]},
+            job2_0: {'input': [(map_job, 'output_0')]},
+            job2_1: {'input': [(map_job, 'output_1')]},
+            reduce_job: {'input_0': [(job2_0, 'output')],
+                         'input_1': [(job2_1, 'output')],
+                         'lengths': [(map_job, 'lengths')]},
+            job3: {'inputs': [(reduce_job, 'outputs')]},
+        }
+
+        function_name = inspect.stack()[0][3] \
+            + '.dynamic_outputs_with_mapreduce_jobs'
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, group_1, job3],
                             name=function_name, param_links=links)
         return workflow
 

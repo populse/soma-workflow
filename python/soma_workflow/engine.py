@@ -37,7 +37,7 @@ import importlib
 
 from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath
 import soma_workflow.constants as constants
-from soma_workflow.client import WorkflowController
+from soma_workflow.client import WorkflowController, EngineExecutionJob
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
@@ -548,14 +548,13 @@ class WorkflowEngineLoop(object):
     def read_job_output_dict(self, job):
         if job.has_outputs:
             output_dict = None
-            if job.output_params_file is not None:
-                #print('Ended job with outputs:', job.job_id, job.output_params_file)
+            if issubclass(job.job_class, EngineExecutionJob):
+                output_dict = job.job_class.engine_execution(job)
+            elif job.output_params_file is not None:
                 if os.path.exists(
                         job.plain_output_params_file()):
                     output_dict = json.load(open(
                       job.plain_output_params_file()))
-            elif issubclass(job.job_type, EngineExecutionJob):
-                output_dict = job.engine_execution()
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,
