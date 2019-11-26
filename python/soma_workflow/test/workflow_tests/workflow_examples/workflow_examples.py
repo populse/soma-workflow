@@ -19,6 +19,8 @@ from soma_workflow.client import Workflow
 from soma_workflow.client import BarrierJob
 from soma_workflow.client import MapJob
 from soma_workflow.client import ReduceJob
+from soma_workflow.client import LeaveOneOutJob
+from soma_workflow.client import CrossValidationFoldJob
 from soma_workflow.errors import ConfigurationError
 import tempfile
 
@@ -494,8 +496,7 @@ class WorkflowExamples(object):
                                     ('list_cv_test_fold', 1, 4))]},
         }
 
-        function_name = inspect.stack()[0][3] \
-            + '.dynamic_outputs_with_mapreduce'
+        function_name = inspect.stack()[0][3]
         workflow = Workflow(jobs,
                             dependencies,
                             root_group=[job1, job2_train, job2_test],
@@ -531,12 +532,69 @@ class WorkflowExamples(object):
             job3: {'inputs': [(reduce_job, 'outputs')]},
         }
 
-        function_name = inspect.stack()[0][3] \
-            + '.dynamic_outputs_with_mapreduce_jobs'
+        function_name = inspect.stack()[0][3]
         workflow = Workflow(jobs,
                             dependencies,
                             root_group=[job1, map_job, group_1, reduce_job,
                                         job3],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_loo_jobs(self):
+        # small leave-one-out
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        loo_job = LeaveOneOutJob(
+            referenced_input_files=job1.referenced_output_files,
+            param_dict={'index': 2})
+        job2_train = self.job_reduce_cat(14)
+        job2_train.name = 'train'
+        job2_test = self.job8_with_output()
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, loo_job, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            loo_job: {'inputs': [(job1, 'outputs')]},
+            job2_train: {'inputs': [(loo_job, 'train')]},
+            job2_test: {'input': [(loo_job, 'test')]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, loo_job, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_cv_jobs(self):
+        # small 4-fold cross-validation
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        cv_job = CrossValidationFoldJob(
+            referenced_input_files=job1.referenced_output_files,
+            param_dict={'nfolds': 4, 'fold': 1})
+        job2_train = self.job_reduce_cat(16)
+        job2_train.name = 'train'
+        job2_test = self.job_reduce_cat(17)
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, cv_job, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            cv_job: {'inputs': [(job1, 'outputs')]},
+            job2_train: {'inputs': [(cv_job, 'train')]},
+            job2_test: {'inputs': [(cv_job, 'test')]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, cv_job, job2_train, job2_test],
                             name=function_name, param_links=links)
         return workflow
 

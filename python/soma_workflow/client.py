@@ -50,10 +50,13 @@ from soma_workflow.errors import TransferError, SerializationError, SomaWorkflow
 
 # imports required by the users of soma-workflow API (do not remove):
 from soma_workflow.client_types import Job
-from soma_workflow.client_types import BarrierJob
-from soma_workflow.client_types import MapJob
-from soma_workflow.client_types import ReduceJob
 from soma_workflow.client_types import EngineExecutionJob
+from soma_workflow.custom_jobs import BarrierJob
+from soma_workflow.custom_jobs import MapJob
+from soma_workflow.custom_jobs import ReduceJob
+from soma_workflow.custom_jobs import ListCatJob
+from soma_workflow.custom_jobs import LeaveOneOutJob
+from soma_workflow.custom_jobs import CrossValidationFoldJob
 from soma_workflow.client_types import Workflow
 from soma_workflow.client_types import Group
 from soma_workflow.client_types import FileTransfer
