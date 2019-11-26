@@ -48,6 +48,15 @@ Job
 .. autoclass:: client.ReduceJob
     :members:
 
+.. autoclass:: client.ListCatJob
+    :members:
+
+.. autoclass:: client.LeaveOneOutJob
+    :members:
+
+.. autoclass:: client.CrossValidationJob
+    :members:
+
 
 FileTransfer
 ============
@@ -435,6 +444,10 @@ A few engine execution jobs types have been defined and are available for workfl
 * :class:`~client.BarrierJob`: just a dependency hub.
 * :class:`~client.MapJob`: *map* part of map/reduce pattern: transforms lists into series of single values parameters.
 * :class:`~client.ReduceJob`: *reduce* part of map/reduce pattern: transforms series of single values parameters into list parameters.
+* :class:`~client.ListCatJob`: conctenates several input lists.
+* :class:`~client.LeaveOneOutJob`: leve-one-out pattern.
+* :class:`~client.CrossValidationJob`: cross-validation pattern.
+
 
 Such jobs are alternatives to :ref:`params_link_functions` described above.
 
