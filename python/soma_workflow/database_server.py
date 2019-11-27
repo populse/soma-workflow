@@ -2961,7 +2961,6 @@ class WorkflowDatabaseServer(object):
         '''
         self.logger.debug("=> updated_job_parameters %d" % job_id)
         # get job workflow id
-        print('updated_job_parameters %d' % job_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
