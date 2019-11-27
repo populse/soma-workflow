@@ -267,7 +267,7 @@ class WorkflowExamplesLocal(WorkflowExamples):
 
     def job3_exception(self):
         job = Job([self.python, self.tr_exceptionJobScript],
-                  self.shared_list([self.lo_exceptionJobScript]),
+                  self.shared_list([self.tr_exceptionJobScript]),
                   self.shared_list([self.tr_file[3]]),
                   self.sh_stdin[3], False, 168, "job3 with exception")
         return job
