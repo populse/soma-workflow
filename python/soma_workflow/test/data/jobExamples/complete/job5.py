@@ -12,14 +12,14 @@ import json
 import subprocess
 import sys
 
-filePathIn = sys.argv[1]
-filePathOut1 = sys.argv[2]
+script = sys.argv[1]
+filePathIn = sys.argv[2]
+filePathOut1 = sys.argv[3]
 timeToSleep = None
-if len(sys.argv) > 3:
-    timeToSleep = sys.argv[3]
+if len(sys.argv) > 4:
+    timeToSleep = sys.argv[4]
 
 my_dir = os.path.dirname(sys.argv[0])
-script = os.path.join(my_dir, 'job1.py')
 
 filePathOut2 = os.path.join(os.path.dirname(filePathOut1), 'job5_filePathOut2')
 

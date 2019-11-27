@@ -22,7 +22,7 @@ filePathIn2 = parameters['filePathIn2']
 timeToSleep = parameters.get('timeToSleep')
 
 my_dir = os.path.dirname(sys.argv[0])
-script = os.path.join(my_dir, 'job2.py')
+script = parameters.get('script_job2', os.path.join(my_dir, 'job2.py'))
 
 filePathOut = os.path.join(os.path.dirname(filePathIn1), 'job6_filePathOut')
 

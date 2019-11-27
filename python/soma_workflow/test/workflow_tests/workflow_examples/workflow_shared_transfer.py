@@ -16,242 +16,25 @@ from soma_workflow.client import Job
 from soma_workflow.client import SharedResourcePath
 from soma_workflow.client import FileTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamples
+from soma_workflow.test.workflow_tests.workflow_examples.workflow_local \
+    import WorkflowExamplesLocal
 
 
-class WorkflowExamplesSharedTransfer(WorkflowExamples):
+class WorkflowExamplesSharedTransfer(WorkflowExamplesLocal):
 
-    def __init__(self):
+    def transfer_function(self, dirname, filename, namespace, uuid,
+                          disposal_timeout, is_input, clientpaths=None):
+        ''' use FileTransfer
         '''
-        The files are read from data located on the computing resource but
-        the output will be written in temporary files and transfered to the
-        computing resource.
+        return FileTransfer(
+            is_input,
+            os.path.join(dirname, filename),
+            disposal_timeout,
+            uuid, client_paths)
+
+    def shared_function(self, dirname, filename, namespace, uuid,
+                          disposal_timeout, is_input, client_paths=None):
+        ''' use SharedResourcePath
         '''
-        super(WorkflowExamplesSharedTransfer, self).__init__()
-
-# Initialize the dictionaries
-        self.sh_file = {}
-        self.sh_script = {}
-        self.sh_stdin = {}
-        self.tr_file = {}
-        self.tr_script = {}
-        self.lo_stdout = {}
-#        self.lo_stderr = {}
-        self.lo_out_model_file = {}
-
-        self.lo_in_dir = self.examples_dir
-        self.tr_in_dir = FileTransfer(True, self.examples_dir, 168, "in_dir")
-
-        # Complete
-        self.complete_path = os.path.join(self.examples_dir, "complete")
-        self.sh_file[0] = SharedResourcePath(
-            os.path.join("complete", "file0"),
-            "example", "job_dir", 168)
-        self.sh_exceptionJobScript = SharedResourcePath(
-            os.path.join("complete", "exception_job.py"),
-            "example", "job_dir", 168)
-        self.tr_sleep_script = FileTransfer(
-            True, os.path.join(self.complete_path, "sleep_job.py"),
-            168, "sleep_job")
-        self.tr_cmd_check_script = FileTransfer(
-            True, os.path.join(self.complete_path, "special_command.py"),
-            168, "cmd_check")
-
-        # Output models
-        self.models_path = os.path.join(self.complete_path, "output_models")
-        self.lo_stdout_exception_model = os.path.join(
-            self.models_path,
-            "stdout_exception_job")
-        self.lo_stdout_command_remote = os.path.join(
-            self.models_path,
-            "stdout_remote_special_command")
-
-        # Special transfer
-        self.special_path = os.path.join(self.examples_dir,
-                                         "special_transfers")
-        self.tr_img_file = FileTransfer(
-            True, os.path.join(self.special_path,
-                               "dir_contents.py"),
-            128, "img_file",
-            [os.path.join(self.special_path, "example.img"),
-             os.path.join(self.special_path, "example.hdr")])
-        self.tr_dir_contents_script = FileTransfer(
-            True, os.path.join(self.special_path,
-                               "dir_contents.py"),
-            168, "dir_contents")
-        self.tr_mff_script = FileTransfer(
-            True, os.path.join(self.special_path,
-                               "multiple_file_format.py"),
-            168, "mdd_script")
-        self.lo_mff_stdout = os.path.join(
-            self.special_path,
-            'stdout_multiple_file_format')
-
-        # Output dir
-        self.tr_out_dir = FileTransfer(
-            False, os.path.join(self.output_dir, "transfered_dir"),
-            168, "out_dir")
-        self.tr_img_out_file = FileTransfer(
-            False, os.path.join(self.output_dir, "example.img"),
-            168, "img_out",
-            [os.path.join(self.output_dir, "example.img"),
-             os.path.join(self.output_dir, "example.hdr")])
-
-        for i in range(1, 5):
-            self.lo_stdout[i] = os.path.join(self.models_path,
-                                             "stdout_job" + str(i))
-            self.sh_script[i] = SharedResourcePath(
-                os.path.join("complete", "job" + str(i) + ".py"),
-                "example", "job_dir", 168)
-            self.sh_stdin[i] = SharedResourcePath(
-                os.path.join("complete", "stdin" + str(i)),
-                "example", "job_dir", 168)
-            self.tr_script[i] = FileTransfer(
-                True, os.path.join(self.complete_path, "job" + str(i) + ".py"),
-                168, "job" + str(i) + "_py")
-
-        for i in [11, 12, 2, 3, 4]:
-            self.lo_out_model_file[i] = os.path.join(
-                self.models_path,
-                "file" + str(i))
-            self.sh_file[i] = SharedResourcePath("file" + str(i), "example",
-                                                 "output_dir", 168)
-            self.tr_file[i] = FileTransfer(
-                False, os.path.join(self.output_dir, "file" + str(i)),
-                168, "file" + str(i))
-
-    def job1(self, option=None):
-        time_to_wait = 2
-        job_name = "job1"
-        job1 = Job(["python",
-                    self.sh_script[1], self.sh_file[0],
-                    self.tr_file[11], self.tr_file[12],
-                    repr(time_to_wait)],
-                   [], [self.tr_file[11], self.tr_file[12]],
-                   self.sh_stdin[1], False, 168, job_name,
-                   native_specification=option)
-        return job1
-
-    def job2(self):
-        time_to_wait = 2
-        job_name = "job2"
-        job2 = Job(["python",
-                    '%(script)s', '%(file1)s',
-                    '%(file2)s', '%(file3)s',
-                    repr(time_to_wait)],
-                   [], [self.tr_file[2]],
-                   self.sh_stdin[2], False, 168, job_name,
-                   param_dict={'script': self.sh_script[2],
-                               'file1': self.sh_file[11],
-                               'file2': self.sh_file[0],
-                               'file3': self.sh_file[2]})
-        return job2
-
-    def job3(self):
-        time_to_wait = 2
-        job_name = "job3"
-        job3 = Job(["python",
-                    '%(script)s', '%(filePathIn)s',
-                    '%(filePathOut)s', '%(timeToSleep)s'],
-                   [], [self.tr_file[3]],
-                   self.sh_stdin[3], False, 168, job_name,
-                   param_dict={'script': self.sh_script[3],
-                               'filePathIn': self.sh_file[12],
-                               'filePathOut': self.sh_file[3],
-                               'timeToSleep': str(time_to_wait)})
-        return job3
-
-    def job4(self):
-        time_to_wait = 5
-        job_name = "job4"
-        job4 = Job(["python",
-                    '%(script)s', '%(file1)s',
-                    '%(file2)s', '%(file3)s',
-                    repr(time_to_wait)],
-                   [], [self.tr_file[4]],
-                   self.sh_stdin[4], False, 168, job_name,
-                   param_dict={'script': self.sh_script[4],
-                               'file1': self.sh_file[2],
-                               'file2': self.sh_file[3],
-                               'file3': self.sh_file[4]})
-        return job4
-
-    def job_test_command_1(self):
-        test_command = Job(["python",
-                            self.tr_cmd_check_script,
-                            "[13.5, 14.5, 15.0]", '[13.5, 14.5, 15.0]',
-                            "['un', 'deux', 'trois']",
-                            '["un", "deux", "trois"]'],
-                           [self.tr_cmd_check_script, self.tr_script[1],
-                            self.tr_script[2], self.tr_script[3]],
-                           [], None, False, 168, "test_command_1")
-        return test_command
-
-    def job_test_dir_contents(self):
-        job = Job(["python", self.tr_dir_contents_script,
-                  self.tr_in_dir, self.tr_out_dir],
-                  [self.tr_dir_contents_script, self.tr_in_dir],
-                  [self.tr_out_dir],
-                  None, False, 168, "dir_contents")
-        return job
-
-    def job_test_multi_file_format(self):
-        job = Job(["python", self.tr_mff_script,
-                   (self.tr_img_file, "example.img"),
-                   (self.tr_img_out_file, "example.img")],
-                  [self.tr_mff_script, self.tr_img_file],
-                  [self.tr_img_out_file],
-                  None, False, 168, "multi file format test")
-        return job
-
-    def job_sleep(self, period):
-        complete_path = os.path.join(self.examples_dir, "complete")
-        transfer = FileTransfer(
-            True, os.path.join(complete_path, "file0"),
-            168, "file0")
-        job = Job(["python", self.tr_sleep_script, repr(period)],
-                  [self.tr_sleep_script, transfer], [],
-                  None, False, 168, "sleep " + repr(period) + " s")
-        return job
-
-    def job1_exception(self):
-        job = Job(["python", self.sh_exceptionJobScript],
-                  [],
-                  [self.tr_file[11], self.tr_file[12]],
-                  self.sh_stdin[1], False, 168, "job1 with exception")
-        return job
-
-    def job3_exception(self):
-        job = Job(["python", self.sh_exceptionJobScript],
-                  [], [self.tr_file[3]],
-                  self.sh_stdin[3], False, 168, "job3 with exception")
-        return job
-
-    def job1_with_outputs1(self):
-        time_to_wait = 2
-        job_name = "job1_with_outputs"
-        job1 = Job([sys.executable,
-                    '%(script)s', '%(filePathIn)s', '%(filePathOut1)s',
-                    '%(timeToSleep)s'],
-                   None, None,
-                   self.sh_stdin[1], False, 168, job_name,
-                   param_dict={'script': self.sh_script[5],
-                               'filePathIn': self.sh_file[0],
-                               'filePathOut1': self.sh_file[11],
-                               'timeToSleep': str(time_to_wait)},
-                   has_outputs=True)
-        return job1
-
-    def job2_with_outputs1(self):
-        time_to_wait = 2
-        job_name = "job2_with_outputs"
-        job2 = Job([sys.executable, '%(script)s'],
-                   None, None,
-                   self.sh_stdin[2], False, 168, job_name,
-                   param_dict={'script': self.sh_script[6],
-                               'filePathIn1': self.sh_file[11],
-                               'filePathIn2': self.sh_file[0],
-                               'timeToSleep': str(time_to_wait)},
-                   has_outputs=True,
-                   use_input_params_file=True)
-        return job2
+        return SharedResourcePath(filename, namespace, uuid, disposal_timeout)
 

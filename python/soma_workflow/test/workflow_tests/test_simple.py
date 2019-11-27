@@ -45,6 +45,8 @@ from soma_workflow.test.workflow_tests import WorkflowTest
 class SimpleTest(WorkflowTest):
 
     allowed_config = [(LIGHT_MODE, WorkflowTest.LOCAL_PATH),
+                      (LIGHT_MODE, WorkflowTest.FILE_TRANSFER),
+                      #(LIGHT_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
                       (LOCAL_MODE, WorkflowTest.LOCAL_PATH),
                       (REMOTE_MODE, WorkflowTest.FILE_TRANSFER),
                       (REMOTE_MODE, WorkflowTest.SHARED_RESOURCE_PATH),
