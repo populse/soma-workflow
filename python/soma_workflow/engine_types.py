@@ -1385,20 +1385,29 @@ class EngineTransfer(FileTransfer):
             rel_eng_path = os.path.relpath(engine_path, eng_dir)
 
         if not out_dir:
+            trans = None
+            path = None
             for param, value in six.iteritems(param_dict):
                 if not isinstance(value, FileTransfer) \
                         or not os.path.isabs(value.client_path):
                     continue
-                common = os.path.commonprefix(engine_path,
-                                              value.engine_path)
-                if common:
-                    if engine_path[len(common)] != os.sep:
-                        common = os.path.dirname(common)
-                    if common and common != '/':
-                        eng_dir = common
-                        rel_eng_path = os.path.relpath(engine_path, common)
-                        out_dir = os.path.dirname(value.client_path)
+                if isinstance(value, FileTransfer):
+                    if value._initial_status == constants.FILES_DO_NOT_EXIST:
+                        # value is an output; use its client directory
+                        trans = value
                         break
+                    # value is not an output. Keep it if we don't find a better
+                    # match
+                    if trans is None:
+                        trans = value
+                elif path is None:
+                    # at last take any path dirname
+                    path = value
+            if trans is not None:
+                out_dir = os.path.dirname(trans.client_path)
+            elif path is not None:
+                out_dir = os.path.dirname(path)
+
         if out_dir:
             rdir = os.path.dirname(rel_eng_path)
             if rdir:
