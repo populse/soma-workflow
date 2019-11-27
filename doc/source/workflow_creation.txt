@@ -30,31 +30,31 @@ Group
 Job
 ===
 
-.. inheritance-diagram:: client.Job client.EngineExecutionJob client.BarrierJob client.MapJob client.ReduceJob
+.. inheritance-diagram:: client_types.Job client_types.EngineExecutionJob client_types.BarrierJob custom_jobs.MapJob custom_jobs.ReduceJob custom_jobs.ListCatJob custom_jobs.LeaveOneOutJob custom_jobs.CrossValidationFoldJob
     :parts: 1
 
-.. autoclass:: client.Job
+.. autoclass:: client_types.Job
     :members:
 
-.. autoclass:: client.EngineExecutionJob
+.. autoclass:: client_types.EngineExecutionJob
     :members:
 
-.. autoclass:: client.BarrierJob
+.. autoclass:: client_types.BarrierJob
     :members:
 
-.. autoclass:: client.MapJob
+.. autoclass:: custom_jobs.MapJob
     :members:
 
-.. autoclass:: client.ReduceJob
+.. autoclass:: custom_jobs.ReduceJob
     :members:
 
-.. autoclass:: client.ListCatJob
+.. autoclass:: custom_jobs.ListCatJob
     :members:
 
-.. autoclass:: client.LeaveOneOutJob
+.. autoclass:: custom_jobs.LeaveOneOutJob
     :members:
 
-.. autoclass:: client.CrossValidationJob
+.. autoclass:: custom_jobs.CrossValidationFoldJob
     :members:
 
 
@@ -433,20 +433,20 @@ param_link_functions module
 Engine execution jobs
 =====================
 
-Soma-Workflow 3.1 introduced :class:`~client.EngineExecutionJob`. This class is the base class for some special jobs which will actually not run as jobs, but as python functions executed inside the engine process. They should be lightweight in processing, since the engine server should not have a heavy CPU load: it runs on the computing resource submitting machine (a cluster frontal typically) which is not designed to perform actual processing.
+Soma-Workflow 3.1 introduced :class:`~client_types.EngineExecutionJob`. This class is the base class for some special jobs which will actually not run as jobs, but as python functions executed inside the engine process. They should be lightweight in processing, since the engine server should not have a heavy CPU load: it runs on the computing resource submitting machine (a cluster frontal typically) which is not designed to perform actual processing.
 
 Such jobs are meant to perform simple parameters transformations, such as transforming lists into series of single parameter values, or the opposite (map/reduce pattern), or string transformation (get a dirnname for instance) etc.
 
-:class:`~client.BarrierJob` used to be the only "special job" class in Soma-Workflow 2.10. They are now a subclass of :class:`~client.EngineExecutionJob` with the particularity of *not* doing any processing even on engine side.
+:class:`~client_types.BarrierJob` used to be the only "special job" class in Soma-Workflow 2.10. They are now a subclass of :class:`~client_types.EngineExecutionJob` with the particularity of *not* doing any processing even on engine side.
 
 A few engine execution jobs types have been defined and are available for workflow developers. Other subclasses can be written, but should be installed and available on engine side to work.
 
-* :class:`~client.BarrierJob`: just a dependency hub.
-* :class:`~client.MapJob`: *map* part of map/reduce pattern: transforms lists into series of single values parameters.
-* :class:`~client.ReduceJob`: *reduce* part of map/reduce pattern: transforms series of single values parameters into list parameters.
-* :class:`~client.ListCatJob`: conctenates several input lists.
-* :class:`~client.LeaveOneOutJob`: leve-one-out pattern.
-* :class:`~client.CrossValidationJob`: cross-validation pattern.
+* :class:`~client_types.BarrierJob`: just a dependency hub.
+* :class:`~custom_jobs.MapJob`: *map* part of map/reduce pattern: transforms lists into series of single values parameters.
+* :class:`~custom_jobs.ReduceJob`: *reduce* part of map/reduce pattern: transforms series of single values parameters into list parameters.
+* :class:`~custom_jobs.ListCatJob`: conctenates several input lists.
+* :class:`~custom_jobs.LeaveOneOutJob`: leve-one-out pattern.
+* :class:`~custom_jobs.CrossValidationFoldJob`: cross-validation pattern.
 
 
 Such jobs are alternatives to :ref:`params_link_functions` described above.
