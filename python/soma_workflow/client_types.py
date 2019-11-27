@@ -21,6 +21,7 @@ import warnings
 import sys
 import soma_workflow.constants as constants
 import re
+import importlib
 
 # python2/3 compatibility
 
@@ -121,16 +122,19 @@ class Job(object):
         specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
 
         *Example:* Specification of a job walltime and more:
-          * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
-          * using a SGE cluster: native_specification="-l h_rt=10:00:00"
+
+        * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
+        * using a SGE cluster: native_specification="-l h_rt=10:00:00"
 
     parallel_job_info: dict
         The parallel job information must be set if the Job is parallel (ie. made to
         run on several CPU).
         The parallel job information is a dict, with the following supported items:
-            * config_name: name of the configuration (native, MPI, OpenMP)
-            * nodes_number: number of computing nodes used by the Job,
-            * cpu_per_node: number of CPU or cores needed for each node
+
+        * config_name: name of the configuration (native, MPI, OpenMP)
+        * nodes_number: number of computing nodes used by the Job,
+        * cpu_per_node: number of CPU or cores needed for each node
+
         The configuration name is the type of parallel Job. Example: MPI or OpenMP.
 
         .. warning::
@@ -176,9 +180,8 @@ class Job(object):
         Path to the file which will be written for output parameters of the
         job.
 
-    ..
-      **disposal_timeout**: int
-      Only requiered outside of a workflow
+    disposal_timeout: int
+        Only requiered outside of a workflow
     '''
 
     # sequence of sequence of string or/and FileTransfer or/and
@@ -381,7 +384,7 @@ class Job(object):
         # however these operators are used in soma-workflow to test if
         # two objects are the same instance. These tests have to be replaced
         # first using the id python function.
-        if not isinstance(other, self.__class__):
+        if other.__class__ is not self.__class__:
             return False
 
         attributes = [
@@ -523,6 +526,9 @@ class Job(object):
             "has_outputs"
         ]
 
+        job_dict["class"] = '%s.%s' % (self.__class__.__module__,
+                                       self.__class__.__name__)
+
         for attr_name in attributes:
             job_dict[attr_name] = getattr(self, attr_name)
 
@@ -638,13 +644,51 @@ class Job(object):
         return state_dict
 
 
-class BarrierJob(Job):
+class EngineExecutionJob(Job):
+
+    '''
+    EngineExecutionJob: a lightweight job which will not run as a "real" job,
+    but as a python function, on the engine server side.
+
+    Such jobs are meant to perform fast, simple operations on their inputs in
+    order to produce modified inputs for other downstream jobs, such as string
+    substituitons, lists manipulations, etc. As they will run in the engine
+    process (generally the jobs submission machine) they should not perform
+    expensive processing (CPU or memory-consuming).
+
+    They are an alternative to link functions in Workflows.
+
+    The only method an EngineExecutionJob defines is :meth:`engine_execution`,
+    which will be able to use its parameters dict (as defined in its param_dict
+    as any other job), and will return an output parameters dict.
+
+    Warning: the :meth:`engine_execution` is actually a **class method**, not a
+    regular instance method. The reason for this is that it will be used with
+    an :class:`~soma_workflow.engine_types.EngineJob` instance, which inherits
+    :class:`Job`, but not the exact subclass. Thus in the method, ``self`` is
+    not a real instance of the class.
+
+    The default implementation does nothing. Subclasses define their own
+    :meth:`engine_execution` methods.
+
+    See :ref:`engine_execution_job` for more details.
+    '''
+    @classmethod
+    def engine_execution(cls, self):
+        pass
+
+
+class BarrierJob(EngineExecutionJob):
 
     '''
     Barrier job: it is a "fake" job which does nothing (and will not become a
     real job on the DRMS) but has dependencies.
     It may be used to make a dependencies hub, to avoid too many dependencies
     with fully connected jobs sets.
+
+    BarrierJob is implemented as an EngineExecutionJob, and just differs in its
+    name, as its :meth:`~EngineExecutionJob.engine_execution` method does
+    nothing.
 
     Ex:
       (Job1, Job2, Job3) should be all connected to (Job4, Job5, Job6)
@@ -654,21 +698,22 @@ class BarrierJob(Job):
         Job1              Job4
               \         /
         Job2 -- Barrier -- Job5
-              /         \
+              /         \.
         Job3              Job6
 
       needs 6 (2*N).
 
-      BarrierJob constructor accepts only a subset of Job constructor parameter:
+    BarrierJob constructor accepts only a subset of Job constructor parameter:
 
-      **referenced_input_files**
+    **referenced_input_files**
 
-      **referenced_output_files**
+    **referenced_output_files**
 
-      **name**
+    **name**
     '''
 
     def __init__(self,
+                 command=[],
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name=None):
@@ -742,6 +787,9 @@ class BarrierJob(Job):
         # stdin, stdout_file, stderr_file and working_directory
         # can contain FileTransfer et SharedResourcePath.
 
+        job_dict["class"] = '%s.%s' % (self.__class__.__module__,
+                                       self.__class__.__name__)
+
         if self.referenced_input_files:
             ser_ref_in_files = list_to_serializable(
                 self.referenced_input_files,
@@ -772,7 +820,6 @@ class Workflow(object):
 
     Attributes
     ----------
-
     name: string
         Name of the workflow which will be displayed in the GUI.
         Default: workflow_id once submitted
@@ -818,13 +865,24 @@ class Workflow(object):
 
     param_links: dict
         New in 3.1.
-        Job parameters links. Links are in the following shape:!
+        Job parameters links. Links are in the following shape::
 
-            dest_job: {dest_param: (source_job, param)}
+            dest_job: {dest_param: [(source_job, param, <function>), ...]}
 
         Links are used to get output values from jobs which have completed
         their run, and to set them into downstream jobs inputs. This system
         allows "dynamic outputs" in workflows.
+        The optional function item is the name of a function that will be
+        called to transform values from the source to the destination of the
+        link at runtime. It is basically a string "module.function", or a
+        tuple for passing some arguments (as in partial):
+        ("module.function", 12, "param"). The function is called with
+        additional arguments: parameter name, parameter value, destination
+        parameter name, destination parameter current value. The destination
+        parameter value is typically used to build / update a list in the
+        destination job from a series of values in source jobs.
+
+        See :ref:`params_link_functions` for details.
 
     '''
     # string
@@ -878,12 +936,35 @@ class Workflow(object):
         which input parameters should be replaced by output parameter values
         from an upstream job.
 
-        param_links is an (options) dict which specifies these links::
+        param_links is an (optional) dict which specifies these links::
 
-            {dest_job: {dest_param: (source_job, param)}}
+            {dest_job: {dest_param: [(source_job, param, <function>), ...]}}
 
         Such links de facto define new jobs dependencies, which are added to
         the dependencies manually specified.
+
+        The optional function item is the name of a function that will be
+        called to transform values from the source to the destination of the
+        link at runtime. It is basically a string "module.function", or a
+        tuple for passing some arguments (as in partial):
+        ("module.function", 12, "param"). The function is called with
+        additional arguments: parameter name, parameter value, destination
+        parameter name, destination parameter current value. The destination
+        parameter value is typically used to build / update a list in the
+        destination job from a series of values in source jobs.
+
+        Parameters
+        ----------
+        jobs
+        dependencies
+        root_group
+        disposal_timeout
+        user_storage
+        name
+        env
+        env_builder_code
+        param_links
+
         '''
         import logging
         logging.debug("Within Workflow constructor")
@@ -984,8 +1065,9 @@ class Workflow(object):
         else:
             current_deps = set(self.dependencies)
         for dest_job, links in six.iteritems(self.param_links):
-            for p, link in six.iteritems(links):
-                deps.add((link[0], dest_job))
+            for p, linkl in six.iteritems(links):
+                for link in linkl:
+                    deps.add((link[0], dest_job))
         if isinstance(self.dependencies, list):
             for dep in deps:
                 if dep not in current_deps:
@@ -1057,8 +1139,10 @@ class Workflow(object):
         for dest_job, links in six.iteritems(self.param_links):
             wdjob = job_ids[dest_job]
             wlinks = {}
-            for dest_par, link in six.iteritems(links):
-                wlinks[dest_par] = (job_ids[link[0]], link[1])
+            for dest_par, linkl in six.iteritems(links):
+                for link in linkl:
+                    wlinks.setdefault(dest_par, []).append(
+                        (job_ids[link[0]], ) + link[1:])
             new_links[wdjob] = wlinks
         wf_dict['param_links'] = new_links
 
@@ -1092,20 +1176,12 @@ class Workflow(object):
         temporary_ids = {}  # TemporaryPath -> id
         option_ids = {} # OptionPath -> id
         for job, job_id in six.iteritems(job_ids):
-            if isinstance(job, BarrierJob):
-                ser_barriers[str(job_id)] = job.to_dict(id_generator,
-                                                        transfer_ids,
-                                                        shared_res_path_ids,
-                                                        temporary_ids,
-                                                        option_ids)
-            else:
-                ser_jobs[str(job_id)] = job.to_dict(id_generator,
-                                                    transfer_ids,
-                                                    shared_res_path_ids,
-                                                    temporary_ids,
-                                                    option_ids)
+            ser_jobs[str(job_id)] = job.to_dict(id_generator,
+                                                transfer_ids,
+                                                shared_res_path_ids,
+                                                temporary_ids,
+                                                option_ids)
         wf_dict["serialized_jobs"] = ser_jobs
-        wf_dict["serialized_barriers"] = ser_barriers
 
         ser_transfers = {}
         for file_transfer, transfer_id in six.iteritems(transfer_ids):
@@ -1179,10 +1255,20 @@ class Workflow(object):
         serialized_jobs = d.get("serialized_jobs", {})
         job_from_ids = {}
         for job_id, job_d in six.iteritems(serialized_jobs):
-            job = Job.from_dict(job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
+            cls_name = job_d.get("class", "soma_workflow.client_types.Job")
+            cls_mod = cls_name.rsplit('.', 1)
+            if len(cls_mod) == 1:
+                jcls = __dict__[cls_name]
+            else:
+                module = importlib.import_module(cls_mod[0])
+                jcls = getattr(module, cls_mod[1])
+            job = jcls.from_dict(job_d, tr_from_ids, srp_from_ids,
+                                 tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
 
         # barrier jobs
+        # obsolete: barriers are now part of jobs definitions, but this helps
+        # reloading older workflows.
         serialized_jobs = d.get("serialized_barriers", {})
         for job_id, job_d in six.iteritems(serialized_jobs):
             job = BarrierJob.from_dict(
@@ -1232,9 +1318,12 @@ class Workflow(object):
         for dest_job, links in six.iteritems(id_links):
             ddest_job = job_from_ids[int(dest_job)]
             dlinks = {}
-            for lname, link in six.iteritems(links):
-                dsrc_job = job_from_ids[link[0]]
-                dlinks[lname] = (dsrc_job, link[1])
+            for lname, linkl in six.iteritems(links):
+                dlinkl = []
+                for link in linkl:
+                    dsrc_job = job_from_ids[link[0]]
+                    dlinkl.append((dsrc_job, ) + tuple(link[1:]))
+                dlinks[lname] = dlinkl
             param_links[ddest_job] = dlinks
 
         # user storage, TODO: handle objects in it

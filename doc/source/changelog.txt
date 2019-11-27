@@ -2,12 +2,13 @@
 Changelog
 =========
 
-Version 3.1 (2019/06/05)
+Version 3.1 (2019/11/15)
 ========================
 
 * workflows can get an "env" variable, like jobs do, and will apply their environment to all jobs
 * workflows can get an "env_builder_code" variable, which contains python source code which will be executed to build additional environment variables on the engine side when the workflow is submitted. This allows to handle client/server configurations, and partially some dynamic workflow tuning.
 * jobs env has been fixed in the local scheduler: it used to completely replace the env variables, now it just adds the new ones to the standard user variables.
+* Dynamic parameters in workflows: jobs can now have "named parameters" and outputs produced by a job (number, string, filename) are passed to downstream jobs. While passing values from a job output to another job input, custom link functions can be called to transform values, enabling applications such as map/reduce, cross-validation or leave-one-out in a semi-dynamic way.
 * some bug fixes especially in the PBSpro scheduler using python3
 
 

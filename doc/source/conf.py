@@ -32,7 +32,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage',
               'sphinx.ext.ifconfig',
-              'sphinx.ext.viewcode']
+              'sphinx.ext.viewcode',
+              'sphinx.ext.inheritance_diagram',
+              ]
 try:
     # try napoleon which replaces numpydoc (and googledoc),
     # comes with sphinx 1.2
@@ -270,6 +272,7 @@ epub_copyright = u'2019, '
 # Allow duplicate toc entries.
 #epub_tocdup = True
 
+autoclass_content = "both"
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}

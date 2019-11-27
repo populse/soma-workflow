@@ -30,10 +30,31 @@ Group
 Job
 ===
 
+.. inheritance-diagram:: client.Job client.EngineExecutionJob client.BarrierJob client.MapJob client.ReduceJob
+    :parts: 1
+
 .. autoclass:: client.Job
     :members:
 
+.. autoclass:: client.EngineExecutionJob
+    :members:
+
 .. autoclass:: client.BarrierJob
+    :members:
+
+.. autoclass:: client.MapJob
+    :members:
+
+.. autoclass:: client.ReduceJob
+    :members:
+
+.. autoclass:: client.ListCatJob
+    :members:
+
+.. autoclass:: client.LeaveOneOutJob
+    :members:
+
+.. autoclass:: client.CrossValidationJob
     :members:
 
 
@@ -77,6 +98,10 @@ Such a job will be "marked" as producing outputs (Job variable ``has_outputs``, 
 
 Then when running later jobs, their input values will be changed accordingly. To allow this, we need a few things:
 
+
+Using dynamic output parameters
+-------------------------------
+
 * such jobs should declare a dictionary of input parameters (Job variable ``param_dict``)
 
 * the workflow should define some "parameters links" between jobs in order to connect output parameters values from one job to the input parameters values of downstream jobs: Workflow variable ``param_linnks``.
@@ -99,7 +124,7 @@ To put things togethr in an example::
         name='job2:cat',
         param_dict={'in1': 'undefined'})
     workflow = Workflow(jobs=[job1, job2], name='test_workflow',
-                        param_links={job2: {'in1': (job1, 'out1')}})
+                        param_links={job2: {'in1': [(job1, 'out1')]}})
 
     # running it is the classical way
     # (or using soma_workflow_gui)
@@ -114,12 +139,12 @@ Here, ``job1`` will run a program, ``my_program`` which will do its job, and wri
 
     param_links = {
         dest_job1: {
-            'dest_param1': (src_job1, 'src_output_param1'),
-            'dest_param2': (src_job2, 'src_output_param2'),
+            'dest_param1': [(src_job1, 'src_output_param1')],
+            'dest_param2': [(src_job2, 'src_output_param2')],
         },
         dest_job2: {
-            'dest_param3': (src_job3, 'src_output_param3'),
-            'dest_param4': (src_job4, 'src_output_param4'),
+            'dest_param3': [(src_job3, 'src_output_param3')],
+            'dest_param4': [(src_job4, 'src_output_param4')],
         },
     }
 
@@ -157,7 +182,7 @@ As you can see, in a "classical" workflow, ``job2`` would not have known which f
 
 
 Dynamic outputs and file transfers
-==================================
+----------------------------------
 
 When a file name is an output of a job (the job decides where to write its output file), and this output file should be transfered from the computing resource to the client machine, then a FileTransfer object should be created (as usual), but with some little additional things to setup:
 
@@ -187,13 +212,13 @@ Ex::
         param_dict={'in1': toutp},
         referenced_input_files=ref_outp)
     workflow = swc.Workflow(jobs=[job1, job2], name='test_out_wf',
-                            param_links={job2: {'in1': (job1, 'out1')}})
+                            param_links={job2: {'in1': [(job1, 'out1')]}})
 
 
 .. _input_params_file:
 
 Job input parameters as file
-============================
+----------------------------
 
 When job parameters are specified through a dictionary of named parameters, it is also possible to pass the parameters set as a JSON file, rather than on commandline arguments. This may prove useful when the parameters list is long.
 
@@ -218,7 +243,7 @@ Ex::
         param_dict={'in1': 'undefined'},
         use_input_params_file=True)  # tell SWF to write the params file
     workflow2 = Workflow(jobs=[job1, job3], name='test_workflow',
-                         param_links={job3: {'in1': (job1, 'out1')}})
+                         param_links={job3: {'in1': [(job1, 'out1')]}})
 
     # running it is the classical way
     # (or using soma_workflow_gui)
@@ -242,4 +267,187 @@ Here ``job3`` must be modified to make it able to read the parameters file. In t
     in_file = params['parameters']['in1']
     # now the "real" job code just prints the file:
     print(open(in_file).read())
+
+
+.. _params_link_functions:
+
+Parameters link functions
+-------------------------
+
+To implement some classical schemas such as map/reduce or cross-validation patterns, we need to transform parameters values which are lists into a series of single values, each passed to a job, for instance. To do this, Soma-Workflow allows to specify link functions in ``param_links``. Such functions are called when building a job inputs before it runs (on engine side). Such functions are passed as an additional item in the link tuple, and may be strings (function definition, including module if appropriate), or a tuple containing a string (function definition) and arguments passed to it:
+
+Ex::
+
+    param_links = {
+        dest_job1: {
+            'dest_param1': [(src_job1, 'src_output_param1',
+                            'link_module.link_function')],
+            'dest_param2': [(src_job2, 'src_output_param2',
+                            ('link_module.link_function', 3))],
+        },
+    }
+
+Arguments, if used, are passed in the function as first parameters, and may be used to specify a counter or identifier for the linked job. Functions are then called using 4 additional arguments: source parameter name, source parameter value, destination parameter name, destination parameter current value. The function should return the new destination parameter value. The destination parameter current value is useful in some cases, for instance to build a list from several source links (reduce pattern).
+
+A few functions are directly available in Soma-Workflow, in the module :mod:`param_link_functions`, to help implementing classical algorithmic patterns:
+:func:`~param_link_functions.list_to_sequence`, :func:`~param_link_functions.sequence_to_list`, :func:`~param_link_functions.list_all_but_one`, :func:`~param_link_functions.list_cv_train_fold`, :func:`~param_link_functions.list_cv_test_fold`.
+
+Custom functions may be used, as long as their module is specified, with the additional constraint that the custom functions modules should be installed on engine side on the computing resource.
+
+Note that this parameters links transformations are the reason why links are lists and not single values: intuitively one may think that a job parameter value is linked from a single job output value, but when dealing with lists, the situatioon may differ: a list can be built from several outputs.
+
+.. note:: aternative: Engine execution jobs
+
+    An alternative to parameters link functions ias also available in Soma-Workflow 3.1 and later: :ref:`engine_execution_job`. They are more convenient to use in some situations, and less in others, so a workflow developer may choose the implementation he prefers.
+
+A cross-validation pattern example::
+
+    # let's say job1 inputs a list and outputs another list, 'outputs'
+    job1 = Job(
+        command=['my_program', '%(inputs)s'], name='prepare_inputs',
+        param_dict={'inputs': ['file1', 'file2', 'file3', 'file4', 'file5']},
+        has_outputs=True)
+    # train_jobs are identical train jobs training folds (we use 3 folds)
+    # they output a single file, 'output'
+    # test_jobs are identical test jobs testing the test part of each fold
+    # they also output a single file, 'output'
+    nfolds = 3
+    train_jobs = []
+    test_jobs = []
+    for fold in range(nfolds):
+        job_train = Job(
+            command=['train_model', '%(inputs)s'], name='train_fold%d' % fold,
+            param_dict={'inputs', []}, has_outputs=True)
+        train_jobs.append(job_train)
+        job_test = Job(
+            command=['test_model', '%(inputs)s'], name='test_fold%d' % fold,
+            param_dict={'inputs', []}, has_outputs=True)
+        test_jobs.append(job_test)
+    # building the workflow
+    jobs = [job1] + train_jobs + test_jobs
+
+    dependencies = []
+    links = {}
+    for fold in range(nfolds):
+        links[train_jobs[fold]] = {
+            'inputs': [(job1, 'outputs',
+                       ('list_cv_train_fold', fold, nfolds))]}
+        links[test_jobs[fold]] = {
+            'inputs': [(job1, 'outputs',
+                       ('list_cv_test_fold', fold, nfolds))]}
+
+    workflow = Workflow(jobs,
+                        dependencies,
+                        name='train CV', param_links=links)
+
+A leave-one-out pattern example::
+
+    # let's say job1 inputs a list and outputs another list, 'outputs'
+    job1 = Job(
+        command=['my_program', '%(inputs)s'], name='prepare_inputs',
+        param_dict={'inputs': ['file1', 'file2', 'file3', 'file4', 'file5']},
+        has_outputs=True)
+    # train_jobs are identical train jobs training folds
+    # they output a single file, 'output'
+    # test_jobs are identical test jobs testing the single leftover file of
+    # each fold. They also output a single file, 'output'
+    nfolds = len(job1.param_dict['inputs'])
+    train_jobs = []
+    test_jobs = []
+    for fold in range(nfolds):
+        job_train = Job(
+            command=['train_model', '%(inputs)s'], name='train_fold%d' % fold,
+            param_dict={'inputs', []}, has_outputs=True)
+        train_jobs.append(job_train)
+        job_test = Job(
+            command=['test_model', '%(input)s'], name='test_fold%d' % fold,
+            param_dict={'input', 'undefined'}, has_outputs=True)
+        test_jobs.append(job_test)
+    # building the workflow
+    jobs = [job1] + train_jobs + test_jobs
+
+    dependencies = []
+    links = {}
+    for fold in range(nfolds):
+        links[train_jobs[fold]] = {
+            'inputs': [(job1, 'outputs',
+                       ('list_all_but_one', fold))]}
+        links[test_jobs[fold]] = {
+            'inputs': [(job1, 'outputs',
+                       ('list_to_sequence', fold))]}
+
+    workflow = Workflow(jobs,
+                        dependencies,
+                        name='train LOO', param_links=links)
+
+A map / reduce example::
+
+    # let's say job1 inputs a list and outputs another list, 'outputs'
+    job1 = Job(
+        command=['my_program', '%(inputs)s'], name='prepare_inputs',
+        param_dict={'inputs': ['file1', 'file2', 'file3', 'file4', 'file5']},
+        has_outputs=True)
+    # process_jobs are identical train jobs processing one of the input files
+    # they output a single file, 'output'
+    nfolds = len(job1.param_dict['inputs'])
+    process_jobs = []
+    for fold in range(nfolds):
+        job_proc = Job(
+            command=['process_data', '%(input)s'], name='process_%d' % fold,
+            param_dict={'input', 'undefined'}, has_outputs=True)
+        process_jobs.append(job_proc)
+    # a reduce node takes outputs of all processing nodes and, for instance,
+    # concatenates them
+    reduce_job = Job(
+        command=['cat_program', '%(inputs)s'], name='cat_results',
+        param_dict={'inputs': [], 'outputs': 'file_output'})
+
+    # building the workflow
+    group_1 = Group(name='processing', elements=process_jobs)
+    jobs = [job1] + process_jobs + [reduce_job]
+    dependencies = []
+    links = {}
+    links[reduce_job] = {'inputs': []}
+    for fold in range(nfolds):
+        links[process_jobs[fold]] = {
+            'inputs': [(job1, 'outputs',
+                       ('list_to_sequence', fold))]}
+        links[reduce_job]['inputs'].append((process_job[fold], 'output',
+                                            ('sequence_to_list', fold)))
+
+    workflow = Workflow(jobs,
+                        root_group=[job1, group_1, reduce_job],
+                        dependencies,
+                        name='map-reduce', param_links=links)
+
+
+param_link_functions module
++++++++++++++++++++++++++++
+
+.. automodule:: param_link_functions
+    :members:
+
+
+.. _engine_execution_job:
+
+Engine execution jobs
+=====================
+
+Soma-Workflow 3.1 introduced :class:`~client.EngineExecutionJob`. This class is the base class for some special jobs which will actually not run as jobs, but as python functions executed inside the engine process. They should be lightweight in processing, since the engine server should not have a heavy CPU load: it runs on the computing resource submitting machine (a cluster frontal typically) which is not designed to perform actual processing.
+
+Such jobs are meant to perform simple parameters transformations, such as transforming lists into series of single parameter values, or the opposite (map/reduce pattern), or string transformation (get a dirnname for instance) etc.
+
+:class:`~client.BarrierJob` used to be the only "special job" class in Soma-Workflow 2.10. They are now a subclass of :class:`~client.EngineExecutionJob` with the particularity of *not* doing any processing even on engine side.
+
+A few engine execution jobs types have been defined and are available for workflow developers. Other subclasses can be written, but should be installed and available on engine side to work.
+
+* :class:`~client.BarrierJob`: just a dependency hub.
+* :class:`~client.MapJob`: *map* part of map/reduce pattern: transforms lists into series of single values parameters.
+* :class:`~client.ReduceJob`: *reduce* part of map/reduce pattern: transforms series of single values parameters into list parameters.
+* :class:`~client.ListCatJob`: conctenates several input lists.
+* :class:`~client.LeaveOneOutJob`: leve-one-out pattern.
+* :class:`~client.CrossValidationJob`: cross-validation pattern.
+
+
+Such jobs are alternatives to :ref:`params_link_functions` described above.
 

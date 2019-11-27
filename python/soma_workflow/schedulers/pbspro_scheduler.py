@@ -293,7 +293,7 @@ class PBSProScheduler(Scheduler):
 
         if self.is_sleeping:
             self.wake()
-        if job.is_barrier:
+        if job.is_engine_execution:
             # barrier jobs don't actually go through job submission
             self.logger.debug('job_submission, PBS - barrier job.')
             job.status = constants.DONE

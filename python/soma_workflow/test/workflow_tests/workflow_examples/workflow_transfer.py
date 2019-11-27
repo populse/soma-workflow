@@ -149,7 +149,7 @@ class WorkflowExamplesTransfer(WorkflowExamples):
         return job3
 
     def job4(self):
-        time_to_wait = 10
+        time_to_wait = 5
         job_name = "job4"
         job4 = Job(["python",
                     '%(script)s', '%(file1)s',

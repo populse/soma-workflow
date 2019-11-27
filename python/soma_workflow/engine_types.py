@@ -32,8 +32,9 @@ import json
 
 from soma_workflow.errors import JobError, WorkflowError
 import soma_workflow.constants as constants
-from soma_workflow.client import Job, BarrierJob, SpecialPath, FileTransfer, \
-    Workflow, SharedResourcePath, TemporaryPath, OptionPath, Group
+from soma_workflow.client import Job, EngineExecutionJob, SpecialPath, \
+    FileTransfer, Workflow, SharedResourcePath, TemporaryPath, OptionPath, \
+    Group
 
 # python 2/3 compatibility
 import sys
@@ -122,6 +123,9 @@ class EngineJob(Job):
     # commandlines
     container_command = None
 
+    # job class
+    job_class = None
+
     def __init__(self,
                  client_job,
                  queue,
@@ -171,10 +175,10 @@ class EngineJob(Job):
         else:
             self.transfer_mapping = transfer_mapping
         self.path_mapping = {}
-        if isinstance(client_job, BarrierJob):
-            self.is_barrier = True
+        if isinstance(client_job, EngineExecutionJob):
+            self.is_engine_execution = True
         else:
-            self.is_barrier = False
+            self.is_engine_execution = False
 
         if wf_env:
             # use workflow env, then update with self.env
@@ -183,6 +187,8 @@ class EngineJob(Job):
                 env.update(self.env)
             self.env = env
 
+        self.job_class = type(client_job)
+
         self._map()
 
     def _map(self):
@@ -190,7 +196,7 @@ class EngineJob(Job):
         Fill the transfer_mapping and srp_mapping attributes.
         + check the types of the Job arguments.
         '''
-        if not self.command and not self.is_barrier:
+        if not self.command and not self.is_engine_execution:
             raise JobError("The command attribute is the only required "
                            "attribute of Job.")
 
@@ -456,6 +462,11 @@ class EngineJob(Job):
             self.exit_status == constants.FINISHED_REGULARLY and \
             self.terminating_signal == None
         return success
+
+    def engine_execution(self):
+        func = getattr(self.job_class, 'engine_execution', None)
+        if func:
+            return func(self.job_class, self)
 
 
 class EngineWorkflow(Workflow):

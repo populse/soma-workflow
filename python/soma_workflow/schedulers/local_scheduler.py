@@ -193,7 +193,7 @@ class LocalScheduler(Scheduler):
             job_id = self._queue.pop(0)
             job = self._jobs[job_id]
             # print("new job " + repr(job.job_id))
-            if job.is_barrier:
+            if job.is_engine_execution:
                 # barrier jobs are not actually run using Popen:
                 # they succeed immediately.
                 self._exit_info[job.drmaa_id] = (constants.FINISHED_REGULARLY,

@@ -3111,17 +3111,22 @@ class JobInfoWidget(QtGui.QTabWidget):
                     if workflow:
                         links = workflow.param_links.get(job_item.data)
                         if links:
-                            link = links.get(param_name)
-                            if link:
-                                item = QtGui.QTableWidgetItem(
-                                    '%s.%s' % (link[0].name, link[1]))
-                                if engine_wf:
-                                    item.job_id \
-                                        = job_mapping.get(
-                                            link[0], link[0]).job_id
-                                else:
-                                    item.job_id \
-                                        = job_mapping.get(link[0])
+                            linkl = links.get(param_name, [])
+                            if linkl:
+                                linkstr = []
+                                job_ids = []
+                                for link in linkl:
+                                    linkstr.append(
+                                        '%s.%s' % (link[0].name, link[1]))
+                                    if engine_wf:
+                                        job_ids.append(job_mapping.get(
+                                            link[0], link[0]).job_id)
+                                    else:
+                                        job_ids.append(job_mapping.get(
+                                            link[0]))
+                                linkstr = ', '.join(linkstr)
+                                item = QtGui.QTableWidgetItem(linkstr)
+                                item.job_ids = job_ids
                                 table.setItem(i, 2, item)
                 table.cellDoubleClicked.connect(
                     self.input_param_double_clicked)
@@ -3249,9 +3254,9 @@ class JobInfoWidget(QtGui.QTabWidget):
     def input_param_double_clicked(self, row, col):
         if col == 2:
             item = self.ui.input_params_contents.item(row, col)
-            job_id = getattr(item, 'job_id', None)
-            if job_id is not None:
-                self.source_job_selected.emit(job_id)
+            job_ids = getattr(item, 'job_ids', None)
+            if job_ids:
+                self.source_job_selected.emit(job_ids[0])
 
 
 class TransferInfoWidget(QtGui.QTabWidget):

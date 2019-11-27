@@ -30,16 +30,18 @@ import six
 import weakref
 import sys
 import json
+import importlib
 
 # import cProfile
 # import traceback
 
 from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath
 import soma_workflow.constants as constants
-from soma_workflow.client import WorkflowController
+from soma_workflow.client import WorkflowController, EngineExecutionJob
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
+from soma_workflow.param_link_functions import *
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -63,6 +65,27 @@ def _out_to_date(last_status_update):
     delta = datetime.now() - last_status_update
     out_to_date = delta > timedelta(seconds=refreshment_timeout)
     return out_to_date
+
+
+def transformed_param_value(func, src_param, value, param, dval):
+    if func is None:
+        return value
+    if isinstance(func, tuple):
+        f = func[0]
+        params = func[1:]
+    else:
+        f = func
+        params = []
+    mod_func = f.rsplit('.', 1)
+    if len(mod_func) == 1:
+        module = sys.modules[__name__]
+        func_name = mod_func[0]
+    else:
+        mod_name, func_name = mod_func
+        module = importlib.import_modulle(mod_name)
+    func = getattr(module, func_name)
+    return func(*params, src_param=src_param, value=value,
+                dst_param=param, dst_value=dval)
 
 
 #-----------------------------------------------------------------------------
@@ -461,9 +484,9 @@ class WorkflowEngineLoop(object):
                         drms_error_jobs[job.job_id] = job
                     else:
                         drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-                        if job.is_barrier:
-                            # barrier jobs immediately get the status DONE
-                            # to avoid losing one time cycle
+                        if job.is_engine_execution:
+                            # Engine execution jobs immediately get the status
+                            # DONE to avoid losing one time cycle
                             job.status = constants.DONE
                         else:
                             job.status = constants.UNDETERMINED
@@ -523,28 +546,32 @@ class WorkflowEngineLoop(object):
             time.sleep(time_interval)
 
     def read_job_output_dict(self, job):
-        if job.has_outputs and job.output_params_file \
-                is not None:
-            #print('Ended job with outputs:', job.job_id, job.output_params_file)
-            if os.path.exists(
-                    job.plain_output_params_file()):
-                output_dict = json.load(open(
-                  job.plain_output_params_file()))
-                self._database_server.set_job_output_params(job.job_id,
-                                                            output_dict)
-                for param, value in six.iteritems(output_dict):
-                    jvalue = job.param_dict.get(param)
-                    if jvalue and isinstance(jvalue, FileTransfer):
-                        engine_transfer = job.transfer_mapping[jvalue]
-                        engine_transfer.set_engine_path(
-                            value,
-                            *engine_transfer.map_client_path_to_engine(
-                                value, job.param_dict))
-                        # update database with modified values
-                        self._database_server.set_transfer_paths(
-                            engine_transfer.transfer_id, value,
-                            engine_transfer.client_path,
-                            engine_transfer.client_paths)
+        if job.has_outputs:
+            output_dict = None
+            if issubclass(job.job_class, EngineExecutionJob):
+                output_dict = job.job_class.engine_execution(job)
+            elif job.output_params_file is not None:
+                if os.path.exists(
+                        job.plain_output_params_file()):
+                    output_dict = json.load(open(
+                      job.plain_output_params_file()))
+            if not output_dict:
+                return
+            self._database_server.set_job_output_params(job.job_id,
+                                                        output_dict)
+            for param, value in six.iteritems(output_dict):
+                jvalue = job.param_dict.get(param)
+                if jvalue and isinstance(jvalue, FileTransfer):
+                    engine_transfer = job.transfer_mapping[jvalue]
+                    engine_transfer.set_engine_path(
+                        value,
+                        *engine_transfer.map_client_path_to_engine(
+                            value, job.param_dict))
+                    # update database with modified values
+                    self._database_server.set_transfer_paths(
+                        engine_transfer.transfer_id, value,
+                        engine_transfer.client_path,
+                        engine_transfer.client_paths)
 
 
     def update_job_parameters(self, job):
@@ -555,23 +582,30 @@ class WorkflowEngineLoop(object):
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
-            for param, value in six.iteritems(u_param_dict):
+            for param, value_tl in six.iteritems(u_param_dict):
                 dval = job.param_dict.get(param)
-                if isinstance(dval, SpecialPath):
-                    engine_transfer = job.transfer_mapping[dval]
-                    former_path = engine_transfer.engine_path
-                    if former_path != value:
-                        engine_transfer.set_engine_path(
-                            value,
-                            *engine_transfer.map_client_path_to_engine(
-                                value, job.param_dict))
-                        # update database with modified values
-                        self._database_server.set_transfer_paths(
-                            engine_transfer.transfer_id, value,
-                            engine_transfer.client_path,
-                            engine_transfer.client_paths)
-                else:
-                    job.param_dict[param] = value
+                if isinstance(dval, list):
+                    # reset list parameters
+                    dval = []
+                for value_t in value_tl:
+                    func, src_param, value = value_t
+                    value = transformed_param_value(func, src_param, value,
+                                                    param, dval)
+                    if isinstance(dval, SpecialPath):
+                        engine_transfer = job.transfer_mapping[dval]
+                        former_path = engine_transfer.engine_path
+                        if former_path != value:
+                            engine_transfer.set_engine_path(
+                                value,
+                                *engine_transfer.map_client_path_to_engine(
+                                    value, job.param_dict))
+                            # update database with modified values
+                            self._database_server.set_transfer_paths(
+                                engine_transfer.transfer_id, value,
+                                engine_transfer.client_path,
+                                engine_transfer.client_paths)
+                    else:
+                        job.param_dict[param] = value
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
         if job.use_input_params_file and job.input_params_file:
@@ -1237,7 +1271,23 @@ class WorkflowEngine(RemoteFileController):
         return self._database_server.get_job_command(job_id)
 
     def updated_job_parameters(self, job_id):
-        return self._database_server.updated_job_parameters(job_id)
+        job = self._database_server.get_engine_job(job_id, self._user_id)[0]
+        u_param_dict = self._database_server.updated_job_parameters(job.job_id)
+        param_dict = {}
+        if u_param_dict:
+            param_dict = {}
+            for param, value_tl in six.iteritems(u_param_dict):
+                dval = job.param_dict.get(param)
+                if isinstance(dval, list):
+                    # reset lists
+                    dval = []
+                for value_t in value_tl:
+                    func, src_param, value = value_t
+                    value = transformed_param_value(func, src_param, value,
+                                                    param, dval)
+                    param_dict[param] = value
+
+        return param_dict
 
     def get_job_output_params(self, job_id):
         return self._database_server.get_job_output_params(job_id)

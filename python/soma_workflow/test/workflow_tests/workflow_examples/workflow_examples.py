@@ -17,6 +17,10 @@ from abc import abstractmethod
 from soma_workflow.client import Group
 from soma_workflow.client import Workflow
 from soma_workflow.client import BarrierJob
+from soma_workflow.client import MapJob
+from soma_workflow.client import ReduceJob
+from soma_workflow.client import LeaveOneOutJob
+from soma_workflow.client import CrossValidationFoldJob
 from soma_workflow.errors import ConfigurationError
 import tempfile
 
@@ -33,12 +37,8 @@ class WorkflowExamples(object):
         module_path = os.path.dirname(module_file)
         self.examples_dir = os.path.join(module_path,
                                          "test", "data", "jobExamples")
-        tmp = tempfile.mkstemp('', prefix='swf_test_')
-        os.close(tmp[0])
-        os.unlink(tmp[1])
-        self.output_dir = tmp[1]
-        if not os.path.isdir(self.output_dir):
-            os.mkdir(self.output_dir)
+        tmp = tempfile.mkdtemp('', prefix='swf_test_')
+        self.output_dir = tmp
         if (not os.path.isdir(self.examples_dir) or
                 not os.path.isdir(self.output_dir)):
             raise ConfigurationError("%s or %s does not exist." % (
@@ -408,9 +408,9 @@ class WorkflowExamples(object):
         group_2 = Group(name='group_2', elements=[job1, group_1])
 
         links = {
-            job2: {'filePathIn1': (job1, 'filePathOut1')},
-            job3: {'filePathIn': (job1, 'filePathOut2')},
-            job4: {'file1': (job2, 'filePathOut')},
+            job2: {'filePathIn1': [(job1, 'filePathOut1')]},
+            job3: {'filePathIn': [(job1, 'filePathOut2')]},
+            job4: {'file1': [(job2, 'filePathOut')]},
         }
 
         function_name = inspect.stack()[0][3]
@@ -420,6 +420,183 @@ class WorkflowExamples(object):
                             name=function_name, param_links=links)
         return workflow
 
+    def example_dynamic_outputs_with_mapreduce(self):
+        # small map/reduce
+        # jobs
+        job1 = self.job_list_with_outputs()
+        job2_0 = self.job8_with_output()
+        job2_0.name = 'job2_0'
+        job2_1 = self.job8_with_output()
+        job2_1.name = 'job2_1'
+        job3 = self.job_reduce_cat()
+        # building the workflow
+        jobs = [job1, job2_0, job2_1, job3]
+
+        dependencies = []
+
+        group_1 = Group(name='group_1', elements=[job2_0, job2_1])
+
+        links = {
+            job2_0: {'input': [(job1, 'outputs', ('list_to_sequence', 0))]},
+            job2_1: {'input': [(job1, 'outputs', ('list_to_sequence', 1))]},
+            job3: {'inputs': [(job2_0, 'output', ('sequence_to_list', 0)),
+                              (job2_1, 'output', ('sequence_to_list', 1))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, group_1, job3],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_loo(self):
+        # small leave-one-out
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        job2_train = self.job_reduce_cat(14)
+        job2_train.name = 'train'
+        job2_test = self.job8_with_output()
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            job2_train: {'inputs': [(job1, 'outputs',
+                                     ('list_all_but_one', 2))]},
+            job2_test: {'input': [(job1, 'outputs', ('list_to_sequence', 2))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_cv(self):
+        # small 4-fold cross-validation
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        job2_train = self.job_reduce_cat(16)
+        job2_train.name = 'train'
+        job2_test = self.job_reduce_cat(17)
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            job2_train: {'inputs': [(job1, 'outputs',
+                                     ('list_cv_train_fold', 1, 4))]},
+            job2_test: {'inputs': [(job1, 'outputs',
+                                    ('list_cv_test_fold', 1, 4))]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_mapreduce_jobs(self):
+        # small map/reduce using MapJob / ReduceJob
+        # jobs
+        job1 = self.job_list_with_outputs()
+        job2_0 = self.job8_with_output()
+        job2_0.name = 'job2_0'
+        job2_1 = self.job8_with_output()
+        job2_1.name = 'job2_1'
+        job3 = self.job_reduce_cat()
+        map_job = MapJob(referenced_input_files=job1.referenced_output_files,
+                         name='map')
+        reduce_job = ReduceJob()
+        # building the workflow
+        jobs = [job1, job2_0, job2_1, job3, map_job, reduce_job]
+
+        dependencies = []
+
+        group_1 = Group(name='group_1', elements=[job2_0, job2_1])
+
+        links = {
+            map_job: {'inputs': [(job1, 'outputs')]},
+            job2_0: {'input': [(map_job, 'output_0')]},
+            job2_1: {'input': [(map_job, 'output_1')]},
+            reduce_job: {'input_0': [(job2_0, 'output')],
+                         'input_1': [(job2_1, 'output')],
+                         'lengths': [(map_job, 'lengths')]},
+            job3: {'inputs': [(reduce_job, 'outputs')]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, map_job, group_1, reduce_job,
+                                        job3],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_loo_jobs(self):
+        # small leave-one-out
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        loo_job = LeaveOneOutJob(
+            referenced_input_files=job1.referenced_output_files,
+            param_dict={'index': 2})
+        job2_train = self.job_reduce_cat(14)
+        job2_train.name = 'train'
+        job2_test = self.job8_with_output()
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, loo_job, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            loo_job: {'inputs': [(job1, 'outputs')]},
+            job2_train: {'inputs': [(loo_job, 'train')]},
+            job2_test: {'input': [(loo_job, 'test')]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, loo_job, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
+
+    def example_dynamic_outputs_with_cv_jobs(self):
+        # small 4-fold cross-validation
+        # jobs
+        job1 = self.job_list_with_outputs2()
+        cv_job = CrossValidationFoldJob(
+            referenced_input_files=job1.referenced_output_files,
+            param_dict={'nfolds': 4, 'fold': 1})
+        job2_train = self.job_reduce_cat(16)
+        job2_train.name = 'train'
+        job2_test = self.job_reduce_cat(17)
+        job2_test.name = 'test'
+        # building the workflow
+        jobs = [job1, cv_job, job2_train, job2_test]
+
+        dependencies = []
+
+        links = {
+            cv_job: {'inputs': [(job1, 'outputs')]},
+            job2_train: {'inputs': [(cv_job, 'train')]},
+            job2_test: {'inputs': [(cv_job, 'test')]},
+        }
+
+        function_name = inspect.stack()[0][3]
+        workflow = Workflow(jobs,
+                            dependencies,
+                            root_group=[job1, cv_job, job2_train, job2_test],
+                            name=function_name, param_links=links)
+        return workflow
 
 if __name__ == "__main__":
     print(WorkflowExamples.get_workflow_example_list())

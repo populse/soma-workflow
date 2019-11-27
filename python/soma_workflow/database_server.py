@@ -309,11 +309,12 @@ def create_database(database_file):
     # parameters dependencies
     cursor.execute(
         '''CREATE TABLE param_links (
-            workflow_id   INTEGER NOT NULL CONSTRAINT known_worflow REFERENCES workflows (id),
-            dest_job_id   INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs (id),
-            dest_param    TEXT,
-            src_job_id    INTEGER NOT NULL CONSTRAINT known_job2 REFERENCES jobs (id),
-            src_param     TEXT)''')
+            workflow_id       INTEGER NOT NULL CONSTRAINT known_worflow REFERENCES workflows (id),
+            dest_job_id       INTEGER NOT NULL CONSTRAINT known_job REFERENCES jobs (id),
+            dest_param        TEXT,
+            src_job_id        INTEGER NOT NULL CONSTRAINT known_job2 REFERENCES jobs (id),
+            src_param         TEXT,
+            pickled_function  TEXT)''')
 
     cursor.close()
     connection.commit()
@@ -489,11 +490,18 @@ def print_tables(database_file):
 
     print("==== param_links table: =========")
     for row in cursor.execute('SELECT * FROM param_links'):
-        workflow_id, dest_job_id, dest_param, src_job_id, src_param = row
+        workflow_id, dest_job_id, dest_param, src_job_id, src_param, func \
+            = row
+        if func is not None:
+            if sys.version_info[0] >= 3:
+                func = pickle.loads(func, encoding='utf-8')
+            else:
+                func = pickle.loads(func)
         print('| workflow_id=', repr(workflow_id).rjust(2), '| dest_job_id=',
               repr(dest_job_id).ljust(2), '| dest_param=',
-              repr(dest_param).rjust(25), ' | src_job_id=', repr(src_job_id).rjust(2), '| src_param=',
-              repr(src_param).rjust(25), ' |')
+              repr(dest_param).rjust(25), '| src_job_id=', repr(src_job_id).rjust(2), '| src_param=',
+              repr(src_param).rjust(25), '| function=',
+              repr(func).ljust(25), '|')
 
     # print("==== file counter table: =========")
     # for row in cursor.execute('SELECT * FROM fileCounter'):
@@ -1807,18 +1815,23 @@ class WorkflowDatabaseServer(object):
                 for dest_job, links \
                         in six.iteritems(engine_workflow.param_links):
                     edest_job = engine_workflow.job_mapping[dest_job]
-                    for dest_param, link in six.iteritems(links):
-                        esrc_job = engine_workflow.job_mapping[link[0]]
-                        cursor.execute(
-                            '''INSERT INTO param_links
-                            (workflow_id,
-                            dest_job_id,
-                            dest_param,
-                            src_job_id,
-                            src_param)
-                            VALUES (?, ?, ?, ?, ?)''',
-                            (engine_workflow.wf_id, edest_job.job_id,
-                             dest_param, esrc_job.job_id, link[1]))
+                    for dest_param, linkl in six.iteritems(links):
+                        for link in linkl:
+                            esrc_job = engine_workflow.job_mapping[link[0]]
+                            func = None
+                            if len(link) > 2:
+                                func = sqlite3.Binary(pickle.dumps(link[2]))
+                            cursor.execute(
+                                '''INSERT INTO param_links
+                                (workflow_id,
+                                dest_job_id,
+                                dest_param,
+                                src_job_id,
+                                src_param,
+                                pickled_function)
+                                VALUES (?, ?, ?, ?, ?, ?)''',
+                                (engine_workflow.wf_id, edest_job.job_id,
+                                dest_param, esrc_job.job_id, link[1], func))
 
             except Exception as e:
                 connection.rollback()
@@ -1930,7 +1943,7 @@ class WorkflowDatabaseServer(object):
 
         if pickled_workflow:
             if sys.version_info[0] >= 3:
-                workflow = pickle.loads(pickled_workflow, encoding='latin1')
+                workflow = pickle.loads(pickled_workflow, encoding='utf-8')
             else:
                 workflow = pickle.loads(pickled_workflow)
         else:
@@ -2541,7 +2554,7 @@ class WorkflowDatabaseServer(object):
         @rtype: C{EngineJob}
         @return: workflow object
         '''
-        self.logger.debug("=> get_engine_job")
+        self.logger.debug("=> get_engine_job %d" % job_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -2561,12 +2574,19 @@ class WorkflowDatabaseServer(object):
 
         if pickled_job:
             if sys.version_info[0] >= 3:
-                job = pickle.loads(pickled_job, encoding='latin1')
+                job = pickle.loads(pickled_job, encoding='utf-8')
             else:
                 job = pickle.loads(pickled_job)
             job.job_id = job_id
         else:
             job = None
+            if workflow_id not in (None, -1):
+                # job is not pickled: get the whole workflow
+                workflow = self.get_engine_workflow(workflow_id, user_id)
+                jobs = [workflow.job_mapping[j] for j in workflow.jobs]
+                jobs = [j for j in jobs if j.job_id == job_id]
+                if len(jobs) != 0:
+                    job = jobs[0]
 
         return (job, workflow_id)
 
@@ -2939,48 +2959,47 @@ class WorkflowDatabaseServer(object):
     def updated_job_parameters(self, job_id):
         '''
         '''
-        self.logger.debug("=> update_job_parameters")
+        self.logger.debug("=> updated_job_parameters %d" % job_id)
         # get job workflow id
+        print('updated_job_parameters %d' % job_id)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
+            cursor2 = connection.cursor()
             try:
-                #try:
-                    #sel = cursor.execute(
-                        #'SELECT workflow_id FROM jobs WHERE id=?', [job_id])
-                #except Exception as e:
-                    #six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
-                #print('update_job_parameters sel wf_id:', job_id)
-                #wf_id = six.next(sel)
 
                 sel = cursor.execute(
-                    'SELECT dest_param, src_job_id, src_param '
+                    'SELECT dest_param, src_job_id, src_param, '
+                    'pickled_function '
                     'FROM param_links WHERE dest_job_id=?', [job_id])
-
-                #job_sql = cursor.execute(
-                    #'SELECT pickled_job FROM jobs WHERE id=', [job_id])
-                #job = pickle.loads(six.next(job_sql))
-                #param_dict = job.param_dict
 
                 param_dict = {}
                 jsons = {}
-                for dst_param, src_job, src_param in sel:
+                for dst_param, src_job, src_param, func in sel:
+                    print(dst_param, src_job, src_param)
                     #if dest_param in param_dict:
+                    if func:
+                        if sys.version_info[0] >= 3:
+                            func = pickle.loads(func, encoding='utf-8')
+                        else:
+                            func = pickle.loads(func)
                     jdict = jsons.get(src_job)
                     if jdict is None:
-                        json_sql = cursor.execute(
+                        json_sql = cursor2.execute(
                             'SELECT output_params FROM jobs WHERE id=?',
                             [src_job])
                         jstr = six.next(json_sql)[0]
                         if jstr is not None:
                             jdict = json.loads(jstr)
-                            jsons[src_job] = jdict
-                            if src_param in jdict:
-                                param_dict[dst_param] = jdict[src_param]
                         else:
-                            jsons[src_job] = {}
+                            jdict = {}
+                        jsons[src_job] = jdict
+                    if src_param in jdict:
+                        param_dict.setdefault(dst_param, []).append(
+                            (func, src_param, jdict[src_param]))
 
             finally:
+                cursor2.close()
                 cursor.close()
                 connection.close()
 

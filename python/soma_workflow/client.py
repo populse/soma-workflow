@@ -27,6 +27,7 @@ import types
 import sys
 import posixpath
 import logging
+import six
 
 if sys.version_info[:2] >= (2, 6):
     import json
@@ -49,7 +50,13 @@ from soma_workflow.errors import TransferError, SerializationError, SomaWorkflow
 
 # imports required by the users of soma-workflow API (do not remove):
 from soma_workflow.client_types import Job
-from soma_workflow.client_types import BarrierJob
+from soma_workflow.client_types import EngineExecutionJob
+from soma_workflow.custom_jobs import BarrierJob
+from soma_workflow.custom_jobs import MapJob
+from soma_workflow.custom_jobs import ReduceJob
+from soma_workflow.custom_jobs import ListCatJob
+from soma_workflow.custom_jobs import LeaveOneOutJob
+from soma_workflow.custom_jobs import CrossValidationFoldJob
 from soma_workflow.client_types import Workflow
 from soma_workflow.client_types import Group
 from soma_workflow.client_types import FileTransfer
@@ -1292,7 +1299,9 @@ class Helper(object):
                 json.dump(workflow_dict, file, indent=4)
                 file.close()
             except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
+                six.reraise(SerializationError,
+                            SerializationError("%s: %s" % (type(e), e)),
+                            sys.exc_info()[2])
         else:
             try:
                 file = open(file_path, "w")

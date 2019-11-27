@@ -52,15 +52,6 @@ class WorkflowTest(unittest.TestCase):
         cls.path_management = path_management
 
     def setUp(self):
-        # use a custom temporary soma-workflow dir to avoid concurrent
-        # access problems
-        tmpdb = tempfile.mkdtemp('', prefix='soma_workflow')
-        self.soma_workflow_temp_dir = tmpdb
-        swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
-            % (socket.gethostname(), tmpdb)
-        Configuration.search_config_path \
-            = staticmethod(lambda : StringIO.StringIO(swf_conf))
-
         if self.path_management == self.LOCAL_PATH:
             workflow_examples = WorkflowExamplesLocal()
         elif self.path_management == self.FILE_TRANSFER:
@@ -70,27 +61,51 @@ class WorkflowTest(unittest.TestCase):
         elif self.path_management == self.SHARED_TRANSFER:
             workflow_examples = WorkflowExamplesSharedTransfer()
         self.wf_examples = workflow_examples
+
+        # use a custom temporary soma-workflow dir to avoid concurrent
+        # access problems
+        tmpdb = self.wf_examples.output_dir
+        if '--keep-temporary' in sys.argv[1:]:
+            print('making non-temporary directory: %s' % tmpdb,
+                  file=sys.stderr)
+        self.soma_workflow_temp_dir = tmpdb
+        swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
+            % (socket.gethostname(), tmpdb)
+        Configuration.search_config_path \
+            = staticmethod(lambda : StringIO.StringIO(swf_conf))
+
         self.temporaries = [self.wf_examples.output_dir]
 
     def tearDown(self):
         swc = self.__class__.wf_ctrl
+        rmfiles = not '--keep-temporary' in sys.argv[1:]
         if swc is not None:
             if self.wf_id:
-                swc.delete_workflow(self.wf_id)
+                if rmfiles:
+                    swc.delete_workflow(self.wf_id)
+                else:
+                    print('workflow %d has been kept in database in %s'
+                          % (self.wf_id, self.soma_workflow_temp_dir),
+                          file=sys.stderr)
             # stop workflow controler and wait for thread termination
             #swc.stop_engine()
-        shutil.rmtree(self.soma_workflow_temp_dir)
         for t in self.temporaries:
             if os.path.isdir(t):
-                try:
-                    shutil.rmtree(t)
-                except:
-                    pass
+                if rmfiles:
+                    try:
+                        shutil.rmtree(t)
+                    except:
+                        pass
+                else:
+                    print('leaving directory: %s' % t, file=sys.stderr)
             elif os.path.exists(t):
-                try:
-                    os.unkink(t)
-                except:
-                    pass
+                if rmfiles:
+                    try:
+                        os.unkink(t)
+                    except:
+                        pass
+                else:
+                    print('leaving file: %s' % t, file=sys.stderr)
 
     def print_jobs(self, jobs, title='Jobs', file=sys.stderr):
         print('\n%s:' % title, self.wf_ctrl.jobs(jobs), file=file)
