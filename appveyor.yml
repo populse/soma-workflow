@@ -15,7 +15,7 @@ install:
   - "pip install six"
   - ps: |
       if ($env:PYTHON_VERSION -eq "2.7") {
-        pip install subprocess32
+        pip install subprocess32 2> $null
       }
   - "python setup.py install"
   #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
