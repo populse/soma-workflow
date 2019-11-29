@@ -9,31 +9,32 @@ organization: IFR 49<http://www.ifr49.org
 
 license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
-
 from ..scheduler import Scheduler
 import sys
-try:
-    try:
-        # subprocess32 seems to have its own zmq implementation,
-        # which proves to be incompatible (too old) with some other modules
-        # (such as ipython). We load the "official" one first to avoid problems
-        import zmq
-    except:
-        pass
-    import subprocess32 as subprocess
-    import subprocess as _subprocess
-    if hasattr(_subprocess, '_args_from_interpreter_flags'):
-        # get this private function which is used somewhere in
-        # multiprocessing
-        subprocess._args_from_interpreter_flags \
-            = _subprocess._args_from_interpreter_flags
-    del _subprocess
-    import sys
-    sys.modules['subprocess'] = sys.modules['subprocess32']
-#    print('using subprocess32')
-except ImportError:
-#    print('subprocess32 could not be loaded - processes may hangup')
-    import subprocess
+#try:
+    #try:
+        ## subprocess32 seems to have its own zmq implementation,
+        ## which proves to be incompatible (too old) with some other modules
+        ## (such as ipython). We load the "official" one first to avoid problems
+        #import zmq
+    #except:
+        #pass
+    #import subprocess32 as subprocess
+    #import subprocess as _subprocess
+    #if hasattr(_subprocess, '_args_from_interpreter_flags'):
+        ## get this private function which is used somewhere in
+        ## multiprocessing
+        #subprocess._args_from_interpreter_flags \
+            #= _subprocess._args_from_interpreter_flags
+    #del _subprocess
+    #import sys
+    #sys.modules['subprocess'] = sys.modules['subprocess32']
+##    print('using subprocess32')
+#except ImportError:
+##    print('subprocess32 could not be loaded - processes may hangup')
+    #import subprocess
+#import ..subprocess
+from .. import subprocess
 import threading
 import time
 import os

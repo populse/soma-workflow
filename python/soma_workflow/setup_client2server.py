@@ -17,17 +17,18 @@ from __future__ import with_statement
 import os
 import re
 import logging
-try:
-    import subprocess32 as subprocess
-    import subprocess as _subprocess
-    if hasattr(_subprocess, '_args_from_interpreter_flags'):
-        # get this private function which is used somewhere in
-        # multiprocessing
-        subprocess._args_from_interpreter_flags \
-            = _subprocess._args_from_interpreter_flags
-    del _subprocess
-except ImportError:
-    import subprocess
+#try:
+    #import subprocess32 as subprocess
+    #import subprocess as _subprocess
+    #if hasattr(_subprocess, '_args_from_interpreter_flags'):
+        ## get this private function which is used somewhere in
+        ## multiprocessing
+        #subprocess._args_from_interpreter_flags \
+            #= _subprocess._args_from_interpreter_flags
+    #del _subprocess
+#except ImportError:
+    #import subprocess
+from . import subprocess
 from ConfigParser import SafeConfigParser
 
 # Soma Workflow import

@@ -29,11 +29,11 @@ import logging
 import sys
 import io
 import traceback
-try:
-    import subprocess32 as subprocess
-except:
-    import subprocess
-
+#try:
+    #import subprocess32 as subprocess
+#except:
+    #import subprocess
+from . import subprocess
 try:
     import socketserver # python3
 except ImportError:

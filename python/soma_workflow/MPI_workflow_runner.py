@@ -11,14 +11,15 @@ organization: PARIETAL, INRIA, Saclay, France
 
 license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
-try:
-    import subprocess32 as subprocess
-except:
-    import subprocess
-    print('subprocess module will be used to start shell commands. Due to '
-          'issues in this module this can lead to problems during execution. '
-          'You should probably install subprocess32 module to avoid these '
-          'problems.')
+#try:
+    #import subprocess32 as subprocess
+#except:
+    #import subprocess
+    #print('subprocess module will be used to start shell commands. Due to '
+          #'issues in this module this can lead to problems during execution. '
+          #'You should probably install subprocess32 module to avoid these '
+          #'problems.')
+from . import subprocess
 import sys
 import time
 import threading

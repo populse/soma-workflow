@@ -14,11 +14,15 @@
 import sys, os
 import soma_workflow.version
 
+# fixes inheritance_diagram Popen issue by preimporting subprocess
+import soma_workflow.subprocess as subprocess
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0,os.path.abspath("../../python/soma_workflow/"))
+sys.path.insert(0, os.path.abspath(os.path.join("..", "..", "python", "soma_workflow")))
+#print('path', sys.path)
+
 
 # -- General configuration -----------------------------------------------------
 

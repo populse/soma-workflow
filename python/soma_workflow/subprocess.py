@@ -41,14 +41,23 @@ Import subprocess32 or subprocess API depending on python version and what is
 available on the system.
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import sys
 
+#from soma_workflow import swf_override_subprocess
+
+#print('soma_workflow subprocess override:', swf_override_subprocess)
+#if sys.version_info[:2] >= (3, 2) or not swf_override_subprocess:
 if sys.version_info[:2] >= (3, 2):
     # in python >= 3.2, subprocess32 is not needed as it is the builtin
     # subprocess module
+    #
+    # if subprocess is already loaded we do not replace it because it
+    # can lead to incompatibility issues (espacially in sphinx.ext.graphviz)
     from subprocess import *
+    
 else:
+    print('!!!! soma_workflow overriding subprocess !!!!')
     try:
         def __initialize_zmq():
             # It is necessary to first import zmq from the system if it is
@@ -86,7 +95,11 @@ else:
 
     except ImportError:
         from subprocess import *
-
+        print('subprocess module will be used to start shell commands. Due to '
+            'issues in this module this can lead to problems during execution. '
+            'You should probably install subprocess32 module to avoid these '
+            'problems.')
+    
         def __initialize_subprocess():
             import subprocess
 
