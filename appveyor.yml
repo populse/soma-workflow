@@ -3,14 +3,20 @@ environment:
   matrix:
 
     - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: 2.7
     - PYTHON: "C:\\Python35"
-
+      PYTHON_VERSION: 3.5
+      
 build: off
 
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python -m pip install --upgrade pip"
   - "pip install six"
+  - ps: |
+      if ($env:PYTHON_VERSION -eq "2.7") {
+        pip install subprocess32
+      }
   - "python setup.py install"
   #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
 
