@@ -57,7 +57,7 @@ if sys.version_info[:2] >= (3, 2):
     from subprocess import *
     
 else:
-    print('!!!! soma_workflow overriding subprocess !!!!')
+    #print('!!!! soma_workflow overriding subprocess !!!!')
     try:
         def __initialize_zmq():
             # It is necessary to first import zmq from the system if it is
