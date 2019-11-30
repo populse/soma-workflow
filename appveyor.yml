@@ -13,13 +13,15 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python -m pip install --upgrade pip"
   - "pip install six"
-  - ps:
+  - ps: |
       if ($env:PYTHON_VERSION -eq "2.7") {
-        pip install subprocess32 2> $null
+        #pip install subprocess32 2> $null
+        Write-Host 'installing subprocess32'
+        pip install subprocess32 | Out-Null
       }
   - "python setup.py install"
   #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
-
+    
 test_script:
   - "python --version"
   - "python -m soma_workflow.test"
