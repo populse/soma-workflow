@@ -4,36 +4,36 @@ environment:
 
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: 2.7
-    #- PYTHON: "C:\\Python35"
-      #PYTHON_VERSION: 3.5
+      PYTHON_OPTS: "-W ignore"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: 3.5
 
-matrix:
-  fast_finish: true
+#matrix:
+  #fast_finish: true
   
 build: off
 
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - "python -m pip install --upgrade pip"
-  - "pip install six"
-  - "pip install subprocess32"
-  #- ps: |
-      #if ($env:PYTHON_VERSION -eq "2.7") {
-        ##pip install subprocess32 2> $null
-        #Write-Host 'installing subprocess32'
-        #pip install subprocess32 | Out-Null
-      #}
-  - "python setup.py install"
+  - ps: |
+      python $env:PYTHON_OPTS -m pip install --upgrade pip
+      python $env:PYTHON_OPTS -m pip install six
+      if ($env:PYTHON_VERSION -eq "2.7") {
+        Write-Host 'installing subprocess32'
+        python $env:PYTHON_OPTS -m pip install subprocess32
+      }
+      python $env:PYTHON_OPTS setup.py install
+      
   #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
     
-#test_script:
-  #- "python --version"
-  #- "python -m soma_workflow.test"
+test_script:
+  - "python --version"
+  - "python -m soma_workflow.test"
 
-#notifications:
-  #- provider: Email
-    #to:
-      #- '{{commitAuthorEmail}}'
-    #on_build_failure: true
-    #on_build_success: false
-    #on_build_status_changed: true
+notifications:
+  - provider: Email
+    to:
+      - '{{commitAuthorEmail}}'
+    on_build_failure: true
+    on_build_success: false
+    on_build_status_changed: true
