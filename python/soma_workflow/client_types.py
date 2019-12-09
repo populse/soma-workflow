@@ -668,14 +668,16 @@ class EngineExecutionJob(Job):
     :class:`Job`, but not the exact subclass. Thus in the method, ``self`` is
     not a real instance of the class.
 
-    The default implementation does nothing. Subclasses define their own
-    :meth:`engine_execution` methods.
+    The default implementation just passes its input parameters as outputs in
+    order to allow later jobs to reuse their parameters. Subclasses define
+    their own :meth:`engine_execution` methods.
 
     See :ref:`engine_execution_job` for more details.
     '''
     @classmethod
     def engine_execution(cls, self):
-        pass
+        output_dict = dict(self.param_dict)
+        return output_dict
 
 
 class BarrierJob(EngineExecutionJob):

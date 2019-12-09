@@ -31,6 +31,10 @@ class MapJob(EngineExecutionJob):
     Each pattern will be used to replace items from the corresponding input in
     the same order. Thus ``input_names``  and ``output_names`` should be the
     same length.
+    * all other parameters given in ``param_dict`` are passed to the output
+    dictionary of the job, so that the job acts as a
+    :class:`~soma_workflow.client_types.BarrierJob` for parameters which are
+    not "mapped".
 
     '''
     def __init__(self,
@@ -60,7 +64,11 @@ class MapJob(EngineExecutionJob):
     def engine_execution(cls,self):
         input_names = self.param_dict.get('input_names', ['inputs'])
         output_names = self.param_dict.get('output_names', ['output_%d'])
-        out_dict = {}
+        out_dict = dict(self.param_dict)
+        for name in ['input_names', 'output_names'] + input_names \
+                + output_names:
+            if name in out_dict:
+                del out_dict[name]
         lengths = []
         for inp, out in zip(input_names, output_names):
             inputs = self.param_dict[inp]
@@ -88,6 +96,10 @@ class ReduceJob(EngineExecutionJob):
     the input number. The defaut value is ``['input_%d']``.
     * Output parameters names are given as the ``output_names`` parameter. The
     default is ``['outputs']``.
+    * all other parameters given in ``param_dict`` are passed to the output
+    dictionary of the job, so that the job acts as a
+    :class:`~soma_workflow.client_types.BarrierJob` for parameters which are
+    not "reduced".
 
     '''
     def __init__(self,
@@ -117,7 +129,11 @@ class ReduceJob(EngineExecutionJob):
         input_names = self.param_dict.get('input_names', ['input_%d'])
         output_names = self.param_dict.get('output_names', ['outputs'])
         lengths = self.param_dict['lengths']
-        out_dict = {}
+        out_dict = dict(self.param_dict)
+        for name in ['input_names', 'output_names', 'lengths'] + input_names \
+                + output_names:
+            if name in out_dict:
+                del out_dict[name]
         for inp, out, length in zip(input_names, output_names, lengths):
             out_list = [self.param_dict[inp % i] for i in range(length)]
             out_dict[out] = out_list
@@ -165,45 +181,6 @@ class LeaveOneOutJob(EngineExecutionJob):
         out_dict = {
             'train': output_list,
             'test': output_item,
-        }
-        return out_dict
-
-
-class ListCatJob(EngineExecutionJob):
-
-    '''
-    Concatenates several lists into a single list
-
-    The input lists should be specified as the ``inputs`` parameter (a list of
-    lists, thus). The output parameter ``outputs``  will be assigned the concatenated list.
-    '''
-
-    def __init__(self,
-                 command=[],
-                 referenced_input_files=None,
-                 referenced_output_files=None,
-                 name='list_cat',
-                 param_dict=None):
-        if param_dict is None:
-            param_dict = {}
-        if 'inputs' not in param_dict:
-            param_dict['inputs'] = []
-        super(ListCatJob, self).__init__(
-            command=[],
-            referenced_input_files=referenced_input_files,
-            referenced_output_files=referenced_output_files,
-            name=name,
-            param_dict=param_dict,
-            has_outputs=True)
-
-    @classmethod
-    def engine_execution(cls, self):
-        inputs = self.param_dict['inputs']
-        outputs = []
-        for in_list in inputs:
-            outputs += in_list
-        out_dict = {
-            'outputs': outputs,
         }
         return out_dict
 
@@ -262,3 +239,97 @@ class CrossValidationFoldJob(EngineExecutionJob):
         return out_dict
 
 
+class ListCatJob(EngineExecutionJob):
+
+    '''
+    Concatenates several lists into a single list
+
+    The input lists should be specified as the ``inputs`` parameter (a list of
+    lists, thus). The output parameter ``outputs``  will be assigned the concatenated list.
+    '''
+
+    def __init__(self,
+                 command=[],
+                 referenced_input_files=None,
+                 referenced_output_files=None,
+                 name='list_cat',
+                 param_dict=None):
+        if param_dict is None:
+            param_dict = {}
+        if 'inputs' not in param_dict:
+            param_dict['inputs'] = []
+        super(ListCatJob, self).__init__(
+            command=[],
+            referenced_input_files=referenced_input_files,
+            referenced_output_files=referenced_output_files,
+            name=name,
+            param_dict=param_dict,
+            has_outputs=True)
+
+    @classmethod
+    def engine_execution(cls, self):
+        inputs = self.param_dict['inputs']
+        outputs = []
+        for in_list in inputs:
+            outputs += in_list
+        out_dict = {
+            'outputs': outputs,
+        }
+        return out_dict
+
+
+class StrCatJob(EngineExecutionJob):
+    '''
+    Concatenates inputs into a string
+
+    Inputs listed in ``input_names`` are concatenated into an output string.
+    Inputs may be strings or lists of strings. Listes are also concatenated
+    into a string.
+    The output parameter is given as the ``output_name`` parameter, if given,
+    and defaults to `` output`` otherwise.
+    ``input_names`` is optional and defaults to ``inputs`` (thus by default the
+    job expects a single list).
+    '''
+
+    def __init__(self,
+                 command=[],
+                 referenced_input_files=None,
+                 referenced_output_files=None,
+                 name='strcat',
+                 param_dict=None):
+        if param_dict is None:
+            param_dict = {}
+        if 'input_names' not in param_dict:
+            param_dict['input_names'] = ['inputs']
+        if 'output_name' not in param_dict:
+            param_dict['output_name'] = 'output'
+        output_name = param_dict['output_name']
+        if output_name not in param_dict:
+            param_dict[output_name] = ''
+        for name in param_dict['input_names']:
+            if name not in param_dict:
+                param_dict[name] = ''
+        super(StrCatJob, self).__init__(
+            command=[],
+            referenced_input_files=referenced_input_files,
+            referenced_output_files=referenced_output_files,
+            name=name,
+            param_dict=param_dict,
+            has_outputs=True)
+
+    @classmethod
+    def engine_execution(cls, self):
+        input_names = self.param_dict['input_names']
+        output_name = self.param_dict['output_name']
+        outputs = []
+        for name in input_names:
+            value = self.param_dict[name]
+            if isinstance(value, list):
+                outputs.append(''.join(value))
+            else:
+                outputs.append(value)
+        output = ''.join(outputs)
+        out_dict = {
+            output_name: output,
+        }
+        return out_dict
