@@ -120,7 +120,7 @@ if __name__ == "__main__":
             )
 
     def start_database_server(resource_id, logger):
-        import subprocess
+        from soma_workflow import subprocess
         if logger:
             logger.info('Trying to start database server:' + resource_id)
             logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
@@ -268,7 +268,8 @@ if __name__ == "__main__":
             sch = None
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
-                config.get_transfered_file_dir())
+                config.get_transfered_file_dir(),
+                remove_orphan_files = config.get_remove_orphan_files())
         else:
             database_server = get_database_server_proxy(config, logger)
             logger.debug("database_server launched")

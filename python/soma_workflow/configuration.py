@@ -83,6 +83,11 @@ CFG_TRANSFERED_FILES_DIR = 'TRANSFERED_FILES_DIR'
 CFG_SERVER_NAME = 'SERVER_NAME'
 CFG_NAME_SERVER_HOST = 'NAME_SERVER_HOST'
 
+# OCFG_REMOVE_ORPHAN_FILES allow to disable search for orphan files (i.e. files
+# that exist in transfered files directory but that are not registered in 
+# database anymore) at connection time. This mechanism can be really slow if a 
+# large number of files exist in the transfered files directory.
+OCFG_REMOVE_ORPHAN_FILES = 'REMOVE_ORPHAN_FILES'
 OCFG_SERVER_LOG_FILE = 'SERVER_LOG_FILE'
 OCFG_SERVER_LOG_LEVEL = 'SERVER_LOG_LEVEL'
 OCFG_SERVER_LOG_FORMAT = 'SERVER_LOG_FORMAT'
@@ -190,6 +195,8 @@ class Configuration(observer.Observable):
     _res_install_path = None
 
     _shared_temporary_dir = None
+    
+    _remove_orphan_files = None
 
     parallel_job_config = None
 
@@ -811,6 +818,24 @@ class Configuration(observer.Observable):
         self._shared_temporary_dir = os.path.expandvars(
             self._shared_temporary_dir)
         return self._shared_temporary_dir
+    
+
+    def get_remove_orphan_files(self):
+        '''config that manages orphan files removal at connection time'''
+        if self._remove_orphan_files is not None:
+            return self._remove_orphan_files
+
+        if self._config_parser is None or \
+            not self._config_parser.has_option(self._resource_id,
+                                               OCFG_REMOVE_ORPHAN_FILES):
+            return True
+        
+        self._remove_orphan_files = self._config_parser.get(self._resource_id,
+                                                            OCFG_REMOVE_ORPHAN_FILES)
+        self._remove_orphan_files = bool(int(os.path.expandvars(
+            self._remove_orphan_files)))
+                                         
+        return self._remove_orphan_files
 
     def get_parallel_job_config(self):
         if self._config_parser == None or self.parallel_job_config != None:
@@ -1422,7 +1447,7 @@ class LocalSchedulerCfg(observer.Observable):
         config_file.close()
 
 
-def AddLineDefintions2BashrcFile(lines2add, path2bashrc=""):
+def AddLineDefinitions2BashrcFile(lines2add, path2bashrc=""):
     """Add line defintions to the ~/.bashrc file
 
     Removing the lines2add which are already exsting in the ~/.bashrc

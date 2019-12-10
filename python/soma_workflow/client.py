@@ -1109,7 +1109,8 @@ def _embedded_engine_and_server(config):
 
     # database server
     database_server = WorkflowDatabaseServer(config.get_database_file(),
-                                             config.get_transfered_file_dir())
+                                             config.get_transfered_file_dir(),
+                                             remove_orphan_files = config.get_remove_orphan_files())
 
     sch = scheduler.build_scheduler(config.get_scheduler_type(), config)
     workflow_engine = ConfiguredWorkflowEngine(database_server,

@@ -317,7 +317,8 @@ if __name__ == '__main__':
 
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
-                config.get_transfered_file_dir())
+                config.get_transfered_file_dir(),
+                remove_orphan_files = config.get_remove_orphan_files())
 
             logger.info("workflow_file " + repr(options.workflow_file))
             logger.info("wf_id_to_restart " + repr(options.wf_id_to_restart))

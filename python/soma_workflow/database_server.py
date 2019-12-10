@@ -517,7 +517,8 @@ class WorkflowDatabaseServer(object):
                  database_file,
                  tmp_file_dir_path,
                  shared_tmp_dir=None,
-                 logging_configuration=None):
+                 logging_configuration=None,
+                 remove_orphan_files=True):
         '''
         The constructor gets as parameter the database information.
 
@@ -528,6 +529,8 @@ class WorkflowDatabaseServer(object):
         the files will be transfered
         '''
 
+        print('WorkflowDatabaseServer::__init__, remove orphan files:', remove_orphan_files)
+        self._remove_orphan_files = remove_orphan_files
         self._tmp_file_dir_path = tmp_file_dir_path
         self._database_file = database_file
         if shared_tmp_dir:
@@ -677,8 +680,9 @@ class WorkflowDatabaseServer(object):
                     os.chmod(personal_path, 0o775)
                 except OSError:
                     pass
-
-        self.remove_non_registered_files()
+                
+        if self._remove_orphan_files:
+            self.remove_orphan_files()
 
         return user_id
 
@@ -871,7 +875,7 @@ class WorkflowDatabaseServer(object):
             connection.commit()
             connection.close()
 
-            # self.remove_non_registered_files()
+            # self.remove_orphan_files()
 
     def vacuum(self):
         '''
@@ -890,8 +894,9 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
-    def remove_non_registered_files(self):
-        self.logger.debug("=> remove_non_registered_files")
+    def remove_orphan_files(self):
+        print('remove orphan files')
+        self.logger.debug("=> remove_orphan_files")
         registered_engine_paths = []
         registered_users = []
         with self._lock:
@@ -941,7 +946,7 @@ class WorkflowDatabaseServer(object):
                 engine_path = os.path.join(directory_path, name)
                 if not engine_path in registered_engine_paths:
                     self.logger.debug(
-                        "remove_non_registered_files, not registered " + engine_path + " to delete!")
+                        "remove_orphan_files, not registered " + engine_path + " to delete!")
                     self.__removeFile(engine_path)
 
     def reserve_file_numbers(self, external_cursor=None, num_files=200):
