@@ -306,9 +306,9 @@ class StrCatJob(EngineExecutionJob):
         output_name = param_dict['output_name']
         if output_name not in param_dict:
             param_dict[output_name] = ''
-        for name in param_dict['input_names']:
-            if name not in param_dict:
-                param_dict[name] = ''
+        for iname in param_dict['input_names']:
+            if iname not in param_dict:
+                param_dict[iname] = ''
         super(StrCatJob, self).__init__(
             command=[],
             referenced_input_files=referenced_input_files,
