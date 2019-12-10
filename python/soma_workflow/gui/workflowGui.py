@@ -3136,6 +3136,8 @@ class JobInfoWidget(QtGui.QTabWidget):
         self.dataChanged()
         if current_tab_index == 4:
             self.refresh_params()
+        elif current_tab_index in (1, 2):
+            self.refreshStdErrOut()
 
         self.currentChanged.connect(self.currentTabChanged)
         self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
@@ -5276,29 +5278,32 @@ class GuiJob(GuiWorkflowItem):
                 self.tmp_stderrout_dir, "tmp_stdout_file")
             stderr_path = os.path.join(
                 self.tmp_stderrout_dir, "tmp_stderr_file")
+            if os.path.exists(stdout_path):
+                os.unlink(stdout_path)
+            if os.path.exists(stderr_path):
+                os.unlink(stderr_path)
             connection.retrieve_job_stdouterr(
                 self.job_id, stdout_path, stderr_path)
 
-            f = open(stdout_path, "rt")
-            line = f.readline()
             stdout = ""
-            while line:
-                stdout = stdout + line + "\n"
-                line = f.readline()
+            if os.path.exists(stdout_path):
+                with open(stdout_path, "rt") as f:
+                    line = f.readline()
+                    while line:
+                        stdout = stdout + line + "\n"
+                        line = f.readline()
+                os.chmod(stdout_path, 0o666)
             self.stdout = stdout
-            f.close()
 
-            f = open(stderr_path, "rt")
-            line = f.readline()
             stderr = ""
-            while line:
-                stderr = stderr + line + "\n"
-                line = f.readline()
+            if os.path.exists(stderr_path):
+                with open(stderr_path, "rt") as f:
+                    line = f.readline()
+                    while line:
+                        stderr = stderr + line + "\n"
+                        line = f.readline()
+                os.chmod(stderr_path, 0o666)
             self.stderr = stderr
-            f.close()
-
-            os.chmod(stdout_path, 0o666)
-            os.chmod(stderr_path, 0o666)
 
     def update_job_command(self, connection):
         if self.job_id != NOT_SUBMITTED_JOB_ID:
