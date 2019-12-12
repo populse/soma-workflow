@@ -729,7 +729,8 @@ class EngineWorkflow(Workflow):
                 elif not isinstance(elem, Group):
                     raise WorkflowError("%s: Wrong type in the workflow "
                                         "groups. Objects of type Job or "
-                                        "Group are required." % (repr(elem)))
+                                        "Group are required. Got type: %s"
+                                        % (repr(elem), type(elem).__name__))
 
         # root group
         for elem in self.root_group:
