@@ -123,6 +123,19 @@ class ReduceJob(EngineExecutionJob):
             name=name,
             param_dict=param_dict,
             has_outputs=True)
+        self.resize_inputs()
+
+    def resize_inputs(self):
+        for param, l in zip(self.param_dict['input_names'],
+                            self.param_dict['lengths']):
+            for i in range(l):
+                p = param % i
+                if p not in self.param_dict:
+                    self.param_dict[p] = ''
+            i = l
+            while param %i in self.param_dict:
+                del self.param_dict[param % i]
+                i += 1
 
     @classmethod
     def engine_execution(cls, self):
