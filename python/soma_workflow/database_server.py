@@ -2980,7 +2980,7 @@ class WorkflowDatabaseServer(object):
                 param_dict = {}
                 jsons = {}
                 for dst_param, src_job, src_param, func in sel:
-                    print(dst_param, src_job, src_param)
+                    # print(dst_param, src_job, src_param)
                     #if dest_param in param_dict:
                     if func:
                         if sys.version_info[0] >= 3:
