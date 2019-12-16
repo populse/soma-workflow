@@ -2510,9 +2510,13 @@ class WorkflowDatabaseServer(object):
     def update_job_command(self, job_id, commandline):
         self.logger.debug("=> update_job_command " + str(job_id) + ':'
                           + repr(commandline))
-        command_info = ""
+        command_info = []
         for command_element in commandline:
-            command_info = command_info + " " + repr(command_element)
+            selem = repr(command_element)
+            if selem.startswith('u'):
+                selem = selem[1:]
+            command_info.append(selem)
+        command_info = u' '.join(command_info)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
