@@ -30,7 +30,7 @@ Group
 Job
 ===
 
-.. inheritance-diagram:: client_types.Job client_types.EngineExecutionJob client_types.BarrierJob custom_jobs.MapJob custom_jobs.ReduceJob custom_jobs.ListCatJob custom_jobs.LeaveOneOutJob custom_jobs.CrossValidationFoldJob
+.. inheritance-diagram:: client_types.Job client_types.EngineExecutionJob client_types.BarrierJob custom_jobs.MapJob custom_jobs.ReduceJob custom_jobs.ListCatJob custom_jobs.LeaveOneOutJob custom_jobs.CrossValidationFoldJob custom_jobs.StrCatJob
     :parts: 1
 
 .. autoclass:: client_types.Job
@@ -49,6 +49,9 @@ Job
     :members:
 
 .. autoclass:: custom_jobs.ListCatJob
+    :members:
+
+.. autoclass:: custom_jobs.StrCatJob
     :members:
 
 .. autoclass:: custom_jobs.LeaveOneOutJob
