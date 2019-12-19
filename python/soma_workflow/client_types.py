@@ -2317,14 +2317,20 @@ def to_serializable(element,
                                     tmp_ids,
                                     opt_ids)
     elif isinstance(element, tuple):
-        return ["soma-workflow-tuple",
-                to_serializable(element[0],
-                                id_generator,
-                                transfer_ids,
-                                shared_res_path_ids,
-                                tmp_ids,
-                                opt_ids),
-                element[1]]
+        return tuple(list_to_serializable(element,
+                                    id_generator,
+                                    transfer_ids,
+                                    shared_res_path_ids,
+                                    tmp_ids,
+                                    opt_ids))
+        #return ["soma-workflow-tuple",
+                #to_serializable(element[0],
+                                #id_generator,
+                                #transfer_ids,
+                                #shared_res_path_ids,
+                                #tmp_ids,
+                                #opt_ids),
+                #element[1]]
     else:
         return element
 

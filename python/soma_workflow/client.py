@@ -1292,11 +1292,13 @@ class Helper(object):
         workflow: client.Workflow
 
         '''
+        from soma_workflow import utils
+
         if sys.version_info[:2] >= (2, 6):
             try:
                 file = open(file_path, "w")
                 workflow_dict = workflow.to_dict()
-                json.dump(workflow_dict, file, indent=4)
+                json.dump(utils.to_json(workflow_dict), file, indent=4)
                 file.close()
             except Exception as e:
                 six.reraise(SerializationError,
@@ -1328,6 +1330,8 @@ class Helper(object):
         Raises *SerializationError* in case of failure
         '''
 
+        from soma_workflow import utils
+
         if sys.version_info[:2] >= (2, 6):
             try:
                 file = open(file_path, "r")
@@ -1336,7 +1340,7 @@ class Helper(object):
 
             workflow = None
             try:
-                dict_from_json = json.load(file)
+                dict_from_json = utils.from_json(json.load(file))
             except ValueError as e:
                 pass
             else:
@@ -1389,12 +1393,14 @@ class Helper(object):
         It converts a workflow file created using Python >= 2.6 to workflow
         file usable in Python 2.5.
         '''
+        from soma_workflow import utils
+
         if sys.version_info[:2] < (2, 6):
             raise Exception("convert_wf_file_for_p2_5 requires Python >= 2.6.")
 
         try:
             o_file = open(origin_file_path, "r")
-            dict_from_json = json.load(o_file)
+            dict_from_json = utils.from_json(json.load(o_file))
             workflow = Workflow.from_dict(dict_from_json)
             o_file.close()
             t_file = open(target_file_path, "w")
