@@ -554,8 +554,12 @@ class WorkflowEngineLoop(object):
             elif job.output_params_file is not None:
                 if os.path.exists(
                         job.plain_output_params_file()):
-                    output_dict = utils.from_json(json.load(open(
-                        job.plain_output_params_file())))
+                    try:
+                        output_dict = utils.from_json(json.load(open(
+                            job.plain_output_params_file())))
+                    except:
+                        self.logger.info('unable to read output parameters '
+                            'file: %s' % job.plain_output_params_file())
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,
