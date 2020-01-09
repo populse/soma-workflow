@@ -36,8 +36,9 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; python --version; fi
     - pwd
     - echo $PWD/bin/python
-    - which python3
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cd bin; ln -s `which python3` python; ln -s `which pip3` pip; cd ..; export PATH="$PWD/bin:$PATH"; fi
+    - which python3.8 || echo FAILED
+    - ls /usr/local/bin
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cd bin; ln -s `which python3.8` python; ln -s `which pip3` pip; cd ..; export PATH="$PWD/bin:$PATH"; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
     - if [[ "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then sudo apt-get install -y pandoc graphviz; pip install sphinx sphinx-gallery pandoc nbsphinx "PyQt5<5.13"; fi
 
