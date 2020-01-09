@@ -993,7 +993,7 @@ class EngineWorkflow(Workflow):
         #f_to_discard = 0
         #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
         #self.has_new_failed_jobs = False
-        t0 = time.clock()
+        #t0 = time.clock()
         for client_job in self.jobs:
             #jcount += 1
             self.logger.debug("client_job=" + repr(client_job))
