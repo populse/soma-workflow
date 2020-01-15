@@ -299,7 +299,7 @@ from soma_workflow.configuration import (AddLineDefintions2BashrcFile,
 import soma_workflow.configuration as configuration
 from setup_client2server import read_configuration_file
 
-AddLineDefintions2BashrcFile(envlines2add)
+AddLineDefinitions2BashrcFile(envlines2add)
 
 #
 #             Create the configuration file on the server side

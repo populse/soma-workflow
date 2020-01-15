@@ -33,13 +33,15 @@ if __name__ == '__main__':
                      database_file,
                      tmp_file_dir_path,
                      shared_tmp_dir=None,
-                     logging_configuration=None):
+                     logging_configuration=None,
+                     remove_orphan_files = True):
             soma_workflow.database_server.WorkflowDatabaseServer.__init__(
                 self,
                 database_file,
                 tmp_file_dir_path,
                 shared_tmp_dir,
-                logging_configuration)
+                logging_configuration,
+                remove_orphan_files)
 
 
     if not len(sys.argv) == 2:
@@ -80,7 +82,8 @@ if __name__ == '__main__':
     server = WorkflowDatabaseServer(config.get_database_file(),
                                     config.get_transfered_file_dir(),
                                     config.get_shared_temporary_directory(),
-                                    config.get_server_log_info())
+                                    config.get_server_log_info(),
+                                    config.get_remove_orphan_files())
 
     logging.debug("The server has been instantiated ")
 
