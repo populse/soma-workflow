@@ -529,7 +529,7 @@ class WorkflowDatabaseServer(object):
         the files will be transfered
         '''
 
-        print('WorkflowDatabaseServer::__init__, remove orphan files:', remove_orphan_files)
+        #print('WorkflowDatabaseServer::__init__, remove orphan files:', remove_orphan_files)
         self._remove_orphan_files = remove_orphan_files
         self._tmp_file_dir_path = tmp_file_dir_path
         self._database_file = database_file
