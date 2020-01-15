@@ -360,19 +360,26 @@ if __name__ == '__main__':
 
             while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
                 time.sleep(2)
+            logger.debug("******** workflow ends **********")
             for slave in range(1, comm.size):
                 logger.debug("[host: " + socket.gethostname() + "] "
                              + "STOP !!! slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+            logger.debug("******** stop signal sends **********")
             while not sch.stop_thread_loop:
                 time.sleep(1)
             logger.debug("######### master ends #############")
+            
         except Exception as e:
+            logger.error('exception occured: %s' % repr(e))
             for slave in range(1, comm.size):
-                logger.debug("STOP !!! " + socket.gethostname()
-                             + " slave " + repr(slave))
+                logger.debug("[host: " + socket.gethostname() + "] "
+                             + "STOP !!! slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+            
+            logger.debug("######### master ends with errors #############")
             raise e
+            
     # slave code
     else:
     
@@ -388,6 +395,10 @@ if __name__ == '__main__':
         logger.addHandler(log_file_handler)
         logger.info("=====> [host: " + socket.gethostname() + "] "
                     + "slave starts " + repr(rank))
+        
+        #logger.debug("=====> [host: " + socket.gethostname() + "] environment:")
+        #for k,v in six.iteritems(os.environ):
+            #logger.debug("%s=%s" % (k, v))
         
         slave_loop(comm,
                    logger=logger,
