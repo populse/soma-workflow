@@ -3089,7 +3089,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                 else:
                     table.horizontalHeader().setResizeMode(
                         QtGui.QHeaderView.ResizeToContents)
-                if job_item.gui_workflow:
+                if job_item.gui_workflow():
                     workflow = job_item.gui_workflow().server_workflow
                 else:
                     workflow = None
@@ -3138,11 +3138,14 @@ class JobInfoWidget(QtGui.QTabWidget):
             self.refresh_params()
         elif current_tab_index in (1, 2):
             self.refreshStdErrOut()
+        elif current_tab_index == 5:
+            self.refresh_envar()
 
         self.currentChanged.connect(self.currentTabChanged)
         self.ui.stderr_refresh_button.clicked.connect(self.refreshStdErrOut)
         self.ui.stdout_refresh_button.clicked.connect(self.refreshStdErrOut)
         self.ui.params_refresh_button.clicked.connect(self.refresh_params)
+        self.ui.envar_copy_btn.clicked.connect(self.copy_envars)
 
     def dataChanged(self):
 
@@ -3209,6 +3212,8 @@ class JobInfoWidget(QtGui.QTabWidget):
                 self.dataChanged()
         elif index == 4:
             self.refresh_params()
+        elif index == 5:
+            self.refresh_envar()
 
     @QtCore.Slot()
     def refreshStdErrOut(self):
@@ -3259,6 +3264,57 @@ class JobInfoWidget(QtGui.QTabWidget):
             job_ids = getattr(item, 'job_ids', None)
             if job_ids:
                 self.source_job_selected.emit(job_ids[0])
+
+    def get_envars(self):
+        if self.job_item.data is None:
+            self.ui.envar_table.clear()
+            return {}
+        env = {}
+        gui_w = self.job_item.gui_workflow()
+        if gui_w:
+            workflow = gui_w.server_workflow
+        else:
+            workflow = None
+        if workflow:
+            job_mapping = getattr(workflow, 'job_mapping', None)
+            if job_mapping:
+                ejob = job_mapping[self.job_item.data]
+                in_param_file = ejob.plain_input_params_file()
+                if in_param_file:
+                    env['SOMAWF_INPUT_PARAMS'] = in_param_file
+                out_param_file = ejob.plain_output_params_file()
+                if out_param_file:
+                    env['SOMAWF_OUTPUT_PARAMS'] = out_param_file
+        if self.job_item.data.env:
+            env.update(self.job_item.data.env)
+        return env
+
+    @QtCore.Slot()
+    def refresh_envar(self):
+        env = self.get_envars()
+        table = self.ui.envar_table
+        table.clearContents()
+        table.setRowCount(len(env))
+        row = 0
+        for var, value in six.iteritems(env):
+            table.setItem(row, 0, QtGui.QTableWidgetItem(var))
+            table.setItem(row, 1, QtGui.QTableWidgetItem(value))
+            row += 1
+        if QT_BACKEND == PYQT5:
+            table.horizontalHeader().setSectionResizeMode(
+                QtGui.QHeaderView.ResizeToContents)
+        else:
+            table.horizontalHeader().setResizeMode(
+                QtGui.QHeaderView.ResizeToContents)
+
+    def copy_envars(self):
+        def _repl(s):
+            sl = [c if c != '"' else '\\"' for c in s]
+            return ''.join(sl)
+        env = self.get_envars()
+        txt_env = ' '.join(['%s="%s"' % (k, _repl(v)) for k, v in six.iteritems(env)])
+        clipboard = QtGui.qApp.clipboard()
+        clipboard.setText(txt_env)
 
 
 class TransferInfoWidget(QtGui.QTabWidget):
@@ -4765,8 +4821,9 @@ class GuiWorkflow(object):
             item_id = id_cnt
             id_cnt = id_cnt + 1
             if isinstance(workflow, EngineWorkflow):
-                job_id = workflow.job_mapping[job].job_id
-                command = workflow.job_mapping[job].plain_command()
+                ejob = workflow.job_mapping[job]
+                job_id = ejob.job_id
+                command = ejob.plain_command()
             else:
                 job_id = NOT_SUBMITTED_JOB_ID
                 command = job.command
@@ -5202,12 +5259,13 @@ class GuiJob(GuiWorkflowItem):
                                " " + command_el.uuid + " " + command_el.relative_path + " >")
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
-            elif isinstance(command_el, unic_t) \
-                    or isinstance(command_el, unic_t):
-                cmd_seq.append(utf8(command_el))
+            elif isinstance(command_el, unic_t):
+                cmd_seq.append(command_el)
+            elif isinstance(command_el, str):
+                cmd_seq.append(command_el.decode('utf-8'))
             else:
                 cmd_seq.append(repr(command_el))
-        separator = " "
+        separator = u" "
         self.command = separator.join(cmd_seq)
 
     def updateState(self, status, queue, exit_info, date_info, drmaa_id):

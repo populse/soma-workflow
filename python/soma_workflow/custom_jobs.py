@@ -89,7 +89,7 @@ class ReduceJob(EngineExecutionJob):
     Several input series can be handled by the job, and input names can be
     customized.
 
-    * The numbers of inputs for each series in given as the ``lengths`` input
+    * The numbers of inputs for each series is given as the ``lengths`` input
     parameter. It is typically linked from the output of a :class:`MapJob`.
     * Input parameters names patterns are given as the ``input_names``
     parameter. It is a list of patterns, each containing a ``%d``pattern for

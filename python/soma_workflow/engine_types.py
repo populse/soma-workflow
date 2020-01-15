@@ -28,6 +28,7 @@ import six
 import time
 import datetime
 from soma_workflow import subprocess
+from soma_workflow import utils
 import json
 
 from soma_workflow.errors import JobError, WorkflowError
@@ -321,15 +322,18 @@ class EngineJob(Job):
             File, command or command elements that should be converted to an
             adequate string representation.
         mode : str
-            * If not "Command", and `command` is a list, it will be converted
-            to a string representation (i.e., the output list will be quoted).
+            * if "Command": return the command as a list of strings
             * If "Tuple", only the path to the directory is returned. Indeed,
             tuples are used to provide a FileTransfer directory and a filename.
             The two must then be concatenated.
+            * if None, ``command`` it will be converted
+            to a string representation (i.e., the output list will be quoted).
         '''
         if command is None:
             new_command = command
-        elif isinstance(command, tuple):
+        elif isinstance(command, tuple) and len(command) == 2 \
+                and isinstance(command[0], SpecialPath) \
+                and isinstance(command[1], (six.string_types, bytes)):
             # If the entry si a tuple, we use 'first' to recover the directory
             # and 'second' to get the filename
             c1 = command[1]
@@ -337,15 +341,21 @@ class EngineJob(Job):
                 c1 = c1.decode()
             new_command = os.path.join(
                 self.generate_command(command[0], mode="Tuple"), c1)
-        elif isinstance(command, list):
+        elif isinstance(command, (list, tuple)):
             # If the entry is a list, we convert all its elements. If the
             # parent call was done on the full command (mode=="Command"),
             # all children lists should be converted to string representations
             new_command = []
             for c in command:
-                new_command += [self.generate_command(c)]
-            if mode != "Command":
-                new_command = repr(new_command).encode('utf-8').replace("'", "\"")
+                new_command.append(self.generate_command(c, mode=mode))
+            if isinstance(command, tuple):
+                new_command = tuple(new_command)
+            elif isinstance(command, set):
+                new_command = set(new_command)
+            if mode is None:
+                new_command = repr(new_command).replace("'", "\"")
+                if six.PY2:
+                    new_command = new_command.encode('utf-8')
         elif isinstance(command, SpecialPath):
             # If the entry is a SpecialPath, it is converted into the
             # corresponding path representation. If the parent call cas
@@ -437,7 +447,8 @@ class EngineJob(Job):
             param_dict = {'parameters': params}
             for param, value in six.iteritems(self.param_dict):
                 params[param] = self.generate_command(value, mode='Command')
-            json.dump(param_dict, open(self.input_params_file, 'w'))
+            json.dump(utils.to_json(param_dict),
+                      open(self.input_params_file, 'w'))
 
     def is_running(self):
         running = self.status != constants.NOT_SUBMITTED and \
@@ -982,7 +993,7 @@ class EngineWorkflow(Workflow):
         #f_to_discard = 0
         #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
         #self.has_new_failed_jobs = False
-        t0 = time.clock()
+        #t0 = time.clock()
         for client_job in self.jobs:
             #jcount += 1
             self.logger.debug("client_job=" + repr(client_job))

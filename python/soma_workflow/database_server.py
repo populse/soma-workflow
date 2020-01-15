@@ -43,6 +43,7 @@ import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
 from soma_workflow.info import DB_VERSION, DB_PICKLE_PROTOCOL
+from soma_workflow import utils
 
 # python 2/3 compatibility
 import sys
@@ -2515,9 +2516,13 @@ class WorkflowDatabaseServer(object):
     def update_job_command(self, job_id, commandline):
         self.logger.debug("=> update_job_command " + str(job_id) + ':'
                           + repr(commandline))
-        command_info = ""
+        command_info = []
         for command_element in commandline:
-            command_info = command_info + " " + repr(command_element)
+            selem = repr(command_element)
+            if selem.startswith('u'):
+                selem = selem[1:]
+            command_info.append(selem)
+        command_info = u' '.join(command_info)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
@@ -2932,7 +2937,7 @@ class WorkflowDatabaseServer(object):
             try:
                 connection.execute(
                     'UPDATE jobs SET output_params=? WHERE id=?',
-                    (json.dumps(param_dict),
+                    (json.dumps(utils.to_json(param_dict)),
                      job_id))
             except Exception as e:
                 connection.rollback()
@@ -2955,7 +2960,7 @@ class WorkflowDatabaseServer(object):
                 jstr = six.next(json_sql)[0]
                 if jstr is None:
                     return None
-                jdict = json.loads(jstr)
+                jdict = utils.from_json(json.loads(jstr))
                 return jdict
             finally:
                 cursor.close()
@@ -2994,7 +2999,7 @@ class WorkflowDatabaseServer(object):
                             [src_job])
                         jstr = six.next(json_sql)[0]
                         if jstr is not None:
-                            jdict = json.loads(jstr)
+                            jdict = utils.from_json(json.loads(jstr))
                         else:
                             jdict = {}
                         jsons[src_job] = jdict

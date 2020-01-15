@@ -42,6 +42,7 @@ from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRME
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
 from soma_workflow.param_link_functions import *
+from soma_workflow import utils
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -553,8 +554,12 @@ class WorkflowEngineLoop(object):
             elif job.output_params_file is not None:
                 if os.path.exists(
                         job.plain_output_params_file()):
-                    output_dict = json.load(open(
-                      job.plain_output_params_file()))
+                    try:
+                        output_dict = utils.from_json(json.load(open(
+                            job.plain_output_params_file())))
+                    except:
+                        self.logger.info('unable to read output parameters '
+                            'file: %s' % job.plain_output_params_file())
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,

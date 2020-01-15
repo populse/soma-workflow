@@ -2283,32 +2283,32 @@ def to_serializable(element,
                     opt_ids):
     if isinstance(element, FileTransfer):
         if element in transfer_ids:
-            return transfer_ids[element]
+            return ('<id>', transfer_ids[element])
         else:
             ident = id_generator.generate_id()
             transfer_ids[element] = ident
-            return ident
+            return ('<id>', ident)
     elif isinstance(element, SharedResourcePath):
         if element in shared_res_path_ids:
-            return shared_res_path_ids[element]
+            return ('<id>', shared_res_path_ids[element])
         else:
             ident = id_generator.generate_id()
             shared_res_path_ids[element] = ident
-            return ident
+            return ('<id>', ident)
     elif isinstance(element, TemporaryPath):
         if element in tmp_ids:
-            return tmp_ids[element]
+            return ('<id>', tmp_ids[element])
         else:
             ident = id_generator.generate_id()
             tmp_ids[element] = ident
-            return ident
+            return ('<id>', ident)
     elif isinstance(element, OptionPath):
         if element in opt_ids:
-            return opt_ids[element]
+            return ('<id>', opt_ids[element])
         else:
             ident = id_generator.generate_id()
             opt_ids[element] = ident
-            return ident
+            return ('<id>', ident)
     elif isinstance(element, list):
         return list_to_serializable(element,
                                     id_generator,
@@ -2317,14 +2317,20 @@ def to_serializable(element,
                                     tmp_ids,
                                     opt_ids)
     elif isinstance(element, tuple):
-        return ["soma-workflow-tuple",
-                to_serializable(element[0],
-                                id_generator,
-                                transfer_ids,
-                                shared_res_path_ids,
-                                tmp_ids,
-                                opt_ids),
-                element[1]]
+        return tuple(list_to_serializable(element,
+                                    id_generator,
+                                    transfer_ids,
+                                    shared_res_path_ids,
+                                    tmp_ids,
+                                    opt_ids))
+        #return ["soma-workflow-tuple",
+                #to_serializable(element[0],
+                                #id_generator,
+                                #transfer_ids,
+                                #shared_res_path_ids,
+                                #tmp_ids,
+                                #opt_ids),
+                #element[1]]
     else:
         return element
 
@@ -2346,14 +2352,22 @@ def from_serializable(element,
         else:
             return list_from_serializable(element, tr_from_ids, srp_from_ids,
                                           tmp_from_ids, opt_from_ids)
-    elif element in tr_from_ids:
-        return tr_from_ids[element]
-    elif element in srp_from_ids:
-        return srp_from_ids[element]
-    elif element in tmp_from_ids:
-        return tmp_from_ids[element]
-    elif element in opt_from_ids:
-        return opt_from_ids[element]
+    elif isinstance(element, tuple):
+        if len(element) >= 1:
+            code = element[0]
+            if code == '<id>' and len(element) == 2:
+                el = element[1]
+                if el in tr_from_ids:
+                    return tr_from_ids[el]
+                elif el in srp_from_ids:
+                    return srp_from_ids[el]
+                elif el in tmp_from_ids:
+                    return tmp_from_ids[el]
+                elif el in opt_from_ids:
+                    return opt_from_ids[el]
+            return tuple(
+                list_from_serializable(element, tr_from_ids, srp_from_ids,
+                                       tmp_from_ids, opt_from_ids))
     else:
         return element
 
