@@ -123,7 +123,7 @@ class FakePipelineTest(WorkflowTest):
                     if os.path.exists(job_stderr_file):
                         os.unlink(job_stderr_file)
 
-        del self.tested_job
+            del self.tested_job
 
 def test():
     return FakePipelineTest.run_test_function(
