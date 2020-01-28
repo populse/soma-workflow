@@ -555,8 +555,8 @@ class WorkflowEngineLoop(object):
                 if os.path.exists(
                         job.plain_output_params_file()):
                     try:
-                        output_dict = utils.from_json(json.load(open(
-                            job.plain_output_params_file())))
+                        with open(job.plain_output_params_file()) as f:
+                            output_dict = utils.from_json(json.load(f))
                     except Exception:
                         self.logger.info('unable to read output parameters '
                             'file: %s' % job.plain_output_params_file())
