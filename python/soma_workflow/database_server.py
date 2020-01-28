@@ -2757,7 +2757,7 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.raise_from(DatabaseError(e), e)
             #connection.commit()
             try:
                 connection.commit()
