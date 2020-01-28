@@ -378,7 +378,7 @@ class PBSProScheduler(Scheduler):
             #     f.write("Error in job submission: %s: %s, output: %s" 
             #             % (type(e), e, e.output))
             #     f.close()
-            # except:
+            # except Exception:
             #     pass
             self.logger.error("Error in job submission: %s: %s\nOutput:\n%s" 
                               % (type(e), e, e.output.decode()),
@@ -392,7 +392,7 @@ class PBSProScheduler(Scheduler):
                 f = open(stderr_file, "wa")
                 f.write("Error in job submission: %s: %s" % (type(e), e))
                 f.close()
-            except:
+            except Exception:
                 pass
             self.logger.error("Error in job submission: %s: %s" % (type(e), e),
                               exc_info = sys.exc_info())
@@ -518,7 +518,7 @@ class PBSProScheduler(Scheduler):
             status = self.get_job_extended_status(scheduler_job_id)
             state = status['job_state']
             self.logger.debug('get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
-        except:
+        except Exception:
             return constants.UNDETERMINED
         if state == codes.ARRAY_STARTED:
             return constants.RUNNING

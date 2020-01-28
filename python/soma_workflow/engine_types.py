@@ -447,8 +447,8 @@ class EngineJob(Job):
             param_dict = {'parameters': params}
             for param, value in six.iteritems(self.param_dict):
                 params[param] = self.generate_command(value, mode='Command')
-            json.dump(utils.to_json(param_dict),
-                      open(self.input_params_file, 'w'))
+            with open(self.input_params_file, 'w') as f:
+                json.dump(utils.to_json(param_dict), f)
 
     def is_running(self):
         running = self.status != constants.NOT_SUBMITTED and \

@@ -8,7 +8,7 @@ user = 'nobody'
 try:
     import pwd
     user = pwd.getpwuid(os.getuid()).pw_name
-except:
+except Exception:
     pass
 
 controller = WorkflowController("Gabriel", user)

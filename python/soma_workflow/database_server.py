@@ -416,7 +416,7 @@ def sqlite3_max_variable_number():
             finally:
                 dll.sqlite3_close(db)
                 os.unlink(t[1])
-    except:
+    except Exception:
         pass
     if _sqlite3_max_variable_number == -1:
         _sqlite3_max_variable_number = 0
@@ -2539,7 +2539,7 @@ class WorkflowDatabaseServer(object):
                         'UPDATE jobs SET command=? WHERE id=?',
                         (command_info, job_id))
                     connection.commit()
-                except:
+                except:  # noqa: E722
                     connection.rollback()
                     raise
             finally:
@@ -2764,11 +2764,11 @@ class WorkflowDatabaseServer(object):
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                six.reraise(DatabaseError, DatabaseError(e), sys.exc_info()[2])
+                six.raise_from(DatabaseError(e), e)
             #connection.commit()
             try:
                 connection.commit()
-            except:
+            except:  # noqa: E722
                 print('DB error on file:', self._database_file, file=sys.stderr)
                 cursor.close()
                 connection.close()

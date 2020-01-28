@@ -9,7 +9,7 @@ from __future__ import print_function
 
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 import traceback
 #import zmq
@@ -39,7 +39,7 @@ class Respond(threading.Thread):
         while True:
             try:
                 message = self.client.recv(12000)
-            except:
+            except Exception:
                 print("Exception while waiting to receive a message")
             #print("msg received")
             #message = self.socket.recv()

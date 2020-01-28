@@ -31,7 +31,7 @@ import io
 import traceback
 #try:
     #import subprocess32 as subprocess
-#except:
+#except ImportError:
     #import subprocess
 from . import subprocess
 try:
@@ -959,8 +959,9 @@ class Tunnel(threading.Thread):
                             logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                     "the data, could potentially be a problem")
                         self.request.send(data)
-            except:
+            except:  # noqa: E722
                 self.shutdown_server()
+                raise
 
         def finish(self):
             print('Channel closed from %r' % (self.request.getpeername(),))
@@ -995,9 +996,10 @@ class Tunnel(threading.Thread):
     def serve_forever(self):
         try:
             super(Tunnel, self).serve_forever()
-        except:
+        except:  # noqa: E722
             print('EXCEPT')
             self.shutdown()
+            raise
 
     def __del__(self):
         logging.info('del Tunnel')

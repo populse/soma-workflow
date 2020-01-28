@@ -103,7 +103,7 @@ class WorkflowEnvTest(WorkflowTest):
                 self.assertTrue(nb_failed_jobs == 0,
                                 "nb failed jobs : %i. Expected : %i" %
                                 (nb_failed_jobs, 0))
-            except:
+            except:  # noqa: E722
                 print('jobs failed:', file=sys.stderr)
                 print(Helper.list_failed_jobs(self.wf_id, self.wf_ctrl), file=sys.stderr)
                 raise
@@ -115,7 +115,7 @@ class WorkflowEnvTest(WorkflowTest):
                 self.assertTrue(nb_failed_aborted_jobs == 0,
                                 "nb failed jobs including aborted : %i. Expected : %i"
                                 % (nb_failed_aborted_jobs, 0))
-            except:
+            except:  # noqa: E722
                 print('aborted jobs:', file=sys.stderr)
                 print(Helper.list_failed_jobs(self.wf_id, self.wf_ctrl, include_aborted_jobs=True), file=sys.stderr)
                 raise

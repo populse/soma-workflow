@@ -28,7 +28,7 @@ _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
 
 try:
     (DRMAA2_LIB_FOUND, _lib) = DetectFindLib(_drmaa_lib_env_name, 'drmaav2')
-except:
+except Exception:
     # an exception occurs when drmaa lib is detected but cannot be loaded
     # because of a failed dependency (torque, grid engine etc)
     print("detection of the DRMAA2 library failed")

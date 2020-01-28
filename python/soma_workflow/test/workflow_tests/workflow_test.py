@@ -94,15 +94,15 @@ class WorkflowTest(unittest.TestCase):
                 if rmfiles:
                     try:
                         shutil.rmtree(t)
-                    except:
+                    except OSError:
                         pass
                 else:
                     print('leaving directory: %s' % t, file=sys.stderr)
             elif os.path.exists(t):
                 if rmfiles:
                     try:
-                        os.unkink(t)
-                    except:
+                        os.unlink(t)
+                    except OSError:
                         pass
                 else:
                     print('leaving file: %s' % t, file=sys.stderr)
@@ -259,7 +259,7 @@ class WorkflowTest(unittest.TestCase):
         try:
             cls.run_test(debug=debug, interactive=interactive, **kwargs)
             return True
-        except:
+        except Exception:
             import traceback
             traceback.print_exc()
             return False
