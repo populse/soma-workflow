@@ -2301,6 +2301,13 @@ class WorkflowDatabaseServer(object):
                 connection.close()
             return login
 
+    @staticmethod
+    def shell_param(item):
+        if sys.version_info[0] < 3 and isinstance(item, unicode):
+            return repr(item.encode('utf-8'))
+        if isinstance(item, (list, tuple)):
+            return '"' + repr(item) + '"'
+        return repr(item)
 
     def add_job(self,
                 user_id,
@@ -2322,6 +2329,7 @@ class WorkflowDatabaseServer(object):
             the identifier of the job:
             (JobIdentifier, stdout_file_path, stderr_file_path)
         '''
+
         expiration_date = expiration_date
         if expiration_date == None:
             expiration_date = datetime.now() + timedelta(
@@ -2335,9 +2343,10 @@ class WorkflowDatabaseServer(object):
                 = engine_job.parallel_job_info.get('config_name')
             nodes_number = engine_job.parallel_job_info.get('nodes_number', 1)
             cpu_per_node = engine_job.parallel_job_info.get('cpu_per_node', 1)
-        command_info = ""
+        command_info = []
         for command_element in engine_job.plain_command():
-            command_info = command_info + " " + repr(command_element)
+            command_info.append(self.shell_param(command_element))
+        command_info = " ".join(command_info)
 
         with self._lock:
             if not external_cursor:
@@ -2518,11 +2527,9 @@ class WorkflowDatabaseServer(object):
                           + repr(commandline))
         command_info = []
         for command_element in commandline:
-            selem = repr(command_element)
-            if selem.startswith('u'):
-                selem = selem[1:]
+            selem = self.shell_param(command_element)
             command_info.append(selem)
-        command_info = u' '.join(command_info)
+        command_info = ' '.join(command_info)
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()

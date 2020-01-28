@@ -347,7 +347,7 @@ class EngineJob(Job):
             # all children lists should be converted to string representations
             new_command = []
             for c in command:
-                new_command.append(self.generate_command(c, mode=mode))
+                new_command.append(self.generate_command(c, mode=None))
             if isinstance(command, tuple):
                 new_command = tuple(new_command)
             elif isinstance(command, set):
