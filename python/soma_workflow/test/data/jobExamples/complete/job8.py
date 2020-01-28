@@ -22,7 +22,7 @@ in_dir = os.path.dirname(filePathIn)
 out_dir = os.path.join(in_dir, 'job8_output')
 try:
     os.mkdir(out_dir)
-except:
+except OSError:
     pass  # already exists because of previous run or concurrent run
 
 filePathOut = os.path.join(out_dir, 'job8_%s' % os.path.basename(filePathIn))

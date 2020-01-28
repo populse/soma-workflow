@@ -31,7 +31,7 @@ import io
 import traceback
 #try:
     #import subprocess32 as subprocess
-#except:
+#except ImportError:
     #import subprocess
 from . import subprocess
 try:

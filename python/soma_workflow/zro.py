@@ -8,7 +8,7 @@ from __future__ import print_function
 
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 import traceback
 import zmq

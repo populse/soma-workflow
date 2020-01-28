@@ -1004,7 +1004,7 @@ class NewServerDialog(QtGui.QDialog):
         except Exception as e:
             QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s" % (e))
             self.is_install = False
-        except:
+        except Exception:
             QtGui.QMessageBox.critical(
                 self, "Oops...", "Oops...some unexpected errors..check terminal")
             self.is_install = False
@@ -2367,7 +2367,7 @@ class MainWindow(QtGui.QMainWindow):
                 try:
                     wf_elements_status = connection.workflow_elements_status(
                         workflow_id)
-                except:
+                except Exception:
                     continue # workflow deleted
                 for transfer_info in wf_elements_status[1]:
                     status = transfer_info[1][0]
@@ -4172,7 +4172,7 @@ class ComputingResourcePool(object):
         if resource_id not in self._connections.keys():
             try:
                 self.add_connection(resource_id, WorkflowController())
-            except:
+            except Exception:
                 print('could not connect to the default connection %s'
                       % resource_id)
 

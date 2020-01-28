@@ -223,7 +223,7 @@ def get_schedulers_list():
                                                  'soma_workflow.schedulers')
             except NotImplementedError:
                 continue # skip not implemented / unfinished ones
-            except:
+            except Exception:
                 enabled = False
             if sched_mod == 'local_scheduler':
                 sched_mod = 'local_basic_scheduler'

@@ -439,7 +439,7 @@ class Configuration(observer.Observable):
 
             try:
                 transfered_file_dir = config.get_transfered_file_dir()
-            except:
+            except Exception:
                 transfered_file_dir = os.path.join(swf_dir, "transfered_files")
                 config._transfered_file_dir = transfered_file_dir
 
@@ -476,7 +476,7 @@ class Configuration(observer.Observable):
                     sched_impl \
                         = scheduler.get_scheduler_implementation(
                             scheduler_type)
-                except:
+                except Exception:
                     raise ConfigurationError("Unknown scheduler type:"
                                              " " + repr(scheduler_type))
             else:
@@ -1487,7 +1487,7 @@ def AddLineDefinitions2BashrcFile(lines2add, path2bashrc=""):
               % (path2bashrc))
     except ValueError:
         print("Could not convert data to an integer.")
-    except:
+    except:  # noqa: E722
         print("Unexpected error:", sys.exc_info()[0])
         raise
 
@@ -1517,7 +1517,7 @@ def AddLineDefinitions2BashrcFile(lines2add, path2bashrc=""):
     except ValueError:
         print("Could not convert data to an integer.")
         raise ValueError
-    except:
+    except:  # noqa: E722
         print("Unexpected error:", sys.exc_info()[0])
         raise
 
@@ -1534,6 +1534,6 @@ def WriteOutConfiguration(config_parser, config_path):
     except ValueError:
         print("Could not convert data to an integer.%s" % (config_path))
         raise ValueError
-    except:
+    except:  # noqa: E722
         print("Unexpected error:", sys.exc_info()[0])
         raise

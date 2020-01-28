@@ -28,12 +28,12 @@ class SerializationTest(unittest.TestCase):
             if os.path.isdir(t):
                 try:
                     shutil.rmtree(t)
-                except:
+                except OSError:
                     pass
             elif os.path.exists(t):
                 try:
-                    os.unkink(t)
-                except:
+                    os.unlink(t)
+                except OSError:
                     pass
 
     def test_serialization(self):

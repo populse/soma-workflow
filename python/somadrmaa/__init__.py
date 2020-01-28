@@ -186,7 +186,7 @@ Attributes can be passed as keyword arguments."""
         try:
             for aname in kwargs:
                 setattr(self, aname, kwargs.get(aname))
-        except:
+        except:  # noqa: E722
             self.delete()
             raise
 

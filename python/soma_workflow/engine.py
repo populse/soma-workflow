@@ -418,7 +418,7 @@ class WorkflowEngineLoop(object):
                             transfer_id,
                             self._user_id)
                         transfer.status = status
-                    except:
+                    except Exception:
                         self.logger.exception('WorkflowEngineLoop')
                 for tmp_id, tmp in six.iteritems(wf_tmp):
                     try:
@@ -426,7 +426,7 @@ class WorkflowEngineLoop(object):
                             tmp_id,
                             self._user_id)
                         tmp.status = status
-                    except:
+                    except Exception:
                         logger.exception()
 
                 for wf_id in six.iterkeys(self._workflows):
@@ -557,7 +557,7 @@ class WorkflowEngineLoop(object):
                     try:
                         output_dict = utils.from_json(json.load(open(
                             job.plain_output_params_file())))
-                    except:
+                    except Exception:
                         self.logger.info('unable to read output parameters '
                             'file: %s' % job.plain_output_params_file())
             if not output_dict:

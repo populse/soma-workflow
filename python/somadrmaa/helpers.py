@@ -202,7 +202,7 @@ def attributes_iterator(attributes):
         while drmaa_get_next_attr_value(attributes, buf, sizeof(buf))\
                 != const.NO_MORE_ELEMENTS:
             yield buf.value
-    except:
+    except:  # noqa: E722
         drmaa_release_attr_values(attributes)
         raise
     else:
@@ -232,7 +232,7 @@ def attribute_names_iterator():
         while drmaa_get_next_attr_name(attrn_p.contents, name, _BUFLEN)\
                 != const.NO_MORE_ELEMENTS:
             yield name.value
-    except:
+    except:  # noqa: E722
         drmaa_release_attr_names(attrn_p.contents)
         raise
     else:
@@ -247,7 +247,7 @@ def vector_attribute_names_iterator():
         while drmaa_get_next_attr_name(attrn_p.contents, name, _BUFLEN)\
                 != const.NO_MORE_ELEMENTS:
             yield name.value
-    except:
+    except:  # noqa: E722
         drmaa_release_attr_names(attrn_p.contents)
         raise
     else:
@@ -262,7 +262,7 @@ def run_bulk_job(jt, start, end, incr=1):
         while drmaa_get_next_job_id(jids.contents, jid, _BUFLEN)\
                 != const.NO_MORE_ELEMENTS:
             yield jid.value
-    except:
+    except:  # noqa: E722
         drmaa_release_job_ids(jids.contents)
         raise
     else:

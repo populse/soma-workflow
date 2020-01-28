@@ -195,7 +195,7 @@ def read_configuration_file(config_file_path):
     config_parser = SafeConfigParser()
     try:
         config_parser.read(config_file_path)
-    except:
+    except Exception:
         strmsg = "Cannot open {0} \n".format(config_file_path)
         raise IOError(strmsg)
     return config_parser
