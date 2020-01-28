@@ -146,7 +146,7 @@ class WorkflowController(object):
 
         # LOCAL MODE
         if mode == configuration.LOCAL_MODE:
-            print("In local mode")
+            print("soma-workflow starting in local mode")
             # setup logging
             (engine_log_dir,
             engine_log_format,
@@ -171,7 +171,7 @@ class WorkflowController(object):
 
         # REMOTE MODE
         elif mode == configuration.REMOTE_MODE:
-            print("In remote mode")
+            print("soma-workflow starting in remote mode")
             submitting_machines = self.config.get_submitting_machines()
             sub_machine = submitting_machines[random.randint(
                 0, len(submitting_machines) - 1)]
@@ -204,7 +204,7 @@ class WorkflowController(object):
 
         # LIGHT MODE
         elif mode == configuration.LIGHT_MODE:
-            print("In light mode")
+            print("soma-workflow starting in light mode")
             local_scdl_cfg_path \
                 = configuration.LocalSchedulerCfg.search_config_path()
             if local_scdl_cfg_path == None:
