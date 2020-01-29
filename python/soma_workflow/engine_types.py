@@ -310,7 +310,7 @@ class EngineJob(Job):
             map_and_register(item)
 
 
-    def generate_command(self, command, mode=None):
+    def generate_command(self, command, mode=None, level=0):
         '''
         This function should only be added after all SpecialPath were
         registered. It generates an adequate server representation of
@@ -347,7 +347,12 @@ class EngineJob(Job):
             # all children lists should be converted to string representations
             new_command = []
             for c in command:
-                new_command.append(self.generate_command(c, mode=None))
+                item = self.generate_command(c, mode=mode, level=level+1)
+                if level == 0 and isinstance(item, (list, tuple)) \
+                        and mode == 'Command':
+                    # commandline elements should be strings
+                    item = repr(item)
+                new_command.append(item)
             if isinstance(command, tuple):
                 new_command = tuple(new_command)
             elif isinstance(command, set):
