@@ -754,9 +754,11 @@ class WorkflowController(object):
             print('** Workflow status OK', file=file)
         elements_status = self.workflow_elements_status(workflow_id)
         failed_jobs = [element for element in elements_status[0]
-                       if element[1] != constants.DONE
-                       or element[3][0] != constants.FINISHED_REGULARLY
-                       or element[3][1] != 0]
+                       if element[1] == constants.FAILED
+                       or (element[1] == constants.DONE and
+                           (element[3][0]
+                              not in (constants.FINISHED_REGULARLY, None)
+                            or element[3][1] != 0))]
         failed_jobs_info = self.jobs(
             [element[0] for element in failed_jobs
             if element[3][0] != constants.EXIT_NOTRUN])
