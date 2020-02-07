@@ -1272,6 +1272,9 @@ class WorkflowEngine(RemoteFileController):
 
         return status
 
+    def get_engine_job(self, job_id):
+        return self._database_server.get_engine_job(job_id, self._user_id)[0]
+
     def get_job_command(self, job_id):
         return self._database_server.get_job_command(job_id)
 

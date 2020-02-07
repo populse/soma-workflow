@@ -28,6 +28,7 @@ import sys
 import posixpath
 import logging
 import six
+import tempfile
 
 if sys.version_info[:2] >= (2, 6):
     import json
@@ -475,6 +476,9 @@ class WorkflowController(object):
         '''
         return self._engine_proxy.job_status(job_id)
 
+    def get_engine_job(self, job_id):
+        return self._engine_proxy.get_engine_job(job_id)
+
     def get_job_command(self, job_id):
         '''
         Get a job commandline from the database
@@ -736,6 +740,89 @@ class WorkflowController(object):
             A negative value means that the method will wait indefinetely.
         '''
         self._engine_proxy.wait_workflow(workflow_id, timeout)
+
+    def log_failed_workflow(self, workflow_id, file=sys.stderr):
+        '''
+        If the workflow has any failed job, log their status and outputs in the
+        given file.
+        '''
+        workflow_status = self.workflow_status(workflow_id)
+        if workflow_status != constants.WORKFLOW_DONE:
+            print('** Workflow did not finish regularly: %s' % workflow_status,
+                  file=file)
+        else:
+            print('** Workflow status OK', file=file)
+        elements_status = self.workflow_elements_status(workflow_id)
+        failed_jobs = [element for element in elements_status[0]
+                       if element[1] != constants.DONE
+                       or element[3][0] != constants.FINISHED_REGULARLY
+                       or element[3][1] != 0]
+        failed_jobs_info = self.jobs(
+            [element[0] for element in failed_jobs
+            if element[3][0] != constants.EXIT_NOTRUN])
+        if len(failed_jobs) != 0:
+            # failure
+            print('** Jobs failure, the following jobs ended with failed '
+                  'status:', file=file)
+            for element in failed_jobs:
+                # skip those aborted for their dependencies
+                if element[3][0] != constants.EXIT_NOTRUN:
+                    job = failed_jobs_info[element[0]]
+                    print('+ job:', job[0], ', status:', element[1],
+                          ', exit:', element[3][0],
+                          ', value:', element[3][1],
+                          file=file)
+                    print('  commandline:', file=file)
+                    print(job[1], file=file)
+            print('\n** Failed jobs outputs:\n', file=file)
+            # log outputs
+            for element in failed_jobs:
+                # skip those aborted for their dependencies
+                if element[3][0] != constants.EXIT_NOTRUN:
+                    job = failed_jobs_info[element[0]]
+                    print('+ job %d:' % element[0], job[0],
+                          ', status:', element[1],
+                          ', exit:', element[3][0],
+                          ', value:', element[3][1],
+                          file=file)
+                    print(
+                        '  =================================================')
+                    print('  commandline:', file=file)
+                    print('  ------------:', file=file)
+                    print(job[1], file=file)
+
+                    print('\n  input parameters:', file=file)
+                    print('  -----------------', file=file)
+                    print(self.updated_job_parameters(element[0]), file=file)
+                    print('\n  output parameters:', file=file)
+                    print('  ------------------', file=file)
+                    print(self.get_job_output_params(element[0]), file=file)
+                    print('\n  environment:', file=file)
+                    print('  ------------', file=file)
+                    job = self.get_engine_job(element[0])
+                    print(job.env, file=file)
+
+                    tmp_stdout = tempfile.mkstemp(prefix='swf_job_stdout_')
+                    tmp_stderr = tempfile.mkstemp(prefix='swf_job_stderr_')
+                    os.close(tmp_stdout[0])
+                    os.close(tmp_stderr[0])
+                    self.retrieve_job_stdouterr(element[0], tmp_stdout[1],
+                                                tmp_stderr[1])
+                    print('\n  standard output:', file=file)
+                    print('  ----------------\n', file=file)
+                    with open(tmp_stdout[1]) as f:
+                        print(f.read(), file=file)
+                    os.unlink(tmp_stdout[1])
+                    print('\n  standard error:', file=file)
+                    print('  ---------------\n', file=file)
+                    with open(tmp_stderr[1]) as f:
+                        print(f.read(), file=file)
+                    os.unlink(tmp_stderr[1])
+                    print(file=file)
+
+        return workflow_status == constants.WORKFLOW_DONE \
+            and len(failed_jobs) == 0
+
 
     # FILE TRANSFER CONTROL #######################################
     def transfer_files(self, transfer_ids, buffer_size=512 ** 2):
