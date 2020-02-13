@@ -95,10 +95,12 @@ else:
 
     except ImportError:
         from subprocess import *
-        print('subprocess module will be used to start shell commands. Due to '
-            'issues in this module this can lead to problems during execution. '
-            'You should probably install subprocess32 module to avoid these '
-            'problems.')
+        ## disable this print becauses it causes commands that start the
+        ## servers to fail (they parse stdout and don't expect this message)
+        #print('subprocess module will be used to start shell commands. Due to '
+            #'issues in this module this can lead to problems during execution. '
+            #'You should probably install subprocess32 module to avoid these '
+            #'problems.')
     
         def __initialize_subprocess():
             import subprocess
