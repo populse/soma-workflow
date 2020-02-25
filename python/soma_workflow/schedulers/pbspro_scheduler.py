@@ -21,6 +21,7 @@ from soma_workflow import configuration
 from soma_workflow.configuration import Configuration
 import tempfile
 from soma_workflow import subprocess
+import time
 
 
 class JobTemplate(object):
@@ -549,7 +550,7 @@ class PBSProScheduler(Scheduler):
         elif state == codes.WAITING:
             return constants.QUEUED_ACTIVE  # FIXME not exactly that
         elif state == codes.SUBJOB_COMPLETE:
-            return DELETE_PENDING  # is it that ?
+            return constants.DELETE_PENDING  # is it that ?
         else:
             return constants.UNDETERMINED
 
