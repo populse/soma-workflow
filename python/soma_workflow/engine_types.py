@@ -40,7 +40,9 @@ from soma_workflow.client import Job, EngineExecutionJob, SpecialPath, \
     Group
 import sys
 
+
 class EngineJob(Job):
+
     '''
     This object represents a Job, i.e. an individual processing task, on the
     server side. It is able to build server representations of SpecialPath
@@ -198,20 +200,21 @@ class EngineJob(Job):
             raise JobError("The command attribute is the only required "
                            "attribute of Job.")
 
-        #if self.parallel_job_info:
-            #parallel_config_name = self.parallel_job_info.get('config_name')
-            #nodes_number = self.parallel_job_info.get('nodes_number', 1)
-            #cpu_per_node = self.parallel_job_info.get('cpu_per_node', 1)
-            #if not parallel_job_submission_info:
-                #raise JobError(
+        # if self.parallel_job_info:
+            # parallel_config_name = self.parallel_job_info.get('config_name')
+            # nodes_number = self.parallel_job_info.get('nodes_number', 1)
+            # cpu_per_node = self.parallel_job_info.get('cpu_per_node', 1)
+            # if not parallel_job_submission_info:
+                # raise JobError(
                     #"No parallel information was registered for the "
                     #" current resource. A parallel job can not be submitted")
-            #if parallel_config_name not in parallel_job_submission_info:
-                #raise JobError(
+            # if parallel_config_name not in parallel_job_submission_info:
+                # raise JobError(
                     #"The parallel job can not be submitted because the "
                     #"parallel configuration %s is missing."
                     #% (parallel_config_name))
-                ## potential bug should configuration_name be parallel_config_name
+                # potential bug should configuration_name be
+                # parallel_config_name
 
         def map_and_register(file, mode=None, addTo=[]):
             '''
@@ -240,7 +243,8 @@ class EngineJob(Job):
             if file:
                 if isinstance(file, OptionPath):
                     if not file in self.path_mapping:
-                        self.path_mapping[file] = EngineOptionPath(file, self.transfer_mapping, self.path_translation)
+                        self.path_mapping[file] = EngineOptionPath(
+                            file, self.transfer_mapping, self.path_translation)
                         true_file = file.parent_path
                     else:
                         return
@@ -249,7 +253,7 @@ class EngineJob(Job):
                 if isinstance(true_file, TemporaryPath) \
                         or isinstance(true_file, FileTransfer):
                     if not true_file in self.transfer_mapping:
-                        if mode=="Command" and \
+                        if mode == "Command" and \
                            not true_file in self.referenced_input_files and \
                            not true_file in self.referenced_output_files:
                             raise JobError("FileTransfer and TemporaryPath objets used in the "
@@ -269,7 +273,8 @@ class EngineJob(Job):
                     if "Output" in addTo and not true_file in self.referenced_output_files:
                         self.referenced_output_files.append(true_file)
                     if not true_file in self.path_mapping:
-                        self.path_mapping[true_file] = self.transfer_mapping[true_file]
+                        self.path_mapping[
+                            true_file] = self.transfer_mapping[true_file]
                 elif isinstance(true_file, SharedResourcePath) \
                         and not true_file in self.path_mapping:
                     self.path_mapping[true_file] \
@@ -280,16 +285,17 @@ class EngineJob(Job):
                         true_file = true_file.decode('utf-8')
                     if not isinstance(true_file, six.string_types):
                         return
-                        #raise JobError(
+                        # raise JobError(
                             #"Wrong argument type in job %s: %s\ncommand:\n%s"
                             #% (self.name, repr(true_file), repr(self.command)))
                     if mode == "File":
                         true_file = os.path.abspath(true_file)
-                #if not isinstance(file, OptionPath):
-                    #file = true_file
+                # if not isinstance(file, OptionPath):
+                    # file = true_file
 
         map_and_register(self.stdin, mode="File", addTo=["Input"])
-        map_and_register(self.working_directory, mode="File", addTo=["Input", "Output"])
+        map_and_register(
+            self.working_directory, mode="File", addTo=["Input", "Output"])
         map_and_register(self.stdout_file, mode="File", addTo=["Output"])
         map_and_register(self.stderr_file, mode="File", addTo=["Output"])
         if self.use_input_params_file:
@@ -305,7 +311,6 @@ class EngineJob(Job):
         map_and_register(self.command, mode="Command")
         for param, item in self.param_dict.items():
             map_and_register(item)
-
 
     def generate_command(self, command, mode=None, level=0):
         '''
@@ -344,7 +349,7 @@ class EngineJob(Job):
             # all children lists should be converted to string representations
             new_command = []
             for c in command:
-                item = self.generate_command(c, mode=mode, level=level+1)
+                item = self.generate_command(c, mode=mode, level=level + 1)
                 if level == 0 and isinstance(item, (list, tuple)) \
                         and mode == 'Command':
                     # commandline elements should be strings
@@ -372,12 +377,13 @@ class EngineJob(Job):
                     new_command = new_command.encode('utf-8')
             else:
                 new_command = (
-                    command.pattern 
+                    command.pattern
                     % self.path_mapping[command].get_engine_main_path())
                 if sys.version_info[0] < 3:
                     new_command = new_command.encode('utf-8')
         else:
-            # If the entry is anything else, we return its string representation
+            # If the entry is anything else, we return its string
+            # representation
             if mode != 'Command':
                 new_command = six.text_type(command)
             else:
@@ -414,7 +420,7 @@ class EngineJob(Job):
                     command[i] \
                         = self.container_command[i].replace('{#command}',
                                                             user_command)
-                return command # no need to replace again
+                return command  # no need to replace again
         else:
             command = self.command
         repl_command = self.commandline_repl(
@@ -483,6 +489,7 @@ class EngineJob(Job):
 
 
 class EngineWorkflow(Workflow):
+
     '''
     Server side representation of a :obj:`Workflow`, i.e. a list of jobs
     with groups and dependencies.
@@ -535,7 +542,7 @@ class EngineWorkflow(Workflow):
     # dictionary: job_id -> list of job id
     _dependency_dict = None
 
-    #A workflow object. For serialisation purposes with serpent
+    # A workflow object. For serialisation purposes with serpent
     _client_workflow = None
 
     logger = None
@@ -760,7 +767,7 @@ class EngineWorkflow(Workflow):
                     self.job_mapping[elem] = ejob
             elif not isinstance(elem, Group):
                 raise WorkflowError(
-                      "%s: Wrong type in the workflow root_group."
+                    "%s: Wrong type in the workflow root_group."
                       " Objects of type Job or Group are required." %
                       (repr(elem)))
 
@@ -811,7 +818,7 @@ class EngineWorkflow(Workflow):
             self.cache = EngineWorkflow.WorkflowCache()
             self.cache.waiting_jobs = set(self.jobs)
             self.cache.dependencies = dict(
-                (k, set(v)) for k, v in  six.iteritems(self._dependency_dict))
+                (k, set(v)) for k, v in six.iteritems(self._dependency_dict))
             self.cache.has_new_failed_jobs = False
         cache = self.cache
         to_run = set()
@@ -819,17 +826,17 @@ class EngineWorkflow(Workflow):
         done = set()
         running = set()
         rmap = {}
-        #jcount = 0
-        #dcount = 0
-        #fcount = 0
+        # jcount = 0
+        # dcount = 0
+        # fcount = 0
         has_failed_jobs = self.cache.has_new_failed_jobs
         self.cache.has_new_failed_jobs = False
-        #import time
-        #t0 = time.clock()
+        # import time
+        # t0 = time.clock()
         for client_job in cache.waiting_jobs:
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
-            #jcount += 1
+            # jcount += 1
             if job.is_done():
                 done.add(job)
                 rmap[job] = client_job
@@ -843,7 +850,7 @@ class EngineWorkflow(Workflow):
                 job_to_run = True
                 job_to_abort = False
                 for ft in job.referenced_input_files:
-                    #fcount += 1
+                    # fcount += 1
                     eft = job.transfer_mapping[ft]
                     if not eft.files_exist_on_server():
                         if eft.status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
@@ -855,7 +862,7 @@ class EngineWorkflow(Workflow):
                 if deps is not None:
                     remove_deps = []
                     for dep_client_job in deps:
-                        #dcount += 1
+                        # dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
@@ -964,8 +971,10 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        #t1 = time.clock()
-        #print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', ended:', len(ended_jobs), ', done:', len(done), ', running:', len(running))
+        # t1 = time.clock()
+        # print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ',
+        # time:', t1 - t0, ', to_run:', len(to_run), ', ended:',
+        # len(ended_jobs), ', done:', len(done), ', running:', len(running))
 
         return (list(to_run), ended_jobs, status)
 
@@ -987,17 +996,17 @@ class EngineWorkflow(Workflow):
         to_abort = set()
         done = []
         running = set()
-        #jcount = 0
-        #dcount = 0
-        #fcount = 0
+        # jcount = 0
+        # dcount = 0
+        # fcount = 0
         j_to_discard = 0
-        #d_to_discard = 0
-        #f_to_discard = 0
-        #has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
-        #self.has_new_failed_jobs = False
-        #t0 = time.clock()
+        # d_to_discard = 0
+        # f_to_discard = 0
+        # has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
+        # self.has_new_failed_jobs = False
+        # t0 = time.clock()
         for client_job in self.jobs:
-            #jcount += 1
+            # jcount += 1
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
             if job.is_done():
@@ -1009,9 +1018,10 @@ class EngineWorkflow(Workflow):
             elif job.status == constants.NOT_SUBMITTED:
                 job_to_run = True
                 job_to_abort = False
-                self.logger.debug("job not submitted, referenced_input_files: " + repr(job.referenced_input_files))
+                self.logger.debug(
+                    "job not submitted, referenced_input_files: " + repr(job.referenced_input_files))
                 for ft in job.referenced_input_files:
-                    #fcount += 1
+                    # fcount += 1
                     eft = job.transfer_mapping[ft]
                     if not eft.files_exist_on_server():
                         if eft.status \
@@ -1019,21 +1029,21 @@ class EngineWorkflow(Workflow):
                             # TBI stop the transfer
                             pass
                         self.logger.debug("Transfer not complete: %s / %s"
-                                          % (eft,  eft.engine_path) 
+                                          % (eft,  eft.engine_path)
                                           + ', status: ' + repr(eft.status))
                         job_to_run = False
                         break
                 self.logger.debug("job_to_run: " + repr(job_to_run))
                 if client_job in self._dependency_dict:
                     for dep_client_job in self._dependency_dict[client_job]:
-                        #dcount += 1
+                        # dcount += 1
                         dep_job = self.job_mapping[dep_client_job]
                         if not dep_job.ended_with_success():
                             job_to_run = False
                             if dep_job.failed():
                                 job_to_abort = True
                                 break
-                        #else: d_to_discard += 1
+                        # else: d_to_discard += 1
                         # TO DO to abort
                 if job_to_run:
                     to_run.add(job)
@@ -1087,8 +1097,11 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        #t1 = time.clock()
-        #print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ', to_run:', len(to_run), ', done:', len(done), ', running:', len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:', d_to_discard)
+        # t1 = time.clock()
+        # print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ',
+        # to_run:', len(to_run), ', done:', len(done), ', running:',
+        # len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:',
+        # d_to_discard)
         if j_to_discard >= 2000:
             self.use_cache = True
             self.logger.debug('enabling cache.')
@@ -1240,18 +1253,18 @@ class EngineWorkflow(Workflow):
         jobsdeps_f = {}
         jobsdeps_t = {}
         for dep in self.dependencies:
-            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j1 = self.job_mapping[dep[0]]  # get engine jobs
             j2 = self.job_mapping[dep[1]]
-            #if j2.status == constants.FAILED \
-                    #and j2.job_id not in ext_job_ids:
+            # if j2.status == constants.FAILED \
+                    # and j2.job_id not in ext_job_ids:
             if j2.job_id not in ext_job_ids:
                 # dep[1] may change state
                 jobsdeps_f.setdefault(j2, set()).add(j1)
                 if j1.job_id in ext_job_ids \
                         and j2.job_id not in ext_job_ids:
                     to_test.append(j2)
-            #if j1.status == constants.FAILED \
-                    #and j1.job_id not in ext_job_ids:
+            # if j1.status == constants.FAILED \
+                    # and j1.job_id not in ext_job_ids:
             if j1.job_id not in ext_job_ids:
                 jobsdeps_t.setdefault(j1, set()).add(j2)
         while to_test:
@@ -1328,7 +1341,7 @@ class EngineWorkflow(Workflow):
         extended_jobs = set(jobs_to_run)
         # look for jobs which can restart immediately (all deps met)
         for dep in self.dependencies:
-            j1 = self.job_mapping[dep[0]] # get engine jobs
+            j1 = self.job_mapping[dep[0]]  # get engine jobs
             j2 = self.job_mapping[dep[1]]
             if j2 in jobs_to_run and j1.status != constants.DONE:
                 jobs_to_run.remove(j2)
@@ -1435,7 +1448,6 @@ class EngineTransfer(FileTransfer):
             return (client_path, client_paths)
         return (None, None)
 
-
     def get_engine_main_path(self):
         ''' main file (translated client_path) name '''
         if self.client_paths:
@@ -1458,7 +1470,7 @@ class EngineTemporaryPath(TemporaryPath):
 
     temp_path_id = None
 
-    #suffix = None
+    # suffix = None
 
     # temporary_directory should be set according to configuration.
     # It will be set by engine.ConfiguredWorkflowEngine, which has access to
@@ -1520,7 +1532,7 @@ class EngineOptionPath(OptionPath):
 
     engine_parent_path = None
 
-    def __init__(self, client_option_path, transfer_mapping = None, path_translation = None ):
+    def __init__(self, client_option_path, transfer_mapping=None, path_translation=None):
         super(EngineOptionPath, self).__init__(
             parent_path=client_option_path.parent_path,
             uri=client_option_path.uri,
@@ -1531,16 +1543,19 @@ class EngineOptionPath(OptionPath):
             if not client_option_path.parent_path in transfer_mapping:
                 transfer_mapping[client_option_path.parent_path] = \
                     EngineTransfer(client_option_path.parent_path)
-            self.engine_parent_path = transfer_mapping[client_option_path.parent_path]
+            self.engine_parent_path = transfer_mapping[
+                client_option_path.parent_path]
             self.status = self.engine_parent_path.status
         elif isinstance(client_option_path.parent_path, TemporaryPath):
             if not client_option_path.parent_path in transfer_mapping:
                 transfer_mapping[client_option_path.parent_path] = \
                     get_EngineTemporaryPath(client_option_path.parent_path)
-            self.engine_parent_path = transfer_mapping[client_option_path.parent_path]
+            self.engine_parent_path = transfer_mapping[
+                client_option_path.parent_path]
             self.status = self.engine_parent_path.status
         elif isinstance(client_option_path, SharedResourcePath):
-            self.engine_parent_path = EngineSharedResourcePath(client_option_path.parent_path, path_translation)
+            self.engine_parent_path = EngineSharedResourcePath(
+                client_option_path.parent_path, path_translation)
             self.status = self.engine_parent_path.status
         else:
             self.engine_parent_path = client_option_path.parent_path
@@ -1563,6 +1578,7 @@ class EngineOptionPath(OptionPath):
 
     def get_id(self):
         return self.get_engine_path()
+
 
 class EngineSharedResourcePath(SharedResourcePath):
 

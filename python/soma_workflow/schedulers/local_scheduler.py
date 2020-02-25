@@ -12,29 +12,29 @@ license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.
 '''
 from ..scheduler import Scheduler
 import sys
-#try:
-    #try:
-        ## subprocess32 seems to have its own zmq implementation,
-        ## which proves to be incompatible (too old) with some other modules
-        ## (such as ipython). We load the "official" one first to avoid problems
-        #import zmq
-    #except:
-        #pass
-    #import subprocess32 as subprocess
-    #import subprocess as _subprocess
-    #if hasattr(_subprocess, '_args_from_interpreter_flags'):
-        ## get this private function which is used somewhere in
-        ## multiprocessing
-        #subprocess._args_from_interpreter_flags \
+# try:
+    # try:
+        # subprocess32 seems to have its own zmq implementation,
+        # which proves to be incompatible (too old) with some other modules
+        # (such as ipython). We load the "official" one first to avoid problems
+        # import zmq
+    # except:
+        # pass
+    # import subprocess32 as subprocess
+    # import subprocess as _subprocess
+    # if hasattr(_subprocess, '_args_from_interpreter_flags'):
+        # get this private function which is used somewhere in
+        # multiprocessing
+        # subprocess._args_from_interpreter_flags \
             #= _subprocess._args_from_interpreter_flags
-    #del _subprocess
-    #import sys
-    #sys.modules['subprocess'] = sys.modules['subprocess32']
-##    print('using subprocess32')
-#except ImportError:
-##    print('subprocess32 could not be loaded - processes may hangup')
-    #import subprocess
-#import ..subprocess
+    # del _subprocess
+    # import sys
+    # sys.modules['subprocess'] = sys.modules['subprocess32']
+# print('using subprocess32')
+# except ImportError:
+# print('subprocess32 could not be loaded - processes may hangup')
+    # import subprocess
+# import ..subprocess
 from .. import subprocess
 import threading
 import time
@@ -87,7 +87,7 @@ class LocalScheduler(Scheduler):
     '''
     parallel_job_submission_info = None
 
-    #logger = None
+    # logger = None
 
     _proc_nb = None
 
@@ -190,7 +190,7 @@ class LocalScheduler(Scheduler):
 
         # run new jobs
         skipped_jobs = []
-        #print('processing queue:', len(self._queue), file=sys.stderr)
+        # print('processing queue:', len(self._queue), file=sys.stderr)
         while self._queue:
             job_id = self._queue.pop(0)
             job = self._jobs[job_id]
@@ -199,28 +199,29 @@ class LocalScheduler(Scheduler):
                 # barrier jobs are not actually run using Popen:
                 # they succeed immediately.
                 self._exit_info[job.drmaa_id] = (constants.FINISHED_REGULARLY,
-                                               0,
-                                               None,
-                                               None)
+                                                 0,
+                                                 None,
+                                                 None)
                 self._status[job.drmaa_id] = constants.DONE
             else:
                 ncpu = self._cpu_for_job(job)
-                #print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
+                # print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
                 if not self._can_submit_new_job(ncpu):
-                    #print('cannot submit.', file=sys.stderr)
-                    skipped_jobs.append(job_id) # postponed
-                    if ncpu == 1: # no other job will be able to run now
+                    # print('cannot submit.', file=sys.stderr)
+                    skipped_jobs.append(job_id)  # postponed
+                    if ncpu == 1:  # no other job will be able to run now
                         break
                     else:
                         continue
-                #print('submitting.', file=sys.stderr)
+                # print('submitting.', file=sys.stderr)
                 process = LocalScheduler.create_process(job)
                 if process == None:
-                    LocalScheduler.logger.error('command process is None:' + job.name)
+                    LocalScheduler.logger.error(
+                        'command process is None:' + job.name)
                     self._exit_info[job.drmaa_id] = (constants.EXIT_ABORTED,
-                                                   None,
-                                                   None,
-                                                   None)
+                                                     None,
+                                                     None,
+                                                     None)
                     self._status[job.drmaa_id] = constants.FAILED
                 else:
                     self._processes[job.drmaa_id] = process
@@ -273,7 +274,7 @@ class LocalScheduler(Scheduler):
                 # decrease artificially idle because we will submit a job,
                 # and next calls should take it into account
                 # until another measurement is done.
-                LocalScheduler._lastidle -= ncpu # increase load artificially
+                LocalScheduler._lastidle -= ncpu  # increase load artificially
                 return True
             return False
         # no psutil: get to the upper limit.
@@ -340,7 +341,8 @@ class LocalScheduler(Scheduler):
                 env2 = dict(os.environ)
                 if sys.platform.startswith('win') and sys.version_info[0] < 3:
                     # windows cannot use unicode strings as env values
-                    env2.update([(k.encode('utf-8'), v.encode('utf-8')) for k, v in six.iteritems(env)])
+                    env2.update([(k.encode('utf-8'), v.encode('utf-8'))
+                                for k, v in six.iteritems(env)])
                 else:
                     env2.update(env)
                 env = env2
@@ -359,7 +361,8 @@ class LocalScheduler(Scheduler):
                 stdout_file.close()
 
         except Exception as e:
-            LocalScheduler.logger.error('exception while running command:' + repr(e))
+            LocalScheduler.logger.error(
+                'exception while running command:' + repr(e))
             if stderr:
                 s = '%s: %s \n' % (type(e), e)
                 stderr_file.write(s)
@@ -513,7 +516,7 @@ class ConfiguredLocalScheduler(LocalScheduler):
                                  "update_from_config",
                                  [LocalSchedulerCfg.PROC_NB_CHANGED,
                                   LocalSchedulerCfg.INTERVAL_CHANGED,
-                                  LocalSchedulerCfg.MAX_PROC_NB_CHANGED,])
+                                  LocalSchedulerCfg.MAX_PROC_NB_CHANGED, ])
 
     def update_from_config(self, observable, event, msg):
         if event == LocalSchedulerCfg.PROC_NB_CHANGED:
@@ -536,7 +539,7 @@ class ConfiguredLocalScheduler(LocalScheduler):
             else:
                 local_scheduler_config = LocalSchedulerCfg()
             config.set_scheduler_config(local_scheduler_config)
-            
+
         sch = ConfiguredLocalScheduler(local_scheduler_config)
         return sch
 

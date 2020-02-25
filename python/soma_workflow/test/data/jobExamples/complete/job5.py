@@ -39,4 +39,3 @@ if output_param_file:
         'filePathOut2': filePathOut2,
     }
     json.dump(out_params, open(output_param_file, 'w'))
-

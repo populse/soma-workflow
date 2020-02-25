@@ -191,6 +191,7 @@ class MultipleTest(WorkflowTest):
                         os.unlink(job_stderr_file)
         del self.tested_job
 
+
 def test():
     return MultipleTest.run_test_function(**WorkflowTest.parse_args(sys.argv))
 

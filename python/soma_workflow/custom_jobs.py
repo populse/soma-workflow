@@ -40,6 +40,7 @@ class MapJob(EngineExecutionJob):
     not "mapped".
 
     '''
+
     def __init__(self,
                  command=[],
                  referenced_input_files=None,
@@ -64,7 +65,7 @@ class MapJob(EngineExecutionJob):
             has_outputs=True)
 
     @classmethod
-    def engine_execution(cls,self):
+    def engine_execution(cls, self):
         input_names = self.param_dict.get('input_names', ['inputs'])
         output_names = self.param_dict.get('output_names', ['output_%d'])
         out_dict = dict(self.param_dict)
@@ -105,6 +106,7 @@ class ReduceJob(EngineExecutionJob):
     not "reduced".
 
     '''
+
     def __init__(self,
                  command=[],
                  referenced_input_files=None,
@@ -136,7 +138,7 @@ class ReduceJob(EngineExecutionJob):
                 if p not in self.param_dict:
                     self.param_dict[p] = ''
             i = l
-            while param %i in self.param_dict:
+            while param % i in self.param_dict:
                 del self.param_dict[param % i]
                 i += 1
 
@@ -193,7 +195,7 @@ class LeaveOneOutJob(EngineExecutionJob):
         inputs = self.param_dict['inputs']
         index = self.param_dict['index']
         output_item = inputs[index]
-        output_list = inputs[:index] + inputs[index+1:]
+        output_list = inputs[:index] + inputs[index + 1:]
         out_dict = {
             'train': output_list,
             'test': output_item,
@@ -246,7 +248,7 @@ class CrossValidationFoldJob(EngineExecutionJob):
         begin += min(begin, nsupp)
         end = fold_size * (fold + 1)
         end += min(end, nsupp)
-        train =  inputs[:begin] + inputs[end:]
+        train = inputs[:begin] + inputs[end:]
         test = inputs[begin:end]
         out_dict = {
             'train': train,
@@ -295,6 +297,7 @@ class ListCatJob(EngineExecutionJob):
 
 
 class StrCatJob(EngineExecutionJob):
+
     '''
     Concatenates inputs into a string
 

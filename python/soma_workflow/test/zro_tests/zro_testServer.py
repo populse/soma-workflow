@@ -9,10 +9,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 import soma_workflow.zro as zro
 
+
 class TestObject:
+
     @staticmethod
     def add(a, b):
         return a + b
+
     def __init__(self, variable):
         self.variable = variable
 
@@ -26,8 +29,8 @@ class TestObject:
 if __name__ == '__main__':
 
     test = TestObject("Hello")
-    #TODO add doc
-    #server = zro.ObjectServer(4444)
+    # TODO add doc
+    # server = zro.ObjectServer(4444)
     server = zro.ObjectServer()
     objectURI = server.register(test)
     print(objectURI)

@@ -11,6 +11,7 @@ from mpi4py import MPI
 
 from soma_workflow import scheduler, constants
 
+
 class MPIScheduler(scheduler.Scheduler):
 
     '''
@@ -98,7 +99,7 @@ class MPIScheduler(scheduler.Scheduler):
         with self._lock:
             t = MPIStatus.Get_tag()
             if t == MPIScheduler.JOB_REQUEST:
-                #self._logger.debug("Master received the JOB_REQUEST signal")
+                # self._logger.debug("Master received the JOB_REQUEST signal")
                 s = MPIStatus.Get_source()
                 if not self._queue:
                     # self._logger.debug("Master No job for now")
@@ -135,23 +136,23 @@ class MPIScheduler(scheduler.Scheduler):
                             self._fail_count[job_id] += 1
                         else:
                             self._fail_count[job_id] = 1
-                        
+
                         if self._fail_count[job_id] < self._nb_attempt_per_job:
                             try_new_attempt = True
-                            
+
                         self._logger.debug(
                             "[host: " + socket.gethostname() + "] "
-                             + repr(self._fail_count[job_id]) 
-                             + " fails for job " + repr(job_id) 
+                             + repr(self._fail_count[job_id])
+                             + " fails for job " + repr(job_id)
                              + " (ret value " + repr(ret_value) + ")")
-                        
+
                     if try_new_attempt:
                         self._queue.insert(0, job_id)
-                        
+
                     else:
                         self._exit_info[job_id] = exit_info
                         self._status[job_id] = job_status
-                        
+
             elif t == MPIScheduler.EXIT_SIGNAL:
                 # self._logger.debug("Master received the EXIT_SIGNAL")
                 self._stopped_slaves = self._stopped_slaves + 1
@@ -159,7 +160,7 @@ class MPIScheduler(scheduler.Scheduler):
                     self.stop_thread_loop = True
             else:
                 self._logger.critical("[host: " + socket.gethostname() + "] "
-                                    + "Master unknown tag")
+                                      + "Master unknown tag")
 
     def sleep(self):
         self.is_sleeping = True
@@ -190,7 +191,7 @@ class MPIScheduler(scheduler.Scheduler):
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
             self._logger.debug("[host: " + socket.gethostname() + "] "
-                             + "A Job was submitted.")
+                               + "A Job was submitted.")
         return job.job_id
 
     def get_job_status(self, scheduler_job_id):
@@ -224,9 +225,8 @@ class MPIScheduler(scheduler.Scheduler):
         '''
         # TODO
         pass
-    
+
     @classmethod
     def build_scheduler(cls, config):
         sch = MPIScheduler(MPI.COMM_WORLD)
         return sch
-

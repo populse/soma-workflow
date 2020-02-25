@@ -74,7 +74,7 @@ class WorkflowTest(unittest.TestCase):
         swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
             % (socket.gethostname(), tmpdb)
         Configuration.search_config_path \
-            = staticmethod(lambda : StringIO.StringIO(swf_conf))
+            = staticmethod(lambda: StringIO.StringIO(swf_conf))
 
         self.temporaries = [self.wf_examples.output_dir]
 
@@ -90,7 +90,7 @@ class WorkflowTest(unittest.TestCase):
                           % (self.wf_id, self.soma_workflow_temp_dir),
                           file=sys.stderr)
             # stop workflow controler and wait for thread termination
-            #swc.stop_engine()
+            # swc.stop_engine()
         for t in self.temporaries:
             if os.path.isdir(t):
                 if rmfiles:
@@ -138,7 +138,8 @@ class WorkflowTest(unittest.TestCase):
 
     @classmethod
     def run_test(cls, debug=False, interactive=False, **kwargs):
-        sys.stdout.write("********* soma-workflow tests: %s *********\n" % cls.__name__)
+        sys.stdout.write(
+            "********* soma-workflow tests: %s *********\n" % cls.__name__)
 
         config_file_path = Configuration.search_config_path()
     #    sys.stdout.write("Configuration file: " + config_file_path + "\n")
@@ -182,9 +183,9 @@ class WorkflowTest(unittest.TestCase):
 
                 with suppress_stdout(debug):
                     wf_controller = WorkflowController(resource_id,
-                                                      login,
-                                                      password,
-                                                      config=config)
+                                                       login,
+                                                       password,
+                                                       config=config)
                     cls.setup_wf_controller(wf_controller)
 
                 allowed_config = cls.allowed_config[:]
@@ -223,7 +224,7 @@ class WorkflowTest(unittest.TestCase):
                             list_tests.append(test)
 
                     suite_list.append(unittest.TestSuite(list(map(cls,
-                                                        list_tests))))
+                                                                  list_tests))))
                     alltests = unittest.TestSuite(suite_list)
                     with suppress_stdout(debug):
                         res = unittest.TextTestRunner(verbosity=2).run(
@@ -239,7 +240,7 @@ class WorkflowTest(unittest.TestCase):
                 if wf_controller:
                     wf_controller.stop_engine()
                 del wf_controller
-                cls.setup_wf_controller(None) # del WorkflowController
+                cls.setup_wf_controller(None)  # del WorkflowController
                 sys.stdout.write("deleted.")
                 if config.get_mode() == LIGHT_MODE:
                     if not kwargs.get('keep_temporary', False):
@@ -341,4 +342,3 @@ class WorkflowTest(unittest.TestCase):
         if first == second and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
         return super(WorkflowTest, self).assertNonEqual(first, second, msg)
-

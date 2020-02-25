@@ -32,4 +32,3 @@ class WorkflowExamplesShared(WorkflowExamplesLocal):
         ''' use SharedResourcePath
         '''
         return SharedResourcePath(filename, namespace, uuid, disposal_timeout)
-

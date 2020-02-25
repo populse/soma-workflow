@@ -52,8 +52,8 @@ class JobTests(unittest.TestCase):
                         'SetUp must be implemented in subclass')
 
     def tearDown(self):
-        #for jid in self.my_jobs:
-            #self.wf_ctrl.delete_job(jid)
+        # for jid in self.my_jobs:
+            # self.wf_ctrl.delete_job(jid)
         remaining_jobs = frozenset(list(self.wf_ctrl.jobs().keys()))
         self.failUnless(len(remaining_jobs.intersection(self.my_jobs)) == 0)
 
@@ -88,34 +88,34 @@ class JobTests(unittest.TestCase):
             self.failUnless(abs(delta - timedelta(seconds=interval)) <
                             timedelta(seconds=1))
 
-    #def test_restart(self):
-        #jobid = self.my_jobs[len(self.my_jobs) - 1]
-        #self.wf_ctrl.kill_job(jobid)
-        #self.wf_ctrl.restart_job(jobid)
-        #status = self.wf_ctrl.job_status(jobid)
-        #self.failUnless(not status == constants.USER_ON_HOLD and
-                        #not status == constants.USER_SYSTEM_ON_HOLD and
-                        #not status == constants.USER_SUSPENDED and
-                        #not status == constants.USER_SYSTEM_SUSPENDED,
+    # def test_restart(self):
+        # jobid = self.my_jobs[len(self.my_jobs) - 1]
+        # self.wf_ctrl.kill_job(jobid)
+        # self.wf_ctrl.restart_job(jobid)
+        # status = self.wf_ctrl.job_status(jobid)
+        # self.failUnless(not status == constants.USER_ON_HOLD and
+                        # not status == constants.USER_SYSTEM_ON_HOLD and
+                        # not status == constants.USER_SUSPENDED and
+                        # not status == constants.USER_SYSTEM_SUSPENDED,
                         #'Job status after restart: %s' % status)
 
-    #def test_kill(self):
-        #jobid = self.my_jobs[0]
-        #time.sleep(2)
-        #self.wf_ctrl.kill_job(jobid)
-        #job_termination_status = self.wf_ctrl.job_termination_status(jobid)
-        #exit_status = job_termination_status[0]
-        #status = self.wf_ctrl.job_status(jobid)
-        #self.failUnless(status == constants.FAILED or status == constants.DONE,
+    # def test_kill(self):
+        # jobid = self.my_jobs[0]
+        # time.sleep(2)
+        # self.wf_ctrl.kill_job(jobid)
+        # job_termination_status = self.wf_ctrl.job_termination_status(jobid)
+        # exit_status = job_termination_status[0]
+        # status = self.wf_ctrl.job_status(jobid)
+        # self.failUnless(status == constants.FAILED or status == constants.DONE,
                         #'Job status after kill: %s. Expected %s or %s' %
                         #(status, constants.FAILED, constants.DONE))
-        #self.failUnless(exit_status == constants.USER_KILLED or
-                        #exit_status == constants.FINISHED_REGULARLY or
-                        #exit_status == constants.EXIT_ABORTED,
+        # self.failUnless(exit_status == constants.USER_KILLED or
+                        # exit_status == constants.FINISHED_REGULARLY or
+                        # exit_status == constants.EXIT_ABORTED,
                         #'Job exit status after kill: %s. Expected %s, %s or %s'
                         #% (exit_status, constants.USER_KILLED,
-                           #constants.FINISHED_REGULARLY,
-                           #constants.EXIT_ABORTED))
+                           # constants.FINISHED_REGULARLY,
+                           # constants.EXIT_ABORTED))
 
     @abstractmethod
     def test_result(self):

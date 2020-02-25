@@ -162,8 +162,8 @@ def SetupConfigurationFileOnClient(configuration_item_name,
 
         # Add client config
         config_parser = ConfiguratePaser(configuration_item_name, userid,
-                                          ip_address_or_domain, userpw, install_swf_path_server,
-                                          sshport, config_parser)
+                                         ip_address_or_domain, userpw, install_swf_path_server,
+                                         sshport, config_parser)
         WriteOutConfiguration(config_parser, config_file_path)
 
 
@@ -359,7 +359,7 @@ def InstallSomaWF2Server(userid,
     print('install command:', command)
 
     (std_out_lines, std_err_lines) = SSH_exec_cmd(command, userid,
-                                                  ip_address_or_domain, 
+                                                  ip_address_or_domain,
                                                   userpw,
                                                   wait_output=False,
                                                   isNeedErr=True,

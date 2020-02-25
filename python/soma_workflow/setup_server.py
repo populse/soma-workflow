@@ -254,7 +254,7 @@ def SetupConfigurationFileOnServer(userid,
             info_queue += "{15}"
 
             config_parser.set(resource_id, configuration.OCFG_MAX_JOB_IN_QUEUE,
-                          info_queue)
+                              info_queue)
 
         for opt, value in options.items():
             config_parser.set(resource_id, opt, value)

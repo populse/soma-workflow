@@ -44,7 +44,7 @@ else:
         if isinstance(s, str):
             return s.encode()
         return s
-  
+
 
 class BoolConverter(object):
 

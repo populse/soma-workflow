@@ -49,10 +49,10 @@ class JobTemplate(object):
                 f.write('#PBS -N %s\n' % self.jobName.replace(' ', '_'))
             if self.queue:
                 f.write('#PBS -q %s\n' % self.queue)
-            #if self.env:
-                #var = ','.join(['"%s=%s"' % (k, v.replace('"', '\\"'))
-                                #for k, v in six.iteritems(self.env)])
-                #f.write('#PBS -v %s\n' % var)
+            # if self.env:
+                # var = ','.join(['"%s=%s"' % (k, v.replace('"', '\\"'))
+                                # for k, v in six.iteritems(self.env)])
+                # f.write('#PBS -v %s\n' % var)
             if self.nativeSpecification:
                 native_spec = self.nativeSpecification
                 if not isinstance(native_spec, list):
@@ -72,7 +72,8 @@ class JobTemplate(object):
                 f.write('cd "%s"\n' % self.workingDirectory)
 
             # commandline
-            escaped_command = [x.replace('"', '\\"') for x in self.remoteCommand]
+            escaped_command = [x.replace('"', '\\"')
+                               for x in self.remoteCommand]
             f.write('"' + '" "'.join(escaped_command) + '"\n')
         logger = logging.getLogger('ljp.pbspro_scheduler')
         logger.debug('build_pbs_script: %s' % script_file)
@@ -104,8 +105,8 @@ class JobTemplate(object):
             if rm_script and not keep_script_file:
                 os.unlink(script_file)
             elif rm_script:
-                logger.info('job %s script file: %s' % (self.jobName, script_file))
-           
+                logger.info('job %s script file: %s' %
+                            (self.jobName, script_file))
 
 
 class PBSProScheduler(Scheduler):
@@ -127,9 +128,9 @@ class PBSProScheduler(Scheduler):
     FAKE_JOB = -167
 
     def __init__(self,
-                  parallel_job_submission_info,
-                  tmp_file_path=None,
-                  configured_native_spec=None):
+                 parallel_job_submission_info,
+                 tmp_file_path=None,
+                 configured_native_spec=None):
 
         super(PBSProScheduler, self).__init__()
 
@@ -162,11 +163,11 @@ class PBSProScheduler(Scheduler):
         '''
         Create a job to test
         '''
-        outputPath="%s:%s" % (self.hostname, 
-                              os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
-        errorPath = "%s:%s" % (self.hostname, 
+        outputPath = "%s:%s" % (self.hostname,
+                                os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
+        errorPath = "%s:%s" % (self.hostname,
                                os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
-        jobTemplate = JobTemplate(remoteCommand=['echo', outstr], 
+        jobTemplate = JobTemplate(remoteCommand=['echo', outstr],
                                   outputPath=outputPath, errorPath=errorPath)
 
         # print("jobTemplate="+repr(jobTemplate))
@@ -315,13 +316,13 @@ class PBSProScheduler(Scheduler):
                 errorPath = "%s:%s" % (self.hostname, stderr_file)
             else:
                 errorPath = None
-            jobTemplate = JobTemplate(remoteCommand=command, 
+            jobTemplate = JobTemplate(remoteCommand=command,
                                       outputPath=outputPath,
                                       errorPath=errorPath)
             jobTemplate.jobName = job.name
 
             self.logger.info("jobTemplate=" + repr(jobTemplate)
-                             + " command[0]=" + repr(command[0]) 
+                             + " command[0]=" + repr(command[0])
                              + " command[1:]=" + repr(command[1:]))
             self.logger.info(
                 "hostname and stdout_file= [%s]:%s" % (self.hostname, stdout_file))
@@ -336,7 +337,7 @@ class PBSProScheduler(Scheduler):
 
             if job.stdin:
                 self.logger.debug("stdin: " + repr(stdin))
-                jobTemplate.inputPath = stdin ## TODO not used. How to specify it ?
+                jobTemplate.inputPath = stdin  # TODO not used. How to specify it ?
 
             working_directory = job.plain_working_directory()
             if working_directory:
@@ -376,14 +377,14 @@ class PBSProScheduler(Scheduler):
         except subprocess.CalledProcessError as e:
             # try:  # this will be done in the engine
             #     f = open(stderr_file, "a")
-            #     f.write("Error in job submission: %s: %s, output: %s" 
+            #     f.write("Error in job submission: %s: %s, output: %s"
             #             % (type(e), e, e.output))
             #     f.close()
             # except Exception:
             #     pass
-            self.logger.error("Error in job submission: %s: %s\nOutput:\n%s" 
+            self.logger.error("Error in job submission: %s: %s\nOutput:\n%s"
                               % (type(e), e, e.output.decode()),
-                              exc_info = sys.exc_info())
+                              exc_info=sys.exc_info())
             raise DRMError("Job submission error: %s:\n%s\nOutput:\n%s"
                            % (type(e), e, e.output.decode()))
 
@@ -396,7 +397,7 @@ class PBSProScheduler(Scheduler):
             except Exception:
                 pass
             self.logger.error("Error in job submission: %s: %s" % (type(e), e),
-                              exc_info = sys.exc_info())
+                              exc_info=sys.exc_info())
             raise DRMError("Job submission error: %s: %s" % (type(e), e))
 
         return job_id
@@ -437,7 +438,7 @@ class PBSProScheduler(Scheduler):
                 json_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = json.loads(json_str)
 
-            else: # torque/pbs
+            else:  # torque/pbs
                 import xml.etree.cElementTree as ET
                 cmd = ['qstat', '-x', scheduler_job_id]
                 xml_str = subprocess.check_output(cmd).decode('utf-8')
@@ -464,7 +465,7 @@ class PBSProScheduler(Scheduler):
             self.logger.critical("%s: %s" % (type(e), e))
             raise
         status = super_status['Jobs'][scheduler_job_id]
-        self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id) 
+        self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id)
                           + ': ' + repr(status))
         return status
 
@@ -483,20 +484,20 @@ class PBSProScheduler(Scheduler):
                 SUSPEND_KB = 'U'
                 WAITING = 'W'
                 SUBJOB_COMPLETE = 'X'
-        else: # torque/pbs
+        else:  # torque/pbs
             class codes:
-                ARRAY_STARTED = 'B' # unused
+                ARRAY_STARTED = 'B'  # unused
                 EXITING = 'E'
                 FINISHED = 'C'
                 HELD = 'H'
-                MOVED = 'M' # unused
+                MOVED = 'M'  # unused
                 QUEUED = 'Q'
                 RUNNING = 'R'
                 SUSPENDED = 'S'
                 MOVING = 'T'
-                SUSPEND_KB = 'U' # unused
+                SUSPEND_KB = 'U'  # unused
                 WAITING = 'W'
-                SUBJOB_COMPLETE = 'X' # unused
+                SUBJOB_COMPLETE = 'X'  # unused
         return codes
 
     def get_job_status(self, scheduler_job_id):
@@ -518,36 +519,37 @@ class PBSProScheduler(Scheduler):
         try:
             status = self.get_job_extended_status(scheduler_job_id)
             state = status['job_state']
-            self.logger.debug('get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
+            self.logger.debug(
+                'get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
         except Exception:
             return constants.UNDETERMINED
         if state == codes.ARRAY_STARTED:
             return constants.RUNNING
         elif state == codes.EXITING:
-            return constants.RUNNING ## FIXME not exactly that
+            return constants.RUNNING  # FIXME not exactly that
         elif state == codes.FINISHED:
             exit_value = status.get('Exit_status', -1)
             if exit_value != 0:
                 return constants.FAILED
             return constants.DONE
         elif state == codes.HELD:
-            return constants.USER_SYSTEM_ON_HOLD ## FIXME or USER_ON_HOLD ?
+            return constants.USER_SYSTEM_ON_HOLD  # FIXME or USER_ON_HOLD ?
         elif state == codes.MOVED:
-            return constants.USER_SYSTEM_SUSPENDED ## FIXME not exactly that
+            return constants.USER_SYSTEM_SUSPENDED  # FIXME not exactly that
         elif state == codes.QUEUED:
             return constants.QUEUED_ACTIVE
         elif state == codes.RUNNING:
             return constants.RUNNING
         elif state == codes.SUSPENDED:
-            return constants.USER_SYSTEM_SUSPENDED ## FIXME or SYSTEM_SUSPENDED ?
+            return constants.USER_SYSTEM_SUSPENDED  # FIXME or SYSTEM_SUSPENDED ?
         elif state == codes.MOVING:
-            return constants.USER_SUSPENDED ## FIXME not exactly that
+            return constants.USER_SUSPENDED  # FIXME not exactly that
         elif state == codes.SUSPEND_KB:
-            return constants.USER_SYSTEM_SUSPENDED ## is it that ?
+            return constants.USER_SYSTEM_SUSPENDED  # is it that ?
         elif state == codes.WAITING:
-            return constants.QUEUED_ACTIVE ## FIXME not exactly that
+            return constants.QUEUED_ACTIVE  # FIXME not exactly that
         elif state == codes.SUBJOB_COMPLETE:
-            return DELETE_PENDING ## is it that ?
+            return DELETE_PENDING  # is it that ?
         else:
             return constants.UNDETERMINED
 
@@ -638,7 +640,7 @@ class PBSProScheduler(Scheduler):
                         res_termSignal = term_sig
                     else:
                         # in soma-workflow a job with a non-zero exit code
-                        # has still finished regularly (ran without being 
+                        # has still finished regularly (ran without being
                         # interrupted)
                         # res_status = constants.EXIT_ABORTED
                         res_status = constants.FINISHED_REGULARLY
@@ -646,7 +648,8 @@ class PBSProScheduler(Scheduler):
             self.logger.info("  ==> res_status=" + repr(res_status))
             res_resourceUsage = u''
             for k, v in six.iteritems(resource_usage):
-                res_resourceUsage = res_resourceUsage + k + u'=' + str(v) + u' '
+                res_resourceUsage = res_resourceUsage + \
+                    k + u'=' + str(v) + u' '
 
         except ExitTimeoutException:
             res_status = constants.EXIT_UNDETERMINED
@@ -677,6 +680,3 @@ class PBSProScheduler(Scheduler):
             os.path.expanduser("~"),
             configured_native_spec=config.get_native_specification())
         return sch
-
-
-

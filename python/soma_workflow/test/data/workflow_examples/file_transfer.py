@@ -18,22 +18,22 @@ controller = WorkflowController("Gabriel", user)
 # FileTransfer creation for input files
 file1 = FileTransfer(is_input=True,
                      client_path="%s/create_file.py"
-                        % Configuration.get_home_dir(),
+                     % Configuration.get_home_dir(),
                      name="script")
 
 file2 = FileTransfer(is_input=True,
                      client_path="%s/output_file"
-                        % Configuration.get_home_dir(),
+                     % Configuration.get_home_dir(),
                      name="file created on the server")
 
 # Job and Workflow
 run_script = Job(command=["python", file1, file2],
-               name="copy",
-               referenced_input_files=[file1],
-               referenced_output_files=[file2])
+                 name="copy",
+                 referenced_input_files=[file1],
+                 referenced_output_files=[file2])
 
 workflow = Workflow(jobs=[run_script],
-                     dependencies=[])
+                    dependencies=[])
 
 workflow_id = controller.submit_workflow(workflow=workflow,
                                          name="Simple transfer")

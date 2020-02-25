@@ -5,17 +5,17 @@ import time
 from six.moves import range
 
 # program arguments
-#filepathout1 = sys.argv[0]
-#filepathout2 = sys.argv[1]
-#sys.stdout.write("outputs = " + filepathout1 + " and " + filepathout2 + "\n")
+# filepathout1 = sys.argv[0]
+# filepathout2 = sys.argv[1]
+# sys.stdout.write("outputs = " + filepathout1 + " and " + filepathout2 + "\n")
 
 # read twice form stdin
-#param1 = sys.stdin.readline()
-#param2 = sys.stdin.readline()
-#sys.stdout.write("parametre 1 = " + param1)
-#sys.stdout.write("parametre 2 = " + param2)
+# param1 = sys.stdin.readline()
+# param2 = sys.stdin.readline()
+# sys.stdout.write("parametre 1 = " + param1)
+# sys.stdout.write("parametre 2 = " + param2)
 
-#sys.stdout.write("len(sys.args) = " + repr(len(sys.argv)) + "\n")
+# sys.stdout.write("len(sys.args) = " + repr(len(sys.argv)) + "\n")
 
 if len(sys.argv) < 4 or len(sys.argv) > 5:
     sys.stdout.write("The program takes 3 or 4 arguments! \n")
@@ -45,11 +45,11 @@ for i in range(1, timeToSleep + 1):
 sys.stdout.write("\n")
 
 filePathIn = sys.argv[1]  # argv[0]=="job1.py"
-#sys.stdout.write("input file = " + filePathIn + "\n")
+# sys.stdout.write("input file = " + filePathIn + "\n")
 filePathOut1 = sys.argv[2]
-#sys.stdout.write("output file 1 = " + filePathOut1 + "\n")
+# sys.stdout.write("output file 1 = " + filePathOut1 + "\n")
 filePathOut2 = sys.argv[3]
-#sys.stdout.write("output file 2 = " + filePathOut2 + "\n")
+# sys.stdout.write("output file 2 = " + filePathOut2 + "\n")
 
 fileOut1 = open(filePathOut1, "w")
 fileOut2 = open(filePathOut2, "w")

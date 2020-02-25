@@ -24,4 +24,3 @@ with open(filePathOut, 'w') as fout:
     for filein in filePathsIn:
         with open(filein) as fin:
             fout.write(fin.read())
-

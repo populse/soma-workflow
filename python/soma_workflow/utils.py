@@ -24,6 +24,7 @@ except ImportError:
     class Undefined(object):
         pass
 
+
 def DetectFindLib(env_name, libname):
     '''Try to find libname using ctype
 
@@ -238,6 +239,7 @@ def explore(root_job,
                         explored,
                         workflow)
 
+
 def to_json(value):
     '''
     Convert value to an object which will mark some types through JSON
@@ -287,5 +289,3 @@ def from_json(value):
     elif code == '<set>':
         return set([from_json(x) for x in value[1:]])
     return [from_json(x) for x in value]
-
-

@@ -13,4 +13,3 @@ if __name__ == '__main__':
         # import drmaa test
         from . import drmaa
         drmaa.test_drmaa()
-

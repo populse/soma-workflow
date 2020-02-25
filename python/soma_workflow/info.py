@@ -66,4 +66,4 @@ EXTRA_REQUIRES = {
 #-----------------------------------------------------------------------------
 
 DB_VERSION = '3.1'
-DB_PICKLE_PROTOCOL = 2 # python 2/3 compatible (should be, but is not)
+DB_PICKLE_PROTOCOL = 2  # python 2/3 compatible (should be, but is not)

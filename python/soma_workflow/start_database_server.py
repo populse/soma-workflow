@@ -27,7 +27,6 @@ if __name__ == '__main__':
     from soma_workflow.configuration import Configuration
     from soma_workflow.errors import EngineError
 
-
     class WorkflowDatabaseServer(soma_workflow.database_server.WorkflowDatabaseServer):
 
         def __init__(self,
@@ -35,7 +34,7 @@ if __name__ == '__main__':
                      tmp_file_dir_path,
                      shared_tmp_dir=None,
                      logging_configuration=None,
-                     remove_orphan_files = True):
+                     remove_orphan_files=True):
             soma_workflow.database_server.WorkflowDatabaseServer.__init__(
                 self,
                 database_file,
@@ -43,7 +42,6 @@ if __name__ == '__main__':
                 shared_tmp_dir,
                 logging_configuration,
                 remove_orphan_files)
-
 
     if not len(sys.argv) == 2:
         sys.stdout.write(
@@ -97,7 +95,6 @@ if __name__ == '__main__':
 
     logging.info('SUCCESS: Server object ' + server_name + ' ready.')
 
-
     # There could be a problem if multiple servers are running:
     # closing one will remove the reference of the object server
     # even if we are not closing the one holding this object server.
@@ -133,4 +130,3 @@ if __name__ == '__main__':
         obj_serv.serve_forever()
     except Exception as e:
         logging.exception(e)
-

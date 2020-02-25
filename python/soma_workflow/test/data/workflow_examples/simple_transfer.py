@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
-#import os
+# import os
 
 # file creation (it is not a part of the example)
-#example_directory = "/tmp/soma_workflow_examples"
+# example_directory = "/tmp/soma_workflow_examples"
 # if not os.path.isdir(example_directory):
   # os.mkdir(example_directory)
 
-#f = open("/tmp/soma_workflow_examples/myfile", "wb")
-#f.write("Content of my file \n")
+# f = open("/tmp/soma_workflow_examples/myfile", "wb")
+# f.write("Content of my file \n")
 # f.close()
 
 

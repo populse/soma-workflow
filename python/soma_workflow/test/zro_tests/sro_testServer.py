@@ -9,10 +9,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 from . import sro
 
+
 class TestObject:
+
     @staticmethod
     def add(a, b):
         return a + b
+
     def __init__(self, variable):
         self.variable = variable
 
@@ -21,7 +24,7 @@ class TestObject:
         return self.variable
 
 test = TestObject("Hello")
-#TODO add doc
+# TODO add doc
 server = sro.ObjectServer()
 objectURI = server.register(test)
 print(objectURI)

@@ -37,4 +37,3 @@ if output_param_file:
         'outputs': filePathsOut,
     }
     json.dump(out_params, open(output_param_file, 'w'))
-

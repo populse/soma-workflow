@@ -10,7 +10,8 @@ if len(sys.argv) < 3 or len(sys.argv) > 4:
     sys.stdout.write("The program takes 2 or 3 arguments! \n")
     sys.exit()
 
-sys.stdout.write("JobWithOutputs1: What should we add to the end of the output file ?")
+sys.stdout.write(
+    "JobWithOutputs1: What should we add to the end of the output file ?")
 comment = sys.stdin.readline()
 sys.stdout.write(
     "JobWithOutputs1: added to the end of the output file : " +
@@ -32,9 +33,9 @@ for i in range(1, timeToSleep + 1):
     sys.stdout.flush()
 sys.stdout.write("\n")
 
-#sys.stdout.write("Input file 1 = " + filePathIn1 + "\n")
-#sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
-#sys.stdout.write("Output file = " + filePathOut + "\n")
+# sys.stdout.write("Input file 1 = " + filePathIn1 + "\n")
+# sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
+# sys.stdout.write("Output file = " + filePathOut + "\n")
 
 fileIn1 = open(filePathIn1)
 fileOut = open(filePathOut, "w")
@@ -65,4 +66,3 @@ output_params = {
 }
 
 json.dump(output_params, open(fileParamsOut, 'w'))
-

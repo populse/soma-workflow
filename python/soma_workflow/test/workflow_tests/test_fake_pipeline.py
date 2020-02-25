@@ -126,6 +126,7 @@ class FakePipelineTest(WorkflowTest):
 
             del self.tested_job
 
+
 def test():
     return FakePipelineTest.run_test_function(
         **WorkflowTest.parse_args(sys.argv))

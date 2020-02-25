@@ -277,13 +277,13 @@ class WorkflowEngineLoop(object):
                         for wf in six.itervalues(self._workflows):
                             jobs = [j
                                     for jid, j
-                                        in six.iteritems(wf.registered_jobs)
+                                    in six.iteritems(wf.registered_jobs)
                                     if jid == job_id]
                             if len(jobs) == 1:
                                 job = jobs[0]
                                 break
                     if job is not None:
-                    #if job_id in self._jobs:
+                    # if job_id in self._jobs:
                         self.logger.debug(" stop job " + repr(job_id))
                         try:
                             stopped = self._stop_job(job_id,  job)
@@ -361,7 +361,8 @@ class WorkflowEngineLoop(object):
                                     = self._scheduler.get_job_exit_info(
                                         job.drmaa_id)
                             except Exception as e:
-                                self.logger.error('exception in get_job_exit_info: %s' % repr(e))
+                                self.logger.error(
+                                    'exception in get_job_exit_info: %s' % repr(e))
                                 raise
 
                             self.logger.debug("  after get_job_exit_info ")
@@ -469,7 +470,7 @@ class WorkflowEngineLoop(object):
                         stderr_file = open(job.stderr_file, "a")
                         self.logger.debug('Job fail, stderr opened')
                         stderr_file.write(
-                            "Error while submitting the job %s:\n%s\n" 
+                            "Error while submitting the job %s:\n%s\n"
                             % (type(e), e))
                         stderr_file.close()
                         drms_error_jobs[job.job_id] = job
@@ -516,7 +517,7 @@ class WorkflowEngineLoop(object):
                     if wf_id in wf_to_kill + wf_to_delete:
                         force = True
                     self.logger.debug("set workflow status for: %s, status: %s"
-                        % (wf_id, workflow.status))
+                                      % (wf_id, workflow.status))
                     self._database_server.set_workflow_status(
                         wf_id, workflow.status,
                         force=force)
@@ -549,7 +550,7 @@ class WorkflowEngineLoop(object):
                             output_dict = utils.from_json(json.load(f))
                     except Exception:
                         self.logger.info('unable to read output parameters '
-                            'file: %s' % job.plain_output_params_file())
+                                         'file: %s' % job.plain_output_params_file())
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,
@@ -567,7 +568,6 @@ class WorkflowEngineLoop(object):
                         engine_transfer.transfer_id, value,
                         engine_transfer.client_path,
                         engine_transfer.client_paths)
-
 
     def update_job_parameters(self, job):
         '''
@@ -715,7 +715,8 @@ class WorkflowEngineLoop(object):
         to_run = []
         for queue_name, jobs in six.iteritems(self._pending_queues):
             if jobs and queue_name in self._running_jobs_limits:
-                self.logger.debug("queue " + repr(queue_name) + " is limited: " + repr(self._running_jobs_limits[queue_name]))
+                self.logger.debug("queue " + repr(queue_name) + " is limited: " + repr(
+                    self._running_jobs_limits[queue_name]))
                 nb_running_jobs = self._database_server.nb_running_jobs(
                     self._user_id,
                     queue_name)
@@ -778,34 +779,38 @@ class WorkflowEngineLoop(object):
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
-                self.logger.debug("OK we have checked the directory can be written.")
-                break # OK we have checked the directory can be written.
+                self.logger.debug(
+                    "OK we have checked the directory can be written.")
+                break  # OK we have checked the directory can be written.
             except Exception as e:
                 self.logger.exception(e)
                 self._database_server.delete_workflow(engine_workflow.wf_id)
                 raise JobError("Could not create the standard output file "
                                "%s %s: %s \n" %
                                (repr(job.stdout_file), type(e), e))
-            #if job.stderr_file:
-                #try:
-                    #tmp = open(job.stderr_file, 'w')
-                    #tmp.close()
-                    #break # OK we have checked the directory can be witten.
-                #except Exception as e:
-                    #self._database_server.delete_workflow(
-                        #engine_workflow.wf_id)
-                    #raise JobError("Could not create the standard error file "
+            # if job.stderr_file:
+                # try:
+                    # tmp = open(job.stderr_file, 'w')
+                    # tmp.close()
+                    # break # OK we have checked the directory can be witten.
+                # except Exception as e:
+                    # self._database_server.delete_workflow(
+                        # engine_workflow.wf_id)
+                    # raise JobError("Could not create the standard error file "
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:
-                    # self.logger.debug("Try to create directory: %s \n" % transfer.engine_path)
+                    # self.logger.debug("Try to create directory: %s \n" %
+                    # transfer.engine_path)
                     os.makedirs(transfer.engine_path)
                 except Exception as e:
-                    self.logger.debug("WARNING: could not create directory %s: \n" % transfer.engine_path)
-                    self.logger.debug("You might not have enough space available.")
+                    self.logger.debug(
+                        "WARNING: could not create directory %s: \n" % transfer.engine_path)
+                    self.logger.debug(
+                        "You might not have enough space available.")
                     self._database_server.delete_workflow(
                         engine_workflow.wf_id)
                     raise JobError("Could not create the directory %s %s: %s \n" %
@@ -923,7 +928,6 @@ class WorkflowEngineLoop(object):
             self._database_server.set_jobs_status(
                 dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
 
-
     def restart_jobs(self, wf_id, job_ids):
         with self._lock:
             if wf_id not in self._workflows:
@@ -943,7 +947,6 @@ class WorkflowEngineLoop(object):
             for job in jobs_to_run:
                 self._pend_for_submission(job)
 
-
     def drms_job_id(self, wf_id, job_id):
         engine_wf = self._workflows.get(wf_id)
         if engine_wf is None:
@@ -955,6 +958,7 @@ class WorkflowEngineLoop(object):
 
 
 class WorkflowEngine(RemoteFileController):
+
     '''
     '''
     # database server
@@ -1188,16 +1192,16 @@ class WorkflowEngine(RemoteFileController):
 
     def restart_jobs(self, workflow_id, job_ids):
         print('restarting jobs:', job_ids)
-        self.stop_jobs(workflow_id, job_ids) # stop before re-running
+        self.stop_jobs(workflow_id, job_ids)  # stop before re-running
         (status, last_status_update) \
             = self._database_server.get_workflow_status(
                 workflow_id, self._user_id)
 
         self.engine_loop.restart_jobs(workflow_id, job_ids)
-        #self._wait_jobs_status_update(
-            #job_ids,
-            #statuses=(constants.DONE, constants.FAILED, constants.RUNNING,
-                       #constants.QUEUED, constants.))
+        # self._wait_jobs_status_update(
+            # job_ids,
+            # statuses=(constants.DONE, constants.FAILED, constants.RUNNING,
+                       # constants.QUEUED, constants.))
 
         return True
 
@@ -1511,17 +1515,17 @@ class WorkflowEngine(RemoteFileController):
         try:
             (status,
              last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                       self._user_id)
+                                                                             self._user_id)
             if status != None and status != expected_status:
                 time.sleep(refreshment_interval)
                 (status,
                  last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                           self._user_id)
+                                                                                 self._user_id)
                 if status != None and status != expected_status:
                     time.sleep(refreshment_interval)
                     (status,
                      last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                               self._user_id)
+                                                                                     self._user_id)
                     while status != None and \
                         status != expected_status and \
                         status != constants.WORKFLOW_DONE and \
@@ -1529,7 +1533,7 @@ class WorkflowEngine(RemoteFileController):
                         time.sleep(refreshment_interval)
                         (status,
                          last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                                   self._user_id)
+                                                                                         self._user_id)
         except UnknownObjectError as e:
             pass
         self.logger.debug("<< _wait_wf_status_update")

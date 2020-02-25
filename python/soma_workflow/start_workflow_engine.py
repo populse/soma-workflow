@@ -34,7 +34,6 @@ if __name__ == "__main__":
     from soma_workflow import subprocess
     import json
 
-
     class VersionError(Exception):
 
         def __init__(self, msg, py_ver):
@@ -42,6 +41,7 @@ if __name__ == "__main__":
             self.python_version = py_ver
 
     class Timeout():
+
         """Timeout class using ALARM signal."""
 
         def __init__(self, sec):
@@ -125,10 +125,12 @@ if __name__ == "__main__":
         from soma_workflow import subprocess
         if logger:
             logger.info('Trying to start database server:' + resource_id)
-            logger.debug("Debug: Starting database server, isPython?: {}".format(sys.executable))
+            logger.debug(
+                "Debug: Starting database server, isPython?: {}".format(sys.executable))
             logger.debug("Resource_id is: {}".format(resource_id))
-            logger.info(os.path.basename(sys.executable) +' -m' + ' soma_workflow.start_database_server ' + resource_id)
-        python_interpreter = sys.executable # os.path.basename(sys.executable)
+            logger.info(os.path.basename(sys.executable) + ' -m' +
+                        ' soma_workflow.start_database_server ' + resource_id)
+        python_interpreter = sys.executable  # os.path.basename(sys.executable)
         return subprocess.Popen([python_interpreter,
                                  '-m',
                                  'soma_workflow.start_database_server',
@@ -155,7 +157,7 @@ if __name__ == "__main__":
                     uri_dict = json.load(f)
                 uri = uri_dict.get('server_uri')
                 logger.debug(uri)
-                hotname = uri_dict.get('hostname') # currently unused
+                hotname = uri_dict.get('hostname')  # currently unused
                 pid = uri_dict.get('pid')
                 py_ver = [int(x)
                           for x in uri_dict.get('python_version').split('.')]
@@ -168,18 +170,19 @@ if __name__ == "__main__":
                                 "that is running if it hasn't been stopped in "
                                 "the meantime.")
 
-                    command='ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
+                    command = 'ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
                     try:
-                        output = subprocess.check_output(command, shell=True).decode()
+                        output = subprocess.check_output(
+                            command, shell=True).decode()
                         output = output.strip().split('\n')
                     except subprocess.CalledProcessError:
                         output = []
 
                     output = [o for o in output if o.split()[1] == str(pid)]
                     logger.debug("Output of grep is: " + repr(output))
-                    #will always be true anyway since grep exit status is 1
-                    #when there is no matching pattern and therefore
-                    #check_output raises an exception.
+                    # will always be true anyway since grep exit status is 1
+                    # when there is no matching pattern and therefore
+                    # check_output raises an exception.
                     if len(output) > 1:
                         logger.warning("Warning: several database server "
                                        "processes match the pid (should not "
@@ -209,11 +212,14 @@ if __name__ == "__main__":
                                  "database_server_uri.py.txt file has not "
                                  "been removed.")
 
-        logger.info('Launching database server and getting a proxy object on it')
+        logger.info(
+            'Launching database server and getting a proxy object on it')
         # We don't need the handle since the database server will continue
         # to run indepently of the server engine.
-        subprocess_db_server_handle = start_database_server(resource_id, logger)
-        logger.debug('Waiting for the database server process to write something')
+        subprocess_db_server_handle = start_database_server(
+            resource_id, logger)
+        logger.debug(
+            'Waiting for the database server process to write something')
         output = subprocess_db_server_handle.stdout.readline()
         output = output.strip().decode()
 
@@ -233,7 +239,6 @@ if __name__ == "__main__":
 
         return database_server_proxy
 
-
     # main server program
     def main(resource_id, engine_name, log=""):
 
@@ -249,7 +254,7 @@ if __name__ == "__main__":
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
             if False:
-                print('logs: ',logfilepath, engine_log_format,
+                print('logs: ', logfilepath, engine_log_format,
                       engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
@@ -272,7 +277,7 @@ if __name__ == "__main__":
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
                 config.get_transfered_file_dir(),
-                remove_orphan_files = config.get_remove_orphan_files())
+                remove_orphan_files=config.get_remove_orphan_files())
         else:
             database_server = get_database_server_proxy(config, logger)
             logger.debug("database_server launched")
@@ -286,9 +291,9 @@ if __name__ == "__main__":
                                                    sch,
                                                    config)
 
-        ################################################################################
+        #
         # Register the objects as remote accessible objects
-        ################################################################################
+        #
 
         logger.info("Registering objects and sending their uri to the client.")
         uri_engine = obj_serv.register(workflow_engine)
@@ -318,23 +323,26 @@ if __name__ == "__main__":
                              + "\n")
         else:
             sys.stdout.write("scheduler_config None\n")
-        #sys.stdout.flush()
+        # sys.stdout.flush()
 
-        sys.stdout.write("zmq " + zmq.__version__ + " " + repr(sys.path) + '\n')
+        sys.stdout.write(
+            "zmq " + zmq.__version__ + " " + repr(sys.path) + '\n')
         sys.stdout.flush()
-        #print(sys.path, file=open('/tmp/WTF','a'))
+        # print(sys.path, file=open('/tmp/WTF','a'))
 
-        ################################################################################
+        #
         # Daemon request loop thread
-        ################################################################################
-        logging.info("Launching a threaded request loop for the object server.")
+        #
+        logging.info(
+            "Launching a threaded request loop for the object server.")
         daemon_request_loop_thread = threading.Thread(name="zro_serve_forever",
                                                       target=obj_serv.serve_forever)
 
         daemon_request_loop_thread.daemon = True
         daemon_request_loop_thread.start()
 
-        logging.debug("Thread object server (obj_serv): " + str(daemon_request_loop_thread))
+        logging.debug(
+            "Thread object server (obj_serv): " + str(daemon_request_loop_thread))
 
         logger.info("******** before client connection ******************")
         client_connected = False
@@ -342,13 +350,15 @@ if __name__ == "__main__":
         try:
             while not client_connected and timeout > 0:
                 client_connected = connection_checker.isConnected()
-                logger.debug("Client connection status: " + repr(client_connected))
+                logger.debug(
+                    "Client connection status: " + repr(client_connected))
                 timeout = timeout - 1
                 time.sleep(1)
 
             logger.info("******** first mode: client connection *************")
             while client_connected:
-                logger.debug("client is connected we sleep multiple times one second")
+                logger.debug(
+                    "client is connected we sleep multiple times one second")
                 client_connected = connection_checker.isConnected()
                 time.sleep(1)
 
@@ -356,25 +366,25 @@ if __name__ == "__main__":
 
             # obj_serv.sock.close()  # free the port
 
-
             # TODO add a destructor if necessary.
             # del (daemon)
 
-            logger.info("******** second mode: wait for jobs to finish ********")
+            logger.info(
+                "******** second mode: wait for jobs to finish ********")
             jobs_running = True
             while jobs_running:
                 jobs_running = not workflow_engine.engine_loop.are_jobs_and_workflow_done(
-                         )
+                )
                 time.sleep(1)
 
-            logger.info("******** jobs are done ! Shuting down workflow engine ***************************")
+            logger.info(
+                "******** jobs are done ! Shuting down workflow engine ***************************")
             workflow_engine.engine_loop_thread.stop()
         except Exception as e:
             logger.exception(e)
 
         sch.clean()
         sys.exit()
-
 
     if not len(sys.argv) == 3 and not len(sys.argv) == 4:
         sys.stdout.write("start_workflow_engine takes 2 arguments:\n")

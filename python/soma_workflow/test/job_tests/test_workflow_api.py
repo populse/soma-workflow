@@ -70,6 +70,7 @@ class WorkflowApiTests(unittest.TestCase):
         self.assertTrue(len(workflow3.groups) == 2)
         self.assertTrue(len(workflow3.dependencies) == 17)
 
+
 def test():
     suite = unittest.TestLoader().loadTestsFromTestCase(WorkflowApiTests)
     runtime = unittest.TextTestRunner(verbosity=2).run(suite)

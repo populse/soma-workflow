@@ -34,8 +34,7 @@ class WorkflowExamplesSharedTransfer(WorkflowExamplesLocal):
             uuid, client_paths)
 
     def shared_function(self, dirname, filename, namespace, uuid,
-                          disposal_timeout, is_input, client_paths=None):
+                        disposal_timeout, is_input, client_paths=None):
         ''' use SharedResourcePath
         '''
         return SharedResourcePath(filename, namespace, uuid, disposal_timeout)
-
