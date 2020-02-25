@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from soma_workflow.client import Job, Workflow, Group, WorkflowController
+from six.moves import range
 
 jobs = []
 dependencies = []

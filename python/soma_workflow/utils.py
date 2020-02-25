@@ -11,6 +11,7 @@
 from __future__ import print_function
 
 
+from __future__ import absolute_import
 import copy
 import os
 from soma_workflow.client import Workflow, Group, Job, Helper
@@ -22,6 +23,7 @@ try:
 except ImportError:
     class Undefined(object):
         pass
+
 
 def DetectFindLib(env_name, libname):
     '''Try to find libname using ctype
@@ -237,6 +239,7 @@ def explore(root_job,
                         explored,
                         workflow)
 
+
 def to_json(value):
     '''
     Convert value to an object which will mark some types through JSON
@@ -286,5 +289,3 @@ def from_json(value):
     elif code == '<set>':
         return set([from_json(x) for x in value[1:]])
     return [from_json(x) for x in value]
-
-

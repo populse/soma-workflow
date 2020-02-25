@@ -3,6 +3,7 @@ Soma-workflow is a unified and simple interface to parallel computing
 resources. It aims at making easier the use of parallel resources by
 non expert users and software.
 """
+from __future__ import absolute_import
 import os
 import ez_setup
 ez_setup.use_setuptools()

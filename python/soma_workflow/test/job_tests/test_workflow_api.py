@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import unittest
 import sys
 
@@ -68,6 +69,7 @@ class WorkflowApiTests(unittest.TestCase):
         self.assertTrue(len(workflow3.jobs) == 10)
         self.assertTrue(len(workflow3.groups) == 2)
         self.assertTrue(len(workflow3.dependencies) == 17)
+
 
 def test():
     suite = unittest.TestLoader().loadTestsFromTestCase(WorkflowApiTests)

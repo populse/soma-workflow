@@ -21,6 +21,7 @@
 
 """drmaa errors"""
 
+from __future__ import absolute_import
 from ctypes import create_string_buffer
 from somadrmaa.const import ERROR_STRING_BUFFER
 

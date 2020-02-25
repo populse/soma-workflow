@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
+from six.moves import range
 
 '''
 @author: Soizic Laguitton
@@ -18,10 +20,7 @@ from __future__ import with_statement, print_function
 import os
 import sys
 import socket
-try:
-    import configparser # python 3
-except ImportError:
-    import ConfigParser as configparser # python 2
+import six.moves.configparser as configparser
 
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
@@ -84,8 +83,8 @@ CFG_SERVER_NAME = 'SERVER_NAME'
 CFG_NAME_SERVER_HOST = 'NAME_SERVER_HOST'
 
 # OCFG_REMOVE_ORPHAN_FILES allow to disable search for orphan files (i.e. files
-# that exist in transfered files directory but that are not registered in 
-# database anymore) at connection time. This mechanism can be really slow if a 
+# that exist in transfered files directory but that are not registered in
+# database anymore) at connection time. This mechanism can be really slow if a
 # large number of files exist in the transfered files directory.
 OCFG_REMOVE_ORPHAN_FILES = 'REMOVE_ORPHAN_FILES'
 OCFG_SERVER_LOG_FILE = 'SERVER_LOG_FILE'
@@ -195,7 +194,7 @@ class Configuration(observer.Observable):
     _res_install_path = None
 
     _shared_temporary_dir = None
-    
+
     _remove_orphan_files = None
 
     parallel_job_config = None
@@ -232,7 +231,7 @@ class Configuration(observer.Observable):
           A mode among the existing modes defined in configuration.MODES
 
         * scheduler_type *string*
-          A scheduler type among the existing schedulers defined in the 
+          A scheduler type among the existing schedulers defined in the
           schedulers submodules
 
         * database_file *string*
@@ -405,19 +404,19 @@ class Configuration(observer.Observable):
 
             swf_dir = os.path.join(home_dir, ".soma-workflow")
             database_file = None
-            
+
             if config_path is not None:
                 if config_parser.has_section(resource_id):
                     if config_parser.has_option(resource_id,
                                                 OCFG_SWF_DIR):
-                        swf_dir = config_parser.get(resource_id, 
+                        swf_dir = config_parser.get(resource_id,
                                                     OCFG_SWF_DIR)
-                    
+
                     if config_parser.has_option(resource_id,
                                                 CFG_DATABASE_FILE):
-                        database_file = config_parser.get(resource_id, 
+                        database_file = config_parser.get(resource_id,
                                                           CFG_DATABASE_FILE)
-            
+
             if database_file is None:
                 database_file = os.path.join(
                     swf_dir, "soma_workflow-%s.db" % DB_VERSION)
@@ -447,12 +446,12 @@ class Configuration(observer.Observable):
                 try:
                     os.mkdir(os.path.join(home_dir, ".soma-workflow"))
                 except OSError:
-                    pass # ignore failed mkdir
+                    pass  # ignore failed mkdir
             if not os.path.isdir(transfered_file_dir):
                 try:
                     os.mkdir(transfered_file_dir)
                 except OSError:
-                    pass # ignore failed mkdir
+                    pass  # ignore failed mkdir
 
             return config
 
@@ -593,14 +592,13 @@ class Configuration(observer.Observable):
                 # remove this one
                 continue
             new_resource_ids.append(resource_id)
-            
+
             try:
                 machines = config_parser.get(resource_id,
-                                            CFG_SUBMITTING_MACHINES)
+                                             CFG_SUBMITTING_MACHINES)
             except configparser.NoOptionError:
                 machines = None
-                
-                
+
             if (machines is None or local_machine in machines
                 or 'localhost' in machines) \
                     and config_parser.has_option(resource_id, OCFG_LIGHT_MODE):
@@ -627,14 +625,14 @@ class Configuration(observer.Observable):
                 or (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
                     and bool(int(config_parser.get(
                         resource_id, OCFG_LIGHT_MODE)))
-                   ) \
+                    ) \
                 or (not config_parser.has_option(
-                        resource_id, OCFG_SCHEDULER_TYPE)
+                    resource_id, OCFG_SCHEDULER_TYPE)
                     and not config_parser.has_option(
                         resource_id, CFG_SUBMITTING_MACHINES)
                     and not config_parser.has_option(
                         resource_id, CFG_CLUSTER_ADDRESS)
-                   ):
+                    ):
             return True
         return False
 
@@ -687,9 +685,9 @@ class Configuration(observer.Observable):
                 or 'localhost' in machines) \
                     and (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
                          or (not config_parser.has_option(
-                                resource_id, CFG_SUBMITTING_MACHINES)
-                            and not config_parser.has_option(
-                                resource_id, CFG_CLUSTER_ADDRESS))):
+                             resource_id, CFG_SUBMITTING_MACHINES)
+                             and not config_parser.has_option(
+                             resource_id, CFG_CLUSTER_ADDRESS))):
                 return resource_id
         return None
 
@@ -789,11 +787,11 @@ class Configuration(observer.Observable):
             swf_dir = os.path.join(self.get_home_dir(), ".soma-workflow")
             self._transfered_file_dir = os.path.join(
                 swf_dir, 'transfered_files')
-            #raise ConfigurationError("Can not find the configuration item %s "
+            # raise ConfigurationError("Can not find the configuration item %s "
                                      #"for the resource %s, in the configuration " "file %s." %
                                     #(CFG_TRANSFERED_FILES_DIR,
-                                        #self._resource_id,
-                                        #self._config_path))
+                                        # self._resource_id,
+                                        # self._config_path))
         else:
             self._transfered_file_dir = self._config_parser.get(
                 self._resource_id, CFG_TRANSFERED_FILES_DIR)
@@ -818,7 +816,6 @@ class Configuration(observer.Observable):
         self._shared_temporary_dir = os.path.expandvars(
             self._shared_temporary_dir)
         return self._shared_temporary_dir
-    
 
     def get_remove_orphan_files(self):
         '''config that manages orphan files removal at connection time'''
@@ -829,12 +826,12 @@ class Configuration(observer.Observable):
             not self._config_parser.has_option(self._resource_id,
                                                OCFG_REMOVE_ORPHAN_FILES):
             return True
-        
+
         self._remove_orphan_files = self._config_parser.get(self._resource_id,
                                                             OCFG_REMOVE_ORPHAN_FILES)
         self._remove_orphan_files = bool(int(os.path.expandvars(
             self._remove_orphan_files)))
-                                         
+
         return self._remove_orphan_files
 
     def get_parallel_job_config(self):
@@ -911,7 +908,7 @@ class Configuration(observer.Observable):
                     f = open(filename, "r")
                 except IOError as e:
                     raise ConfigurationError("Can not read the translation file %s" %
-                                            (filename))
+                                             (filename))
 
                 if not namespace in self.path_translation.keys():
                     self.path_translation[namespace] = {}
@@ -947,9 +944,9 @@ class Configuration(observer.Observable):
                                               CFG_SERVER_NAME):
             raise ConfigurationError("Can not find the configuration item %s "
                                      "for the resource %s, in the configuration " "file %s." %
-                                    (CFG_SERVER_NAME,
-                                        self._resource_id,
-                                        self._config_path))
+                                     (CFG_SERVER_NAME,
+                                      self._resource_id,
+                                      self._config_path))
         self._server_name = self._config_parser.get(self._resource_id,
                                                     CFG_SERVER_NAME)
         return self._server_name
@@ -961,8 +958,8 @@ class Configuration(observer.Observable):
         * queue_limit *int*
         '''
         self.get_queue_limits()
-        if queue_limit == 0: # unlimited
-            if self._queue_limits.has_key(queue_name):
+        if queue_limit == 0:  # unlimited
+            if queue_name in self._queue_limits:
                 del self._queue_limits[queue_name]
         else:
             self._queue_limits[queue_name] = queue_limit
@@ -975,8 +972,8 @@ class Configuration(observer.Observable):
         * running_jobs_limit *int*
         '''
         self.get_running_jobs_limits()
-        if running_jobs_limit == 0: # unlimited
-            if self._running_jobs_limits.has_key(queue_name):
+        if running_jobs_limit == 0:  # unlimited
+            if queue_name in self._running_jobs_limits:
                 del self._running_jobs_limits[queue_name]
         else:
             self._running_jobs_limits[queue_name] = running_jobs_limit
@@ -1035,7 +1032,7 @@ class Configuration(observer.Observable):
         queues = set()
         if self._config_parser.has_option(self._resource_id, OCFG_QUEUES):
             queues.update(self._config_parser.get(self._resource_id,
-                                                        OCFG_QUEUES).split())
+                                                  OCFG_QUEUES).split())
         if self._config_parser.has_option(self._resource_id,
                                           OCFG_MAX_JOB_IN_QUEUE):
             queues.update(self.get_queue_limits().keys())
@@ -1223,13 +1220,13 @@ def cpu_count():
         except Exception as e:  # sometimes happens on MacOS... ?
             print('Warning: CPU count detection failed. Using default (2)',
                   file=sys.stderr)
-            #print(e)
-            #import traceback
-            #traceback.print_exc()
+            # print(e)
+            # import traceback
+            # traceback.print_exc()
             return 2
     # Linux, Unix and MacOS:
     if hasattr(os, "sysconf"):
-        if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+        if "SC_NPROCESSORS_ONLN" in os.sysconf_names:
                     # Linux & Unix:
             ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
             if isinstance(ncpus, int) and ncpus > 0:
@@ -1240,7 +1237,7 @@ def cpu_count():
                 ["sysctl", "-n", "hw.ncpu"],
                 stdout=subprocess.PIPE).stdout.read())
     # Windows:
-    if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+    if "NUMBER_OF_PROCESSORS" in os.environ:
         ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
         if ncpus > 0:
             return ncpus
@@ -1253,11 +1250,12 @@ def default_cpu_number():
     when 3 processors or more are available, or cpu_count() on a mono or
     bi-processor machine.
     '''
-    #cpu = cpu_count()
-    #if cpu > 2:
-        #return cpu - 1
-    #return cpu
+    # cpu = cpu_count()
+    # if cpu > 2:
+        # return cpu - 1
+    # return cpu
     return 0
+
 
 class LocalSchedulerCfg(observer.Observable):
 

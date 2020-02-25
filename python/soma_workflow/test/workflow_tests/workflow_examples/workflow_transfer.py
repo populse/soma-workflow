@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from __future__ import absolute_import
 
 # -*- coding: utf-8 -*-
 """
@@ -20,6 +21,7 @@ from soma_workflow.test.workflow_tests.workflow_examples.workflow_local \
 
 
 class WorkflowExamplesTransfer(WorkflowExamplesLocal):
+
     '''
     The input and ouput files are temporary files on the computing
     resource and these files can be transfered from and to the
@@ -45,4 +47,3 @@ class WorkflowExamplesTransfer(WorkflowExamplesLocal):
             os.path.join(dirname, filename),
             disposal_timeout,
             uuid, client_paths)
-

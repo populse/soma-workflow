@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 # -*- coding: utf-8 -*-
 """
@@ -11,6 +12,8 @@ Created on Mon Oct 21 14:05:37 2013
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
+from six.moves import range
+from six.moves import zip
 import os
 import inspect
 from abc import abstractmethod

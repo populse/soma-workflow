@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 import six
 import os
 import inspect
@@ -148,7 +150,7 @@ def get_scheduler_implementation(scheduler_type):
     if os.path.exists(os.path.join(sched_dir,
                                    '%s_scheduler.py' % scheduler_type)):
         sched_mod = '%s_scheduler' % scheduler_type
-        #try:
+        # try:
         module = importlib.import_module('.%s' % sched_mod,
                                          'soma_workflow.schedulers')
         sched_list = []
@@ -158,7 +160,7 @@ def get_scheduler_implementation(scheduler_type):
             return scheduler
         for element in six.itervalues(module.__dict__):
             if element in sched_list:
-                continue # avoid duplicates
+                continue  # avoid duplicates
             if inspect.isclass(element) and element is not Scheduler \
                     and issubclass(element, Scheduler):
                 sched_list.append(element)
@@ -176,7 +178,7 @@ def get_scheduler_implementation(scheduler_type):
             print('Warning: module soma_workflow.schedulers.%s contains '
                   'several schedulers:' % sched_mod)
             print([s.__name__ for s in sched_list])
-        #except ImportError:
+        # except ImportError:
     raise NameError('scheduler type %s is not found' % scheduler_type)
 
 
@@ -222,7 +224,7 @@ def get_schedulers_list():
                 module = importlib.import_module('.%s' % sched_mod,
                                                  'soma_workflow.schedulers')
             except NotImplementedError:
-                continue # skip not implemented / unfinished ones
+                continue  # skip not implemented / unfinished ones
             except Exception:
                 enabled = False
             if sched_mod == 'local_scheduler':
@@ -230,4 +232,3 @@ def get_schedulers_list():
             sched = sched_mod[:-10]
             schedulers.append((sched, enabled))
     return schedulers
-

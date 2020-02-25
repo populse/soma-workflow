@@ -1,5 +1,6 @@
 
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 '''
 author: Soizic Laguitton
@@ -38,7 +39,6 @@ if DRMAA_LIB_FOUND:
     from somadrmaa.errors import *
     from somadrmaa.const import JobControlAction
 
-
     class DrmaaScheduler(Scheduler):
 
         '''
@@ -68,10 +68,10 @@ if DRMAA_LIB_FOUND:
         FAKE_JOB = -167
 
         def __init__(self,
-                      drmaa_implementation,
-                      parallel_job_submission_info,
-                      tmp_file_path=None,
-                      configured_native_spec=None):
+                     drmaa_implementation,
+                     parallel_job_submission_info,
+                     tmp_file_path=None,
+                     configured_native_spec=None):
 
             super(DrmaaScheduler, self).__init__()
 
@@ -174,8 +174,8 @@ if DRMAA_LIB_FOUND:
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
         def _setDrmaaParallelJob(self,
-                                  drmaa_job_template,
-                                  parallel_job_info):
+                                 drmaa_job_template,
+                                 parallel_job_info):
             '''
             Set the DRMAA job template information for a parallel job submission.
             The configuration file must provide the parallel job submission
@@ -478,10 +478,9 @@ if DRMAA_LIB_FOUND:
             return sch
 
 
-else: # DRMAA_LIB_FOUND is False
+else:  # DRMAA_LIB_FOUND is False
 
     DrmaaScheduler = None
 
 # for backward compatibility
 DrmaaCTypes = DrmaaScheduler
-

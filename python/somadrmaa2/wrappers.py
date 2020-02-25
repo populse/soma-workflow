@@ -1,11 +1,14 @@
 
 """DRMAA2 C library function wrappers"""
 
+from __future__ import absolute_import
+from __future__ import print_function
 from ctypes import *
 from ctypes.util import find_library
 from soma_workflow.utils import DetectFindLib
 from somadrmaa.errors import DrmaaException
 import os
+from six.moves import range
 
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
@@ -31,13 +34,14 @@ def error_check(code):
 
 drmaa2_list_entryfree = CFUNCTYPE(None, POINTER(c_void_p))
 
+
 class drmaa2_list_s(Structure):
     _fields_ = [
         ('free_callback', drmaa2_list_entryfree),
         ('type', c_int),
         ('size', c_long),
         ('head', c_void_p),
-      ]
+    ]
 drmaa2_list = POINTER(drmaa2_list_s)
 drmaa2_string_list = drmaa2_list
 
@@ -50,6 +54,7 @@ DRMAA2_MACHINEINFOLIST = 3
 DRMAA2_SLOTINFOLIST = 4
 DRMAA2_RESERVATIONLIST = 5
 
+
 class drmaa2_dict_s(Structure):
     _fields_ = [
         #('free_entry', drmaa2_dict_entryfree),
@@ -58,15 +63,18 @@ class drmaa2_dict_s(Structure):
 
 drmaa2_dict = POINTER(drmaa2_dict_s)
 
+
 class drmaa2_jsession_s(Structure):
     _fields_ = []
 
 drmaa2_jsession = POINTER(drmaa2_jsession_s)
 
+
 class drmaa2_version_s(Structure):
     _fields_ = [('major', STRING), ('minor', STRING)]
 
 drmaa2_version = POINTER(drmaa2_version_s)
+
 
 class drmaa2_jtemplate_s(Structure):
     _fields_ = [
@@ -92,10 +100,10 @@ class drmaa2_jtemplate_s(Structure):
         ('priority', c_longlong),
         ('candidateMachines', drmaa2_string_list),
         ('minPhysMemory', c_longlong),
-        ('machineOS', c_void_p), ## TODO drmaa2_os
-        ('machineArch', c_void_p), ## TODO drmaa2_cpu
-        ('startTime', c_void_p), ## TODO time_t
-        ('deadlineTime', c_void_p), ## TODO time_t
+        ('machineOS', c_void_p),  # TODO drmaa2_os
+        ('machineArch', c_void_p),  # TODO drmaa2_cpu
+        ('startTime', c_void_p),  # TODO time_t
+        ('deadlineTime', c_void_p),  # TODO time_t
         ('stageInFiles', drmaa2_dict),
         ('stageOutFiles', drmaa2_dict),
         ('resourceLimits', drmaa2_dict),
@@ -104,6 +112,7 @@ class drmaa2_jtemplate_s(Structure):
     ]
 
 drmaa2_jtemplate = POINTER(drmaa2_jtemplate_s)
+
 
 class drmaa2_j_s(Structure):
     _fields_ = []
@@ -116,6 +125,7 @@ drmaa2_create_jsession.argtypes = [STRING, STRING]
 drmaa2_close_jsession = _lib.drmaa2_close_jsession
 drmaa2_close_jsession.argtypes = [drmaa2_jsession]
 drmaa2_close_jsession.restype = error_check
+
 
 def init(contact='', name=''):
     session = drmaa2_create_jsession(name, contact)
@@ -148,19 +158,23 @@ drmaa2_list_create = _lib.drmaa2_list_create
 drmaa2_list_create.argtypes = [c_int, drmaa2_list_entryfree]
 drmaa2_list_create.restype = drmaa2_list
 drmaa2_list_add = _lib.drmaa2_list_add
-drmaa2_list_add.argtypes = [drmaa2_list, STRING] ## WARNING: using STRING, should be c_void_p
+drmaa2_list_add.argtypes = [drmaa2_list, STRING]
+    ## WARNING: using STRING, should be c_void_p
 drmaa2_list_add.restype = error_check
 drmaa2_string_list_default_callback = _lib.drmaa2_string_list_default_callback
 drmaa2_string_list_default_callback.argtypes = [POINTER(c_void_p)]
 drmaa2_string_list_default_callback.restype = None
+
+
 def drmaa2_string_list_default_callback_py(item):
-  drmaa2_string_list_default_callback(item)
-drmaa2_string_list_default_callback_c = drmaa2_list_entryfree(drmaa2_string_list_default_callback_py)
+    drmaa2_string_list_default_callback(item)
+drmaa2_string_list_default_callback_c = drmaa2_list_entryfree(
+    drmaa2_string_list_default_callback_py)
 drmaa2_list_size = _lib.drmaa2_list_size
 drmaa2_list_size.argtypes = [drmaa2_list]
 drmaa2_list_size.restype = c_long
 drmaa2_list_free = _lib.drmaa2_list_free
-drmaa2_list_free.argtypes = [POINTER(drmaa2_list)] ## FIXME: causes segfault
+drmaa2_list_free.argtypes = [POINTER(drmaa2_list)]  # FIXME: causes segfault
 drmaa2_list_free.restype = None
 drmaa2_list_get = _lib.drmaa2_list_get
 drmaa2_list_get.argtypes = [drmaa2_list, c_long]
@@ -169,14 +183,17 @@ drmaa2_string_list_get = _lib.drmaa2_list_get
 drmaa2_string_list_get.argtypes = [drmaa2_list, c_long]
 drmaa2_string_list_get.restype = STRING
 
+
 def drmaa2_make_string_list(str_list):
-    dlist = drmaa2_list_create(DRMAA2_STRINGLIST, drmaa2_string_list_default_callback_c)
+    dlist = drmaa2_list_create(
+        DRMAA2_STRINGLIST, drmaa2_string_list_default_callback_c)
     for i in range(len(str_list)):
         item = str_list[-i - 1]
         print('insert item:', item)
         # insertion is at the beginning of the list
         drmaa2_list_add(dlist, item)
     return dlist
+
 
 def drmaa2_list_from_string_list(drmaa2_str_list):
     pylist = []
@@ -187,5 +204,3 @@ def drmaa2_list_from_string_list(drmaa2_str_list):
             item = drmaa2_list_get(drmaa2_str_list, i)
         pylist.append(item)
     return pylist
-
-

@@ -6,6 +6,7 @@ Created on Wed Jan 23 13:58:21 2013
 @author: benoit.da_mota@inria.fr
 """
 
+from __future__ import absolute_import
 from soma_workflow.test.workflow_tests.workflow_examples.workflow_examples import WorkflowExamples
 from soma_workflow.test.workflow_tests.workflow_examples.workflow_local import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests.workflow_examples.workflow_shared_transfer import WorkflowExamplesSharedTransfer

@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from six.moves import range
 
 '''
 author: Benoit Da Mota
@@ -11,14 +12,15 @@ organization: PARIETAL, INRIA, Saclay, France
 
 license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
-#try:
-    #import subprocess32 as subprocess
-#except:
-    #import subprocess
-    #print('subprocess module will be used to start shell commands. Due to '
+# try:
+    # import subprocess32 as subprocess
+# except:
+    # import subprocess
+    # print('subprocess module will be used to start shell commands. Due to '
           #'issues in this module this can lead to problems during execution. '
           #'You should probably install subprocess32 module to avoid these '
           #'problems.')
+from __future__ import absolute_import
 from . import subprocess
 import sys
 import time
@@ -33,6 +35,7 @@ import six
 from mpi4py import MPI
 from soma_workflow import scheduler, constants
 from soma_workflow.schedulers.mpi_scheduler import MPIScheduler
+
 
 def slave_loop(communicator,
                logger=None,
@@ -67,39 +70,39 @@ def slave_loop(communicator,
         ended_jobs_info = {}  # job_id -> (job_status, job_exit_status)
         t = None
         if len(commands) < max_nb_jobs:
-            communicator.send('Requesting a job', 
+            communicator.send('Requesting a job',
                               dest=0,
                               tag=MPIScheduler.JOB_REQUEST)
 
-            #logger.debug("Slave " + repr(rank) + " job request")
+            # logger.debug("Slave " + repr(rank) + " job request")
             communicator.Probe(source=0,
                                tag=MPI.ANY_TAG, status=status)
-            #logger.debug("Slave " + repr(rank) + " job request answered")
+            # logger.debug("Slave " + repr(rank) + " job request answered")
             t = status.Get_tag()
         elif communicator.Iprobe(source=0,
                                  tag=MPI.ANY_TAG, status=status):
             t = status.Get_tag()
         if t != None:
-            
+
             if t == MPIScheduler.JOB_SENDING:
-                #logger.debug("Slave " + repr(rank) + " receiving job")
+                # logger.debug("Slave " + repr(rank) + " receiving job")
                 job_list = communicator.recv(source=0, tag=t)
-                #logger.debug("Slave " + repr(rank) + " job list received")
+                # logger.debug("Slave " + repr(rank) + " job list received")
                 for j in job_list:
                     # process = scheduler.LocalScheduler.create_process(j)
                     separator = " "
                     if not j.command:  # barrier job
                         command = None
                     else:
-                        #command = ""
-                        #for command_el in j.plain_command():
-                            #command = command + "\'" + command_el + "\' "
-                        command = (j.plain_command(), 
-                                   j.plain_stdout(), 
+                        # command = ""
+                        # for command_el in j.plain_command():
+                            # command = command + "\'" + command_el + "\' "
+                        command = (j.plain_command(),
+                                   j.plain_stdout(),
                                    j.plain_stderr())
                     # command = separator.join(j.plain_command())
-                    #logger.debug("[host: " + socket.gethostname() + "] "
-                             #+ "Slave " + repr(rank) + " RUNS JOB" 
+                    # logger.debug("[host: " + socket.gethostname() + "] "
+                             #+ "Slave " + repr(rank) + " RUNS JOB"
                              #+ repr(j.job_id) + " " + str(command))
                     commands[j.job_id] = (command, j.env)
             elif t == MPIScheduler.NO_JOB:
@@ -134,27 +137,27 @@ def slave_loop(communicator,
                                             None, None))
             else:
 
-                #if j.plain_stderr():
-                    #command = command + " >> " + \
-                        #j.plain_stdout() + " 2>> " + j.plain_stderr()
-                #else:
-                    #command = command + " >> " + j.plain_stdout()
+                # if j.plain_stderr():
+                    # command = command + " >> " + \
+                        # j.plain_stdout() + " 2>> " + j.plain_stderr()
+                # else:
+                    # command = command + " >> " + j.plain_stdout()
 
-                #ret_value = os.system(command)
+                # ret_value = os.system(command)
                 plain_command, plain_stdout, plain_stderr = command
                 cmd_stdout, cmd_stderr = (None, None)
-                            
+
                 if plain_stdout:
                     cmd_stdout = open(plain_stdout, 'w+')
-                    
+
                 if plain_stderr:
                     cmd_stderr = open(plain_stderr, 'w+')
-                
+
                 logger.debug("[host: " + socket.gethostname() + "] "
-                           + "Slave %s JOB%s STARTING SUBPROCESS COMMAND %s, " \
-                             "stdout: %s, stderr: %s" \
-                            % (repr(rank), repr(job_id), plain_command, 
-                               plain_stdout, plain_stderr))
+                             + "Slave %s JOB%s STARTING SUBPROCESS COMMAND %s, "
+                             "stdout: %s, stderr: %s"
+                             % (repr(rank), repr(job_id), plain_command,
+                                plain_stdout, plain_stderr))
 
                 if env is not None:
                     env2 = dict(os.environ)
@@ -162,42 +165,43 @@ def slave_loop(communicator,
                     env = env2
 
                 try:
-                    ret_value = subprocess.call(plain_command, 
-                                                stdout=cmd_stdout, 
+                    ret_value = subprocess.call(plain_command,
+                                                stdout=cmd_stdout,
                                                 stderr=cmd_stderr,
                                                 env=env)
-                    #ret_value = subprocess.call(plain_command)
+                    # ret_value = subprocess.call(plain_command)
                     logger.debug("[host: " + socket.gethostname() + "] "
-                               + "Slave %s JOB%s ENDED REGULARLY " \
-                                 "(ret value %d), stdout: %s, stderr: %s" \
-                                % (repr(rank), repr(job_id), ret_value,
-                                   plain_stdout, plain_stderr))
-                            
+                                 + "Slave %s JOB%s ENDED REGULARLY "
+                                 "(ret value %d), stdout: %s, stderr: %s"
+                                 % (repr(rank), repr(job_id), ret_value,
+                                    plain_stdout, plain_stderr))
+
                 except Exception as e:
                     ret_value = None
-                    #import traceback
-                    #exc_type, exc_value, exc_traceback = sys.exc_info()
-                    #if hasattr(e, 'child_traceback'):
-                        #logger.debug(
-                        #traceback.print_tb(e.child_traceback)
+                    # import traceback
+                    # exc_type, exc_value, exc_traceback = sys.exc_info()
+                    # if hasattr(e, 'child_traceback'):
+                        # logger.debug(
+                        # traceback.print_tb(e.child_traceback)
                     logger.debug("[host: " + socket.gethostname() + "] "
-                               + "Slave %s JOB%s RAISED ERROR, " \
-                                 "stdout: %s, stderr: %s" \
-                                % (repr(rank), repr(job_id),
-                                   plain_stdout, plain_stderr), 
+                                 + "Slave %s JOB%s RAISED ERROR, "
+                                 "stdout: %s, stderr: %s"
+                                 % (repr(rank), repr(job_id),
+                                    plain_stdout, plain_stderr),
                                  exc_info=True)
                     ended_jobs_info[job_id] = (constants.FAILED,
                                                (constants.EXIT_ABORTED,
                                                 None, None, None))
-                    #traceback.format_exception(exc_type, exc_value, exc_traceback)
-                    
+                    # traceback.format_exception(exc_type, exc_value,
+                    # exc_traceback)
+
                 finally:
                     if cmd_stdout:
                         cmd_stdout.close()
-                        
+
                     if cmd_stderr:
                         cmd_stderr.close()
-                    
+
                 if ret_value != None:
                     ended_jobs_info[job_id] = (constants.DONE,
                                                (constants.FINISHED_REGULARLY,
@@ -242,7 +246,7 @@ if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.size
-    
+
     parser = optparse.OptionParser()
     parser.add_option('--workflow',
                       dest='workflow_file', default=None,
@@ -264,25 +268,25 @@ if __name__ == '__main__':
         help="untar directory")
 
     options, args = parser.parse_args(sys.argv)
-    
+
     if rank == 0:
 
         from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
         from soma_workflow.database_server import WorkflowDatabaseServer
         from soma_workflow.client import Helper
         import soma_workflow.configuration
-    
+
         log_file_handler = logging.FileHandler(
             os.path.expandvars("$HOME/logtestmpi_master_%s" % socket.gethostname()))
         log_file_handler.setLevel(logging.DEBUG)
         log_formatter = logging.Formatter(
             "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
         log_file_handler.setFormatter(log_formatter)
-    
+
         logger = logging.getLogger('testMPI')
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
-        
+
         resource_id = args[1]  # sys.argv[1]
 
         if not len(args) == 2:
@@ -318,7 +322,7 @@ if __name__ == '__main__':
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
                 config.get_transfered_file_dir(),
-                remove_orphan_files = config.get_remove_orphan_files())
+                remove_orphan_files=config.get_remove_orphan_files())
 
             logger.info("workflow_file " + repr(options.workflow_file))
             logger.info("wf_id_to_restart " + repr(options.wf_id_to_restart))
@@ -340,9 +344,9 @@ if __name__ == '__main__':
                 logger.info(" ")
                 logger.info("******* submission of workflow **********")
                 logger.info("workflow file: " + repr(workflow_file))
-                
+
                 if not os.path.exists(workflow_file):
-                    logger.info("workflow file: " + repr(workflow_file) + 
+                    logger.info("workflow file: " + repr(workflow_file) +
                                 "does not exist and can not be submitted")
 
                 workflow = Helper.unserialize(workflow_file)
@@ -369,37 +373,37 @@ if __name__ == '__main__':
             while not sch.stop_thread_loop:
                 time.sleep(1)
             logger.debug("######### master ends #############")
-            
+
         except Exception as e:
             logger.error('exception occured: %s' % repr(e))
             for slave in range(1, comm.size):
                 logger.debug("[host: " + socket.gethostname() + "] "
                              + "STOP !!! slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-            
+
             logger.debug("######### master ends with errors #############")
             raise e
-            
+
     # slave code
     else:
-    
+
         log_file_handler = logging.FileHandler(
             os.path.expandvars("$HOME/logtestmpi_slave%d_%s" % (rank, socket.gethostname())))
         log_file_handler.setLevel(logging.DEBUG)
         log_formatter = logging.Formatter(
             "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
         log_file_handler.setFormatter(log_formatter)
-        
+
         logger = logging.getLogger("testMPI.slave")
         logger.setLevel(logging.DEBUG)
         logger.addHandler(log_file_handler)
         logger.info("=====> [host: " + socket.gethostname() + "] "
                     + "slave starts " + repr(rank))
-        
-        #logger.debug("=====> [host: " + socket.gethostname() + "] environment:")
-        #for k,v in six.iteritems(os.environ):
-            #logger.debug("%s=%s" % (k, v))
-        
+
+        # logger.debug("=====> [host: " + socket.gethostname() + "] environment:")
+        # for k,v in six.iteritems(os.environ):
+            # logger.debug("%s=%s" % (k, v))
+
         slave_loop(comm,
                    logger=logger,
                    epd_to_deploy=options.epd_to_deploy,

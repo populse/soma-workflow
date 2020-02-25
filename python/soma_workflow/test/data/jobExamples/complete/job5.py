@@ -7,6 +7,7 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 import os
 import json
 import subprocess
@@ -38,4 +39,3 @@ if output_param_file:
         'filePathOut2': filePathOut2,
     }
     json.dump(out_params, open(output_param_file, 'w'))
-

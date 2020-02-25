@@ -12,6 +12,7 @@ Created on Fri Oct 25 17:09:13 2013
 # Imports
 #-----------------------------------------------------------------------------
 
+from __future__ import absolute_import
 import sys
 import os
 from contextlib import contextmanager

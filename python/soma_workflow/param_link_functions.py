@@ -1,6 +1,7 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 try:
     from traits.api import Undefined
 except ImportError:
@@ -38,7 +39,7 @@ def list_all_but_one(item, src_param, value, dst_param, dst_value):
     ''' remove item-th element from the input list.
     Useful in a leave-one-out pattern
     '''
-    return value[:item] + value[item+1:]
+    return value[:item] + value[item + 1:]
 
 
 def list_cv_train_fold(fold, nfolds, src_param, value, dst_param, dst_value):
@@ -76,4 +77,3 @@ def list_cat(item, src_param, value, dst_param, dst_value):
         dst_value = []
     dst_value += value
     return dst_value
-

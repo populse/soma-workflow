@@ -16,6 +16,7 @@
 #-------------------------------------------------------------------------
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import os
 import hashlib
@@ -34,9 +35,6 @@ if sys.version_info[:2] >= (2, 6):
     import json
 # import cProfile
 # import traceback
-
-if sys.version_info[0] >= 3:
-    basestring = str
 
 
 import soma_workflow.connection as connection
@@ -66,6 +64,7 @@ from soma_workflow.client_types import TemporaryPath
 from soma_workflow.client_types import SpecialPath
 from soma_workflow.client_types import OptionPath
 from soma_workflow import scheduler
+
 
 class WorkflowController(object):
 
@@ -150,8 +149,8 @@ class WorkflowController(object):
             print("soma-workflow starting in local mode")
             # setup logging
             (engine_log_dir,
-            engine_log_format,
-            engine_log_level) = self.config.get_engine_log_info()
+             engine_log_format,
+             engine_log_level) = self.config.get_engine_log_info()
             if engine_log_dir:
                 logfilepath = os.path.join(
                     os.path.abspath(engine_log_dir), "log_local_mode")
@@ -162,7 +161,6 @@ class WorkflowController(object):
                     filename=logfilepath,
                     format=engine_log_format,
                     level=eval("logging." + engine_log_level))
-
 
             self._connection = connection.LocalConnection(resource_id, "")
             self._engine_proxy = self._connection.get_workflow_engine()
@@ -757,11 +755,11 @@ class WorkflowController(object):
                        if element[1] == constants.FAILED
                        or (element[1] == constants.DONE and
                            (element[3][0]
-                              not in (constants.FINISHED_REGULARLY, None)
+                            not in (constants.FINISHED_REGULARLY, None)
                             or element[3][1] != 0))]
         failed_jobs_info = self.jobs(
             [element[0] for element in failed_jobs
-            if element[3][0] != constants.EXIT_NOTRUN])
+             if element[3][0] != constants.EXIT_NOTRUN])
         if len(failed_jobs) != 0:
             # failure
             print('** Jobs failure, the following jobs ended with failed '
@@ -825,7 +823,6 @@ class WorkflowController(object):
         return workflow_status == constants.WORKFLOW_DONE \
             and len(failed_jobs) == 0
 
-
     # FILE TRANSFER CONTROL #######################################
     def transfer_files(self, transfer_ids, buffer_size=512 ** 2):
         '''
@@ -854,8 +851,8 @@ class WorkflowController(object):
 
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
-        #Raises *TransferError*
-        if not isinstance(transfer_ids, basestring):
+        # Raises *TransferError*
+        if not isinstance(transfer_ids, six.string_types):
             for transfer_id in transfer_ids:
                 self._transfer_file(transfer_id, buffer_size)
         else:
@@ -1199,7 +1196,7 @@ def _embedded_engine_and_server(config):
     # database server
     database_server = WorkflowDatabaseServer(config.get_database_file(),
                                              config.get_transfered_file_dir(),
-                                             remove_orphan_files = config.get_remove_orphan_files())
+                                             remove_orphan_files=config.get_remove_orphan_files())
 
     sch = scheduler.build_scheduler(config.get_scheduler_type(), config)
     workflow_engine = ConfiguredWorkflowEngine(database_server,
@@ -1458,7 +1455,7 @@ class Helper(object):
                 workflow = pickle.load(file)
             except Exception as e:
                 raise SerializationError(
-                  "Error %s: %s \n\n"
+                    "Error %s: %s \n\n"
                   "The workflow file may have been created "
                   "using Python >= 2.6 using the JSON format.\n"
                   "Use the converter: \n"
@@ -1506,4 +1503,3 @@ class Helper(object):
         ==> Python >= 2.6: multiprocessing.cpu_count
         """
         return configuration.cpu_count()
-

@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 import os
 import sys
 import json
@@ -23,4 +24,3 @@ with open(filePathOut, 'w') as fout:
     for filein in filePathsIn:
         with open(filein) as fin:
             fout.write(fin.read())
-

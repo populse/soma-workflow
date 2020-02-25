@@ -5,6 +5,8 @@
 
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 import soma_workflow.zro as zro
 from six.moves import input
 import threading
@@ -21,19 +23,24 @@ test_proxy = zro.Proxy(object_uri)
 # proxy2 = zro.Proxy(object_uri)
 # proxy3 = zro.Proxy(object_uri)
 
+
 def toRunInThread(prox, socket_lock):
     i = 0
     while i < 30:
-        i = i+1
+        i = i + 1
         socket_lock.acquire()
-        print(prox.modify_string(str(i)+ " " + 50 * "a string that is not so long, check possible interference with thread"))
+        print(prox.modify_string(str(i) + " "
+                                 + 50 * "a string that is not so long, check possible interference with thread"))
         socket_lock.release()
     print("thread finished")
 
-ma_thread = threading.Thread(target=toRunInThread, args=(test_proxy, socket_lock))
-# ma_thread = threading.Thread(target=toRunInThread, args=(proxy2, socket_lock))
+ma_thread = threading.Thread(
+    target=toRunInThread, args=(test_proxy, socket_lock))
+# ma_thread = threading.Thread(target=toRunInThread, args=(proxy2,
+# socket_lock))
 ma_thread.start()
-ma_thread = threading.Thread(target=toRunInThread, args=(test_proxy, socket_lock))
+ma_thread = threading.Thread(
+    target=toRunInThread, args=(test_proxy, socket_lock))
 ma_thread.start()
 
 socket_lock.acquire()
@@ -43,9 +50,10 @@ socket_lock.release()
 print(type(result))
 print(result)
 
-#ma_thread.start()
+# ma_thread.start()
 
-string1 = 10 * "mqksdjfmqskdjfmqskdfjmqsdpqerygqmhdkjqsdmfjqskdfjqmsdjkfmqsjkdfqsmdf"
+string1 = 10 * \
+    "mqksdjfmqskdjfmqskdfjmqsdpqerygqmhdkjqsdmfjqskdfjqmsdjkfmqsjkdfqsmdf"
 string2 = 100 * "mlkjmkljmkjmkljmlmmkljmkljmkljmlkjmlkjmkj"
 string3 = 1000 * "qsdfqsdfqsdfqsdfqsdfqsdfqsdfqsdfqsdfqsdfq"
 

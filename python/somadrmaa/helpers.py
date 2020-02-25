@@ -21,6 +21,7 @@
 
 """internal helpers"""
 
+from __future__ import absolute_import
 import ctypes as _ct
 from somadrmaa.wrappers import *
 from somadrmaa.errors import error_buffer
@@ -43,7 +44,7 @@ else:
         if isinstance(s, str):
             return s.encode()
         return s
-  
+
 
 class BoolConverter(object):
 

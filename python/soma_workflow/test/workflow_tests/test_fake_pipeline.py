@@ -1,4 +1,3 @@
-from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 13:51:00 2013
@@ -30,6 +29,8 @@ Workflow test of a fake pipeline of operations:
           number of failed jobs (including aborted)
           job stdout and stderr
 """
+from __future__ import with_statement
+from __future__ import absolute_import
 import os
 import tempfile
 import sys
@@ -124,6 +125,7 @@ class FakePipelineTest(WorkflowTest):
                         os.unlink(job_stderr_file)
 
             del self.tested_job
+
 
 def test():
     return FakePipelineTest.run_test_function(

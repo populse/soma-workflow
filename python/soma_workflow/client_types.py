@@ -16,6 +16,7 @@ license: CeCILL version: 2 http://www.cecill.info/licences/Licence_CeCILL_V2-en.
 #-------------------------------------------------------------------------
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import warnings
 import sys
@@ -26,10 +27,7 @@ import importlib
 # python2/3 compatibility
 
 import six
-
-if sys.version_info[0] >= 3:
-    basestring = str
-    unicode = str
+from six.moves import range
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -228,7 +226,7 @@ class Job(object):
 
     # any small and picklable object needed by the user
     user_storage = None
-    
+
     # dict (name -> value)
     env = None
 
@@ -298,7 +296,7 @@ class Job(object):
         self.output_params_file = output_params_file
 
         for command_elem in self.command:
-            if isinstance(command_elem, basestring):
+            if isinstance(command_elem, six.string_types):
                 if "'" in command_elem:
                     warnings.warn("%s contains single quote. It could fail using DRMAA"
                                   % command_elem, UserWarning)
@@ -306,8 +304,9 @@ class Job(object):
     def _attributes_equal(self, element, other_element):
         if element.__class__ is not other_element.__class__:
             # special case str / unicode
-            if not isinstance(element, basestring) or not isinstance(element, basestring):
-                #print('differ in class:', element.__class__, other_element.__class__)
+            if not isinstance(element, six.string_types) or not isinstance(element, six.string_types):
+                # print('differ in class:', element.__class__,
+                # other_element.__class__)
                 return False
         if isinstance(element, FileTransfer) or \
             isinstance(element, SharedResourcePath) or \
@@ -317,11 +316,12 @@ class Job(object):
 
         if isinstance(element, (list, tuple)):
             if len(element) != len(other_element):
-                #print('len differ:', len(element), '!=', len(other_element))
+                # print('len differ:', len(element), '!=', len(other_element))
                 return False
             for i in range(0, len(element)):
                 if not self._attributes_equal(element[i], other_element[i]):
-                    #print('list element differ:', element[i], '!=', other_element[i])
+                    # print('list element differ:', element[i], '!=',
+                    # other_element[i])
                     return False
             return True
 
@@ -345,7 +345,7 @@ class Job(object):
         which contains a replacement string in the shame %(var)s is replaced
         using the param_dict values.
         '''
-        #return [x % self.param_dict for x in self.command]
+        # return [x % self.param_dict for x in self.command]
         if not self.param_dict:
             return command
         cmd = []
@@ -368,10 +368,10 @@ class Job(object):
                     cmd.append(e)
                 else:
                     if len(m) > 3 or m[0] != '' or m[2] != '':
-                        #if m[0] == '':
-                            #m = m[1:]
-                        #if m[-1] == '':
-                            #m = m[:-1]
+                        # if m[0] == '':
+                            # m = m[1:]
+                        # if m[-1] == '':
+                            # m = m[:-1]
                         # WARNING: returns a string, losing
                         # SpecialPath instances
                         cmd.append(''.join(m))
@@ -412,8 +412,8 @@ class Job(object):
             attr = getattr(self, attr_name)
             other_attr = getattr(other, attr_name)
             if not self._attributes_equal(attr, other_attr):
-                #print('differ in:', attr_name)
-                #print(attr, '!=', other_attr)
+                # print('differ in:', attr_name)
+                # print(attr, '!=', other_attr)
                 return False
         return True
 
@@ -1030,7 +1030,7 @@ class Workflow(object):
         self.jobs += workflow.jobs
         if type(self.dependencies) in (list, tuple):
             self.dependencies += workflow.dependencies
-        else: # assume set
+        else:  # assume set
             self.dependencies.update(workflow.dependencies)
         if as_group:
             group = Group(workflow.root_group, name=as_group)
@@ -1053,7 +1053,7 @@ class Workflow(object):
         '''
         if type(self.dependencies) in (list, tuple):
             self.dependencies += dependencies
-        else: # assume set
+        else:  # assume set
             self.dependencies.update(dependencies)
         self.__convert_group_dependencies(dependencies)
 
@@ -1074,7 +1074,7 @@ class Workflow(object):
             for dep in deps:
                 if dep not in current_deps:
                     self.dependencies.append(dep)
-        else: # deps as set
+        else:  # deps as set
             for dep in deps:
                 if dep not in current_deps:
                     self.dependencies.add(dep)
@@ -1176,7 +1176,7 @@ class Workflow(object):
         transfer_ids = {}  # FileTransfer -> id
         shared_res_path_ids = {}  # SharedResourcePath -> id
         temporary_ids = {}  # TemporaryPath -> id
-        option_ids = {} # OptionPath -> id
+        option_ids = {}  # OptionPath -> id
         for job, job_id in six.iteritems(job_ids):
             ser_jobs[str(job_id)] = job.to_dict(id_generator,
                                                 transfer_ids,
@@ -1250,7 +1250,8 @@ class Workflow(object):
         serialized_opt = d.get("serialized_option_paths", {})
         opt_from_ids = {}
         for opt_id, opt_d in six.iteritems(serialized_opt):
-            opt_file = OptionPath.from_dict(opt_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
+            opt_file = OptionPath.from_dict(
+                opt_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             opt_from_ids[int(opt_id)] = opt_file
 
         # jobs
@@ -1296,7 +1297,7 @@ class Workflow(object):
             for group_id in new_converted:
                 to_convert.remove(group_id)
             converted_or_stuck = not to_convert or not new_converted
-        groups = group_from_ids.values() # WARNING, not used
+        groups = list(group_from_ids.values())  # WARNING, not used
 
         # root group
         id_root_group = d.get("root_group", [])
@@ -1571,6 +1572,7 @@ class SpecialPath(object):
 
     FileTransfer, TemporaryPath, and SharedResourcePath are SpecialPath.
     '''
+
     def __init__(self, path=None):
         super(SpecialPath, self).__init__()
         if isinstance(path, self.__class__):
@@ -1585,19 +1587,19 @@ class SpecialPath(object):
 
     def __add__(self, other):
         res = type(self)(self)
-        res.pattern = self.pattern + unicode(other)
+        res.pattern = self.pattern + six.text_type(other)
         res.ref = self.referent()
         return res
 
     def __radd__(self, other):
         res = type(self)(self)
-        res.pattern = unicode(other) + self.pattern
+        res.pattern = six.text_type(other) + self.pattern
         res.ref = self.referent()
         return res
 
     def __iadd__(self, other):
-        self.pattern += unicode(other)
-        super(SpecialPath, self).__iadd__(unicode(other))
+        self.pattern += six.text_type(other)
+        super(SpecialPath, self).__iadd__(six.text_type(other))
 
     def __hash__(self):
         if self.ref:
@@ -1608,7 +1610,7 @@ class SpecialPath(object):
         if not isinstance(other, self.__class__):
             return False
         return self.referent() is other.referent()
-    
+
     def __lt__(self, other):
         return hash(self) < hash(other)
 
@@ -1722,12 +1724,12 @@ class FileTransfer(SpecialPath):
             if client_path is not None or name is not None \
                     or client_paths is not None:
                 raise TypeError('FileTransfer as copy constructor '
-                    'should have only one argument')
+                                'should have only one argument')
             super(FileTransfer, self).__init__(is_input)
             return
         if client_path is None:
             raise TypeError('FileTransfer.__init__ takes at least '
-                '3 arguments')
+                            '3 arguments')
         super(FileTransfer, self).__init__()
         if name:
             ft_name = name
@@ -1874,13 +1876,13 @@ class SharedResourcePath(SpecialPath):
         if isinstance(relative_path, self.__class__):
             if namespace is not None or uuid is not None:
                 raise TypeError('SharedResourcePath as copy constructor '
-                    'should have only one argument')
+                                'should have only one argument')
             super(SharedResourcePath, self).__init__(relative_path)
             return
 
         if namespace is None or uuid is None:
             raise TypeError('SharedResourcePath.__init__ takes at least '
-                '4 arguments')
+                            '4 arguments')
         super(SharedResourcePath, self).__init__()
         self.relative_path = relative_path
         self.namespace = namespace
@@ -2006,7 +2008,7 @@ class TemporaryPath(SpecialPath):
         if isinstance(is_directory, self.__class__):
             if name is not None or suffix != '':
                 raise TypeError('TemporaryPath as copy constructor should '
-                    'have only one argument')
+                                'have only one argument')
             super(TemporaryPath, self).__init__(is_directory)
             return
         super(TemporaryPath, self).__init__()
@@ -2096,7 +2098,9 @@ class TemporaryPath(SpecialPath):
     def __str__(self):
         return self.pattern % self.name
 
+
 class OptionPath(SpecialPath):
+
     '''
     File with reading or writing parameters given through a URI (or any
     other suffix system). The file can be passed as a string or as a
@@ -2132,7 +2136,7 @@ class OptionPath(SpecialPath):
         if isinstance(parent_path, OptionPath):
             if not uri is None:
                 raise TypeError('OptionPath as copy constructor should '
-                    'have only one argument')
+                                'have only one argument')
             super(OptionPath, self).__init__(parent_path)
             return
 
@@ -2174,7 +2178,8 @@ class OptionPath(SpecialPath):
             self.referent()._parent_path = value
         else:
             self.referent()._parent_path = str(value)
-        self.referent()._parent_type = type(self.referent()._parent_path).__name__
+        self.referent()._parent_type = type(
+            self.referent()._parent_path).__name__
 
     @property
     def uri(self):
@@ -2264,6 +2269,7 @@ class OptionPath(SpecialPath):
     def __repr__(self):
         return repr(self.__str__())
 
+
 class IdGenerator(object):
 
     def __init__(self):
@@ -2318,19 +2324,19 @@ def to_serializable(element,
                                     opt_ids)
     elif isinstance(element, tuple):
         return tuple(list_to_serializable(element,
-                                    id_generator,
-                                    transfer_ids,
-                                    shared_res_path_ids,
-                                    tmp_ids,
-                                    opt_ids))
-        #return ["soma-workflow-tuple",
-                #to_serializable(element[0],
-                                #id_generator,
-                                #transfer_ids,
-                                #shared_res_path_ids,
-                                #tmp_ids,
-                                #opt_ids),
-                #element[1]]
+                                          id_generator,
+                                          transfer_ids,
+                                          shared_res_path_ids,
+                                          tmp_ids,
+                                          opt_ids))
+        # return ["soma-workflow-tuple",
+                # to_serializable(element[0],
+                                # id_generator,
+                                # transfer_ids,
+                                # shared_res_path_ids,
+                                # tmp_ids,
+                                # opt_ids),
+                # element[1]]
     else:
         return element
 
@@ -2404,6 +2410,3 @@ def list_from_serializable(list_to_convert,
                                        opt_from_ids)
         us_list.append(us_element)
     return us_list
-
-
-

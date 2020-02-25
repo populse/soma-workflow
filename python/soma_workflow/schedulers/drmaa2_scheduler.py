@@ -1,5 +1,6 @@
 
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 '''
 organization: I2BM, Neurospin, Gif-sur-Yvette, France
@@ -9,7 +10,8 @@ organization: IFR 49
 license:CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 
-raise NotImplementedError('DRMAA2 support is not finished and not working. Not sure it will be supported at all.')
+raise NotImplementedError(
+    'DRMAA2 support is not finished and not working. Not sure it will be supported at all.')
 
 
 from ..scheduler import Scheduler
@@ -65,10 +67,10 @@ if DRMAA2_LIB_FOUND:
         FAKE_JOB = -167
 
         def __init__(self,
-                      drmaa_implementation,
-                      parallel_job_submission_info,
-                      tmp_file_path=None,
-                      configured_native_spec=None):
+                     drmaa_implementation,
+                     parallel_job_submission_info,
+                     tmp_file_path=None,
+                     configured_native_spec=None):
 
             super(Drmaa2Scheduler, self).__init__()
 
@@ -149,7 +151,8 @@ if DRMAA2_LIB_FOUND:
                 '''
                 jobTemplate = drmaa2.drmaa2_jtemplate_create()
                 jobTemplate.contents.remoteCommand = 'echo'
-                jobTemplate.contents.args = drmaa2.drmaa2_make_string_list(["%s" % (outstr)])
+                jobTemplate.contents.args = drmaa2.drmaa2_make_string_list(
+                    ["%s" % (outstr)])
                 jobTemplate.contents.outputPath = "%s:%s" % (
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
                 jobTemplate.contents.errorPath = "%s:%s" % (
@@ -162,7 +165,8 @@ if DRMAA2_LIB_FOUND:
                 # print(
                 # "jobTemplate.errorPath="+repr(jobTemplate.contents.errorPath))
 
-                jobid = drmaa2.drmaa2_jsession_run_job(self._drmaa, jobTemplateId)
+                jobid = drmaa2.drmaa2_jsession_run_job(
+                    self._drmaa, jobTemplateId)
                 # print("jobid="+jobid)
                 retval = self._drmaa.wait(
                     jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
@@ -170,9 +174,9 @@ if DRMAA2_LIB_FOUND:
                 self._drmaa.deleteJobTemplate(jobTemplateId)
 
         def _setDrmaaParallelJob(self,
-                                  drmaa_job_template_id,
-                                  configuration_name,
-                                  max_num_node):
+                                 drmaa_job_template_id,
+                                 configuration_name,
+                                 max_num_node):
             '''
             Set the DRMAA job template information for a parallel job submission.
             The configuration file must provide the parallel job submission
@@ -459,7 +463,6 @@ if DRMAA2_LIB_FOUND:
             return sch
 
 
-else: # DRMAA2_LIB_FOUND is False
+else:  # DRMAA2_LIB_FOUND is False
 
     Drmaa2Scheduler = None
-

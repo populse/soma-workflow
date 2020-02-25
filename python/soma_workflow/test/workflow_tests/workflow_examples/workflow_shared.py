@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from __future__ import absolute_import
 
 # -*- coding: utf-8 -*-
 """
@@ -31,4 +32,3 @@ class WorkflowExamplesShared(WorkflowExamplesLocal):
         ''' use SharedResourcePath
         '''
         return SharedResourcePath(filename, namespace, uuid, disposal_timeout)
-

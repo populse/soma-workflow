@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from __future__ import absolute_import
 
 # -*- coding: utf-8 -*-
 """
@@ -13,6 +14,7 @@ Created on Fri Oct 18 12:19:20 2013
 # Imports
 #-----------------------------------------------------------------------------
 
+from six.moves import range
 import os
 import sys
 
@@ -227,8 +229,10 @@ class WorkflowExamplesLocal(WorkflowExamples):
                             "['un', 'deux', 'trois']",
                             '["un", "deux", "trois"]'],
                            self.shared_list([
-                              self.tr_cmd_check_script, self.tr_script[1],
-                              self.tr_script[2], self.tr_script[3]]),
+                                            self.tr_cmd_check_script, self.tr_script[
+                                                1],
+                                            self.tr_script[
+                                                2], self.tr_script[3]]),
                            None,
                            None, False, 168, "test_command_1")
         return test_command
@@ -366,4 +370,3 @@ class WorkflowExamplesLocal(WorkflowExamples):
                               'output': self.sh_file[file_num]},
                   use_input_params_file=True)
         return job
-

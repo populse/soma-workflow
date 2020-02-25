@@ -1,7 +1,9 @@
 from __future__ import print_function
 
+from __future__ import absolute_import
 import sys
 import time
+from six.moves import range
 
 if len(sys.argv) < 4 or len(sys.argv) > 5:
     sys.stdout.write("The program takes 3 or 4 arguments! \n")
@@ -28,9 +30,9 @@ for i in range(1, timeToSleep + 1):
     sys.stdout.flush()
 sys.stdout.write("\n")
 
-#sys.stdout.write("Input file 1 = " + filePathIn1 + "\n")
-#sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
-#sys.stdout.write("Output file = " + filePathOut + "\n")
+# sys.stdout.write("Input file 1 = " + filePathIn1 + "\n")
+# sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
+# sys.stdout.write("Output file = " + filePathOut + "\n")
 
 fileIn1 = open(filePathIn1)
 fileOut = open(filePathOut, "w")
