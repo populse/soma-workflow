@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
+from six.moves import range
 
 '''
 @author: Soizic Laguitton
@@ -18,10 +20,7 @@ from __future__ import with_statement, print_function
 import os
 import sys
 import socket
-try:
-    import configparser # python 3
-except ImportError:
-    import ConfigParser as configparser # python 2
+import six.moves.configparser as configparser
 
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
@@ -962,7 +961,7 @@ class Configuration(observer.Observable):
         '''
         self.get_queue_limits()
         if queue_limit == 0: # unlimited
-            if self._queue_limits.has_key(queue_name):
+            if queue_name in self._queue_limits:
                 del self._queue_limits[queue_name]
         else:
             self._queue_limits[queue_name] = queue_limit
@@ -976,7 +975,7 @@ class Configuration(observer.Observable):
         '''
         self.get_running_jobs_limits()
         if running_jobs_limit == 0: # unlimited
-            if self._running_jobs_limits.has_key(queue_name):
+            if queue_name in self._running_jobs_limits:
                 del self._running_jobs_limits[queue_name]
         else:
             self._running_jobs_limits[queue_name] = running_jobs_limit
@@ -1229,7 +1228,7 @@ def cpu_count():
             return 2
     # Linux, Unix and MacOS:
     if hasattr(os, "sysconf"):
-        if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+        if "SC_NPROCESSORS_ONLN" in os.sysconf_names:
                     # Linux & Unix:
             ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
             if isinstance(ncpus, int) and ncpus > 0:
@@ -1240,7 +1239,7 @@ def cpu_count():
                 ["sysctl", "-n", "hw.ncpu"],
                 stdout=subprocess.PIPE).stdout.read())
     # Windows:
-    if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+    if "NUMBER_OF_PROCESSORS" in os.environ:
         ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
         if ncpus > 0:
             return ncpus

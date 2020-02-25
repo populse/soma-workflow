@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from soma_workflow.client import Job, Workflow, WorkflowController, FileTransfer
 #import os
 

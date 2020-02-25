@@ -8,6 +8,8 @@ organization: CATI, France
 license: CeCILL version 2 <http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 if __name__ == "__main__":
 
     import sys
@@ -247,7 +249,8 @@ if __name__ == "__main__":
             logfilepath = os.path.join(os.path.abspath(engine_log_dir),
                                        "log_" + engine_name + log)
             if False:
-                print('logs: ',logfilepath, engine_log_format, engine_log_level)
+                print('logs: ',logfilepath, engine_log_format,
+                      engine_log_level)
             logging.basicConfig(
                 filename=logfilepath,
                 format=engine_log_format,

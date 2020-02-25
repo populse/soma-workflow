@@ -1,5 +1,7 @@
 
 from __future__ import print_function
+from __future__ import absolute_import
+from six.moves import range
 
 '''
 @author: Soizic Laguitton
@@ -36,12 +38,7 @@ import soma_workflow.constants as constants
 from soma_workflow.client import Job, EngineExecutionJob, SpecialPath, \
     FileTransfer, Workflow, SharedResourcePath, TemporaryPath, OptionPath, \
     Group
-
-# python 2/3 compatibility
 import sys
-if sys.version_info[0] >= 3:
-    basestring = str
-    unicode = str
 
 class EngineJob(Job):
     '''
@@ -382,7 +379,7 @@ class EngineJob(Job):
         else:
             # If the entry is anything else, we return its string representation
             if mode != 'Command':
-                new_command = unicode(command)
+                new_command = six.text_type(command)
             else:
                 new_command = command
         return new_command

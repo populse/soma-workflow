@@ -11,6 +11,7 @@
 '''
 
 from __future__ import print_function, with_statement
+from __future__ import absolute_import
 import os
 import signal
 import sys

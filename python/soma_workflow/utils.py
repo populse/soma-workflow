@@ -11,6 +11,7 @@
 from __future__ import print_function
 
 
+from __future__ import absolute_import
 import copy
 import os
 from soma_workflow.client import Workflow, Group, Job, Helper

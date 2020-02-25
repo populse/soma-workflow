@@ -25,6 +25,7 @@ binding specification (http://www.ogf.org/documents/GFD.143.pdf).  See
 http://drmaa-python.googlecode.com for package info and download.
 """
 
+from __future__ import absolute_import
 __docformat__ = "restructuredtext en"
 
 import ctypes as _ct

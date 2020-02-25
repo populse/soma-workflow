@@ -14,6 +14,7 @@
 '''
 start to check the requirement on the server side
 '''
+from __future__ import absolute_import
 import os
 import sys
 

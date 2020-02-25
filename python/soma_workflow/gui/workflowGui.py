@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 '''
 @author: Soizic Laguitton
@@ -15,6 +16,7 @@ from __future__ import with_statement, print_function
 # Imports
 #-----------------------------------------------------------------------------
 
+from six.moves import range
 import time
 import threading
 import os
@@ -127,23 +129,23 @@ import six
 import sys
 
 if sys.version_info[0] >= 3:
-    def unicode(string):
+    def six.text_type(string):
         if isinstance(string, bytes):
             return string.decode('utf-8')
         return str(string)
 
     def utf8(string):
-        return unicode(string)
+        return six.text_type(string)
 else:
     def utf8(string):
         try:
-            return unicode(string).encode('utf-8')
+            return six.text_type(string).encode('utf-8')
         except UnicodeDecodeError as e:
             s1 = [string[:e.start - 1] + '?']
             s2 = string[e.end:]
             while s2:
                 try:
-                    x = unicode(s2)
+                    x = six.text_type(s2)
                     s1.append(x)
                     s2 = ''
                 except UnicodeDecodeError as e:
@@ -162,7 +164,7 @@ try:
         matplotlib.use('Qt5Agg')
     elif QT_BACKEND == PYSIDE:
         matplotlib.use('Qt4Agg')
-        if 'backend.qt4' in matplotlib.rcParams.keys():
+        if 'backend.qt4' in list(matplotlib.rcParams.keys()):
             matplotlib.rcParams['backend.qt4'] = 'PySide'
         else:
             print("Could not use Matplotlib, the backend using PySide "
@@ -588,7 +590,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             return
         item = selected_items[0]
         if use_qvariant:
-            rid = utf8(unicode(
+            rid = utf8(six.text_type(
                 item.data(QtCore.Qt.UserRole).toString()))
         else:
             rid = utf8(item.data(QtCore.Qt.UserRole))
@@ -649,7 +651,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
         resources = []
         for item in selected:
             if use_qvariant:
-                rid = utf8(unicode(
+                rid = utf8(six.text_type(
                     item.data(QtCore.Qt.UserRole).toString()))
             else:
                 rid = utf8(item.data(QtCore.Qt.UserRole))
@@ -1061,13 +1063,13 @@ class ServerManagementDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def update_login(self):
-        resource_id = unicode(
+        resource_id = six.text_type(
             self.ui.combo_resources.currentText()).encode('utf-8')
         if resource_id == '' or resource_id == None:
             return
 
         login = None
-        if self.login_list.has_key(resource_id):
+        if resource_id in self.login_list:
             login = self.login_list[resource_id]
 
         if login != None:
@@ -1116,7 +1118,7 @@ class ServerManagementDialog(QtGui.QDialog):
         if reply == QtGui.QMessageBox.No:
             return
 
-        resource_id = unicode(
+        resource_id = six.text_type(
             self.ui.combo_resources.currentText()).encode('utf-8')
 
         if self.config_file_path != None:
@@ -1140,7 +1142,7 @@ class ServerManagementDialog(QtGui.QDialog):
     def remove_server_on_client(self):
         from soma_workflow.setup_client2server import RemoveResNameOnConfigureFile
 
-        resource_id = unicode(
+        resource_id = six.text_type(
             self.ui.combo_resources.currentText()).encode('utf-8')
         if resource_id != None:
             RemoveResNameOnConfigureFile(resource_id)
@@ -1176,7 +1178,7 @@ class ConnectionDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def update_login(self):
-        resource_id = unicode(
+        resource_id = six.text_type(
             self.ui.combo_resources.currentText())
         if sys.version_info[0] < 3:
             resource_id = resource_id.encode('utf-8')
@@ -1188,10 +1190,10 @@ class ConnectionDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def kill_servers(self):
-        resource_id = unicode(self.ui.combo_resources.currentText())
+        resource_id = six.text_type(self.ui.combo_resources.currentText())
         erase_db = self.ui.erase_db_checkbox.isChecked()
-        login = unicode(self.ui.lineEdit_login.text())
-        passwd = unicode(self.ui.lineEdit_password.text())
+        login = six.text_type(self.ui.lineEdit_login.text())
+        passwd = six.text_type(self.ui.lineEdit_password.text())
         #rsa_passwd = unicode(self.ui.lineEdit_rsa_password.text())
         print('kill_servers', resource_id, erase_db)
         connection.RemoteConnection.kill_remote_servers(
@@ -1419,21 +1421,21 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def firstConnection(self):
-        resource_id = unicode(
+        resource_id = six.text_type(
             self.connection_dlg.ui.combo_resources.currentText())
         if self.connection_dlg.ui.lineEdit_login.text():
-            login = unicode(
+            login = six.text_type(
                 self.connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
         else:
             login = None
         if self.connection_dlg.ui.lineEdit_password.text():
-            password = unicode(
+            password = six.text_type(
                 self.connection_dlg.ui.lineEdit_password.text()).encode(
                     'utf-8')
         else:
             password = None
         if self.connection_dlg.ui.lineEdit_rsa_password.text():
-            rsa_key_pass = unicode(
+            rsa_key_pass = six.text_type(
                 self.connection_dlg.ui.lineEdit_rsa_password.text()).encode(
                     'utf-8')
         else:
@@ -1771,7 +1773,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.ui.combo_resources.setCurrentIndex(index)
             return
 
-        resource_id = utf8(unicode(
+        resource_id = utf8(six.text_type(
             self.ui.combo_resources.itemText(index)))
         if resource_id == " ":
             index = self.ui.combo_resources.findText(
@@ -1814,17 +1816,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
             index = connection_dlg.ui.combo_resources.currentIndex()
             resource_id = self.resource_list[index]
             if connection_dlg.ui.lineEdit_login.text():
-                login = unicode(
+                login = six.text_type(
                     connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
             else:
                 login = None
             if connection_dlg.ui.lineEdit_password.text():
-                password = unicode(
+                password = six.text_type(
                     connection_dlg.ui.lineEdit_password.text()).encode('utf-8')
             else:
                 password = None
             if connection_dlg.ui.lineEdit_rsa_password.text():
-                rsa_key_pass = unicode(
+                rsa_key_pass = six.text_type(
                     connection_dlg.ui.lineEdit_rsa_password.text()).encode('utf-8')
             else:
                 rsa_key_pass = None
@@ -2155,7 +2157,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.workflowSelectionChanged)
         self.ui.list_widget_submitted_wfs.clear()
         wf_id_info = sorted(
-            submitted_wf.items(), key=lambda elem: elem[1], reverse=True)
+            submitted_wf.items)), key=lambda elem: elem[1], reverse=True)
 
         for wf_id, wf_info in wf_id_info:
             workflow_name, expiration_date = wf_info
@@ -4696,7 +4698,8 @@ class ApplicationModel(QtCore.QObject):
                     self.current_resource_id][workflow_id]
             else:
                 self.current_workflow_about_to_change.emit()
-                if self._current_workflow and self._current_workflow.wf_id in self._workflows[self.current_resource_id].keys():
+                if self._current_workflow and self._current_workflow.wf_id \
+                        in self._workflows[self.current_resource_id].keys():
                     del self._workflows[self.current_resource_id][
                         self._current_workflow.wf_id]
                     del self._expiration_dates[self.current_resource_id][
@@ -5244,9 +5247,6 @@ class GuiJob(GuiWorkflowItem):
             self.gui_workflow = None
 
         cmd_seq = []
-        unic_t = str
-        if sys.version_info[0] < 3:
-            unic_t = unicode
         for command_el in command:
             if isinstance(command_el, tuple) and isinstance(command_el[0], FileTransfer):
                 cmd_seq.append(
@@ -5259,7 +5259,7 @@ class GuiJob(GuiWorkflowItem):
                                " " + command_el.uuid + " " + command_el.relative_path + " >")
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
-            elif isinstance(command_el, unic_t):
+            elif isinstance(command_el, six.text_type):
                 cmd_seq.append(command_el)
             elif isinstance(command_el, str):
                 cmd_seq.append(command_el.decode('utf-8'))

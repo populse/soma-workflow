@@ -1,6 +1,7 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 try:
     from traits.api import Undefined
 except ImportError:

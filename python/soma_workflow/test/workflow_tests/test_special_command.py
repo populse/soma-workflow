@@ -1,4 +1,3 @@
-from __future__ import with_statement, print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Oct 24 17:15:01 2013
@@ -24,6 +23,8 @@ Workflow test of one job with a command:
           job stdout and stderr
           submission warning when single quote comand
 """
+from __future__ import with_statement, print_function
+from __future__ import absolute_import
 import tempfile
 import os
 import sys

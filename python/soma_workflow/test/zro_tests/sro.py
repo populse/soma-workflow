@@ -7,8 +7,9 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 import traceback

@@ -5,6 +5,8 @@
 
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 import soma_workflow.zro as zro
 
 class TestObject:

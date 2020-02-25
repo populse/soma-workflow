@@ -7,6 +7,7 @@ Created on Mon Oct 28 15:06:18 2013
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 @author: laure.hugo@cea.fr
 """
+from __future__ import absolute_import
 import sys
 from soma_workflow.test.job_tests.job_tests import JobTests
 from soma_workflow.configuration import LIGHT_MODE

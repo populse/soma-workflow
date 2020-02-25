@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 '''
 @author: Soizic Laguitton
@@ -29,15 +30,12 @@ import logging
 import sys
 import io
 import traceback
-#try:
-    #import subprocess32 as subprocess
-#except ImportError:
-    #import subprocess
+# try:
+    # import subprocess32 as subprocess
+# except ImportError:
+    # import subprocess
 from . import subprocess
-try:
-    import socketserver # python3
-except ImportError:
-    import SocketServer as socketserver # python 2
+import six.moves.socketserver as socketserver
 
 from soma_workflow.errors import ConnectionError
 
@@ -79,8 +77,8 @@ def SSH_exec_cmd(sshcommand,
                  sshport=22,
                  isNeedErr=False,
                  num_line_stdout=-1,  # How many stdout or stderr lines to read
-               num_line_stderr=-1,  # -1 means unlimited
-               exit_status=None):   # None, 'return' or 'raise'
+                 num_line_stderr=-1,  # -1 means unlimited
+                 exit_status=None):   # None, 'return' or 'raise'
 
     if wait_output:
         tag = '----xxxx=====start to exec=====xxxxx----'
@@ -135,7 +133,7 @@ def SSH_exec_cmd(sshcommand,
         if isNeedErr:
             std_err_lines = read_output(stderr, None, num_line_stderr)
 
-    if exit_status is not  None:
+    if exit_status is not None:
         status = stdout.channel.recv_exit_status()
     client.close()
 
@@ -173,7 +171,7 @@ def check_if_soma_wf_cr_on_server(
     ip_address_or_domain,
     userpw='',
     sshport=22,
-    resource_id=None):
+        resource_id=None):
     """ Check if the check_requirement module exists
     """
     python_interpreter = server_python_interpreter()
@@ -261,7 +259,6 @@ def search_available_port():
 
 class RemoteConnection(object):
 
-
     '''
     Remote version of the connection.
     The WorkflowControler object is created using ssh with paramiko.
@@ -277,7 +274,7 @@ class RemoteConnection(object):
                  resource_id,
                  log="",
                  rsa_key_pass=None,
-                 config = None):
+                 config=None):
         '''
         @type  login: string
         @param login: user's login on the computing resource
@@ -289,7 +286,6 @@ class RemoteConnection(object):
         '''
         logging.info("************************************************")
         logging.info("***********Init remote connection***************")
-
 
         import soma_workflow.zro as zro
         import zmq
@@ -319,22 +315,22 @@ class RemoteConnection(object):
                                   % (cluster_address, cluster_address))
 
         # start_workflow_engine will run the database server
-        #if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
-                                           #password):
-            #command = "python -m soma_workflow.start_database_server %s & bg" % (
-                #resource_id)
-            #SSHExecCmd(
-                #command,
-                #login,
-                #cluster_address,
-                #userpw=password,
-                #wait_output=False)
+        # if not check_if_somawfdb_on_server(resource_id, login, cluster_address,
+                                           # password):
+            # command = "python -m soma_workflow.start_database_server %s & bg" % (
+                # resource_id)
+            # SSHExecCmd(
+                # command,
+                # login,
+                # cluster_address,
+                # userpw=password,
+                # wait_output=False)
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
         python_interpreter = server_python_interpreter()
         command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
-                  " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
+            " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         print("start engine command: "
               "ssh %s@%s %s" % (login, cluster_address, command))
@@ -374,21 +370,23 @@ class RemoteConnection(object):
                 if zmq.__version__ != version:
                     print("WARNING!!!: you are not using the same version of "
                           "zmq on the server and you might have some issues: \n"
-                          "local version is: " + zmq.__version__ + "\nserver version is: "
+                          "local version is: " +
+                          zmq.__version__ + "\nserver version is: "
                           + version)
-                    print("Note, the beginning of your PYTHONPATH on host is: " + repr(python_path))
+                    print(
+                        "Note, the beginning of your PYTHONPATH on host is: " + repr(python_path))
                 else:
                     # print("DEBUG same version of ZMQ on both sides")
                     pass
 
-        logging.debug("workflow_engine_uri: " +  str(workflow_engine_uri))
+        logging.debug("workflow_engine_uri: " + str(workflow_engine_uri))
         logging.debug("connection_checker_uri: "
-                      +  str(connection_checker_uri))
+                      + str(connection_checker_uri))
         logging.debug("configuration_uri: " + str(configuration_uri))
 
         if (not configuration_uri or
             not connection_checker_uri or
-            not workflow_engine_uri):
+                not workflow_engine_uri):
             stdout = '\n'.join(std_out_lines)
             short_msg = "A problem occured while starting the engine " \
                 "process on the remote machine " \
@@ -406,23 +404,22 @@ class RemoteConnection(object):
                 "**Engine process standard output:** \n"
                 "\n" + stdout)
 
-
         whole_uri = str(workflow_engine_uri)
         (object_data_type, object_id, port) = whole_uri.split(":")
         remote_object_server_port = int(port)
 
-
-        #checking
+        # checking
         logging.debug("zro object server port: %d" % remote_object_server_port)
         logging.debug('its type: %s' % repr(type(remote_object_server_port)))
 
-        ### find an available port            ###
+        # find an available port            ###
         tunnel_entrance_port = search_available_port()
-        logging.debug("client tunel port on localhost: %s" % repr(tunnel_entrance_port))
+        logging.debug("client tunel port on localhost: %s" %
+                      repr(tunnel_entrance_port))
 
         import paramiko
 
-        ### tunnel creation                     ###
+        # tunnel creation                     ###
         try:
             self.__transport = paramiko.Transport((cluster_address, 22))
             self.__transport.setDaemon(True)
@@ -448,7 +445,7 @@ class RemoteConnection(object):
                   + str(remote_object_server_port))
 
             tunnel = Tunnel(tunnel_entrance_port,
-                            #submitting_machine,
+                            # submitting_machine,
                             remote_object_server_port,
                             self.__transport)
 
@@ -465,12 +462,18 @@ class RemoteConnection(object):
         logging.debug("The workflow engine URI is: " + workflow_engine_uri)
 
         # rewritting the uri to use the tunnel entrance port
-        (object_data_type, object_id, object_server_port) = workflow_engine_uri.split(":")
-        workflow_engine_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
-        (object_data_type, object_id, object_server_port) = connection_checker_uri.split(":")
-        connection_checker_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
-        (object_data_type, object_id, object_server_port) = configuration_uri.split(":")
-        configuration_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+        (object_data_type, object_id,
+         object_server_port) = workflow_engine_uri.split(":")
+        workflow_engine_uri = object_data_type + ":" + \
+            object_id + ":" + str(tunnel_entrance_port)
+        (object_data_type, object_id,
+         object_server_port) = connection_checker_uri.split(":")
+        connection_checker_uri = object_data_type + \
+            ":" + object_id + ":" + str(tunnel_entrance_port)
+        (object_data_type, object_id,
+         object_server_port) = configuration_uri.split(":")
+        configuration_uri = object_data_type + ":" + \
+            object_id + ":" + str(tunnel_entrance_port)
 
         # create the proxy objects                     #
 
@@ -481,8 +484,10 @@ class RemoteConnection(object):
         if scheduler_config_uri is not None:
             # setting the proxies to use the tunnel  #
             logging.info("Scheduler config available")
-            (object_data_type, object_id, object_server_port) = scheduler_config_uri.split(":")
-            scheduler_config_uri = object_data_type + ":" + object_id + ":" + str(tunnel_entrance_port)
+            (object_data_type, object_id,
+             object_server_port) = scheduler_config_uri.split(":")
+            scheduler_config_uri = object_data_type + ":" + \
+                object_id + ":" + str(tunnel_entrance_port)
             self.scheduler_config = zro.Proxy(scheduler_config_uri)
         else:
             logging.info('No scheduler config')
@@ -496,7 +501,7 @@ class RemoteConnection(object):
             try:
                 attempts = attempts + 1
                 print("Communication through the ssh tunnel. Attempt no " +
-                       repr(attempts) + "/" + repr(maxattemps))
+                      repr(attempts) + "/" + repr(maxattemps))
                 # print("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 # print("After calling the remote object")
@@ -586,8 +591,10 @@ class RemoteConnection(object):
 
             stdin, stdout, stderr = ssh.exec_command('ps ux')
 
-            db_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
-            en_re = re.compile('^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+            db_re = re.compile(
+                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+            en_re = re.compile(
+                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
             for psline in stdout.readlines():
                 m = db_re.match(psline)
                 if m:
@@ -629,7 +636,9 @@ class RemoteConnection(object):
                 print('cannot retreive database file name from server config. '
                       'Installation problem on server side?')
 
+
 class LocalConnection(object):
+
     '''
     Local version of the connection.
     The workflow engine process is created using subprocess.
@@ -643,19 +652,7 @@ class LocalConnection(object):
 
         import soma_workflow.zro as zro
         import sys
-        try:
-            import subprocess32 as subprocess
-            import subprocess as _subprocess
-            if hasattr(_subprocess, '_args_from_interpreter_flags'):
-                # get this private function which is used somewhere in
-                # multiprocessing
-                subprocess._args_from_interpreter_flags \
-                    = _subprocess._args_from_interpreter_flags
-            del _subprocess
-            import sys
-            sys.modules['subprocess'] = sys.modules['subprocess32']
-        except ImportError:
-            import subprocess
+        from . import subprocess
 
         login = getpass.getuser()
         remote_workflow_engine_name = "workflow_engine_" + login
@@ -710,8 +707,9 @@ class LocalConnection(object):
             stderr_content = line
             while line:
                 line = engine_process.stderr.readline().decode()
-                #TODO TBC
-                print("this should contain the uri of the connection checker in 2nd position" +line)
+                # TODO TBC
+                print(
+                    "this should contain the uri of the connection checker in 2nd position" + line)
                 stderr_content = stderr_content + "\n" + line
             raise ConnectionError("A problem occured while starting the engine "
                                   "process on the local machine. \n"
@@ -777,7 +775,9 @@ class LocalConnection(object):
     def get_configuration(self):
         return self.configuration
 
+
 class ConnectionChecker(object):
+
     ''' ConnectionChecker runs on server side. It runs a thread which listens
         to "life signals" emitted from the client (using a ConnectionHolder
         object).
@@ -802,7 +802,8 @@ class ConnectionChecker(object):
                     # print(ls)
                 delta = datetime.now() - last_signal
                 if delta > self.interval * 12:
-                    logger.debug("Delta is too large, the client is not connected anymore: " + str(delta))
+                    logger.debug(
+                        "Delta is too large, the client is not connected anymore: " + str(delta))
                     self.disconnectionCallback()
                     with self.lock:
                         self.connected = False
@@ -842,6 +843,7 @@ class ConnectionChecker(object):
 
 
 class ConnectionHolder(threading.Thread):
+
     ''' ConnectionHolder runs on client side, it runs a thread which emits a
         signal to the server every time interval, using a ConnectionChecker
         proxy.
@@ -864,8 +866,8 @@ class ConnectionHolder(threading.Thread):
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
-                #print('life signal emitted')
-            except ConnectionClosedError as e: # TBC Apparently the exception is not defined anymore
+                # print('life signal emitted')
+            except ConnectionClosedError as e:  # TBC Apparently the exception is not defined anymore
                 print("Connection closed")
                 break
             time.sleep(self.interval)
@@ -884,7 +886,7 @@ class Tunnel(threading.Thread):
     class Handler (socketserver.BaseRequestHandler):
 
         def setup(self):
-            logging.info('Setup : %d' %(self.channel_end_port))
+            logging.info('Setup : %d' % (self.channel_end_port))
             if not self.ssh_transport.is_active():
                 raise ConnectionError('ssh transport is closed.')
             logging.debug("Tunnel::Handler::Beginning of setup")
@@ -897,13 +899,14 @@ class Tunnel(threading.Thread):
                 # print("Peername is: ", self.request.getpeername())
                 self.__chan = self.ssh_transport.open_channel(
                     'direct-tcpip',
-                    ('localhost', self.channel_end_port), #destination address
-                    self.request.getpeername())#source address (from the Proxy object)
+                    ('localhost', self.channel_end_port),
+                     # destination address
+                    self.request.getpeername())  # source address (from the Proxy object)
             except Exception as e:
                 logging.exception("Hey here is an exception!: %s" % repr(e))
                 self.shutdown_server()
                 raise ConnectionError('Incoming request to %d failed: %s'
-                    % (self.channel_end_port, repr(e)))
+                                      % (self.channel_end_port, repr(e)))
 
             if self.__chan is None:
                 self.shutdown_server()
@@ -912,20 +915,21 @@ class Tunnel(threading.Thread):
                     % ('localhost', self.channel_end_port))
 
             logging.info('Connected!  Tunnel open %r -> %r -> %r'
-                  % (self.request.getpeername(),
-                     self.__chan.getpeername(),
-                     ('localhost', self.channel_end_port)))
+                         % (self.request.getpeername(),
+                            self.__chan.getpeername(),
+                            ('localhost', self.channel_end_port)))
 
         def handle(self):
             # print("Beginning of handle")
-            logging.info('Handle : %s %d' %('localhost',
-                                            self.channel_end_port))
+            logging.info('Handle : %s %d' % ('localhost',
+                                             self.channel_end_port))
             if not self.ssh_transport.is_active():
                 return
             try:
                 while True:
                     try:
-                        r, w, x = select.select([self.request, self.__chan], [],
+                        r, w, x = select.select(
+                            [self.request, self.__chan], [],
                                                 [])
                     except Exception as e:
                         if e.args[0] == errno.EINTR:
@@ -947,7 +951,7 @@ class Tunnel(threading.Thread):
                         if len(data) == 12000:
                             logging.debug("Network data too small")
                             logging.info("Tunnel.Handler.handle: multiple receive to transfert"
-                                    " the data, could potentially be a problem")
+                                         " the data, could potentially be a problem")
                         self.__chan.send(data)
                     if self.__chan in r:
                         # print('Transfering from the channel to the proxy')
@@ -957,7 +961,7 @@ class Tunnel(threading.Thread):
                         if len(data) == 12000:
                             logging.debug("Network data too small 2")
                             logging.info("Tunnel.Handler.handle: multiple receive to transfert"
-                                    "the data, could potentially be a problem")
+                                         "the data, could potentially be a problem")
                         self.request.send(data)
             except:  # noqa: E722
                 self.shutdown_server()
@@ -971,7 +975,7 @@ class Tunnel(threading.Thread):
             self.shutdown_server()
 
         def shutdown_server(self):
-            #Tunnel.server_instance.shutdown()
+            # Tunnel.server_instance.shutdown()
             # try to determine which socket server has called us,
             # and shut it down
             import gc
@@ -1010,7 +1014,7 @@ class Tunnel(threading.Thread):
         transport = self.__transport
         local_port = self.__port
 
-        logging.debug("local server port: " + str(local_port) )
+        logging.debug("local server port: " + str(local_port))
 
         class SubHandler(Tunnel.Handler):
             channel_end_port = hostport
@@ -1021,7 +1025,8 @@ class Tunnel(threading.Thread):
             Tunnel.server_instance = self.__server
             self.__server.serve_forever()
         except KeyboardInterrupt:
-            logging.error('tunnel from local_port %d to port %d stopped !' % (local_port, hostport))
+            logging.error('tunnel from local_port %d to port %d stopped !' %
+                          (local_port, hostport))
         except Exception as e:
             logging.error('Tunnel Error. %s: %s' % (type(e), e))
         logging.warning('Tunnel stopped.')

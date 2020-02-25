@@ -1,4 +1,3 @@
-from __future__ import with_statement, print_function
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 14:03:52 2013
@@ -24,6 +23,8 @@ Workflow test of multiple examples:
           job stdout and stderr
           job output
 """
+from __future__ import with_statement, print_function
+from __future__ import absolute_import
 import tempfile
 import os
 import sys

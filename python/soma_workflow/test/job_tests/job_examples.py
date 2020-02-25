@@ -7,12 +7,14 @@ Created on Mon Oct 28 11:29:54 2013
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
+from __future__ import absolute_import
 import os
 import sys
 
 from soma_workflow.errors import ConfigurationError
 from soma_workflow.client import Job, FileTransfer
 import soma_workflow.configuration as configuration
+from six.moves import range
 
 
 class JobExamples(object):

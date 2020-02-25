@@ -6,10 +6,12 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 import os
 import json
 import sys
 import shutil
+from six.moves import zip
 
 input_param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
 input_dict = json.load(open(input_param_file))

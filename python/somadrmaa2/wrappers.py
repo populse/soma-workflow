@@ -1,11 +1,14 @@
 
 """DRMAA2 C library function wrappers"""
 
+from __future__ import absolute_import
+from __future__ import print_function
 from ctypes import *
 from ctypes.util import find_library
 from soma_workflow.utils import DetectFindLib
 from somadrmaa.errors import DrmaaException
 import os
+from six.moves import range
 
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'

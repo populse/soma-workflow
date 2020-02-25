@@ -13,6 +13,7 @@ the appropriate options to ``use_setuptools()``.
 
 This file can also be run as a script to install or upgrade setuptools.
 """
+from __future__ import absolute_import
 import os
 import shutil
 import sys
@@ -29,7 +30,7 @@ from distutils import log
 try:
     from urllib.request import urlopen
 except ImportError:
-    from urllib2 import urlopen
+    from six.moves.urllib.request import urlopen
 
 try:
     from site import USER_SITE

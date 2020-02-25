@@ -1,4 +1,3 @@
-from __future__ import with_statement, print_function
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 09:28:55 2013
@@ -26,6 +25,8 @@ Workflow test of job exception:
           number of failed jobs (including aborted)
           job stdout and stderr
 """
+from __future__ import with_statement, print_function
+from __future__ import absolute_import
 import tempfile
 import sys
 import os

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import time
 
 from soma_workflow.client import Job, Workflow, WorkflowController, Helper, FileTransfer

@@ -6,7 +6,10 @@ Small library of custom :class:`~client_types.EngineExecutionJob` subclasses.
 Provides jobs for map/reduce patterns, cross-validation folding, and lists manipulations.
 '''
 
+from __future__ import absolute_import
 from soma_workflow.client_types import Job, EngineExecutionJob, BarrierJob
+from six.moves import range
+from six.moves import zip
 
 
 class MapJob(EngineExecutionJob):

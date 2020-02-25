@@ -5,6 +5,8 @@
 
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 import soma_workflow.zro as zro
 from six.moves import input
 import threading
@@ -26,7 +28,8 @@ def toRunInThread(prox, socket_lock):
     while i < 30:
         i = i+1
         socket_lock.acquire()
-        print(prox.modify_string(str(i)+ " " + 50 * "a string that is not so long, check possible interference with thread"))
+        print(prox.modify_string(str(i)+ " "
+                                 + 50 * "a string that is not so long, check possible interference with thread"))
         socket_lock.release()
     print("thread finished")
 

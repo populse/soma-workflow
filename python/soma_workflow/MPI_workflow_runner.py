@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from six.moves import range
 
 '''
 author: Benoit Da Mota
@@ -19,6 +20,7 @@ license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.
           #'issues in this module this can lead to problems during execution. '
           #'You should probably install subprocess32 module to avoid these '
           #'problems.')
+from __future__ import absolute_import
 from . import subprocess
 import sys
 import time

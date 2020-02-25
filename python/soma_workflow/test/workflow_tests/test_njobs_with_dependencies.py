@@ -1,4 +1,3 @@
-from __future__ import with_statement
 # -*- coding: utf-8 -*-
 """
 Created on Fri Oct 25 13:51:00 2013
@@ -28,6 +27,8 @@ Workflow test of multiple jobs with dependencies:
           number of failed jobs (including aborted)
           job stdout and stderr
 """
+from __future__ import with_statement
+from __future__ import absolute_import
 import os
 import tempfile
 import sys

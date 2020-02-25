@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 '''
 @author: laure.hugo@cea.fr
 @author: Soizic Laguitton
@@ -6,6 +7,7 @@ from __future__ import with_statement, print_function
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from six.moves import map
 import unittest
 import sys
 import os
@@ -220,8 +222,8 @@ class WorkflowTest(unittest.TestCase):
                         if test[0: len(prefix)] == prefix:
                             list_tests.append(test)
 
-                    suite_list.append(unittest.TestSuite(map(cls,
-                                                        list_tests)))
+                    suite_list.append(unittest.TestSuite(list(map(cls,
+                                                        list_tests))))
                     alltests = unittest.TestSuite(suite_list)
                     with suppress_stdout(debug):
                         res = unittest.TextTestRunner(verbosity=2).run(

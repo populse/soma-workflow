@@ -13,6 +13,7 @@ Created on Mon May 13 10:48:02 2013
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 def test_drmaa():
     import soma_workflow.scheduler

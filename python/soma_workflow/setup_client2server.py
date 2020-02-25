@@ -12,24 +12,15 @@ Licence_CeCILL_V2-en.html>}
 """
 
 from __future__ import with_statement
+from __future__ import absolute_import
+from __future__ import print_function
 
 # System import
 import os
 import re
 import logging
-#try:
-    #import subprocess32 as subprocess
-    #import subprocess as _subprocess
-    #if hasattr(_subprocess, '_args_from_interpreter_flags'):
-        ## get this private function which is used somewhere in
-        ## multiprocessing
-        #subprocess._args_from_interpreter_flags \
-            #= _subprocess._args_from_interpreter_flags
-    #del _subprocess
-#except ImportError:
-    #import subprocess
 from . import subprocess
-from ConfigParser import SafeConfigParser
+from six.moves.configparser import SafeConfigParser
 
 # Soma Workflow import
 from soma_workflow.connection import SSH_exec_cmd, check_if_somawfdb_on_server

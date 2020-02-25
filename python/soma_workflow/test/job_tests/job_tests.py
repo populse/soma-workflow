@@ -6,6 +6,7 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
+from __future__ import absolute_import
 import unittest
 import time
 # import os
@@ -22,6 +23,7 @@ from soma_workflow.configuration import Configuration
 from soma_workflow.test.job_tests.job_examples import JobExamples
 from soma_workflow.test.utils import get_user_id
 from soma_workflow.test.utils import suppress_stdout
+from six.moves import map
 
 
 class JobTests(unittest.TestCase):
@@ -52,7 +54,7 @@ class JobTests(unittest.TestCase):
     def tearDown(self):
         #for jid in self.my_jobs:
             #self.wf_ctrl.delete_job(jid)
-        remaining_jobs = frozenset(self.wf_ctrl.jobs().keys())
+        remaining_jobs = frozenset(list(self.wf_ctrl.jobs().keys()))
         self.failUnless(len(remaining_jobs.intersection(self.my_jobs)) == 0)
 
     def test_jobs(self):
@@ -179,8 +181,8 @@ class JobTests(unittest.TestCase):
                 if test[0: len(prefix)] == prefix:
                     list_tests.append(test)
 
-            suite_list.append(unittest.TestSuite(map(cls,
-                                                 list_tests)))
+            suite_list.append(unittest.TestSuite(list(map(cls,
+                                                 list_tests))))
             alltests = unittest.TestSuite(suite_list)
             with suppress_stdout(debug):
                 unittest.TextTestRunner(verbosity=2).run(alltests)

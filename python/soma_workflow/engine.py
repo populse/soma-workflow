@@ -1,20 +1,10 @@
-from __future__ import with_statement, print_function
-
-'''
-@author: Soizic Laguitton
-
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
-
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-'''
-
 
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
 
+from __future__ import with_statement, print_function
+from __future__ import absolute_import
 from datetime import date, timedelta, datetime
 import threading
 import getpass

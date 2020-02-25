@@ -16,6 +16,7 @@ license: CeCILL version: 2 http://www.cecill.info/licences/Licence_CeCILL_V2-en.
 #-------------------------------------------------------------------------
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import warnings
 import sys
@@ -26,10 +27,7 @@ import importlib
 # python2/3 compatibility
 
 import six
-
-if sys.version_info[0] >= 3:
-    basestring = str
-    unicode = str
+from six.moves import range
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -298,7 +296,7 @@ class Job(object):
         self.output_params_file = output_params_file
 
         for command_elem in self.command:
-            if isinstance(command_elem, basestring):
+            if isinstance(command_elem, six.string_types):
                 if "'" in command_elem:
                     warnings.warn("%s contains single quote. It could fail using DRMAA"
                                   % command_elem, UserWarning)
@@ -306,7 +304,7 @@ class Job(object):
     def _attributes_equal(self, element, other_element):
         if element.__class__ is not other_element.__class__:
             # special case str / unicode
-            if not isinstance(element, basestring) or not isinstance(element, basestring):
+            if not isinstance(element, six.string_types) or not isinstance(element, six.string_types):
                 #print('differ in class:', element.__class__, other_element.__class__)
                 return False
         if isinstance(element, FileTransfer) or \
@@ -1296,7 +1294,7 @@ class Workflow(object):
             for group_id in new_converted:
                 to_convert.remove(group_id)
             converted_or_stuck = not to_convert or not new_converted
-        groups = group_from_ids.values() # WARNING, not used
+        groups = list(group_from_ids.values()) # WARNING, not used
 
         # root group
         id_root_group = d.get("root_group", [])
@@ -1585,19 +1583,19 @@ class SpecialPath(object):
 
     def __add__(self, other):
         res = type(self)(self)
-        res.pattern = self.pattern + unicode(other)
+        res.pattern = self.pattern + six.text_type(other)
         res.ref = self.referent()
         return res
 
     def __radd__(self, other):
         res = type(self)(self)
-        res.pattern = unicode(other) + self.pattern
+        res.pattern = six.text_type(other) + self.pattern
         res.ref = self.referent()
         return res
 
     def __iadd__(self, other):
-        self.pattern += unicode(other)
-        super(SpecialPath, self).__iadd__(unicode(other))
+        self.pattern += six.text_type(other)
+        super(SpecialPath, self).__iadd__(six.text_type(other))
 
     def __hash__(self):
         if self.ref:

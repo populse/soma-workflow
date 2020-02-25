@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function
+from __future__ import absolute_import
 
 '''
 author: Soizic Laguitton
@@ -19,6 +20,7 @@ license: `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html>`_
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------
+from six.moves import range
 import sqlite3
 import threading
 import os
@@ -52,11 +54,6 @@ import six
 if sys.version_info[0] >= 3:
     StringIO = io.StringIO
 
-    def unicode(string):
-        if isinstance(string, bytes):
-            return string.decode('utf-8')
-        return str(string)
-
     def keys(thing):
         return list(thing.keys())
 
@@ -65,12 +62,12 @@ else:
     StringIO = StringIO.StringIO
 
     def keys(thing):
-        return thing.keys()
+        return list(thing.keys())
 
 if not hasattr(six, 'next'):
     # ubuntu 12.04 does not have next() in its six module
     def six_next(obj):
-        return obj.next()
+        return next(obj)
     six.next = six_next
     del six_next
 
@@ -584,7 +581,8 @@ class WorkflowDatabaseServer(object):
                         count = six.next(cursor.execute(
                             "SELECT count(*) FROM workflows WHERE "
                             "queue=?", ["default queue"]))[0]
-                    elif unicode(version) != unicode(DB_VERSION):
+                    elif six.ensure_text(version) \
+                            != six.ensure_text(DB_VERSION):
                         raise Exception('Wrong db version')
                     if py_ver is None:
                         py_ver0 = 2
@@ -2303,7 +2301,7 @@ class WorkflowDatabaseServer(object):
 
     @staticmethod
     def shell_param(item):
-        if sys.version_info[0] < 3 and isinstance(item, unicode):
+        if sys.version_info[0] < 3 and isinstance(item, six.text_type):
             return repr(item.encode('utf-8'))
         if isinstance(item, (list, tuple)):
             return '"' + repr(item) + '"'

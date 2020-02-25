@@ -16,6 +16,7 @@
 #-------------------------------------------------------------------------
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import os
 import hashlib
@@ -34,9 +35,6 @@ if sys.version_info[:2] >= (2, 6):
     import json
 # import cProfile
 # import traceback
-
-if sys.version_info[0] >= 3:
-    basestring = str
 
 
 import soma_workflow.connection as connection
@@ -855,7 +853,7 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
         #Raises *TransferError*
-        if not isinstance(transfer_ids, basestring):
+        if not isinstance(transfer_ids, six.string_types):
             for transfer_id in transfer_ids:
                 self._transfer_file(transfer_id, buffer_size)
         else:

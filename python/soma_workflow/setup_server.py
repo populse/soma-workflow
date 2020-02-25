@@ -14,6 +14,7 @@ Licence_CeCILL_V2-en.html>}
 
 # System import
 from __future__ import print_function
+from __future__ import absolute_import
 
 import os
 import logging
@@ -24,7 +25,7 @@ import getpass
 import socket
 from soma_workflow import subprocess
 import shutil
-from ConfigParser import SafeConfigParser
+from six.moves.configparser import SafeConfigParser
 
 
 #
@@ -297,7 +298,7 @@ envlines2add = SetupServerEnvVar(path2somawf)
 from soma_workflow.configuration import (AddLineDefintions2BashrcFile,
                                          WriteOutConfiguration)
 import soma_workflow.configuration as configuration
-from setup_client2server import read_configuration_file
+from .setup_client2server import read_configuration_file
 
 AddLineDefinitions2BashrcFile(envlines2add)
 
