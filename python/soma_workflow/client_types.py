@@ -1261,7 +1261,7 @@ class Workflow(object):
             cls_name = job_d.get("class", "soma_workflow.client_types.Job")
             cls_mod = cls_name.rsplit('.', 1)
             if len(cls_mod) == 1:
-                jcls = __dict__[cls_name]
+                jcls = sys.modules[__name__].__dict__[cls_name]
             else:
                 module = importlib.import_module(cls_mod[0])
                 jcls = getattr(module, cls_mod[1])

@@ -33,7 +33,6 @@ def DetectFindLib(env_name, libname):
     from ctypes.util import find_library
     from ctypes import CDLL
     from ctypes import cdll
-    import os
     import glob
 
     libpath = None

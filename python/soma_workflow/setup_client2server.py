@@ -18,6 +18,7 @@ from __future__ import print_function
 # System import
 import os
 import re
+import sys
 import logging
 from . import subprocess
 from six.moves.configparser import SafeConfigParser

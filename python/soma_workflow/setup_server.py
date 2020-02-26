@@ -26,7 +26,7 @@ import socket
 from soma_workflow import subprocess
 import shutil
 from six.moves.configparser import SafeConfigParser
-
+from soma_workflow import configuration as swconf
 
 #
 #               Global variables
@@ -300,7 +300,7 @@ from soma_workflow.configuration import (AddLineDefintions2BashrcFile,
 import soma_workflow.configuration as configuration
 from .setup_client2server import read_configuration_file
 
-AddLineDefinitions2BashrcFile(envlines2add)
+swconf.AddLineDefinitions2BashrcFile(envlines2add)
 
 #
 #             Create the configuration file on the server side

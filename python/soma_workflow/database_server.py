@@ -1591,7 +1591,7 @@ class WorkflowDatabaseServer(object):
         client_path: str
             path on client side
         client_paths: list
-            filenales on client side
+            filenames on client side
         '''
         # if type(engine_file_path) is int:
             # return self.set_temporary_status(engine_file_path, status)
@@ -1601,8 +1601,7 @@ class WorkflowDatabaseServer(object):
             connection = self._connect()
             cursor = connection.cursor()
             if client_paths:
-                client_paths = file_separator.join(
-                    engine_transfer.client_paths)
+                client_paths = file_separator.join(client_paths)
             try:
                 cursor.execute(
                     '''UPDATE transfers SET
