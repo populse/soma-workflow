@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -409,9 +410,9 @@ class EngineJob(Job):
             else:
                 user_command = self.generate_command(self.command,
                                                      mode="Command")
-                for item in user_command:
+                for i, item in enumerate(user_command):
                     if isinstance(item, list):
-                        item = ''.join(item)
+                        user_command[i] = ''.join(item)
                 user_command = [self.escape_quotes(item)
                                 for item in user_command]
                 user_command = '"' + '" "'.join(user_command) + '"'
