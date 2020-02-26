@@ -30,10 +30,6 @@ import logging
 import sys
 import io
 import traceback
-# try:
-    # import subprocess32 as subprocess
-# except ImportError:
-    # import subprocess
 from . import subprocess
 import six.moves.socketserver as socketserver
 
@@ -586,7 +582,7 @@ class RemoteConnection(object):
                       "Please check your user and password. "
                       "You can test the connection in terminal with "
                       "command: ssh -p %s %s@%s"
-                      % (e, sshport, userid, ip_address_or_domain))
+                      % (e, ssh_port, login, sub_machine))
                 raise
 
             stdin, stdout, stderr = ssh.exec_command('ps ux')
@@ -651,8 +647,6 @@ class LocalConnection(object):
         # required in the local connection mode
 
         import soma_workflow.zro as zro
-        import sys
-        from . import subprocess
 
         login = getpass.getuser()
         remote_workflow_engine_name = "workflow_engine_" + login
@@ -867,7 +861,7 @@ class ConnectionHolder(threading.Thread):
             try:
                 self.connectionChecker.signalConnectionExist()
                 # print('life signal emitted')
-            except ConnectionClosedError as e:  # TBC Apparently the exception is not defined anymore
+            except Exception as e:  # TBC Apparently the exception is not defined anymore
                 print("Connection closed")
                 break
             time.sleep(self.interval)
