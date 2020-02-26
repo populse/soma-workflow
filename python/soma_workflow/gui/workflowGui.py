@@ -1,26 +1,16 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
-'''
-@author: Soizic Laguitton
-
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
-
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
-'''
 
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
 
+from __future__ import with_statement, print_function
+from __future__ import absolute_import
+
 from six.moves import range
 import time
 import threading
 import os
-from datetime import date
 from datetime import datetime
 from datetime import timedelta
 import socket
@@ -129,11 +119,6 @@ import six
 import sys
 
 if sys.version_info[0] >= 3:
-    def six.text_type(string):
-        if isinstance(string, bytes):
-            return string.decode('utf-8')
-        return str(string)
-
     def utf8(string):
         return six.text_type(string)
 else:
@@ -152,8 +137,8 @@ else:
                     s1.append(s2[:e.start - 1] + '?')
                     s2 = s2[e.end:]
             return ''.join(s1).encode('utf-8')
-                
-            
+
+
 
 MATPLOTLIB = True
 try:
@@ -907,10 +892,10 @@ class NewServerDialog(QtGui.QDialog):
     def update_schedulers(self):
         from soma_workflow import scheduler
         schedulers = scheduler.get_schedulers_list()
-        for scheduler in schedulers:
+        for scheduler_inst in schedulers:
             # add only non-builtin
-            if scheduler[0] not in ('local_basic', 'mpi', 'drmaa'):
-                self.ui.comboBox_schedulerType.addItem(scheduler[0])
+            if scheduler_inst[0] not in ('local_basic', 'mpi', 'drmaa'):
+                self.ui.comboBox_schedulerType.addItem(scheduler_inst[0])
 
     def InstallServer(self):
         from soma_workflow.setup_client2server import InstallSomaWF2Server, check_if_somawfdb_on_server
@@ -1326,7 +1311,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
             else:
                 if auto_connect and user is not None \
                         and len(self.resource_list) > 0:
-                    print('connect to computing resource:', resource_list[0])
+                    print('connect to computing resource:',
+                          self.resource_list[0])
                     self.connect_to_controller(self.resource_list[0], user)
                 else:
                     print('connect to computing resource:',
@@ -2156,8 +2142,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(
             self.workflowSelectionChanged)
         self.ui.list_widget_submitted_wfs.clear()
-        wf_id_info = sorted(
-            submitted_wf.items)), key=lambda elem: elem[1], reverse=True)
+        wf_id_info = sorted(submitted_wf.items(), key=lambda elem: elem[1],
+                            reverse=True)
 
         for wf_id, wf_info in wf_id_info:
             workflow_name, expiration_date = wf_info
@@ -4319,8 +4305,9 @@ class ApplicationModel(QtCore.QObject):
 
         self._lock = threading.RLock()
 
-        for rid, connection in six.iteritems(self.resource_pool._connections):
-            self.add_connection(rid, connection)
+        for rid, connection_inst in six.iteritems(
+                self.resource_pool._connections):
+            self.add_connection(rid, connection_inst)
 
         self.update_thread = None
 
