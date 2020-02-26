@@ -24,7 +24,7 @@ from soma_workflow.test.workflow_tests.workflow_examples.workflow_local \
 class WorkflowExamplesSharedTransfer(WorkflowExamplesLocal):
 
     def transfer_function(self, dirname, filename, namespace, uuid,
-                          disposal_timeout, is_input, clientpaths=None):
+                          disposal_timeout, is_input, client_paths=None):
         ''' use FileTransfer
         '''
         return FileTransfer(

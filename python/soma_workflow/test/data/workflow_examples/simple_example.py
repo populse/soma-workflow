@@ -16,6 +16,8 @@ workflow = Workflow(jobs=jobs,
                     dependencies=dependencies)
 
 
+login = 'myself'
+password = 'carrot'
 controller = WorkflowController("DSV_cluster", login, password)
 
 controller.submit_workflow(workflow=workflow,

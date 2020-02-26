@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import time
+import os
 
 from soma_workflow.client import Job, Workflow, WorkflowController, Helper, FileTransfer
 from soma_workflow.configuration import Configuration

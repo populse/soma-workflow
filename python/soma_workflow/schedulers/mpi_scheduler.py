@@ -6,10 +6,8 @@ import threading
 import logging
 import socket
 import six
-
 from mpi4py import MPI
-
-from soma_workflow import scheduler, constants
+from .. import constants
 
 
 class MPIScheduler(scheduler.Scheduler):

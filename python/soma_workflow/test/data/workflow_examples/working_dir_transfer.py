@@ -41,6 +41,7 @@ workflow = Workflow(jobs=[job1, job2],
 
 # Submit the workflow
 print("password? ")
+login = 'myself'
 password = getpass.getpass()
 controller = WorkflowController("DSV_cluster", login, password)
 
