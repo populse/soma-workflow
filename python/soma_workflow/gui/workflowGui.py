@@ -60,14 +60,14 @@ if QT_BACKEND is None:
                 sip.setapi(sip_class, 2)
             except ValueError as e:
                 pass
-        from PyQt4 import QtGui, QtCore
+        from PyQt4 import QtGui, QtCore  # noqa: F811
         QT_BACKEND = PYQT4
     except ImportError as e:
         pass
 
 if QT_BACKEND is None:
     try:
-        from PySide import QtGui, QtCore
+        from PySide import QtGui, QtCore  # noqa: F811
         QT_BACKEND = PYSIDE
     except ImportError as e:
         pass
@@ -76,7 +76,7 @@ use_qvariant = False
 
 if QT_BACKEND == PYQT4:
     import sip
-    from PyQt4 import QtCore, QtGui, uic
+    from PyQt4 import QtCore, QtGui, uic  # noqa: F811
     from PyQt4.uic import loadUiType
     use_qvariant = False
     if sip.getapi('QVariant') < 2:
@@ -85,7 +85,7 @@ if QT_BACKEND == PYQT4:
     QtCore.Signal = QtCore.pyqtSignal
 
 elif QT_BACKEND == PYQT5:
-    from PyQt5 import QtCore, QtGui, QtWidgets, uic
+    from PyQt5 import QtCore, QtGui, QtWidgets, uic  # noqa: F811
     from PyQt5.uic import loadUiType
     QtCore.Slot = QtCore.pyqtSlot
     QtCore.Signal = QtCore.pyqtSignal
