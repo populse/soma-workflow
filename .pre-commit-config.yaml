@@ -1,0 +1,26 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+    -   id: check-case-conflict
+    -   id: check-executables-have-shebangs
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: check-symlinks
+    -   id: check-xml
+    -   id: check-yaml
+    -   id: debug-statements
+    -   id: fix-encoding-pragma
+    -   id: check-added-large-files
+
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.9
+    hooks:
+    -   id: flake8
+        name: flake8 under python2
+        language_version: python2
+        exclude: ^doc/sphinx/sphinxext/
+    -   id: flake8
+        name: flake8 under python3
+        language_version: python3
+        exclude: ^doc/sphinx/sphinxext/
