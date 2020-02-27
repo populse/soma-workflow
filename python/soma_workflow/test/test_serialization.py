@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 author: laure.hugo@cea.fr
 author: Soizic Laguitton

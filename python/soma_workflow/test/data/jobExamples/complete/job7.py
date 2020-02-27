@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # inputs: as env var SOMAWF_INPUT_PARAMS
 # expect "inputs" parameter: list of filenames

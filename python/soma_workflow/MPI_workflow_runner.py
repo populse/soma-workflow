@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 author: Benoit Da Mota
 author: Soizic Laguitton

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Soma-workflow is a unified and simple interface to parallel computing
 resources. It aims at making easier the use of parallel resources by

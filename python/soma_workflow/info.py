@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 version_major = 3
 version_minor = 1

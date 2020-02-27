@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # input: "input" param in json dict
 # output: filename is an output of this job

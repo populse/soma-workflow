@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 @authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 

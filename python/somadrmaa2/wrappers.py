@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 """DRMAA2 C library function wrappers"""
 

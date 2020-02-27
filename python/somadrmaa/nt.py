@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 """named tuple implementation"""
 
