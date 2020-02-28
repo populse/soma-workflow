@@ -54,7 +54,7 @@ AUTHOR_EMAIL = "support@brainvisa.info"
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
 REQUIRES = [
-    "six",
+    "six>1.12",
     "argparse",
 ]
 EXTRA_REQUIRES = {
