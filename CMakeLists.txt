@@ -10,7 +10,7 @@ BRAINVISA_COPY_DIRECTORY( "${CMAKE_CURRENT_SOURCE_DIR}/bin"
                           bin
                           ${PROJECT_NAME} )
 
-BRAINVISA_DEPENDENCY( RUN DEPENDS python RUN ">= 2.6; << 4.0" )
+BRAINVISA_DEPENDENCY( RUN DEPENDS python RUN ">= 2.7; << 4.0" )
 if( DESIRED_QT_VERSION EQUAL 4 )
   BRAINVISA_DEPENDENCY( RUN RECOMMENDS python-qt4 RUN )
 else()
