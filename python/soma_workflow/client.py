@@ -1368,7 +1368,7 @@ class Helper(object):
     def serialize(file_path, workflow):
         '''
         Saves a workflow to a file.
-        Uses JSON format if Python >= 2.6, Python pickle otherwise.
+        Uses JSON format.
 
         Raises *SerializationError* in case of failure
 
@@ -1381,30 +1381,22 @@ class Helper(object):
         '''
         from soma_workflow import utils
 
-        if sys.version_info[:2] >= (2, 6):
-            try:
-                file = open(file_path, "w")
-                workflow_dict = workflow.to_dict()
-                json.dump(utils.to_json(workflow_dict), file, indent=4)
-                file.close()
-            except Exception as e:
-                six.reraise(SerializationError,
-                            SerializationError("%s: %s" % (type(e), e)),
-                            sys.exc_info()[2])
-        else:
-            try:
-                file = open(file_path, "w")
-                pickle.dump(workflow, file)
-                file.close()
-            except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
+        try:
+            file = open(file_path, "w")
+            workflow_dict = workflow.to_dict()
+            json.dump(utils.to_json(workflow_dict), file, indent=4)
+            file.close()
+        except Exception as e:
+            six.reraise(SerializationError,
+                        SerializationError("%s: %s" % (type(e), e)),
+                        sys.exc_info()[2])
 
     @staticmethod
     def unserialize(file_path):
         '''
         Loads a workflow from a file.
-        Opens JSON format or pickle if Python >= 2.6, only Python pickle
-        otherwise (see the method: Helper.convert_wf_file_for_p2_5).
+        Opens JSON format or pickle (see the method:
+        Helper.convert_wf_file_for_p2_5).
 
         Parameters
         ----------
@@ -1419,52 +1411,31 @@ class Helper(object):
 
         from soma_workflow import utils
 
-        if sys.version_info[:2] >= (2, 6):
-            try:
-                file = open(file_path, "r")
-            except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
+        try:
+            file = open(file_path, "r")
+        except Exception as e:
+            raise SerializationError("%s: %s" % (type(e), e))
 
-            workflow = None
-            try:
-                dict_from_json = utils.from_json(json.load(file))
-            except ValueError as e:
-                pass
-            else:
-                workflow = Workflow.from_dict(dict_from_json)
-
-            if not workflow:
-                file.close()
-                file = open(file_path, "r")
-                try:
-                    workflow = pickle.load(file)
-                except Exception as e:
-                    raise SerializationError("%s: %s" % (type(e), e))
-
-            try:
-                file.close()
-            except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
-
+        workflow = None
+        try:
+            dict_from_json = utils.from_json(json.load(file))
+        except ValueError as e:
+            pass
         else:
-            try:
-                file = open(file_path, "r")
-            except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
+            workflow = Workflow.from_dict(dict_from_json)
+
+        if not workflow:
+            file.close()
+            file = open(file_path, "r")
             try:
                 workflow = pickle.load(file)
             except Exception as e:
-                raise SerializationError(
-                    "Error %s: %s \n\n"
-                  "The workflow file may have been created "
-                  "using Python >= 2.6 using the JSON format.\n"
-                  "Use the converter: \n"
-                  "soma_workflow.client.Helper.convert_wf_file_for_p2_5 "
-                  " " % (type(e), e))
-            try:
-                file.close()
-            except Exception as e:
                 raise SerializationError("%s: %s" % (type(e), e))
+
+        try:
+            file.close()
+        except Exception as e:
+            raise SerializationError("%s: %s" % (type(e), e))
 
         # compatibility with version 2.2 and previous
         for job in workflow.jobs:
@@ -1500,6 +1471,5 @@ class Helper(object):
     def cpu_count():
         """
         Detects the number of CPUs on a system.
-        ==> Python >= 2.6: multiprocessing.cpu_count
         """
         return configuration.cpu_count()

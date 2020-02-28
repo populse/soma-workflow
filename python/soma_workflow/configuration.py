@@ -1211,25 +1211,17 @@ class Configuration(observer.Observable):
 def cpu_count():
     """
     Detects the number of CPUs on a system.
-    ==> Python >= 2.6: multiprocessing.cpu_count
     """
-    if sys.version_info[:2] >= (2, 6):
-        try:
-            import multiprocessing
-            return multiprocessing.cpu_count()
-        except Exception as e:  # sometimes happens on MacOS... ?
-            print('Warning: CPU count detection failed. Using default (2)',
-                  file=sys.stderr)
-            # print(e)
-            # import traceback
-            # traceback.print_exc()
-            return 2
+    try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        pass
     # Linux, Unix and MacOS:
     if hasattr(os, "sysconf"):
-        if "SC_NPROCESSORS_ONLN" in os.sysconf_names:
-                    # Linux & Unix:
+        if "SC_NPROCESSORS_ONLN" in os.sysconf_names:  # Linux & Unix:
             ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-            if isinstance(ncpus, int) and ncpus > 0:
+            if isinstance(ncpus, six.integer_types) and ncpus > 0:
                 return ncpus
         else:  # OSX:
             from soma_workflow import subprocess
