@@ -7,12 +7,6 @@ matrix:
       name: python 3.8
     - os: linux
       language: python
-      name: python 2.6
-      dist: trusty
-      python:
-        - 2.6
-    - os: linux
-      language: python
       name: python 2.7
       python:
         - 2.7
@@ -23,9 +17,9 @@ matrix:
         - 3.5
     - os: linux
       language: python
-      name: python 3.6
+      name: python 3.7
       python:
-        - 3.6
+        - 3.7
 
 before_install:
     - echo "TRAVIS_PYTHON_VERSION:" "$TRAVIS_PYTHON_VERSION"
