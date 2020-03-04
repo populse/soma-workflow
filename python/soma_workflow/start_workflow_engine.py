@@ -174,7 +174,8 @@ if __name__ == "__main__":
                     command = 'ps ux | grep soma_workflow.start_database_server | grep %d | grep -v grep' % pid
                     try:
                         output = subprocess.check_output(
-                            command, shell=True).decode()
+                            command, shell=True).decode(encoding='utf-8',
+                                                        errors='ignore')
                         output = output.strip().split('\n')
                     except subprocess.CalledProcessError:
                         output = []
