@@ -29,7 +29,7 @@ This mode is for advenced users who know how to use a cluster. In this mode the 
 Requirements:
 =============
 
-* Python *version 2.5 or more*
+* Python *version 2.7 or more*
 * `MPI4py <https://code.google.com/p/mpi4py>`_  
 
 Installation:

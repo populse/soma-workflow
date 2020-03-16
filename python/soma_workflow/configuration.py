@@ -330,28 +330,9 @@ class Configuration(observer.Observable):
 
     @staticmethod
     def get_home_dir():
-        # if python version > 2.5 expanduser should be ok
-        homedir = os.getenv('HOME')
-        if not homedir:
-            homedir = ''
-            if sys.platform[:3] == 'win':
-                homedir = os.getenv('USERPROFILE')
-                if not homedir:
-                    homedir = os.getenv('HOMEPATH')
-                    if not homedir:
-                        homedir = '\\'
-                    drive = os.getenv('HOMEDRIVE')
-                    if not drive:
-                        drive = os.getenv('SystemDrive')
-                        if not drive:
-                            drive = os.getenv('SystemRoot')
-                            if not drive:
-                                drive = os.getenv('windir')
-                            if drive and len(drive) >= 2:
-                                drive = drive[:2]
-                            else:
-                                drive = ''
-                    homedir = drive + homedir
+        homedir = os.path.expanduser('~')
+        if homedir == '~':
+            return ''  # backward-compatible behaviour of get_home_dir()
         return homedir
 
     @classmethod
