@@ -76,7 +76,7 @@ class Respond(threading.Thread):
                     traceback.print_last()  # TODO what is this?
 
 
-class ObjectServer:
+class ObjectServer(object):
 
     '''
     Usage:

@@ -49,7 +49,7 @@ class ReturnException(object):
         self.exc_info = exc_info  # a tuple (exc_type, exc_value, traceback)
 
 
-class ObjectServer:
+class ObjectServer(object):
 
     '''
     Usage:

@@ -473,7 +473,7 @@ class PBSProScheduler(Scheduler):
 
     def get_pbs_status_codes(self):
         if self._pbs_impl == 'pbspro':
-            class codes:
+            class codes(object):
                 ARRAY_STARTED = 'B'
                 EXITING = 'E'
                 FINISHED = 'F'
@@ -487,7 +487,7 @@ class PBSProScheduler(Scheduler):
                 WAITING = 'W'
                 SUBJOB_COMPLETE = 'X'
         else:  # torque/pbs
-            class codes:
+            class codes(object):
                 ARRAY_STARTED = 'B'  # unused
                 EXITING = 'E'
                 FINISHED = 'C'

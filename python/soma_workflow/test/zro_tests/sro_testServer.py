@@ -11,7 +11,7 @@ from __future__ import print_function
 from . import sro
 
 
-class TestObject:
+class TestObject(object):
 
     @staticmethod
     def add(a, b):

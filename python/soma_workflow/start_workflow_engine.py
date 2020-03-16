@@ -41,7 +41,7 @@ if __name__ == "__main__":
             super(VersionError, self).__init__(msg)
             self.python_version = py_ver
 
-    class Timeout():
+    class Timeout(object):
 
         """Timeout class using ALARM signal."""
 
