@@ -235,8 +235,7 @@ def ConfiguratePaser(configuration_item_name,
         config_parser = SafeConfigParser()
 
     # Get server info
-    hostname = GetHostNameOnPBSTORQUE(userid, ip_address_or_domain,
-                                      userpw)
+    hostname = ip_address_or_domain
     info_queue = GetQueueNamesOnPBSTORQUE(userid, ip_address_or_domain,
                                           userpw)
 
