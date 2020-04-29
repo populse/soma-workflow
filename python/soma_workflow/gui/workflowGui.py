@@ -987,7 +987,7 @@ class NewServerDialog(QtGui.QDialog):
 
         try:
             SetupSomaWF2Server(
-                strInstallPath, ResName, strLogin, strAdd, userpw=strPW, sshport=intPort)
+                strLogin, strAdd, ResName, userpw=strPW, sshport=intPort)
         except Exception as e:
             QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s" % (e))
             self.is_install = False
