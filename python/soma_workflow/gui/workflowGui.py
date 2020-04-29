@@ -991,10 +991,6 @@ class NewServerDialog(QtGui.QDialog):
         except Exception as e:
             QtGui.QMessageBox.critical(self, "Oops...", "Oops...%s" % (e))
             self.is_install = False
-        except Exception:
-            QtGui.QMessageBox.critical(
-                self, "Oops...", "Oops...some unexpected errors..check terminal")
-            self.is_install = False
         else:
             self.is_install = True
             QtGui.QMessageBox.information(
