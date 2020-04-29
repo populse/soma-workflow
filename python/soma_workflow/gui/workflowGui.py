@@ -147,21 +147,14 @@ except ImportError as e:
     print("Could not use Matplotlib: %s %s" % (type(e), e))
     MATPLOTLIB = False
 
-try:
-    if sys.version_info[0] >= 3:
-        from Pyro4.errors import ConnectionClosedError
-    else:
-        from Pyro.errors import ConnectionClosedError
-except ImportError:
-    # Pyro is not required when soma-workflow runs as a one process application
-    class PyroError(Exception):
-        pass
 
-    class ProtocolError(PyroError):
-        pass
+class ProtocolError(Exception):
+    pass
 
-    class ConnectionClosedError(ProtocolError):
-        pass
+
+class ConnectionClosedError(ProtocolError):
+    pass
+
 
 # QFileDialog options:
 # in binary packages containing thirdpary libs/python, we must use 
