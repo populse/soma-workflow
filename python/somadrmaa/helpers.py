@@ -27,8 +27,9 @@ import ctypes as _ct
 from somadrmaa.wrappers import *
 from somadrmaa.errors import error_buffer
 import somadrmaa.const as const
-import six
 import sys
+
+import six
 
 _BUFLEN = const.ATTR_BUFFER
 
@@ -37,7 +38,7 @@ try:
 except ImportError:  # pre 2.6 behaviour
     from somadrmaa import nt as _nt
 
-if sys.version_info[0] < 3:
+if six.PY2:
     def c_str(s):
         return s
 else:
@@ -138,7 +139,7 @@ Attribute constructor.
    implementation. See BoolConverter for an example.
 """
         self.name = c_str(name)
-        if type_converter is None and sys.version_info[0] >= 3:
+        if type_converter is None and not six.PY2:
             type_converter = StringConverter
         self.converter = type_converter
 

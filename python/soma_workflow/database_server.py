@@ -41,6 +41,7 @@ import ctypes
 import ctypes.util
 import tempfile
 import json
+import sys
 
 import soma_workflow.constants as constants
 from soma_workflow.client import FileTransfer, TemporaryPath
@@ -48,29 +49,8 @@ from soma_workflow.errors import UnknownObjectError, DatabaseError
 from soma_workflow.info import DB_VERSION, DB_PICKLE_PROTOCOL
 from soma_workflow import utils
 
-# python 2/3 compatibility
-import sys
 import six
-
-if sys.version_info[0] >= 3:
-    StringIO = io.StringIO
-
-    def keys(thing):
-        return list(thing.keys())
-
-else:
-    import StringIO
-    StringIO = StringIO.StringIO
-
-    def keys(thing):
-        return list(thing.keys())
-
-if not hasattr(six, 'next'):
-    # ubuntu 12.04 does not have next() in its six module
-    def six_next(obj):
-        return next(obj)
-    six.next = six_next
-    del six_next
+from six.moves import StringIO
 
 
 #-----------------------------------------------------------------------------
@@ -494,10 +474,10 @@ def print_tables(database_file):
         workflow_id, dest_job_id, dest_param, src_job_id, src_param, func \
             = row
         if func is not None:
-            if sys.version_info[0] >= 3:
-                func = pickle.loads(func, encoding='utf-8')
-            else:
+            if six.PY2:
                 func = pickle.loads(func)
+            else:
+                func = pickle.loads(func, encoding='utf-8')
         print('| workflow_id=', repr(workflow_id).rjust(2), '| dest_job_id=',
               repr(dest_job_id).ljust(2), '| dest_param=',
               repr(dest_param).rjust(25), '| src_job_id=', repr(
@@ -762,7 +742,7 @@ class WorkflowDatabaseServer(object):
                 # check that they are not currently used (as an input of output
                 # of a job)
                 if len(transfersToDelete) != 0:
-                    transfers_list = keys(transfersToDelete)
+                    transfers_list = list(transfersToDelete.keys())
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
@@ -782,7 +762,7 @@ class WorkflowDatabaseServer(object):
 
                 # delete transfers data and associated engine file
                 if len(transfersToDelete) != 0:
-                    transfers_list = keys(transfersToDelete)
+                    transfers_list = list(transfersToDelete.keys())
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
@@ -818,7 +798,7 @@ class WorkflowDatabaseServer(object):
                     if nmax == 0:
                         nmax = len(tmpToDelete)
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
-                    tkeys = keys(tmpToDelete)
+                    tkeys = list(tmpToDelete.keys())
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
@@ -837,7 +817,7 @@ class WorkflowDatabaseServer(object):
                     if nmax == 0:
                         nmax = len(tmpToDelete)
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
-                    tkeys = keys(tmpToDelete)
+                    tkeys = list(tmpToDelete.keys())
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
                             n = nmax
@@ -1759,10 +1739,7 @@ class WorkflowDatabaseServer(object):
             cursor = connection.cursor()
             name = None
             if engine_workflow.name != None:
-                if sys.version_info[0] >= 3:
-                    name = engine_workflow.name
-                else:
-                    name = engine_workflow.name.decode('utf8')
+                name = six.ensure_text(engine_workflow.name, 'utf8')
             try:
                 cursor.execute('''INSERT INTO workflows
                          (user_id,
@@ -1953,10 +1930,10 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_workflow:
-            if sys.version_info[0] >= 3:
-                workflow = pickle.loads(pickled_workflow, encoding='utf-8')
-            else:
+            if six.PY2:
                 workflow = pickle.loads(pickled_workflow)
+            else:
+                workflow = pickle.loads(pickled_workflow, encoding='utf-8')
         else:
             workflow = None
 
@@ -2307,7 +2284,7 @@ class WorkflowDatabaseServer(object):
 
     @staticmethod
     def shell_param(item):
-        if sys.version_info[0] < 3 and isinstance(item, six.text_type):
+        if six.PY2 and isinstance(item, six.text_type):
             return repr(item.encode('utf-8'))
         if isinstance(item, (list, tuple)):
             return '"' + repr(item) + '"'
@@ -2594,10 +2571,10 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
         if pickled_job:
-            if sys.version_info[0] >= 3:
-                job = pickle.loads(pickled_job, encoding='utf-8')
-            else:
+            if six.PY2:
                 job = pickle.loads(pickled_job)
+            else:
+                job = pickle.loads(pickled_job, encoding='utf-8')
             job.job_id = job_id
         else:
             job = None
@@ -2687,7 +2664,7 @@ class WorkflowDatabaseServer(object):
                 nmax = len(job_status)
             sel = []
             nchunks = int(math.ceil(float(len(job_status)) / nmax))
-            jkeys = keys(job_status)
+            jkeys = list(job_status.keys())
             for chunk in range(nchunks):
                 if chunk < nchunks - 1:
                     n = nmax
@@ -3001,10 +2978,10 @@ class WorkflowDatabaseServer(object):
                     # print(dst_param, src_job, src_param)
                     # if dest_param in param_dict:
                     if func:
-                        if sys.version_info[0] >= 3:
-                            func = pickle.loads(func, encoding='utf-8')
-                        else:
+                        if six.PY2:
                             func = pickle.loads(func)
+                        else:
+                            func = pickle.loads(func, encoding='utf-8')
                     jdict = jsons.get(src_job)
                     if jdict is None:
                         json_sql = cursor2.execute(
@@ -3247,17 +3224,12 @@ class WorkflowDatabaseServer(object):
     def _string_conversion(self, string):
         # return string
         if string:
-            if sys.version_info[0] < 3:
-                return string.encode('utf-8')
-            else:
-                if isinstance(string, bytes):
-                    return string.decode('utf-8')
+            return six.ensure_str(string, 'utf-8')
         return string
 
     def _str_to_date_conversion(self, strdate):
         if strdate:
-            if sys.version_info[0] < 3:
-                strdate = strdate.encode('utf-8')
+            strdate = six.ensure_str(strdate, 'utf-8')
             # this is a hack to avoid issues because
             # for an undetermined reason the date may be stored in
             # a different format in the database.

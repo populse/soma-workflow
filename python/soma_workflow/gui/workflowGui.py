@@ -7,7 +7,6 @@
 from __future__ import with_statement, print_function
 from __future__ import absolute_import
 
-from six.moves import range
 import time
 import threading
 import os
@@ -114,30 +113,11 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
 import soma_workflow.version as version
 
-# python 2/3 compatibility
 import six
-import sys
+from six.moves import range
 
-if sys.version_info[0] >= 3:
-    def utf8(string):
-        return six.text_type(string)
-else:
-    def utf8(string):
-        try:
-            return six.text_type(string).encode('utf-8')
-        except UnicodeDecodeError as e:
-            s1 = [string[:e.start - 1] + '?']
-            s2 = string[e.end:]
-            while s2:
-                try:
-                    x = six.text_type(s2)
-                    s1.append(x)
-                    s2 = ''
-                except UnicodeDecodeError as e:
-                    s1.append(s2[:e.start - 1] + '?')
-                    s2 = s2[e.end:]
-            return ''.join(s1).encode('utf-8')
-
+def utf8(string):
+    return six.ensure_str(six.ensure_text(string, errors='replace'), 'utf-8')
 
 
 MATPLOTLIB = True
@@ -1161,8 +1141,7 @@ class ConnectionDialog(QtGui.QDialog):
     def update_login(self):
         resource_id = six.text_type(
             self.ui.combo_resources.currentText())
-        if sys.version_info[0] < 3:
-            resource_id = resource_id.encode('utf-8')
+        resource_id = six.ensure_str(resource_id, 'utf-8')
         login = self.login_list[resource_id]
         if login != None:
             self.ui.lineEdit_login.setText(login)
