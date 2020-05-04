@@ -245,6 +245,9 @@ class Job(object):
     # string (path)
     output_params_file = None
 
+    # dict (config options)
+    configuration = {}
+
     def __init__(self,
                  command,
                  referenced_input_files=None,
@@ -265,7 +268,8 @@ class Job(object):
                  use_input_params_file=False,
                  has_outputs=False,
                  input_params_file=None,
-                 output_params_file=None):
+                 output_params_file=None,
+                 configuration={}):
         if not name and len(command) != 0:
             self.name = command[0]
         else:
@@ -294,6 +298,7 @@ class Job(object):
         self.has_outputs = has_outputs
         self.input_params_file = input_params_file
         self.output_params_file = output_params_file
+        self.configuration = configuration
 
         for command_elem in self.command:
             if isinstance(command_elem, six.string_types):
@@ -407,6 +412,7 @@ class Job(object):
             "param_dict",
             "input_params_file",
             "output_params_file",
+            "configuration",
         ]
         for attr_name in attributes:
             attr = getattr(self, attr_name)
@@ -431,7 +437,8 @@ class Job(object):
          * tmp_from_ids *id -> TemporaryPath*
          * opt_from_ids *id -> OptionPath*
         '''
-        job = cls(command=d["command"])
+        job = cls(command=d["command"],
+                  configuration=d.get("configuration", {}))
         for key, value in six.iteritems(d):
             setattr(job, key, value)
 
@@ -523,7 +530,8 @@ class Job(object):
             "disposal_timeout",
             "env",
             "use_input_params_file",
-            "has_outputs"
+            "has_outputs",
+            "configuration",
         ]
 
         job_dict["class"] = '%s.%s' % (self.__class__.__module__,
