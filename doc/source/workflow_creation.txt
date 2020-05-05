@@ -431,6 +431,30 @@ param_link_functions module
     :members:
 
 
+.. _jobs_with_conf:
+
+Jobs with configuration
+=======================
+
+In Soma-Workflow 3.1 any job in a workflow is allowed to include some runtime configuration data. This is meant especially to enable the use of specific software which needs configuration, paths, or environment variables on the computing resource. This conficuration may of course be passed through environment variables (using the ``env`` variable / parameter of :class:`Job`, but also as a config dictionary which will be passed th the job.
+
+The job configuration is included in the job parameters as in the :ref:`dynamic output / input arguments passing system <dynamic_outputs>`. This thus allows 2 ways of passing the config dict to jobs:
+
+* as a named job parameter, `configuration_dict`. In this case this named parameter is reserved for configuration. It is used as another named parameter in the job::
+
+    job = Job(command=['my_program', '%(configuration_dict)s'], name='job1',
+        configuration={'conf_var1': 'value1'})
+
+  The job will receive the configuration as a JSON string parameter
+
+* as a part of a parameters file. In this case the parameters file will be created before the job is run, even if the job does not use the outputs from another job, and the conficuration will be held in a sub-dictionary of this input JSON file, under the key ``"configuration_dict"``, separate from the ``"params"`` key. Therefore in this shape, ``configuration_dict`` is not a reserved parameter name::
+
+    job = Job(command=['my_program', name='job1', use_input_params_file=True,
+        configuration={'conf_var1': 'value1'})
+
+  As in the dynamic parameters system, when the job is run, the environment variable ``SOMAWF_INPUT_PARAMS`` will hold the path of the input parameters / configuration file.
+
+
 .. _engine_execution_job:
 
 Engine execution jobs
