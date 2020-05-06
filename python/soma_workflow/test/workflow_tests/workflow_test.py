@@ -25,10 +25,7 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests import WorkflowExamplesShared
 from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
-if sys.version_info[0] >= 3:
-    import io as StringIO
-else:
-    import StringIO
+import six
 
 
 class WorkflowTest(unittest.TestCase):
@@ -75,7 +72,7 @@ class WorkflowTest(unittest.TestCase):
         swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
             % (socket.gethostname(), tmpdb)
         Configuration.search_config_path \
-            = staticmethod(lambda: StringIO.StringIO(swf_conf))
+            = staticmethod(lambda: six.StringIO(swf_conf))
 
         self.temporaries = [self.wf_examples.output_dir]
 
