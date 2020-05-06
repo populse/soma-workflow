@@ -103,7 +103,9 @@ class EngineLoopThread(threading.Thread):
 
     def stop(self):
         self.engine_loop.stop_loop()
-        self.join()
+        # when python3 exits, join() may block on its lock indefinitely
+        # so we have to use a timeout.
+        self.join(timeout=3)
         # print("Soma workflow engine thread ended nicely.")
 
     @staticmethod

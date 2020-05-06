@@ -228,8 +228,11 @@ class WorkflowController(object):
     def __del__(self):
         print('del WorkflowController')
         self.disconnect()
-        import gc
-        gc.collect()
+        try:
+            import gc
+            gc.collect()
+        except Exception:
+            pass
 
     def disconnect(self):
         '''
