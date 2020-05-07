@@ -370,7 +370,11 @@ class Configuration(observer.Observable):
         if config_path is not None:
             config_parser = configparser.ConfigParser()
             if hasattr(config_path, 'readline'):
-                config_parser.readfp(config_path)
+                # tha API of configparser is somewhat moving...
+                if hasattr(config_parser, 'read_file'):
+                    config_parser.read_file(config_path)
+                else:
+                    config_parser.readfp(config_path)
             else:
                 config_parser.read(config_path)
 
