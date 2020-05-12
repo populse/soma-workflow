@@ -901,7 +901,6 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
     def remove_orphan_files(self):
-        print('remove orphan files')
         self.logger.debug("=> remove_orphan_files")
         registered_engine_paths = []
         registered_users = []
