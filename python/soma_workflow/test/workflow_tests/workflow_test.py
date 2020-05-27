@@ -8,7 +8,6 @@ from __future__ import absolute_import
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from six.moves import map
 import unittest
 import sys
 import os
@@ -25,7 +24,9 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests import WorkflowExamplesShared
 from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
+
 import six
+from six.moves import map
 
 
 class WorkflowTest(unittest.TestCase):

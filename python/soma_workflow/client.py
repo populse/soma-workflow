@@ -31,8 +31,7 @@ import logging
 import six
 import tempfile
 
-if sys.version_info[:2] >= (2, 6):
-    import json
+import json
 # import cProfile
 # import traceback
 
@@ -1176,14 +1175,8 @@ def _embedded_engine_and_server(config):
         if not os.path.exists(os.path.dirname(server_log_file)):
             os.makedirs(os.path.dirname(server_log_file))
 
-    if sys.version_info >= (2, 7):
-        import logging.config
-        logging.config.dictConfig(log_config)
-    elif engine_log_dir:
-        logging.basicConfig(
-            filename=logfilepath,
-            format=engine_log_format,
-            level=eval("logging." + engine_log_level))
+    import logging.config
+    logging.config.dictConfig(log_config)
 
     if engine_log_dir:
         logger = logging.getLogger('engine')
@@ -1462,9 +1455,6 @@ class Helper(object):
         file usable in Python 2.5.
         '''
         from soma_workflow import utils
-
-        if sys.version_info[:2] < (2, 6):
-            raise Exception("convert_wf_file_for_p2_5 requires Python >= 2.6.")
 
         try:
             o_file = open(origin_file_path, "r")

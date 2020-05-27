@@ -340,7 +340,7 @@ class LocalScheduler(Scheduler):
                 kwargs = {}
             if env is not None:
                 env2 = dict(os.environ)
-                if sys.platform.startswith('win') and sys.version_info[0] < 3:
+                if sys.platform.startswith('win') and six.PY2:
                     # windows cannot use unicode strings as env values
                     env2.update([(k.encode('utf-8'), v.encode('utf-8'))
                                 for k, v in six.iteritems(env)])
@@ -440,28 +440,15 @@ class LocalScheduler(Scheduler):
                     process.communicate()
                 else:
                     # psutil not available
-                    if sys.version_info < (2, 6):
-                        if sys.platform == 'win32':
-                            PROCESS_TERMINATE = 1
-                            handle = ctypes.windll.kernel32.OpenProcess(
-                                PROCESS_TERMINATE,
-                                False,
-                                process.pid)
-                            ctypes.windll.kernel32.TerminateProcess(handle, -1)
-                            ctypes.windll.kernel32.CloseHandle(handle)
-                        else:
-                            os.kill(process.pid, signal.SIGKILL)
-                            os.wait()
+                    if sys.platform == 'win32':
+                        # children processes will probably not be killed
+                        # immediately.
+                        process.kill()
                     else:
-                        if sys.platform == 'win32':
-                            # children processes will probably not be killed
-                            # immediately.
-                            process.kill()
-                        else:
-                            # kill process group, to kill children processes as well
-                            # see
-                            # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
-                            os.killpg(process.pid, signal.SIGKILL)
+                        # kill process group, to kill children processes as well
+                        # see
+                        # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
+                        os.killpg(process.pid, signal.SIGKILL)
 
                     # wait for actual termination, to avoid process writing files after
                     # we return from here.

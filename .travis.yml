@@ -33,7 +33,7 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then sudo apt-get install -y pandoc graphviz; pip install sphinx sphinx-gallery pandoc nbsphinx "PyQt5<5.13"; fi
 
 install:
-    - pip install "six>=1.13"
+    - pip install "six~=1.13"
     - if [ ${TRAVIS_PYTHON_VERSION} == "2.7" ]; then pip install subprocess32; fi
     - pip install codecov
     - python setup.py install

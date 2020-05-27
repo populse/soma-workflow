@@ -23,6 +23,7 @@ uses on the client side (in the GUI for example) without importing
 module required in the engine module.
 '''
 
+import io
 import os
 import logging
 import tempfile
@@ -375,14 +376,12 @@ class EngineJob(Job):
                 new_command = (
                     command.pattern
                     % self.path_mapping[command].get_engine_path())
-                if sys.version_info[0] < 3:
-                    new_command = new_command.encode('utf-8')
+                new_command = six.ensure_str(new_command, 'utf-8')
             else:
                 new_command = (
                     command.pattern
                     % self.path_mapping[command].get_engine_main_path())
-                if sys.version_info[0] < 3:
-                    new_command = new_command.encode('utf-8')
+                new_command = six.ensure_str(new_command, 'utf-8')
         else:
             # If the entry is anything else, we return its string
             # representation
@@ -662,13 +661,9 @@ class EngineWorkflow(Workflow):
             t = tempfile.mkstemp(prefix='swf_', suffix='.py')
             try:
                 os.close(t[0])
-                if sys.version_info[0] >= 3:
-                    f = open(t[1], 'w', encoding='utf-8')
-                else:
-                    f = open(t[1], 'w')
-                f.write(self.env_builder_code)
-                f.write('\n')
-                f.close()
+                with io.open(t[1], 'w', encoding='utf-8') as f:
+                    f.write(six.ensure_text(self.env_builder_code))
+                    f.write(u'\n')
                 try:
                     env_json = subprocess.check_output([sys.executable,
                                                         t[1]]).decode('utf-8')

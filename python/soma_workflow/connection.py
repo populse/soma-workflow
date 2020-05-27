@@ -32,6 +32,8 @@ import sys
 import io
 import traceback
 from . import subprocess
+
+import six
 import six.moves.socketserver as socketserver
 
 from soma_workflow.errors import ConnectionError
@@ -157,7 +159,7 @@ def SSH_exec_cmd(sshcommand,
 def server_python_interpreter():
     ''' python command to run on server side '''
     python_interpreter = os.path.basename(sys.executable)
-    if sys.version_info[0] >= 3 and python_interpreter == 'python':
+    if not six.PY2 and python_interpreter == 'python':
         # force the use of python3 if we use it on client side
         python_interpreter = 'python%d' % sys.version_info[0]
     return python_interpreter
