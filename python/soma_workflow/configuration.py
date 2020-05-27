@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, print_function
 from __future__ import absolute_import
-from six.moves import range
 
 '''
 @author: Soizic Laguitton
@@ -27,6 +26,7 @@ import soma_workflow.observer as observer
 from soma_workflow.info import DB_VERSION
 
 import six
+from six.moves import range
 
 
 #-----------------------------------------------------------------------------
@@ -370,7 +370,11 @@ class Configuration(observer.Observable):
         if config_path is not None:
             config_parser = configparser.ConfigParser()
             if hasattr(config_path, 'readline'):
-                config_parser.readfp(config_path)
+                # tha API of configparser is somewhat moving...
+                if hasattr(config_parser, 'read_file'):
+                    config_parser.read_file(config_path)
+                else:
+                    config_parser.readfp(config_path)
             else:
                 config_parser.read(config_path)
 
@@ -1508,3 +1512,17 @@ def WriteOutConfiguration(config_parser, config_path):
     except:  # noqa: E722
         print("Unexpected error:", sys.exc_info()[0])
         raise
+
+def change_soma_workflow_directory(directory, config_name=None):
+    '''
+    Temporarily and locally change the configuration file of Soma-Workflow to a
+    different directory. This is useful during tests to isolate the SWF
+    environment from the current user settings and workflows.
+    '''
+    if not config_name:
+        config_name = socket.gethostname()
+    swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
+        % (config_name, directory)
+    Configuration.search_config_path \
+        = staticmethod(lambda: six.StringIO(swf_conf))
+

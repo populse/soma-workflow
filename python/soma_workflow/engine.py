@@ -103,7 +103,9 @@ class EngineLoopThread(threading.Thread):
 
     def stop(self):
         self.engine_loop.stop_loop()
-        self.join()
+        # when python3 exits, join() may block on its lock indefinitely
+        # so we have to use a timeout.
+        self.join(timeout=3)
         # print("Soma workflow engine thread ended nicely.")
 
     @staticmethod
@@ -575,6 +577,9 @@ class WorkflowEngineLoop(object):
         Set job parameters from upstream outputs, set the env variables
         SOMAWF_INPUT_PARAMS and / or SOMAWF_OUTPUT_PARAMS when they are used,
         and write the input parameters file if needed.
+
+        If the job has a configuration dict, it will be included as a parameter
+        named "configuration_dict".
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
         if u_param_dict:
@@ -602,6 +607,12 @@ class WorkflowEngineLoop(object):
                                 engine_transfer.client_paths)
                     else:
                         job.param_dict[param] = value
+        if u_param_dict or \
+                (job.configuration and not job.use_input_params_file):
+            if job.configuration and not job.use_input_params_file:
+                job.param_dict['configuration_dict'] \
+                    = json.dumps(job.configuration)
+                print('configuration_dict included', file=sys.stderr)
             self._database_server.update_job_command(job.job_id,
                                                      job.plain_command())
         if job.use_input_params_file and job.input_params_file:

@@ -8,7 +8,6 @@ from __future__ import absolute_import
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from six.moves import map
 import unittest
 import sys
 import os
@@ -26,7 +25,8 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesShared
 from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 
-from six.moves import StringIO
+import six
+from six.moves import map
 
 
 class WorkflowTest(unittest.TestCase):
@@ -73,7 +73,7 @@ class WorkflowTest(unittest.TestCase):
         swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
             % (socket.gethostname(), tmpdb)
         Configuration.search_config_path \
-            = staticmethod(lambda: StringIO(swf_conf))
+            = staticmethod(lambda: six.StringIO(swf_conf))
 
         self.temporaries = [self.wf_examples.output_dir]
 

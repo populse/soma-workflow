@@ -156,7 +156,8 @@ class EngineJob(Job):
             use_input_params_file=client_job.use_input_params_file,
             has_outputs=client_job.has_outputs,
             input_params_file=client_job.input_params_file,
-            output_params_file=client_job.output_params_file)
+            output_params_file=client_job.output_params_file,
+            configuration=client_job.configuration)
 
         self.job_id = -1
 
@@ -455,6 +456,9 @@ class EngineJob(Job):
             param_dict = {'parameters': params}
             for param, value in six.iteritems(self.param_dict):
                 params[param] = self.generate_command(value, mode='Command')
+            # include config
+            if self.configuration:
+                param_dict['configuration_dict'] = self.configuration
             with open(self.input_params_file, 'w') as f:
                 json.dump(utils.to_json(param_dict), f)
 

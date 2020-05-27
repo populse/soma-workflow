@@ -16,7 +16,7 @@ build: off
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python %PYTHON_OPTS% -m pip install --upgrade pip"
-  - "python %PYTHON_OPTS% -m pip install six"
+  - "python %PYTHON_OPTS% -m pip install six>=1.13"
   - "if %PYTHON_VERSION%==2.7 (python %PYTHON_OPTS% -m pip install subprocess32)"
   - "python %PYTHON_OPTS% setup.py install"
   #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"

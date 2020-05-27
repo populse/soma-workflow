@@ -227,8 +227,11 @@ class WorkflowController(object):
     def __del__(self):
         print('del WorkflowController')
         self.disconnect()
-        import gc
-        gc.collect()
+        try:
+            import gc
+            gc.collect()
+        except Exception:
+            pass
 
     def disconnect(self):
         '''
@@ -1208,7 +1211,8 @@ class Helper(object):
     def list_failed_jobs(workflow_id,
                          wf_ctrl,
                          include_aborted_jobs=False,
-                         include_user_killed_jobs=False):
+                         include_user_killed_jobs=False,
+                         include_statuses=None):
         '''
         To spot the problematic jobs in a workflow.
 
@@ -1219,9 +1223,12 @@ class Helper(object):
         include_aborted_jobs: bool
             Include the jobs which exit status is constants.EXIT_ABORTED
             and constants.EXIT_NOTRUN
-
         include_user_killed_jobs: bool
             Include the jobs which exit status is constants.USER_KILLED
+        include_statuses: sequence or None
+            Get failed jobs with exit status in this list/set. Ignore
+            ``include_aborted_jobs`` and ``include_user_killed_jobs``
+            parameters.
 
         Returns
         -------
@@ -1236,14 +1243,17 @@ class Helper(object):
          transfers_temp_info) = wf_ctrl.workflow_elements_status(
             workflow_id, with_drms_id=True)
         failed_job_ids = []
+        if include_statuses is None:
+            include_statuses = set(constants.JOB_EXIT_STATUS)
+            if not include_user_killed_jobs:
+                include_statuses.remove(constants.USER_KILLED)
+            if not include_aborted_jobs:
+                include_statuses.remove(constants.EXIT_ABORTED)
+                include_statuses.remove(constants.EXIT_NOTRUN)
         for (job_id, status, queue, exit_info, dates, drmaa_id) in jobs_info:
             if(status == constants.DONE and exit_info[1] != 0) or \
-              (status == constants.FAILED and
-               (include_aborted_jobs
-                or exit_info[0] not in (constants.EXIT_ABORTED,
-                                        constants.EXIT_NOTRUN))
-               and (include_user_killed_jobs
-                    or exit_info[0] != constants.USER_KILLED)):
+                    (status == constants.FAILED and
+                     exit_info[0] in include_statuses):
                 failed_job_ids.append(job_id)
         return failed_job_ids
 
