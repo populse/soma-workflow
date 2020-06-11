@@ -331,6 +331,8 @@ class EngineJob(Job):
             * If "Tuple", only the path to the directory is returned. Indeed,
             tuples are used to provide a FileTransfer directory and a filename.
             The two must then be concatenated.
+            * if "PathOnly", only special path replacements are done, the
+            remaining of parameters are left as they are (lists, tuples etc).
             * if None, ``command`` it will be converted
             to a string representation (i.e., the output list will be quoted).
         '''
@@ -385,7 +387,7 @@ class EngineJob(Job):
         else:
             # If the entry is anything else, we return its string
             # representation
-            if mode != 'Command':
+            if mode not in ('Command', 'PathOnly'):
                 new_command = six.text_type(command)
             else:
                 new_command = command
@@ -455,7 +457,7 @@ class EngineJob(Job):
             params = {}  # dict(self.param_dict)
             param_dict = {'parameters': params}
             for param, value in six.iteritems(self.param_dict):
-                params[param] = self.generate_command(value, mode='Command')
+                params[param] = self.generate_command(value, mode='PathOnly')
             # include config
             if self.configuration:
                 param_dict['configuration_dict'] = self.configuration
