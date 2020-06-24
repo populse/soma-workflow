@@ -612,7 +612,6 @@ class EngineWorkflow(Workflow):
             client_workflow.jobs,
             client_workflow.dependencies,
             client_workflow.root_group,
-            client_workflow.groups,
             env=client_workflow.env,
             env_builder_code=client_workflow.env_builder_code,
             param_links=client_workflow.param_links)
