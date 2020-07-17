@@ -117,6 +117,9 @@ import six
 from six.moves import range
 
 def utf8(string):
+    if not isinstance(string, bytes):
+        string = unicode(string)
+    
     return six.ensure_str(six.ensure_text(string, errors='replace'), 'utf-8')
 
 
