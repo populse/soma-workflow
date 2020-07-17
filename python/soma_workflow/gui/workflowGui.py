@@ -1476,15 +1476,9 @@ class SomaWorkflowWidget(QtGui.QWidget):
             example_type = ui.comboBox_example_type.currentIndex()
             file_path = QtGui.QFileDialog.getSaveFileName(self,
                                                           "Create a workflow example")
-            if QT_BACKEND in (PYSIDE, PYQT5):
-                file_path = QtGui.QFileDialog.getSaveFileName(
-                    self, "Create a workflow example", "", "", "",
-                    filedialog_options)
-                file_path = file_path[0]
-            else: # PyQt4
-                file_path = QtGui.QFileDialog.getSaveFileName(
-                    self, "Create a workflow example", "", "",
-                    filedialog_options)
+            file_path = QtGui.QFileDialog.getSaveFileName(
+                self, "Create a workflow example", "", "", "",
+                filedialog_options)
             if file_path:
                 try:
                     if with_file_transfer and not with_shared_resource_path:
