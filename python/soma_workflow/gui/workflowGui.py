@@ -117,10 +117,21 @@ import six
 from six.moves import range
 
 def utf8(string):
-    if not isinstance(string, bytes):
-        string = unicode(string)
+    """Convert a Unicode or utf-8 encoded string to a native Python str.
     
-    return six.ensure_str(six.ensure_text(string, errors='replace'), 'utf-8')
+    This function's name is misleading: while on Python 2 it really
+    returns a utf-8-encoded string, on Python 3 it return a native
+    Unicode Python str.
+    
+    This function is robust to incorrectly-encoded utf-8 strings, and
+    will replace undecodable sequences with the Unicode
+    U+FFFD REPLACEMENT CHARACTER.
+    """
+    if isinstance(string, bytes):
+        unicode_string = string.decode('utf-8', errors='replace')
+    else:
+        unicode_string = six.text_type(string)  # to handle QString
+    return six.ensure_str(unicode_string, 'utf-8')
 
 
 MATPLOTLIB = True
