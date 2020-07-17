@@ -129,8 +129,10 @@ class WorkflowTest(unittest.TestCase):
                 self.wf_ctrl.retrieve_job_stdouterr(job_id,
                                                     job_stdout_file,
                                                     job_stderr_file)
-                print('stdout:\n', open(job_stdout_file).read(), file=file)
-                print('stderr:\n', open(job_stderr_file).read(), file=file)
+                with open(job_stdout_file) as f:
+                    print('stdout:\n', f.read(), file=file)
+                with open(job_stderr_file) as f:
+                    print('stderr:\n', f.read(), file=file)
             finally:
                 os.unlink(job_stdout_file)
                 os.unlink(job_stderr_file)

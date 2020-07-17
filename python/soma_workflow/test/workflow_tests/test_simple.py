@@ -130,9 +130,10 @@ class SimpleTest(WorkflowTest):
                             self.wf_examples.lo_stdout[1])
                         self.assertTrue(isSame, msg)
                         # Test no stderr
-                        msg = "job stderr not empty : cf %s\n" \
-                            "stderr:\n---\n%s\n---" \
-                            % (job_stderr_file, open(job_stderr_file).read())
+                        with open(job_stderr_file) as f:
+                            msg = "job stderr not empty : cf %s\n" \
+                                "stderr:\n---\n%s\n---" \
+                                % (job_stderr_file, f.read())
                         self.assertTrue(os.stat(job_stderr_file).st_size == 0,
                                         msg)
 
