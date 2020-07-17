@@ -15,7 +15,8 @@ import shutil
 # get the input pams file location from env variable
 param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
 # read it
-param_json = json.load(open(param_file))
+with open(param_file) as f:
+    param_json = json.load(f)
 parameters = param_json['parameters']
 # now get our specific parameter(s)
 filePathsIn = parameters['inputs']

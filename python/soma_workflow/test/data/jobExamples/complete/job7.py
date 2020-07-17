@@ -15,7 +15,8 @@ import shutil
 from six.moves import zip
 
 input_param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
-input_dict = json.load(open(input_param_file))
+with open(input_param_file) as f:
+    input_dict = json.load(f)
 input_params = input_dict['parameters']
 
 filePathsIn = input_params['inputs']
@@ -37,4 +38,5 @@ if output_param_file:
     out_params = {
         'outputs': filePathsOut,
     }
-    json.dump(out_params, open(output_param_file, 'w'))
+    with open(output_param_file, 'w') as f:
+        json.dump(out_params, f)

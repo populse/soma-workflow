@@ -16,7 +16,8 @@ import subprocess
 # get the input pams file location from env variable
 param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
 # read it
-params = json.load(open(param_file))
+with open(param_file) as f:
+    params = json.load(f)
 parameters = params['parameters']
 # now get our specific parameter(s)
 filePathIn1 = parameters['filePathIn1']
@@ -42,4 +43,5 @@ if output_param_file:
     out_params = {
         'filePathOut': filePathOut,
     }
-    json.dump(out_params, open(output_param_file, 'w'))
+    with open(output_param_file, 'w') as f:
+        json.dump(out_params, f)

@@ -52,30 +52,30 @@ filePathOut1 = sys.argv[2]
 filePathOut2 = sys.argv[3]
 # sys.stdout.write("output file 2 = " + filePathOut2 + "\n")
 
-fileOut1 = open(filePathOut1, "w")
-fileOut2 = open(filePathOut2, "w")
+with open(filePathOut1, "w") as fileOut1, open(filePathOut2, "w") as fileOut2:
 
-print("1****************job1**************", file=fileOut1)
-print("1****************job1**************", file=fileOut2)
+    print("1****************job1**************", file=fileOut1)
+    print("1****************job1**************", file=fileOut2)
 
-fileIn = open(filePathIn)
-line = fileIn.readline()
-i = 0
-while line:
-    if i % 2 == 0:
-        print("1 " + repr(i) + " " + line, file=fileOut2, end='')
-    else:
-        print("1 " + repr(i) + " " + line, file=fileOut1, end='')
-    line = fileIn.readline()
-    i += 1
+    with open(filePathIn) as fileIn:
+        line = fileIn.readline()
+        i = 0
+        while line:
+            if i % 2 == 0:
+                print("1 " + repr(i) + " " + line, file=fileOut2, end='')
+            else:
+                print("1 " + repr(i) + " " + line, file=fileOut1, end='')
+            line = fileIn.readline()
+            i += 1
 
+    print("1 ", file=fileOut1)
+    print("1 job1 out1: stdin comment:", file=fileOut1)
+    print("1 " + comment1, file=fileOut1, end='')
+    print("1******************************************************",
+          file=fileOut1)
 
-print("1 ", file=fileOut1)
-print("1 job1 out1: stdin comment:", file=fileOut1)
-print("1 " + comment1, file=fileOut1, end='')
-print("1******************************************************", file=fileOut1)
-
-print("1 ", file=fileOut2)
-print("1 job1 out2: stdin comment:************", file=fileOut2)
-print("1 " + comment2, file=fileOut2, end='')
-print("1******************************************************", file=fileOut2)
+    print("1 ", file=fileOut2)
+    print("1 job1 out2: stdin comment:************", file=fileOut2)
+    print("1 " + comment2, file=fileOut2, end='')
+    print("1******************************************************",
+          file=fileOut2)

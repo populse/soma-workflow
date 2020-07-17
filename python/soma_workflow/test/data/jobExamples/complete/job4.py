@@ -36,22 +36,23 @@ for i in range(1, timeToSleep + 1):
 sys.stdout.write("\n")
 
 
-fileIn1 = open(filePathIn1)
-fileOut = open(filePathOut, "w")
-print("4****************job4***********************", file=fileOut)
-line = fileIn1.readline()
-while line:
-    print("4 " + line, file=fileOut, end='')
-    line = fileIn1.readline()
+with open(filePathOut, "w") as fileOut:
+    with open(filePathIn1) as fileIn1:
+        print("4****************job4***********************", file=fileOut)
+        line = fileIn1.readline()
+        while line:
+            print("4 " + line, file=fileOut, end='')
+            line = fileIn1.readline()
 
 
-fileIn2 = open(filePathIn2)
-line = fileIn2.readline()
-while line:
-    print("4 " + line, file=fileOut, end='')
-    line = fileIn2.readline()
+    with open(filePathIn2) as fileIn2:
+        line = fileIn2.readline()
+        while line:
+            print("4 " + line, file=fileOut, end='')
+            line = fileIn2.readline()
 
-print("4 ", file=fileOut)
-print("4 job4: stdin comment:", file=fileOut)
-print("4 " + comment, file=fileOut, end='')
-print("4******************************************************", file=fileOut)
+    print("4 ", file=fileOut)
+    print("4 job4: stdin comment:", file=fileOut)
+    print("4 " + comment, file=fileOut, end='')
+    print("4******************************************************",
+          file=fileOut)

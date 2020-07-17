@@ -35,22 +35,22 @@ sys.stdout.write("\n")
 # sys.stdout.write("Input file 2 = " + filePathIn2 + "\n")
 # sys.stdout.write("Output file = " + filePathOut + "\n")
 
-fileIn1 = open(filePathIn1)
-fileOut = open(filePathOut, "w")
+with open(filePathOut, "w") as fileOut:
+    with open(filePathIn1) as fileIn1:
+        print("2****************job2**************", file=fileOut)
+        line = fileIn1.readline()
+        while line:
+            print("2 " + line, file=fileOut, end='')
+            line = fileIn1.readline()
 
-print("2****************job2**************", file=fileOut)
-line = fileIn1.readline()
-while line:
-    print("2 " + line, file=fileOut, end='')
-    line = fileIn1.readline()
 
+    with open(filePathIn2) as fileIn2:
+        nblines = len(fileIn2.readlines())
+        print("2 ", file=fileOut)
+        print("2  # lines:" + repr(nblines), file=fileOut, end=' ')
 
-fileIn2 = open(filePathIn2)
-nblines = len(fileIn2.readlines())
-print("2 ", file=fileOut)
-print("2  # lines:" + repr(nblines), file=fileOut, end=' ')
-
-print("2 ", file=fileOut)
-print("2 job2: stdin comment:", file=fileOut)
-print("2 " + comment, file=fileOut, end='')
-print("2******************************************************", file=fileOut)
+    print("2 ", file=fileOut)
+    print("2 job2: stdin comment:", file=fileOut)
+    print("2 " + comment, file=fileOut, end='')
+    print("2******************************************************",
+          file=fileOut)

@@ -34,16 +34,16 @@ for i in range(1, timeToSleep + 1):
 sys.stdout.write("\n")
 
 
-fileIn = open(filePathIn)
-fileOut = open(filePathOut, "w")
-print("3****************job3***********************", file=fileOut)
-line = fileIn.readline()
-while line:
-    print("3 " + line, file=fileOut, end='')
-    line = fileIn.readline()
+with open(filePathOut, "w") as fileOut:
+    with open(filePathIn) as fileIn:
+        print("3****************job3***********************", file=fileOut)
+        line = fileIn.readline()
+        while line:
+            print("3 " + line, file=fileOut, end='')
+            line = fileIn.readline()
 
-print("3 ", file=fileOut)
-print("3 job3: stdin comment:", file=fileOut)
-print("3 " + comment, file=fileOut, end='')
-print("3*************************************************************",
-      file=fileOut)
+    print("3 ", file=fileOut)
+    print("3 job3: stdin comment:", file=fileOut)
+    print("3 " + comment, file=fileOut, end='')
+    print("3*************************************************************",
+          file=fileOut)
