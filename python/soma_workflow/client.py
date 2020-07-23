@@ -226,12 +226,12 @@ class WorkflowController(object):
 
     def __del__(self):
         print('del WorkflowController')
-        self.disconnect()
-        try:
-            import gc
-            gc.collect()
-        except Exception:
-            pass
+        self.stop_engine()
+        #try:
+            #import gc
+            #gc.collect()
+        #except Exception:
+            #pass
 
     def disconnect(self):
         '''
@@ -240,9 +240,26 @@ class WorkflowController(object):
         '''
         if self._connection:
             self._connection.stop()
+            self._connection = None
 
     def stop_engine(self):
-        self._engine_proxy.stop()
+        if hasattr(self, '_transfer_monitoring') \
+                and self._transfer_monitoring is not None:
+            del self._transfer_monitoring
+        if hasattr(self, '_transfer') and self._transfer is not None:
+            del self._transfer
+        if hasattr(self, '_transfer_stdouterr') \
+                and self._transfer_stdouterr is not None:
+            del self._transfer_stdouterr
+        if hasattr(self, 'engine_config_proxy') \
+                and self.engine_config_proxy is not None:
+            del self.engine_config_proxy
+        if hasattr(self, 'scheduler_config') \
+                and self.scheduler_config is not None:
+            del self.scheduler_config
+        if self._engine_proxy and self._engine_proxy is not None:
+            self._engine_proxy.stop()
+            self._engine_proxy = None
         self.disconnect()
 
     # SUBMISSION / REGISTRATION ####################################

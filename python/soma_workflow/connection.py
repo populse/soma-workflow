@@ -536,11 +536,15 @@ class RemoteConnection(object):
         For test purpose only !
         '''
         print('RemoteConnection.stop')
+        if self.__connection_holder is not None:
+            self.__connection_holder.stop()
+            self.__connection_holder = None
         if self.__tunnel is not None:
             self.__tunnel.shutdown()
-        self.__tunnel = None
-        self.__connection_holder.stop()
-        self.__transport.close()
+            self.__tunnel = None
+        if self.__transport is not None:
+            self.__transport.close()
+            self.__transport = None
 
     def get_workflow_engine(self):
         return self.workflow_engine
@@ -848,18 +852,23 @@ class ConnectionHolder(threading.Thread):
 
     def __init__(self, connectionChecker):
         threading.Thread.__init__(self)
+        self.lock = threading.RLock()
         self.setDaemon(True)
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
 
     def __del__(self):
-        print('del ConnectionHolder')
         self.stop()
+        self.join()
+
+    def is_stopped(self):
+        with self.lock:
+            return self.stopped
 
     def run(self):
         self.stopped = False
-        while not self.stopped:
+        while not self.is_stopped():
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
@@ -871,7 +880,8 @@ class ConnectionHolder(threading.Thread):
         print('ConnectionHolder stopped.')
 
     def stop(self):
-        self.stopped = True
+        with self.lock:
+            self.stopped = True
 
 
 class Tunnel(threading.Thread):
@@ -965,7 +975,7 @@ class Tunnel(threading.Thread):
                 raise
 
         def finish(self):
-            print('Channel closed from %r' % (self.request.getpeername(),))
+            print('Channel closed from %r' % (self.request.getpeername(), ))
             self.__chan.close()
             self.request.close()
             del self.__chan
