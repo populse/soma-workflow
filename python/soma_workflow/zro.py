@@ -6,8 +6,8 @@
 
 '''
 from __future__ import print_function
-
 from __future__ import absolute_import
+
 try:
     import six.moves.cPickle as pickle
 except ImportError:
@@ -17,6 +17,8 @@ import zmq
 import logging
 import threading
 import sys
+import weakref
+import time
 
 # For some reason the zmq bind_to_random_port did not work with
 # one of the version of zmq that we are using. Therfore we have
@@ -154,7 +156,7 @@ class Proxy(object):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         # To avoid multiple threads using the socket at the same time
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         # Deux cas: ou uri est un bytes object ou il est du type str
         if type(uri) == type(b'bytes type'):
             (classname, object_id, self._port) = uri.split(b':')
@@ -188,44 +190,107 @@ class Proxy(object):
                      + str(self._port))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
+        self.timeout = -1
+        self.running_methods = set()
+
+    def __del__(self):
+        # kill all running methods because the proxy / connection is destroyed.
+        print('del Proxy', self.classname, self)
+        def get_running(self):
+            with self.lock:
+                if self.running_methods:
+                    return next(iter(self.running_methods))
+                return None
+        while True:
+            method = get_running(self)
+            if method is None:
+                break
+            print('    interrupt method:', method.method)
+            method.interrupt()
 
     def __getattr__(self, method_name):
+        if method_name in self.__dict__:
+            return self.__dict__[method_name]
         logger = logging.getLogger('database.ObjectServer')
         logger.debug("On class:               " + self.classname)
         logger.debug("method called:          " + method_name)
-        return ProxyMethod(self, method_name)
+        with self.lock:
+            method = ProxyMethod(self, method_name)
+            self.running_methods.add(method)
+        return method
+
+    def interrupt_after(self, timeout):
+        with self.lock:
+            self.timeout = timeout
 
 
 class ProxyMethod(object):
 
     def __init__(self, proxy, method):
-        self.proxy = proxy
+        self.proxy = weakref.proxy(proxy)
         self.method = method
+        self.stop_request = False
 
     def __call__(self, *args, **kwargs):
-        logger = logging.getLogger('database.ObjectServer')
-        self.proxy.lock.acquire()
         try:
-            self.proxy.socket.send(
-                pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
-        except Exception as e:
-            logger.exception(e)
-            print("Exception occurred while calling a remote object!")
-            print(e)
-        result = pickle.loads(self.proxy.socket.recv())
-        logger.debug("remote call result:     " + str(result))
-        self.proxy.lock.release()
+            timeout = 2000  # ms
+            logger = logging.getLogger('database.ObjectServer')
+            #self.proxy.lock.acquire()
+            with self.proxy.lock:
+                try:
+                    self.proxy.socket.send(
+                        pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
+                except Exception as e:
+                    logger.exception(e)
+                    print("Exception occurred while calling a remote object: %s.%s(*%s, **%s)"
+                          % (self.proxy.classname, self.method, repr(args),
+                          repr(kwargs)))
+                    print(e)
+            done = False
+            t0 = time.time()
+            while not done:
+                with self.proxy.lock:
+                    poll_res = self.proxy.socket.poll(timeout, zmq.POLLIN)
+                if poll_res:
+                    done = True
+                    with self.proxy.lock:
+                        msg = self.proxy.socket.recv(zmq.NOBLOCK)
+                with self.proxy.lock:
+                    if self.stop_request or (self.proxy.timeout >= 0 \
+                            and time.time() - t0 > self.proxy.timeout):
+                        done = True
+                        raise RuntimeError(
+                            'Connection timeout in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
+                            % (self.proxy.classname, self.method, repr(args),
+                              repr(kwargs)))
+            result = pickle.loads(msg)
+            logger.debug("remote call result:     " + str(result))
 
-        if isinstance(result, ReturnException):
-            logger.error('ZRO proxy returned an exception: '
-                         + str(result.exc_info[1]))
-            logger.error(''.join(traceback.format_stack()))
-            if hasattr(result.exc_info[1], 'server_traceback'):
-                logger.error('exception remote traceback:'
-                             + result.exc_info[1].server_traceback)
-            else:
-                logger.error('exception traceback: '
-                             + str(result.exc_info[2]))
-            raise result.exc_info[1]
+            if isinstance(result, ReturnException):
+                logger.error('ZRO proxy returned an exception: '
+                            + str(result.exc_info[1]))
+                logger.error(''.join(traceback.format_stack()))
+                if hasattr(result.exc_info[1], 'server_traceback'):
+                    logger.error('exception remote traceback:'
+                                + result.exc_info[1].server_traceback)
+                else:
+                    logger.error('exception traceback: '
+                                + str(result.exc_info[2]))
+                raise result.exc_info[1]
 
-        return result
+            return result
+
+        finally:
+            with self.proxy.lock:
+                self.proxy.running_methods.remove(self)
+                if self.stop_request:
+                    self.stop_request = False
+
+    def interrupt(self):
+        with self.proxy.lock:
+            self.stop_request = True
+        done = False
+        while not done:
+            with self.proxy.lock:
+                if not self.stop_request:
+                    done = True
