@@ -24,7 +24,8 @@ def debug(sig, frame):
 
     #pdb.set_trace()
 
-signal.signal(signal.SIGUSR1, debug)
+if not sys.platform.startswith('win'):
+    signal.signal(signal.SIGUSR1, debug)
 
 res = True
 
