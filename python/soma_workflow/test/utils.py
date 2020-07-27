@@ -35,7 +35,9 @@ def get_user_id(resource_id, config):
     password = None
     if config.get_mode() == 'remote':
         sys.stdout.write("Remote connection to %s\n" % resource_id)
-        default_login = getpass.getuser()
+        default_login = config.get_login()
+        if not default_login:
+            default_login = getpass.getuser()
         sys.stdout.write("Login (default: %s): " % default_login)
         sys.stdout.flush()
         login = sys.stdin.readline()
