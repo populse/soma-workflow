@@ -16,7 +16,8 @@ import tempfile
 import socket
 
 from soma_workflow.client import WorkflowController
-from soma_workflow.configuration import Configuration, LIGHT_MODE
+from soma_workflow.configuration import Configuration, LIGHT_MODE, \
+    change_soma_workflow_directory
 from soma_workflow.test.utils import get_user_id
 from soma_workflow.test.utils import suppress_stdout
 
@@ -70,10 +71,8 @@ class WorkflowTest(unittest.TestCase):
             print('making non-temporary directory: %s' % tmpdb,
                   file=sys.stderr)
         self.soma_workflow_temp_dir = tmpdb
-        swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
-            % (socket.gethostname(), tmpdb)
-        Configuration.search_config_path \
-            = staticmethod(lambda: six.StringIO(swf_conf))
+        self.old_search_config_path = Configuration.search_config_path
+        change_soma_workflow_directory(tmpdb, socket.gethostname())
 
         self.temporaries = [self.wf_examples.output_dir]
 
@@ -107,6 +106,8 @@ class WorkflowTest(unittest.TestCase):
                         pass
                 else:
                     print('leaving file: %s' % t, file=sys.stderr)
+        Configuration.search_config_path \
+            = staticmethod(self.old_search_config_path)
 
     def print_jobs(self, jobs, title='Jobs', file=sys.stderr):
         print('\n%s:' % title, self.wf_ctrl.jobs(jobs), file=file)
@@ -143,8 +144,12 @@ class WorkflowTest(unittest.TestCase):
             "********* soma-workflow tests: %s *********\n" % cls.__name__)
 
         config_file_path = Configuration.search_config_path()
-    #    sys.stdout.write("Configuration file: " + config_file_path + "\n")
         resource_ids = Configuration.get_configured_resources(config_file_path)
+
+        enabled_resources = getattr(WorkflowTest, 'enabled_resources', None)
+        enable_resources = []
+        if not hasattr(WorkflowTest, 'resource_pass'):
+            WorkflowTest.resource_pass = {}
 
         for resource_id in resource_ids:
             sys.stdout.write("============ Resource : " + resource_id +
@@ -156,17 +161,26 @@ class WorkflowTest(unittest.TestCase):
                                  'non-interactive mode\n' % resource_id)
                 continue  # skip login/password ask
             if interactive:
-                sys.stdout.write("Do you want to test the resource "
-                                 "%s (Y/n) ? " % resource_id)
-                sys.stdout.flush()
-                test_resource = sys.stdin.readline()
-                if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
-                    # Skip the resource
-                    sys.stdout.write('Resource %s is not tested \n'
-                                     % resource_id)
+                if enabled_resources is None:
+                    sys.stdout.write("Do you want to test the resource "
+                                    "%s (Y/n) ? " % resource_id)
                     sys.stdout.flush()
-                    continue
-            (login, password) = get_user_id(resource_id, config)
+                    test_resource = sys.stdin.readline()
+                    if test_resource.strip() in ['no', 'n', 'N', 'No', 'NO']:
+                        # Skip the resource
+                        sys.stdout.write('Resource %s is not tested \n'
+                                        % resource_id)
+                        sys.stdout.flush()
+                        continue
+                    enable_resources.append(resource_id)
+                    (login, password) = get_user_id(resource_id, config)
+                    WorkflowTest.resource_pass[resource_id] = (login, password)
+                else:
+                    if resource_id not in enabled_resources:
+                        continue
+                    (login, password) = WorkflowTest.resource_pass[resource_id]
+            else:
+                (login, password) = get_user_id(resource_id, config)
 
             if config.get_mode() == LIGHT_MODE:
                 # use a temporary sqlite database in soma-workflow to avoid
@@ -254,6 +268,10 @@ class WorkflowTest(unittest.TestCase):
                         print('temporary files kept:')
                         print('databse file:', config._database_file)
                         print('transfers:', config._transfered_file_dir)
+
+        if interactive and enabled_resources is None:
+            print('set enabled_resources')
+            WorkflowTest.enabled_resources = enable_resources
 
     @classmethod
     def run_test_function(cls, debug=False, interactive=False, **kwargs):
