@@ -536,15 +536,30 @@ class RemoteConnection(object):
         For test purpose only !
         '''
         print('RemoteConnection.stop')
-        if self.__connection_holder is not None:
-            self.__connection_holder.stop()
-            self.__connection_holder = None
-        if self.__tunnel is not None:
-            self.__tunnel.shutdown()
-            self.__tunnel = None
-        if self.__transport is not None:
-            self.__transport.close()
-            self.__transport = None
+        try:
+            self.__connection_holder
+        except AttributeError:
+            pass
+        else:
+            if self.__connection_holder is not None:
+                self.__connection_holder.stop()
+                self.__connection_holder = None
+        try:
+            self.__tunnel
+        except AttributeError:
+            pass
+        else:
+            if self.__tunnel is not None:
+                self.__tunnel.shutdown()
+                self.__tunnel = None
+        try:
+            self.__transport
+        except AttributeError:
+            pass
+        else:
+            if self.__transport is not None:
+                self.__transport.close()
+                self.__transport = None
 
     def get_workflow_engine(self):
         return self.workflow_engine

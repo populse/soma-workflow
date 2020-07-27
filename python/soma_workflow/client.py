@@ -258,6 +258,8 @@ class WorkflowController(object):
                 and self.scheduler_config is not None:
             del self.scheduler_config
         if self._engine_proxy and self._engine_proxy is not None:
+            if hasattr(self._engine_proxy, 'interrupt_after'):
+                self._engine_proxy.interrupt_after(10.)
             self._engine_proxy.stop()
             self._engine_proxy = None
         self.disconnect()
