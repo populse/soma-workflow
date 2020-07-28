@@ -82,7 +82,7 @@ class JobTemplate(object):
                 # know  another way.
                 redirect = ' < "%s"' % self.inputPath
 
-            f.write('"' + '" "'.join(escaped_command) + redirect + '"\n')
+            f.write('"' + '" "'.join(escaped_command) + '"' + redirect + '\n')
         logger = logging.getLogger('ljp.pbspro_scheduler')
         logger.debug('build_pbs_script: %s' % script_file)
         return script_file
