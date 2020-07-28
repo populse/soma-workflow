@@ -35,6 +35,34 @@ if __name__ == "__main__":
     from soma_workflow import subprocess
     import json
 
+    # DEBUGGING
+
+    def debug_stack(sig, frame):
+        """Interrupt running process, and provide a traceback in a file /tmp/
+        traceback_<pid>."""
+        import traceback
+        import threading
+
+        dump_filename = '/tmp/traceback_%d' % os.getpid()
+        with open(dump_filename) as f:
+            id2name = dict([(th.ident, th.name)
+                            for th in threading.enumerate()])
+            code = []
+            for threadId, stack in sys._current_frames().items():
+                code.append("\n=== Thread: %s(%d) ==="
+                            % (id2name.get(threadId,""), threadId))
+                for filename, lineno, name, line \
+                        in traceback.extract_stack(stack):
+                    code.append('File: "%s", line %d, in %s'
+                                % (filename, lineno, name))
+                    if line:
+                        code.append("  %s" % (line.strip()))
+            f.write("\n".join(code))
+
+    if not sys.platform.startswith('win'):
+        signal.signal(signal.SIGUSR1, debug_stack)
+
+
     class VersionError(Exception):
 
         def __init__(self, msg, py_ver):

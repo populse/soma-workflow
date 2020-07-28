@@ -985,7 +985,8 @@ class Tunnel(threading.Thread):
                             logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                          "the data, could potentially be a problem")
                         self.request.send(data)
-            except:  # noqa: E722
+            except Exception as e:  # noqa: E722
+                print('-- Handler exception:', e, file=sys.stderr)
                 self.shutdown_server()
                 raise
 
@@ -1000,6 +1001,7 @@ class Tunnel(threading.Thread):
             # Tunnel.server_instance.shutdown()
             # try to determine which socket server has called us,
             # and shut it down
+            print('** shutdown_server from handler **', file=sys.stderr)
             import gc
             import inspect
             frames = [x.f_back for x in gc.get_referrers(self)
@@ -1008,6 +1010,7 @@ class Tunnel(threading.Thread):
                        if 'self' in x.f_locals
                           and isinstance(x.f_locals['self'],
                                          Tunnel.ForwardServer)]
+            print('** shutdown servers:', servers, file=sys.stderr)
             for server in servers:
                 server.shutdown()
 
@@ -1022,8 +1025,8 @@ class Tunnel(threading.Thread):
     def serve_forever(self):
         try:
             super(Tunnel, self).serve_forever()
-        except:  # noqa: E722
-            print('EXCEPT')
+        except Exception as e:  # noqa: E722
+            print('EXCEPT:', e, file=sys.stderr)
             self.shutdown()
             raise
 
@@ -1052,8 +1055,10 @@ class Tunnel(threading.Thread):
         except Exception as e:
             logging.error('Tunnel Error. %s: %s' % (type(e), e))
         logging.warning('Tunnel stopped.')
+        self.shutdown()
 
     def shutdown(self):
+        print('** shutdown tunnel **', self, file=sys.stderr)
         if self.__server is not None:
             self.__server.shutdown()
             self.__server = None
