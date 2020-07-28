@@ -44,7 +44,7 @@ if __name__ == "__main__":
         import threading
 
         dump_filename = '/tmp/traceback_%d' % os.getpid()
-        with open(dump_filename) as f:
+        with open(dump_filename, 'w') as f:
             id2name = dict([(th.ident, th.name)
                             for th in threading.enumerate()])
             code = []
