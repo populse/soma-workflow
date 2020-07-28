@@ -76,7 +76,13 @@ class JobTemplate(object):
             # commandline
             escaped_command = [x.replace('"', '\\"')
                                for x in self.remoteCommand]
-            f.write('"' + '" "'.join(escaped_command) + '"\n')
+            redirect = ''
+            if self.inputPath:
+                # handle stdin redirection. Use bash redirection, I don't
+                # know  another way.
+                redirect = ' < "%s"' % self.inputPath
+
+            f.write('"' + '" "'.join(escaped_command) + redirect + '"\n')
         logger = logging.getLogger('ljp.pbspro_scheduler')
         logger.debug('build_pbs_script: %s' % script_file)
         return script_file
@@ -339,7 +345,7 @@ class PBSProScheduler(Scheduler):
 
             if job.stdin:
                 self.logger.debug("stdin: " + repr(stdin))
-                jobTemplate.inputPath = stdin  # TODO not used. How to specify it ?
+                jobTemplate.inputPath = stdin
 
             working_directory = job.plain_working_directory()
             if working_directory:
