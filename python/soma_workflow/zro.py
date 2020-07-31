@@ -84,7 +84,7 @@ class WorkerThread(threading.Thread):
                     job = self.todo.pop(0)
                     logger.debug('pop job: ' + repr(job))
             if not job:
-                time.sleep(1)
+                time.sleep(0.05)
             else:
                 socket, client, instance, method, args, kwargs = job
                 try:
@@ -170,7 +170,7 @@ class ObjectServer(object):
 
     def serve_forever(self):
         logger = logging.getLogger('zro.ObjectServer')
-        interval = 300
+        interval = 100
         frontend = self.context.socket(zmq.ROUTER)
         frontend.bind("tcp://*:" + str(self.port))
         poller = zmq.Poller()
