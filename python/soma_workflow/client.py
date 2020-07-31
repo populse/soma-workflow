@@ -260,7 +260,10 @@ class WorkflowController(object):
         if self._engine_proxy and self._engine_proxy is not None:
             if hasattr(self._engine_proxy, 'interrupt_after'):
                 self._engine_proxy.interrupt_after(10.)
-            self._engine_proxy.stop()
+            try:
+                self._engine_proxy.stop()
+            except Exception:
+                pass  # cleanup anyway
             self._engine_proxy = None
         self.disconnect()
 
