@@ -53,6 +53,32 @@ class WorkflowTest(unittest.TestCase):
         '''
         cls.path_management = path_management
 
+    @classmethod
+    def setUpClass(cls):
+        #import pdb
+        import signal
+        #import code
+
+        def debug_stack(sig, frame):
+            """Interrupt running process, and provide a python prompt for
+            interactive debugging."""
+            import traceback
+            traceback.print_stack()
+
+            #d={'_frame':frame}         # Allow access to frame object.
+            #d.update(frame.f_globals)  # Unless shadowed by global
+            #d.update(frame.f_locals)
+
+            #i = code.InteractiveConsole(d)
+            #message  = "Signal received : entering python shell.\nTraceback:\n"
+            #message += ''.join(traceback.format_stack(frame))
+            #i.interact(message)
+
+            #pdb.set_trace()
+
+        if not sys.platform.startswith('win'):
+            signal.signal(signal.SIGUSR1, debug_stack)
+
     def setUp(self):
         if self.path_management == self.LOCAL_PATH:
             workflow_examples = WorkflowExamplesLocal()

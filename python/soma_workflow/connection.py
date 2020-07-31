@@ -866,12 +866,15 @@ class ConnectionHolder(threading.Thread):
     '''
 
     def __init__(self, connectionChecker):
+        logger = logging.getLogger('client.ConnectionHolder')
+        logger.debug('init ConnectionHolder')
         threading.Thread.__init__(self)
         self.lock = threading.RLock()
         self.setDaemon(True)
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
+        logger.debug('interval: %f' % self.interval)
 
     def __del__(self):
         self.stop()
@@ -882,17 +885,23 @@ class ConnectionHolder(threading.Thread):
             return self.stopped
 
     def run(self):
-        self.stopped = False
+        logger = logging.getLogger('client.ConnectionHolder')
+        logger.debug('Holder running')
+        with self.lock:
+            self.stopped = False
         while not self.is_stopped():
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
+                logger.debug('life signal emitted')
                 # print('life signal emitted')
             except Exception as e:  # TBC Apparently the exception is not defined anymore
-                print("Connection closed")
+                logger.info('Connection closed.')
+                # print("Connection closed")
                 break
             time.sleep(self.interval)
-        print('ConnectionHolder stopped.')
+        logger.info('ConnectionHolder stopped.')
+        # print('ConnectionHolder stopped.')
 
     def stop(self):
         with self.lock:
@@ -931,6 +940,7 @@ class Tunnel(threading.Thread):
                                       % (self.channel_end_port, repr(e)))
 
             if self.__chan is None:
+                logging.exception("channel is null")
                 self.shutdown_server()
                 raise ConnectionError(
                     'Incoming request to %s:%d was rejected by the SSH server.'
@@ -991,17 +1001,19 @@ class Tunnel(threading.Thread):
                 raise
 
         def finish(self):
-            print('Channel closed from %r' % (self.request.getpeername(), ))
+            # print('Channel closed from %r' % (self.request.getpeername(), ))
             self.__chan.close()
             self.request.close()
             del self.__chan
-            self.shutdown_server()
 
         def shutdown_server(self):
             # Tunnel.server_instance.shutdown()
             # try to determine which socket server has called us,
             # and shut it down
             print('** shutdown_server from handler **', file=sys.stderr)
+            #import traceback
+            #traceback.print_stack()
+
             import gc
             import inspect
             frames = [x.f_back for x in gc.get_referrers(self)
