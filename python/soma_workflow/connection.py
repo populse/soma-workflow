@@ -517,6 +517,9 @@ class RemoteConnection(object):
             raise ConnectionError("The ssh tunnel could not be started within"
                                   + repr(maxattemps) + " attempts.")
 
+        # reset time check to avoid a timeout soon.
+        self.connection_checker.signalConnectionExist()
+
         # create the connection holder object for #
         # a clean disconnection in any case      #
         logging.info("Launching the connection holder thread")
