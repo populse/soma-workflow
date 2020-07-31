@@ -31,6 +31,7 @@ class JobTemplate(object):
         self.remoteCommand = remoteCommand
         self.outputPath = outputPath
         self.errorPath = errorPath
+        self.inputPath = None
         self.jobName = ''
         self.queue = None
         self.env = None
