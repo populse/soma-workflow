@@ -518,7 +518,7 @@ class RemoteConnection(object):
                                   + repr(maxattemps) + " attempts.")
 
         # reset time check to avoid a timeout soon.
-        self.connection_checker.signalConnectionExist()
+        connection_checker.signalConnectionExist()
 
         # create the connection holder object for #
         # a clean disconnection in any case      #
