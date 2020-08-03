@@ -216,7 +216,7 @@ class Proxy(object):
         logger.debug("method called:          " + method_name)
         with self.lock:
             method = ProxyMethod(self, method_name)
-            self.running_methods.add(method)
+            #self.running_methods.add(method)
         return method
 
     def interrupt_after(self, timeout):
@@ -232,59 +232,86 @@ class ProxyMethod(object):
         self.stop_request = False
 
     def __call__(self, *args, **kwargs):
+        logger = logging.getLogger('database.ObjectServer')
+        self.proxy.lock.acquire()
         try:
-            timeout = 2000  # ms
-            logger = logging.getLogger('database.ObjectServer')
-            #self.proxy.lock.acquire()
-            with self.proxy.lock:
-                try:
-                    self.proxy.socket.send(
-                        pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
-                except Exception as e:
-                    logger.exception(e)
-                    print("Exception occurred while calling a remote object: %s.%s(*%s, **%s)"
-                          % (self.proxy.classname, self.method, repr(args),
-                          repr(kwargs)))
-                    print(e)
-            done = False
-            t0 = time.time()
-            while not done:
-                with self.proxy.lock:
-                    poll_res = self.proxy.socket.poll(timeout, zmq.POLLIN)
-                if poll_res:
-                    done = True
-                    with self.proxy.lock:
-                        msg = self.proxy.socket.recv(zmq.NOBLOCK)
-                with self.proxy.lock:
-                    if self.stop_request or (self.proxy.timeout >= 0 \
-                            and time.time() - t0 > self.proxy.timeout):
-                        done = True
-                        raise RuntimeError(
-                            'Connection timeout in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
-                            % (self.proxy.classname, self.method, repr(args),
-                              repr(kwargs)))
-            result = pickle.loads(msg)
-            logger.debug("remote call result:     " + str(result))
+            self.proxy.socket.send(
+                pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
+        except Exception as e:
+            logger.exception(e)
+            print("Exception occurred while calling a remote object!")
+            print(e)
+        result = pickle.loads(self.proxy.socket.recv())
+        logger.debug("remote call result:     " + str(result))
+        self.proxy.lock.release()
 
-            if isinstance(result, ReturnException):
-                logger.error('ZRO proxy returned an exception: '
-                            + str(result.exc_info[1]))
-                logger.error(''.join(traceback.format_stack()))
-                if hasattr(result.exc_info[1], 'server_traceback'):
-                    logger.error('exception remote traceback:'
-                                + result.exc_info[1].server_traceback)
-                else:
-                    logger.error('exception traceback: '
-                                + str(result.exc_info[2]))
-                raise result.exc_info[1]
+        if isinstance(result, ReturnException):
+            logger.error('ZRO proxy returned an exception: '
+                         + str(result.exc_info[1]))
+            logger.error(''.join(traceback.format_stack()))
+            if hasattr(result.exc_info[1], 'server_traceback'):
+                logger.error('exception remote traceback:'
+                             + result.exc_info[1].server_traceback)
+            else:
+                logger.error('exception traceback: '
+                             + str(result.exc_info[2]))
+            raise result.exc_info[1]
 
-            return result
+        return result
 
-        finally:
-            with self.proxy.lock:
-                self.proxy.running_methods.remove(self)
-                if self.stop_request:
-                    self.stop_request = False
+        #try:
+            #timeout = 2000  # ms
+            #logger = logging.getLogger('database.ObjectServer')
+            ##self.proxy.lock.acquire()
+            #with self.proxy.lock:
+                #try:
+                    #self.proxy.socket.send(
+                        #pickle.dumps([self.proxy.classname, self.proxy.object_id, self.method, args, kwargs]))
+                #except Exception as e:
+                    #logger.exception(e)
+                    #print("Exception occurred while calling a remote object: %s.%s(*%s, **%s)"
+                          #% (self.proxy.classname, self.method, repr(args),
+                          #repr(kwargs)))
+                    #print(e)
+            #done = False
+            #t0 = time.time()
+            #while not done:
+                #with self.proxy.lock:
+                    #poll_res = self.proxy.socket.poll(timeout, zmq.POLLIN)
+                #if poll_res:
+                    #done = True
+                    #with self.proxy.lock:
+                        #msg = self.proxy.socket.recv(zmq.NOBLOCK)
+                #with self.proxy.lock:
+                    #if self.stop_request or (self.proxy.timeout >= 0 \
+                            #and time.time() - t0 > self.proxy.timeout):
+                        #done = True
+                        #raise RuntimeError(
+                            #'Connection timeout in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
+                            #% (self.proxy.classname, self.method, repr(args),
+                              #repr(kwargs)))
+            #result = pickle.loads(msg)
+            #logger.debug("remote call result:     " + str(result))
+
+            #if isinstance(result, ReturnException):
+                #logger.error('ZRO proxy returned an exception: '
+                            #+ str(result.exc_info[1]))
+                #logger.error(''.join(traceback.format_stack()))
+                #if hasattr(result.exc_info[1], 'server_traceback'):
+                    #logger.error('exception remote traceback:'
+                                #+ result.exc_info[1].server_traceback)
+                #else:
+                    #logger.error('exception traceback: '
+                                #+ str(result.exc_info[2]))
+                #raise result.exc_info[1]
+
+            #return result
+
+        #finally:
+            #with self.proxy.lock:
+                #self.proxy.running_methods.remove(self)
+                #if self.stop_request:
+                    #self.stop_request = False
 
     def interrupt(self):
         with self.proxy.lock:
