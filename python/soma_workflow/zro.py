@@ -19,6 +19,7 @@ import threading
 import sys
 import weakref
 import time
+import six
 
 # For some reason the zmq bind_to_random_port did not work with
 # one of the version of zmq that we are using. Therfore we have
@@ -364,13 +365,28 @@ class Proxy(object):
 
 class ProxyMethod(object):
 
+    # per-thread socket
+    sockets = {}
+    lock = threading.RLock()
+
     def __init__(self, proxy, method):
         self.proxy = weakref.proxy(proxy)
         self.method = method
         self.stop_request = False
 
     def new_socket(self):
-        socket = self.proxy.context.socket(zmq.REQ)
+        thread_names = set([thread.name for thread in threading.enumerate()])
+        with ProxyMethod.lock:
+            ProxyMethod.sockets = dict(
+                [(thread, socket)
+                 for thread, socket in six.iteritems(ProxyMethod.sockets)
+                 if thread in thread_names])
+            thread = threading.current_thread().name
+            socket = ProxyMethod.sockets.get(thread)
+            if socket:
+                return socket
+            socket = self.proxy.context.socket(zmq.REQ)
+            ProxyMethod.sockets[thread] = socket
         # caveat: note that connect will succeed even if there is
         # no port waiting for a connection, as such you have to
         # check yourself that the connection has succeeded
