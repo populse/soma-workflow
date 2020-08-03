@@ -257,7 +257,9 @@ class ObjectServer(object):
             self.must_stop = True
         for cls, obj in self.objects.items():
             for instance in obj.values():
-                instance.interrupt_after(0)
+                if hasattr(instance, 'interrupt_after'):
+                    # object is itself a proxy to another server (database)
+                    instance.interrupt_after(0)
         for worker in self.workers:
             if worker.running():
                 with worker.lock:
