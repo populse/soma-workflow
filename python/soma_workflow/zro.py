@@ -68,6 +68,7 @@ class WorkerThread(threading.Thread):
         self.replies = []
         self.stop_request = False
         self._hold_running = True  # keep alive until we submit a job
+        self.event = threading.Event()
 
     def running(self):
         with self.lock:
@@ -84,11 +85,16 @@ class WorkerThread(threading.Thread):
         with self.lock:
             self.todo.append(job)
             self._hold_running = False
+            # awaken the thread
+            self.event.set()
 
     def run(self):
         logger = logging.getLogger('zro.ObjectServer')
         logger.debug('worker thread starting: ' + self.worker_id + ' : '
                      + str(self))
+        iddle_t0 = None
+        iddle_t = None
+        iddle_timeout = 30.
         while self.running():
             job = None
             with self.lock:
@@ -96,8 +102,19 @@ class WorkerThread(threading.Thread):
                     job = self.todo.pop(0)
                     logger.debug('pop job: ' + repr(job))
             if not job:
-                time.sleep(0.05)
+                if iddle_t0 is None:
+                    iddle_t0 = time.time()
+                iddle_t = time.time()
+                if (iddle_t - iddle_t0 >= iddle_timeout) \
+                        and not self._hold_running:
+                    # no more jobs for a "long time": stop the thread
+                    logger.debug('stopping iddle worker: ' + self.worker_id)
+                    self.stop_request = True
+                    break
+                self.event.wait(0.05)
             else:
+                self.event.clear()
+                iddle_t0 = None
                 socket, client, instance, method, args, kwargs, call_time \
                     = job
                 pop_time = time.time()
@@ -125,11 +142,8 @@ class WorkerThread(threading.Thread):
                     self.replies.append((socket, client, result,
                                          res_time - call_time))
                     logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
-                    if len(self.todo) == 0 and not self._hold_running:
-                        # no more jobs: stop the thread
-                        logger.debug('stopping worker: ' + self.worker_id)
-                        self.stop_request = True
-                        break
+
+        logger.debug('stopping worker: ' + self.worker_id)
 
 
 class ObjectServer(object):
@@ -279,7 +293,7 @@ class ObjectServer(object):
                 if hasattr(instance, 'interrupt_after'):
                     # object is itself a proxy to another server (database)
                     instance.interrupt_after(0)
-        for worker in self.workers:
+        for worker in self.workers.values():
             if worker.running():
                 with worker.lock:
                     worker.stop_request = True
