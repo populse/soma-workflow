@@ -411,6 +411,9 @@ if __name__ == "__main__":
                 "******** jobs are done ! Shuting down workflow engine ***************************")
             workflow_engine.engine_loop_thread.stop()
             obj_serv.stop()
+            if hasattr(database_server, 'interrupt_after'):
+                # interrupt / disconnect the database server if it's a proxy
+                database_server.interrupt_after(0)
         except Exception as e:
             logger.exception(e)
 

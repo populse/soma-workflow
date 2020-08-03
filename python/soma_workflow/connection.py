@@ -922,6 +922,7 @@ class Tunnel(threading.Thread):
         def setup(self):
             logging.info('Setup : %d' % (self.channel_end_port))
             if not self.ssh_transport.is_active():
+                self.shutdown_server()
                 raise ConnectionError('ssh transport is closed.')
             logging.debug("Tunnel::Handler::Beginning of setup")
             try:
