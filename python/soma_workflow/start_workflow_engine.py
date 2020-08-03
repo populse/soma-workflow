@@ -410,6 +410,7 @@ if __name__ == "__main__":
             logger.info(
                 "******** jobs are done ! Shuting down workflow engine ***************************")
             workflow_engine.engine_loop_thread.stop()
+            obj_serv.stop()
         except Exception as e:
             logger.exception(e)
 

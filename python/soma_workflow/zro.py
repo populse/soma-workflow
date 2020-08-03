@@ -86,12 +86,13 @@ class WorkerThread(threading.Thread):
             if not job:
                 time.sleep(0.05)
             else:
-                socket, client, instance, method, args, kwargs = job
+                socket, client, instance, method, args, kwargs, call_time \
+                    = job
+                pop_time = time.time()
                 try:
                     method_code = getattr(instance, method)
-                    logger.debug('calling: ' + repr(method_code))
+                    logger.debug('calling: ' + repr(method_code) + 'after %f s' % (pop_time - call_time))
                     result = method_code(*args, **kwargs)
-                    logger.debug('result: ' + repr(result))
                 except Exception as e:
                     logger.exception(e)
                     etype, evalue, etb = sys.exc_info()
@@ -106,8 +107,10 @@ class WorkerThread(threading.Thread):
                     result = ReturnException(e, (etype, evalue,
                                                  traceback.format_exc()))
 
+                res_time = time.time()
+                logger.debug('result (%f s): ' % (res_time - pop_time) + repr(result))
                 with self.lock:
-                    self.replies.append((socket, client, result))
+                    self.replies.append((socket, client, result, res_time - call_time))
                     logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
                     if len(self.todo) == 0:
                         # no more jobs: stop the thread
@@ -151,6 +154,12 @@ class ObjectServer(object):
         logger = logging.getLogger('zro.ObjectServer')
         logger.debug("Initialising object server on port: " + repr(self.port))
         self.workers = {}
+        self.lock = threading.RLock()
+        self.stop_request = False
+
+    def must_stop(self):
+        with self.lock:
+            return self.stop_request
 
     def register(self, object):
         """The full socket adress should be provided
@@ -178,7 +187,7 @@ class ObjectServer(object):
         logger.debug("ObS0:" + str(self.port)[-3:]
                      + ":Waiting for incoming data")
         # logger.setLevel(logging.DEBUG)
-        while True:
+        while not self.must_stop():
             try:
                 #  Wait for next request from client
                 #logger.debug("ObS0:" + str(self.port)[-3:]
@@ -203,7 +212,7 @@ class ObjectServer(object):
                             worker.todo.append(
                                 (zsocket, client,
                                 self.objects[classname][object_id],
-                                method, args, kwargs))
+                                method, args, kwargs, time.time()))
                     else:
                         logger.info(
                             "object not in the list of objects: %s / %s"
@@ -220,8 +229,8 @@ class ObjectServer(object):
                         if worker.replies:
                             replies = list(worker.replies)
                     for reply in replies:
-                        zsocket, client, result = reply
-                        logger.debug("ObS2:" + str(self.port)[-3:] + ": result is: "
+                        zsocket, client, result, exc_time = reply
+                        logger.debug("ObS2:" + str(self.port)[-3:] + " (%f s): result is: " % exc_time
                                 + repr(result))
                         zsocket.send_multipart((client, '',
                                                pickle.dumps(result)))
@@ -242,6 +251,19 @@ class ObjectServer(object):
         self.workers[worker_id] = worker
         worker.start()
         return worker
+
+    def stop(self):
+        with self.lock:
+            self.must_stop = True
+        for cls, obj in self.objects.items():
+            for instance in obj.values():
+                instance.interrupt_after(0)
+        for worker in self.workers:
+            if worker.running():
+                with worker.lock:
+                    worker.stop_request = True
+                worker.join()
+        self.workers = {}
 
 
 class Proxy(object):
@@ -361,11 +383,13 @@ class ProxyMethod(object):
                         'Disconnected in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
                         % (self.proxy.classname, self.method, repr(args),
                           repr(kwargs)))
-                logger.debug('polling...')
+                logger.debug(self.proxy.classname + ' ' + self.method
+                             + ' polling... timeout: % f' % self.proxy.timeout)
+                t1 = time.time()
                 poll_res = socket.poll(timeout, zmq.POLLIN)
                 if poll_res:
                     done = True
-                    logger.debug('receiving result...')
+                    logger.debug('receiving result... %f' % (time.time() - t1))
                     msg = socket.recv(zmq.NOBLOCK)
                     logger.debug('received: %s' % repr(msg))
                     break
