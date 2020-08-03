@@ -137,7 +137,6 @@ class ObjectServer(object):
     def __init__(self, port=None):
         self.objects = {}
         self.context = zmq.Context()
-        #self.socket = self.context.socket(zmq.REP)
         if not port:
             port = find_free_port()
             # try:
@@ -148,8 +147,6 @@ class ObjectServer(object):
             #                                            max_tries=1200)
             # except Exception as e:
             #     logging.debug("Maximum number of attempt to find a port reached?: " + str(e))
-        # else:
-        #self.socket.bind("tcp://*:" + str(port))
         self.port = port
         logger = logging.getLogger('zro.ObjectServer')
         logger.debug("Initialising object server on port: " + repr(self.port))
@@ -207,7 +204,6 @@ class ObjectServer(object):
                             + classname + " " + object_id + " " + method
                             + " " + repr(args))
                         worker = self.get_worker(thread_id)
-                        #logger.debug('worker: ' + worker.worker_id + ' ' + repr(worker))
                         with worker.lock:
                             worker.todo.append(
                                 (zsocket, client,
@@ -230,7 +226,7 @@ class ObjectServer(object):
                             replies = list(worker.replies)
                     for reply in replies:
                         zsocket, client, result, exc_time = reply
-                        logger.debug("ObS2:" + str(self.port)[-3:] + " (%f s): result is: " % exc_time
+                        logger.debug("ObS2:" + str(self.port)[-3:] + " (%f s): %s result is: " % (exc_time, client)
                                 + repr(result))
                         zsocket.send_multipart((client, '',
                                                pickle.dumps(result)))
@@ -254,7 +250,7 @@ class ObjectServer(object):
 
     def stop(self):
         with self.lock:
-            self.must_stop = True
+            self.stop_request = True
         for cls, obj in self.objects.items():
             for instance in obj.values():
                 if hasattr(instance, 'interrupt_after'):
@@ -278,8 +274,7 @@ class Proxy(object):
 
     def __init__(self, uri):
         self.context = zmq.Context()
-        #self.socket = self.context.socket(zmq.REQ)
-        # To avoid multiple threads using the socket at the same time
+        # To avoid multiple threads using the proxy variables at the same time
         self.lock = threading.RLock()  # FIXME remove this
         # Deux cas: ou uri est un bytes object ou il est du type str
         if type(uri) == type(b'bytes type'):
