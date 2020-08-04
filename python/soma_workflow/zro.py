@@ -116,8 +116,9 @@ class WorkerThread(threading.Thread):
             else:
                 self.event.clear()
                 iddle_t0 = None
-                socket, client, instance, method, args, kwargs, call_time \
+                socket, client, instance, method, args, kwargs, timing \
                     = job
+                call_time, rec_time = timing
                 pop_time = time.time()
                 try:
                     method_code = getattr(instance, method)
@@ -141,7 +142,7 @@ class WorkerThread(threading.Thread):
                 logger.debug('result (%f s): ' % (res_time - pop_time) + repr(result))
                 with self.lock:
                     self.replies.append((socket, client, result,
-                                         res_time - call_time))
+                                         (res_time - call_time, rec_time, call_time, pop_time, res_time)))
                     logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
 
         logger.debug('stopping worker: ' + self.worker_id)
@@ -210,6 +211,8 @@ class ObjectServer(object):
                      + ":Waiting for incoming data")
         init_time = time.time()
         nreq = 0
+        ovh_total = 0.
+        exc_total = 0.
         # logger.setLevel(logging.DEBUG)
         while not self.must_stop():
             try:
@@ -220,6 +223,7 @@ class ObjectServer(object):
                 event = None
                 for zsocket in socks:
                     event = True
+                    t0 = time.time()
                     message = zsocket.recv_multipart()
                     client = message[0]
                     classname, object_id, method, thread_id, args, kwargs \
@@ -235,7 +239,7 @@ class ObjectServer(object):
                             worker.add_job(
                                 (zsocket, client,
                                 self.objects[classname][object_id],
-                                method, args, kwargs, time.time()))
+                                method, args, kwargs, (time.time(), t0)))
                     else:
                         logger.info(
                             "object not in the list of objects: %s / %s"
@@ -253,16 +257,22 @@ class ObjectServer(object):
                             replies = list(worker.replies)
                             worker.replies = []  # vacuum replies list
                     for reply in replies:
-                        zsocket, client, result, exc_time = reply
+                        zsocket, client, result, timimg = reply
+                        exc_time, rec_time, call_time, pop_time, res_time = timimg
                         t = time.time()
                         nreq += 1
-                        logger.debug("ObS2:" + str(self.port)[-3:]
+                        logger.info("ObS2:" + str(self.port)[-3:]
                                      + " (%f s - %d req in %f: %f req/s): %s result is: "
                                      % (exc_time, nreq, t - init_time,
                                         nreq / (t - init_time), repr(client))
                                 + repr(result))
                         zsocket.send_multipart((client, '',
                                                pickle.dumps(result)))
+                        t1 = time.time()
+                        overhead = t1 - rec_time - exc_time
+                        ovh_total += overhead
+                        exc_total += res_time - pop_time
+                        logger.info('req time: %f total, %f recv, %f exec, %f send, %f overhd, %f exc avg, %f ovh avg' % (t1 - rec_time, pop_time - rec_time, res_time - pop_time, t1 - res_time, overhead, exc_total / nreq, ovh_total / nreq))
 
                 for worker_id, worker in ended_workers.items():
                     worker.join()
