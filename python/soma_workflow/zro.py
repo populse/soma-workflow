@@ -61,7 +61,7 @@ class WorkerThread(threading.Thread):
     order to reproduce client threads behavior, and avoid deadlocks.
     """
 
-    def __init__(self, worker_id):
+    def __init__(self, worker_id, context, poller):
         super(WorkerThread, self).__init__()
         self.worker_id = worker_id
         self.lock = threading.RLock()
@@ -70,6 +70,16 @@ class WorkerThread(threading.Thread):
         self.stop_request = False
         self._hold_running = True  # keep alive until we submit a job
         self.event = threading.Event()
+        self.context = context
+        self.poller = poller
+        self.serv_sock = context.socket(zmq.PAIR)
+        self.serv_sock.bind('inproc://%s' % worker_id)
+        logger = logging.getLogger('zro.ObjectServer')
+        logger.info('register inproc socket: %s' % repr(self.serv_sock))
+        self.poller.register(self.serv_sock, zmq.POLLIN)
+
+    def __del__(self):
+        self.poller.unregister(self.serv_sock)
 
     def running(self):
         with self.lock:
@@ -96,6 +106,16 @@ class WorkerThread(threading.Thread):
         iddle_t0 = None
         iddle_t = None
         iddle_timeout = 30.
+
+        logger.info('Worker create zmq context')
+        #context = zmq.Context.instance()
+        context = self.context
+        logger.info('Worker create zmq socket')
+        reply_sock = context.socket(zmq.PAIR)
+        logger.info('Worker connect zmq socket')
+        reply_sock.connect("inproc://%s" % self.worker_id)
+        logger.info('Worker socket OK')
+
         while self.running():
             job = None
             with self.lock:
@@ -118,7 +138,7 @@ class WorkerThread(threading.Thread):
                 iddle_t0 = None
                 socket, client, instance, method, args, kwargs, timing \
                     = job
-                call_time, rec_time = timing
+                call_time, rec_time, rec1_time = timing
                 pop_time = time.time()
                 try:
                     method_code = getattr(instance, method)
@@ -142,7 +162,9 @@ class WorkerThread(threading.Thread):
                 logger.debug('result (%f s): ' % (res_time - pop_time) + repr(result))
                 with self.lock:
                     self.replies.append((socket, client, result,
-                                         (res_time - call_time, rec_time, call_time, pop_time, res_time)))
+                                         (res_time - call_time, rec_time, rec1_time, call_time, pop_time, res_time)))
+                    # wake the communication thread
+                    reply_sock.send('answer available')
                     logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
 
         logger.debug('stopping worker: ' + self.worker_id)
@@ -162,7 +184,7 @@ class ObjectServer(object):
 
     def __init__(self, port=None):
         self.objects = {}
-        self.context = zmq.Context()
+        self.context = zmq.Context.instance()
         if not port:
             port = find_free_port()
             # try:
@@ -179,6 +201,7 @@ class ObjectServer(object):
         self.workers = {}
         self.lock = threading.RLock()
         self.stop_request = False
+        #self.poller = zmq.Poller()
 
     def must_stop(self):
         with self.lock:
@@ -204,15 +227,25 @@ class ObjectServer(object):
         logger = logging.getLogger('zro.ObjectServer')
         interval = 100
         frontend = self.context.socket(zmq.ROUTER)
+        #reply_sock = self.context.socket(zmq.PAIR)
         frontend.bind("tcp://*:" + str(self.port))
+        #reply_sock.bind("inproc://replies")
         poller = zmq.Poller()
+        self.poller = poller
         poller.register(frontend, zmq.POLLIN)
+        #poller.register(reply_sock, zmq.POLLIN)
         logger.debug("ObS0:" + str(self.port)[-3:]
                      + ":Waiting for incoming data")
         init_time = time.time()
         nreq = 0
         ovh_total = 0.
         exc_total = 0.
+        rcv_total = 0.
+        send_total = 0.
+        wait_total = 0.
+        other_total = 0.
+        getwk_total = 0.
+        getres_total = 0.
         # logger.setLevel(logging.DEBUG)
         while not self.must_stop():
             try:
@@ -221,62 +254,83 @@ class ObjectServer(object):
                             #+ ":Waiting for incoming data")
                 socks = dict(poller.poll(interval))
                 event = None
+                #logger.info('socks: %s' % repr(socks))
+                #if socks.get(frontend) == zmq.POLLIN:
                 for zsocket in socks:
-                    event = True
-                    t0 = time.time()
-                    message = zsocket.recv_multipart()
-                    client = message[0]
-                    classname, object_id, method, thread_id, args, kwargs \
-                        = pickle.loads(message[2])
-                    instance = self.objects.get(classname, {}).get(object_id)
-                    if instance:
-                        logger.debug(
-                            "ObS1:" + str(self.port)[-3:] + ":calling "
-                            + classname + " " + object_id + ", thread: " + thread_id + ", client: " + repr(client) + ": " + method
-                            + " " + repr(args))
-                        worker = self.get_worker(thread_id)
-                        with worker.lock:
-                            worker.add_job(
-                                (zsocket, client,
-                                self.objects[classname][object_id],
-                                method, args, kwargs, (time.time(), t0)))
+                    if zsocket is frontend:
+                        event = True
+                        t0 = time.time()
+                        message = frontend.recv_multipart()
+                        client = message[0]
+                        classname, object_id, method, thread_id, args, kwargs \
+                            = pickle.loads(message[2])
+                        instance = self.objects.get(classname, {}).get(object_id)
+                        t01 = time.time()
+                        if instance:
+                            logger.debug(
+                                "ObS1:" + str(self.port)[-3:] + ":calling "
+                                + classname + " " + object_id + ", thread: " + thread_id + ", client: " + repr(client) + ": " + method
+                                + " " + repr(args))
+                            worker = self.get_worker(thread_id)
+                            with worker.lock:
+                                worker.add_job(
+                                    (frontend, client,
+                                    self.objects[classname][object_id],
+                                    method, args, kwargs, (time.time(), t0, t01)))
+                        else:
+                            logger.info(
+                                "object not in the list of objects: %s / %s"
+                                % (classname, object_id))
+
+                    #if socks.get(reply_sock) == zmq.POLLIN:
                     else:
-                        logger.info(
-                            "object not in the list of objects: %s / %s"
-                            % (classname, object_id))
-                        #pass  # TODO
+                        logger.info('answer ready')
+                        dummy_msg = zsocket.recv()
+                        logger.info('message: %s' % repr(dummy_msg))
+                        # poll answers
+                        ended_workers = {}
+                        for worker_id, worker in self.workers.items():
+                            replies = []
+                            with worker.lock:
+                                if not worker.is_alive() or not worker.running():
+                                    ended_workers[worker_id] = worker
+                                if worker.replies:
+                                    replies = list(worker.replies)
+                                    worker.replies = []  # vacuum replies list
+                            for reply in replies:
+                                frontend, client, result, timimg = reply
+                                exc_time, rec_time, rec1_time, call_time, pop_time, res_time = timimg
+                                t = time.time()
+                                nreq += 1
+                                logger.debug("ObS2:" + str(self.port)[-3:]
+                                            + " (%f s - %d req in %f: %f req/s): %s result is: "
+                                            % (exc_time, nreq, t - init_time,
+                                                nreq / (t - init_time), repr(client))
+                                        + repr(result))
+                                t = time.time()
+                                frontend.send_multipart((client, '',
+                                                      pickle.dumps(result)))
+                                t1 = time.time()
+                                overhead = t1 - rec_time - exc_time
+                                ovh_total += overhead
+                                exc_total += res_time - pop_time
+                                rec_dur = rec1_time - rec_time
+                                rcv_total += rec_dur
+                                send_dur = t1 - t
+                                send_total += send_dur
+                                wait_dur = pop_time - call_time
+                                other_dur = overhead - rec_dur - send_dur - wait_dur
+                                other_total += other_dur
+                                getwk_dur = call_time - rec1_time
+                                getres_dur = t - res_time
+                                getwk_total += getwk_dur
+                                getres_total += getres_dur
 
-                # poll answers
-                ended_workers = {}
-                for worker_id, worker in self.workers.items():
-                    replies = []
-                    with worker.lock:
-                        if not worker.is_alive() or not worker.running():
-                            ended_workers[worker_id] = worker
-                        if worker.replies:
-                            replies = list(worker.replies)
-                            worker.replies = []  # vacuum replies list
-                    for reply in replies:
-                        zsocket, client, result, timimg = reply
-                        exc_time, rec_time, call_time, pop_time, res_time = timimg
-                        t = time.time()
-                        nreq += 1
-                        logger.info("ObS2:" + str(self.port)[-3:]
-                                     + " (%f s - %d req in %f: %f req/s): %s result is: "
-                                     % (exc_time, nreq, t - init_time,
-                                        nreq / (t - init_time), repr(client))
-                                + repr(result))
-                        zsocket.send_multipart((client, '',
-                                               pickle.dumps(result)))
-                        t1 = time.time()
-                        overhead = t1 - rec_time - exc_time
-                        ovh_total += overhead
-                        exc_total += res_time - pop_time
-                        logger.info('req time: %f total, %f recv, %f exec, %f send, %f overhd, %f exc avg, %f ovh avg' % (t1 - rec_time, pop_time - rec_time, res_time - pop_time, t1 - res_time, overhead, exc_total / nreq, ovh_total / nreq))
+                                logger.info('req time: %f total, %f recv, %f exec, %f send, %f overhd, %f exc avg, %f ovh avg, %f rcv avg, %f send avg, %f wait avg, %f other avg, %f ovh tot, %d req, %f getwk avg, %f getres avg' % (t1 - rec_time, pop_time - rec_time, res_time - pop_time, t1 - res_time, overhead, exc_total / nreq, ovh_total / nreq, rcv_total / nreq, send_total / nreq, wait_total / nreq, other_total / nreq, ovh_total, nreq, getwk_total / nreq, getres_total / nreq))
 
-                for worker_id, worker in ended_workers.items():
-                    worker.join()
-                    del self.workers[worker_id]
+                        for worker_id, worker in ended_workers.items():
+                            worker.join()
+                            del self.workers[worker_id]
 
             except Exception as e:
                 logger.exception(e)
@@ -285,13 +339,20 @@ class ObjectServer(object):
 
     def get_worker(self, worker_id):
         worker = self.workers.get(worker_id)
+        old_res = None
         if worker:
             with worker.lock:
                 if worker.running():
                     worker.hold_running()
                     return worker
+                old_res = worker.replies
             del self.workers[worker_id]
-        worker = WorkerThread(worker_id)
+        worker = WorkerThread(worker_id, self.context, self.poller)
+        if old_res:
+            # the older worker gets deleted, but it may still hold
+            # unprocessed results. Thus we must keep them in the new worker
+            # for the same thread.
+            worker.replies = old_res
         self.workers[worker_id] = worker
         worker.start()
         return worker
@@ -321,7 +382,7 @@ class Proxy(object):
     """
 
     def __init__(self, uri):
-        self.context = zmq.Context()
+        self.context = zmq.Context.instance()
         # To avoid multiple threads using the proxy variables at the same time
         self.lock = threading.RLock()  # FIXME remove this
         # Deux cas: ou uri est un bytes object ou il est du type str
