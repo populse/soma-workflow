@@ -20,6 +20,7 @@ import sys
 import weakref
 import time
 import six
+import uuid
 
 # For some reason the zmq bind_to_random_port did not work with
 # one of the version of zmq that we are using. Therfore we have
@@ -77,8 +78,9 @@ class WorkerThread(threading.Thread):
         # thread-specific: zmq doesn't send messages on the same receiver
         # from multiple threads, so each threads must register its own.
         self.poller = poller
+        self.uuid = uuid.uuid4()
         self.serv_sock = context.socket(zmq.PAIR)
-        self.serv_sock.bind('inproc://%s' % worker_id)
+        self.serv_sock.bind('inproc://%s' % self.uuid)
         self.poller.register(self.serv_sock, zmq.POLLIN)
 
     def __del__(self):
@@ -114,7 +116,7 @@ class WorkerThread(threading.Thread):
         # connect a socket to the ObjectServer poller to notify answers
         context = self.context
         reply_sock = context.socket(zmq.PAIR)
-        reply_sock.connect("inproc://%s" % self.worker_id)
+        reply_sock.connect("inproc://%s" % self.uuid)
 
         while self.running():
             job = None
