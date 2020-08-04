@@ -71,14 +71,18 @@ class WorkerThread(threading.Thread):
         self._hold_running = True  # keep alive until we submit a job
         self.event = threading.Event()
         self.context = context
+        # we use the ObjectServer poller to register a socket pair. This socket
+        # will send signals when worker job results are available in order to
+        # send results immediately to the clients. The socket here is
+        # thread-specific: zmq doesn't send messages on the same receiver
+        # from multiple threads, so each threads must register its own.
         self.poller = poller
         self.serv_sock = context.socket(zmq.PAIR)
         self.serv_sock.bind('inproc://%s' % worker_id)
-        logger = logging.getLogger('zro.ObjectServer')
-        logger.info('register inproc socket: %s' % repr(self.serv_sock))
         self.poller.register(self.serv_sock, zmq.POLLIN)
 
     def __del__(self):
+        # the socket will be deleted and must not be monitored any longer.
         self.poller.unregister(self.serv_sock)
 
     def running(self):
@@ -107,21 +111,17 @@ class WorkerThread(threading.Thread):
         iddle_t = None
         iddle_timeout = 30.
 
-        logger.info('Worker create zmq context')
-        #context = zmq.Context.instance()
+        # connect a socket to the ObjectServer poller to notify answers
         context = self.context
-        logger.info('Worker create zmq socket')
         reply_sock = context.socket(zmq.PAIR)
-        logger.info('Worker connect zmq socket')
         reply_sock.connect("inproc://%s" % self.worker_id)
-        logger.info('Worker socket OK')
 
         while self.running():
             job = None
             with self.lock:
                 if len(self.todo) != 0:
                     job = self.todo.pop(0)
-                    logger.debug('pop job: ' + repr(job))
+                    #logger.debug('pop job: ' + repr(job))
             if not job:
                 if iddle_t0 is None:
                     iddle_t0 = time.time()
@@ -136,13 +136,12 @@ class WorkerThread(threading.Thread):
             else:
                 self.event.clear()
                 iddle_t0 = None
-                socket, client, instance, method, args, kwargs, timing \
-                    = job
-                call_time, rec_time, rec1_time = timing
-                pop_time = time.time()
+                socket, client, instance, method, args, kwargs = job
+                #call_time, rec_time, rec1_time = timing
+                #pop_time = time.time()
                 try:
                     method_code = getattr(instance, method)
-                    logger.debug('calling: ' + repr(method_code) + 'after %f s' % (pop_time - call_time))
+                    logger.debug('calling: ' + repr(method_code))
                     result = method_code(*args, **kwargs)
                 except Exception as e:
                     logger.exception(e)
@@ -158,14 +157,16 @@ class WorkerThread(threading.Thread):
                     result = ReturnException(e, (etype, evalue,
                                                  traceback.format_exc()))
 
-                res_time = time.time()
-                logger.debug('result (%f s): ' % (res_time - pop_time) + repr(result))
+                #res_time = time.time()
+                #logger.debug('result (%f s): ' % (res_time - pop_time) + repr(result))
+                logger.debug('%s result : %s'
+                             % (repr(method_code), repr(result)))
                 with self.lock:
-                    self.replies.append((socket, client, result,
-                                         (res_time - call_time, rec_time, rec1_time, call_time, pop_time, res_time)))
+                    self.replies.append((socket, client, result))  #,
+                                         #(res_time - call_time, rec_time, rec1_time, call_time, pop_time, res_time)))
                     # wake the communication thread
-                    reply_sock.send('answer available')
-                    logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
+                    reply_sock.send(b'')
+                    #logger.debug('replies: ' + str(len(self.replies)) + ', todo: ' + str(len(self.todo)))
 
         logger.debug('stopping worker: ' + self.worker_id)
 
@@ -173,6 +174,17 @@ class WorkerThread(threading.Thread):
 class ObjectServer(object):
 
     '''
+    ObjectServer runs on server side. It listens to client requests (method
+    calls on a registered object), executes them, and sends back the results.
+
+    Each request may be performed from any thread on client side, and we
+    replicate client threads on server side: each client thread gets a worker
+    thread on server side to process its requests. This way we do not get into
+    deadlocks or out-of-order answers.
+
+    Communications are based on zmq sockets (REQ on client side, ROUTER on
+    server side).
+
     Usage:
     -create an ObjectServer providing a port.
     -register the object you want to access from another
@@ -227,26 +239,25 @@ class ObjectServer(object):
         logger = logging.getLogger('zro.ObjectServer')
         interval = 100
         frontend = self.context.socket(zmq.ROUTER)
-        #reply_sock = self.context.socket(zmq.PAIR)
         frontend.bind("tcp://*:" + str(self.port))
-        #reply_sock.bind("inproc://replies")
         poller = zmq.Poller()
         self.poller = poller
         poller.register(frontend, zmq.POLLIN)
-        #poller.register(reply_sock, zmq.POLLIN)
+
         logger.debug("ObS0:" + str(self.port)[-3:]
                      + ":Waiting for incoming data")
-        init_time = time.time()
-        nreq = 0
-        ovh_total = 0.
-        exc_total = 0.
-        rcv_total = 0.
-        send_total = 0.
-        wait_total = 0.
-        other_total = 0.
-        getwk_total = 0.
-        getres_total = 0.
+        #init_time = time.time()
+        #nreq = 0
+        #ovh_total = 0.
+        #exc_total = 0.
+        #rcv_total = 0.
+        #send_total = 0.
+        #wait_total = 0.
+        #other_total = 0.
+        #getwk_total = 0.
+        #getres_total = 0.
         # logger.setLevel(logging.DEBUG)
+
         while not self.must_stop():
             try:
                 #  Wait for next request from client
@@ -255,17 +266,17 @@ class ObjectServer(object):
                 socks = dict(poller.poll(interval))
                 event = None
                 #logger.info('socks: %s' % repr(socks))
-                #if socks.get(frontend) == zmq.POLLIN:
                 for zsocket in socks:
                     if zsocket is frontend:
                         event = True
-                        t0 = time.time()
+                        #t0 = time.time()
                         message = frontend.recv_multipart()
                         client = message[0]
                         classname, object_id, method, thread_id, args, kwargs \
                             = pickle.loads(message[2])
-                        instance = self.objects.get(classname, {}).get(object_id)
-                        t01 = time.time()
+                        instance = self.objects.get(
+                            classname, {}).get(object_id)
+                        #t01 = time.time()
                         if instance:
                             logger.debug(
                                 "ObS1:" + str(self.port)[-3:] + ":calling "
@@ -276,17 +287,19 @@ class ObjectServer(object):
                                 worker.add_job(
                                     (frontend, client,
                                     self.objects[classname][object_id],
-                                    method, args, kwargs, (time.time(), t0, t01)))
+                                    method, args, kwargs))  #, (time.time(), t0, t01)))
                         else:
                             logger.info(
                                 "object not in the list of objects: %s / %s"
                                 % (classname, object_id))
 
-                    #if socks.get(reply_sock) == zmq.POLLIN:
                     else:
-                        logger.info('answer ready')
+                        # an internal message is received on an inproc socket,
+                        # meaning that an job answer is ready to be sent to
+                        # the client.
+                        #logger.debug('answer ready')
                         dummy_msg = zsocket.recv()
-                        logger.info('message: %s' % repr(dummy_msg))
+                        #logger.info('message: %s' % repr(dummy_msg))
                         # poll answers
                         ended_workers = {}
                         for worker_id, worker in self.workers.items():
@@ -298,35 +311,45 @@ class ObjectServer(object):
                                     replies = list(worker.replies)
                                     worker.replies = []  # vacuum replies list
                             for reply in replies:
-                                frontend, client, result, timimg = reply
-                                exc_time, rec_time, rec1_time, call_time, pop_time, res_time = timimg
-                                t = time.time()
-                                nreq += 1
-                                logger.debug("ObS2:" + str(self.port)[-3:]
-                                            + " (%f s - %d req in %f: %f req/s): %s result is: "
-                                            % (exc_time, nreq, t - init_time,
-                                                nreq / (t - init_time), repr(client))
-                                        + repr(result))
-                                t = time.time()
+                                #frontend, client, result, timimg = reply
+                                frontend, client, result = reply
+                                #exc_time, rec_time, rec1_time, call_time, pop_time, res_time = timimg
+                                #t = time.time()
+                                #nreq += 1
+                                #logger.debug("ObS2:" + str(self.port)[-3:]
+                                            #+ " (%f s - %d req in %f: %f req/s): %s result is: "
+                                            #% (exc_time, nreq, t - init_time,
+                                                #nreq / (t - init_time), repr(client))
+                                        #+ repr(result))
+                                #t = time.time()
+
+                                logger.debug(
+                                    "ObS2:" + str(self.port)[-3:]
+                                    + ": %s result is: " % repr(client)
+                                    + repr(result))
+
+                                # send result
                                 frontend.send_multipart((client, '',
                                                       pickle.dumps(result)))
-                                t1 = time.time()
-                                overhead = t1 - rec_time - exc_time
-                                ovh_total += overhead
-                                exc_total += res_time - pop_time
-                                rec_dur = rec1_time - rec_time
-                                rcv_total += rec_dur
-                                send_dur = t1 - t
-                                send_total += send_dur
-                                wait_dur = pop_time - call_time
-                                other_dur = overhead - rec_dur - send_dur - wait_dur
-                                other_total += other_dur
-                                getwk_dur = call_time - rec1_time
-                                getres_dur = t - res_time
-                                getwk_total += getwk_dur
-                                getres_total += getres_dur
 
-                                logger.info('req time: %f total, %f recv, %f exec, %f send, %f overhd, %f exc avg, %f ovh avg, %f rcv avg, %f send avg, %f wait avg, %f other avg, %f ovh tot, %d req, %f getwk avg, %f getres avg' % (t1 - rec_time, pop_time - rec_time, res_time - pop_time, t1 - res_time, overhead, exc_total / nreq, ovh_total / nreq, rcv_total / nreq, send_total / nreq, wait_total / nreq, other_total / nreq, ovh_total, nreq, getwk_total / nreq, getres_total / nreq))
+                                ## timing debugging code...
+                                #t1 = time.time()
+                                #overhead = t1 - rec_time - exc_time
+                                #ovh_total += overhead
+                                #exc_total += res_time - pop_time
+                                #rec_dur = rec1_time - rec_time
+                                #rcv_total += rec_dur
+                                #send_dur = t1 - t
+                                #send_total += send_dur
+                                #wait_dur = pop_time - call_time
+                                #other_dur = overhead - rec_dur - send_dur - wait_dur
+                                #other_total += other_dur
+                                #getwk_dur = call_time - rec1_time
+                                #getres_dur = t - res_time
+                                #getwk_total += getwk_dur
+                                #getres_total += getres_dur
+
+                                #logger.info('req time: %f total, %f recv, %f exec, %f send, %f overhd, %f exc avg, %f ovh avg, %f rcv avg, %f send avg, %f wait avg, %f other avg, %f ovh tot, %d req, %f getwk avg, %f getres avg' % (t1 - rec_time, pop_time - rec_time, res_time - pop_time, t1 - res_time, overhead, exc_total / nreq, ovh_total / nreq, rcv_total / nreq, send_total / nreq, wait_total / nreq, other_total / nreq, ovh_total, nreq, getwk_total / nreq, getres_total / nreq))
 
                         for worker_id, worker in ended_workers.items():
                             worker.join()
@@ -376,9 +399,10 @@ class ObjectServer(object):
 class Proxy(object):
 
     """
-    The Proxy object is created with the uri of the object
+    The Proxy object is created on client side with the uri of the object
     afterwards you can call any method you want on it,
-    to access variable attributes you will have to create properties (accessors)
+    to access variable attributes you will have to create properties
+    (accessors)
     """
 
     def __init__(self, uri):
