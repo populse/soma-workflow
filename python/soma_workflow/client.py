@@ -997,9 +997,10 @@ class WorkflowController(object):
                     print("WARNING: The file or directory %s doesn't exist "
                           "on the computing resource side." % (engine_path))
             else:  # client_paths
+                engine_dir = os.path.dirname(engine_path)
                 for path in client_paths:
                     relative_path = os.path.basename(path)
-                    r_path = posixpath.join(transfer_id, relative_path)
+                    r_path = posixpath.join(engine_dir, relative_path)
                     if not self._engine_proxy.is_file(r_path) and \
                        not self._engine_proxy.is_dir(r_path):
                         print("WARNING: The file or directory %s doesn't "
@@ -1411,8 +1412,7 @@ class Helper(object):
                 to_transfer.append(engine_path)
             if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
                 engine_path = transfer_info[0]
-                to_transfer.append(engine_path)
-
+                to_transfer.append(repr(engine_path))
         wf_ctrl.transfer_files(to_transfer, buffer_size)
 
     @staticmethod
