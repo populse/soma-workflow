@@ -478,6 +478,10 @@ class RemoteConnection(object):
 
         self.workflow_engine = zro.Proxy(workflow_engine_uri)
         connection_checker = zro.Proxy(connection_checker_uri)
+        # at connection time let 20s to check connection, after that we assume
+        # it's a failure
+        connection_checker.interrupt_after(20.)
+        self.workflow_engine.interrupt_after(20.)
         self.configuration = zro.Proxy(configuration_uri)
 
         if scheduler_config_uri is not None:
@@ -501,6 +505,9 @@ class RemoteConnection(object):
                 attempts = attempts + 1
                 print("Communication through the ssh tunnel. Attempt no " +
                       repr(attempts) + "/" + repr(maxattemps))
+                logging.info(
+                    "Communication through the ssh tunnel. Attempt no " +
+                    repr(attempts) + "/" + repr(maxattemps))
                 # print("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 # print("After calling the remote object")
@@ -508,9 +515,13 @@ class RemoteConnection(object):
             except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
+                logging.info(
+                    "-> Communication through ssh tunnel Failed. %s: %s"
+                    % (type(e), e))
                 time.sleep(1)
             else:
                 print("-> Communication through ssh tunnel OK")
+                logging.info("-> Communication through ssh tunnel OK")
                 tunnelSet = True
 
         if attempts >= maxattemps:
@@ -520,10 +531,17 @@ class RemoteConnection(object):
         # reset time check to avoid a timeout soon.
         connection_checker.signalConnectionExist()
 
+        # now we remove the timeout on the engine because some calls will
+        # block a long time (like wait_wrkflow). The ConnectionHolder will
+        # take care of ensuring the connection is still OK.
+        self.workflow_engine.interrupt_after(-1)
+
         # create the connection holder object for #
         # a clean disconnection in any case      #
         logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
+        self.__connection_holder.disconnect_callbacks.append(
+            self.connection_holder_disconnected)
         self.__connection_holder.start()
         logging.info("End of the initialisation of RemoteConnection.")
 
@@ -545,6 +563,9 @@ class RemoteConnection(object):
             pass
         else:
             if self.__connection_holder is not None:
+                with self.__connection_holder.lock:
+                    # don't play callbabcks again
+                    self.__connection_holder.callbacks = []
                 self.__connection_holder.stop()
                 self.__connection_holder = None
         try:
@@ -563,6 +584,10 @@ class RemoteConnection(object):
             if self.__transport is not None:
                 self.__transport.close()
                 self.__transport = None
+
+    def connection_holder_disconnected(self, holder):
+        # (here we are in the ConnectionHolder thread)
+        self.stop()
 
     def get_workflow_engine(self):
         return self.workflow_engine
@@ -866,6 +891,9 @@ class ConnectionHolder(threading.Thread):
     ''' ConnectionHolder runs on client side, it runs a thread which emits a
         signal to the server every time interval, using a ConnectionChecker
         proxy.
+
+        When the server seems to be disconnected, callbacks can be called
+        (from the monitoring thread) to clean things up.
     '''
 
     def __init__(self, connectionChecker):
@@ -877,7 +905,10 @@ class ConnectionHolder(threading.Thread):
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
+        # if the server doesn't answer within 10s we suppose it is disconnected
+        self.connectionChecker.interrupt_after(10.)
         logger.debug('interval: %f' % self.interval)
+        self.disconnect_callbacks = []
 
     def __del__(self):
         self.stop()
@@ -899,12 +930,19 @@ class ConnectionHolder(threading.Thread):
                 logger.debug('life signal emitted')
                 # print('life signal emitted')
             except Exception as e:  # TBC Apparently the exception is not defined anymore
-                logger.info('Connection closed.')
+                logger.info('Connection closed, with exception: %s' % repr(e))
                 # print("Connection closed")
                 break
             time.sleep(self.interval)
         logger.info('ConnectionHolder stopped.')
         # print('ConnectionHolder stopped.')
+        # possibly do something at disconnection time
+        # (from the holder thread)
+        with self.lock:
+            callbacks = list(self.disconnect_callbacks)
+        for callback in callbacks:
+            logger.info('calling disconnection callback: %s' % repr(callback))
+            callback(self)
 
     def stop(self):
         with self.lock:
