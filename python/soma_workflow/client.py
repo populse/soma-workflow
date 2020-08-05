@@ -178,15 +178,34 @@ class WorkflowController(object):
                 login = self.config.get_login()
             print('cluster address: %s, submission machine: %s, login: %s'
                   % (cluster_address, sub_machine, login))
-            self._connection = connection.RemoteConnection(login,
-                                                           password,
-                                                           cluster_address,
-                                                           sub_machine,
-                                                           resource_id,
-                                                           "",
-                                                           rsa_key_pass,
-                                                           self.config)
-            print("Remote connection established")
+            trial = 0
+            ok = False
+            # several attempts are sometimes needed here:
+            # the paramiko transport and tunnel sometimes does not start
+            # correctly and remains silent (no communication can be done, no
+            # error reported). We must wait for a timeout and the subsequent
+            # exception, then retry, and it often works...
+            while not ok and trial < 3:
+                trial += 1
+                try:
+                    self._connection = connection.RemoteConnection(
+                        login,
+                        password,
+                        cluster_address,
+                        sub_machine,
+                        resource_id,
+                        "",
+                        rsa_key_pass,
+                        self.config)
+                    print("Remote connection established")
+                    ok = True
+                except Exception:
+                    if trial == 2:
+                        raise
+                    logging.info('RemoteConnection failed to establish '
+                                 '- trying again')
+                    import time
+                    time.sleep(1.)
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()

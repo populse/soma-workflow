@@ -436,8 +436,13 @@ class RemoteConnection(object):
                 else:
                     key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
                 self.__transport.auth_publickey(login, key)
-
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
+
+            logging.info(
+                "tunnel creation " + str(login) + "@" + cluster_address +
+                "   port: " + repr(tunnel_entrance_port) + " host: " +
+                str(submitting_machine) + " host port: "
+                + str(remote_object_server_port))
             print("tunnel creation " + str(login) + "@" + cluster_address +
                   "   port: " + repr(tunnel_entrance_port) + " host: " +
                   str(submitting_machine) + " host port: "
@@ -498,7 +503,12 @@ class RemoteConnection(object):
 
         # waiting for the tunnel to be set
         tunnelSet = False
-        maxattemps = 3
+        # several attempts are not needed any longer: we now have a
+        # programmable timeout (set to 20s here) which can wait for the
+        # connection to establish, and retry is in WorkflowController, because
+        # the paramiko transport and tunnel sometimes does not start correctly
+        # and remains silent (no communication can be done, no error reported).
+        maxattemps = 1
         attempts = 0
         while not tunnelSet and attempts < maxattemps:
             try:
@@ -524,7 +534,7 @@ class RemoteConnection(object):
                 logging.info("-> Communication through ssh tunnel OK")
                 tunnelSet = True
 
-        if attempts >= maxattemps:
+        if attempts > maxattemps:
             raise ConnectionError("The ssh tunnel could not be started within"
                                   + repr(maxattemps) + " attempts.")
 
@@ -955,7 +965,7 @@ class Tunnel(threading.Thread):
         daemon_threads = True
         allow_reuse_address = True
 
-    class Handler (socketserver.BaseRequestHandler):
+    class Handler(socketserver.BaseRequestHandler):
 
         def setup(self):
             logging.info('Setup : %d' % (self.channel_end_port))
