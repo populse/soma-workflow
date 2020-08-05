@@ -4,6 +4,13 @@ from __future__ import absolute_import
 
 import sys
 
+if '--debug' in sys.argv[1:]:
+    import logging
+    logging.basicConfig(
+        filename='/tmp/swf_test_log',
+        format="%(asctime)s => %(module)s line %(lineno)s: %(message)s",
+        level=logging.DEBUG)
+
 res = True
 
 import soma_workflow.test.job_tests.test_workflow_api
