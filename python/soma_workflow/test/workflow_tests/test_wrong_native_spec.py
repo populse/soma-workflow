@@ -30,6 +30,7 @@ Workflow test of a wrong native spec of the PBS:
 
 from __future__ import with_statement
 from __future__ import absolute_import
+from __future__ import print_function
 import sys
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE
@@ -79,7 +80,8 @@ class WrongNativeSpecPbsTest(WorkflowTest):
             self.wf_id,
             self.wf_ctrl,
             include_aborted_jobs=True))
-        if self.path_management == self.LOCAL_PATH:
+        if self.path_management == self.LOCAL_PATH \
+                or self.wf_ctrl.get_scheduler_type() != 'pbs':
             self.assertTrue(nb_failed_aborted_jobs == 0,
                             "nb failed jobs including aborted : %i. "
                             "Expected : %i" % (nb_failed_aborted_jobs, 0))

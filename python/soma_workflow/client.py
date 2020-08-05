@@ -252,6 +252,13 @@ class WorkflowController(object):
         #except Exception:
             #pass
 
+    def get_scheduler_type(self):
+        '''
+        Returns the scheduler type in the underlying engine ('local_basic',
+        'pbs', 'pbspro', 'drmaa' ...)
+        '''
+        return self.engine_config_proxy.get_scheduler_type()
+
     def disconnect(self):
         '''
         Simulates a disconnection for TEST PURPOSE ONLY.
