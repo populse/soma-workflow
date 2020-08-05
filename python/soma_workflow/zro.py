@@ -543,10 +543,18 @@ class ProxyMethod(object):
                 if self.stop_request or (self.proxy.timeout >= 0 \
                         and time.time() - t0 > self.proxy.timeout):
                     done = True
-                    raise RuntimeError(
+                    logger.error(
                         'Connection timeout in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
                         % (self.proxy.classname, self.method, repr(args),
-                          repr(kwargs)))
+                           repr(kwargs)))
+                    # reset socket for this thread (by deleting it)
+                    with self.lock:
+                        del ProxyMethod.sockets[thread_id]
+                    raise RuntimeError(
+                        'Connection timeout in ProxyMethod.__call__ for: '
+                        '%s.%s(*%s, **%s)'
+                        % (self.proxy.classname, self.method, repr(args),
+                           repr(kwargs)))
             result = pickle.loads(msg)
             logger.debug("remote call result:     " + str(result))
 
