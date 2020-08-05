@@ -29,6 +29,7 @@ Workflow test of job exception:
 """
 from __future__ import with_statement
 from __future__ import absolute_import
+from __future__ import print_function
 import tempfile
 import os
 import sys
@@ -41,6 +42,9 @@ import soma_workflow.constants as constants
 from soma_workflow.test.utils import identical_files
 from soma_workflow.test.workflow_tests import WorkflowTest
 
+#import logging
+#logging.basicConfig(filename='/tmp/client_log', level=logging.DEBUG)
+
 
 class Exception2Test(WorkflowTest):
 
@@ -52,21 +56,31 @@ class Exception2Test(WorkflowTest):
 
     def test_result(self):
         workflow = self.wf_examples.example_simple_exception2()
+        print('SUBMIT WF...', file=sys.stderr)
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
-            name=self.__class__.__name__)
+            name=self.__class__.__name__,
+            queue='Cati_run4')
+        print('SUBMITTED.', file=sys.stderr)
         # Transfer input files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
+            print('TRANSFER INPUTS...', file=sys.stderr)
             Helper.transfer_input_files(self.wf_id, self.wf_ctrl)
+            print('TRANSFER INPUTS DONE.', file=sys.stderr)
         # Wait for the workflow to finish
+        print('EXEC WORKFLOW...', file=sys.stderr)
         Helper.wait_workflow(self.wf_id, self.wf_ctrl)
+        print('WAIT WORKFLOW DONE.', file=sys.stderr)
         # Transfer output files if file transfer
         if self.path_management == self.FILE_TRANSFER or \
                 self.path_management == self.SHARED_TRANSFER:
+            print('TRANSFER...', file=sys.stderr)
             Helper.transfer_output_files(self.wf_id, self.wf_ctrl)
+            print('TRANSFER DONE.', file=sys.stderr)
 
         status = self.wf_ctrl.workflow_status(self.wf_id)
+        print('status:', status, file=sys.stderr)
         self.assertTrue(status == constants.WORKFLOW_DONE,
                         "workflow status : %s. Expected : %s" %
                         (status, constants.WORKFLOW_DONE))
@@ -183,6 +197,7 @@ class Exception2Test(WorkflowTest):
                     os.unlink(job_stderr_file)
 
         del self.tested_job
+        print('TEST DONE.', file=sys.stderr)
 
 
 def test():

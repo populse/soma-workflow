@@ -178,15 +178,34 @@ class WorkflowController(object):
                 login = self.config.get_login()
             print('cluster address: %s, submission machine: %s, login: %s'
                   % (cluster_address, sub_machine, login))
-            self._connection = connection.RemoteConnection(login,
-                                                           password,
-                                                           cluster_address,
-                                                           sub_machine,
-                                                           resource_id,
-                                                           "",
-                                                           rsa_key_pass,
-                                                           self.config)
-            print("Remote connection established")
+            trial = 0
+            ok = False
+            # several attempts are sometimes needed here:
+            # the paramiko transport and tunnel sometimes does not start
+            # correctly and remains silent (no communication can be done, no
+            # error reported). We must wait for a timeout and the subsequent
+            # exception, then retry, and it often works...
+            while not ok and trial < 3:
+                trial += 1
+                try:
+                    self._connection = connection.RemoteConnection(
+                        login,
+                        password,
+                        cluster_address,
+                        sub_machine,
+                        resource_id,
+                        "",
+                        rsa_key_pass,
+                        self.config)
+                    print("Remote connection established")
+                    ok = True
+                except Exception:
+                    if trial == 2:
+                        raise
+                    logging.info('RemoteConnection failed to establish '
+                                 '- trying again')
+                    import time
+                    time.sleep(1.)
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()
@@ -233,6 +252,13 @@ class WorkflowController(object):
         #except Exception:
             #pass
 
+    def get_scheduler_type(self):
+        '''
+        Returns the scheduler type in the underlying engine ('local_basic',
+        'pbs', 'pbspro', 'drmaa' ...)
+        '''
+        return self.engine_config_proxy.get_scheduler_type()
+
     def disconnect(self):
         '''
         Simulates a disconnection for TEST PURPOSE ONLY.
@@ -260,7 +286,10 @@ class WorkflowController(object):
         if self._engine_proxy and self._engine_proxy is not None:
             if hasattr(self._engine_proxy, 'interrupt_after'):
                 self._engine_proxy.interrupt_after(10.)
-            self._engine_proxy.stop()
+            try:
+                self._engine_proxy.stop()
+            except Exception:
+                pass  # cleanup anyway
             self._engine_proxy = None
         self.disconnect()
 
@@ -968,9 +997,10 @@ class WorkflowController(object):
                     print("WARNING: The file or directory %s doesn't exist "
                           "on the computing resource side." % (engine_path))
             else:  # client_paths
+                engine_dir = os.path.dirname(engine_path)
                 for path in client_paths:
                     relative_path = os.path.basename(path)
-                    r_path = posixpath.join(transfer_id, relative_path)
+                    r_path = posixpath.join(engine_dir, relative_path)
                     if not self._engine_proxy.is_file(r_path) and \
                        not self._engine_proxy.is_dir(r_path):
                         print("WARNING: The file or directory %s doesn't "
@@ -1382,8 +1412,7 @@ class Helper(object):
                 to_transfer.append(engine_path)
             if status == constants.TRANSFERING_FROM_CR_TO_CLIENT:
                 engine_path = transfer_info[0]
-                to_transfer.append(engine_path)
-
+                to_transfer.append(repr(engine_path))
         wf_ctrl.transfer_files(to_transfer, buffer_size)
 
     @staticmethod

@@ -3,29 +3,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import sys
-#import pdb
-import signal
-import code
 
-def debug(sig, frame):
-    """Interrupt running process, and provide a python prompt for
-    interactive debugging."""
-    import traceback
-    traceback.print_stack()
-
-    #d={'_frame':frame}         # Allow access to frame object.
-    #d.update(frame.f_globals)  # Unless shadowed by global
-    #d.update(frame.f_locals)
-
-    #i = code.InteractiveConsole(d)
-    #message  = "Signal received : entering python shell.\nTraceback:\n"
-    #message += ''.join(traceback.format_stack(frame))
-    #i.interact(message)
-
-    #pdb.set_trace()
-
-if not sys.platform.startswith('win'):
-    signal.signal(signal.SIGUSR1, debug)
+if '--debug' in sys.argv[1:]:
+    import logging
+    logging.basicConfig(
+        filename='/tmp/swf_test_log',
+        format="%(asctime)s => %(module)s line %(lineno)s: %(message)s",
+        level=logging.DEBUG)
 
 res = True
 

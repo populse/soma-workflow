@@ -436,8 +436,13 @@ class RemoteConnection(object):
                 else:
                     key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
                 self.__transport.auth_publickey(login, key)
-
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
+
+            logging.info(
+                "tunnel creation " + str(login) + "@" + cluster_address +
+                "   port: " + repr(tunnel_entrance_port) + " host: " +
+                str(submitting_machine) + " host port: "
+                + str(remote_object_server_port))
             print("tunnel creation " + str(login) + "@" + cluster_address +
                   "   port: " + repr(tunnel_entrance_port) + " host: " +
                   str(submitting_machine) + " host port: "
@@ -478,6 +483,10 @@ class RemoteConnection(object):
 
         self.workflow_engine = zro.Proxy(workflow_engine_uri)
         connection_checker = zro.Proxy(connection_checker_uri)
+        # at connection time let 20s to check connection, after that we assume
+        # it's a failure
+        connection_checker.interrupt_after(20.)
+        self.workflow_engine.interrupt_after(20.)
         self.configuration = zro.Proxy(configuration_uri)
 
         if scheduler_config_uri is not None:
@@ -494,13 +503,21 @@ class RemoteConnection(object):
 
         # waiting for the tunnel to be set
         tunnelSet = False
-        maxattemps = 3
+        # several attempts are not needed any longer: we now have a
+        # programmable timeout (set to 20s here) which can wait for the
+        # connection to establish, and retry is in WorkflowController, because
+        # the paramiko transport and tunnel sometimes does not start correctly
+        # and remains silent (no communication can be done, no error reported).
+        maxattemps = 1
         attempts = 0
         while not tunnelSet and attempts < maxattemps:
             try:
                 attempts = attempts + 1
                 print("Communication through the ssh tunnel. Attempt no " +
                       repr(attempts) + "/" + repr(maxattemps))
+                logging.info(
+                    "Communication through the ssh tunnel. Attempt no " +
+                    repr(attempts) + "/" + repr(maxattemps))
                 # print("BEFORE calling a remote object")
                 self.workflow_engine.jobs()
                 # print("After calling the remote object")
@@ -508,19 +525,33 @@ class RemoteConnection(object):
             except Exception as e:
                 print("-> Communication through ssh tunnel Failed. %s: %s"
                       % (type(e), e))
+                logging.info(
+                    "-> Communication through ssh tunnel Failed. %s: %s"
+                    % (type(e), e))
                 time.sleep(1)
             else:
                 print("-> Communication through ssh tunnel OK")
+                logging.info("-> Communication through ssh tunnel OK")
                 tunnelSet = True
 
-        if attempts >= maxattemps:
+        if attempts > maxattemps:
             raise ConnectionError("The ssh tunnel could not be started within"
                                   + repr(maxattemps) + " attempts.")
+
+        # reset time check to avoid a timeout soon.
+        connection_checker.signalConnectionExist()
+
+        # now we remove the timeout on the engine because some calls will
+        # block a long time (like wait_wrkflow). The ConnectionHolder will
+        # take care of ensuring the connection is still OK.
+        self.workflow_engine.interrupt_after(-1)
 
         # create the connection holder object for #
         # a clean disconnection in any case      #
         logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
+        self.__connection_holder.disconnect_callbacks.append(
+            self.connection_holder_disconnected)
         self.__connection_holder.start()
         logging.info("End of the initialisation of RemoteConnection.")
 
@@ -542,6 +573,9 @@ class RemoteConnection(object):
             pass
         else:
             if self.__connection_holder is not None:
+                with self.__connection_holder.lock:
+                    # don't play callbabcks again
+                    self.__connection_holder.callbacks = []
                 self.__connection_holder.stop()
                 self.__connection_holder = None
         try:
@@ -560,6 +594,10 @@ class RemoteConnection(object):
             if self.__transport is not None:
                 self.__transport.close()
                 self.__transport = None
+
+    def connection_holder_disconnected(self, holder):
+        # (here we are in the ConnectionHolder thread)
+        self.stop()
 
     def get_workflow_engine(self):
         return self.workflow_engine
@@ -863,15 +901,24 @@ class ConnectionHolder(threading.Thread):
     ''' ConnectionHolder runs on client side, it runs a thread which emits a
         signal to the server every time interval, using a ConnectionChecker
         proxy.
+
+        When the server seems to be disconnected, callbacks can be called
+        (from the monitoring thread) to clean things up.
     '''
 
     def __init__(self, connectionChecker):
+        logger = logging.getLogger('client.ConnectionHolder')
+        logger.debug('init ConnectionHolder')
         threading.Thread.__init__(self)
         self.lock = threading.RLock()
         self.setDaemon(True)
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
+        # if the server doesn't answer within 10s we suppose it is disconnected
+        self.connectionChecker.interrupt_after(10.)
+        logger.debug('interval: %f' % self.interval)
+        self.disconnect_callbacks = []
 
     def __del__(self):
         self.stop()
@@ -882,17 +929,30 @@ class ConnectionHolder(threading.Thread):
             return self.stopped
 
     def run(self):
-        self.stopped = False
+        logger = logging.getLogger('client.ConnectionHolder')
+        logger.debug('Holder running')
+        with self.lock:
+            self.stopped = False
         while not self.is_stopped():
             # print("ConnectionHolder => signal")
             try:
                 self.connectionChecker.signalConnectionExist()
+                logger.debug('life signal emitted')
                 # print('life signal emitted')
             except Exception as e:  # TBC Apparently the exception is not defined anymore
-                print("Connection closed")
+                logger.info('Connection closed, with exception: %s' % repr(e))
+                # print("Connection closed")
                 break
             time.sleep(self.interval)
-        print('ConnectionHolder stopped.')
+        logger.info('ConnectionHolder stopped.')
+        # print('ConnectionHolder stopped.')
+        # possibly do something at disconnection time
+        # (from the holder thread)
+        with self.lock:
+            callbacks = list(self.disconnect_callbacks)
+        for callback in callbacks:
+            logger.info('calling disconnection callback: %s' % repr(callback))
+            callback(self)
 
     def stop(self):
         with self.lock:
@@ -905,11 +965,12 @@ class Tunnel(threading.Thread):
         daemon_threads = True
         allow_reuse_address = True
 
-    class Handler (socketserver.BaseRequestHandler):
+    class Handler(socketserver.BaseRequestHandler):
 
         def setup(self):
             logging.info('Setup : %d' % (self.channel_end_port))
             if not self.ssh_transport.is_active():
+                self.shutdown_server()
                 raise ConnectionError('ssh transport is closed.')
             logging.debug("Tunnel::Handler::Beginning of setup")
             try:
@@ -931,6 +992,7 @@ class Tunnel(threading.Thread):
                                       % (self.channel_end_port, repr(e)))
 
             if self.__chan is None:
+                logging.exception("channel is null")
                 self.shutdown_server()
                 raise ConnectionError(
                     'Incoming request to %s:%d was rejected by the SSH server.'
@@ -985,21 +1047,25 @@ class Tunnel(threading.Thread):
                             logging.info("Tunnel.Handler.handle: multiple receive to transfert"
                                          "the data, could potentially be a problem")
                         self.request.send(data)
-            except:  # noqa: E722
+            except Exception as e:  # noqa: E722
+                print('-- Handler exception:', e, file=sys.stderr)
                 self.shutdown_server()
                 raise
 
         def finish(self):
-            print('Channel closed from %r' % (self.request.getpeername(), ))
+            # print('Channel closed from %r' % (self.request.getpeername(), ))
             self.__chan.close()
             self.request.close()
             del self.__chan
-            self.shutdown_server()
 
         def shutdown_server(self):
             # Tunnel.server_instance.shutdown()
             # try to determine which socket server has called us,
             # and shut it down
+            print('** shutdown_server from handler **', file=sys.stderr)
+            #import traceback
+            #traceback.print_stack()
+
             import gc
             import inspect
             frames = [x.f_back for x in gc.get_referrers(self)
@@ -1008,6 +1074,7 @@ class Tunnel(threading.Thread):
                        if 'self' in x.f_locals
                           and isinstance(x.f_locals['self'],
                                          Tunnel.ForwardServer)]
+            print('** shutdown servers:', servers, file=sys.stderr)
             for server in servers:
                 server.shutdown()
 
@@ -1022,8 +1089,8 @@ class Tunnel(threading.Thread):
     def serve_forever(self):
         try:
             super(Tunnel, self).serve_forever()
-        except:  # noqa: E722
-            print('EXCEPT')
+        except Exception as e:  # noqa: E722
+            print('EXCEPT:', e, file=sys.stderr)
             self.shutdown()
             raise
 
@@ -1052,8 +1119,10 @@ class Tunnel(threading.Thread):
         except Exception as e:
             logging.error('Tunnel Error. %s: %s' % (type(e), e))
         logging.warning('Tunnel stopped.')
+        self.shutdown()
 
     def shutdown(self):
+        print('** shutdown tunnel **', self, file=sys.stderr)
         if self.__server is not None:
             self.__server.shutdown()
             self.__server = None

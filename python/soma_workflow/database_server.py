@@ -547,6 +547,8 @@ class WorkflowDatabaseServer(object):
                 self.logger.info("Database creation " + database_file)
                 create_database(database_file)
             else:
+                self.logger.info("Connecting to existing database "
+                                 + database_file)
                 connection = self._connect()
                 cursor = connection.cursor()
                 version = None
