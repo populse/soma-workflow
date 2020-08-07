@@ -25,7 +25,6 @@ where "jl123456" is ssh login and "gabriel" is the hostname of cluster. An simil
 [jl123456@gabriel]
 database_file = /home/jl123456/.soma-workflow/soma_workflow.db
 transfered_files_dir = /home/jl123456/.soma-workflow/transfered-files
-name_server_host = gabriel
 server_name = soma_workflow_database_jl123456
 server_log_file = /home/jl123456/.soma-workflow/logs/log_server
 server_log_format = %(asctime)s => line %(lineno)s: %(message)s

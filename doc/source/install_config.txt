@@ -229,7 +229,6 @@ Configuration file example: ::
 
   DATABASE_FILE        = path/soma_workflow.db
   TRANSFERED_FILES_DIR = path/transfered_files
-  NAME_SERVER_HOST     = titan0
   SERVER_NAME          = soma_workflow_server_for_titan
 
   # optional limitation of the jobs in various queues
@@ -260,8 +259,6 @@ Configuration items required on the server side:
     .. warning::
       Do not copy any file in this directory. Soma_workflow manages the
       entire directory and might delete any external file.
-
-  **NAME_SERVER_HOST** legacy to be removed.
 
   **SERVER_NAME** (to be replace with DB_SERVER_NAME, will be clearer)
     Name of the database server.
@@ -421,6 +418,11 @@ uses several CPUs and involves parallel code: MPI, OpenMP for example.
     PARALLEL_JOB_ENV = [OCFG_PARALLEL_ENV_MPI_BIN, OCFG_PARALLEL_ENV_NODE_FILE]
 
 
+Obsolete config entries
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**NAME_SERVER_HOST** removed in v3, this was for the Pyro name server.
+
 
 
 .. _light_mode_config:
@@ -566,7 +568,6 @@ Server configuratinon (``$HOME/.soma-workflow.cfg``):
   SUBMITTING_MACHINES = averell.mylab.fr
   LOGIN = my_login
   SCHEDULER_TYPE = local_basic
-  NAME_SERVER_HOST = averell.mylab.fr
   SERVER_NAME = averell
   ENGINE_LOG_DIR = /home/my_login/.soma_workflow/averell/logs
   TRANSFERED_FILE_DIR = /home/my_login/.soma_workflow/averell/file_transfers

@@ -173,7 +173,6 @@ def GetQueueNamesOnPBSTORQUEServer():
 
 
 def SetupConfigurationFileOnServer(userid,
-                                   ip_address_or_domain,
                                    resource_id=None, options={}):
     """ Create a configuration file on the server side
 
@@ -185,8 +184,6 @@ def SetupConfigurationFileOnServer(userid,
     ----------
     userid: str
         user name on the server side
-    ip_address_or_domain: str
-        the ip address or the domain of the server
     resource_id: str
         the name of the configuration component
     options: dict
@@ -209,7 +206,7 @@ def SetupConfigurationFileOnServer(userid,
 
     # Create default configuration component name
     if resource_id is None:
-        resource_id = "{0}@{1}".format(userid, ip_address_or_domain)
+        resource_id = "{0}@{1}".format(userid, socket.gethostname())
 
     # Fill the configuration parser if resource id do not exists
     sections = config_parser.sections()
@@ -225,8 +222,6 @@ def SetupConfigurationFileOnServer(userid,
         config_parser.set(resource_id, configuration.CFG_TRANSFERED_FILES_DIR,
                           transfer_dir)
         ensure_is_dir(transfer_dir, clear_dir=True)
-        config_parser.set(resource_id, configuration.CFG_NAME_SERVER_HOST,
-                          ip_address_or_domain)
         config_parser.set(resource_id, configuration.CFG_SERVER_NAME,
                           "soma_workflow_database_" + userid)
 
@@ -326,8 +321,7 @@ if len(args.options) != 0:
         options[opt] = val
 
 userid = getpass.getuser()
-ip_address_or_domain = socket.gethostname()
-SetupConfigurationFileOnServer(userid, ip_address_or_domain, resource_id,
+SetupConfigurationFileOnServer(userid, resource_id,
                                options=options)
 
 # Stop running database and start the new one

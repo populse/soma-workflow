@@ -12,6 +12,11 @@ Important changes in Soma-Workflow 3.1
 
 Database format has moved to version 3.0
 
+Client-server communication
+===========================
+
+The communication protocol in client / server mode (now based on ZMQ since 3.0) has been modified to handle multi-threaded, asynchronous requests, and avoid deadlocks. Disconnections are detected at several places and both client and server stopped when this occurs.
+
 Dynamic parameters in workflows
 ===============================
 

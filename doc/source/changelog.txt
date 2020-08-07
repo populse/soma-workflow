@@ -5,6 +5,7 @@ Changelog
 Version 3.1 (2019/11/15)
 ========================
 
+* the communication protocol in client / server mode (now based on ZMQ since 3.0) has been modified to handle multi-threaded, asynchronous requests, and avoid deadlocks. Disconnections are detected at several places and both client and server stopped when this occurs.
 * workflows can get an "env" variable, like jobs do, and will apply their environment to all jobs
 * workflows can get an "env_builder_code" variable, which contains python source code which will be executed to build additional environment variables on the engine side when the workflow is submitted. This allows to handle client/server configurations, and partially some dynamic workflow tuning.
 * jobs env has been fixed in the local scheduler: it used to completely replace the env variables, now it just adds the new ones to the standard user variables.

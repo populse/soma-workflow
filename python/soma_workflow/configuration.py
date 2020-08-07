@@ -80,7 +80,6 @@ OCFG_MAX_JOB_RUNNING = 'MAX_JOB_RUNNING'
 CFG_DATABASE_FILE = 'DATABASE_FILE'
 CFG_TRANSFERED_FILES_DIR = 'TRANSFERED_FILES_DIR'
 CFG_SERVER_NAME = 'SERVER_NAME'
-CFG_NAME_SERVER_HOST = 'NAME_SERVER_HOST'
 
 # OCFG_REMOVE_ORPHAN_FILES allow to disable search for orphan files (i.e. files
 # that exist in transfered files directory but that are not registered in
@@ -173,8 +172,6 @@ class Configuration(observer.Observable):
 
     _cluster_address = None
 
-    _name_server_host = None
-
     _server_name = None
 
     _queue_limits = None
@@ -212,7 +209,6 @@ class Configuration(observer.Observable):
                  transfered_file_dir,
                  submitting_machines=None,
                  cluster_address=None,
-                 name_server_host=None,
                  server_name=None,
                  queues=None,
                  queue_limits=None,
@@ -248,10 +244,6 @@ class Configuration(observer.Observable):
         * cluster_address *string*
           Address of the cluster. Mandatory in the REMOTE_MODE for the remote
           ssh connection.
-
-        * name_server_host *string*
-          Machine where the pyro name server can be found. Mandatory in the
-          REMOTE_MODE to connect to the database_server.
 
         * server_name *string*
           Name of the database server regitered on the Pyro name server. Mandatory
@@ -303,7 +295,6 @@ class Configuration(observer.Observable):
         self._transfered_file_dir = transfered_file_dir
         self._submitting_machines = submitting_machines
         self._cluster_address = cluster_address
-        self._name_server_host = name_server_host
         self._server_name = server_name
         self._login = login
         self._native_specification = native_specification
@@ -911,16 +902,6 @@ class Configuration(observer.Observable):
                 f.close()
 
         return self.path_translation
-
-    def get_name_server_host(self):
-        if self._config_parser == None or self._name_server_host != None:
-            return self._name_server_host
-        self._name_server_host = None
-        if self._config_parser != None:
-            self._name_server_host = self._config_parser.get(self._resource_id,
-                                                             CFG_NAME_SERVER_HOST)
-            self._name_server_host = os.path.expandvars(self._name_server_host)
-        return self._name_server_host
 
     def get_server_name(self):
         if self._config_parser == None or self._server_name != None:

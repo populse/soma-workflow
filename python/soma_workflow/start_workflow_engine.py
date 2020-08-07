@@ -118,7 +118,6 @@ if __name__ == "__main__":
                      transfered_file_dir,
                      submitting_machines=None,
                      cluster_address=None,
-                     name_server_host=None,
                      server_name=None,
                      queues=None,
                      queue_limits=None,
@@ -133,7 +132,6 @@ if __name__ == "__main__":
                 transfered_file_dir,
                 submitting_machines,
                 cluster_address,
-                name_server_host,
                 server_name,
                 queues,
                 queue_limits,
@@ -169,9 +167,6 @@ if __name__ == "__main__":
                                 stderr=subprocess.PIPE)
 
     def get_database_server_proxy(config, logger):
-        name_server_host = config.get_name_server_host()
-        logger.info("Debug: name_server_host: {}".format(name_server_host))
-
         # Checking if the database server is running
         # if it is running we get its uri
         # else we launch it and get its uri
