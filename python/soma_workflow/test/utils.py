@@ -24,7 +24,7 @@ import getpass
 # Functions
 #-----------------------------------------------------------------------------
 
-def get_user_id(resource_id, config):
+def get_user_id(resource_id, config, interactive=True):
     '''Ask for user id to connect to a resource
 
     If the resource is remote, ask for a login and a password
@@ -38,16 +38,20 @@ def get_user_id(resource_id, config):
         default_login = config.get_login()
         if not default_login:
             default_login = getpass.getuser()
-        sys.stdout.write("Login (default: %s): " % default_login)
-        sys.stdout.flush()
-        login = sys.stdin.readline()
-        login = login.rstrip()
-        if not login:
+        if interactive:
+            sys.stdout.write("Login (default: %s): " % default_login)
+            sys.stdout.flush()
+            login = sys.stdin.readline()
+            login = login.rstrip()
+            if not login:
+                login = default_login
+            sys.stdout.write("Password (blank=ssh key): ")
+            sys.stdout.flush()
+            password = getpass.getpass("")
+            password = password.rstrip()
+        else:
             login = default_login
-        sys.stdout.write("Password (blank=ssh key): ")
-        sys.stdout.flush()
-        password = getpass.getpass("")
-        password = password.rstrip()
+            password = ''
         sys.stdout.write("Login => " + repr(login) + "\n")
     else:
         sys.stdout.write("Local connection to %s\n" % resource_id)

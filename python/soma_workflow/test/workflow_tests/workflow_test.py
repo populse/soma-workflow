@@ -14,6 +14,7 @@ import os
 import shutil
 import tempfile
 import socket
+import atexit
 
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration, LIGHT_MODE, \
@@ -28,6 +29,49 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 
 import six
 from six.moves import map
+
+
+def init_params():
+
+    cls = WorkflowTest
+
+    # check global commandline arguments
+    if '--isolated' in sys.argv[1:]:
+        tmpdir = tempfile.mkdtemp(prefix='swf_isol')
+        print('isolated mode:', tmpdir, file=sys.stderr)
+        cls.isolated_dir = tmpdir
+        with open(os.path.join(tmpdir, '.soma-workflow.cfg'), 'w') as f:
+            f.write('''[local-server]
+cluster_address = localhost
+submitting_machines = localhost
+scheduler_type = local_basic
+server_name = local-server
+soma_workflow_dir = %s
+engine_log_level = DEBUG
+server_log_level = DEBUG
+''' % tmpdir)
+        #change_soma_workflow_directory(tmpdir, 'swf-test')
+        os.environ['SOMA_WORKFLOW_CONFIG'] = os.path.join(
+            tmpdir, '.soma-workflow.cfg')
+        atexit.register(exit_tests)
+
+    if '--resources' in sys.argv[1:]:
+        # non-interactive list of resources
+        resources = sys.argv[sys.argv[1:].index('--resources') + 2]
+        cls.enabled_resources = [x.strip() for x in resources.split(',')]
+
+
+def exit_tests():
+
+    cls = WorkflowTest
+
+    if hasattr(cls, 'isolated_dir'):
+        if '--keep-temporary' in sys.argv[1:]:
+            print('leaving [non-temporary] directory %s' % cls.isolated_dir,
+                  file=sys.stderr)
+        else:
+            shutil.rmtree(cls.isolated_dir)
+
 
 
 class WorkflowTest(unittest.TestCase):
@@ -78,6 +122,7 @@ class WorkflowTest(unittest.TestCase):
 
         if not sys.platform.startswith('win'):
             signal.signal(signal.SIGUSR1, debug_stack)
+
 
     def setUp(self):
         if self.path_management == self.LOCAL_PATH:
@@ -182,7 +227,8 @@ class WorkflowTest(unittest.TestCase):
                              " =================== \n")
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
-            if not interactive and config.get_mode() != LIGHT_MODE:
+            if not interactive and config.get_mode() != LIGHT_MODE \
+                    and resource_id not in enabled_resources:
                 sys.stdout.write('Resource %s is not tested in '
                                  'non-interactive mode\n' % resource_id)
                 continue  # skip login/password ask
@@ -206,7 +252,8 @@ class WorkflowTest(unittest.TestCase):
                         continue
                     (login, password) = WorkflowTest.resource_pass[resource_id]
             else:
-                (login, password) = get_user_id(resource_id, config)
+                (login, password) = get_user_id(resource_id, config,
+                                                interactive=interactive)
 
             if config.get_mode() == LIGHT_MODE:
                 # use a temporary sqlite database in soma-workflow to avoid
@@ -315,7 +362,10 @@ class WorkflowTest(unittest.TestCase):
     @staticmethod
     def print_help(argv):
         print(argv[0],
-              '[-h|--help] [--interactive] [--keep-temporary] [--debug]')
+              '[-h|--help] [--interactive] [--keep-temporary] [--debug] [--resources <resource1,resource2,...>] [--isolated]')
+        print('--interactive: ask computing resources to be tested from the current user config')
+        print('--resources: provide a non-interactive list of computing resources to be tested')
+        print('--isolated: isolate config from the actual user config: use a temporary one containing the local resource and a local server config (client-server mode on the local machine, "ssh localhost" needs to work without a password)')
 
     @staticmethod
     def parse_args(argv):
@@ -387,3 +437,5 @@ class WorkflowTest(unittest.TestCase):
         if first == second and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
         return super(WorkflowTest, self).assertNonEqual(first, second, msg)
+
+init_params()
