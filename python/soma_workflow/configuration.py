@@ -418,9 +418,9 @@ class Configuration(observer.Observable):
                 transfered_file_dir = os.path.join(swf_dir, "transfered_files")
                 config._transfered_file_dir = transfered_file_dir
 
-            if not os.path.isdir(os.path.join(home_dir, ".soma-workflow")):
+            if not os.path.isdir(swf_dir):
                 try:
-                    os.mkdir(os.path.join(home_dir, ".soma-workflow"))
+                    os.mkdir(swf_dir)
                 except OSError:
                     pass  # ignore failed mkdir
             if not os.path.isdir(transfered_file_dir):
@@ -472,6 +472,15 @@ class Configuration(observer.Observable):
 
     def get_scheduler_type(self):
         return self._scheduler_type
+
+    def get_soma_workflow_dir(self):
+        config_parser = self._config_parser
+        if config_parser.has_option(self._resource_id, OCFG_SWF_DIR):
+            swf_dir = config_parser.get(self._resource_id, OCFG_SWF_DIR)
+        else:
+            home_dir = self.get_home_dir()
+            swf_dir = os.path.join(home_dir, ".soma-workflow")
+        return swf_dir
 
     def get_res_install_path(self):
         if self._config_parser == None or self._res_install_path:
@@ -553,7 +562,7 @@ class Configuration(observer.Observable):
         '''
         resource_ids = []
         if config_file_path == None:
-            return [socket.gethostname()]
+            config_file_path = Configuration.search_config_path()
         config_parser = configparser.ConfigParser()
         config_parser.read(config_file_path)
         for r_id in config_parser.sections():
@@ -735,11 +744,7 @@ class Configuration(observer.Observable):
             return self._database_file
 
         if not self._config_parser.has_option(self._resource_id, CFG_DATABASE_FILE):
-            swf_dir = os.path.join(self.get_home_dir(), ".soma-workflow")
-            if self._config_parser.has_section(self._resource_id) \
-                    and self._config_parser.has_option(self._resource_id, OCFG_SWF_DIR):
-                swf_dir = self._config_parser.get(
-                    self._resource_id, OCFG_SWF_DIR)
+            swf_dir = self.get_soma_workflow_dir()
             self._database_file = os.path.join(
                 swf_dir, "soma_workflow-%s.db" % DB_VERSION)
         else:
@@ -760,7 +765,7 @@ class Configuration(observer.Observable):
 
         if not self._config_parser.has_option(self._resource_id,
                                               CFG_TRANSFERED_FILES_DIR):
-            swf_dir = os.path.join(self.get_home_dir(), ".soma-workflow")
+            swf_dir = self.get_soma_workflow_dir()
             self._transfered_file_dir = os.path.join(
                 swf_dir, 'transfered_files')
             # raise ConfigurationError("Can not find the configuration item %s "
@@ -1009,12 +1014,15 @@ class Configuration(observer.Observable):
         return self._queues
 
     def get_engine_log_info(self):
-        if self._config_parser != None \
-                and self._config_parser.has_option(self._resource_id,
-                                                   OCFG_ENGINE_LOG_DIR):
-            engine_log_dir = self._config_parser.get(self._resource_id,
-                                                     OCFG_ENGINE_LOG_DIR)
-            engine_log_dir = os.path.expandvars(engine_log_dir)
+        if self._config_parser != None:
+            if self._config_parser.has_option(self._resource_id,
+                                              OCFG_ENGINE_LOG_DIR):
+                engine_log_dir = self._config_parser.get(self._resource_id,
+                                                        OCFG_ENGINE_LOG_DIR)
+                engine_log_dir = os.path.expandvars(engine_log_dir)
+            else:
+                engine_log_dir = os.path.join(self.get_soma_workflow_dir(),
+                                              'logs')
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_ENGINE_LOG_FORMAT):
                 engine_log_format = self._config_parser.get(
@@ -1035,12 +1043,15 @@ class Configuration(observer.Observable):
             return (None, None, None)
 
     def get_server_log_info(self):
-        if self._config_parser != None \
-                and self._config_parser.has_option(self._resource_id,
+        if self._config_parser != None:
+            if self._config_parser.has_option(self._resource_id,
                                                    OCFG_SERVER_LOG_FILE):
-            server_log_file = self._config_parser.get(self._resource_id,
-                                                      OCFG_SERVER_LOG_FILE)
-            server_log_file = os.path.expandvars(server_log_file)
+                server_log_file = self._config_parser.get(self._resource_id,
+                                                          OCFG_SERVER_LOG_FILE)
+                server_log_file = os.path.expandvars(server_log_file)
+            else:
+                server_log_file = os.path.join(self.get_soma_workflow_dir(),
+                                               'logs', 'log_server')
             if self._config_parser.has_option(self._resource_id,
                                               OCFG_SERVER_LOG_FORMAT):
                 server_log_format = self._config_parser.get(
