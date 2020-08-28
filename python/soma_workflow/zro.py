@@ -331,8 +331,8 @@ class ObjectServer(object):
                                     + repr(result))
 
                                 # send result
-                                frontend.send_multipart((client, '',
-                                                      pickle.dumps(result)))
+                                frontend.send_multipart(
+                                    (client, b'', pickle.dumps(result)))
 
                                 ## timing debugging code...
                                 #t1 = time.time()
