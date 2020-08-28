@@ -331,8 +331,14 @@ class RemoteConnection(object):
         command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
             " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
+        if cluster_address in ('localhost', socket.gethostname()) \
+                and login == getpass.getuser() \
+                and os.environ.get('SOMA_WORKFLOW_CONFIG'):
+            command = 'SOMA_WORKFLOW_CONFIG="%s" %s' \
+                % (os.environ['SOMA_WORKFLOW_CONFIG'], command)
+
         print("start engine command: "
-              "ssh %s@%s %s" % (login, cluster_address, command))
+              "ssh %s@%s %s" % (login, cluster_address, command), file=sys.stderr)
 
         (std_out_lines) = SSH_exec_cmd(
             command,
