@@ -228,7 +228,8 @@ class WorkflowTest(unittest.TestCase):
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
             if not interactive and config.get_mode() != LIGHT_MODE \
-                    and resource_id not in enabled_resources:
+                    and (enabled_resources is None
+                         or resource_id not in enabled_resources):
                 sys.stdout.write('Resource %s is not tested in '
                                  'non-interactive mode\n' % resource_id)
                 continue  # skip login/password ask
@@ -362,10 +363,17 @@ class WorkflowTest(unittest.TestCase):
     @staticmethod
     def print_help(argv):
         print(argv[0],
-              '[-h|--help] [--interactive] [--keep-temporary] [--debug] [--resources <resource1,resource2,...>] [--isolated]')
-        print('--interactive: ask computing resources to be tested from the current user config')
-        print('--resources: provide a non-interactive list of computing resources to be tested')
-        print('--isolated: isolate config from the actual user config: use a temporary one containing the local resource and a local server config (client-server mode on the local machine, "ssh localhost" needs to work without a password)')
+              '[-h|--help] [--interactive] [--keep-temporary] [--debug] '
+              '[--resources <resource1,resource2,...>] [--isolated]')
+        print('--interactive: ask computing resources to be tested from the '
+              'current user config')
+        print('--resources: provide a non-interactive list of computing '
+              'resources to be tested')
+        print('--isolated: isolate config from the actual user config: use a '
+              'temporary one containing the local resource and a local server '
+              'config (client-server mode on the local machine, named '
+              '"local-server" - "ssh localhost" needs to work without a '
+              'password)')
 
     @staticmethod
     def parse_args(argv):
