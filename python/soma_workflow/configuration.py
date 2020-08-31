@@ -564,7 +564,7 @@ class Configuration(observer.Observable):
         if config_file_path == None:
             config_file_path = Configuration.search_config_path()
         config_parser = configparser.ConfigParser()
-        if config_path:
+        if config_file_path:
             config_parser.read(config_file_path)
         for r_id in config_parser.sections():
             resource_ids.append(r_id)
