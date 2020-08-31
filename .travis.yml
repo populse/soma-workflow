@@ -34,7 +34,7 @@ before_install:
 
 install:
     - pip install "six~=1.13" paramiko zmq
-    - ssh -o "StrictHostKeyChecking no" localhost "echo toto"
+    - ssh -o "CheckHostIP no" localhost "echo toto"
     - if [ ${TRAVIS_PYTHON_VERSION} == "2.7" ]; then pip install subprocess32; fi
     - pip install codecov
     - python setup.py install
