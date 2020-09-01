@@ -67,6 +67,10 @@ server_log_level = DEBUG
         # non-interactive list of resources
         resources = sys.argv[sys.argv[1:].index('--resources') + 2]
         cls.enabled_resources = [x.strip() for x in resources.split(',')]
+        if 'localhost' in cls.enabled_resources:
+            local_resource = Configuration.get_local_resource_id()
+            cls.enabled_resources[cls.enabled_resources.index('localhost')] \
+                = local_resource
 
 
 def exit_tests():
