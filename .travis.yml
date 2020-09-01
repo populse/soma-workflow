@@ -44,7 +44,7 @@ install:
     - if [[ -n "$GITHUB_ACCESS_TOKEN" ]]; then export PUSH_DOC_TO_GH_PAGES=yes; fi
 
 script:
-    - coverage run -m soma_workflow.test --isolated --resources localhost,local-server
+    - coverage run -m soma_workflow.test --isolated --resources localhost
 
 after_success:
     - codecov
