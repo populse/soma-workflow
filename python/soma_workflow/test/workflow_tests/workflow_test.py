@@ -68,7 +68,7 @@ server_log_level = DEBUG
         resources = sys.argv[sys.argv[1:].index('--resources') + 2]
         cls.enabled_resources = [x.strip() for x in resources.split(',')]
         if 'localhost' in cls.enabled_resources:
-            local_resource = Configuration.get_local_resource_id()
+            local_resource = socket.gethostname()
             cls.enabled_resources[cls.enabled_resources.index('localhost')] \
                 = local_resource
 
