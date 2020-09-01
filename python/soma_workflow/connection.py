@@ -284,7 +284,7 @@ class RemoteConnection(object):
         computing resource.
         '''
         logging.info("************************************************")
-        logging.info("***********Init remote connection***************")
+        logging.info("********** Init remote connection **************")
 
         import soma_workflow.zro as zro
         import zmq
@@ -348,6 +348,7 @@ class RemoteConnection(object):
             wait_output=True,
             sshport=22,
             num_line_stdout=5)
+
         workflow_engine_uri = None
         connection_checker_uri = None
         configuration_uri = None
@@ -627,31 +628,42 @@ class RemoteConnection(object):
             local = True
             print('local mode')
         else:
-            import paramiko
-
             local = False
+            if config.get_mode() == 'local':
+                local = True  # local server mode
+
             if login is None:
                 login = config.get_login()
 
-            submitting_machines = config.get_submitting_machines()
-            sub_machine = submitting_machines[random.randint(
-                0, len(submitting_machines) - 1)]
+            if local:
+                try:
+                    stdout = subprocess.check_output(['ps', 'ux'])
+                    stdout = io.BytesIO(stdout)
+                except Exception as e:
+                    print('error running command: "ps ux"', file=sys.stderr)
+                    raise
+            else:
+                import paramiko
 
-            try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.load_system_host_keys()
-                ssh.connect(sub_machine, port=ssh_port, username=login,
-                            password=passwd)
-            except paramiko.AuthenticationException as e:
-                print("The authentification failed. %s. "
-                      "Please check your user and password. "
-                      "You can test the connection in terminal with "
-                      "command: ssh -p %s %s@%s"
-                      % (e, ssh_port, login, sub_machine))
-                raise
+                submitting_machines = config.get_submitting_machines()
+                sub_machine = submitting_machines[random.randint(
+                    0, len(submitting_machines) - 1)]
 
-            stdin, stdout, stderr = ssh.exec_command('ps ux')
+                try:
+                    ssh = paramiko.SSHClient()
+                    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    ssh.load_system_host_keys()
+                    ssh.connect(sub_machine, port=ssh_port, username=login,
+                                password=passwd)
+                except paramiko.AuthenticationException as e:
+                    print("The authentification failed. %s. "
+                          "Please check your user and password. "
+                          "You can test the connection in terminal with "
+                          "command: ssh -p %s %s@%s"
+                          % (e, ssh_port, login, sub_machine))
+                    raise
+
+                stdin, stdout, stderr = ssh.exec_command('ps ux')
 
             db_re = re.compile(
                 '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
@@ -663,15 +675,21 @@ class RemoteConnection(object):
                     resource = m.group(2).strip()
                     if resource == resource_id:
                         print('found database process id:', m.group(1))
-                        cmd = 'kill %s' % m.group(1)
-                        ssh.exec_command(cmd)
+                        cmd = ['kill', m.group(1)]
+                        if local:
+                            subprocess.check_call(cmd)
+                        else:
+                            ssh.exec_command(' '.join(cmd))
                 else:
                     m = en_re.match(psline)
                     if m:
                         if m.group(2) == resource_id:
                             print('found engine process id:', m.group(1))
-                            cmd = 'kill %s' % m.group(1)
-                            ssh.exec_command(cmd)
+                            cmd = ['kill', m.group(1)]
+                            if local:
+                                subprocess.check_call(cmd)
+                            else:
+                                ssh.exec_command(' '.join(cmd))
 
         if clear_db:
             print('clearing database')
@@ -713,6 +731,10 @@ class LocalConnection(object):
         # required in the local connection mode
 
         import soma_workflow.zro as zro
+        import zmq
+
+        logging.info("************************************************")
+        logging.info("*********** Init local connection **************")
 
         login = getpass.getuser()
         remote_workflow_engine_name = "workflow_engine_" + login
@@ -723,102 +745,137 @@ class LocalConnection(object):
                                          # resource_id,
                                          # remote_workflow_engine_name,
                                          # log)
-        (local_dir, python_interpreter) = os.path.split(sys.executable)
+        #(local_dir, python_interpreter) = os.path.split(sys.executable)
+        python_interpreter = sys.executable
         command = python_interpreter + " -m soma_workflow.start_workflow_engine %s %s %s" % (
             resource_id,
             remote_workflow_engine_name,
             log)
 
+        print("start engine command: %s" % command, file=sys.stderr)
         engine_process = subprocess.Popen(command,
                                           shell=True,
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
 
-        line = engine_process.stdout.readline().decode()
-        stdout_content = line
-        while line and line.split()[0] != remote_workflow_engine_name:
-            line = engine_process.stdout.readline().decode()
-            stdout_content = stdout_content + "\n" + line
+        std_out_lines = []
+        while engine_process.stdout:
+            line = engine_process.stdout.readline().decode().strip()
+            std_out_lines.append(line)
+            stdout_content = line
+            if not line or line.startswith('zmq'):
+                break
+        #print('std_out_lines:', std_out_lines, file=sys.stderr)
 
-        if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline().decode()
-            stderr_content = line
-            while line:
-                line = engine_process.stderr.readline().decode()
-                stderr_content = stderr_content + "\n" + line
-            raise ConnectionError("A problem occured while starting the engine "
-                                  "process on the local machine. \n"
-                                  "**More details:**\n"
-                                  "**Start engine process command line:** \n"
-                                  "\n" + command + "\n\n"
-                                  "**Engine process standard output:** \n"
-                                  "\n" + stdout_content +
-                                  "**Engine process standard error:** \n"
-                                  "\n" + stderr_content)
-        workflow_engine_uri = line.split()[1]
-        line = engine_process.stdout.readline().decode()
-        stdout_content = stdout_content + "\n" + line
-        while line and line.split()[0] != "connection_checker":
-            line = engine_process.stdout.readline().decode()
-            stdout_content = stdout_content + "\n" + line
+        workflow_engine_uri = None
+        connection_checker_uri = None
+        configuration_uri = None
+        scheduler_config_uri = None
 
-        if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline().decode()
-            stderr_content = line
-            while line:
-                line = engine_process.stderr.readline().decode()
-                # TODO TBC
-                print(
-                    "this should contain the uri of the connection checker in 2nd position" + line)
-                stderr_content = stderr_content + "\n" + line
-            raise ConnectionError("A problem occured while starting the engine "
-                                  "process on the local machine. \n"
-                                  "**More details:**\n"
-                                  "**Start engine process command line:** \n"
-                                  "\n" + command + "\n\n"
-                                  "**Engine process standard output:** \n"
-                                  "\n" + stdout_content +
-                                  "**Engine process standard error:** \n"
-                                  "\n" + stderr_content)
+        for std_out_line in std_out_lines:
+            if std_out_line.split()[0] == remote_workflow_engine_name:
+                workflow_engine_uri = std_out_line.split()[1]
+            elif std_out_line.split()[0] == "connection_checker":
+                connection_checker_uri = std_out_line.split()[1]
+            elif std_out_line.split()[0] == "configuration":
+                configuration_uri = std_out_line.split()[1]
+            elif std_out_line.split()[0] == "scheduler_config":
+                scheduler_config_uri = std_out_line.split()[1]
+                if scheduler_config_uri == "None":
+                    scheduler_config_uri = None
+            elif std_out_line.split()[0] == "zmq":
+                version = std_out_line.split()[1]
+                if len(std_out_line.split()) > 9:
+                    python_path = std_out_line.split()[2:9]
+                else:
+                    python_path = std_out_line.split()[2:]
+                if zmq.__version__ != version:
+                    print("WARNING!!!: you are not using the same version of "
+                          "zmq on the server and you might have some issues: \n"
+                          "local version is: " +
+                          zmq.__version__ + "\nserver version is: "
+                          + version)
+                    print(
+                        "Note, the beginning of your PYTHONPATH on host is: " + repr(python_path))
+                else:
+                    # print("DEBUG same version of ZMQ on both sides")
+                    pass
 
-        connection_checker_uri = line.split()[1]
-        line = engine_process.stdout.readline().decode()
-        stdout_content = stdout_content + "\n" + line
-        while line and line.split()[0] != "configuration":
-            line = engine_process.stdout.readline().decode()
-            stdout_content = stdout_content + "\n" + line
+        logging.debug("workflow_engine_uri: " + str(workflow_engine_uri))
+        logging.debug("connection_checker_uri: "
+                      + str(connection_checker_uri))
+        logging.debug("configuration_uri: " + str(configuration_uri))
 
-        if not line:  # A problem occured while starting the engine.
-            line = engine_process.stderr.readline().decode()
-            stderr_content = line
-            while line:
-                line = engine_process.stderr.readline().decode()
-                stderr_content = stderr_content + "\n" + line
-            raise ConnectionError("A problem occured while starting the engine "
-                                  "process on the local machine. \n"
-                                  "**More details:**\n"
-                                  "**Start engine process command line:** \n"
-                                  "\n" + command + "\n\n"
-                                  "**Engine process standard output:** \n"
-                                  "\n" + stdout_content +
-                                  "**Engine process standard error:** \n"
-                                  "\n" + stderr_content)
-        configuration_uri = line.split()[1]
-
-        logging.debug("workflow_engine_uri: " + workflow_engine_uri)
-        logging.debug("connection_checker_uri: " + connection_checker_uri)
-        logging.debug("configuration_uri: " + configuration_uri)
+        if (not configuration_uri or
+            not connection_checker_uri or
+                not workflow_engine_uri):
+            stdout = '\n'.join(std_out_lines)
+            short_msg = "A problem occured while starting the engine " \
+                "process on the local server machine\n"
+            if 'already been running with a different version of Python' \
+                    in stdout:
+                # in case of thie specific error, display it in the short
+                # message to be immediately visible in the GUI
+                short_msg += '\n' + stdout
+            raise ConnectionError(
+                short_msg +
+                "**More details:**\n"
+                "**Start engine process command line:** \n"
+                "\n" + command + "\n\n"
+                "**Engine process standard output:** \n"
+                "\n" + stdout)
 
         # create the proxies                     #
 
         self.workflow_engine = zro.Proxy(workflow_engine_uri)
         connection_checker = zro.Proxy(connection_checker_uri)
+        # at connection time let 20s to check connection, after that we assume
+        # it's a failure
+        connection_checker.interrupt_after(20.)
+        self.workflow_engine.interrupt_after(20.)
         self.configuration = zro.Proxy(configuration_uri)
+
+        if scheduler_config_uri is not None:
+            self.scheduler_config = zro.Proxy(scheduler_config_uri)
+        else:
+            logging.info('No scheduler config')
+            self.scheduler_config = None
+
+        # wait for the connection to establish
+        try:
+            print("Communication with engine...")
+            logging.info("Communication with engine...")
+            # print("BEFORE calling a remote object")
+            self.workflow_engine.jobs()
+            # print("After calling the remote object")
+            connection_checker.isConnected()
+        except Exception as e:
+            print("-> Communication Failed. %s: %s" % (type(e), e))
+            logging.info("-> Communication Failed. %s: %s" % (type(e), e))
+        else:
+            print("-> Communication with engine OK")
+            logging.info("-> Communication with engine OK")
+
+        # reset time check to avoid a timeout soon.
+        connection_checker.signalConnectionExist()
+
+        # now we remove the timeout on the engine because some calls will
+        # block a long time (like wait_wrkflow). The ConnectionHolder will
+        # take care of ensuring the connection is still OK.
+        self.workflow_engine.interrupt_after(-1)
 
         # create the connection holder objet for #
         # a clean disconnection in any case      #
+        logging.info("Launching the connection holder thread")
         self.__connection_holder = ConnectionHolder(connection_checker)
+        self.__connection_holder.disconnect_callbacks.append(
+            self.connection_holder_disconnected)
         self.__connection_holder.start()
+        logging.info("End of the initialisation of LocalConnection.")
+
+    def __del__(self):
+        print('del LocalConnection')
+        self.stop()
 
     def isValid(self):
         return self.__connection_holder.isAlive()
@@ -827,13 +884,31 @@ class LocalConnection(object):
         '''
         For test purpose only !
         '''
-        self.__connection_holder.stop()
+        print('LocalConnection.stop')
+        try:
+            self.__connection_holder
+        except AttributeError:
+            pass
+        else:
+            if self.__connection_holder is not None:
+                with self.__connection_holder.lock:
+                    # don't play callbabcks again
+                    self.__connection_holder.callbacks = []
+                self.__connection_holder.stop()
+                self.__connection_holder = None
+
+    def connection_holder_disconnected(self, holder):
+        # (here we are in the ConnectionHolder thread)
+        self.stop()
 
     def get_workflow_engine(self):
         return self.workflow_engine
 
     def get_configuration(self):
         return self.configuration
+
+    def get_scheduler_config(self):
+        return self.scheduler_config
 
 
 class ConnectionChecker(object):

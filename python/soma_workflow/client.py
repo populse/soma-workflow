@@ -161,7 +161,28 @@ class WorkflowController(object):
                     format=engine_log_format,
                     level=eval("logging." + engine_log_level))
 
-            self._connection = connection.LocalConnection(resource_id, "")
+            trial = 0
+            ok = False
+            # several attempts are sometimes needed here:
+            # the local port is sometimes busy or something.
+            # We must wait for a timeout and the subsequent
+            # exception, then retry, and it often works...
+            while not ok and trial < 3:
+                trial += 1
+                try:
+                    self._connection = connection.LocalConnection(
+                        resource_id,
+                        "")
+                    print("Local connection established")
+                    ok = True
+                except Exception:
+                    if trial == 2:
+                        raise
+                    logging.info('LocalConnection failed to establish '
+                                 '- trying again')
+                    import time
+                    time.sleep(1.)
+
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self._transfer = TransferLocal(self._engine_proxy)
@@ -206,6 +227,7 @@ class WorkflowController(object):
                                  '- trying again')
                     import time
                     time.sleep(1.)
+
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
             self.scheduler_config = self._connection.get_scheduler_config()

@@ -158,6 +158,10 @@ if __name__ == "__main__":
             logger.info(os.path.basename(sys.executable) + ' -m' +
                         ' soma_workflow.start_database_server ' + resource_id)
         python_interpreter = sys.executable  # os.path.basename(sys.executable)
+        print('start_database_server:\n', python_interpreter,
+                                 '-m',
+                                 'soma_workflow.start_database_server',
+                                 resource_id)
         return subprocess.Popen([python_interpreter,
                                  '-m',
                                  'soma_workflow.start_database_server',

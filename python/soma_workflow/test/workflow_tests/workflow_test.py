@@ -43,13 +43,21 @@ def init_params():
         with open(os.path.join(tmpdir, '.soma-workflow.cfg'), 'w') as f:
             f.write('''[local-server]
 cluster_address = localhost
-submitting_machines = localhost
 scheduler_type = local_basic
 server_name = local-server
 soma_workflow_dir = %s
 engine_log_level = DEBUG
 server_log_level = DEBUG
-''' % tmpdir)
+
+[local-server-ssh]
+cluster_address = localhost
+submitting_machines = localhost
+scheduler_type = local_basic
+server_name = local-server-ssh
+soma_workflow_dir = %s
+engine_log_level = DEBUG
+server_log_level = DEBUG
+''' % (tmpdir, tmpdir))
         #change_soma_workflow_directory(tmpdir, 'swf-test')
         os.environ['SOMA_WORKFLOW_CONFIG'] = os.path.join(
             tmpdir, '.soma-workflow.cfg')
@@ -66,6 +74,12 @@ def exit_tests():
     cls = WorkflowTest
 
     if hasattr(cls, 'isolated_dir'):
+        # kill database server in local server mode
+        if hasattr(cls, 'enabled_resources'):
+            from soma_workflow.connection import RemoteConnection
+            for resource_id in cls.enabled_resources:
+                if resource_id in ('local-server', 'local-server-ssh'):
+                    RemoteConnection.kill_remote_servers(resource_id)
         if '--keep-temporary' in sys.argv[1:]:
             print('leaving [non-temporary] directory %s' % cls.isolated_dir,
                   file=sys.stderr)
@@ -227,9 +241,12 @@ class WorkflowTest(unittest.TestCase):
                              " =================== \n")
             config = Configuration.load_from_file(resource_id,
                                                   config_file_path)
-            if not interactive and config.get_mode() != LIGHT_MODE \
-                    and (enabled_resources is None
-                         or resource_id not in enabled_resources):
+
+            if not interactive \
+                    and ((enabled_resources is None
+                          and config.get_mode() != LIGHT_MODE)
+                         or (enabled_resources is not None
+                             and resource_id not in enabled_resources)):
                 sys.stdout.write('Resource %s is not tested in '
                                  'non-interactive mode\n' % resource_id)
                 continue  # skip login/password ask
@@ -370,10 +387,11 @@ class WorkflowTest(unittest.TestCase):
         print('--resources: provide a non-interactive list of computing '
               'resources to be tested')
         print('--isolated: isolate config from the actual user config: use a '
-              'temporary one containing the local resource and a local server '
-              'config (client-server mode on the local machine, named '
-              '"local-server" - "ssh localhost" needs to work without a '
-              'password)')
+              'temporary one containing 3 configs: the local resource, '
+              '"local-server": a local server config (client-server mode on '
+              'the local machine), and "local-server-ssh": a local server in '
+              '"remote mode" using ssh - "ssh localhost" needs to work '
+              'without a password)')
 
     @staticmethod
     def parse_args(argv):
