@@ -159,6 +159,14 @@ Main Features
 New
 ===
 
+In version 3.1:
+---------------
+
+* The client/server communication architecture (based on ZMQ) has been revised to avoid some stability and timeout problems.
+
+* Dynamic parameters in workflows: jobs can now have "named parameters" and outputs produced by a job (number, string, filename) are passed to downstream jobs. While passing values from a job output to another job input, custom link functions can be called to transform values, enabling applications such as map/reduce, cross-validation or leave-one-out in a semi-dynamic way.
+
+
 In version 3.0:
 ---------------
 
@@ -174,14 +182,6 @@ In version 3.0:
 
 * A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
 
-
-
-In version 2.10:
-----------------
-
-* In Soma-Workflow 2.10, the **"server management" options** have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.
-
-* Soma-Workflow allows a new server config option, :ref:`CONTAINER_COMMAND <container_command>`, which allows to **run jobs through a container** (typically `Docker <https://www.docker.com/>`_ or `Singularity <https://www.sylabs.io/singularity/>`_)
 
 See :doc:`the full changelog <changelog>`
 
