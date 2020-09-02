@@ -28,8 +28,6 @@ if __name__ == "__main__":
     from soma_workflow.errors import NoDrmaaLibError, EngineError
     from soma_workflow.database_server import WorkflowDatabaseServer
     from soma_workflow import scheduler
-    from soma_workflow.schedulers.local_scheduler \
-        import ConfiguredLocalScheduler
     import time
     import signal
     from soma_workflow import subprocess
