@@ -53,9 +53,9 @@ class FakePipelineTest(WorkflowTest):
 
     def test_result(self):
         if hasattr(self.wf_ctrl.scheduler_config, 'get_proc_nb'):
-            n_iter = 10 * self.wf_ctrl.scheduler_config.get_proc_nb()
+            n_iter = 5 * self.wf_ctrl.scheduler_config.get_proc_nb()
         else:
-            n_iter = 10
+            n_iter = 5
         workflow = self.wf_examples.example_fake_pipelineT1(n_iter)
         self.wf_id = self.wf_ctrl.submit_workflow(
             workflow=workflow,
