@@ -18,7 +18,7 @@ import atexit
 
 from soma_workflow.client import WorkflowController
 from soma_workflow.configuration import Configuration, LIGHT_MODE, \
-    change_soma_workflow_directory
+    change_soma_workflow_directory, restore_soma_workflow_directory
 from soma_workflow.test.utils import get_user_id
 from soma_workflow.test.utils import suppress_stdout
 
@@ -160,7 +160,6 @@ class WorkflowTest(unittest.TestCase):
             print('making non-temporary directory: %s' % tmpdb,
                   file=sys.stderr)
         self.soma_workflow_temp_dir = tmpdb
-        self.old_search_config_path = Configuration.search_config_path
         change_soma_workflow_directory(tmpdb, socket.gethostname())
 
         self.temporaries = [self.wf_examples.output_dir]
@@ -195,8 +194,7 @@ class WorkflowTest(unittest.TestCase):
                         pass
                 else:
                     print('leaving file: %s' % t, file=sys.stderr)
-        Configuration.search_config_path \
-            = staticmethod(self.old_search_config_path)
+        restore_soma_workflow_directory()
 
     def print_jobs(self, jobs, title='Jobs', file=sys.stderr):
         print('\n%s:' % title, self.wf_ctrl.jobs(jobs), file=file)

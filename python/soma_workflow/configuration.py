@@ -1516,6 +1516,18 @@ def change_soma_workflow_directory(directory, config_name=None):
         config_name = socket.gethostname()
     swf_conf = '[%s]\nSOMA_WORKFLOW_DIR = %s\n' \
         % (config_name, directory)
+    if not hasattr(Configuration, '_old_search_config_path'):
+        Configuration._old_search_config_path \
+            = Configuration.search_config_path
     Configuration.search_config_path \
         = staticmethod(lambda: six.StringIO(swf_conf))
+
+def restore_soma_workflow_directory():
+    '''
+    Restore the search_config_path static method of Configuration after
+    change_soma_workflow_directory() has been used.
+    '''
+    if hasattr(Configuration, '_old_search_config_path'):
+        Configuration.search_config_path \
+            = staticmethod(Configuration._old_search_config_path.im_func)
 
