@@ -623,7 +623,10 @@ class RemoteConnection(object):
         '''
         from soma_workflow import configuration
 
+        print('=== kill_remote_servers', resource_id, file=sys.stderr)
+        print('config file:', configuration.Configuration.search_config_path(), file=sys.stderr)
         config = configuration.Configuration.load_from_file(resource_id)
+        print('config:', config, ', config_parser:', config.get_config_parser(), file=sys.stderr)
         if config.is_local_resource(config.get_config_parser(), resource_id):
             local = True
             print('local mode')
