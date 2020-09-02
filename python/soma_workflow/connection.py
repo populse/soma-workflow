@@ -666,9 +666,9 @@ class RemoteConnection(object):
                 stdin, stdout, stderr = ssh.exec_command('ps ux')
 
             db_re = re.compile(
-                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+                b'^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
             en_re = re.compile(
-                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+                b'^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
             for psline in stdout.readlines():
                 m = db_re.match(psline)
                 if m:
