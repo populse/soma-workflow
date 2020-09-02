@@ -185,6 +185,7 @@ class WorkflowController(object):
 
             self._engine_proxy = self._connection.get_workflow_engine()
             self.engine_config_proxy = self._connection.get_configuration()
+            self.scheduler_config = self._connection.get_scheduler_config()
             self._transfer = TransferLocal(self._engine_proxy)
             self._transfer_stdouterr = TransferLocal(self._engine_proxy)
 
