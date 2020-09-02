@@ -1528,6 +1528,10 @@ def restore_soma_workflow_directory():
     change_soma_workflow_directory() has been used.
     '''
     if hasattr(Configuration, '_old_search_config_path'):
-        Configuration.search_config_path \
-            = staticmethod(Configuration._old_search_config_path.im_func)
+        if sys.version_info[0] < 3:
+            Configuration.search_config_path \
+                = staticmethod(Configuration._old_search_config_path.im_func)
+        else:
+            Configuration.search_config_path \
+                = staticmethod(Configuration._old_search_config_path)
 
