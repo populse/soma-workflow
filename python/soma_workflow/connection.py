@@ -735,6 +735,7 @@ class LocalConnection(object):
 
         logging.info("************************************************")
         logging.info("*********** Init local connection **************")
+        print('new LocalConnection', self)
 
         login = getpass.getuser()
         remote_workflow_engine_name = "workflow_engine_" + login
@@ -874,7 +875,7 @@ class LocalConnection(object):
         logging.info("End of the initialisation of LocalConnection.")
 
     def __del__(self):
-        print('del LocalConnection')
+        print('del LocalConnection, thread:', threading.current_thread())
         self.stop()
 
     def isValid(self):
@@ -884,7 +885,7 @@ class LocalConnection(object):
         '''
         For test purpose only !
         '''
-        print('LocalConnection.stop')
+        print('LocalConnection.stop', self, self.workflow_engine._port)
         try:
             self.__connection_holder
         except AttributeError:

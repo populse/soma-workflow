@@ -233,7 +233,8 @@ class ObjectServer(object):
         logger = logging.getLogger('zro.ObjectServer')
         logger.debug("The oject server is registering a "
                      + repr(object.__class__.__name__)
-                     + " object, on " + repr(self.port))
+                     + " object, on " + repr(self.port)
+                     + ', id: %s' % str(id(object)))
 
         return str(object.__class__.__name__) + ":" + str(id(object)) + ":" + str(self.port)
 
@@ -246,8 +247,7 @@ class ObjectServer(object):
         self.poller = poller
         poller.register(frontend, zmq.POLLIN)
 
-        logger.debug("ObS0:" + str(self.port)[-3:]
-                     + ":Waiting for incoming data")
+        logger.debug("ObS0: " + str(self.port) + ":Waiting for incoming data")
         #init_time = time.time()
         #nreq = 0
         #ovh_total = 0.
@@ -281,7 +281,7 @@ class ObjectServer(object):
                         #t01 = time.time()
                         if instance:
                             logger.debug(
-                                "ObS1:" + str(self.port)[-3:] + ":calling "
+                                "ObS1:" + str(self.port) + ":calling "
                                 + classname + " " + object_id + ", thread: " + thread_id + ", client: " + repr(client) + ": " + method
                                 + " " + repr(args))
                             worker = self.get_worker(thread_id)
@@ -292,8 +292,9 @@ class ObjectServer(object):
                                     method, args, kwargs))  #, (time.time(), t0, t01)))
                         else:
                             logger.info(
-                                "object not in the list of objects: %s / %s"
-                                % (classname, object_id))
+                                "object not in the list of objects: %s:%s, "
+                                "port: %s"
+                                % (classname, object_id, self.port))
 
                     else:
                         # an internal message is received on an inproc socket,
@@ -407,6 +408,11 @@ class Proxy(object):
     (accessors)
     """
 
+    # we need to refcount the used ports in order to garbage-collect the
+    # sockets in ProxyMethod
+    ports_count = {}
+    class_lock = threading.RLock()
+
     def __init__(self, uri):
         self.context = zmq.Context.instance()
         # To avoid multiple threads using the proxy variables at the same time
@@ -422,12 +428,15 @@ class Proxy(object):
         # (cf how the database server engine is handled
         #self.socket.connect("tcp://localhost:" + self._port)
         logger = logging.getLogger('zro.ObjectServer')
-        logger.debug("Proxy: " + str(self.classname) + str(self.object_id)
-                     + str(self._port))
+        logger.debug("Proxy: " + str(self.classname) + ":"
+                     + str(self.object_id) + ":" + str(self._port))
         # TODO
         # logging.debug(self.classname, self.object_id, self._port)
         self.timeout = -1
         self.running_methods = set()
+        with Proxy.class_lock:
+            Proxy.ports_count[self._port] \
+                = Proxy.ports_count.get(self._port, 0) + 1
 
     def __del__(self):
         # kill all running methods because the proxy / connection is destroyed.
@@ -443,6 +452,12 @@ class Proxy(object):
                 break
             print('    interrupt method:', method.method)
             method.interrupt()
+        with Proxy.class_lock:
+            count = Proxy.ports_count.get(self._port, 0) - 1
+            if count != 0:
+                Proxy.ports_count[self._port] = count
+            else:
+                del Proxy.ports_count[self._port]
 
     def __getattr__(self, method_name):
         if method_name in self.__dict__:
@@ -471,19 +486,25 @@ class ProxyMethod(object):
         self.method = method
         self.stop_request = False
 
-    def new_socket(self):
+    def get_socket(self):
+        # garbage-collect sockets (could be done elsewhere, at another time)
         thread_names = set([thread.name for thread in threading.enumerate()])
+        with Proxy.class_lock:
+            used_ports = set([p for p, n in Proxy.ports_count.items()
+                              if n > 0])
         with ProxyMethod.lock:
             ProxyMethod.sockets = dict(
-                [(thread, socket)
-                 for thread, socket in six.iteritems(ProxyMethod.sockets)
-                 if thread in thread_names])
+                [(thread_port, socket)
+                 for thread_port, socket in six.iteritems(ProxyMethod.sockets)
+                 if thread_port[0] in thread_names
+                    and thread_port[1] in used_ports])
+
             thread = threading.current_thread().name
-            socket = ProxyMethod.sockets.get(thread)
+            socket = ProxyMethod.sockets.get((thread, self.proxy._port))
             if socket:
                 return socket
             socket = self.proxy.context.socket(zmq.REQ)
-            ProxyMethod.sockets[thread] = socket
+            ProxyMethod.sockets[(thread, self.proxy._port)] = socket
         # caveat: note that connect will succeed even if there is
         # no port waiting for a connection, as such you have to
         # check yourself that the connection has succeeded
@@ -498,8 +519,10 @@ class ProxyMethod(object):
             logger.debug('Execute method: %s.%s(*%s, **%s)'
                          % (self.proxy.classname, self.method, repr(args),
                             repr(kwargs)))
-            socket = self.new_socket()
-            logger.debug('socket: %s, thread: %s' % (repr(socket), threading.current_thread().name))
+            socket = self.get_socket()
+            logger.debug('socket: %s, thread: %s, port: %s'
+                         % (repr(socket), threading.current_thread().name,
+                            self.proxy._port))
             try:
                 if socket.closed:
                     logger.info('### SOCKET CLOSED. ###')
@@ -544,17 +567,18 @@ class ProxyMethod(object):
                         and time.time() - t0 > self.proxy.timeout):
                     done = True
                     logger.error(
-                        'Connection timeout in ProxyMethod.__call__ for: %s.%s(*%s, **%s)'
-                        % (self.proxy.classname, self.method, repr(args),
-                           repr(kwargs)))
+                        'Connection timeout in ProxyMethod.__call__, '
+                        'port %s, for: %s.%s(*%s, **%s)'
+                        % (self.proxy._port, self.proxy.classname, self.method,
+                           repr(args), repr(kwargs)))
                     # reset socket for this thread (by deleting it)
                     with self.lock:
                         del ProxyMethod.sockets[thread_id]
                     raise RuntimeError(
-                        'Connection timeout in ProxyMethod.__call__ for: '
-                        '%s.%s(*%s, **%s)'
-                        % (self.proxy.classname, self.method, repr(args),
-                           repr(kwargs)))
+                        'Connection timeout in ProxyMethod.__call__, '
+                        'port %s, for: %s.%s(*%s, **%s)'
+                        % (self.proxy._port, self.proxy.classname, self.method,
+                           repr(args), repr(kwargs)))
             result = pickle.loads(msg)
             logger.debug("remote call result:     " + str(result))
 
