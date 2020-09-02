@@ -44,7 +44,8 @@ install:
     - if [[ -n "$GITHUB_ACCESS_TOKEN" ]]; then export PUSH_DOC_TO_GH_PAGES=yes; fi
 
 script:
-    - coverage run -m soma_workflow.test --isolated --resources local-server --debug & sleep 120 && echo "\n******** client log:" && cat /tmp/swf_test_log && echo "\n************* server log:" && tail -2000 /tmp/swf_isol*/logs/log_workflow_engine*
+    #- coverage run -m soma_workflow.test --isolated --resources local-server --debug & sleep 120 && echo "\n******** client log:" && cat /tmp/swf_test_log && echo "\n************* server log:" && tail -2000 /tmp/swf_isol*/logs/log_workflow_engine*
+    - coverage run -m soma_workflow.test --isolated --resources local-server --debug
 
 after_success:
     - codecov
