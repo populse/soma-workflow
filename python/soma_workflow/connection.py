@@ -627,7 +627,9 @@ class RemoteConnection(object):
         print('config file:', configuration.Configuration.search_config_path(), file=sys.stderr)
         config = configuration.Configuration.load_from_file(resource_id)
         print('config:', config, ', config_parser:', config.get_config_parser(), file=sys.stderr)
-        if config.is_local_resource(config.get_config_parser(), resource_id):
+        config_parser = config.get_config_parser()
+        if not config_parser or config.is_local_resource(config_parser,
+                                                         resource_id):
             local = True
             print('local mode')
         else:
