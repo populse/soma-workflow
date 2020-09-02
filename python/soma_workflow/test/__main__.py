@@ -22,8 +22,8 @@ res &= soma_workflow.test.workflow_tests.test_exception1.test()
 import soma_workflow.test.workflow_tests.test_exception2
 res &= soma_workflow.test.workflow_tests.test_exception2.test()
 
-import soma_workflow.test.workflow_tests.test_fake_pipeline
-res &= soma_workflow.test.workflow_tests.test_fake_pipeline.test()
+#import soma_workflow.test.workflow_tests.test_fake_pipeline
+#res &= soma_workflow.test.workflow_tests.test_fake_pipeline.test()
 
 import soma_workflow.test.workflow_tests.test_multiple
 res &= soma_workflow.test.workflow_tests.test_multiple.test()
