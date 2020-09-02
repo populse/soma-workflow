@@ -580,7 +580,10 @@ class ProxyMethod(object):
                         % (self.proxy._port, self.proxy.classname, self.method,
                            repr(args), repr(kwargs)))
             result = pickle.loads(msg)
-            logger.debug("remote call result:     " + str(result))
+            logger.debug(
+              "remote call result for %s.%s/%s:     %s"
+              % (self.proxy.classname, self.method, self.proxy.object_id,
+                 str(result)))
 
             if isinstance(result, ReturnException):
                 logger.error('ZRO proxy returned an exception: '
