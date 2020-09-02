@@ -30,7 +30,7 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; python --version; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="/usr/local/opt/python@3.8/bin:$PATH"; ln -s `which python3` bin/python; ln -s `which pip3` bin/pip; export PATH="$PWD/bin:$PATH"; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
-    - if [[ "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then sudo apt-get install -y pandoc graphviz; pip install sphinx sphinx-gallery pandoc nbsphinx "PyQt5<5.13"; fi
+    - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then sudo apt-get install -y pandoc graphviz; pip install sphinx sphinx-gallery pandoc nbsphinx "PyQt5<5.13"; fi
 
 install:
     - pip install "six~=1.13" paramiko zmq
@@ -42,8 +42,7 @@ install:
     # with '_' (such as '_static')
     - if [[  "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then cd doc && make html && touch build/html/.nojekyll && cd ..; fi
     - if [[ -n "$GITHUB_ACCESS_TOKEN" ]]; then export PUSH_DOC_TO_GH_PAGES=yes; fi
-    - cat /proc/cpuinfo
-    - free
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cat /proc/cpuinfo && free; fi
 
 script:
     #- coverage run -m soma_workflow.test --isolated --resources local-server --debug & sleep 120 && echo "\n******** client log:" && cat /tmp/swf_test_log && echo "\n************* server log:" && tail -2000 /tmp/swf_isol*/logs/log_workflow_engine*
