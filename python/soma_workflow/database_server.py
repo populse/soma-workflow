@@ -703,6 +703,8 @@ class WorkflowDatabaseServer(object):
                 nmax = maxv
                 if maxv == 0:
                     nmax = len(jobsToDelete)
+                    if nmax == 0:
+                        nmax = 1
                 nchunks = int(math.ceil(float(len(jobsToDelete)) / nmax))
 
                 for chunk in range(nchunks):
