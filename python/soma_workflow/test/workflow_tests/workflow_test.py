@@ -180,7 +180,7 @@ class WorkflowTest(unittest.TestCase):
                         # debug
                         if '--debug' in sys.argv[1:]:
                             print('\n=======  client log  ========',
-                                  file=sys.argv)
+                                  file=sys.stderr)
                             with open('/tmp/swf_test_log') as f:
                                 print(f.read(), file=sys.stderr)
                             config = swc.config
