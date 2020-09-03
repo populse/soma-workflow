@@ -755,6 +755,8 @@ class WorkflowDatabaseServer(object):
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
+                        if nmax == 0:
+                            nmax = 1
                     nchunks = int(math.ceil(float(len(transfersToDelete))
                                             / nmax))
                     for chunk in range(nchunks):
@@ -775,6 +777,8 @@ class WorkflowDatabaseServer(object):
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(transfersToDelete)
+                        if nmax == 0:
+                            nmax = 1
                     nchunks = int(math.ceil(float(len(transfersToDelete))
                                             / nmax))
                     for chunk in range(nchunks):
@@ -806,6 +810,8 @@ class WorkflowDatabaseServer(object):
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(tmpToDelete)
+                        if nmax == 0:
+                            nmax = 1
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
                     tkeys = list(tmpToDelete.keys())
                     for chunk in range(nchunks):
@@ -825,6 +831,8 @@ class WorkflowDatabaseServer(object):
                     nmax = maxv
                     if nmax == 0:
                         nmax = len(tmpToDelete)
+                        if nmax == 0:
+                            nmax = 1
                     nchunks = int(math.ceil(float(len(tmpToDelete)) / nmax))
                     tkeys = list(tmpToDelete.keys())
                     for chunk in range(nchunks):
@@ -2211,6 +2219,8 @@ class WorkflowDatabaseServer(object):
         nmax = maxv
         if maxv == 0:
             nmax = len(job_ids)
+            if nmax == 0:
+                nmax = 1
         nchunks = int(math.ceil(float(len(job_ids)) / nmax))
 
         for chunk in range(nchunks):
@@ -2670,6 +2680,8 @@ class WorkflowDatabaseServer(object):
             nmax = sqlite3_max_variable_number()
             if nmax == 0:
                 nmax = len(job_status)
+                if nmax == 0:
+                    nmax = 1
             sel = []
             nchunks = int(math.ceil(float(len(job_status)) / nmax))
             jkeys = list(job_status.keys())
@@ -2737,6 +2749,8 @@ class WorkflowDatabaseServer(object):
                     # update last_status_update for all jobs which may
                     # become outdated
                     nmax -= 1
+                    if nmax == 0:
+                        nmax = 1
                     nchunks = int(math.ceil(float(len(date_to_update)) / nmax))
                     for chunk in range(nchunks):
                         if chunk < nchunks - 1:
@@ -2851,6 +2865,8 @@ class WorkflowDatabaseServer(object):
             nmax = maxv
             if maxv == 0:
                 nmax = len(job_ids)
+                if nmax == 0:
+                    nmax = 1
             nchunks = int(math.ceil(float(len(job_ids)) / nmax))
             for chunk in range(nchunks):
                 if chunk < nchunks - 1:
