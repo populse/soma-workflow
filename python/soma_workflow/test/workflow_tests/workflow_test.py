@@ -170,7 +170,43 @@ class WorkflowTest(unittest.TestCase):
         if swc is not None:
             if self.wf_id:
                 if rmfiles:
-                    swc.delete_workflow(self.wf_id)
+                    try:
+                        swc.delete_workflow(self.wf_id)
+                    except Exception as e:
+                        print('** error in delete_workflow: **',
+                              file=sys.stderr)
+                        import traceback
+                        traceback.print_exc()
+                        # debug
+                        if '--debug' in sys.argv[1:]:
+                            print('\n=======  client log  ========',
+                                  file=sys.argv)
+                            with open('/tmp/swf_test_log') as f:
+                                print(f.read(), file=sys.stderr)
+                            config = swc.config
+                            if config.get_mode() != 'light':
+                                resource_id = config._resource_id
+                                eng_log_info = config.get_engine_log_info()
+                                login = config.get_login()
+                                if login is None:
+                                    import getpass
+                                    login = getpass.getuser()
+                                engine_name = "workflow_engine_" + login
+                                log_file = os.path.join(
+                                    eng_log_info[0],
+                                    "log_" + engine_name)
+                                if os.path.exists(log_file):
+                                    print('\n=======  server log  =======',
+                                          file=sys.stderr)
+                                    with open(log_file) as f:
+                                        lines = f.readlines()
+                                        if len(lines) > 2000:
+                                            print(
+                                                'tail 2000 log lines out of %d'
+                                                % len(lines), file=sys.stderr)
+                                        print('\n'.join(lines[-2000:]),
+                                              file=sys.stderr)
+
                 else:
                     print('workflow %d has been kept in database in %s'
                           % (self.wf_id, self.soma_workflow_temp_dir),
