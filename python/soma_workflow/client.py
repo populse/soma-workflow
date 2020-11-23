@@ -853,6 +853,11 @@ class WorkflowController(object):
                 # skip those aborted for their dependencies
                 if element[3][0] != constants.EXIT_NOTRUN:
                     job = failed_jobs_info[element[0]]
+                    ejob = self.get_engine_job(element[0])
+                    if ejob.env:
+                        env = dict(ejob.env)
+                    else:
+                        env = {}
                     print('+ job %d:' % element[0], job[0],
                           ', status:', element[1],
                           ', exit:', element[3][0],
@@ -866,14 +871,20 @@ class WorkflowController(object):
 
                     print('\n  input parameters:', file=file)
                     print('  -----------------', file=file)
-                    print(self.updated_job_parameters(element[0]), file=file)
+                    print(dict(self.updated_job_parameters(element[0]),
+                               file=file))
+                    in_param_file = ejob.plain_input_params_file()
+                    if in_param_file:
+                        env['SOMAWF_INPUT_PARAMS'] = in_param_file
+                    out_param_file = ejob.plain_output_params_file()
+                    if out_param_file:
+                        env['SOMAWF_OUTPUT_PARAMS'] = out_param_file
                     print('\n  output parameters:', file=file)
                     print('  ------------------', file=file)
                     print(self.get_job_output_params(element[0]), file=file)
                     print('\n  environment:', file=file)
                     print('  ------------', file=file)
-                    job = self.get_engine_job(element[0])
-                    print(job.env, file=file)
+                    print(env, file=file)
 
                     tmp_stdout = tempfile.mkstemp(prefix='swf_job_stdout_')
                     tmp_stderr = tempfile.mkstemp(prefix='swf_job_stderr_')
@@ -892,6 +903,8 @@ class WorkflowController(object):
                         print(f.read(), file=file)
                     os.unlink(tmp_stderr[1])
                     print(file=file)
+            print('---- full host env ----', file=file)
+            print(repr(os.environ))
 
         return workflow_status == constants.WORKFLOW_DONE \
             and len(failed_jobs) == 0
