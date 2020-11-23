@@ -871,8 +871,8 @@ class WorkflowController(object):
 
                     print('\n  input parameters:', file=file)
                     print('  -----------------', file=file)
-                    print(dict(self.updated_job_parameters(element[0]),
-                               file=file))
+                    print(repr(dict(self.updated_job_parameters(element[0]))),
+                          file=file)
                     in_param_file = ejob.plain_input_params_file()
                     if in_param_file:
                         env['SOMAWF_INPUT_PARAMS'] = in_param_file
