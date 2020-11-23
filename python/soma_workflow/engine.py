@@ -1287,7 +1287,7 @@ class WorkflowEngine(RemoteFileController):
     def updated_job_parameters(self, job_id):
         job = self._database_server.get_engine_job(job_id, self._user_id)[0]
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
-        param_dict = {}
+        param_dict = job.param_dict
         if u_param_dict:
             param_dict = {}
             for param, value_tl in six.iteritems(u_param_dict):
