@@ -300,11 +300,12 @@ class Job(object):
         self.output_params_file = output_params_file
         self.configuration = configuration
 
-        for command_elem in self.command:
-            if isinstance(command_elem, six.string_types):
-                if "'" in command_elem:
-                    warnings.warn("%s contains single quote. It could fail using DRMAA"
-                                  % command_elem, UserWarning)
+        # this deson't seem to be really hamful.
+        # for command_elem in self.command:
+        #     if isinstance(command_elem, six.string_types):
+        #         if "'" in command_elem:
+        #             warnings.warn("%s contains single quote. It could fail using DRMAA"
+        #                           % command_elem, UserWarning)
 
     def _attributes_equal(self, element, other_element):
         if element.__class__ is not other_element.__class__:
