@@ -191,6 +191,8 @@ class EngineJob(Job):
             self.env = env
 
         self.job_class = type(client_job)
+        if hasattr(client_job, 'uuid'):
+            self.uuid = client_job.uuid
 
         self._map()
 
@@ -629,6 +631,8 @@ class EngineWorkflow(Workflow):
         self.name = name
 
         self.user_storage = client_workflow.user_storage
+        if hasattr(client_workflow, 'uuid'):
+            self.uuid = client_workflow.uuid
 
         self.job_mapping = {}
         self.transfer_mapping = {}

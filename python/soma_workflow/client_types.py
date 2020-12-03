@@ -533,13 +533,15 @@ class Job(object):
             "use_input_params_file",
             "has_outputs",
             "configuration",
+            "uuid",
         ]
 
         job_dict["class"] = '%s.%s' % (self.__class__.__module__,
                                        self.__class__.__name__)
 
         for attr_name in attributes:
-            job_dict[attr_name] = getattr(self, attr_name)
+            if hasattr(self, attr_name):
+                job_dict[attr_name] = getattr(self, attr_name)
 
         # command, referenced_input_files, referenced_output_files
         # stdin, stdout_file, stderr_file and working_directory
@@ -1227,6 +1229,9 @@ class Workflow(object):
             wf_dict['env'] = self.env
         if self.env_builder_code is not None:
             wf_dict['env_builder_code'] = self.env_builder_code
+
+        if hasattr(self, 'uuid'):
+            wf_dict['uuid'] = self.uuid
 
         return wf_dict
 
