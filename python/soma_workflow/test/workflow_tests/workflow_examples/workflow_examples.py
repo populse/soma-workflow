@@ -27,6 +27,7 @@ from soma_workflow.client import LeaveOneOutJob
 from soma_workflow.client import CrossValidationFoldJob
 from soma_workflow.errors import ConfigurationError
 import tempfile
+import warnings
 
 
 class WorkflowExamples(object):
@@ -126,6 +127,7 @@ class WorkflowExamples(object):
     def example_special_command(self):
         # jobs
         test_command_job = self.job_test_command_1()
+        warnings.warn("This workflow prints a warning.")
         # building the workflow
         jobs = [test_command_job]
 

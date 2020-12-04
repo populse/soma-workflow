@@ -58,7 +58,7 @@ class SpecialCommandTest(WorkflowTest):
             # Verify some things
             self.assertTrue(len(w) == 1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue("contains single quote. It could fail using DRMAA"
+            self.assertTrue("This workflow prints a warning."
                             in str(w[-1].message))
 
         self.wf_id = self.wf_ctrl.submit_workflow(
