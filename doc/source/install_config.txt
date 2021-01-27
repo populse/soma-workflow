@@ -135,6 +135,8 @@ Configuration file example (2 computing resources are configured): ::
 .. _python_command_option:
 
   **PYTHON_COMMAND**
+    Option added in Soma-Workflow 3.1.
+
     May be set on client side in the computing resource configuration, to specify the way the client will start the server. Soma-workflow server is normally started using Python language modules, as commands in the shape:
 
     .. code-block:: bash
