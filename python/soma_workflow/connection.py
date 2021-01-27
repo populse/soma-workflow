@@ -77,7 +77,8 @@ def SSH_exec_cmd(sshcommand,
                  isNeedErr=False,
                  num_line_stdout=-1,  # How many stdout or stderr lines to read
                  num_line_stderr=-1,  # -1 means unlimited
-                 exit_status=None):   # None, 'return' or 'raise'
+                 exit_status=None,  # None, 'return' or 'raise'
+                 use_rc=True):  # load .profile, .bash_profile, .bashrc
 
     if wait_output:
         tag = '----xxxx=====start to exec=====xxxxx----'
@@ -110,7 +111,15 @@ def SSH_exec_cmd(sshcommand,
                        username=userid,
                        password=userpw)
 
-        stdin, stdout, stderr = client.exec_command(sshcommand)
+        if use_rc:
+            # load config files
+            prefix = '[ -f ~/.profile ] && . ~/.profile; ' \
+                '[ -f ~/.bash_profile ] && . ~/.bash_profile; ' \
+                '[ -f ~/.bashrc ] && . ~/.bashrc; '
+        else:
+            prefix = ''
+
+        stdin, stdout, stderr = client.exec_command(prefix + sshcommand)
 
     except paramiko.AuthenticationException as e:
         print("The authentification failed. %s. "
@@ -156,13 +165,38 @@ def SSH_exec_cmd(sshcommand,
         return std_out_lines
 
 
-def server_python_interpreter():
-    ''' python command to run on server side '''
-    python_interpreter = os.path.basename(sys.executable)
-    if not six.PY2 and python_interpreter == 'python':
-        # force the use of python3 if we use it on client side
-        python_interpreter = 'python%d' % sys.version_info[0]
+def server_python_interpreter(resource_id):
+    ''' python command to run on server side
+
+    Returns
+    -------
+    a list, as commands passed to subprocess.Popen
+    '''
+    python_interpreter = None
+    if resource_id is not None:
+        from soma_workflow import configuration
+        config = configuration.Configuration.load_from_file(resource_id)
+        config_parser = config.get_config_parser()
+        # if config_parser:
+        #     print('local:', config.is_local_resource(config_parser, resource_id))
+        if config_parser and not config.is_local_resource(config_parser,
+                                                          resource_id):
+            python_interpreter = config.get_python_command(config_parser,
+                                                           resource_id)
+            if (python_interpreter is not None
+                    and python_interpreter.startswith('[')):
+                python_interpreter = eval(python_interpreter)
+            else:
+                python_interpreter = [python_interpreter]
+    if not python_interpreter:
+        python_interpreter = os.path.basename(sys.executable)
+        if not six.PY2 and python_interpreter == 'python':
+            # force the use of python3 if we use it on client side
+            python_interpreter = 'python%d' % sys.version_info[0]
+        python_interpreter = [python_interpreter]
+
     return python_interpreter
+
 
 
 def check_if_soma_wf_cr_on_server(
@@ -170,10 +204,10 @@ def check_if_soma_wf_cr_on_server(
     ip_address_or_domain,
     userpw='',
     sshport=22,
-        resource_id=None):
+    resource_id=None):
     """ Check if the check_requirement module exists
     """
-    python_interpreter = server_python_interpreter()
+    python_interpreter = ' '.join(server_python_interpreter(resource_id))
     command = python_interpreter + " -m soma_workflow.check_requirement"
     if resource_id:
         command += ' ' + resource_id
@@ -197,10 +231,11 @@ def check_if_somawf_on_server(
     userid,
     ip_address_or_domain,
     userpw='',
-        sshport=22):
+    sshport=22,
+    resource_id=None):
     """ Check if the soma_workflow module exists
     """
-    python_interpreter = server_python_interpreter()
+    python_interpreter = ' '.join(server_python_interpreter(resource_id))
     command = python_interpreter + " -c 'import soma_workflow'"
     print(command)
     (std_out_lines, std_err_lines) = SSH_exec_cmd(
@@ -300,7 +335,8 @@ class RemoteConnection(object):
 
         remote_workflow_engine_name = "workflow_engine_" + login
 
-        if not check_if_somawf_on_server(login, cluster_address, password):
+        if not check_if_somawf_on_server(login, cluster_address, password,
+                                         resource_id=resource_id):
             raise ConnectionError("Cannot find soma-workflow on %s. "
                                   "Please verify if your PYTHONPATH "
                                   "includes the soma-workflow."
@@ -327,8 +363,8 @@ class RemoteConnection(object):
 
         # run the workflow engine process and get back the    #
         # WorkflowEngine and ConnectionChecker URIs       #
-        python_interpreter = server_python_interpreter()
-        command = python_interpreter + " -m soma_workflow.start_workflow_engine"\
+        python_interpreter = server_python_interpreter(resource_id)
+        command = ' '.join(python_interpreter) + " -m soma_workflow.start_workflow_engine"\
             " %s %s %s" % (resource_id, remote_workflow_engine_name, log)
 
         if cluster_address in ('localhost', socket.gethostname()) \
@@ -701,8 +737,14 @@ class RemoteConnection(object):
             if local:
                 db_file = config.get_database_file()
             else:
-                python_interpreter = server_python_interpreter()
-                cmd = '''. $HOME/.bashrc && %s -c 'from __future__ import print_function; from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print(config.get_database_file())\'''' \
+                python_interpreter = ' '.join(
+                    server_python_interpreter(resource_id))
+
+                # load config files
+                prefix = '[ -f ~/.profile ] && . ~/.profile; ' \
+                    '[ -f ~/.bash_profile ] && . ~/.bash_profile; ' \
+                    '[ -f ~/.bashrc ] && . ~/.bashrc; '
+                cmd = prefix + '''%s -c 'from __future__ import print_function; from soma_workflow import configuration; config = configuration.Configuration.load_from_file("%s"); print(config.get_database_file())\'''' \
                     % (python_interpreter, resource_id)
                 stdin, stdout, stderr = ssh.exec_command(cmd)
                 db_file = stdout.read().strip()

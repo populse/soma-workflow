@@ -136,6 +136,7 @@ OCFG_CONTAINER_COMMAND = 'CONTAINER_COMMAND'
 
 # Python version filtering
 OCFG_ALLOWED_PYTHON_VERSIONS = 'ALLOWED_PYTHON_VERSIONS'
+OCFG_PYTHON_COMMAND = 'PYTHON_COMMAND'
 
 # local sheduler configuration -------------------------------------------
 
@@ -1106,6 +1107,13 @@ class Configuration(observer.Observable):
         py_ver = Configuration.get_allowed_python_versions(
             config_parser, resource_id=resource_id)
         return py_ver is None or sys.version_info[0] in py_ver
+
+    @staticmethod
+    def get_python_command(config_parser, resource_id):
+        if config_parser.has_option(resource_id, OCFG_PYTHON_COMMAND):
+            return config_parser.get(resource_id, OCFG_PYTHON_COMMAND)
+        else:
+            return None
 
     def make_dirs(self, anypath, is_file_path=False):
         '''

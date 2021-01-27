@@ -41,6 +41,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
               'sphinx.ext.inheritance_diagram',
+              'sphinx.ext.extlinks',
               ]
 try:
     # try napoleon which replaces numpydoc (and googledoc),
@@ -65,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'soma-workflow'
-copyright = u'2011-2018 CEA, Neurospin, France, CATI, France'
+copyright = u'2011-2021 CEA, Neurospin, France, CATI, France'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -246,8 +247,8 @@ man_pages = [
 # Bibliographic Dublin Core info.
 epub_title = u'soma-workflow'
 epub_author = u'Soizic Laguitton'
-epub_publisher = u'2019 CEA, Neurospin, France, CATI, France'
-epub_copyright = u'2019, '
+epub_publisher = u'2021 CEA, Neurospin, France, CATI, France'
+epub_copyright = u'2021, '
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
@@ -284,3 +285,16 @@ autoclass_content = "both"
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+
+# versions of our software
+casadistro_version = '3.0'
+try:
+    from casa_distro import info as cdinfo
+    casadistro_version = '%d.%d' % (cdinfo.version_major, cdinfo.version_minor)
+except ImportError:
+    pass
+
+extlinks = {
+    'casadistro': ('../../casa-distro-' + casadistro_version + '/%s',
+                   'casa-distro'),
+}

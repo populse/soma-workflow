@@ -647,75 +647,79 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def refresh(self):
-        self.ui.table.clear()
-        self.ui.table.setColumnCount(3)
-        self.ui.table.setRowCount(len(self.resource_ids))
-        row = 0
-        for rid in self.resource_ids:
-            if not rid in self.model.resource_pool.resource_ids():
-                self.resource_ids.remove(rid)
-                continue
-            status_list = self.model.list_workflow_status(rid)
-            running = status_list.count(constants.WORKFLOW_IN_PROGRESS)
-            warning = status_list.count(constants.WARNING)
-            to_display = ""
-            if running == 0 and warning == 0:
-                icon = QtGui.QIcon(
-                    os.path.join(os.path.dirname(__file__), "icon/done.png"))
-            elif warning > 0:
-                icon = QtGui.QIcon(
-                    os.path.join(os.path.dirname(__file__), "icon/warning.png"))
-                if warning == 1:
-                    to_display = to_display + " (1 warning)"
+        try:
+            self.ui.table.clear()
+            self.ui.table.setColumnCount(3)
+            self.ui.table.setRowCount(len(self.resource_ids))
+            row = 0
+            for rid in self.resource_ids:
+                if not rid in self.model.resource_pool.resource_ids():
+                    self.resource_ids.remove(rid)
+                    continue
+                status_list = self.model.list_workflow_status(rid)
+                running = status_list.count(constants.WORKFLOW_IN_PROGRESS)
+                warning = status_list.count(constants.WARNING)
+                to_display = ""
+                if running == 0 and warning == 0:
+                    icon = QtGui.QIcon(
+                        os.path.join(os.path.dirname(__file__), "icon/done.png"))
+                elif warning > 0:
+                    icon = QtGui.QIcon(
+                        os.path.join(os.path.dirname(__file__), "icon/warning.png"))
+                    if warning == 1:
+                        to_display = to_display + " (1 warning)"
+                    else:
+                        to_display = to_display + \
+                            " (" + repr(warning) + " warnings)"
+                    if running == 1:
+                        to_display = to_display + " (1 is running)"
+                    elif running > 1:
+                        to_display = to_display + \
+                            " (" + repr(running) + " are running)"
                 else:
-                    to_display = to_display + \
-                        " (" + repr(warning) + " warnings)"
-                if running == 1:
-                    to_display = to_display + " (1 is running)"
-                elif running > 1:
-                    to_display = to_display + \
-                        " (" + repr(running) + " are running)"
-            else:
-                icon = QtGui.QIcon(
-                    os.path.join(os.path.dirname(__file__), "icon/running.png"))
-                if running == 1:
-                    to_display = to_display + " (1 is running)"
-                else:
-                    to_display = to_display + \
-                        " (" + repr(running) + " are running)"
+                    icon = QtGui.QIcon(
+                        os.path.join(os.path.dirname(__file__), "icon/running.png"))
+                    if running == 1:
+                        to_display = to_display + " (1 is running)"
+                    else:
+                        to_display = to_display + \
+                            " (" + repr(running) + " are running)"
 
-            item = QtGui.QTableWidgetItem(rid + " ")
-            item.setData(QtCore.Qt.UserRole, rid)
-            self.ui.table.setItem(row, 0, item)
-            self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(
-                icon, repr(len(status_list)) + " workflows" + to_display))
-            resource = self.model.resource_pool.connection(rid)
-            if resource.config.get_scheduler_type() \
-                    == configuration.LOCAL_SCHEDULER:
-                scheduler_config = resource.scheduler_config
-                if not scheduler_config and resource.engine_config_proxy:
-                    scheduler_config \
-                        = self.model.current_connection.scheduler_config
-                if scheduler_config:
-                    scheduler_widget = LocalSchedulerConfigController(
-                        scheduler_config,
+                item = QtGui.QTableWidgetItem(rid + " ")
+                item.setData(QtCore.Qt.UserRole, rid)
+                self.ui.table.setItem(row, 0, item)
+                self.ui.table.setItem(row, 1,  QtGui.QTableWidgetItem(
+                    icon, repr(len(status_list)) + " workflows" + to_display))
+                resource = self.model.resource_pool.connection(rid)
+                if resource.config.get_scheduler_type() \
+                        == configuration.LOCAL_SCHEDULER:
+                    scheduler_config = resource.scheduler_config
+                    if not scheduler_config and resource.engine_config_proxy:
+                        scheduler_config \
+                            = self.model.current_connection.scheduler_config
+                    if scheduler_config:
+                        scheduler_widget = LocalSchedulerConfigController(
+                            scheduler_config,
+                            self)
+                        self.ui.table.setCellWidget(row, 2, scheduler_widget)
+                        self.ui.table.resizeColumnToContents(2)
+                elif resource.engine_config_proxy.get_queue_limits() \
+                        or resource.engine_config_proxy.get_running_jobs_limits():
+                    controller_widget = WorkflowEngineConfigController(
+                        resource.engine_config_proxy,
                         self)
-                    self.ui.table.setCellWidget(row, 2, scheduler_widget)
+                    self.ui.table.setCellWidget(row, 2, controller_widget)
                     self.ui.table.resizeColumnToContents(2)
-            elif resource.engine_config_proxy.get_queue_limits() \
-                    or resource.engine_config_proxy.get_running_jobs_limits():
-                controller_widget = WorkflowEngineConfigController(
-                    resource.engine_config_proxy,
-                    self)
-                self.ui.table.setCellWidget(row, 2, controller_widget)
-                self.ui.table.resizeColumnToContents(2)
 
-            row = row + 1
-        if self.model.current_resource_id != None and \
-           self.model.current_resource_id in self.resource_ids:
-            self.ui.table.selectRow(
-                self.resource_ids.index(self.model.current_resource_id))
-        self.ui.table.resizeColumnsToContents()
+                row = row + 1
+            if self.model.current_resource_id != None and \
+              self.model.current_resource_id in self.resource_ids:
+                self.ui.table.selectRow(
+                    self.resource_ids.index(self.model.current_resource_id))
+            self.ui.table.resizeColumnsToContents()
+        except Exception as e:
+            print('exception in Qt slot:', e, file=sys.stderr)
+            traceback.print_exc()
 
 
 class LocalSchedulerConfigController(QtGui.QWidget):

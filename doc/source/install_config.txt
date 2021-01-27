@@ -132,6 +132,18 @@ Configuration file example (2 computing resources are configured): ::
     easier the selection of the queue when submitting a workflow.
     Syntax: "queue1 queue2 queue3"
 
+  **PYTHON_COMMAND**
+    May be set on client side in the computing resource configuration, to specify the way the client will start the server. Soma-workflow server is normally started using Python language modules, as commands in the shape:
+
+    .. code-block:: bash
+
+        python -m soma_workflow.start_workflow_engine
+
+    If this config option is not set, the ``python`` command is automatically adjusted to either ``python2`` or ``python3`` to match the client python version (they should be the same due to objects formats ("pickles")).
+
+    But in some cases, including when the soma-workflow servers should run inside a container like :casadistro:`Casa-Distro <index.html>` Singularity containers, entering the container involves an additional indirection, so we should specify, like::
+
+        PYTHON_COMMAND = bv python
 
 
 .. _server:

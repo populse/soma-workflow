@@ -30,7 +30,10 @@ sys.path.insert(0, os.path.abspath("../../python/soma_workflow/"))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinxtogithub', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx',
-              'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode']
+              'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode',
+              'sphinx.ext.inheritance_diagram',
+              'sphinx.ext.extlinks',
+              ]
 
 sphinx_to_github = True
 sphinx_to_github_verbose = True
@@ -49,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'soma-workflow'
-copyright = u'2011 CEA, Neurospin, France, CATI, France'
+copyright = u'2011-2021 CEA, Neurospin, France, CATI, France'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -229,8 +232,8 @@ man_pages = [
 # Bibliographic Dublin Core info.
 epub_title = u'soma-workflow'
 epub_author = u'Soizic Laguitton'
-epub_publisher = u'2011 CEA, Neurospin, France, CATI, France'
-epub_copyright = u'2011, '
+epub_publisher = u'2021 CEA, Neurospin, France, CATI, France'
+epub_copyright = u'2021, '
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
@@ -266,3 +269,8 @@ epub_copyright = u'2011, '
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+
+extlinks = {
+    'casadistro': ('https://brainvisa.github.io/casa-distro/%s',
+                   'casa-distro'),
+}
