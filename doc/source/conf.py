@@ -294,7 +294,15 @@ try:
 except ImportError:
     pass
 
+try:
+    import soma.info
+    somabase_version = '%d.%d' % (soma.info.version_major,
+                                  soma.info.version_minor)
+except:
+    somabase_version = '5.0'
+
 extlinks = {
     'casadistro': ('../../casa-distro-' + casadistro_version + '/%s',
                    'casa-distro'),
+    'bv': ('../../web-' + somabase_version + '/%s', 'brainvisa'),
 }

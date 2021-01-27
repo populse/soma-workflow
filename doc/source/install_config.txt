@@ -132,6 +132,8 @@ Configuration file example (2 computing resources are configured): ::
     easier the selection of the queue when submitting a workflow.
     Syntax: "queue1 queue2 queue3"
 
+.. _python_command_option:
+
   **PYTHON_COMMAND**
     May be set on client side in the computing resource configuration, to specify the way the client will start the server. Soma-workflow server is normally started using Python language modules, as commands in the shape:
 
@@ -378,6 +380,12 @@ Configuration items optional on the server side:
 
     This variable, being set only on server-side, allows to run workflows not aware of any container system on the computing resource, and can be set differently (or not set) on different computing resources.
 
+    **BrainVisa containers case (casa-distro releases)**: Starting with :bv:`BrainVisa 5.0 <index.html>`, BrainVisa is distributed as Singularity virtual containers. The installation setup provides a command ``bv``, which takes care of all options to call the container. Thus the ``CONTAINER_COMMAND`` here could just be::
+
+        container_command = ['/home/johndoe/brainvisa/bin/bv']
+
+    See also :ref:`containerized_soma_workflow`.
+
 Logging configuration:
 
   **SERVER_LOG_FILE**
@@ -560,6 +568,57 @@ Configuration file example: ::
     database, and file transfers).
 
   In addition :ref:`Local scheduler options <local_sched_config>` can be used in the configuration: **CPU_NB**, **MAX_CPU_NB**, and **SCHEDULER_INTERVAL**.
+
+
+.. _containerized_soma_workflow:
+
+Running servers and jobs in a container
+=======================================
+
+When Soma-Workflow is installed as part of the :bv:`BrainVISA distribution <index.html>`, it now runs inside a container or a virtual machine. Users thus would need to run the Soma-Workflow servers in such a container, and run jobs also in the container.
+
+There are two main use cases:
+
+Local execution
+---------------
+
+**It runs transparently out of the box.**
+
+This mode is using the local machine (and system) to run processing in parallel. As the client and the scheduing is run from a container or virtual machine, processing will also run in the same system (or say, subsystem), this means in the same container or virtual machine, and thus will get access to all BrainVISA distribution software.
+
+
+Remote execution
+----------------
+
+Remote execution means that the client will connect to a remote machine (a cluster typically) and run jobs remotely. The remote computing resource thus needs to have the software installed. This software installation is in two parts:
+
+* The soma-workflow server needs to be installed on the cluster front-end machine (the one you connect via ``ssh`` to run jobs).
+
+* software need to be installed on the computing nodes which actually run the jobs. This may include BrainVISA software, and external software used by it (such as SPM, FSL, Freesurfer).
+
+In most cases, the front-end machine and cluster nodes share a filesystem where you can install the software, thus you can install the BrainVISA distribution just once on this shared filesystem.
+
+Programs will be run from cluster jobs, so the virtual machine distribution of BrainVISA is generally not the most convenient: VMs have to be started first, then programs have to be called inside them. Well it's possible but not the easiest to setup.
+
+The container system based on `Singularity <https://sylabs.io/singularity/>`_ allows to run jobs in the most convenient way. Singularity needs to be installed on the cluster nodes. Installing it requires some admin permissions, so you will have to contact the cluster admins, but once installed it doesn't require special permissions, any user can run it (contrarily to Docker).
+
+Once the software is installed, we need to use it the right way. There are 2 different places to be configured: the Soma-Workflow server, and the software for computing jobs.
+
+* Soma-workflow server needs to be called remotely from the client. When the client connects via ``ssh``, it runs the server as Python modules on the cluser front-end. There are 3 ways to make them available:
+
+  * run the server inside the container. In this situation the server config files ``$HOME/.soma-workflow.cfg`` should be in the container home directory. To start it inside the container, the client configuration has to contain the :ref:`PYTHON_COMMAND option <python_command_option>`, which will specify how to call it. Typically, if the front-end server (host) machine has been configured to contain the BrainVisa installation ``bin/`` directory (see :bv:`install instructions <download.html>`), calling ``bv python`` instead of ``python`` will be OK. Otherwise using the full path th ``bv`` is also OK.
+
+  * If the cluster front-end (generally a Unix / Linux system) has Python installed, with the required modules (PyZMQ mainly) and can run the server natively: setting the ``PYTONPATH`` environment variable in a config file (``$HOME/.bash_profile`` or ``$HOME/.bashrc`` if you are using a bash-like shell) to the python directory containing Soma-Workflow should be OK. In a singularity image the files are not seen from the host system, thus a "read-write install" may be required.
+
+  * Like above, running natively on the front-end machine, but using Soma-Workflow sources: clone them from https://github.com/populse/soma-workflow and set the ``PYTONPATH`` environment variable to point to it.
+
+* To run jobs inside the container,
+
+  * either the ``bin`` directory of the BrainVISA installation directory is in the user ``PATH`` in the cluster nodes: then commands will be transparently redirected to the container. Nothing more has to be done (maybe the brainvisa container config to define mount point etc, but nothing specific to soma-workflow).
+
+  * Or the option :ref:`CONTAINER_COMMAND <container_command>` may be used, to specify the indirection, typically::
+
+      container_command = ['/home/johndoe/brainvisa/bin/bv']
 
 
 Server configuration examples

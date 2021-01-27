@@ -273,4 +273,5 @@ intersphinx_mapping = {'http://docs.python.org/': None}
 extlinks = {
     'casadistro': ('https://brainvisa.github.io/casa-distro/%s',
                    'casa-distro'),
+    'bv': ('http://brainvisa.info/web/%s', 'brainvisa'),
 }
