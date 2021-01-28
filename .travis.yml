@@ -4,7 +4,7 @@ matrix:
   include:
     - os: osx
       language: generic
-      name: python 3.8
+      name: python 3.7
     - os: linux
       language: python
       name: python 2.7
@@ -23,12 +23,10 @@ matrix:
 
 before_install:
     - echo "TRAVIS_PYTHON_VERSION:" "$TRAVIS_PYTHON_VERSION"
-    # osx deps
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python3 --version; which python3; which pip3; fi
+    # osx deps - we don't need a brew install which is very unstable and often
+    # broken. The system comes with python 3.7 which is perfect for us.
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew uninstall --ignore-dependencies python; fi
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-    #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python@3; fi
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python@3.9; fi
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="/usr/local/opt/python@3.8/bin:$PATH"; ln -s `which python3` bin/python; ln -s `which pip3` bin/pip; export PATH="$PWD/bin:$PATH"; fi
