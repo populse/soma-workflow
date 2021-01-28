@@ -186,15 +186,18 @@ def server_python_interpreter(resource_id):
             if (python_interpreter is not None
                     and python_interpreter.startswith('[')):
                 python_interpreter = eval(python_interpreter)
-            else:
-                python_interpreter = [python_interpreter]
-    if not python_interpreter:
+    if not isinstance(python_interpreter, list):
+        python_interpreter = [python_interpreter]          
+    if len(python_interpreter) == 1 and None in python_interpreter:
         python_interpreter = os.path.basename(sys.executable)
         if not six.PY2 and python_interpreter == 'python':
             # force the use of python3 if we use it on client side
             python_interpreter = 'python%d' % sys.version_info[0]
         python_interpreter = [python_interpreter]
-
+    # Remove None value from the list if python interpreter was not found
+    if len(python_interpreter) == 1 and None in python_interpreter:
+        python_interpreter.pop()
+    
     return python_interpreter
 
 
