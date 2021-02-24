@@ -13,7 +13,7 @@ Mono process application on a multiple core machine
 
 **No configuration is needed to use Soma-workflow on a multiple core machine.**
 
-See `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for installation.
+See `Soma-workflow main page <https://brainvisa.info/soma-workflow>`_ for installation.
 
 
 .. _client_intall_config:

@@ -35,7 +35,7 @@ Requirements:
 Installation:
 =============
 
-This mode use pure Python code, you do not need to compile anything: c.f. `Soma-workflow main page <http://brainvisa.info/soma-workflow>`_ for installation. 
+This mode use pure Python code, you do not need to compile anything: c.f. `Soma-workflow main page <https://brainvisa.info/soma-workflow>`_ for installation. 
 
 Configuration:
 ==============

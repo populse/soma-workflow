@@ -197,7 +197,7 @@ Communications
 **They use Soma-workflow:**
   * `A fast computational framework for genome-wide association studies with neuroimaging data <http://hal.inria.fr/hal-00720265>`_  by Benoit Da Mota et al.
   * `PyHRF <http://pyhrf.org>`_
-  * `BrainVISA <http://brainvisa.info>`_
+  * `BrainVISA <https://brainvisa.info>`_
 
 
 Authors and contributors
