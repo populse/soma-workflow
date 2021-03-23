@@ -3,13 +3,13 @@ from __future__ import with_statement, print_function
 from __future__ import absolute_import
 
 '''
-@author: Soizic Laguitton
+author: Soizic Laguitton
 
-@organization: I2BM, Neurospin, Gif-sur-Yvette, France
-@organization: CATI, France
-@organization: U{IFR 49<http://www.ifr49.org>}
+organization: I2BM, Neurospin, Gif-sur-Yvette, France
+organization: CATI, France
+organization: IFR 49
 
-@license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
+license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 
 
@@ -474,13 +474,25 @@ class RemoteConnection(object):
             if not password:
                 rsa_file_path = os.path.join(
                     os.environ['HOME'], '.ssh', 'id_rsa')
-                logging.info("reading RSA key in " + repr(rsa_file_path))
-                if rsa_key_pass:
-                    key = paramiko.RSAKey.from_private_key_file(
-                        rsa_file_path,
-                        password=rsa_key_pass)
+                if os.path.exists(rsa_file_path):
+                    logging.info("reading RSA key in " + repr(rsa_file_path))
+                    if rsa_key_pass:
+                        key = paramiko.RSAKey.from_private_key_file(
+                            rsa_file_path,
+                            password=rsa_key_pass)
+                    else:
+                        key = paramiko.RSAKey.from_private_key_file(
+                            rsa_file_path)
                 else:
-                    key = paramiko.RSAKey.from_private_key_file(rsa_file_path)
+                    # try using a ssh agent
+                    agent = paramiko.agent.Agent()
+                    keys = agent.get_keys()
+                    if keys:
+                        key = keys[0]  # assume use 1st key
+                    else:
+                        raise RuntimeError(
+                            'Could not find a suitable ssh key. Please check '
+                            'your SSH configuration or agent.')
                 self.__transport.auth_publickey(login, key)
                 # TBI DSA Key => see paramamiko/demos/demo.py for an example
 
