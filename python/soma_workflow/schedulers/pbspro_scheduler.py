@@ -245,6 +245,9 @@ class PBSProScheduler(Scheduler):
         '''
         impl, ver = self.get_pbs_version()
         self._pbs_impl = impl
+        # strip off suffixes like in '20.0.1~ubuntu_16.04'
+        if '~' in ver:
+            ver = ver[:ver.index('~')]
         self._pbs_version = [int(x) for x in ver.split('.')]
         self.logger.info('PBS implementation: %s' % self._pbs_impl)
         self.logger.info('PBS version: %s' % repr(self._pbs_version))
