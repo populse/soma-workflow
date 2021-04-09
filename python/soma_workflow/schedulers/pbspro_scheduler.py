@@ -23,6 +23,7 @@ from soma_workflow.configuration import Configuration
 import tempfile
 from soma_workflow import subprocess
 import time
+import distutils.spawn
 
 
 class JobTemplate(object):
@@ -89,12 +90,13 @@ class JobTemplate(object):
         return script_file
 
     def qsub_command(self, script_file):
-        cmd = ['qsub']
-        if self.outputPath:
-            cmd += ['-o', self.outputPath]
-        if self.errorPath:
-            cmd += ['-e', self.errorPath]
-        cmd.append(script_file)
+        cmd = PBSProScheduler.qsub_command()
+        if script_file:
+            if self.outputPath:
+                cmd += ['-o', self.outputPath]
+            if self.errorPath:
+                cmd += ['-e', self.errorPath]
+            cmd.append(script_file)
         return cmd
 
     def run_job(self, script_file=None, keep_script_file=False):
@@ -135,6 +137,7 @@ class PBSProScheduler(Scheduler):
 
     is_sleeping = False
     FAKE_JOB = -167
+    _out_of_container_command = None
 
     def __init__(self,
                  parallel_job_submission_info,
@@ -168,6 +171,33 @@ class PBSProScheduler(Scheduler):
     def __del__(self):
         self.clean()
 
+    @staticmethod
+    def out_of_container_command():
+        """
+        In case this server is running inside a contaner, qsat/qsub commands
+        are not available inside the container but are on the host. We need to
+        get out of the container in such a situation.
+        """
+        out_container = getattr(PBSProScheduler, '_out_of_container_command',
+                                None)
+        if out_container is not None:
+            return out_container  # cached
+        if distutils.spawn.find_executable('qstat') \
+                or 'CASA_HOST_DIR' not in os.environ:
+            out_container = []
+        else:
+            out_container = ['ssh', 'localhost']
+        PBSProScheduler._out_of_container_command = out_container
+        return out_container
+
+    @staticmethod
+    def qstat_command():
+        return PBSProScheduler.out_of_container_command() + ['qstat']
+
+    @staticmethod
+    def qsub_command():
+        return PBSProScheduler.out_of_container_command() + ['qsub']
+
     def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
         '''
         Create a job to test
@@ -198,7 +228,7 @@ class PBSProScheduler(Scheduler):
         pbs_version: tuple (2 strings)
             (implementation, version)
         '''
-        cmd = ['qstat', '--version']
+        cmd = self.qstat_command() + ['--version']
         verstr = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode(
             'utf-8')
         if verstr.startswith('pbs_version ='):
@@ -443,13 +473,14 @@ class PBSProScheduler(Scheduler):
             return constants.DONE
         try:
             if self._pbs_impl == 'pbspro':
-                cmd = ['qstat', '-x', '-f', '-F', 'json', scheduler_job_id]
+                cmd = self.qstat_command() + ['-x', '-f', '-F', 'json',
+                                              scheduler_job_id]
                 json_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = json.loads(json_str)
 
             else:  # torque/pbs
                 import xml.etree.cElementTree as ET
-                cmd = ['qstat', '-x', scheduler_job_id]
+                cmd = self.qstat_command() + ['-x', scheduler_job_id]
                 xml_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = {}
                 s_xml = ET.fromstring(xml_str)
