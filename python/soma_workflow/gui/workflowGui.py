@@ -3571,7 +3571,7 @@ class PlotView(QtGui.QWidget):
         # tolerence seems to work only on line artists anyway.
         for p in self.axes.lines + self.axes.patches:
             if p is not None:
-                p.set_picker(tolerance)
+                p.set_pickradius(tolerance)
 
         self.canvas.draw()
 
