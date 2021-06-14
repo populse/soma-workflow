@@ -890,7 +890,8 @@ class Configuration(observer.Observable):
                 try:
                     f = open(filename, "r")
                 except IOError as e:
-                    print("Can not read the translation file %s" % (filename))
+                    print("Can not read the translation file %s" % (filename),
+                          file=sys.stderr)
                     continue
 
                 if not namespace in self.path_translation.keys():
