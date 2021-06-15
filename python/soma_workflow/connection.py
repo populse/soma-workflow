@@ -722,10 +722,11 @@ class RemoteConnection(object):
                 stdin, stdout, stderr = ssh.exec_command('ps ux')
 
             db_re = re.compile(
-                b'^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
+                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_database_server ([^ ]+)$')
             en_re = re.compile(
-                b'^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
+                '^[^ ]+ +([0-9]+) .*python[0-9]? -m soma_workflow.start_workflow_engine ([^ ]+) .*$')
             for psline in stdout.readlines():
+                psline = six.ensure_text(psline)
                 m = db_re.match(psline)
                 if m:
                     resource = m.group(2).strip()
