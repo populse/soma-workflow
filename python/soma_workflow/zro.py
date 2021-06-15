@@ -573,7 +573,7 @@ class ProxyMethod(object):
                            repr(args), repr(kwargs)))
                     # reset socket for this thread (by deleting it)
                     with self.lock:
-                        del ProxyMethod.sockets[thread_id]
+                        del ProxyMethod.sockets[(thread_id, self.proxy._port)]
                     raise RuntimeError(
                         'Connection timeout in ProxyMethod.__call__, '
                         'port %s, for: %s.%s(*%s, **%s)'
