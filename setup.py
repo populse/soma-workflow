@@ -6,8 +6,6 @@ non expert users and software.
 """
 from __future__ import absolute_import
 import os
-import ez_setup
-ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 import os.path as op
 commands = [op.join('bin', 'soma_delete_all_workflows'),

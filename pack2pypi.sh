@@ -24,7 +24,6 @@ find -name "*.pyo" | xargs rm > /dev/null 2>&1
 cp README.txt ./$PACKNAME
 cp MANIFEST.in ./$PACKNAME
 cp LICENSE ./$PACKNAME
-cp ez_setup.py ./$PACKNAME
 
 # Set version number
 cat setup.py | sed -e "s/development version/$FULLVERSION/" > ./$PACKNAME/setup.py
