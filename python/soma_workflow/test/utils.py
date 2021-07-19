@@ -110,13 +110,13 @@ def identical_files(filepath1, filepath2):
     with open(filepath1) as file1:
         with open(filepath2) as file2:
             lineNb = 1
-            line1 = file1.readline()
-            line2 = file2.readline()
+            line1 = file1.readline().rstrip('\n')
+            line2 = file2.readline().rstrip('\n')
             identical = (line1 == line2)
 
             while identical and line1:
-                line1 = file1.readline()
-                line2 = file2.readline()
+                line1 = file1.readline().rstrip('\n')
+                line2 = file2.readline().rstrip('\n')
                 lineNb = lineNb + 1
                 identical = (line1 == line2)
 
