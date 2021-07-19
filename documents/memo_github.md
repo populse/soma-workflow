@@ -16,4 +16,3 @@ $ git log --follow ./path/to/file
 ```
 
 c.f http://git-scm.com/docs/git-log
-

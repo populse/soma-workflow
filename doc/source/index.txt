@@ -264,6 +264,3 @@ Authors and contributors
 ..
   :Release: |release|
   :Date: |today|
-
-
-

@@ -31,6 +31,3 @@ cat setup.py | sed -e "s/development version/$FULLVERSION/" > ./$PACKNAME/setup.
 VERSIONPATH=./$PACKNAME/python/soma_workflow
 echo fullVersion = \'$FULLVERSION\' > $VERSIONPATH/version.py
 echo shortVersion = \'$SHORTVERSION\' >> $VERSIONPATH/version.py
-
-
-

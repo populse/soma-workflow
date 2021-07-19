@@ -239,7 +239,3 @@ File Transfer status
                   :height: 100 px
                   :width: 100 px
                   :scale: 30
-
-
-
-

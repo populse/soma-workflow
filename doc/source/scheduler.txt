@@ -68,4 +68,3 @@ MPI implementation
 
 .. automodule:: soma_workflow.schedulers.mpi_scheduler
     :members:
-

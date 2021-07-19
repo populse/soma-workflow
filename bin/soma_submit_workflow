@@ -41,6 +41,3 @@ if __name__ == '__main__':
     wfc = WorkflowController(args.resource)
 
     wfc.submit_workflow(workflow, name = args.name, queue = args.queue)
-
-
-

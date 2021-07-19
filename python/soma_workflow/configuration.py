@@ -1543,4 +1543,3 @@ def restore_soma_workflow_directory():
         else:
             Configuration.search_config_path \
                 = staticmethod(Configuration._old_search_config_path)
-

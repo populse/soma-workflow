@@ -24,4 +24,3 @@ clear_db = options.clear
 
 connection.RemoteConnection.kill_remote_servers(
     resource_id, login=login, passwd=passwd, clear_db=clear_db)
-

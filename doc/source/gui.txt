@@ -181,5 +181,3 @@ Several plots can be displayed and refreshed at regular time interval:
 * the jobs function of the time, also showing the number or CPU cores used by each job (new in Soma-Workflow 3.0)
 * the number of jobs running function of the time.
 * the number of CPU cores running function of the time (new in Soma-Workflow 3.0)
-
-

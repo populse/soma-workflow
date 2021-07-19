@@ -28,6 +28,3 @@ if __name__ == '__main__':
     wfc = WorkflowController(sys.argv[2])
 
     wfc.stop_workflow(workflow_id)
-
-
-

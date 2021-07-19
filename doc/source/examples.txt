@@ -439,9 +439,3 @@ the output files.
 
 The data directory "/tmp/soma_workflow_examples/" on your machine  should now 
 contains the file copy_of_myfile.
-
-
-
-
-
-

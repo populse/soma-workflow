@@ -33,5 +33,3 @@ if __name__ == '__main__':
     else:
         queue = sys.argv[3]
         wfc.restart_workflow(workflow_id, queue)
-
-
