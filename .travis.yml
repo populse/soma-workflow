@@ -40,6 +40,7 @@ install:
     - pip install codecov
     - python setup.py install
     - export QT_API=pyqt5
+    - if [[ $TRAVIS_OS_NAME == linux ]]; then pip install pre-commit; fi
     # build doc; set .nojekyll otherwise github.io doesn't copy dirs starting
     # with '_' (such as '_static')
     - if [[  "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then cd doc && make html && touch build/html/.nojekyll && cd ..; fi
@@ -49,6 +50,9 @@ install:
 script:
     #- coverage run -m soma_workflow.test --isolated --resources local-server --debug & sleep 120 && echo "\n******** client log:" && cat /tmp/swf_test_log && echo "\n************* server log:" && tail -2000 /tmp/swf_isol*/logs/log_workflow_engine*
     - coverage run -m soma_workflow.test --isolated --resources local-server,localhost --debug
+    # run code quality checks (skip them on Mac OS because Python 3 is not
+    # available there)
+    - if [[ $TRAVIS_OS_NAME == linux ]]; then pre-commit run --all-files; fi
 
 after_success:
     - codecov
@@ -62,3 +66,8 @@ deploy:
   on:
     branch: master
     condition: $PUSH_DOC_TO_GH_PAGES == yes && $TRAVIS_OS_NAME == linux && $TRAVIS_PYTHON_VERSION == 3.5
+
+
+cache:
+  directories:
+    - $HOME/.cache/pre-commit
