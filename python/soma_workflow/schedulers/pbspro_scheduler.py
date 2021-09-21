@@ -75,8 +75,8 @@ class JobTemplate(object):
             if self.workingDirectory:
                 f.write('cd "%s"\n' % self.workingDirectory)
 
-            # commandline
-            escaped_command = [x.replace('"', '\\"')
+            # commandline, ensure all args are strings
+            escaped_command = [str(x).replace('"', '\\"')
                                for x in self.remoteCommand]
             redirect = ''
             if self.inputPath:

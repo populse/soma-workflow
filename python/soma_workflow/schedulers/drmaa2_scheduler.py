@@ -261,7 +261,8 @@ raise NotImplementedError(
             #try:
                 #jobTemplateId = self._drmaa.createJobTemplate()
                 #jobTemplateId.remoteCommand = command[0]
-                #jobTemplateId.args = command[1:]
+                ## ensure all args are strings
+                #jobTemplateId.args = [str(c) for c in command[1:]]
                 #jobTemplateId.jobName = job.name
 
                 #self.logger.info("jobTemplateId=" + repr(jobTemplateId) + " command[0]=" + repr(

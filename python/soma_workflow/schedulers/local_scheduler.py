@@ -349,6 +349,8 @@ class LocalScheduler(Scheduler):
                 env = env2
             LocalScheduler.logger.debug('run command:' + repr(command))
             LocalScheduler.logger.debug('with env:' + repr(env))
+            # ensure all args are strings
+            command = [str(c) for c in command]
             process = subprocess.Popen(command,
                                        stdin=stdin_file,
                                        stdout=stdout_file,
@@ -365,10 +367,10 @@ class LocalScheduler(Scheduler):
             LocalScheduler.logger.error(
                 'exception while running command:' + repr(e))
             if stderr:
-                s = '%s: %s \n' % (type(e), e)
+                s = ('%s: %s \n' % (type(e), e)).encode()
                 stderr_file.write(s)
             elif stdout:
-                s = '%s: %s \n' % (type(e), e)
+                s = ('%s: %s \n' % (type(e), e)).encode()
                 stdout_file.write(s)
             if stderr_file:
                 stderr_file.close()
