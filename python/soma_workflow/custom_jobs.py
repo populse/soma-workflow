@@ -46,7 +46,8 @@ class MapJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='map',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'input_names' not in param_dict:
@@ -112,7 +113,8 @@ class ReduceJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='reduce',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'input_names' not in param_dict:
@@ -175,7 +177,8 @@ class LeaveOneOutJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='leave_one_out',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'inputs' not in param_dict:
@@ -219,7 +222,8 @@ class CrossValidationFoldJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='cross_validation',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'inputs' not in param_dict:
@@ -271,7 +275,8 @@ class ListCatJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='list_cat',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'inputs' not in param_dict:
@@ -315,7 +320,8 @@ class StrCatJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name='strcat',
-                 param_dict=None):
+                 param_dict=None,
+                 **kwargs):
         if param_dict is None:
             param_dict = {}
         if 'input_names' not in param_dict:
