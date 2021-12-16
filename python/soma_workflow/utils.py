@@ -17,6 +17,7 @@ import copy
 import os
 from soma_workflow.client import Workflow, Group, Job, Helper
 from soma_workflow.configuration import cpu_count, default_cpu_number
+import soma_workflow.client_types as sct
 import six
 
 try:
@@ -262,6 +263,16 @@ def to_json(value):
         value = new_value
     elif value is Undefined:
         value = ['<undefined>']
+    elif isinstance(value, sct.SpecialPath):
+        # force back to standard string type
+        # otherwise json refuses to serialize them
+        if hasattr(value, 'get_engine_main_path'):
+            value = value.get_engine_main_path()
+        elif hasattr(value, 'client_path'):
+            # get_EngineTemporaryPath
+            value = value.client_path()
+        else:
+            value = '<special_path>'
     return value
 
 

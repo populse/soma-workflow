@@ -44,10 +44,11 @@ import json
 import sys
 
 import soma_workflow.constants as constants
-from soma_workflow.client import FileTransfer, TemporaryPath
+from soma_workflow.client import FileTransfer, TemporaryPath, SpecialPath
 from soma_workflow.errors import UnknownObjectError, DatabaseError
 from soma_workflow.info import DB_VERSION, DB_PICKLE_PROTOCOL
 from soma_workflow import utils
+from soma_workflow.engine_types import get_EngineTemporaryPath
 
 import six
 from six.moves import StringIO
@@ -2941,17 +2942,43 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
-    def set_job_output_params(self, job_id, param_dict):
+    @staticmethod
+    def replace_transfers_with_paths(items, engine_job):
+        if isinstance(items, dict):
+            ritems = {k:
+                        WorkflowDatabaseServer.replace_transfers_with_paths(
+                            v, engine_job)
+                        for k, v in items.items()}
+            return ritems
+        elif isinstance(items, (list, tuple)):
+            ritems = [WorkflowDatabaseServer.replace_transfers_with_paths(
+                          v, engine_job)
+                      for v in items]
+            return ritems
+        else:
+            if isinstance(items, SpecialPath):
+                engine_path = get_EngineTemporaryPath(items, False)
+                if engine_path:
+                    return engine_path.get_engine_path()
+                engine_path = engine_job.transfer_mapping.get(items)
+                if engine_path:
+                    return engine_path.get_engine_path()
+                return '<special_path>'
+            return items
+
+    def set_job_output_params(self, job_id, param_dict, user_id):
         '''
         Updates the job output parameters dict.
         '''
         self.logger.debug("=> set_job_output_params")
         with self._lock:
             connection = self._connect()
+            engine_job = self.get_engine_job(job_id, user_id)[0]
+            rparams = self.replace_transfers_with_paths(param_dict, engine_job)
             try:
                 connection.execute(
                     'UPDATE jobs SET output_params=? WHERE id=?',
-                    (json.dumps(utils.to_json(param_dict)),
+                    (json.dumps(utils.to_json(rparams)),
                      job_id))
             except Exception as e:
                 connection.rollback()
@@ -2960,7 +2987,7 @@ class WorkflowDatabaseServer(object):
             connection.commit()
             connection.close()
 
-    def get_job_output_params(self, job_id):
+    def get_job_output_params(self, job_id, user_id):
         '''
         Returns the job output parameters dict.
         '''

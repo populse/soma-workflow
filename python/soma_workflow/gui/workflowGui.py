@@ -4646,6 +4646,10 @@ class ApplicationModel(QtCore.QObject):
                 except ConnectionClosedError as e:
                     QtGui.QApplication.restoreOverrideCursor()
                     self.connection_closed_error[()].emit()
+                except Exception:
+                    import traceback
+                    traceback.print_exc()
+                    self._current_workflow = None
                 else:
                     self._current_workflow.updateState(wf_status)
 

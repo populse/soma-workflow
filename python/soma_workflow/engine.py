@@ -26,7 +26,7 @@ import importlib
 # import cProfile
 # import traceback
 
-from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath
+from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath, TemporaryPath
 import soma_workflow.constants as constants
 from soma_workflow.client import WorkflowController, EngineExecutionJob
 from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
@@ -557,7 +557,8 @@ class WorkflowEngineLoop(object):
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,
-                                                        output_dict)
+                                                        output_dict,
+                                                        self._user_id)
             for param, value in six.iteritems(output_dict):
                 jvalue = job.param_dict.get(param)
                 if jvalue and isinstance(jvalue, FileTransfer):
@@ -585,28 +586,47 @@ class WorkflowEngineLoop(object):
         if u_param_dict:
             for param, value_tl in six.iteritems(u_param_dict):
                 dval = job.param_dict.get(param)
-                if isinstance(dval, list):
-                    # reset list parameters
-                    dval = []
                 for value_t in value_tl:
                     func, src_param, value = value_t
-                    value = transformed_param_value(func, src_param, value,
-                                                    param, dval)
-                    if isinstance(dval, SpecialPath):
-                        engine_transfer = job.transfer_mapping[dval]
-                        former_path = engine_transfer.engine_path
-                        if former_path != value:
-                            engine_transfer.set_engine_path(
-                                value,
-                                *engine_transfer.map_client_path_to_engine(
-                                    value, job.param_dict))
-                            # update database with modified values
-                            self._database_server.set_transfer_paths(
-                                engine_transfer.transfer_id, value,
-                                engine_transfer.client_path,
-                                engine_transfer.client_paths)
+                    nvalue = transformed_param_value(func, src_param, value,
+                                                     param, dval)
+                    if isinstance(nvalue, list):
+                        values = nvalue
+                        dvals = dval
                     else:
-                        job.param_dict[param] = value
+                        values = [nvalue]
+                        dvals = [dval]
+                    new_values = []
+                    for i in range(len(values)):
+                        value = values[i]
+                        if i < len(dvals):
+                            dval = dvals[i]
+                            if isinstance(dval, SpecialPath) \
+                                    and not isinstance(dval, TemporaryPath):
+                                # temp paths are replaced as normal files
+                                # if they happen to get a new value in an
+                                # output
+                                engine_transfer = job.transfer_mapping[dval]
+                                former_path = engine_transfer.engine_path
+                                if former_path != value:
+                                    engine_transfer.set_engine_path(
+                                        value,
+                                        *engine_transfer.map_client_path_to_engine(
+                                            value, job.param_dict))
+                                    # update database with modified values
+                                    self._database_server.set_transfer_paths(
+                                        engine_transfer.transfer_id, value,
+                                        engine_transfer.client_path,
+                                        engine_transfer.client_paths)
+                                new_values.append(dval)
+                            else:
+                                new_values.append(value)
+                        else:
+                            new_values.append(value)
+                    if not isinstance(nvalue, list):
+                        new_values = new_values[0]
+                    job.param_dict[param] = new_values
+
         if u_param_dict or \
                 (job.configuration and not job.use_input_params_file):
             if job.configuration and not job.use_input_params_file:
@@ -1304,7 +1324,8 @@ class WorkflowEngine(RemoteFileController):
         return param_dict
 
     def get_job_output_params(self, job_id):
-        return self._database_server.get_job_output_params(job_id)
+        return self._database_server.get_job_output_params(job_id,
+                                                           self._user_id)
 
     def workflow_status(self, wf_id):
         '''
@@ -1312,8 +1333,8 @@ class WorkflowEngine(RemoteFileController):
         '''
         self.logger.debug("! Entering workflow_status")
         (status,
-         last_status_update) = self._database_server.get_workflow_status(wf_id,
-                                                                         self._user_id)
+         last_status_update) = self._database_server.get_workflow_status(
+            wf_id, self._user_id)
         self.logger.debug("!Getting workflow status: %s" % repr(status))
         if status and \
            not status == constants.WORKFLOW_DONE and \

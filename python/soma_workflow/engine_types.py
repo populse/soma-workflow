@@ -1521,13 +1521,13 @@ class EngineTemporaryPath(TemporaryPath):
 _engine_temp_paths = weakref.WeakKeyDictionary()
 
 
-def get_EngineTemporaryPath(client_temporary_path):
+def get_EngineTemporaryPath(client_temporary_path, insert=True):
     '''
     Create an EngineTemporaryPath from a client TemporaryPath, or return an existing one if it has already been created.
     '''
     global _engine_temp_paths
     etp = _engine_temp_paths.get(client_temporary_path)
-    if etp is None:
+    if etp is None and insert:
         etp = EngineTemporaryPath(client_temporary_path)
         _engine_temp_paths[client_temporary_path] = etp
     return etp
