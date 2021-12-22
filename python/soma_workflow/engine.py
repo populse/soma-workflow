@@ -583,11 +583,22 @@ class WorkflowEngineLoop(object):
         named "configuration_dict".
         '''
         u_param_dict = self._database_server.updated_job_parameters(job.job_id)
+        # I don't understand any longer what I have done.
+        # we iterate over params (OK).
+        #   then on each link for the value (value_tl):
+        #      we get an output value and re-iterate over sub-values
+        #      then set the whole param, forgetting all previous links
+        # if this is right we may process only the last link ?
+        # seems are done many times here...
         if u_param_dict:
             for param, value_tl in six.iteritems(u_param_dict):
                 dval = job.param_dict.get(param)
+                #print('update_job_parameters', param, ':', value_tl)
+                #print('job:', job.name, job)
+                #print('dval:', repr(dval))
                 for value_t in value_tl:
                     func, src_param, value = value_t
+                    #print('   ', func, src_param, value, param, dval)
                     nvalue = transformed_param_value(func, src_param, value,
                                                      param, dval)
                     if isinstance(nvalue, list):
@@ -600,13 +611,13 @@ class WorkflowEngineLoop(object):
                     for i in range(len(values)):
                         value = values[i]
                         if i < len(dvals):
-                            dval = dvals[i]
-                            if isinstance(dval, SpecialPath) \
-                                    and not isinstance(dval, TemporaryPath):
+                            val = dvals[i]
+                            if isinstance(val, SpecialPath) \
+                                    and not isinstance(val, TemporaryPath):
                                 # temp paths are replaced as normal files
                                 # if they happen to get a new value in an
                                 # output
-                                engine_transfer = job.transfer_mapping[dval]
+                                engine_transfer = job.transfer_mapping[val]
                                 former_path = engine_transfer.engine_path
                                 if former_path != value:
                                     engine_transfer.set_engine_path(
@@ -618,7 +629,7 @@ class WorkflowEngineLoop(object):
                                         engine_transfer.transfer_id, value,
                                         engine_transfer.client_path,
                                         engine_transfer.client_paths)
-                                new_values.append(dval)
+                                new_values.append(val)
                             else:
                                 new_values.append(value)
                         else:
