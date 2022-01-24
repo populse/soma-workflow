@@ -313,6 +313,13 @@ if __name__ == '__main__':
                         + "################ MASTER STARTS ####################")
             logger.info("comm.size (workers + scheduler): " + repr(comm.size))
 
+            if len(comm.size) < 2:
+                msg = 'the MPI mode needs at least 2 MPI processes (1 ' \
+                    'master + 1+ worker(s)) to be able to work. We do not ' \
+                    'have enouth instances now.'
+                logger.critical(msg)
+                raise RuntimeError(msg)
+
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
                 config.get_transfered_file_dir(),
