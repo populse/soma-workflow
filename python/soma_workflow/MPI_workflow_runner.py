@@ -239,7 +239,6 @@ def slave_loop(communicator,
 if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    size = comm.size
 
     parser = optparse.OptionParser()
     parser.add_option('--workflow',
@@ -312,6 +311,7 @@ if __name__ == '__main__':
             logger.info(" ")
             logger.info("[host: " + socket.gethostname() + "] "
                         + "################ MASTER STARTS ####################")
+            logger.info("comm.size (workers + scheduler): " + repr(comm.size))
 
             database_server = WorkflowDatabaseServer(
                 config.get_database_file(),
@@ -363,8 +363,8 @@ if __name__ == '__main__':
                 logger.debug("[host: " + socket.gethostname() + "] "
                              + "STOP !!! slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-            logger.debug("******** stop signal sends **********")
-            while not sch.stop_thread_loop:
+            logger.debug("******** stop signal sent **********")
+            while not sch.stop_thread_loop and comm.size > 1:
                 time.sleep(1)
             logger.debug("######### master ends #############")
 
