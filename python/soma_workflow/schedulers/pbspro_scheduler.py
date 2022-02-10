@@ -50,7 +50,11 @@ class JobTemplate(object):
             f.write('#!/bin/sh\n')
             # PBS options
             if self.jobName:
-                f.write('#PBS -N %s\n' % self.jobName.replace(' ', '_'))
+                special_chars = " ()&:"
+                job_name = self.jobName
+                for special_char in special_chars:
+                    job_name = job_name.replace(special_char, '_')
+                f.write('#PBS -N %s\n' % job_name)
             if self.queue:
                 f.write('#PBS -q %s\n' % self.queue)
             # if self.env:
