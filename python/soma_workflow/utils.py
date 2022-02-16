@@ -273,6 +273,8 @@ def to_json(value):
             value = value.client_path()
         else:
             value = '<special_path>'
+    elif isinstance(value, bytes):
+        value = six.ensure_str(value)
     return value
 
 
