@@ -262,6 +262,8 @@ def to_json(value):
         value = new_value
     elif value is Undefined:
         value = ['<undefined>']
+    elif isinstance(value, bytes):
+        value = six.ensure_str(value)
     return value
 
 
