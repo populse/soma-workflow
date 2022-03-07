@@ -139,6 +139,8 @@ def slave_loop(communicator,
 
                 # ret_value = os.system(command)
                 plain_command, plain_stdout, plain_stderr = command
+                # ensure each command argument is a string
+                plain_command = [str(c) for c in plain_command]
                 cmd_stdout, cmd_stderr = (None, None)
 
                 if plain_stdout:
