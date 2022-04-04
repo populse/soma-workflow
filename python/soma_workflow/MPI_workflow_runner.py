@@ -263,6 +263,7 @@ if __name__ == '__main__':
         help="untar directory")
 
     options, args = parser.parse_args(sys.argv)
+    os.makedirs(os.expandvars("$HOME/logs_mpi/"), exist_ok=True)
 
     if rank == 0:
 
@@ -272,7 +273,7 @@ if __name__ == '__main__':
         import soma_workflow.configuration
 
         log_file_handler = logging.FileHandler(
-            os.path.expandvars("$HOME/logtestmpi_master_%s" % socket.gethostname()))
+            os.path.expandvars("$HOME/logs_mpi/logtestmpi_master_%s" % socket.gethostname()))
         log_file_handler.setLevel(logging.DEBUG)
         log_formatter = logging.Formatter(
             "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
@@ -391,7 +392,7 @@ if __name__ == '__main__':
     else:
 
         log_file_handler = logging.FileHandler(
-            os.path.expandvars("$HOME/logtestmpi_slave%d_%s" % (rank, socket.gethostname())))
+            os.path.expandvars("$HOME/logs_mpi/logtestmpi_slave%d_%s" % (rank, socket.gethostname())))
         log_file_handler.setLevel(logging.DEBUG)
         log_formatter = logging.Formatter(
             "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
