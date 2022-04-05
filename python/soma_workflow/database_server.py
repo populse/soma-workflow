@@ -61,6 +61,7 @@ from six.moves import StringIO
 strtime_format = '%Y-%m-%d %H:%M:%S'
 file_separator = ', '
 update_interval = timedelta(0, 30, 0)
+max_files_per_dir = 200
 
 #-----------------------------------------------------------------------------
 # Local utilities
@@ -1083,29 +1084,44 @@ class WorkflowDatabaseServer(object):
                         DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
             file_num = self.get_new_file_number(external_cursor)
+            # decompose file_num on base <max_files_per_dir>
+            decomp = [file_num]
+            while decomp[0] > max_files_per_dir:
+                decomp.insert(0, decomp[0] // max_files_per_dir)
+                decomp[1] = decomp[1] % max_files_per_dir
+            file_num_part = os.path.join(*(
+                ['%d_dir' % n for n in decomp[:-1]] + ['%d' % decomp[-1]]))
+
             userDirPath = self._user_transfer_dir_path(login, user_id)
             if client_file_path == None:
-                newFilePath = os.path.join(userDirPath, repr(file_num))
-                # newFilePath += repr(file_num)
+                newFilePath = os.path.join(userDirPath, file_num_part)
+                # newFilePath += file_num_part
             else:
                 client_base_name = os.path.basename(client_file_path)
                 iextention = client_base_name.find(".")
                 if iextention == -1:
                     newFilePath = os.path.join(
-                        userDirPath, client_base_name + '_' + repr(file_num))
+                        userDirPath, client_base_name + '_' + file_num_part)
                     # newFilePath +=
                     # client_file_path[client_file_path.rfind("/")+1:] + '_' +
-                    # repr(file_num)
+                    # file_num_part
                 else:
                     newFilePath = os.path.join(
                         userDirPath, client_base_name[0:iextention] + '_'
-                        + repr(file_num) + client_base_name[iextention:])
+                        + file_num_part + client_base_name[iextention:])
                     # newFilePath +=
                     # client_file_path[client_file_path.rfind("/")+1:iextention]
-                    # + '_' + repr(file_num) + client_file_path[iextention:]
+                    # + '_' + file_num_part + client_file_path[iextention:]
             if not external_cursor:
                 connection.commit()
                 connection.close()
+
+            pdir = os.path.dirname(newFilePath)
+            if not os.path.exists(pdir):
+                try:
+                    os.makedirs(pdir)
+                except Exception:
+                    pass  # already done concurrently ?
             return newFilePath
 
     def __removeFile(self, file_path):
@@ -1114,7 +1130,7 @@ class WorkflowDatabaseServer(object):
                 shutil.rmtree(file_path)
             except Exception as e:
                 self.logger.debug(
-                    "Could not remove file %s, error %s: %s \n" % (file_path, type(e), e))
+                    "Could not remove directory %s, error %s: %s \n" % (file_path, type(e), e))
 
         elif file_path and os.path.isfile(file_path):
             try:
@@ -1122,6 +1138,18 @@ class WorkflowDatabaseServer(object):
             except Exception as e:
                 self.logger.debug(
                     "Could not remove file %s, error %s: %s \n" % (file_path, type(e), e))
+
+            dirname = os.path.dirname(file_path)
+            base = os.path.join(self._tmp_file_dir_path, '')
+            up_dname = os.path.dirname(dirname)
+            while up_dname.startswith(base) and up_dname != base \
+                    and len(os.listdir(dirname)) == 0:
+                try:
+                    os.rmdir(dirname)
+                except Exception:
+                    break
+                dirname = up_dname
+                up_dname = os.path.dirname(up_dname)
 
     # "
     # TRANSFERS
