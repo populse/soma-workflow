@@ -514,7 +514,7 @@ class ProxyMethod(object):
 
     def __call__(self, *args, **kwargs):
         try:
-            timeout = 2000  # ms
+            timeout = 5000  # ms
             logger = logging.getLogger('zro.ObjectServer')
             logger.debug('Execute method: %s.%s(*%s, **%s)'
                          % (self.proxy.classname, self.method, repr(args),
