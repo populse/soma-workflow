@@ -186,8 +186,7 @@ Job server database tables:
 def create_database(database_file):
     if not database_file.startswith(':'):
         db_dir = os.path.dirname(database_file)
-        if not os.path.exists(db_dir):
-            os.makedirs(db_dir)
+        os.makedirs(db_dir, exist_ok=True)
 
     connection = sqlite3.connect(
         database_file, timeout=5, isolation_level="EXCLUSIVE",
@@ -1117,11 +1116,7 @@ class WorkflowDatabaseServer(object):
                 connection.close()
 
             pdir = os.path.dirname(newFilePath)
-            if not os.path.exists(pdir):
-                try:
-                    os.makedirs(pdir)
-                except Exception:
-                    pass  # already done concurrently ?
+            os.makedirs(pdir, exist_ok=True)
             return newFilePath
 
     def __removeFile(self, file_path):
