@@ -96,6 +96,9 @@ OCFG_ENGINE_LOG_LEVEL = 'ENGINE_LOG_LEVEL'
 OCFG_ENGINE_LOG_FORMAT = 'ENGINE_LOG_FORMAT'
 OCFG_SHARED_TEMPORARY_DIR = 'SHARED_TEMPORARY_DIR'
 
+OCFG_MPI_LOG_FORMAT = 'MPI_LOG_FORMAT'
+OCFG_MPI_LOG_DIR = 'MPI_LOG_DIR'
+
 # Shared resource path translation files
 # specify the translation files (if any) associated to a namespace
 # eg. translation_files =

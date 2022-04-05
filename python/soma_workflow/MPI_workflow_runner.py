@@ -254,6 +254,11 @@ if __name__ == '__main__':
                       help="A job can be restarted several time if it fails. This option "
                            "specify the number of attempt per job. "
                            "By default, the jobs are not restarted.")
+    parser.add_option('--log_level', type='int', default=None,
+                      help='override log level. The default is to use the '
+                      'config file option ENGINE_LOG_LEVEL. Values are those '
+                      'from the logging module: 50=CRITICAL, 40=ERROR, '
+                      '30=WARNING, 20=INFO, 10=DEBUG, 0=NOTSET.')
     group_alpha = optparse.OptionGroup(parser, "Alpha options")
     parser.add_option_group(group_alpha)
     group_alpha.add_option('--deploy_epd', dest='epd_to_deploy', default=None,
@@ -263,45 +268,72 @@ if __name__ == '__main__':
         help="untar directory")
 
     options, args = parser.parse_args(sys.argv)
-    os.makedirs(os.expandvars("$HOME/logs_mpi/"), exist_ok=True)
+
+    import soma_workflow.configuration
+    from soma_workflow.configuration import (OCFG_MPI_LOG_FORMAT,
+                                             OCFG_MPI_LOG_DIR)
+
+    resource_id = args[1]  # sys.argv[1]
+
+    config = soma_workflow.configuration.Configuration.load_from_file(
+        resource_id)
+
+    log_level = options.log_level
+    if log_level is None:
+        _, _, log_level = config.get_engine_log_info()
+
+    if config._config_parser is not None:
+        if config._config_parser.has_option(resource_id, OCFG_MPI_LOG_DIR):
+            mpi_log_dir = config._config_parser.get(resource_id,
+                                                    OCFG_MPI_LOG_DIR)
+            mpi_log_dir = os.path.expandvars(mpi_log_dir)
+        else:
+            mpi_log_dir = os.path.join(config.get_soma_workflow_dir(),
+                                       'logs', 'mpi_logs')
+        if config._config_parser.has_option(resource_id,
+                                            OCFG_MPI_LOG_FORMAT):
+            log_format = config._config_parser.get(
+                resource_id, OCFG_MPI_LOG_FORMAT, raw=1)
+        else:
+            log_format = "%(asctime)s => %(module)s line %(lineno)s: " \
+                          "%(message)s          %(threadName)s)"
 
     if rank == 0:
+
+        log_file_handler = logging.FileHandler(
+            os.path.join(mpi_log_dir,
+                         "log_mpi_master_%s" % socket.gethostname()))
+        log_file_handler.setLevel(log_level)
+
+        log_formatter = logging.Formatter(log_format)
+        log_file_handler.setFormatter(log_formatter)
+
+        logger = logging.getLogger('testMPI')
+        logger.setLevel(log_level)
+        logger.addHandler(log_file_handler)
+
+
+        os.makedirs(mpi_log_dir, exist_ok=True)
+
 
         from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
         from soma_workflow.database_server import WorkflowDatabaseServer
         from soma_workflow.client import Helper
-        import soma_workflow.configuration
-
-        log_file_handler = logging.FileHandler(
-            os.path.expandvars("$HOME/logs_mpi/logtestmpi_master_%s" % socket.gethostname()))
-        log_file_handler.setLevel(logging.DEBUG)
-        log_formatter = logging.Formatter(
-            "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
-        log_file_handler.setFormatter(log_formatter)
-
-        logger = logging.getLogger('testMPI')
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(log_file_handler)
-
-        resource_id = args[1]  # sys.argv[1]
 
         if not len(args) == 2:
             # TO DO: stopping slave procedure in a function
             logger.critical("Mandatory argument: resource id.")
             for slave in range(1, comm.size):
-                logger.debug("[host: " + socket.gethostname() + "] "
+                logger.ERROR("[host: " + socket.gethostname() + "] "
                              + "STOP !!! slave " + repr(slave))
                 comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-            logger.debug("[host: " + socket.gethostname() + "] "
+            logger.ERROR("[host: " + socket.gethostname() + "] "
                          + "######### MASTER ENDS #############")
             raise Exception("Mandatory argument: resource id. \n")
 
         resource_id = args[1]
 
         try:
-            config = soma_workflow.configuration.Configuration.load_from_file(
-                resource_id)
-
             if config.get_scheduler_type() != soma_workflow.configuration.MPI_SCHEDULER:
                 raise Exception("The resource id %s is not configured to use a MPI scheduler. "
                                 "Configure a resource with SCHEDULER_TYPE = mpi." % (resource_id))
@@ -392,14 +424,15 @@ if __name__ == '__main__':
     else:
 
         log_file_handler = logging.FileHandler(
-            os.path.expandvars("$HOME/logs_mpi/logtestmpi_slave%d_%s" % (rank, socket.gethostname())))
-        log_file_handler.setLevel(logging.DEBUG)
-        log_formatter = logging.Formatter(
-            "%(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)")
+            os.path.join(mpi_log_dir,
+                         "logtestmpi_slave%d_%s" % (rank,
+                                                    socket.gethostname())))
+        log_file_handler.setLevel(log_level)
+        log_formatter = logging.Formatter(log_format)
         log_file_handler.setFormatter(log_formatter)
 
         logger = logging.getLogger("testMPI.slave")
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(log_level)
         logger.addHandler(log_file_handler)
         logger.info("=====> [host: " + socket.gethostname() + "] "
                     + "slave starts " + repr(rank))
