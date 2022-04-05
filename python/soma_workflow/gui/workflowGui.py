@@ -5254,12 +5254,12 @@ class GuiJob(GuiWorkflowItem):
         self.queue = queue
         if self.exit_info:
             exit_status, exit_value, term_signal, resource_usage = self.exit_info
+            rud = {}
             if resource_usage:
                 if six.PY3 and isinstance(resource_usage, bytes):
                     # in py3 RU is bytes, we want unicode/str
                     resource_usage = resource_usage.decode()
                 ru = resource_usage.split()
-                rud = {}
                 for ruel in ru:
                     ruel = ruel.split("=")
                     rud[ruel[0]] = ruel[1]
@@ -5275,28 +5275,28 @@ class GuiJob(GuiWorkflowItem):
                         t = time.localtime(float(ruel[1].replace(',', '.')))
                         self.submission_date = datetime(year=t[0], month=t[
                                                         1], day=t[2], hour=t[3], minute=t[4], second=t[5])
-                if self.ending_date:
-                    self.serial_duration \
-                        = self.ending_date - self.execution_date
-                    if "cput" in rud:
-                        tlist = [int(x) for x in rud["cput"].split(':')]
-                        tlist = [0] * (6 - len(tlist)) + tlist + [0, 0, 0]
-                        tlist[0] += 2000  # to avoid error about year range
-                        t = time.struct_time(tlist)
-                        t = datetime.fromtimestamp(time.mktime(t))
-                        t0 = datetime.fromtimestamp(time.mktime(
-                            time.struct_time([2000] + [0] * 8)))
-                        #t = datetime.strptime(rud["cput"], "%H:%M:%S")
-                        #t0 = datetime.strptime("00:00:00", "%H:%M:%S")
-                        self.serial_duration = t - t0
-                    elif "cpupercent" in rud:
-                        duration = self.serial_duration.total_seconds() \
-                            * float(rud["cpupercent"]) / 100.
-                        self.serial_duration = timedelta(seconds=duration)
-                    elif 'ncpus' in rud:
-                        duration = self.serial_duration.total_seconds() \
-                            * int(rud["ncpus"])
-                        self.serial_duration = timedelta(seconds=duration)
+            if self.ending_date:
+                self.serial_duration \
+                    = self.ending_date - self.execution_date
+                if "cput" in rud:
+                    tlist = [int(x) for x in rud["cput"].split(':')]
+                    tlist = [0] * (6 - len(tlist)) + tlist + [0, 0, 0]
+                    tlist[0] += 2000  # to avoid error about year range
+                    t = time.struct_time(tlist)
+                    t = datetime.fromtimestamp(time.mktime(t))
+                    t0 = datetime.fromtimestamp(time.mktime(
+                        time.struct_time([2000] + [0] * 8)))
+                    #t = datetime.strptime(rud["cput"], "%H:%M:%S")
+                    #t0 = datetime.strptime("00:00:00", "%H:%M:%S")
+                    self.serial_duration = t - t0
+                elif "cpupercent" in rud:
+                    duration = self.serial_duration.total_seconds() \
+                        * float(rud["cpupercent"]) / 100.
+                    self.serial_duration = timedelta(seconds=duration)
+                elif 'ncpus' in rud:
+                    duration = self.serial_duration.total_seconds() \
+                        * int(rud["ncpus"])
+                    self.serial_duration = timedelta(seconds=duration)
 
 
         return state_changed
