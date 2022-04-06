@@ -1323,7 +1323,7 @@ class LocalSchedulerCfg(observer.Observable):
                                     OCFG_SCDL_INTERVAL):
             interval_str = config_parser.get(hostname,
                                              OCFG_SCDL_INTERVAL)
-            interval = int(interval_str)
+            interval = float(interval_str)
         if config_parser.has_option(hostname,
                                     OCFG_SCDL_MAX_CPU_NB):
             max_proc_nb_str = config_parser.get(socket.gethostname(),
