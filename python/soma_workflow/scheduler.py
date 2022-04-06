@@ -6,6 +6,7 @@ import six
 import os
 import inspect
 import importlib
+import threading
 
 
 class Scheduler(object):
@@ -32,9 +33,12 @@ class Scheduler(object):
 
     is_sleeping = None
 
+    jobs_finished_event = None
+
     def __init__(self):
         self.parallel_job_submission_info = None
         self.is_sleeping = False
+        self.jobs_finished_event = threading.Event()
 
     def sleep(self):
         self.is_sleeping = True

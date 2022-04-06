@@ -241,6 +241,9 @@ class WorkflowEngineLoop(object):
             if not self._running:
                 break
             with self._lock:
+                # clear scheduler evnts
+                self._scheduler.jobs_finished_event.clear()
+
                 ended_jobs = drms_error_jobs  # {}
                 wf_to_inspect = set()  # set of workflow id
                 for job in six.itervalues(drms_error_jobs):
@@ -538,7 +541,7 @@ class WorkflowEngineLoop(object):
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
             self._loop_count += 1
-            time.sleep(time_interval)
+            self._scheduler.jobs_finished_event.wait(time_interval)
 
     def read_job_output_dict(self, job):
         if job.has_outputs:
