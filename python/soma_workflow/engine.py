@@ -456,9 +456,9 @@ class WorkflowEngineLoop(object):
 
                 # --- 6. Submit jobs ------------------------------------------
                 drmaa_id_for_db_up = {}
+                self.update_jobs_parameters(jobs_to_run)
                 for job in jobs_to_run:
                     # set dynamic paramters from upstream outputs
-                    self.update_job_parameters(job)
                     try:
                         job.drmaa_id = self._scheduler.job_submission(job)
                     except DRMError as e:
@@ -576,7 +576,7 @@ class WorkflowEngineLoop(object):
                         engine_transfer.client_path,
                         engine_transfer.client_paths)
 
-    def update_job_parameters(self, job):
+    def update_jobs_parameters(self, jobs):
         '''
         Set job parameters from upstream outputs, set the env variables
         SOMAWF_INPUT_PARAMS and / or SOMAWF_OUTPUT_PARAMS when they are used,
@@ -585,79 +585,85 @@ class WorkflowEngineLoop(object):
         If the job has a configuration dict, it will be included as a parameter
         named "configuration_dict".
         '''
-        u_param_dict = self._database_server.updated_job_parameters(job.job_id)
-        # I don't understand any longer what I have done.
-        # we iterate over params (OK).
-        #   then on each link for the value (value_tl):
-        #      we get an output value and re-iterate over sub-values
-        #      then set the whole param, forgetting all previous links
-        # if this is right we may process only the last link ?
-        # seems are done many times here...
-        if u_param_dict:
-            for param, value_tl in six.iteritems(u_param_dict):
-                dval = job.param_dict.get(param)
-                #print('update_job_parameters', param, ':', value_tl)
-                #print('job:', job.name, job)
-                #print('dval:', repr(dval))
-                for value_t in value_tl:
-                    func, src_param, value = value_t
-                    #print('   ', func, src_param, value, param, dval)
-                    nvalue = transformed_param_value(func, src_param, value,
-                                                     param, dval)
-                    if isinstance(nvalue, list):
-                        values = nvalue
-                        dvals = dval
-                    else:
-                        values = [nvalue]
-                        dvals = [dval]
-                    new_values = []
-                    for i in range(len(values)):
-                        value = values[i]
-                        if i < len(dvals):
-                            val = dvals[i]
-                            if isinstance(val, SpecialPath) \
-                                    and not isinstance(val, TemporaryPath):
-                                # temp paths are replaced as normal files
-                                # if they happen to get a new value in an
-                                # output
-                                engine_transfer = job.transfer_mapping[val]
-                                former_path = engine_transfer.engine_path
-                                if former_path != value:
-                                    engine_transfer.set_engine_path(
-                                        value,
-                                        *engine_transfer.map_client_path_to_engine(
-                                            value, job.param_dict))
-                                    # update database with modified values
-                                    self._database_server.set_transfer_paths(
-                                        engine_transfer.transfer_id, value,
-                                        engine_transfer.client_path,
-                                        engine_transfer.client_paths)
-                                new_values.append(val)
+        u_param_dicts = self._database_server.updated_jobs_parameters(
+            [job.job_id for job in jobs])
+
+        for job in jobs:
+            u_param_dict = u_param_dicts.get(job.job_id)
+
+            # I don't understand any longer what I have done.
+            # we iterate over params (OK).
+            #   then on each link for the value (value_tl):
+            #      we get an output value and re-iterate over sub-values
+            #      then set the whole param, forgetting all previous links
+            # if this is right we may process only the last link ?
+            # seems are done many times here...
+            if u_param_dict:
+                for param, value_tl in six.iteritems(u_param_dict):
+                    dval = job.param_dict.get(param)
+                    #print('update_job_parameters', param, ':', value_tl)
+                    #print('job:', job.name, job)
+                    #print('dval:', repr(dval))
+                    for value_t in value_tl:
+                        func, src_param, value = value_t
+                        #print('   ', func, src_param, value, param, dval)
+                        nvalue = transformed_param_value(func, src_param,
+                                                         value, param, dval)
+                        if isinstance(nvalue, list):
+                            values = nvalue
+                            dvals = dval
+                        else:
+                            values = [nvalue]
+                            dvals = [dval]
+                        new_values = []
+                        for i in range(len(values)):
+                            value = values[i]
+                            if i < len(dvals):
+                                val = dvals[i]
+                                if isinstance(val, SpecialPath) \
+                                        and not isinstance(val, TemporaryPath):
+                                    # temp paths are replaced as normal files
+                                    # if they happen to get a new value in an
+                                    # output
+                                    engine_transfer = job.transfer_mapping[val]
+                                    former_path = engine_transfer.engine_path
+                                    if former_path != value:
+                                        engine_transfer.set_engine_path(
+                                            value,
+                                            *engine_transfer.map_client_path_to_engine(
+                                                value, job.param_dict))
+                                        # update database with modified values
+                                        self._database_server.set_transfer_paths(
+                                            engine_transfer.transfer_id, value,
+                                            engine_transfer.client_path,
+                                            engine_transfer.client_paths)
+                                    new_values.append(val)
+                                else:
+                                    new_values.append(value)
                             else:
                                 new_values.append(value)
-                        else:
-                            new_values.append(value)
-                    if not isinstance(nvalue, list):
-                        new_values = new_values[0]
-                    job.param_dict[param] = new_values
+                        if not isinstance(nvalue, list):
+                            new_values = new_values[0]
+                        job.param_dict[param] = new_values
+                        break  # avoid doing this multiple times
 
-        if u_param_dict or \
-                (job.configuration and not job.use_input_params_file):
-            if job.configuration and not job.use_input_params_file:
-                job.param_dict['configuration_dict'] \
-                    = json.dumps(job.configuration)
-                print('configuration_dict included', file=sys.stderr)
-            self._database_server.update_job_command(job.job_id,
-                                                     job.plain_command())
-        if job.use_input_params_file and job.input_params_file:
-            if job.env is None:
-                job.env = {}
-            job.env['SOMAWF_INPUT_PARAMS'] = job.plain_input_params_file()
-            job.write_input_params_file()
-        if job.has_outputs and job.output_params_file:
-            if job.env is None:
-                job.env = {}
-            job.env['SOMAWF_OUTPUT_PARAMS'] = job.plain_output_params_file()
+            if u_param_dict or \
+                    (job.configuration and not job.use_input_params_file):
+                if job.configuration and not job.use_input_params_file:
+                    job.param_dict['configuration_dict'] \
+                        = json.dumps(job.configuration)
+                    print('configuration_dict included', file=sys.stderr)
+                self._database_server.update_job_command(job.job_id,
+                                                        job.plain_command())
+            if job.use_input_params_file and job.input_params_file:
+                if job.env is None:
+                    job.env = {}
+                job.env['SOMAWF_INPUT_PARAMS'] = job.plain_input_params_file()
+                job.write_input_params_file()
+            if job.has_outputs and job.output_params_file:
+                if job.env is None:
+                    job.env = {}
+                job.env['SOMAWF_OUTPUT_PARAMS'] = job.plain_output_params_file()
 
     def stop_loop(self):
         with self._lock:
@@ -862,13 +868,13 @@ class WorkflowEngineLoop(object):
                     raise JobError("Could not create the directory %s %s: %s \n" %
                                    (repr(transfer.engine_path), type(e), e))
 
-        # submit independant jobs
-        (jobs_to_run,
-         engine_workflow.status) = engine_workflow.find_out_independant_jobs()
-        for job in jobs_to_run:
-            self._pend_for_submission(job)
-        # add to the engine managed workflow list
         with self._lock:
+            # submit independant jobs
+            (jobs_to_run,
+            engine_workflow.status) = engine_workflow.find_out_independant_jobs()
+            for job in jobs_to_run:
+                self._pend_for_submission(job)
+            # add to the engine managed workflow list
             self._workflows[engine_workflow.wf_id] = engine_workflow
 
         return engine_workflow.wf_id
