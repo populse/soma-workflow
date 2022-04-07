@@ -456,24 +456,28 @@ class LocalScheduler(Scheduler):
 
         return process
 
-    def job_submission(self, job, signal_end=True):
+    def job_submission(self, jobs):
         '''
         * job *EngineJob*
         * return: *string*
             Job id for the scheduling system (DRMAA for example)
         '''
-        if not job.job_id or job.job_id == -1:
-            raise LocalSchedulerError("Invalid job: no id")
-        job.signal_end = signal_end
+        drmaa_ids = []
+        queues = set()
+        for job in jobs:
+            if not job.job_id or job.job_id == -1:
+                raise LocalSchedulerError("Invalid job: no id")
         with self._lock:
-            # print("job submission " + repr(job.job_id))
-            drmaa_id = str(job.job_id)
-            self._queue.append(drmaa_id)
-            self._jobs[drmaa_id] = job
-            self._status[drmaa_id] = constants.QUEUED_ACTIVE
-            self._queue.sort(key=lambda job_id: self._jobs[drmaa_id].priority,
+            for job in jobs:
+                # print("job submission " + repr(job.job_id))
+                drmaa_id = str(job.job_id)
+                drmaa_ids.append(drmaa_id)
+                self._queue.append(drmaa_id)
+                self._jobs[drmaa_id] = job
+                self._status[drmaa_id] = constants.QUEUED_ACTIVE
+            self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
-        return drmaa_id
+        return drmaa_ids
 
     def get_job_status(self, scheduler_job_id):
         '''

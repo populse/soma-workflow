@@ -150,8 +150,6 @@ class WorkflowEngineLoop(object):
     _pending_queues = None
     # boolean
     _running = None
-    # boolean
-    _j_wf_ended = None
 
     _lock = None
 
@@ -212,8 +210,6 @@ class WorkflowEngineLoop(object):
         self._user_login = userLogin
         self.logger.debug("user_id : " + repr(self._user_id))
 
-        self._j_wf_ended = True
-
         self._lock = threading.RLock()
         # counter which may be used to synchronize things
         self._loop_count = 0
@@ -241,7 +237,8 @@ class WorkflowEngineLoop(object):
             if not self._running:
                 break
             with self._lock:
-                # clear scheduler evnts
+                #print('engine loop 0')
+                # clear scheduler events
                 self._scheduler.jobs_finished_event.clear()
 
                 ended_jobs = drms_error_jobs  # {}
@@ -263,6 +260,7 @@ class WorkflowEngineLoop(object):
                 # --- 1. Jobs and workflow deletion and kill ------------------
                 # Get the jobs and workflow with the status DELETE_PENDING
                 # and KILL_PENDING
+                #print('engine loop 1')
                 jobs_to_delete = []
                 jobs_to_kill = []
                 (jobs_to_delete, jobs_to_kill) \
@@ -326,6 +324,7 @@ class WorkflowEngineLoop(object):
                 # --- 2. Update job status from the scheduler -----------------
                 # get back the termination status and terminate the jobs which
                 # ended
+                #print('engine loop 2')
                 wf_jobs = {}
                 wf_transfers = {}
                 wf_tmp = {}
@@ -409,6 +408,7 @@ class WorkflowEngineLoop(object):
                                 "  => signal " + repr(job.terminating_signal))
 
                 # --- 3. Get back transfered status ---------------------------
+                #print('engine loop 3')
                 for transfer_id, transfer in six.iteritems(wf_transfers):
                     try:
                         status = self._database_server.get_transfer_status(
@@ -433,6 +433,7 @@ class WorkflowEngineLoop(object):
                         wf_to_inspect.add(wf_id)
 
                 # --- 4. Inspect workflows ------------------------------------
+                #print('engine loop 4')
                 self.logger.debug("wf_to_inspect " + repr(wf_to_inspect))
                 for wf_id in wf_to_inspect:
                     (to_run,
@@ -448,54 +449,61 @@ class WorkflowEngineLoop(object):
                     self._pend_for_submission(to_run)
 
                 # --- 5. Check if pending jobs can now be submitted -----------
+                #print('engine loop 5')
                 self.logger.debug("Check pending jobs")
                 jobs_to_run = self._get_pending_job_to_submit()
                 self.logger.debug("jobs_to_run=" + repr(jobs_to_run))
                 self.logger.debug("len(jobs_to_run)=" + repr(len(jobs_to_run)))
 
                 # --- 6. Submit jobs ------------------------------------------
+                #print('engine loop 6')
                 drmaa_id_for_db_up = {}
+                # set dynamic paramters from upstream outputs
                 self.update_jobs_parameters(jobs_to_run)
+                #print('engine loop 6.1')
 
-                for job in jobs_to_run:
-                    # set dynamic paramters from upstream outputs
-                    try:
-                        job.drmaa_id = self._scheduler.job_submission(
-                            job, signal_end=job.signal_end)
-                    except DRMError as e:
-                        # Resubmission ?
-                        # if job.queue in self._pending_queues:
-                        #  self._pending_queues[job.queue].insert(0, job)
-                        # else:
-                        #  self._pending_queues[job.queue] = [job]
-                        # job.status = constants.SUBMISSION_PENDING
-                        self.logger.debug(
-                            "job %s !!!ERROR!!! %s: %s" % (repr(job.command),
-                                                           type(e), e))
-                        job.status = constants.FAILED
-                        job.exit_status = constants.EXIT_ABORTED
-                        stderr_file = open(job.stderr_file, "a")
-                        self.logger.debug('Job fail, stderr opened')
-                        stderr_file.write(
-                            "Error while submitting the job %s:\n%s\n"
-                            % (type(e), e))
-                        stderr_file.close()
-                        drms_error_jobs[job.job_id] = job
-                    else:
-                        drmaa_id_for_db_up[job.job_id] = job.drmaa_id
-                        if job.is_engine_execution:
-                            # Engine execution jobs immediately get the status
-                            # DONE to avoid losing one time cycle
-                            job.status = constants.DONE
+                if jobs_to_run:
+                    drmaa_ids = self._scheduler.job_submission(jobs_to_run)
+                    for job, drmaa_id in zip(jobs_to_run, drmaa_ids):
+                        if drmaa_id is None:
+                            # Resubmission ?
+                            # if job.queue in self._pending_queues:
+                            #  self._pending_queues[job.queue].insert(0, job)
+                            # else:
+                            #  self._pending_queues[job.queue] = [job]
+                            # job.status = constants.SUBMISSION_PENDING
+                            self.logger.debug(
+                                "job %s !!!ERROR!!! %s: %s"
+                                % (repr(job.command),
+                                                              type(e), e))
+                            job.status = constants.FAILED
+                            job.exit_status = constants.EXIT_ABORTED
+                            stderr_file = open(job.stderr_file, "a")
+                            self.logger.debug('Job fail, stderr opened')
+                            stderr_file.write(
+                                "Error while submitting the job %s:\n%s\n"
+                                % (type(e), e))
+                            stderr_file.close()
+                            drms_error_jobs[job.job_id] = job
                         else:
-                            job.status = constants.UNDETERMINED
+                            job.drmaa_id = drmaa_id
+                            drmaa_id_for_db_up[job.job_id] = job.drmaa_id
+                            if job.is_engine_execution:
+                                # Engine execution jobs immediately get the
+                                # status
+                                # DONE to avoid losing one time cycle
+                                job.status = constants.DONE
+                            else:
+                                job.status = constants.UNDETERMINED
 
+                #print('engine loop 6.2')
                 if drmaa_id_for_db_up:
                     self._database_server.set_submission_information(
                         drmaa_id_for_db_up,
                         datetime.now())
 
                 # --- 7. Update the workflow and jobs status to the database_server -
+                #print('engine loop 7')
                 ended_job_ids = []
                 ended_wf_ids = []
                 self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
@@ -503,9 +511,6 @@ class WorkflowEngineLoop(object):
                 for job_id, job in itertools.chain(six.iteritems(self._jobs),
                                                    six.iteritems(wf_jobs)):
                     job_status_for_db_up[job_id] = job.status
-                    self._j_wf_ended = self._j_wf_ended and \
-                        (job.status == constants.DONE or
-                         job.status == constants.FAILED)
                     if job_id in self._jobs and \
                         (job.status == constants.DONE or
                          job.status == constants.FAILED):
@@ -513,6 +518,7 @@ class WorkflowEngineLoop(object):
                     self.logger.debug(
                         "job " + repr(job_id) + " " + repr(job.status))
 
+                #print('update jobs status:', len(job_status_for_db_up))
                 if job_status_for_db_up:
                     self._database_server.set_jobs_status(job_status_for_db_up)
 
@@ -542,7 +548,9 @@ class WorkflowEngineLoop(object):
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
             self._loop_count += 1
+            #print('engine loop 8')
             self._scheduler.jobs_finished_event.wait(time_interval)
+            #print('engine loop 9')
 
     def read_job_output_dict(self, job):
         if job.has_outputs:
@@ -823,18 +831,15 @@ class WorkflowEngineLoop(object):
         '''
         # register
         self.logger.debug("Within add_workflow")
-        print('add_workflow strating...')
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
                                          expiration_date,
                                          name,
                                          container_command=container_command)
-        print('engine wf created')
 
         engine_workflow = self._database_server.add_workflow(
             self._user_id, engine_workflow, login=self._user_login)
-        print('wf added in db')
 
         for job in six.itervalues(engine_workflow.job_mapping):
             try:
@@ -860,7 +865,6 @@ class WorkflowEngineLoop(object):
                     # raise JobError("Could not create the standard error file "
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
-        print('stdout files created.')
 
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
@@ -879,18 +883,14 @@ class WorkflowEngineLoop(object):
                     raise JobError("Could not create the directory %s %s: %s \n" %
                                    (repr(transfer.engine_path), type(e), e))
 
-        print('transfers done')
         # submit independant jobs
         (jobs_to_run,
         engine_workflow.status) = engine_workflow.find_out_independant_jobs()
-        print('independent jobs:', len(jobs_to_run))
         with self._lock:
             self._pend_for_submission(jobs_to_run)
-            print('pending submitted')
             # add to the engine managed workflow list
             self._workflows[engine_workflow.wf_id] = engine_workflow
 
-        print('add_workflow done')
         return engine_workflow.wf_id
 
     def _stop_job(self, job_id, job):

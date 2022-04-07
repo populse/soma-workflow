@@ -177,26 +177,31 @@ class MPIScheduler(scheduler.Scheduler):
     def queued_job_count(self):
         return len(self._queue)
 
-    def job_submission(self, job, signal_end=True):
+    def job_submission(self, jobs):
         '''
         * job *EngineJob*
         * return: *string*
         Job id for the scheduling system (DRMAA for example)
         '''
-        if not job.job_id or job.job_id == -1:
-            raise Exception("Invalid job: no id")
+        print('MPI job_submission:', len(jobs))
+        for job in jobs:
+            if not job.job_id or job.job_id == -1:
+                raise Exception("Invalid job: no id")
         # self._logger.debug(">> job_submission wait lock")
-        job.signal_end = signal_end
+        drmaa_ids = []
+
         with self._lock:
             # self._logger.debug(">> job_submission wait lock END")
-            self._queue.append(job.job_id)
-            self._jobs[job.job_id] = job
-            self._status[job.job_id] = constants.QUEUED_ACTIVE
+            for job in jobs:
+                self._queue.append(job.job_id)
+                self._jobs[job.job_id] = job
+                self._status[job.job_id] = constants.QUEUED_ACTIVE
+                drmaa_ids.append(job.job_id)
             self._queue.sort(key=lambda job_id: self._jobs[job_id].priority,
                              reverse=True)
             self._logger.debug("[host: " + socket.gethostname() + "] "
-                               + "A Job was submitted.")
-        return job.job_id
+                               + "%d Jobs were submitted." % len(jobs))
+        return drmaa_ids
 
     def get_job_status(self, scheduler_job_id):
         '''

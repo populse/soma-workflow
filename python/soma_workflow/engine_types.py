@@ -640,7 +640,7 @@ class EngineWorkflow(Workflow):
         # and set of jobs whith downstream dependencies
         for dep in self.dependencies:
             self._dependency_dict.setdefault(dep[1], []).append(dep[0])
-            self._rev_dependency_dict.setdefault(dep[0]).append(dep[1])
+            self._jobs_with_downstream.add(dep[0])
 
         self.job_mapping = {}
         self.transfer_mapping = {}

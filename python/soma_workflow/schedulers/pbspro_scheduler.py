@@ -326,11 +326,11 @@ class PBSProScheduler(Scheduler):
 
         return job_template
 
-    def job_submission(self, job, signal_end=True):
+    def job_submission(self, jobs, signal_end=True):
         '''
         Parameters
         ----------
-        job: soma_workflow.client.Job
+        jobs: soma_workflow.client.Job
             job to be submitted
         signal_end: bool
 
@@ -339,7 +339,16 @@ class PBSProScheduler(Scheduler):
         job_id: string
             job id
         '''
+        drmaa_ids = []
+        for job in jobs:
+            try:
+                drmaa_id = self.submit_one_job(job)
+            except:
+                drmaa_id = None
+            drmaa_ids.append(drmaa_id)
+        return drmaa_ids
 
+    def submit_one_job(self, job):
         if self.is_sleeping:
             self.wake()
         if job.is_engine_execution:
