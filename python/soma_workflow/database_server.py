@@ -189,7 +189,7 @@ def create_database(database_file):
         os.makedirs(db_dir, exist_ok=True)
 
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        database_file, timeout=15, isolation_level="EXCLUSIVE",
         check_same_thread=False)
     cursor = connection.cursor()
     cursor.execute(
@@ -411,7 +411,7 @@ def sqlite3_max_variable_number():
 
 def print_job_status(database_file):
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        database_file, timeout=15, isolation_level="EXCLUSIVE",
         check_same_thread=False)
     cursor = connection.cursor()
 
@@ -427,7 +427,7 @@ def print_job_status(database_file):
 def print_tables(database_file):
 
     connection = sqlite3.connect(
-        database_file, timeout=5, isolation_level="EXCLUSIVE",
+        database_file, timeout=15, isolation_level="EXCLUSIVE",
         check_same_thread=False)
     cursor = connection.cursor()
 
@@ -615,7 +615,7 @@ class WorkflowDatabaseServer(object):
     def _connect(self):
         try:
             connection = sqlite3.connect(
-                self._database_file, timeout=10, isolation_level="EXCLUSIVE",
+                self._database_file, timeout=15, isolation_level="EXCLUSIVE",
                 check_same_thread=False)
             # set journal_mode to TRUNCATE mode. On some systems / filesystems
             # / python versions (3), using the default DELETE mode can
