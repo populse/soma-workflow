@@ -2186,6 +2186,11 @@ class MainWindow(QtGui.QMainWindow):
                  config_file=None,
                  db_file=None,
                  interactive=False):
+        '''
+        Parameters
+        ----------
+        model: ApplicationModel
+        '''
 
         super(MainWindow, self).__init__(parent)
 
@@ -2607,17 +2612,7 @@ class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
 class WorkflowTree(QtGui.QWidget):
 
     '''
-    Signals:
-
-    current_connection_changed
-    current_workflow_about_to_change
-    current_workflow_changed
     '''
-
-    current_connection_changed = QtCore.Signal()
-    current_workflow_about_to_change = QtCore.Signal()
-    current_workflow_changed = QtCore.Signal()
-   
 
     assigned_wf_id = None
 
@@ -4784,8 +4779,8 @@ class GuiWorkflow(object):
         # print(" ==> building the workflow ")
         # begining = datetime.now()
         # retrieving the set of job and the set of file transfers
-        w_js = set([])
-        w_fts = set([])
+        w_js = set()
+        w_fts = set()
 
         for job in workflow.jobs:
             w_js.add(job)
@@ -4844,16 +4839,24 @@ class GuiWorkflow(object):
                                            name=group.name)
 
         # parent and children research for jobs and groups
+        # build maps to accelerate search
+        rows = {data: row for row, data in enumerate(workflow.root_group)}
+        g_rows = {}
+        for group in workflow.groups:
+            g_rows[group] = {data: row
+                             for row, data in enumerate(group.elements)}
         for item in self.items.values():
             if isinstance(item, GuiGroup) or isinstance(item, GuiJob):
-                if item.data in workflow.root_group:
+                row = rows.get(item.data)
+                if row is not None:
                     item.parent = -1
-                    item.row = workflow.root_group.index(item.data)
+                    item.row = row
                     self.root_item.children[item.row] = item.it_id
                 for group in workflow.groups:
-                    if item.data in group.elements:
+                    row = g_rows[group].get(item.data)
+                    if row is not None:
                         item.parent = ids[group]
-                        item.row = group.elements.index(item.data)
+                        item.row = row
                         self.items[item.parent].children[item.row] = item.it_id
 
         # processing the file transfers
