@@ -26,6 +26,7 @@ import shutil
 import optparse
 import tarfile
 import six
+import datetime
 from mpi4py import MPI
 from soma_workflow import scheduler, constants
 from soma_workflow.schedulers.mpi_scheduler import MPIScheduler
@@ -56,6 +57,7 @@ def slave_loop(communicator,
                 logger.error("Could not deploy epd: %s" % (e))
                 pass
 
+    interval = 0.01
     max_nb_jobs = 1
 
     ret_value = 0
@@ -144,9 +146,11 @@ def slave_loop(communicator,
                 cmd_stdout, cmd_stderr = (None, None)
 
                 if plain_stdout:
+                    os.makedirs(os.path.dirname(plain_stdout), exist_ok=True)
                     cmd_stdout = open(plain_stdout, 'w+')
 
                 if plain_stderr:
+                    os.makedirs(os.path.dirname(plain_stderr), exist_ok=True)
                     cmd_stderr = open(plain_stderr, 'w+')
 
                 logger.debug("[host: " + socket.gethostname() + "] "
@@ -219,7 +223,7 @@ def slave_loop(communicator,
             # time.sleep(1200) #20 mins
             break
         else:
-            time.sleep(1)
+            time.sleep(interval)
 
     if epd_to_deploy != None:
         logger.debug("[host: " + socket.gethostname() + "] "
@@ -273,7 +277,21 @@ if __name__ == '__main__':
     from soma_workflow.configuration import (OCFG_MPI_LOG_FORMAT,
                                              OCFG_MPI_LOG_DIR)
 
-    resource_id = args[1]  # sys.argv[1]
+#if not len(args) == 2:
+    ## TO DO: stopping slave procedure in a function
+    #logger.critical("Mandatory argument: resource id.")
+    #for slave in range(1, comm.size):
+        #logger.error("[host: " + socket.gethostname() + "] "
+                      #+ "STOP !!! slave " + repr(slave))
+        #comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
+    #logger.error("[host: " + socket.gethostname() + "] "
+                  #+ "######### MASTER ENDS #############")
+    #raise Exception("Mandatory argument: resource id. \n")
+
+    if len(args) > 1:
+        resource_id = args[1]  # sys.argv[1]
+    else:
+        resource_id = None  # local
 
     config = soma_workflow.configuration.Configuration.load_from_file(
         resource_id)
@@ -282,21 +300,25 @@ if __name__ == '__main__':
     if log_level is None:
         _, _, log_level = config.get_engine_log_info()
 
-    if config._config_parser is not None:
-        if config._config_parser.has_option(resource_id, OCFG_MPI_LOG_DIR):
-            mpi_log_dir = config._config_parser.get(resource_id,
-                                                    OCFG_MPI_LOG_DIR)
-            mpi_log_dir = os.path.expandvars(mpi_log_dir)
-        else:
-            mpi_log_dir = os.path.join(config.get_soma_workflow_dir(),
-                                       'logs', 'mpi_logs')
-        if config._config_parser.has_option(resource_id,
-                                            OCFG_MPI_LOG_FORMAT):
-            log_format = config._config_parser.get(
-                resource_id, OCFG_MPI_LOG_FORMAT, raw=1)
-        else:
-            log_format = "%(asctime)s => %(module)s line %(lineno)s: " \
-                          "%(message)s          %(threadName)s)"
+    if config._config_parser is None:
+        raise ValueError('resource %s is not configured.' % resource_id)
+
+    if config._config_parser.has_option(resource_id, OCFG_MPI_LOG_DIR):
+        mpi_log_dir = config._config_parser.get(resource_id,
+                                                OCFG_MPI_LOG_DIR)
+        mpi_log_dir = os.path.expandvars(mpi_log_dir)
+    else:
+        mpi_log_dir = os.path.join(config.get_soma_workflow_dir(),
+                                    'logs', 'mpi_logs')
+    if config._config_parser.has_option(resource_id,
+                                        OCFG_MPI_LOG_FORMAT):
+        log_format = config._config_parser.get(
+            resource_id, OCFG_MPI_LOG_FORMAT, raw=1)
+    else:
+        log_format = "%(asctime)s => %(module)s line %(lineno)s: " \
+                      "%(message)s          %(threadName)s)"
+
+    os.makedirs(mpi_log_dir, exist_ok=True)
 
     if rank == 0:
 
@@ -319,19 +341,6 @@ if __name__ == '__main__':
         from soma_workflow.engine import WorkflowEngine, ConfiguredWorkflowEngine
         from soma_workflow.database_server import WorkflowDatabaseServer
         from soma_workflow.client import Helper
-
-        if not len(args) == 2:
-            # TO DO: stopping slave procedure in a function
-            logger.critical("Mandatory argument: resource id.")
-            for slave in range(1, comm.size):
-                logger.ERROR("[host: " + socket.gethostname() + "] "
-                             + "STOP !!! slave " + repr(slave))
-                comm.send('STOP', dest=slave, tag=MPIScheduler.EXIT_SIGNAL)
-            logger.ERROR("[host: " + socket.gethostname() + "] "
-                         + "######### MASTER ENDS #############")
-            raise Exception("Mandatory argument: resource id. \n")
-
-        resource_id = args[1]
 
         try:
             if config.get_scheduler_type() != soma_workflow.configuration.MPI_SCHEDULER:
@@ -367,7 +376,7 @@ if __name__ == '__main__':
             logger.info("epd_to_deploy " + repr(options.epd_to_deploy))
             logger.info("untar_directory " + repr(options.untar_directory))
             sch = MPIScheduler(
-                comm, interval=1, nb_attempt_per_job=options.nb_attempt_per_job)
+                comm, interval=0.01, nb_attempt_per_job=options.nb_attempt_per_job)
             logger.info("scheduler started")
             config.disable_queue_limits()
             logger.info("queue limits disabled")
@@ -385,21 +394,35 @@ if __name__ == '__main__':
                     logger.info("workflow file: " + repr(workflow_file) +
                                 "does not exist and can not be submitted")
 
+                t0 = datetime.datetime.now()
+                print('start time:', t0)
                 workflow = Helper.unserialize(workflow_file)
+                t1 = datetime.datetime.now()
+                print('load time:', t1 - t0)
                 workflow_engine.submit_workflow(workflow,
                                                 expiration_date=None,
                                                 name=None,
                                                 queue=None)
+                t2 = datetime.datetime.now()
+                print('submission time:', t2 - t1)
             if options.wf_id_to_restart != None:
                 workflow_id = options.wf_id_to_restart
                 logger.info(" ")
                 logger.info("******* restart workflow **********")
                 logger.info("workflow if: " + repr(workflow_id))
+                t0 = datetime.datetime.now()
+                print('start time:', t0)
                 workflow_engine.stop_workflow(workflow_id)
+                t1 = datetime.datetime.now()
+                print('stop old workflow time:', t1 - t0)
                 workflow_engine.restart_workflow(workflow_id, queue=None)
+                t2 = datetime.datetime.now()
+                print('restart time:', t2 - t1)
 
             while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
                 time.sleep(2)
+            t3 = datetime.datetime.now()
+            print('run time:', t3 - t2)
             logger.debug("******** workflow ends **********")
             for slave in range(1, comm.size):
                 logger.debug("[host: " + socket.gethostname() + "] "
