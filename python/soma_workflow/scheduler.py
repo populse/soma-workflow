@@ -49,7 +49,7 @@ class Scheduler(object):
     def clean(self):
         pass
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         Submit a Soma-Workflow job
 
@@ -57,6 +57,13 @@ class Scheduler(object):
         ----------
         job: EngineJob
             Job to be submitted
+        signal_end: bool
+            set the ``jobs_finished_event`` signal when this job terminates.
+            True by default, it can be set to False to indicate that the end of
+            this job has no immediate consequence on others, thus needs not to
+            run another engine loop immediately.
+            Schedulers implementations are free to actually implement the
+            ``jobs_finished_event`` or not.
 
         Returns
         -------

@@ -151,6 +151,10 @@ class MPIScheduler(scheduler.Scheduler):
                     else:
                         self._exit_info[job_id] = exit_info
                         self._status[job_id] = job_status
+                        job = self._jobs[job_id]
+                        if job.signal_end:
+                            # trigger the event to the engine
+                            self.jobs_finished_event.set()
 
             elif t == MPIScheduler.EXIT_SIGNAL:
                 # self._logger.debug("Master received the EXIT_SIGNAL")
@@ -173,7 +177,7 @@ class MPIScheduler(scheduler.Scheduler):
     def queued_job_count(self):
         return len(self._queue)
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         * job *EngineJob*
         * return: *string*
@@ -182,6 +186,7 @@ class MPIScheduler(scheduler.Scheduler):
         if not job.job_id or job.job_id == -1:
             raise Exception("Invalid job: no id")
         # self._logger.debug(">> job_submission wait lock")
+        job.signal_end = signal_end
         with self._lock:
             # self._logger.debug(">> job_submission wait lock END")
             self._queue.append(job.job_id)
@@ -215,6 +220,8 @@ class MPIScheduler(scheduler.Scheduler):
         with self._lock:
             exit_info = self._exit_info[scheduler_job_id]
             del self._exit_info[scheduler_job_id]
+            del self._jobs[scheduler_job_id]
+            del self._status[scheduler_job_id]
         return exit_info
 
     def kill_job(self, scheduler_job_id):

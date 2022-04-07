@@ -326,12 +326,13 @@ class PBSProScheduler(Scheduler):
 
         return job_template
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         Parameters
         ----------
         job: soma_workflow.client.Job
             job to be submitted
+        signal_end: bool
 
         Returns
         -------

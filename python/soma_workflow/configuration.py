@@ -1261,7 +1261,7 @@ class LocalSchedulerCfg(observer.Observable):
     INTERVAL_CHANGED = 1
     MAX_PROC_NB_CHANGED = 2
 
-    def __init__(self, proc_nb=default_cpu_number(), interval=1,
+    def __init__(self, proc_nb=default_cpu_number(), interval=0.05,
                  max_proc_nb=0):
         '''
         * proc_nb *int*

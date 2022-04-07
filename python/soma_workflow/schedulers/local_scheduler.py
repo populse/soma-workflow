@@ -197,7 +197,7 @@ class LocalScheduler(Scheduler):
                             ret_value,
                             None,
                             None)
-                    fire_event = True
+                fire_event = True
 
             if fire_event:
                 self._poll_event.set()
@@ -212,6 +212,7 @@ class LocalScheduler(Scheduler):
         # print("#############################")
         # Control the running jobs
 
+        fire_event = False
         with self._lock:
             ended_jobs = self._ended_jobs
             self._ended_jobs = set()
@@ -221,6 +222,8 @@ class LocalScheduler(Scheduler):
             for job_id in ended_jobs:
                 # print("updated job_id " + repr(job_id) + " status DONE")
                 self._status[job_id] = constants.DONE
+                if self._jobs[job_id].signal_end:
+                    fire_event = True
                 try:
                     del self._processes[job_id]
                 except KeyError:
@@ -280,7 +283,7 @@ class LocalScheduler(Scheduler):
         with self._lock:
             self._queue = skipped_jobs + queue + self._queue
 
-        if ended_jobs:
+        if fire_event:
             # signal that we can process more jobs
             self.jobs_finished_event.set()
 
@@ -453,7 +456,7 @@ class LocalScheduler(Scheduler):
 
         return process
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         * job *EngineJob*
         * return: *string*
@@ -461,6 +464,7 @@ class LocalScheduler(Scheduler):
         '''
         if not job.job_id or job.job_id == -1:
             raise LocalSchedulerError("Invalid job: no id")
+        job.signal_end = signal_end
         with self._lock:
             # print("job submission " + repr(job.job_id))
             drmaa_id = str(job.job_id)

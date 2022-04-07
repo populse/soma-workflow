@@ -457,10 +457,12 @@ class WorkflowEngineLoop(object):
                 # --- 6. Submit jobs ------------------------------------------
                 drmaa_id_for_db_up = {}
                 self.update_jobs_parameters(jobs_to_run)
+
                 for job in jobs_to_run:
                     # set dynamic paramters from upstream outputs
                     try:
-                        job.drmaa_id = self._scheduler.job_submission(job)
+                        job.drmaa_id = self._scheduler.job_submission(
+                            job, signal_end=job.signal_end)
                     except DRMError as e:
                         # Resubmission ?
                         # if job.queue in self._pending_queues:

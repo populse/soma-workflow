@@ -634,6 +634,14 @@ class EngineWorkflow(Workflow):
         if hasattr(client_workflow, 'uuid'):
             self.uuid = client_workflow.uuid
 
+        self._dependency_dict = {}
+        self._jobs_with_downstream = set()
+        # reshape dependencies as a dict dependent_job: [upstream_job, ...]
+        # and set of jobs whith downstream dependencies
+        for dep in self.dependencies:
+            self._dependency_dict.setdefault(dep[1], []).append(dep[0])
+            self._rev_dependency_dict.setdefault(dep[0]).append(dep[1])
+
         self.job_mapping = {}
         self.transfer_mapping = {}
         self.container_command = container_command
@@ -643,12 +651,6 @@ class EngineWorkflow(Workflow):
         self.registered_tmp = {}
         self.registered_jobs = {}
 
-        self._dependency_dict = {}
-        for dep in self.dependencies:
-            if dep[1] in self._dependency_dict:
-                self._dependency_dict[dep[1]].append(dep[0])
-            else:
-                self._dependency_dict[dep[1]] = [dep[0]]
         self.cache = None
         # begin without cache because it also has an overhead
         self.use_cache = False
@@ -775,6 +777,9 @@ class EngineWorkflow(Workflow):
                     "%s: Wrong type in the workflow root_group."
                       " Objects of type Job or Group are required." %
                       (repr(elem)))
+
+        for client_job, job in self.job_mapping.items():
+            job.signal_end = (client_job in self._jobs_with_downstream)
 
     def find_out_independant_jobs(self):
         independant_jobs = []

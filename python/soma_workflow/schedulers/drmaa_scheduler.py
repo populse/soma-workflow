@@ -237,7 +237,7 @@ if DRMAA_LIB_FOUND:
 
             return drmaa_job_template
 
-        def job_submission(self, job):
+        def job_submission(self, job, signal_end=True):
             '''
             @type  job: soma_workflow.engine_types.EngineJob
             @param job: job to be submitted
