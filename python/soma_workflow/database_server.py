@@ -3095,7 +3095,7 @@ class WorkflowDatabaseServer(object):
     def updated_job_parameters(self, job_id):
         '''
         '''
-        return self.updated_jobs_parameters([job_id])[job_id]
+        return self.updated_jobs_parameters([job_id]).get(job_id, {})
 
     def get_drmaa_job_id(self, job_id):
         '''

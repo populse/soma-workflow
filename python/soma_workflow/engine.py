@@ -233,6 +233,8 @@ class WorkflowEngineLoop(object):
 
         drms_error_jobs = {}
         idle_cmpt = 0
+        prev_jobs_status = {}
+
         while True:
             if not self._running:
                 break
@@ -508,18 +510,23 @@ class WorkflowEngineLoop(object):
                 ended_wf_ids = []
                 self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
                 job_status_for_db_up = {}
+                new_jobs_status = {}
                 for job_id, job in itertools.chain(six.iteritems(self._jobs),
                                                    six.iteritems(wf_jobs)):
-                    job_status_for_db_up[job_id] = job.status
+                    prev_status = prev_jobs_status.get(job_id)
+                    if prev_status != job.status:
+                        job_status_for_db_up[job_id] = job.status
+                    new_jobs_status[job_id] = job.status
                     if job_id in self._jobs and \
                         (job.status == constants.DONE or
                          job.status == constants.FAILED):
                         ended_job_ids.append(job_id)
                     self.logger.debug(
                         "job " + repr(job_id) + " " + repr(job.status))
+                prev_jobs_status = new_jobs_status
 
-                #print('update jobs status:', len(job_status_for_db_up))
                 if job_status_for_db_up:
+                    #print('update jobs status:', len(job_status_for_db_up))
                     self._database_server.set_jobs_status(job_status_for_db_up)
 
                 if len(ended_jobs):
