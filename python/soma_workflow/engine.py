@@ -445,8 +445,7 @@ class WorkflowEngineLoop(object):
                         "NEW status wf " + repr(wf_id) + " " + repr(status))
                     # jobs_to_run.extend(to_run)
                     ended_jobs.update(aborted_jobs)
-                    for job in to_run:
-                        self._pend_for_submission(job)
+                    self._pend_for_submission(to_run)
 
                 # --- 5. Check if pending jobs can now be submitted -----------
                 self.logger.debug("Check pending jobs")
@@ -745,21 +744,26 @@ class WorkflowEngineLoop(object):
 
         return engine_job
 
-    def _pend_for_submission(self, engine_job):
+    def _pend_for_submission(self, engine_jobs):
         '''
         All the job submission are actually done in the loop (start_loop method).
         The jobs to submit after add_job, add_workflow and restart_workflow are
         first stored in _pending_queues waiting to be submitted.
         '''
+        if not isinstance(engine_jobs, (list, tuple, set)):
+            engine_jobs = [engine_jobs]
+        queues = set()
         with self._lock:
-            if engine_job.queue in self._pending_queues:
-                self._pending_queues[engine_job.queue].append(engine_job)
-                self._pending_queues[engine_job.queue].sort(
+            for engine_job in engine_jobs:
+                queue = engine_job.queue
+                queues.add(queue)
+                self._pending_queues.setdefault(queue, []).append(engine_job)
+                engine_job.status = constants.SUBMISSION_PENDING
+            # sort queues at the end
+            for queue in queues:
+                self._pending_queues[queue].sort(
                     key=lambda job: job.priority,
                     reverse=True)
-            else:
-                self._pending_queues[engine_job.queue] = [engine_job]
-            engine_job.status = constants.SUBMISSION_PENDING
 
     def _get_pending_job_to_submit(self):
         '''
@@ -819,15 +823,18 @@ class WorkflowEngineLoop(object):
         '''
         # register
         self.logger.debug("Within add_workflow")
+        print('add_workflow strating...')
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
                                          expiration_date,
                                          name,
                                          container_command=container_command)
+        print('engine wf created')
 
         engine_workflow = self._database_server.add_workflow(
             self._user_id, engine_workflow, login=self._user_login)
+        print('wf added in db')
 
         for job in six.itervalues(engine_workflow.job_mapping):
             try:
@@ -853,6 +860,8 @@ class WorkflowEngineLoop(object):
                     # raise JobError("Could not create the standard error file "
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
+        print('stdout files created.')
+
         for transfer in six.itervalues(engine_workflow.transfer_mapping):
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
@@ -870,15 +879,18 @@ class WorkflowEngineLoop(object):
                     raise JobError("Could not create the directory %s %s: %s \n" %
                                    (repr(transfer.engine_path), type(e), e))
 
+        print('transfers done')
+        # submit independant jobs
+        (jobs_to_run,
+        engine_workflow.status) = engine_workflow.find_out_independant_jobs()
+        print('independent jobs:', len(jobs_to_run))
         with self._lock:
-            # submit independant jobs
-            (jobs_to_run,
-            engine_workflow.status) = engine_workflow.find_out_independant_jobs()
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
+            self._pend_for_submission(jobs_to_run)
+            print('pending submitted')
             # add to the engine managed workflow list
             self._workflows[engine_workflow.wf_id] = engine_workflow
 
+        print('add_workflow done')
         return engine_workflow.wf_id
 
     def _stop_job(self, job_id, job):
@@ -934,16 +946,14 @@ class WorkflowEngineLoop(object):
                 (jobs_to_run, status) \
                     = workflow.restart(self._database_server, queue)
                 workflow.status = status
-                for job in jobs_to_run:
-                    self._pend_for_submission(job)
+                self._pend_for_submission(jobs_to_run)
             else:
                 workflow = self._database_server.get_engine_workflow(
                     wf_id, self._user_id)
                 (jobs_to_run, status) = workflow.restart(
                     self._database_server, queue)
                 workflow.status = status
-                for job in jobs_to_run:
-                    self._pend_for_submission(job)
+                self._pend_for_submission(jobs_to_run)
                 # add to the engine managed workflow list
                 with self._lock:
                     self._workflows[wf_id] = workflow
@@ -998,8 +1008,7 @@ class WorkflowEngineLoop(object):
             jobs_to_run = workflow.restart_jobs(
                 self._database_server, extended_job_ids, check_deps=False)
             print('can re-run immediately:', [j.job_id for j in jobs_to_run])
-            for job in jobs_to_run:
-                self._pend_for_submission(job)
+            self._pend_for_submission(jobs_to_run)
 
     def drms_job_id(self, wf_id, job_id):
         engine_wf = self._workflows.get(wf_id)
