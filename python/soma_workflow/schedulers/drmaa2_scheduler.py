@@ -218,14 +218,24 @@ raise NotImplementedError(
 
             #return drmaa_job_template_id
 
-        #def job_submission(self, job, signal_end=True):
+        #def job_submission(self, jobs):
             #'''
             #@type  job: soma_workflow.client.Job
             #@param job: job to be submitted
             #@rtype: string
             #@return: drmaa job id
             #'''
+            #drmaa_ids = []
+            #for job in jobs:
+            #for job in jobs:
+                #try:
+                    #drmaa_id = self.submit_one_job(job)
+                #except:
+                    #drmaa_id = None
+                #drmaa_ids.append(drmaa_id)
+            #return drmaa_ids
 
+        #def sumbit_one_job(self, job):
             #if self.is_sleeping:
                 #self.wake()
             ## patch for the PBS-torque DRMAA implementation

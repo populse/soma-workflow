@@ -49,27 +49,22 @@ class Scheduler(object):
     def clean(self):
         pass
 
-    def job_submission(self, job, signal_end=True):
+    def job_submission(self, jobs):
         '''
         Submit a Soma-Workflow job
 
         Parameters
         ----------
-        job: EngineJob
+        jobs: EngineJob or list[EngineJob]
             Job to be submitted
-        signal_end: bool
-            set the ``jobs_finished_event`` signal when this job terminates.
-            True by default, it can be set to False to indicate that the end of
-            this job has no immediate consequence on others, thus needs not to
-            run another engine loop immediately.
-            Schedulers implementations are free to actually implement the
-            ``jobs_finished_event`` or not.
 
         Returns
         -------
-        job_id: string
+        job_id: list[str]
             Job id for the scheduling system (DRMAA for example, or native DRMS
-            identifier)
+            identifier).
+            If some submissions failed, None is in the list instead of the job
+            id.
         '''
         raise Exception("Scheduler is an abstract class!")
 

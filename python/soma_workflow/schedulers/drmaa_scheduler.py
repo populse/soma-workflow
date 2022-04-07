@@ -237,14 +237,29 @@ if DRMAA_LIB_FOUND:
 
             return drmaa_job_template
 
-        def job_submission(self, job, signal_end=True):
+        def job_submission(self, jobs):
+            '''
+            @type  job: soma_workflow.engine_types.EngineJob
+            @param job: job to be submitted
+            @rtype: string
+            @return: drmaa job ids
+            '''
+            drmaa_ids = []
+            for job in jobs:
+                try:
+                    drmaa_id = self.submit_one_job(job)
+                except:
+                    drmaa_id = None
+                drmaa_ids.append(drmaa_id)
+            return drmaa_ids
+
+        def submit_one_job(self, jobs):
             '''
             @type  job: soma_workflow.engine_types.EngineJob
             @param job: job to be submitted
             @rtype: string
             @return: drmaa job id
             '''
-
             if self.is_sleeping:
                 self.wake()
             # patch for the PBS-torque DRMAA implementation
