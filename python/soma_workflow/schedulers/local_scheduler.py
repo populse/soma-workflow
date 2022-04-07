@@ -222,7 +222,8 @@ class LocalScheduler(Scheduler):
             for job_id in ended_jobs:
                 # print("updated job_id " + repr(job_id) + " status DONE")
                 self._status[job_id] = constants.DONE
-                if self._jobs[job_id].signal_end:
+                job = self._jobs.get(job_id)
+                if job is not None and job.signal_end:
                     fire_event = True
                 try:
                     del self._processes[job_id]
