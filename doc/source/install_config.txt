@@ -260,6 +260,9 @@ Configuration file example: ::
   ENGINE_LOG_FORMAT = %(asctime)s => line %(lineno)s: %(message)s
   ENGINE_LOG_LEVEL  = ERROR
 
+  MPI_LOG_DIR       = path/logs/mpi_logs
+  MPI_LOG_FORMAT    = %(asctime)s => %(module)s line %(lineno)s: %(message)s          %(threadName)s)
+
   # remote access information
   CLUSTER_ADDRESS     = titan.mylab.fr
   SUBMITTING_MACHINES = titan0
@@ -408,7 +411,14 @@ Logging configuration:
     <http://docs.python.org/library/logging.html>`_ module.
 
   **ENGINE_LOG_FORMAT**
-    Workflow Engine logging level as defined in the `logging
+    Workflow Engine logging format as defined in the `logging
+    <http://docs.python.org/library/logging.html>`_ module.
+
+  **MPI_LOG_DIR**
+    Directory path where to store the MPI workflow runner log files. (only used in MPI mode)
+
+  **MPI_LOG_FORMAT**
+    MPI runner logging format as defined in the `logging
     <http://docs.python.org/library/logging.html>`_ module.
 
 Parallel job configuration:

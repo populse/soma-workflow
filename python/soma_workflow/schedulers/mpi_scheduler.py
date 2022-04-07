@@ -49,7 +49,7 @@ class MPIScheduler(scheduler.Scheduler):
     JOB_RESULT = 15
     NO_JOB = 16
 
-    def __init__(self, communicator, interval=1, nb_attempt_per_job=1):
+    def __init__(self, communicator, interval=0.01, nb_attempt_per_job=1):
         super(MPIScheduler, self).__init__()
 
         self._communicator = communicator
