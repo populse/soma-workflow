@@ -6,6 +6,7 @@ import six
 import os
 import inspect
 import importlib
+import threading
 
 
 class Scheduler(object):
@@ -32,9 +33,12 @@ class Scheduler(object):
 
     is_sleeping = None
 
+    jobs_finished_event = None
+
     def __init__(self):
         self.parallel_job_submission_info = None
         self.is_sleeping = False
+        self.jobs_finished_event = threading.Event()
 
     def sleep(self):
         self.is_sleeping = True
@@ -45,7 +49,7 @@ class Scheduler(object):
     def clean(self):
         pass
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         Submit a Soma-Workflow job
 
@@ -53,6 +57,13 @@ class Scheduler(object):
         ----------
         job: EngineJob
             Job to be submitted
+        signal_end: bool
+            set the ``jobs_finished_event`` signal when this job terminates.
+            True by default, it can be set to False to indicate that the end of
+            this job has no immediate consequence on others, thus needs not to
+            run another engine loop immediately.
+            Schedulers implementations are free to actually implement the
+            ``jobs_finished_event`` or not.
 
         Returns
         -------

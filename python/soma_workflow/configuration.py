@@ -1264,7 +1264,7 @@ class LocalSchedulerCfg(observer.Observable):
     INTERVAL_CHANGED = 1
     MAX_PROC_NB_CHANGED = 2
 
-    def __init__(self, proc_nb=default_cpu_number(), interval=1,
+    def __init__(self, proc_nb=default_cpu_number(), interval=0.05,
                  max_proc_nb=0):
         '''
         * proc_nb *int*
@@ -1326,7 +1326,7 @@ class LocalSchedulerCfg(observer.Observable):
                                     OCFG_SCDL_INTERVAL):
             interval_str = config_parser.get(hostname,
                                              OCFG_SCDL_INTERVAL)
-            interval = int(interval_str)
+            interval = float(interval_str)
         if config_parser.has_option(hostname,
                                     OCFG_SCDL_MAX_CPU_NB):
             max_proc_nb_str = config_parser.get(socket.gethostname(),

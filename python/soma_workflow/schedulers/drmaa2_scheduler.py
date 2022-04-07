@@ -218,7 +218,7 @@ raise NotImplementedError(
 
             #return drmaa_job_template_id
 
-        #def job_submission(self, job):
+        #def job_submission(self, job, signal_end=True):
             #'''
             #@type  job: soma_workflow.client.Job
             #@param job: job to be submitted

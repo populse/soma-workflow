@@ -113,7 +113,7 @@ class LocalScheduler(Scheduler):
     _lasttime = None
     _lastidle = None
 
-    def __init__(self, proc_nb=default_cpu_number(), interval=1,
+    def __init__(self, proc_nb=default_cpu_number(), interval=0.05,
                  max_proc_nb=0):
         super(LocalScheduler, self).__init__()
 
@@ -134,13 +134,21 @@ class LocalScheduler(Scheduler):
 
         def loop(self):
             while not self.stop_thread_loop:
-                with self._lock:
-                    self._iterate()
-                time.sleep(self._interval)
+                self._iterate()
 
         self._loop = threading.Thread(name="scheduler_loop",
                                       target=loop,
                                       args=[self])
+
+        self._ended_jobs = set()
+        self._stop_process_loop = False
+        self._poll_interval = 0.01
+        self._poll_event = threading.Event()
+        self._poll_thread = threading.Thread(name='poll_thread',
+                                             target=self.poll_processes)
+        self._poll_thread.setDaemon(True)
+        self._poll_thread.start()
+
         self._loop.setDaemon(True)
         self._loop.start()
 
@@ -163,71 +171,124 @@ class LocalScheduler(Scheduler):
     def end_scheduler_thread(self):
         with self._lock:
             self.stop_thread_loop = True
-            self._loop.join()
-            # print("Soma scheduler thread ended nicely.")
+            self._stop_process_loop = True
+
+        self._loop.join()
+        self._poll_thread.join()
+        # print("Soma scheduler thread ended nicely.")
+
+    def poll_processes(self):
+        while True:
+
+            if self._stop_process_loop:
+                break
+
+            with self._lock:
+                processes = dict(self._processes)
+
+            fire_event = False
+            for job_id, process in processes.items():
+                ret_value = process.poll()
+                if ret_value != None:
+                    with self._lock:
+                        self._ended_jobs.add(job_id)
+                        self._exit_info[job_id] = (
+                            constants.FINISHED_REGULARLY,
+                            ret_value,
+                            None,
+                            None)
+                fire_event = True
+
+            if fire_event:
+                self._poll_event.set()
+
+            time.sleep(self._poll_interval)
 
     def _iterate(self):
-        # Nothing to do if the queue is empty and nothing is running
-        if not self._queue and not self._processes:
-            return
+        ## Nothing to do if the queue is empty and nothing is running
+        #with self._lock:
+            #if not self._queue and not self._processes:
+                #return
         # print("#############################")
         # Control the running jobs
-        ended_jobs = []
-        for job_id, process in six.iteritems(self._processes):
-            ret_value = process.poll()
-            # print("job_id " + repr(job_id) + " ret_value " + repr(ret_value))
-            if ret_value != None:
-                ended_jobs.append(job_id)
-                self._exit_info[job_id] = (constants.FINISHED_REGULARLY,
-                                           ret_value,
-                                           None,
-                                           None)
 
-        # update for the ended job
-        for job_id in ended_jobs:
-            # print("updated job_id " + repr(job_id) + " status DONE")
-            self._status[job_id] = constants.DONE
-            del self._processes[job_id]
+        fire_event = False
+        with self._lock:
+            ended_jobs = self._ended_jobs
+            self._ended_jobs = set()
+            self._poll_event.clear()
+
+            # update for the ended job
+            for job_id in ended_jobs:
+                # print("updated job_id " + repr(job_id) + " status DONE")
+                self._status[job_id] = constants.DONE
+                if self._jobs[job_id].signal_end:
+                    fire_event = True
+                try:
+                    del self._processes[job_id]
+                except KeyError:
+                    continue  # deleted by another means
 
         # run new jobs
         skipped_jobs = []
-        # print('processing queue:', len(self._queue), file=sys.stderr)
-        while self._queue:
-            job_id = self._queue.pop(0)
-            job = self._jobs[job_id]
-            # print("new job " + repr(job.job_id))
-            if job.is_engine_execution:
-                # barrier jobs are not actually run using Popen:
-                # they succeed immediately.
-                self._exit_info[job.drmaa_id] = (constants.FINISHED_REGULARLY,
-                                                 0,
-                                                 None,
-                                                 None)
-                self._status[job.drmaa_id] = constants.DONE
-            else:
-                ncpu = self._cpu_for_job(job)
-                # print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
-                if not self._can_submit_new_job(ncpu):
-                    # print('cannot submit.', file=sys.stderr)
-                    skipped_jobs.append(job_id)  # postponed
-                    if ncpu == 1:  # no other job will be able to run now
-                        break
-                    else:
-                        continue
-                # print('submitting.', file=sys.stderr)
-                process = LocalScheduler.create_process(job)
-                if process == None:
-                    LocalScheduler.logger.error(
-                        'command process is None:' + job.name)
-                    self._exit_info[job.drmaa_id] = (constants.EXIT_ABORTED,
-                                                     None,
-                                                     None,
-                                                     None)
-                    self._status[job.drmaa_id] = constants.FAILED
+        with self._lock:
+            queue = self._queue
+            self._queue = []
+
+        while queue:
+            job_id = queue.pop(0)
+            with self._lock:
+                job = self._jobs.get(job_id)
+                if job is None:
+                    continue
+                # print("new job " + repr(job.job_id))
+                if job.is_engine_execution:
+                    # barrier jobs are not actually run using Popen:
+                    # they succeed immediately.
+                    self._exit_info[job.drmaa_id] = (constants.FINISHED_REGULARLY,
+                                                    0,
+                                                    None,
+                                                    None)
+                    self._status[job.drmaa_id] = constants.DONE
                 else:
-                    self._processes[job.drmaa_id] = process
-                    self._status[job.drmaa_id] = constants.RUNNING
-        self._queue = skipped_jobs + self._queue
+                    ncpu = self._cpu_for_job(job)
+                    # print('job:', job.command, ', cpus:', ncpu, file=sys.stderr)
+                    if not self._can_submit_new_job(ncpu):
+                        # print('cannot submit.', file=sys.stderr)
+                        skipped_jobs.append(job_id)  # postponed
+                        if ncpu == 1:  # no other job will be able to run now
+                            break
+                        else:
+                            continue
+                    # print('submitting.', file=sys.stderr)
+                    process = LocalScheduler.create_process(job)
+                    if process is None:
+                        LocalScheduler.logger.error(
+                            'command process is None:' + job.name)
+                        self._exit_info[job.drmaa_id] = (constants.EXIT_ABORTED,
+                                                        None,
+                                                        None,
+                                                        None)
+                        self._status[job.drmaa_id] = constants.FAILED
+                    else:
+                        self._processes[job.drmaa_id] = process
+                        self._status[job.drmaa_id] = constants.RUNNING
+
+        # here:
+        # - skipped_jobs contains jobs that could not be set running for
+        #   lack of available CPUs
+        # - queue contains remaining jobs when all CPUs have been loaded
+        #   (then the rest is not processed)
+        # - self._queue can have been added new jobs in the meantime
+        with self._lock:
+            self._queue = skipped_jobs + queue + self._queue
+
+        if fire_event:
+            # signal that we can process more jobs
+            self.jobs_finished_event.set()
+
+        self._poll_event.wait(self._interval)
+        #time.sleep(1)
 
     def _cpu_for_job(self, job):
         parallel_job_info = job.parallel_job_info
@@ -239,7 +300,7 @@ class LocalScheduler(Scheduler):
 
     def _can_submit_new_job(self, ncpu=1):
         n = sum([self._cpu_for_job(self._jobs[j])
-                 for j in self._processes])
+                for j in self._processes])
         n += ncpu
         if n <= self._proc_nb:
             return True
@@ -295,19 +356,29 @@ class LocalScheduler(Scheduler):
         stdout = engine_job.plain_stdout()
         stdout_file = None
         if stdout:
+            os.makedirs(os.path.dirname(stdout), exist_ok=True)
             try:
                 stdout_file = open(stdout, "wb")
             except Exception as e:
+                LocalScheduler.logger.error(
+                    'exception while opening command stdout:' + repr(stdout))
+                LocalScheduler.logger.error('command:' + repr(command))
+                LocalScheduler.logger.error('exception:' + repr(e))
                 return None
 
         stderr = engine_job.plain_stderr()
         stderr_file = None
         if stderr:
+            os.makedirs(os.path.dirname(stderr), exist_ok=True)
             try:
                 stderr_file = open(stderr, "wb")
             except Exception as e:
                 if stdout_file:
                     stdout_file.close()
+                LocalScheduler.logger.error(
+                    'exception while opening command stderr:' + repr(stderr))
+                LocalScheduler.logger.error('command:' + repr(command))
+                LocalScheduler.logger.error('exception:' + repr(e))
                 return None
 
         stdin = engine_job.plain_stdin()
@@ -326,6 +397,10 @@ class LocalScheduler(Scheduler):
                     stderr_file.close()
                 if stdout_file:
                     stdout_file.close()
+                LocalScheduler.logger.error(
+                    'exception while opening command stdin:' + repr(stdin))
+                LocalScheduler.logger.error('command:' + repr(command))
+                LocalScheduler.logger.error('exception:' + repr(e))
                 return None
 
         working_directory = engine_job.plain_working_directory()
@@ -365,7 +440,8 @@ class LocalScheduler(Scheduler):
 
         except Exception as e:
             LocalScheduler.logger.error(
-                'exception while running command:' + repr(e))
+                'exception while starting command:' + repr(e))
+            LocalScheduler.logger.error('command:' + repr(command))
             if stderr:
                 s = ('%s: %s \n' % (type(e), e)).encode()
                 stderr_file.write(s)
@@ -380,7 +456,7 @@ class LocalScheduler(Scheduler):
 
         return process
 
-    def job_submission(self, job):
+    def job_submission(self, job, signal_end=True):
         '''
         * job *EngineJob*
         * return: *string*
@@ -388,6 +464,7 @@ class LocalScheduler(Scheduler):
         '''
         if not job.job_id or job.job_id == -1:
             raise LocalSchedulerError("Invalid job: no id")
+        job.signal_end = signal_end
         with self._lock:
             # print("job submission " + repr(job.job_id))
             drmaa_id = str(job.job_id)
@@ -413,6 +490,8 @@ class LocalScheduler(Scheduler):
 
     def get_job_exit_info(self, scheduler_job_id):
         '''
+        This function is called only once per job by the engine, thus it also deletes references to the job in internal tables.
+
         * scheduler_job_id *string*
             Job id for the scheduling system (DRMAA for example)
         * return: *tuple*
@@ -422,6 +501,8 @@ class LocalScheduler(Scheduler):
         with self._lock:
             exit_info = self._exit_info[scheduler_job_id]
             del self._exit_info[scheduler_job_id]
+            del self._status[scheduler_job_id]
+            del self._jobs[scheduler_job_id]
         return exit_info
 
     def kill_job(self, scheduler_job_id):
@@ -432,9 +513,9 @@ class LocalScheduler(Scheduler):
         # TBI Errors
 
         with self._lock:
-            if scheduler_job_id in self._processes:
+            process = self._processes.get(scheduler_job_id)
+            if process is not None:
                 # print("    => kill the process ")
-                process = self._processes[scheduler_job_id]
                 if have_psutil:
                     kill_process_tree(process.pid)
                     # wait for actual termination, to avoid process writing files after
@@ -450,7 +531,10 @@ class LocalScheduler(Scheduler):
                         # kill process group, to kill children processes as well
                         # see
                         # http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
-                        os.killpg(process.pid, signal.SIGKILL)
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass  # it certainly finished in the meantime
 
                     # wait for actual termination, to avoid process writing files after
                     # we return from here.

@@ -3030,53 +3030,72 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
 
-    def updated_job_parameters(self, job_id):
+    def updated_jobs_parameters(self, job_ids):
         '''
         '''
-        self.logger.debug("=> updated_job_parameters %d" % job_id)
+        self.logger.debug("=> updated_jobs_parameters %s" % repr(job_ids))
         # get job workflow id
+        maxv = sqlite3_max_variable_number()
+        nmax = maxv
+        if maxv == 0:
+            nmax = len(job_ids)
+            if nmax == 0:
+                nmax = 1
+        nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
             cursor2 = connection.cursor()
             try:
 
-                sel = cursor.execute(
-                    'SELECT dest_param, src_job_id, src_param, '
-                    'pickled_function '
-                    'FROM param_links WHERE dest_job_id=?', [job_id])
-
-                param_dict = {}
+                param_dicts = {}
                 jsons = {}
-                for dst_param, src_job, src_param, func in sel:
-                    # print(dst_param, src_job, src_param)
-                    # if dest_param in param_dict:
-                    if func:
-                        if six.PY2:
-                            func = pickle.loads(func)
-                        else:
+                for chunk in range(nchunks):
+                    if chunk < nchunks - 1:
+                        n = nmax
+                    else:
+                        n = len(job_ids) - chunk * nmax
+                    job_str = ','.join(['?'] * n)
+                    sel = cursor.execute(
+                        'SELECT dest_param, src_job_id, dest_job_id, '
+                        'src_param, pickled_function '
+                        'FROM param_links WHERE dest_job_id IN (%s)'
+                        % job_str,
+                        job_ids[chunk * nmax:chunk * nmax + n])
+
+                    for dst_param, src_job, job_id, src_param, func in sel:
+                        param_dict = param_dicts.setdefault(job_id, {})
+                        # print(dst_param, src_job, src_param)
+                        # if dest_param in param_dict:
+                        if func:
                             func = pickle.loads(func, encoding='utf-8')
-                    jdict = jsons.get(src_job)
-                    if jdict is None:
-                        json_sql = cursor2.execute(
-                            'SELECT output_params FROM jobs WHERE id=?',
-                            [src_job])
-                        jstr = six.next(json_sql)[0]
-                        if jstr is not None:
-                            jdict = utils.from_json(json.loads(jstr))
-                        else:
-                            jdict = {}
-                        jsons[src_job] = jdict
-                    if src_param in jdict:
-                        param_dict.setdefault(dst_param, []).append(
-                            (func, src_param, jdict[src_param]))
+                        jdict = jsons.get(src_job)
+                        if jdict is None:
+                            json_sql = cursor2.execute(
+                                'SELECT output_params FROM jobs WHERE id=?',
+                                [src_job])
+                            jstr = six.next(json_sql)[0]
+                            if jstr is not None:
+                                jdict = utils.from_json(json.loads(jstr))
+                            else:
+                                jdict = {}
+                            jsons[src_job] = jdict
+                        if src_param in jdict:
+                            param_dict.setdefault(dst_param, []).append(
+                                (func, src_param, jdict[src_param]))
 
             finally:
                 cursor2.close()
                 cursor.close()
                 connection.close()
 
-            return param_dict
+            return param_dicts
+
+    def updated_job_parameters(self, job_id):
+        '''
+        '''
+        return self.updated_jobs_parameters([job_id])[job_id]
 
     def get_drmaa_job_id(self, job_id):
         '''
