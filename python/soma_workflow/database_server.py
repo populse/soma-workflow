@@ -1815,20 +1815,16 @@ class WorkflowDatabaseServer(object):
                         engine_workflow.registered_tmp[
                             transfer.temp_path_id] = transfer
 
-                job_info = []
-
                 if login is None:
                     login = self.get_user_login(cursor)
 
-                for job in six.itervalues(engine_workflow.job_mapping):
+                for job in engine_workflow.job_mapping.values():
                     job.workflow_id = engine_workflow.wf_id
                     job = self.add_job(user_id,
                                        job,
                                        engine_workflow.expiration_date,
                                        external_cursor=cursor,
                                        login=login)
-                    job_info.append(
-                        (job.job_id, job.stdout_file, job.stderr_file))
                     engine_workflow.registered_jobs[job.job_id] = job
 
                 pickled_workflow = pickle.dumps(engine_workflow,
@@ -1840,16 +1836,32 @@ class WorkflowDatabaseServer(object):
                                (sqlite3.Binary(pickled_workflow),
                                 engine_workflow.wf_id))
 
-                for dest_job, links \
-                        in six.iteritems(engine_workflow.param_links):
+                # links
+                nmax = sqlite3_max_variable_number()
+                if nmax == 0:
+                    nmax = len(engine_workflow.param_links)
+                    if nmax == 0:
+                        nmax = 1
+                nvalues = 6 # nb of values to set for each row
+                nmax //= nvalues
+                if nmax < 1:
+                    nmax = 1
+                nchunks = int(math.ceil(float(len(
+                    engine_workflow.param_links)) / nmax))
+
+                sqlinks = []
+                for dest_job, links in engine_workflow.param_links.items():
                     edest_job = engine_workflow.job_mapping[dest_job]
-                    for dest_param, linkl in six.iteritems(links):
+                    for dest_param, linkl in links.items():
                         for link in linkl:
                             esrc_job = engine_workflow.job_mapping[link[0]]
                             func = None
                             if len(link) > 2:
                                 func = sqlite3.Binary(pickle.dumps(link[2]))
-                            cursor.execute(
+                            sqlinks+= [engine_workflow.wf_id, edest_job.job_id,
+                                dest_param, esrc_job.job_id, link[1], func]
+                            if len(sqlinks) == nmax:
+                                cursor.execute(
                                 '''INSERT INTO param_links
                                 (workflow_id,
                                 dest_job_id,
@@ -1857,9 +1869,24 @@ class WorkflowDatabaseServer(object):
                                 src_job_id,
                                 src_param,
                                 pickled_function)
-                                VALUES (?, ?, ?, ?, ?, ?)''',
-                                (engine_workflow.wf_id, edest_job.job_id,
-                                 dest_param, esrc_job.job_id, link[1], func))
+                                VALUES %s'''
+                                % (', '.join(['(?, ?, ?, ?, ?, ?)']
+                                             * (len(sqlinks) // nvalues))),
+                                sqlinks)
+                                sqlinks = []
+                if len(sqlinks) != 0:
+                    cursor.execute(
+                    '''INSERT INTO param_links
+                    (workflow_id,
+                    dest_job_id,
+                    dest_param,
+                    src_job_id,
+                    src_param,
+                    pickled_function)
+                    VALUES %s'''
+                    % (', '.join(['(?, ?, ?, ?, ?, ?)']
+                                  * (len(sqlinks) // nvalues))),
+                    sqlinks)
 
             except Exception as e:
                 connection.rollback()
@@ -2504,33 +2531,56 @@ class WorkflowDatabaseServer(object):
                         'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
                                   (sqlite3.Binary(pickled_engine_job), job_id))
 
-                for transfer_id in referenced_input_files:
-                    cursor.execute('''INSERT INTO ios (job_id,
-                                             engine_file_id,
-                                             is_input)
-                             VALUES (?, ?, ?)''',
-                                   (job_id, transfer_id, True))
+                transfers = [(job_id, x, True)
+                             for x in referenced_input_files] \
+                    + [(job_id, x, False) for x in referenced_output_files]
 
-                for transfer_id in referenced_output_files:
-                    cursor.execute('''INSERT INTO ios (job_id,
-                                             engine_file_id,
-                                             is_input)
-                            VALUES (?, ?, ?)''',
-                                   (job_id, transfer_id, False))
+                nmax = sqlite3_max_variable_number()
+                if nmax == 0:
+                    nmax = len(transfers)
+                    if nmax == 0:
+                        nmax = 1
+                nmax //= 3
+                if nmax < 1:
+                    nmax = 1
+                nchunks = int(math.ceil(float(len(transfers)) / nmax))
 
-                for temp_path_id in referenced_input_temp:
-                    cursor.execute('''INSERT INTO ios_tmp (job_id,
-                                             temp_path_id,
-                                             is_input)
-                             VALUES (?, ?, ?)''',
-                                   (job_id, temp_path_id, True))
+                for chunk in range(nchunks):
+                    if chunk < nchunks - 1:
+                        n = nmax
+                    else:
+                        n = len(transfers) - chunk * nmax
+                    cursor.execute(
+                        'INSERT INTO ios (job_id, engine_file_id, is_input) '
+                        'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
+                        list(itertools.chain.from_iterable(
+                            transfers[chunk * nmax:chunk * nmax + n])))
 
-                for temp_path_id in referenced_output_temp:
-                    cursor.execute('''INSERT INTO ios_tmp (job_id,
-                                             temp_path_id,
-                                             is_input)
-                             VALUES (?, ?, ?)''',
-                                   (job_id, temp_path_id, False))
+                transfers = [(job_id, x, True)
+                             for x in referenced_input_temp] \
+                    + [(job_id, x, False) for x in referenced_output_temp]
+
+                nmax = sqlite3_max_variable_number()
+                if nmax == 0:
+                    nmax = len(transfers)
+                    if nmax == 0:
+                        nmax = 1
+                nmax //= 3
+                if nmax < 1:
+                    nmax = 1
+                nchunks = int(math.ceil(float(len(transfers)) / nmax))
+
+                for chunk in range(nchunks):
+                    if chunk < nchunks - 1:
+                        n = nmax
+                    else:
+                        n = len(transfers) - chunk * nmax
+                    cursor.execute(
+                        'INSERT INTO ios_tmp '
+                        '(job_id, engine_file_id, is_input) '
+                        'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
+                        list(itertools.chain.from_iterable(
+                            transfers[chunk * nmax:chunk * nmax + n])))
 
             except Exception as e:
                 if not external_cursor:
