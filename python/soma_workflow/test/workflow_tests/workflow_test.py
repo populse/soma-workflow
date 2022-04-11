@@ -325,7 +325,7 @@ class WorkflowTest(unittest.TestCase):
             wf_controller = None
             try:
 
-                with suppress_stdout(debug):
+                with suppress_stdout(debug or kwargs.get('verbosity', 0) >= 1):
                     wf_controller = WorkflowController(resource_id,
                                                        login,
                                                        password,
@@ -367,10 +367,11 @@ class WorkflowTest(unittest.TestCase):
                         if test[0: len(prefix)] == prefix:
                             list_tests.append(test)
 
-                    suite_list.append(unittest.TestSuite(list(map(cls,
-                                                                  list_tests))))
+                    suite_list.append(
+                        unittest.TestSuite(list(map(cls, list_tests))))
                     alltests = unittest.TestSuite(suite_list)
-                    with suppress_stdout(debug):
+                    with suppress_stdout(debug
+                                         or kwargs.get('verbosity', 0) >= 1):
                         res = unittest.TextTestRunner(verbosity=2).run(
                             alltests)
                     sys.stdout.flush()
@@ -430,6 +431,7 @@ class WorkflowTest(unittest.TestCase):
               'the local machine), and "local-server-ssh": a local server in '
               '"remote mode" using ssh - "ssh localhost" needs to work '
               'without a password)')
+        print('-v|--verbose')
 
     @staticmethod
     def parse_args(argv):
@@ -446,6 +448,8 @@ class WorkflowTest(unittest.TestCase):
                 kwargs['debug'] = True
             else:
                 kwargs['debug'] = False
+            if '-v' in argv[1:] or '--verbose' in argv[1:]:
+                kwargs['verbosity'] = 2
         return kwargs
 
     def print_job_io_info(self, job_id, msg=None, file=sys.stderr):
