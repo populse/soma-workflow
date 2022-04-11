@@ -1169,10 +1169,11 @@ class EngineWorkflow(Workflow):
                 job.terminating_signal = None
                 job.drmaa_id = None
                 job.str_rusage = None
-                stdout = open(job.stdout_file, "w")
-                stdout.close()
-                stderr = open(job.stderr_file, "w")
-                stderr.close()
+                # what's this for ?
+                #stdout = open(job.stdout_file, "w")
+                #stdout.close()
+                #stderr = open(job.stderr_file, "w")
+                #stderr.close()
                 new_status[job.job_id] = constants.FAILED
                 new_exit_info[job.job_id] = job
 
@@ -1203,8 +1204,10 @@ class EngineWorkflow(Workflow):
                 job.drmaa_id = None
                 job.queue = self.queue
                 jobs_queue_changed.append(job.job_id)
+                os.makedirs(os.path.dirname(job.stdout_file), exist_ok=True)
                 stdout = open(job.stdout_file, "w")
                 stdout.close()
+                os.makedirs(os.path.dirname(job.stderr_file), exist_ok=True)
                 stderr = open(job.stderr_file, "w")
                 stderr.close()
 

@@ -2670,16 +2670,32 @@ class WorkflowDatabaseServer(object):
             # TBI if the status is not valid raise an exception ??
             connection = self._connect()
             cursor = connection.cursor()
+
+            nmax = sqlite3_max_variable_number()
+            if nmax == 0:
+                nmax = len(job_ids)
+                if nmax == 0:
+                    nmax = 1
+            if nmax > 1:
+                nmax -= 1  # reserve 1 variable
+            nchunks = int(math.ceil(float(len(job_ids)) / nmax))
+
             try:
-                if wf_id != None:
+                if wf_id is not None:
                     cursor.execute(
                         '''UPDATE workflows SET queue=? WHERE id=?''',
                         (queue_name, wf_id))
 
-                cursor.execute(
-                    '''UPDATE jobs SET queue=? WHERE id in (%s)'''
-                    % ','.join(['?'] * len(job_ids)),
-                    list(itertools.chain((queue_name, ), job_ids)))
+                    for chunk in range(nchunks):
+                        if chunk < nchunks - 1:
+                            n = nmax
+                        else:
+                            n = len(job_ids) - chunk * nmax
+                        cursor.execute(
+                            'UPDATE jobs SET queue=? WHERE id IN (%s)'
+                            % ','.join(['?'] * n),
+                            [queue_name] + job_ids[chunk * nmax:
+                                                   chunk * nmax + n])
             except Exception as e:
                 connection.rollback()
                 cursor.close()
