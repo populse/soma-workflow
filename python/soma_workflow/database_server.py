@@ -1038,6 +1038,21 @@ class WorkflowDatabaseServer(object):
             self.ensure_file_numbers_available(1, 200, external_cursor)
             return self._free_file_counters.pop(0)
 
+    def get_new_file_numbers(self, nfiles, external_cursor=None):
+        '''
+        Get file counter numbers in the internal preallocated list, and
+        generate new ones if needed.
+
+        Used to allocate file names on server side for file transfers and
+        stdout / stderr streams for jobs (see generate_file_path()).
+        '''
+        with self._lock:
+            self.ensure_file_numbers_available(1, nfiles + 200,
+                                               external_cursor)
+            nums = self._free_file_counters[:nfiles]
+            self._free_file_counters = self._free_file_counters[nfiles:]
+            return nums
+
     def generate_file_path(self,
                            user_id,
                            client_file_path=None,
@@ -1061,8 +1076,38 @@ class WorkflowDatabaseServer(object):
         ------
         file path: string
         '''
+        return self.generate_file_paths(
+            1, user_id, client_file_path, external_cursor, login)[0]
 
-        self.logger.debug("=> generate_file_path")
+    def generate_file_paths(self,
+                            npaths,
+                            user_id,
+                            client_file_path=None,
+                            external_cursor=None,
+                            login=None):
+        '''
+        Generates file paths for transfers.
+        The user_id must be valid.
+
+        Parameters
+        ----------
+        npaths: number of paths to generate
+        user_id: UserIdentifier
+            user identifier
+        client_file_path: string
+            the generated name can derivate from this path.
+        external_cursor: SQlite Cursor object (optionsl)
+        login: user login corresponding to the id (optional)
+            If specified, a SQL request is saved.
+
+        Retuns
+        ------
+        file path: string
+        '''
+
+        self.logger.debug("=> generate_file_paths")
+        newFilePaths = []
+
         with self._lock:
             if not external_cursor:
                 connection = self._connect()
@@ -1082,7 +1127,15 @@ class WorkflowDatabaseServer(object):
                     six.reraise(
                         DatabaseError, DatabaseError(e), sys.exc_info()[2])
 
-            file_num = self.get_new_file_number(external_cursor)
+            userDirPath = self._user_transfer_dir_path(login, user_id)
+
+            file_nums = self.get_new_file_numbers(npaths, external_cursor)
+            if not external_cursor:
+                connection.commit()
+                connection.close()
+
+        prev_dir = None
+        for file_num in file_nums:
             # decompose file_num on base <max_files_per_dir>
             decomp = [file_num]
             while decomp[0] > max_files_per_dir:
@@ -1091,7 +1144,6 @@ class WorkflowDatabaseServer(object):
             file_num_part = os.path.join(*(
                 ['%d_dir' % n for n in decomp[:-1]] + ['%d' % decomp[-1]]))
 
-            userDirPath = self._user_transfer_dir_path(login, user_id)
             if client_file_path == None:
                 newFilePath = os.path.join(userDirPath, file_num_part)
                 # newFilePath += file_num_part
@@ -1111,13 +1163,14 @@ class WorkflowDatabaseServer(object):
                     # newFilePath +=
                     # client_file_path[client_file_path.rfind("/")+1:iextention]
                     # + '_' + file_num_part + client_file_path[iextention:]
-            if not external_cursor:
-                connection.commit()
-                connection.close()
 
             pdir = os.path.dirname(newFilePath)
-            os.makedirs(pdir, exist_ok=True)
-            return newFilePath
+            if pdir != prev_dir:
+                os.makedirs(pdir, exist_ok=True)
+            prev_dir = pdir
+            newFilePaths.append(newFilePath)
+
+        return newFilePaths
 
     def __removeFile(self, file_path):
         if file_path and os.path.isdir(file_path):
@@ -1769,6 +1822,7 @@ class WorkflowDatabaseServer(object):
         '''
         # get back the workflow id first
         self.logger.debug("=> add_workflow")
+        #print('add workflow...')
         with self._lock:
             # try to allocate enough file counters before opening a new cursor
             needed_files = len(engine_workflow.transfer_mapping) \
@@ -1799,6 +1853,7 @@ class WorkflowDatabaseServer(object):
                                 engine_workflow.queue))
 
                 engine_workflow.wf_id = cursor.lastrowid
+                #print('workflow insert done:', engine_workflow.wf_id)
 
                 # the transfers must be registered before the jobs
                 for transfer in six.itervalues(
@@ -1820,11 +1875,16 @@ class WorkflowDatabaseServer(object):
 
                 for job in engine_workflow.job_mapping.values():
                     job.workflow_id = engine_workflow.wf_id
-                    job = self.add_job(user_id,
-                                       job,
-                                       engine_workflow.expiration_date,
-                                       external_cursor=cursor,
-                                       login=login)
+                #print('adding jobs')
+                jobs = self.add_jobs(
+                    user_id,
+                    list(engine_workflow.job_mapping.values()),
+                    [engine_workflow.expiration_date]
+                        * len(engine_workflow.job_mapping),
+                    external_cursor=cursor,
+                    login=login)
+                #print('add_jobs done')
+                for job in jobs:
                     engine_workflow.registered_jobs[job.job_id] = job
 
                 pickled_workflow = pickle.dumps(engine_workflow,
@@ -2359,44 +2419,93 @@ class WorkflowDatabaseServer(object):
             return '"' + repr(item) + '"'
         return repr(item)
 
-    def add_job(self,
-                user_id,
-                engine_job,
-                expiration_date=None,
-                external_cursor=None,
-                login=None):
+    def _register_transfers(self, engine_jobs, cursor):
+        transfers = []
+        temp = []
+
+        for engine_job in engine_jobs:
+            for ft in engine_job.referenced_input_files:
+                eft = engine_job.transfer_mapping[ft]
+                if isinstance(eft, FileTransfer):
+                    transfers.append((engine_job.job_id, eft.transfer_id,
+                                      True))
+                else:
+                    temp.append((engine_job.job_id, eft.temp_path_id, True))
+
+            for ft in engine_job.referenced_output_files:
+                eft = engine_job.transfer_mapping[ft]
+                if isinstance(eft, FileTransfer):
+                    transfers.append((engine_job.job_id, eft.engine_path,
+                                      False))
+                else:
+                    temp.append((engine_job.job_id, eft.temp_path_id, False))
+
+        nmax = sqlite3_max_variable_number()
+        if nmax == 0:
+            nmax = len(transfers)
+            if nmax == 0:
+                nmax = 1
+        nmax //= 3
+        if nmax < 1:
+            nmax = 1
+        nchunks = int(math.ceil(float(len(transfers)) / nmax))
+
+        for chunk in range(nchunks):
+            if chunk < nchunks - 1:
+                n = nmax
+            else:
+                n = len(transfers) - chunk * nmax
+            cursor.execute(
+                'INSERT INTO ios (job_id, engine_file_id, is_input) '
+                'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
+                list(itertools.chain.from_iterable(
+                    transfers[chunk * nmax:chunk * nmax + n])))
+
+        nmax = sqlite3_max_variable_number()
+        if nmax == 0:
+            nmax = len(temp)
+            if nmax == 0:
+                nmax = 1
+        nmax //= 3
+        if nmax < 1:
+            nmax = 1
+        nchunks = int(math.ceil(float(len(temp)) / nmax))
+
+        for chunk in range(nchunks):
+            if chunk < nchunks - 1:
+                n = nmax
+            else:
+                n = len(temp) - chunk * nmax
+            cursor.execute(
+                'INSERT INTO ios_tmp '
+                '(job_id, engine_file_id, is_input) '
+                'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
+                list(itertools.chain.from_iterable(
+                    temp[chunk * nmax:chunk * nmax + n])))
+
+    def add_jobs(self,
+                 user_id,
+                 engine_jobs,
+                 expiration_dates=None,
+                 external_cursor=None,
+                 login=None):
         '''
         Adds a job to the database and returns its identifier.
 
         Parameters
         ----------
         user_id: UserIdentifier
-        engine_job: EngineJob
+        engine_jobs: list[EngineJob]
 
         Returns
         -------
-        job_desc: tuple
-            the identifier of the job:
-            (JobIdentifier, stdout_file_path, stderr_file_path)
+        jobs: list[EngineJob]
         '''
 
-        expiration_date = expiration_date
-        if expiration_date == None:
-            expiration_date = datetime.now() + timedelta(
-                hours=engine_job.disposal_timeout)
-
-        parallel_config_name = None
-        nodes_number = 1
-        cpu_per_node = 1
-        if engine_job.parallel_job_info:
-            parallel_config_name \
-                = engine_job.parallel_job_info.get('config_name')
-            nodes_number = engine_job.parallel_job_info.get('nodes_number', 1)
-            cpu_per_node = engine_job.parallel_job_info.get('cpu_per_node', 1)
-        command_info = []
-        for command_element in engine_job.plain_command():
-            command_info.append(self.shell_param(command_element))
-        command_info = " ".join(command_info)
+        print('add_jobs:', len(engine_jobs))
+        njobs = len(engine_jobs)
+        command_infos = []
+        j_exp_dates = []
 
         with self._lock:
             if not external_cursor:
@@ -2406,49 +2515,94 @@ class WorkflowDatabaseServer(object):
             else:
                 cursor = external_cursor
 
-            if login is None:
-                login = self.get_user_login(user_id, cursor)
+        add_paths = []
+        add_inparpaths = []
+        add_outpatpaths = []
 
-            try:
+        now = datetime.now()
+        d1 = now - now
+        d2 = now - now
+        d3 = now - now
 
-                if not engine_job.plain_stdout():
-                    engine_job.stdout_file = self.generate_file_path(
-                        user_id, external_cursor=cursor, login=login)
-                    engine_job.stderr_file = self.generate_file_path(
-                        user_id, external_cursor=cursor, login=login)
-                    custom_submission = False  # the std out and err file has to be removed with the job
-                else:
-                    custom_submission = True  # the std out and err file won't to be removed with the job
+        for jn, engine_job in enumerate(engine_jobs):
+            #if jn % 1000 == 0 and jn != 0:
+                #print(jn, (datetime.now() - now) * 1000 / jn, d1 * 1000 / jn, d2 * 1000 / jn, d3 * 1000 / jn)
+            #t0 = datetime.now()
 
-                if engine_job.use_input_params_file \
-                        and not engine_job.plain_input_params_file():
-                    engine_job.input_params_file = self.generate_file_path(
-                        user_id, external_cursor=cursor, login=login)
+            if expiration_dates is None or len(expiration_dates) <= jn \
+                    or expiration_dates[jn] is None:
+                expiration_date = now \
+                    + timedelta(hours=engine_job.disposal_timeout)
+                j_exp_dates.append(expiration_date)
+            else:
+                j_exp_dates.append(expiration_dates[jn])
 
-                if engine_job.has_outputs \
-                        and not engine_job.plain_output_params_file():
-                    engine_job.output_params_file = self.generate_file_path(
-                        user_id, external_cursor=cursor, login=login)
+            #t1 = datetime.now()
+            #d1 += t1 - t0
+            parallel_config_name = None
+            nodes_number = 1
+            cpu_per_node = 1
+            if engine_job.parallel_job_info:
+                parallel_config_name \
+                    = engine_job.parallel_job_info.get('config_name')
+                nodes_number = engine_job.parallel_job_info.get('nodes_number',
+                                                                1)
+                cpu_per_node = engine_job.parallel_job_info.get('cpu_per_node',
+                                                                1)
+            command_info = [self.shell_param(command_element)
+                            for command_element in engine_job.plain_command()]
+            command_infos.append(" ".join(command_info))
+            #t2 = datetime.now()
+            #d2 += t2 - t1
 
-                referenced_input_files = []
-                referenced_input_temp = []
-                for ft in engine_job.referenced_input_files:
-                    eft = engine_job.transfer_mapping[ft]
-                    if isinstance(eft, FileTransfer):
-                        referenced_input_files.append(eft.transfer_id)
-                    else:
-                        referenced_input_temp.append(eft.temp_path_id)
+            if not engine_job.stdout_file:
+                add_paths.append(engine_job)
+                custom_submission = False  # the std out and err file has to be removed with the job
+            else:
+                custom_submission = True  # the std out and err file won't be removed with the job
 
-                referenced_output_files = []
-                referenced_output_temp = []
-                for ft in engine_job.referenced_output_files:
-                    eft = engine_job.transfer_mapping[ft]
-                    if isinstance(eft, FileTransfer):
-                        referenced_output_files.append(eft.engine_path)
-                    else:
-                        referenced_output_temp.append(eft.temp_path_id)
+            if engine_job.use_input_params_file \
+                    and not engine_job.input_params_file:
+                add_inparpaths.append(engine_job)
 
-                cursor.execute('''INSERT INTO jobs
+            if engine_job.has_outputs \
+                    and not engine_job.output_params_file:
+                add_outpatpaths.append(engine_job)
+            #t3 = datetime.now()
+            #d3 += t3 - t2
+
+        # pool paths generation in one bulk
+        gen_paths = self.generate_file_paths(
+            len(add_paths) * 2 + len(add_inparpaths) + len(add_outpatpaths),
+            user_id, external_cursor=cursor, login=login)
+        i = 0
+        for engine_job in add_paths:
+            engine_job.stdout_file = gen_paths[i]
+            engine_job.stderr_file = gen_paths[i+1]
+            i += 2
+        for engine_job in add_inparpaths:
+            engine_job.input_params_file = gen_paths[i]
+            i += 1
+        for engine_job in add_outpatpaths:
+            engine_job.output_params_file = gen_paths[i]
+            i += 1
+
+        if login is None:
+            login = self.get_user_login(user_id, cursor)
+
+        nvalues = 28  # nb of cols inserted per job
+
+        nmax = sqlite3_max_variable_number()
+        if nmax == 0:
+            nmax = len(engine_jobs)
+            if nmax == 0:
+                nmax = 1
+        nmax //= nvalues
+        if nmax < 1:
+            nmax = 1
+        nchunks = int(math.ceil(float(len(engine_jobs)) / nmax))
+        # print('nchunks:', nchunks, ', nmax:', nmax)
+        insert_str = '''INSERT INTO jobs
                          (user_id,
 
                           drmaa_id,
@@ -2482,105 +2636,85 @@ class WorkflowDatabaseServer(object):
                           resource_usage,
 
                           pickled_engine_job)
-                          VALUES (?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?,
-                                  ?, ?, ?)''',
-                               (user_id,
+                          VALUES '''
 
-                                None,  # drmaa_id
-                                expiration_date,
-                                constants.NOT_SUBMITTED,  # status
-                                datetime.now(),  # last_status_update
-                                engine_job.workflow_id,
 
-                                command_info,
-                                engine_job.plain_stdin(),
-                                engine_job.join_stderrout,
-                                engine_job.plain_stdout(),
-                                engine_job.plain_stderr(),
-                                engine_job.plain_working_directory(),
-                                custom_submission,
-                                parallel_config_name,
-                                nodes_number,
-                                cpu_per_node,
-                                engine_job.queue,
-                                engine_job.plain_input_params_file(),
-                                engine_job.plain_output_params_file(),
+        with self._lock:
 
-                                engine_job.name,
-                                None,  # submission_date,
-                                None,  # execution_date,
-                                None,  # ending_date,
-                                None,  # exit_status,
-                                None,  # exit_value,
-                                None,  # terminating_signal,
-                                None,  # resource_usage,
-
-                                None  # pickled_engine_job
-                                ))
-
-                job_id = cursor.lastrowid
-                engine_job.job_id = job_id
-                if not engine_job.workflow_id or engine_job.workflow_id == -1:
-                    pickled_engine_job = pickle.dumps(
-                        engine_job, protocol=DB_PICKLE_PROTOCOL)
-                    cursor.execute(
-                        'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
-                                  (sqlite3.Binary(pickled_engine_job), job_id))
-
-                transfers = [(job_id, x, True)
-                             for x in referenced_input_files] \
-                    + [(job_id, x, False) for x in referenced_output_files]
-
-                nmax = sqlite3_max_variable_number()
-                if nmax == 0:
-                    nmax = len(transfers)
-                    if nmax == 0:
-                        nmax = 1
-                nmax //= 3
-                if nmax < 1:
-                    nmax = 1
-                nchunks = int(math.ceil(float(len(transfers)) / nmax))
+            try:
 
                 for chunk in range(nchunks):
                     if chunk < nchunks - 1:
                         n = nmax
                     else:
-                        n = len(transfers) - chunk * nmax
+                        n = len(engine_jobs) - chunk * nmax
+
+                    vars = ', '.join(['''(?, ?, ?, ?, ?,
+                                    ?, ?, ?, ?, ?,
+                                    ?, ?, ?, ?, ?,
+                                    ?, ?, ?, ?, ?,
+                                    ?, ?, ?, ?, ?,
+                                    ?, ?, ?)'''] * n)
+
+                    s = chunk * nmax
+                    e = s + n
+                    sub_jobs = engine_jobs[s:e]
+
                     cursor.execute(
-                        'INSERT INTO ios (job_id, engine_file_id, is_input) '
-                        'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
+                        insert_str + vars,
                         list(itertools.chain.from_iterable(
-                            transfers[chunk * nmax:chunk * nmax + n])))
+                            (user_id,
 
-                transfers = [(job_id, x, True)
-                             for x in referenced_input_temp] \
-                    + [(job_id, x, False) for x in referenced_output_temp]
+                              None,  # drmaa_id
+                              exp_date,
+                              constants.NOT_SUBMITTED,  # status
+                              datetime.now(),  # last_status_update
+                              engine_job.workflow_id,
 
-                nmax = sqlite3_max_variable_number()
-                if nmax == 0:
-                    nmax = len(transfers)
-                    if nmax == 0:
-                        nmax = 1
-                nmax //= 3
-                if nmax < 1:
-                    nmax = 1
-                nchunks = int(math.ceil(float(len(transfers)) / nmax))
+                              command_info,
+                              engine_job.plain_stdin(),
+                              engine_job.join_stderrout,
+                              engine_job.plain_stdout(),
+                              engine_job.plain_stderr(),
+                              engine_job.plain_working_directory(),
+                              custom_submission,
+                              parallel_config_name,
+                              nodes_number,
+                              cpu_per_node,
+                              engine_job.queue,
+                              engine_job.plain_input_params_file(),
+                              engine_job.plain_output_params_file(),
 
-                for chunk in range(nchunks):
-                    if chunk < nchunks - 1:
-                        n = nmax
-                    else:
-                        n = len(transfers) - chunk * nmax
-                    cursor.execute(
-                        'INSERT INTO ios_tmp '
-                        '(job_id, engine_file_id, is_input) '
-                        'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
-                        list(itertools.chain.from_iterable(
-                            transfers[chunk * nmax:chunk * nmax + n])))
+                              engine_job.name,
+                              None,  # submission_date,
+                              None,  # execution_date,
+                              None,  # ending_date,
+                              None,  # exit_status,
+                              None,  # exit_value,
+                              None,  # terminating_signal,
+                              None,  # resource_usage,
+
+                              None  # pickled_engine_job
+                            )
+                            for engine_job, exp_date, command_info
+                                in zip(sub_jobs, j_exp_dates[s:e],
+                                       command_infos[s:e]))))
+
+                    last_job_id = cursor.lastrowid
+
+                    for i, engine_job in enumerate(sub_jobs):
+                        job_id = last_job_id - n + i + 1
+                        engine_job.job_id = job_id
+
+                        if not engine_job.workflow_id \
+                                or engine_job.workflow_id == -1:
+                            pickled_engine_job = pickle.dumps(
+                                engine_job, protocol=DB_PICKLE_PROTOCOL)
+                            cursor.execute(
+                                'UPDATE jobs SET pickled_engine_job=? WHERE id=?',
+                                (sqlite3.Binary(pickled_engine_job), job_id))
+
+                self._register_transfers([engine_job], cursor)
 
             except Exception as e:
                 if not external_cursor:
@@ -2593,7 +2727,32 @@ class WorkflowDatabaseServer(object):
                 cursor.close()
                 connection.close()
 
-        return engine_job
+        return engine_jobs
+
+    def add_job(self,
+                user_id,
+                engine_job,
+                expiration_date=None,
+                external_cursor=None,
+                login=None):
+        '''
+        Adds a job to the database and returns its identifier.
+
+        Parameters
+        ----------
+        user_id: UserIdentifier
+        engine_job: EngineJob
+
+        Returns
+        -------
+        job_desc: tuple
+            the identifier of the job:
+            (JobIdentifier, stdout_file_path, stderr_file_path)
+        '''
+        if expiration_date is not None:
+            expiration_date = [expiration_date]
+        return self.add_jobs(user_id, [engine_job], expiration_date,
+                             external_cursor, login)[0]
 
     def update_job_command(self, job_id, commandline):
         self.logger.debug("=> update_job_command " + str(job_id) + ':'
