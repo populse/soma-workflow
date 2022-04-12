@@ -1,12 +1,13 @@
 .. _mpi_workflow_runner:
 
-====================================
-MPI workflow runner ---**beta**---
-====================================
+===================
+MPI workflow runner
+===================
 
 The MPI workflow runner is a second way of executing workflows using a cluster:
-  * high throughput mode (using DRMAA for example): 1 job = 1 cluster job
-  * low throughput mode with the MPI workflow runner: 1 workflow = 1 cluster job
+
+* high throughput mode (using DRMAA for example): 1 job = 1 cluster job
+* low throughput mode with the MPI workflow runner: 1 workflow = 1 cluster job
 
 
 
@@ -18,18 +19,29 @@ The MPI workflow runner is a second way of executing workflows using a cluster:
   :scale: 60
 
 This mode makes it possible:
-  * to run workflows on clusters with limited number of job per user.
-  * to run workflows on clusters where it is not possible to run a server process.
-  * to run workflows if you only have a simple MPI installation.
-  * to remove the time interval between jobs execution which is due to the submission of each job to the cluster management system.
 
-This mode is for advenced users who know how to use a cluster. In this mode the workflow control (submission, stop and resart) via the python API is disabled. The DRMS commands such as *qsub* and *qdel* for PBS for example, must be used instead. However, the monitoring tools (GUI and Python API) remains the same. 
+* to run workflows on clusters with limited number of job per user.
+* to run workflows on clusters where it is not possible to run a server process.
+* to run workflows if you only have a simple MPI installation.
+* to remove the time interval between jobs execution which is due to the submission of each job to the cluster management system.
+* For this reason, and the fact that parallelization in worker processes avoids overheads due to locks and the python GIL contrarily to the standard threaded local mode, it is much more efficient for large workflows of small jobs.
+
+This mode is for advanced users who know how to use a cluster. In this mode the workflow control (submission, stop and resart) via the python API is disabled. The DRMS commands such as *qsub* and *qdel* for PBS for example, must be used instead. However, the monitoring tools (GUI and Python API) remains the same.
+
+* When to use the MPI mode
+
+  * On a cluster with limited number of job per user
+  * Locally when workflows involve many jobs: as said earlier, this mode is more efficient than the local scheduler
+
+* When *not* to use the MPI mode
+
+  * the MPI mode consumes more CPU than the local scheduler, because it removes wait intervals in jobs execution. It will basically consume some CPU even when there are no jobs to process.
 
 
 Requirements:
 =============
 
-* Python *version 2.7 or more*
+* Python *version 3 or more*
 * `MPI4py <https://code.google.com/p/mpi4py>`_  
 
 Installation:
@@ -42,9 +54,9 @@ Configuration:
 
 Required items:
 
-  * DATABASE_FILE
-  * TRANSFERED_FILES_DIR
-  * SCHEDULER_TYPE
+* DATABASE_FILE
+* TRANSFERED_FILES_DIR
+* SCHEDULER_TYPE
 
 .. note:: **SCHEDULER_TYPE must be set to "mpi"**
 
@@ -96,8 +108,30 @@ MPI_workflow_runner options:
                           A job can be restarted several time if it fails. This
                           option specify the number of attempt per job. By
                           default, the jobs are not restarted.
-  
+    --log_level=LOG_LEVEL
+                          override log level. The default is to use the config
+                          file option ENGINE_LOG_LEVEL. Values are those from
+                          the logging module: 50=CRITICAL, 40=ERROR, 30=WARNING,
+                          20=INFO, 10=DEBUG, 0=NOTSET.
 
+    Alpha options:
+      --deploy_epd=EPD_TO_DEPLOY
+                          EPD tarball which will be inflated on each node using
+                          tar.
+      --untar_dir=UNTAR_DIRECTORY
+                          untar directory
+
+
+Example using a local multicore machine:
+========================================
+
+The following will run the workflow in the file ``$HOME/my_workflow_file`` using 8 processes (1 master + 7 workers) on the local machine configurd as the ``local_MPI`` resource.
+
+::
+
+  time mpirun -n 8 python -m soma_workflow.MPI_workflow_runner local_MPI --workflow $HOME/my_workflow_file
+
+Monitoring can be achieved as in other modes, using the ``soma_workflow_gui`` graphical tool, or using the client API (:ref:`client_api`).
 
 
 Example using PBS:
