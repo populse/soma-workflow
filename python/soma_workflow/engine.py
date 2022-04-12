@@ -446,7 +446,6 @@ class WorkflowEngineLoop(object):
                     self._workflows[wf_id].status = status
                     self.logger.debug(
                         "NEW status wf " + repr(wf_id) + " " + repr(status))
-                    # jobs_to_run.extend(to_run)
                     ended_jobs.update(aborted_jobs)
                     self._pend_for_submission(to_run)
 
@@ -838,15 +837,18 @@ class WorkflowEngineLoop(object):
         '''
         # register
         self.logger.debug("Within add_workflow")
+        #print('add_workflow: create EngineWorkflow')
         engine_workflow = EngineWorkflow(client_workflow,
                                          self._path_translation,
                                          queue,
                                          expiration_date,
                                          name,
                                          container_command=container_command)
+        #print('EngineWorkflow created')
 
         engine_workflow = self._database_server.add_workflow(
             self._user_id, engine_workflow, login=self._user_login)
+        #print('added in DB')
 
         for job in six.itervalues(engine_workflow.job_mapping):
             try:
@@ -891,13 +893,16 @@ class WorkflowEngineLoop(object):
                                    (repr(transfer.engine_path), type(e), e))
 
         # submit independant jobs
+        #print('submit jobs...')
         (jobs_to_run,
         engine_workflow.status) = engine_workflow.find_out_independant_jobs()
+        #print('independent jobs:', len(jobs_to_run))
         with self._lock:
             self._pend_for_submission(jobs_to_run)
             # add to the engine managed workflow list
             self._workflows[engine_workflow.wf_id] = engine_workflow
 
+        #print('add_workflow done.')
         return engine_workflow.wf_id
 
     def _stop_job(self, job_id, job):
