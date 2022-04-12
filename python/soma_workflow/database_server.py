@@ -2520,9 +2520,9 @@ class WorkflowDatabaseServer(object):
         add_outpatpaths = []
 
         now = datetime.now()
-        d1 = now - now
-        d2 = now - now
-        d3 = now - now
+        #d1 = now - now
+        #d2 = now - now
+        #d3 = now - now
 
         for jn, engine_job in enumerate(engine_jobs):
             #if jn % 1000 == 0 and jn != 0:
