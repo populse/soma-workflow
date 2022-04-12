@@ -2478,7 +2478,7 @@ class WorkflowDatabaseServer(object):
                 n = len(temp) - chunk * nmax
             cursor.execute(
                 'INSERT INTO ios_tmp '
-                '(job_id, engine_file_id, is_input) '
+                '(job_id, temp_path_id, is_input) '
                 'VALUES %s' % ', '.join(['(?, ?, ?)'] * n),
                 list(itertools.chain.from_iterable(
                     temp[chunk * nmax:chunk * nmax + n])))
