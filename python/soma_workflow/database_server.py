@@ -1047,7 +1047,7 @@ class WorkflowDatabaseServer(object):
         stdout / stderr streams for jobs (see generate_file_path()).
         '''
         with self._lock:
-            self.ensure_file_numbers_available(1, nfiles + 200,
+            self.ensure_file_numbers_available(nfiles, nfiles + 200,
                                                external_cursor)
             nums = self._free_file_counters[:nfiles]
             self._free_file_counters = self._free_file_counters[nfiles:]
@@ -1105,7 +1105,7 @@ class WorkflowDatabaseServer(object):
         file path: string
         '''
 
-        self.logger.debug("=> generate_file_paths")
+        self.logger.debug("=> generate_file_paths: %d" % npaths)
         newFilePaths = []
 
         with self._lock:
@@ -2502,7 +2502,7 @@ class WorkflowDatabaseServer(object):
         jobs: list[EngineJob]
         '''
 
-        print('add_jobs:', len(engine_jobs))
+        # print('add_jobs:', len(engine_jobs))
         njobs = len(engine_jobs)
         command_infos = []
         j_exp_dates = []
