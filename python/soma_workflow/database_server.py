@@ -947,7 +947,8 @@ class WorkflowDatabaseServer(object):
             directory_path = self._user_transfer_dir_path(login, user_id)
             for name in os.listdir(directory_path):
                 engine_path = os.path.join(directory_path, name)
-                if not engine_path in registered_engine_paths:
+                if not engine_path in registered_engine_paths \
+                        and not os.path.isdir(engine_path):
                     self.logger.debug(
                         "remove_orphan_files, not registered " + engine_path + " to delete!")
                     self.__removeFile(engine_path)
@@ -1106,6 +1107,7 @@ class WorkflowDatabaseServer(object):
         '''
 
         self.logger.debug("=> generate_file_paths: %d" % npaths)
+        # print('generate_file_paths:', npaths, client_file_path)
         newFilePaths = []
 
         with self._lock:
