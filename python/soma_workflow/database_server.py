@@ -899,39 +899,51 @@ class WorkflowDatabaseServer(object):
             connection.close()
 
     def remove_orphan_files(self):
+        def _add_path(path, registered_engine_paths, registered_dirs):
+            path = self._string_conversion(path)
+            registered_engine_paths.append(path)
+            dirn = os.path.dirname(path)
+            while dirn not in ('', '/') and dirn not in registered_dirs:
+                registered_dirs.add(dirn)
+                dirn2 = os.path.dirname(dirn)
+                if dirn2 == dirn:
+                    break
+                dirn = dirn2
+
         self.logger.debug("=> remove_orphan_files")
         registered_engine_paths = []
         registered_users = []
+        registered_dirs = set()
         with self._lock:
             connection = self._connect()
             cursor = connection.cursor()
             try:
                 for row in cursor.execute('SELECT engine_file_path FROM transfers'):
                     engine_path = row[0]
-                    registered_engine_paths.append(
-                        self._string_conversion(engine_path))
+                    _add_path(engine_path, registered_engine_paths,
+                              registered_dirs)
                 for row in cursor.execute('SELECT stdout_file FROM jobs'):
                     stdout_file = row[0]
                     if stdout_file:
-                        registered_engine_paths.append(
-                            self._string_conversion(stdout_file))
+                        _add_path(stdout_file, registered_engine_paths,
+                                  registered_dirs)
                 for row in cursor.execute('SELECT stderr_file FROM jobs'):
                     stderr_file = row[0]
                     if stderr_file:
-                        registered_engine_paths.append(
-                            self._string_conversion(stderr_file))
+                        _add_path(stderr_file, registered_engine_paths,
+                                  registered_dirs)
                 for row in cursor.execute(
                         'SELECT input_params_file FROM jobs'):
                     input_params_file = row[0]
                     if input_params_file:
-                        registered_engine_paths.append(
-                            self._string_conversion(input_params_file))
+                        _add_path(input_params_file, registered_engine_paths,
+                                  registered_dirs)
                 for row in cursor.execute(
                         'SELECT output_params_file FROM jobs'):
                     output_params_file = row[0]
                     if output_params_file:
-                        registered_engine_paths.append(
-                            self._string_conversion(output_params_file))
+                        _add_path(output_params_file, registered_engine_paths,
+                                  registered_dirs)
                 for row in cursor.execute('SELECT id, login FROM users'):
                     user_id, login = row
                     registered_users.append((user_id, login))
@@ -942,16 +954,23 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+        print('remove_orphan_files, registered_dirs:', registered_dirs)
+        todo = []
         for user_info in registered_users:
             user_id, login = user_info
             directory_path = self._user_transfer_dir_path(login, user_id)
+            todo.append(directory_path)
+        while todo:
+            directory_path = todo.pop(0)
             for name in os.listdir(directory_path):
                 engine_path = os.path.join(directory_path, name)
                 if not engine_path in registered_engine_paths \
-                        and not os.path.isdir(engine_path):
+                        and engine_path not in registered_dirs:
                     self.logger.debug(
                         "remove_orphan_files, not registered " + engine_path + " to delete!")
                     self.__removeFile(engine_path)
+                elif os.path.isdir(engine_path):
+                    todo.append(engine_path)
 
     def reserve_file_numbers(self, external_cursor=None, num_files=200):
         '''
@@ -1175,6 +1194,7 @@ class WorkflowDatabaseServer(object):
         return newFilePaths
 
     def __removeFile(self, file_path):
+        print('REMOVE:', file_path)
         if file_path and os.path.isdir(file_path):
             try:
                 shutil.rmtree(file_path)
