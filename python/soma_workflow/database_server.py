@@ -954,7 +954,6 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
-        print('remove_orphan_files, registered_dirs:', registered_dirs)
         todo = []
         for user_info in registered_users:
             user_id, login = user_info
@@ -1194,7 +1193,6 @@ class WorkflowDatabaseServer(object):
         return newFilePaths
 
     def __removeFile(self, file_path):
-        print('REMOVE:', file_path)
         if file_path and os.path.isdir(file_path):
             try:
                 shutil.rmtree(file_path)
