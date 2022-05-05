@@ -137,19 +137,19 @@ def utf8(string):
 MATPLOTLIB = True
 try:
     import matplotlib
-    if QT_BACKEND == PYQT4:
-        matplotlib.use('Qt4Agg')
-    elif QT_BACKEND == PYQT5:
+    if QT_BACKEND == PYQT5:
         matplotlib.use('Qt5Agg')
-    elif QT_BACKEND == PYSIDE:
+    elif QT_BACKEND == PYQT4:
         matplotlib.use('Qt4Agg')
+    elif QT_BACKEND == PYSIDE:
+        matplotlib.use('Qt5Agg')
         if 'backend.qt4' in list(matplotlib.rcParams.keys()):
             matplotlib.rcParams['backend.qt4'] = 'PySide'
         else:
             print("Could not use Matplotlib, the backend using PySide "
                 "is missing.")
             MATPLOTLIB = False
-    if QT_BACKEND in (PYQT4, PYSIDE):
+    if QT_BACKEND in (PYQT4, ):
         from matplotlib.backends.backend_qt4agg \
             import FigureCanvasQTAgg as FigureCanvas
     else:
