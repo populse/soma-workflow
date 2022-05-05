@@ -467,7 +467,7 @@ class RemoteConnection(object):
         # tunnel creation                     ###
         try:
             self.__transport = paramiko.Transport((cluster_address, 22))
-            self.__transport.setDaemon(True)
+            self.__transport.daemon =True
             self.__transport.set_keepalive(150)
             self.__transport.connect(username=login, password=password)
 
@@ -1020,7 +1020,7 @@ class ConnectionChecker(object):
         self.controlThread = threading.Thread(name="connectionControlThread",
                                               target=controlLoop,
                                               args=(self, controlInterval))
-        self.controlThread.setDaemon(True)
+        self.controlThread.daemon = True
         self.controlThread.start()
 
     def get_interval(self):
@@ -1056,7 +1056,7 @@ class ConnectionHolder(threading.Thread):
         logger.debug('init ConnectionHolder')
         threading.Thread.__init__(self)
         self.lock = threading.RLock()
-        self.setDaemon(True)
+        self.daemon = True
         self.name = "connectionHolderThread"
         self.connectionChecker = connectionChecker
         self.interval = self.connectionChecker.get_interval()
@@ -1229,7 +1229,7 @@ class Tunnel(threading.Thread):
         self.__hostport = hostport
         self.__transport = transport
         self.__server = None
-        self.setDaemon(True)
+        self.daemon = True
 
     def serve_forever(self):
         try:

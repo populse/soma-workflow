@@ -1095,13 +1095,16 @@ class WorkflowDatabaseServer(object):
         ------
         file path: string
         '''
+        cp = None
+        if client_file_path:
+            cp = [client_file_path]
         return self.generate_file_paths(
-            1, user_id, client_file_path, external_cursor, login)[0]
+            1, user_id, cp, external_cursor, login)[0]
 
     def generate_file_paths(self,
                             npaths,
                             user_id,
-                            client_file_path=None,
+                            client_file_paths=None,
                             external_cursor=None,
                             login=None):
         '''
@@ -1113,7 +1116,7 @@ class WorkflowDatabaseServer(object):
         npaths: number of paths to generate
         user_id: UserIdentifier
             user identifier
-        client_file_path: string
+        client_file_paths: list[str]
             the generated name can derivate from this path.
         external_cursor: SQlite Cursor object (optionsl)
         login: user login corresponding to the id (optional)
@@ -1125,7 +1128,7 @@ class WorkflowDatabaseServer(object):
         '''
 
         self.logger.debug("=> generate_file_paths: %d" % npaths)
-        # print('generate_file_paths:', npaths, client_file_path)
+        # print('generate_file_paths:', npaths, client_file_paths)
         newFilePaths = []
 
         with self._lock:
@@ -1155,7 +1158,7 @@ class WorkflowDatabaseServer(object):
                 connection.close()
 
         prev_dir = None
-        for file_num in file_nums:
+        for n, file_num in enumerate(file_nums):
             # decompose file_num on base <max_files_per_dir>
             decomp = [file_num]
             while decomp[0] > max_files_per_dir:
@@ -1164,7 +1167,11 @@ class WorkflowDatabaseServer(object):
             file_num_part = os.path.join(*(
                 ['%d_dir' % n for n in decomp[:-1]] + ['%d' % decomp[-1]]))
 
-            if client_file_path == None:
+            if client_file_paths is not None and n < len(client_file_paths):
+                client_file_path = client_file_paths[n]
+            else:
+                client_file_path = None
+            if client_file_path is None:
                 newFilePath = os.path.join(userDirPath, file_num_part)
                 # newFilePath += file_num_part
             else:

@@ -146,10 +146,10 @@ class LocalScheduler(Scheduler):
         self._poll_event = threading.Event()
         self._poll_thread = threading.Thread(name='poll_thread',
                                              target=self.poll_processes)
-        self._poll_thread.setDaemon(True)
+        self._poll_thread.daemon = True
         self._poll_thread.start()
 
-        self._loop.setDaemon(True)
+        self._loop.daemon = True
         self._loop.start()
 
         atexit.register(LocalScheduler.end_scheduler_thread, self)

@@ -1668,7 +1668,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         thread = threading.Thread(name="TransferInputFiles",
                                   target=transfer,
                                   args=([self]))
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
     @QtCore.Slot()
@@ -1688,7 +1688,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         thread = threading.Thread(name="TransferOuputFiles",
                                   target=transfer,
                                   args=([self]))
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
     @QtCore.Slot()

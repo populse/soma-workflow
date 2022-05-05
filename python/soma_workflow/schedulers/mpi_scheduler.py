@@ -78,7 +78,7 @@ class MPIScheduler(scheduler.Scheduler):
         self._loop = threading.Thread(name="scheduler_loop",
                                       target=master_loop,
                                       args=[self])
-        self._loop.setDaemon(True)
+        self._loop.daemon = True
         self._loop.start()
 
     def end_scheduler_thread(self):
