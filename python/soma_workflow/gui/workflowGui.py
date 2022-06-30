@@ -3030,10 +3030,13 @@ class JobInfoWidget(QtGui.QTabWidget):
 
         self.job_item = job_item
         self.connection = connection
+        self.tab_index = {i: i for i in range(6)}
 
         if not job_item.data or (not job_item.data.has_outputs
                                  and not job_item.data.param_dict):
             self.removeTab(4)
+            self.tab_index[4] = -1
+            self.tab_index[5] = 4
             if current_tab_index == 4:
                 current_tab_index = 0
         else:
@@ -3097,11 +3100,11 @@ class JobInfoWidget(QtGui.QTabWidget):
         self.setCurrentIndex(current_tab_index)
 
         self.dataChanged()
-        if current_tab_index == 4:
+        if current_tab_index == self.tab_index[4]:
             self.refresh_params()
-        elif current_tab_index in (1, 2):
+        elif current_tab_index in (self.tab_index[1], self.tab_index[2]):
             self.refreshStdErrOut()
-        elif current_tab_index == 5:
+        elif current_tab_index == self.tab_index[5]:
             self.refresh_envar()
 
         self.currentChanged.connect(self.currentTabChanged)
@@ -3159,23 +3162,24 @@ class JobInfoWidget(QtGui.QTabWidget):
 
     @QtCore.Slot(int)
     def currentTabChanged(self, index):
-        if index == 0:
+        if index == self.tab_index[0]:
             try:
                 self.job_item.update_job_command(self.connection)
             except ConnectionClosedError as e:
                 self.parent.connection_closed_error[()].emit()
             else:
                 self.dataChanged()
-        elif (index == 1 or index == 2) and self.job_item.stdout == "":
+        elif (index == self.tab_index[1] or index == self.tab_index[2]) \
+                and self.job_item.stdout == "":
             try:
                 self.job_item.updateStdOutErr(self.connection)
             except ConnectionClosedError as e:
                 self.parent.connection_closed_error[()].emit()
             else:
                 self.dataChanged()
-        elif index == 4:
+        elif index == self.tab_index[4]:
             self.refresh_params()
-        elif index == 5:
+        elif index == self.tab_index[5]:
             self.refresh_envar()
 
     @QtCore.Slot()
@@ -3248,6 +3252,8 @@ class JobInfoWidget(QtGui.QTabWidget):
                 out_param_file = ejob.plain_output_params_file()
                 if out_param_file:
                     env['SOMAWF_OUTPUT_PARAMS'] = out_param_file
+                if ejob.env:
+                    env.update(ejob.env)
         if self.job_item.data.env:
             env.update(self.job_item.data.env)
         return env
