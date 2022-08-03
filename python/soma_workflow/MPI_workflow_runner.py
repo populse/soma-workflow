@@ -35,7 +35,8 @@ from soma_workflow.schedulers.mpi_scheduler import MPIScheduler
 def slave_loop(communicator,
                logger=None,
                epd_to_deploy=None,
-               untar_directory='/tmp'):
+               untar_directory='/tmp',
+               job_timeout=None):
     status = MPI.Status()
     rank = communicator.Get_rank()
 
@@ -165,9 +166,11 @@ def slave_loop(communicator,
                     env = env2
 
                 try:
+                    print("Subprocess call")
                     ret_value = subprocess.call(plain_command,
                                                 stdout=cmd_stdout,
                                                 stderr=cmd_stderr,
+                                                timeout=job_timeout,
                                                 env=env)
                     # ret_value = subprocess.call(plain_command)
                     logger.debug("[host: " + socket.gethostname() + "] "
@@ -275,7 +278,8 @@ if __name__ == '__main__':
 
     import soma_workflow.configuration
     from soma_workflow.configuration import (OCFG_MPI_LOG_FORMAT,
-                                             OCFG_MPI_LOG_DIR)
+                                             OCFG_MPI_LOG_DIR,
+                                             OCFG_JOB_TIMEOUT)
 
 #if not len(args) == 2:
     ## TO DO: stopping slave procedure in a function
@@ -317,6 +321,11 @@ if __name__ == '__main__':
     else:
         log_format = "%(asctime)s => %(module)s line %(lineno)s: " \
                       "%(message)s          %(threadName)s)"
+
+    if config._config_parser.has_option(resource_id,
+                                        OCFG_JOB_TIMEOUT):
+        job_timeout = config._config_parser.getint(
+            resource_id, OCFG_JOB_TIMEOUT)
 
     os.makedirs(mpi_log_dir, exist_ok=True)
 
@@ -422,7 +431,7 @@ if __name__ == '__main__':
             while not workflow_engine.engine_loop.are_jobs_and_workflow_done():
                 time.sleep(2)
             t3 = datetime.datetime.now()
-            print('run time:', t3 - t2)
+            print('run time:', t3 - t2)  # May cause error if t2 is not defined 
             logger.debug("******** workflow ends **********")
             for slave in range(1, comm.size):
                 logger.debug("[host: " + socket.gethostname() + "] "
@@ -467,4 +476,5 @@ if __name__ == '__main__':
         slave_loop(comm,
                    logger=logger,
                    epd_to_deploy=options.epd_to_deploy,
-                   untar_directory=options.untar_directory)
+                   untar_directory=options.untar_directory,
+                   job_timeout=job_timeout)

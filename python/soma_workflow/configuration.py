@@ -76,6 +76,9 @@ OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE'
 # N jobs at once.
 OCFG_MAX_JOB_RUNNING = 'MAX_JOB_RUNNING'
 
+# Set timeout for jobs. Useful if jobs may run indefinitely
+OCFG_JOB_TIMEOUT = 'JOB_TIMEOUT'
+
 # database server
 CFG_DATABASE_FILE = 'DATABASE_FILE'
 CFG_TRANSFERED_FILES_DIR = 'TRANSFERED_FILES_DIR'
