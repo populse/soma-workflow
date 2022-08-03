@@ -77,7 +77,7 @@ OCFG_MAX_JOB_IN_QUEUE = 'MAX_JOB_IN_QUEUE'
 OCFG_MAX_JOB_RUNNING = 'MAX_JOB_RUNNING'
 
 # Set timeout for jobs. Useful if jobs may run indefinitely
-OCFG_JOB_TIMEOUT = 'JOB_TIMEOUT'
+OCFG_MPI_JOB_TIMEOUT = 'MPI_JOB_TIMEOUT'
 
 # database server
 CFG_DATABASE_FILE = 'DATABASE_FILE'
