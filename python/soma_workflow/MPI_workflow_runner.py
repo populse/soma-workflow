@@ -326,6 +326,8 @@ if __name__ == '__main__':
                                         OCFG_MPI_JOB_TIMEOUT):
         job_timeout = config._config_parser.getint(
             resource_id, OCFG_MPI_JOB_TIMEOUT)
+    else:
+        job_timeout = None
 
     os.makedirs(mpi_log_dir, exist_ok=True)
 
