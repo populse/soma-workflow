@@ -395,7 +395,7 @@ if __name__ == '__main__':
                                                        sch,
                                                        config)
             logger.info("engine initialized")
-            if options.workflow_file and os.path.exists(options.workflow_file):
+            if options.workflow_file:
                 workflow_file = options.workflow_file
                 logger.info(" ")
                 logger.info("******* submission of workflow **********")
