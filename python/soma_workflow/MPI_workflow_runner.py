@@ -166,7 +166,6 @@ def slave_loop(communicator,
                     env = env2
 
                 try:
-                    print("Subprocess call")
                     ret_value = subprocess.call(plain_command,
                                                 stdout=cmd_stdout,
                                                 stderr=cmd_stderr,
