@@ -633,6 +633,42 @@ Once the software is installed, we need to use it the right way. There are 2 dif
       container_command = ['/home/johndoe/brainvisa/bin/bv']
 
 
+Limitations
+-----------
+
+There are a few limitaions to the client / server processing
+
+#. :ref:`Cluster admins may not like servers running on the login node <limit_cluster>`
+#. :ref:`Why it's difficult and often impossible to run the Soma-Workflow server inside a container <limit_container_server>`
+
+
+.. _limit_cluster:
+
+Cluster admins may not like servers running on the login node
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The SWF server needs to be contacted by network from the client machine: this means connecting from "outside" the cluster network (through a theoretically secure ssh connection tunnel), and running a server on the login node of the cluster. This may be seen as a security issue by admins, and it may somawhat load the node (especially when managing large workflows). Thus this is not allowed in all infrastructures.
+
+It might be possible to run the server inside a cluster worker node, but with additional indirections, and at the condition that the worker nodes can submit jobs to the cluster job manager. We have not really tested this architecture...
+
+The other solution is to use the :doc:`MPI workflow runner <MPI_workflow_runner>`, which runs entirely inside a multiprocessor (multi-node) job. But it's not integrated in the standard client/server API and GUI.
+
+
+.. _limit_container_server:
+
+Why it's difficult and often impossible to run the Soma-Workflow server inside a container
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The server is the process which starts the worker jobs, either directly, or through the DRMS (cluster jobs manager). If it's inside a container, there are the following issues:
+
+- in a DRMS environment, the containerized server may not be able to access the DRMS (which is outside the container).
+- otherwise, using the "local_basic" scheduler jobs would be started inside the container too. Sometimes it's what we want, but sometimes not.
+
+To get out of the container, there is no standard and universal way: containers are not made for this, and the "outside" environment may be any foreign system (a Windows or Mac system, for instance).
+
+If the outside system is running a ssh server, then the ``ssh localhost`` command may work, and could be setup in the :ref:`CONTAINER_COMMAND <container_command>` prefix in the server config.
+
+
 Server configuration examples
 =============================
 
