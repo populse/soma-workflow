@@ -2149,7 +2149,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if resource_id == None:
             resource_id = self.model.current_resource_id
         else:
-            resource_id = resource_id.encode('utf-8')
+            resource_id = six.ensure_str(resource_id)
         answer = QtGui.QMessageBox.question(None,
                                             "Connection closed",
                                             "The connection to  " + resource_id +
