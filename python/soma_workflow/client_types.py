@@ -1628,6 +1628,15 @@ class SpecialPath(object):
     def __lt__(self, other):
         return hash(self) < hash(other)
 
+    def __gt__(self, other):
+        return hash(self) > hash(other)
+
+    def __le__(self, other):
+        return hash(self) <= hash(other)
+
+    def __ge__(self, other):
+        return hash(self) >= hash(other)
+
 
 class FileTransfer(SpecialPath):
 
