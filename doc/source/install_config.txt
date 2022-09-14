@@ -518,8 +518,8 @@ Configuration file example: ::
 
   LIGHT_MODE    = True
 
-  TRANSFERED_FILE_DIR = path/soma_workflow.db
-  DATABASE_FILE       = path/transfered_files
+  TRANSFERED_FILES_DIR = path/soma_workflow.db
+  DATABASE_FILE        = path/transfered_files
 
 ..
   If you want to use the same application as a client to other computing resources,
@@ -532,8 +532,8 @@ Configuration file example: ::
 
     LIGHT_MODE    = True
 
-    TRANSFERED_FILE_DIR = path/soma_workflow.db
-    DATABASE_FILE       = path/transfered_files
+    TRANSFERED_FILES_DIR = path/soma_workflow.db
+    DATABASE_FILE        = path/transfered_files
 
 
     [LabDesktops]
@@ -549,7 +549,7 @@ Configuration file example: ::
     This item can be set up with any value, however it must be defined to use
     soma_workflow in the light mode.
 
-  **TRANSFERED_FILE_DIR**
+  **TRANSFERED_FILES_DIR**
     Path of the directory where the transfered files will be copied. The
     directory must be empty and will be managed entirely by Soma-workflow.
     This item is required to let you run workflow with file transfer for
@@ -690,7 +690,7 @@ Server configuratinon (``$HOME/.soma-workflow.cfg``):
   SCHEDULER_TYPE = local_basic
   SERVER_NAME = averell
   ENGINE_LOG_DIR = /home/my_login/.soma_workflow/averell/logs
-  TRANSFERED_FILE_DIR = /home/my_login/.soma_workflow/averell/file_transfers
+  TRANSFERED_FILES_DIR = /home/my_login/.soma_workflow/averell/file_transfers
   DATABASE_FILE = /home/my_login/.soma_workflow/averell/soma_workflow.db
 
 .. _local_sched_config:
