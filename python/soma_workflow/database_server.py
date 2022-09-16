@@ -534,7 +534,7 @@ class WorkflowDatabaseServer(object):
         self._lock = threading.RLock()
 
         self.logger = logging.getLogger('jobServer')
-        self.logger.debug(
+        self.logger.info(
             "=> starting database server, within the constructor")
         self._free_file_counters = []
 
@@ -954,6 +954,10 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+        registered_engine_paths = set(registered_engine_paths)
+        # self.logger.debug("**\nregistered_engine_paths: %s\n**" %
+        #                   repr(registered_engine_paths))
+
         todo = []
         for user_info in registered_users:
             user_id, login = user_info
@@ -963,13 +967,14 @@ class WorkflowDatabaseServer(object):
             directory_path = todo.pop(0)
             for name in os.listdir(directory_path):
                 engine_path = os.path.join(directory_path, name)
-                if not engine_path in registered_engine_paths \
-                        and engine_path not in registered_dirs:
-                    self.logger.debug(
-                        "remove_orphan_files, not registered " + engine_path + " to delete!")
-                    self.__removeFile(engine_path)
-                elif os.path.isdir(engine_path):
-                    todo.append(engine_path)
+                # self.logger.debug('test engine path: %s' % engine_path)
+                if not engine_path in registered_engine_paths:
+                    if engine_path not in registered_dirs:
+                        self.logger.debug(
+                            "remove_orphan_files, not registered " + engine_path + " to delete!")
+                        self.__removeFile(engine_path)
+                    elif os.path.isdir(engine_path):
+                        todo.append(engine_path)
 
     def reserve_file_numbers(self, external_cursor=None, num_files=200):
         '''

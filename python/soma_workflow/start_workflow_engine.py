@@ -311,6 +311,7 @@ if __name__ == "__main__":
 
         # initialisation of the zro object server.
         logger.info("Starting object server for the workflow engine")
+        # logging.getLogger('zro.ObjectServer').setLevel(logging.DEBUG)
         obj_serv = zro.ObjectServer()
 
         logger.info("Instanciation of the workflow engine")
