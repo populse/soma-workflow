@@ -78,3 +78,38 @@ def list_cat(item, src_param, value, dst_param, dst_value):
         dst_value = []
     dst_value += value
     return dst_value
+
+
+def sequence_max(shift, src_param, value, dst_param, dst_value):
+    ''' get maximum value from a list
+    '''
+    #print('shift', shift,
+          #'src_param:', src_param,
+          #'dst_param:', dst_param, 
+          #'dst_value:', dst_value, 
+          #'value', value)
+    if dst_value is None:
+        dst_value = type(value)(0) + shift
+    dst_value = max(dst_value, value + shift)
+    return dst_value
+
+
+def sequence_min(shift, src_param, value, dst_param, dst_value):
+    ''' get minimum value from a list
+    '''
+    if dst_value is None:
+        dst_value = type(value)(value + shift)
+
+    dst_value = min(dst_value, value + shift)
+    return dst_value
+
+
+def sequence_sum(shift, src_param, value, dst_param, dst_value):
+    ''' sum value from a list
+    '''
+    if dst_value is None:
+        dst_value = type(value)(0) + shift
+    
+    dst_value += value
+
+    return dst_value

@@ -615,15 +615,20 @@ class WorkflowEngineLoop(object):
             # seems are done many times here...
             if u_param_dict:
                 for param, value_tl in six.iteritems(u_param_dict):
-                    dval = job.param_dict.get(param)
+                    #print('+' + '-' * 78 + '+')
                     #print('update_job_parameters', param, ':', value_tl)
                     #print('job:', job.name, job)
-                    #print('dval:', repr(dval))
+                    #print('+' + '-' * 78 + '+')
                     for value_t in value_tl:
+                        # dval should be reread from job parameters dictionary
+                        # as it could have been updated since previous iteration
+                        dval = job.param_dict.get(param)
+                        #print('dval:', repr(dval))
+                        
                         func, src_param, value = value_t
-                        #print('   ', func, src_param, value, param, dval)
                         nvalue = transformed_param_value(func, src_param,
                                                          value, param, dval)
+                        #print('resulting nvalue', nvalue)
                         if isinstance(nvalue, list):
                             values = nvalue
                             dvals = dval
@@ -660,8 +665,15 @@ class WorkflowEngineLoop(object):
                         if not isinstance(nvalue, list):
                             new_values = new_values[0]
                         job.param_dict[param] = new_values
-                        break  # avoid doing this multiple times
-
+                        
+                        # This break lead to fail to update output lists
+                        # when multiple outputs result in an input list value.
+                        # With this break, only the first value of the input 
+                        # list is updated. Break does not seem to be a good
+                        # optimization
+                        #break  # avoid doing this multiple times
+                    #print('+' + '-' * 78 + '+')
+                    #print()
             if u_param_dict or \
                     (job.configuration and not job.use_input_params_file):
                 if job.configuration and not job.use_input_params_file:
@@ -1358,7 +1370,11 @@ class WorkflowEngine(RemoteFileController):
                 if isinstance(dval, list):
                     # reset lists
                     dval = []
+
                 for value_t in value_tl:
+                    # dval should be reread from parameters dictionary
+                    # as it could have been updated since previous iteration
+                    dval = param_dict.get(param, dval)
                     func, src_param, value = value_t
                     value = transformed_param_value(func, src_param, value,
                                                     param, dval)
