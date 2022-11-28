@@ -22,7 +22,7 @@ repos:
     # -   id: trailing-whitespace  # not ready yet
     #     exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
 
--   repo: https://gitlab.com/pycqa/flake8
+-   repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
     -   id: flake8
