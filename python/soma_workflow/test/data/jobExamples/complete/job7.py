@@ -25,8 +25,8 @@ out_dir = input_params['output_dir']
 if not os.path.exists(out_dir):
     os.mkdir(out_dir)
 
-filePathsOut = [os.path.join(out_dir, os.path.basename(f))
-                for f in filePathsIn]
+filePathsOut = [os.path.join(out_dir, os.path.basename(fp))
+                for fp in filePathsIn]
 
 for fin, fout in zip(filePathsIn, filePathsOut):
     shutil.copy2(fin, fout)

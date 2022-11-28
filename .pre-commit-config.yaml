@@ -1,7 +1,8 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.5.0
+    rev: v4.1.0
     hooks:
+    -   id: check-added-large-files
     -   id: check-case-conflict
     -   id: check-executables-have-shebangs
     -   id: check-json
@@ -10,11 +11,14 @@ repos:
     -   id: check-xml
     -   id: check-yaml
     -   id: debug-statements
+    -   id: destroyed-symlinks
+    # -   id: end-of-file-fixer
+    -   id: fix-byte-order-marker
     -   id: fix-encoding-pragma
-    -   id: check-added-large-files
+    # -   id: trailing-whitespace
 
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.7.9
+    rev: 3.9.2
     hooks:
     -   id: flake8
         name: flake8 under python2
