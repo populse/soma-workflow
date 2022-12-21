@@ -23,11 +23,14 @@ import traceback
 
 PYQT4 = "pyqt4"
 PYQT5 = "pyqt5"
+PYQT6 = "pyqt6"
 PYSIDE = "pyside"
 QT_BACKEND = None
 
 if 'PyQt4' in sys.modules:
     QT_BACKEND = PYQT4
+elif 'PyQt6' in sys.modules:
+    QT_BACKEND = PYQT6
 elif 'PyQt5' in sys.modules:
     QT_BACKEND = PYQT5
 elif 'PySide' in sys.modules:
@@ -35,7 +38,9 @@ elif 'PySide' in sys.modules:
 
 if QT_BACKEND is None:
     qt_api = os.environ.get('QT_API')
-    if qt_api == 'pyqt5':
+    if qt_api == 'pyqt6':
+        QT_BACKEND = PYQT6
+    elif qt_api == 'pyqt5':
         QT_BACKEND = PYQT5
     elif qt_api in ('pyqt4', 'pyqt'):
         QT_BACKEND = PYQT4
@@ -44,10 +49,14 @@ if QT_BACKEND is None:
 
 if QT_BACKEND is None:
     try:
-        from PyQt5 import QtGui, QtCore, QtWidgets
-        QT_BACKEND = PYQT5
+        from PyQt6 import QtGui, QtCore, QtWidgets
+        QT_BACKEND = PYQT6
     except ImportError as e:
-        raise Exception("Soma-workflow Gui requires PyQt4, PyQt5 or PySide.")
+        try:
+            from PyQt5 import QtGui, QtCore, QtWidgets
+            QT_BACKEND = PYQT5
+        except ImportError as e:
+            raise Exception("Soma-workflow Gui requires PyQt4, PyQt5, PyQt6 or PySide.")
 
 if QT_BACKEND is None:
     try:
@@ -95,6 +104,29 @@ elif QT_BACKEND == PYQT5:
     # more hacks
     QtGui.QSortFilterProxyModel = QtCore.QSortFilterProxyModel
     QtGui.QItemSelectionModel = QtCore.QItemSelectionModel
+    try:
+        from PyQt5 import sip
+        sys.modules['sip'] = sip
+    except ImportError:
+        import sip
+
+elif QT_BACKEND == PYQT6:
+    from PyQt6 import QtCore, QtGui, QtWidgets, uic  # noqa: F811
+    from PyQt6.uic import loadUiType
+    QtCore.Slot = QtCore.pyqtSlot
+    QtCore.Signal = QtCore.pyqtSignal
+    # copy QtWidgets contents into QtGui
+    for key in QtWidgets.__dict__:
+        if not key.startswith('__') and key not in QtGui.__dict__:
+            setattr(QtGui, key, getattr(QtWidgets, key))
+    # more hacks
+    QtGui.QSortFilterProxyModel = QtCore.QSortFilterProxyModel
+    QtGui.QItemSelectionModel = QtCore.QItemSelectionModel
+    try:
+        from PyQt6 import sip
+        sys.modules['sip'] = sip
+    except ImportError:
+        import sip
 
 elif QT_BACKEND == PYSIDE:
 
@@ -137,7 +169,9 @@ def utf8(string):
 MATPLOTLIB = True
 try:
     import matplotlib
-    if QT_BACKEND == PYQT5:
+    if QT_BACKEND == PYQT6:
+        matplotlib.use('Qt5Agg')  # apparently not Qt6Agg
+    elif QT_BACKEND == PYQT5:
         matplotlib.use('Qt5Agg')
     elif QT_BACKEND == PYQT4:
         matplotlib.use('Qt4Agg')
@@ -161,6 +195,116 @@ except ImportError as e:
     print("Could not use Matplotlib: %s %s" % (type(e), e))
     MATPLOTLIB = False
 
+# from soma.utils.sip_compat:
+
+import inspect
+import enum
+
+
+def sip4_to_sip6_enums(module, recursive=True):
+    ''' Convert Sip4 style enums to sip6 style enums.
+
+    Sip4 exports C++ enums as in C++, ex::
+
+        instance.ENUM_VALUE  # where ENUM_VALUE is an instance of EnumType
+
+    Sip6 keeps values inside the enum type::
+
+        instance.EnumType.ENUM_VALUE
+
+    In order to maintain code compatible, we duplicat these values. If using
+    sip4, then we copy values inside the enum types as sip6 does.
+
+    If recursive (the default), sub-modules are also scanned and modified.
+    '''
+    todo = [module]
+    done = set()
+    while todo:
+        module = todo.pop(0)
+        if id(module) in done:
+            continue
+
+        done.add(id(module))
+        enums = set()
+        for iname, item in module.__dict__.items():
+            if type(item).__name__ == 'enumtype' and id(item) not in done:
+                enums.add(item)
+                done.add(id(item))
+            elif inspect.isclass(item) or (recursive
+                                           and inspect.ismodule(item)):
+                todo.append(item)
+        if enums:
+            for iname, item in module.__dict__.items():
+                if type(item) in enums:
+                    setattr(type(item), iname, item)
+
+
+def sip6_to_sip4(module, recursive=True):
+    ''' Convert Sip6 style enums to sip4 style enums.
+
+    Sip4 exports C++ enums as in C++, ex::
+
+        instance.ENUM_VALUE  # where ENUM_VALUE is an instance of EnumType
+
+    Sip6 keeps values inside the enum type::
+
+        instance.EnumType.ENUM_VALUE
+
+    In order to maintain code compatible, we duplicat these values. If using
+    sip6, then we copy values outside the enum types as sip4 does.
+
+    If recursive (the default), sub-modules are also scanned and modified.
+    '''
+    todo = [module]
+    done = set()
+    while todo:
+        module = todo.pop(0)
+        if id(module) in done:
+            continue
+
+        done.add(id(module))
+        enums = []
+        for iname, item in module.__dict__.items():
+            if type(item) is enum.EnumMeta and id(item) not in done:
+                enums.append(item)
+                done.add(id(item))
+            elif inspect.isclass(item) or (recursive
+                                           and inspect.ismodule(item)):
+                todo.append(item)
+        for entype in enums:
+            for name in entype._member_names_:
+                setattr(module, name, getattr(entype, name))
+
+
+def sip_export_enums(module, recursive=True):
+    ''' Convert Sip6 style enums to sip4 style enums, or the contrary.
+
+    Sip4 exports C++ enums as in C++, ex::
+
+        instance.ENUM_VALUE  # where ENUM_VALUE is an instance of EnumType
+
+    Sip6 keeps values inside the enum type::
+
+        instance.EnumType.ENUM_VALUE
+
+    In order to maintain code compatible, we duplicat these values. If using
+    sip6, then we copy values outside the enum types as sip4 does. If using
+    sip4, then we copy values inside the enum types as sip6 does.
+
+    If recursive (the default), sub-modules are also scanned and modified.
+    '''
+    sip = sys.modules['sip']
+    if sip.SIP_VERSION >= 0x060000:
+        sip6_to_sip4(module, recursive=recursive)
+    else:
+        sip4_to_sip6_enums(module, recursive=recursive)
+
+# ---
+
+sip_export_enums(QtCore)
+sip_export_enums(QtGui)
+sip_export_enums(QtWidgets)
+
 
 class ProtocolError(Exception):
     pass
@@ -173,7 +317,10 @@ class ConnectionClosedError(ProtocolError):
 # QFileDialog options:
 # in binary packages containing thirdpary libs/python, we must use 
 # DontUseNativeDialog to prevent loading external libs from the system.
-filedialog_options = QtGui.QFileDialog.DontUseNativeDialog
+if QT_BACKEND == PYQT6:
+    filedialog_options = QtGui.QFileDialog.Option.DontUseNativeDialog
+else:
+    filedialog_options = QtGui.QFileDialog.DontUseNativeDialog
 
 #-----------------------------------------------------------------------------
 # Globals and constants
@@ -189,7 +336,7 @@ GREEN = QtGui.QColor(155, 255, 50)
 LIGHT_BLUE = QtGui.QColor(200, 255, 255)
 
 
-if QT_BACKEND in (PYQT4, PYQT5):
+if QT_BACKEND in (PYQT4, PYQT5, PYQT6):
     '''
     The types can be loaded directly from the ui files (useful during developpement)
     '''
@@ -397,7 +544,7 @@ def detailed_critical_message_box(msg, title, parent):
         message_box.setSizeGripEnabled(True)
         message_box.setSizePolicy(QtGui.QSizePolicy.Expanding,
                                   QtGui.QSizePolicy.Expanding)
-        message_box.exec_()
+        message_box.exec()
     else:
         QResizeMessageBox.critical(parent, "error", "%s" % (msg))
 
@@ -1075,7 +1222,7 @@ class ServerManagementDialog(QtGui.QDialog):
     @QtCore.Slot()
     def add_server(self):
         self.add_widget = NewServerDialog(self)
-        self.add_widget.exec_()
+        self.add_widget.exec()
         self.UpdateInterface()
 
     @QtCore.Slot()
@@ -1336,7 +1483,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             QtGui.QPixmap(os.path.join(os.path.dirname(__file__),
                                        "icon/logo.png")))
 
-        message_box.exec_()
+        message_box.exec()
 
     def connect_to_controller(self,
                               resource_id,
@@ -1419,18 +1566,14 @@ class SomaWorkflowWidget(QtGui.QWidget):
     @QtCore.Slot()
     def openServerManagement(self):
         self.server_widget = ServerManagementDialog(self)
-        self.server_widget.exec_()
+        self.server_widget.exec()
         # pass
 
     @QtCore.Slot()
     def openWorkflow(self):
-        if QT_BACKEND in(PYSIDE, PYQT5):
-            file_path = QtGui.QFileDialog.getOpenFileName(
-                self, "Open a workflow", "", "", "", filedialog_options)
-            file_path = file_path[0]
-        else: # PyQt4
-            file_path = QtGui.QFileDialog.getOpenFileName(
-                self, "Open a workflow", "", "", None, filedialog_options)
+        file_path = QtGui.QFileDialog.getOpenFileName(
+            self, "Open a workflow", "", "", "", filedialog_options)
+        file_path = file_path[0]
         if file_path:
             try:
                 workflow = Controller.unserialize_workflow(file_path)
@@ -1447,15 +1590,10 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def saveWorkflow(self):
-        if QT_BACKEND in (PYSIDE, PYQT5):
-            file_path = QtGui.QFileDialog.getSaveFileName(
-                self, "Save the current workflow", "", "", "",
-                filedialog_options)
-            file_path = file_path[0]
-        else: # PyQt4
-            file_path = QtGui.QFileDialog.getSaveFileName(
-                self, "Save the current workflow", "", "",
-                filedialog_options)
+        file_path = QtGui.QFileDialog.getSaveFileName(
+            self, "Save the current workflow", "", "", "",
+            filedialog_options)
+        file_path = file_path[0]
 
         if file_path:
             try:
@@ -1472,7 +1610,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         ui.setupUi(workflowExample_dlg)
         ui.comboBox_example_type.addItems(
             WorkflowExamples.get_workflow_example_list())
-        if workflowExample_dlg.exec_() == QtGui.QDialog.Accepted:
+        if workflowExample_dlg.exec() == QtGui.QDialog.Accepted:
             with_file_transfer = ui.checkBox_file_transfers.checkState(
             ) == QtCore.Qt.Checked
             with_shared_resource_path = ui.checkBox_shared_resource_path.checkState(
@@ -1532,7 +1670,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                 self.model.current_connection) if q not in (None, 'default')]))
             ui.combo_queue.addItems(queues)
 
-            if submission_dlg.exec_() != QtGui.QDialog.Accepted:
+            if submission_dlg.exec() != QtGui.QDialog.Accepted:
                 return (None, None)
 
             if ui.lineedit_wf_name.text():
@@ -1617,7 +1755,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             index = queues.index(previous_queue)
             ui.combo_queue.setCurrentIndex(index)
 
-            if submission_dlg.exec_() != QtGui.QDialog.Accepted:
+            if submission_dlg.exec() != QtGui.QDialog.Accepted:
                 return
             queue = utf8(ui.combo_queue.currentText())
             if queue == "default":
@@ -1773,7 +1911,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                                               resource_id,
                                               editable_resource)
             connection_dlg.setModal(True)
-            if connection_dlg.exec_() != QtGui.QDialog.Accepted:
+            if connection_dlg.exec() != QtGui.QDialog.Accepted:
                 try_again = False
                 index = self.ui.combo_resources.findText(
                     self.model.current_resource_id)
@@ -1972,7 +2110,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         ui.combo_queue.addItem(queue)
         ui.combo_queue.setEnabled(False)
 
-        if dlg.exec_() != QtGui.QDialog.Accepted:
+        if dlg.exec() != QtGui.QDialog.Accepted:
             return
 
         qtdt = ui.dateTimeEdit_expiration.dateTime()
@@ -2297,8 +2435,18 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
         self.ui.menu_file.addAction(self.sw_widget.ui.action_create_wf_ex)
         self.ui.menu_file.addSeparator()
-        self.ui.menu_file.addAction(
-            'Quit', self.close, QtCore.Qt.Key_Q | QtCore.Qt.ControlModifier)
+        if QtCore.QT_VERSION >= 0x060000:
+            self.ui.menu_file.addAction(
+                'Quit',
+                QtGui.QKeySequence(QtCore.Qt.Key_Q
+                                   | QtCore.Qt.ControlModifier),
+                self.close)
+        else:
+            self.ui.menu_file.addAction(
+                'Quit',
+                self.close,
+                QtGui.QKeySequence(QtCore.Qt.Key_Q
+                                   | QtCore.Qt.ControlModifier))
 
         self.ui.menu_workflow.addAction(self.sw_widget.ui.action_submit)
         self.ui.menu_workflow.addAction(self.sw_widget.ui.action_stop_wf)
@@ -2772,7 +2920,7 @@ class WorkflowTree(QtGui.QWidget):
             stop = popup.addAction('Stop jobs', self.stop_selected_jobs)
             restart = popup.addAction('Restart jobs',
                                       self.restart_selected_jobs)
-            popup.exec_(QtGui.QCursor.pos())
+            popup.exec(QtGui.QCursor.pos())
 
     def _expand_groups(self, jobs_groups):
         expanded = []
@@ -3049,12 +3197,8 @@ class JobInfoWidget(QtGui.QTabWidget):
             if job_item.data.param_dict:
                 table = self.ui.input_params_contents
                 table.setRowCount(len(job_item.data.param_dict))
-                if QT_BACKEND == PYQT5:
-                    table.horizontalHeader().setSectionResizeMode(
-                        QtGui.QHeaderView.ResizeToContents)
-                else:
-                    table.horizontalHeader().setResizeMode(
-                        QtGui.QHeaderView.ResizeToContents)
+                table.horizontalHeader().setSectionResizeMode(
+                    QtGui.QHeaderView.ResizeToContents)
                 if job_item.gui_workflow():
                     workflow = job_item.gui_workflow().server_workflow
                 else:
@@ -3213,12 +3357,8 @@ class JobInfoWidget(QtGui.QTabWidget):
             output_params = getattr(self.job_item, 'output_params', None)
             if output_params is not None:
                 table.setRowCount(len(output_params))
-                if QT_BACKEND == PYQT5:
-                    table.horizontalHeader().setSectionResizeMode(
-                        QtGui.QHeaderView.ResizeToContents)
-                else:
-                    table.horizontalHeader().setResizeMode(
-                        QtGui.QHeaderView.ResizeToContents)
+                table.horizontalHeader().setSectionResizeMode(
+                    QtGui.QHeaderView.ResizeToContents)
                 for row, param_name in enumerate(sorted(output_params.keys())):
                     value = output_params[param_name]
                     table.setItem(row, 0, QtGui.QTableWidgetItem(param_name))
@@ -3269,12 +3409,8 @@ class JobInfoWidget(QtGui.QTabWidget):
             table.setItem(row, 0, QtGui.QTableWidgetItem(var))
             table.setItem(row, 1, QtGui.QTableWidgetItem(value))
             row += 1
-        if QT_BACKEND == PYQT5:
-            table.horizontalHeader().setSectionResizeMode(
-                QtGui.QHeaderView.ResizeToContents)
-        else:
-            table.horizontalHeader().setResizeMode(
-                QtGui.QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(
+            QtGui.QHeaderView.ResizeToContents)
 
     def copy_envars(self):
         def _repl(s):

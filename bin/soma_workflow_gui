@@ -92,7 +92,7 @@ if __name__=="__main__":
         sw_widget.show()
 
 
-    app.exec_()
+    app.exec()
 
     if i == 1:
         del sw_main_window
