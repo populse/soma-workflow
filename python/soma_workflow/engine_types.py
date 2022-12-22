@@ -842,7 +842,7 @@ class EngineWorkflow(Workflow):
         has_failed_jobs = self.cache.has_new_failed_jobs
         self.cache.has_new_failed_jobs = False
         # import time
-        # t0 = time.clock()
+        # t0 = time.perf_counter()
         for client_job in cache.waiting_jobs:
             self.logger.debug("client_job=" + repr(client_job))
             job = self.job_mapping[client_job]
@@ -981,7 +981,7 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        # t1 = time.clock()
+        # t1 = time.perf_counter()
         # print('jcount:', jcount, ', dcount:', dcount, ', fcount:', fcount, ',
         # time:', t1 - t0, ', to_run:', len(to_run), ', ended:',
         # len(ended_jobs), ', done:', len(done), ', running:', len(running))
@@ -1014,7 +1014,7 @@ class EngineWorkflow(Workflow):
         # f_to_discard = 0
         # has_failed_jobs = getattr(self, 'has_new_failed_jobs', False)
         # self.has_new_failed_jobs = False
-        # t0 = time.clock()
+        # t0 = time.perf_counter()
         for client_job in self.jobs:
             # jcount += 1
             self.logger.debug("client_job=" + repr(client_job))
@@ -1107,7 +1107,7 @@ class EngineWorkflow(Workflow):
         else:
             status = constants.WORKFLOW_NOT_STARTED
 
-        # t1 = time.clock()
+        # t1 = time.perf_counter()
         # print('jcount:', jcount, ', dcount:', dcount, ', time:', t1 - t0, ',
         # to_run:', len(to_run), ', done:', len(done), ', running:',
         # len(running), 'j_to_discard:', j_to_discard, ', d_to_discard:',
