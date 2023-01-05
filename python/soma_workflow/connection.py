@@ -618,7 +618,7 @@ class RemoteConnection(object):
         self.stop()
 
     def isValid(self):
-        return self.__connection_holder.isAlive()
+        return self.__connection_holder.is_alive()
 
     def stop(self):
         '''
@@ -942,7 +942,7 @@ class LocalConnection(object):
         self.stop()
 
     def isValid(self):
-        return self.__connection_holder.isAlive()
+        return self.__connection_holder.is_alive()
 
     def stop(self):
         '''
