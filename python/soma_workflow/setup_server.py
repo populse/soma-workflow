@@ -88,6 +88,8 @@ def AddPathToEnvVar(env_var_name, path):
 def SetupServerEnvVar(path2somawf):
     """ Environment variable list
 
+    This is obsolete and does nothing any longer.
+
     Parameters
     ----------
     path2somawf: str
@@ -101,28 +103,28 @@ def SetupServerEnvVar(path2somawf):
     envlines2add = []
     envlines2add.append(AddPathToEnvVar("PYTHONPATH", path2somawf))
 
-    if socket.gethostname() == "gabriel.intra.cea.fr":
-        envlines2add.append(AddPathToEnvVar(
-            "PYTHONPATH",
-            os.path.join(path2resources, "lib", "python2.7")))
-        envlines2add.append(AddPathToEnvVar(
-            "PYTHONPATH",
-            os.path.join(path2resources, "lib", "python2.7", "site-packages")))
-        envlines2add.append(AddPathToEnvVar(
-            "PATH",
-            os.path.join(path2resources, "bin")))
-        envlines2add.append(AddPathToEnvVar(
-            "LD_LIBRARY_PATH",
-            os.path.join(path2resources, "lib")))
-        envlines2add.append(AddPathToEnvVar(
-            "LD_LIBRARY_PATH",
-            "/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib"))
-        envlines2add.append(AddPathToEnvVar(
-            "LD_LIBRARY_PATH",
-            "/usr/lib64/openmpi/lib"))
-        envlines2add.append(SetPathToEnvVar(
-            "DRMAA_LIBRARY_PATH",
-            "/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib/libdrmaa.so"))
+    #if socket.gethostname() == "gabriel.intra.cea.fr":
+        #envlines2add.append(AddPathToEnvVar(
+            #"PYTHONPATH",
+            #os.path.join(path2resources, "lib", "python2.7")))
+        #envlines2add.append(AddPathToEnvVar(
+            #"PYTHONPATH",
+            #os.path.join(path2resources, "lib", "python2.7", "site-packages")))
+        #envlines2add.append(AddPathToEnvVar(
+            #"PATH",
+            #os.path.join(path2resources, "bin")))
+        #envlines2add.append(AddPathToEnvVar(
+            #"LD_LIBRARY_PATH",
+            #os.path.join(path2resources, "lib")))
+        #envlines2add.append(AddPathToEnvVar(
+            #"LD_LIBRARY_PATH",
+            #"/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib"))
+        #envlines2add.append(AddPathToEnvVar(
+            #"LD_LIBRARY_PATH",
+            #"/usr/lib64/openmpi/lib"))
+        #envlines2add.append(SetPathToEnvVar(
+            #"DRMAA_LIBRARY_PATH",
+            #"/i2bm/brainvisa/CentOS-5.11-x86_64/pbs_drmaa/lib/libdrmaa.so"))
 
     return envlines2add
 
