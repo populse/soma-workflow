@@ -162,32 +162,11 @@ New
 In version 3.2:
 ---------------
 
-* Python2 support has been dropped
-
+* Python2 support has been dropped.
 * Optimization for scalability: performance in the engine and database has been much improved, in order to manage very large workflows, especially for workflows of independent jobs (large iterations). Where soma-workflow <= 3.1 used to reach a limit around 5-10000 jobs (with timeouts causing aborts and hangs in the engine), in 3.2 it has now been tested using up to 500000 jobs in local and MPI modes. The MPI mode is by far the most efficient for such large workflows (processing 500000 very small jobs in about 25 minutes on a 8-core laptop). Both Workflow submission, engine management, and scheduling have been much improved, and processing time has dropped by several orders of magnitude. For very large workflows around the limit, however, monitoring (using either soma_workflow_gui or the client API) may involve an overhead which may cause timeouts in the database, which may in turn hang or crash the engine.
-
-In version 3.1:
----------------
-
-* The client/server communication architecture (based on ZMQ) has been revised to avoid some stability and timeout problems.
-
-* Dynamic parameters in workflows: jobs can now have "named parameters" and outputs produced by a job (number, string, filename) are passed to downstream jobs. While passing values from a job output to another job input, custom link functions can be called to transform values, enabling applications such as map/reduce, cross-validation or leave-one-out in a semi-dynamic way.
-
-
-In version 3.0:
----------------
-
-* Pyro is gone, Soma-Workflow is now using `ZMQ <http://zeromq.org/>`_ and `PyZmq <https://pyzmq.readthedocs.io/en/latest/>`_.
-
-  As a consequence, all the client/server communication layer has been made completely incompatible with soma-workflow 2.9 and earlier. Client and server should always be the same version anyway. The client/server API has not changed fundamentally however.
-
-* Porting to Python3: Pyro3 having been dropped, all the requirements for porting to Python3 have now been met, and Soma-Workflow can entirely wotk using Python3. However it is not possible to run different versions of Python on the client and the server: read :doc:`changes_swf3` for details.
-
-* New PBSPro scheduler type, to be used when DRMAA is not available, or doesn't work (like on our new cluster): use ``scheduler_type = pbspro`` in the server config file. It might also work on PBS/Torque, we have not tried yet.
-
-* It is now possible to restart a workflow which is still running: running / pending jobs will go on, and only failed jobs will be restarted.
-
-* A few improvements, such as the 2 new plots modes in the GUI (soma_workflow_gui) displaying the use of CPUs in addition to jobs (useful for parallel jobs)
+* Docs complements and improvements.
+* Support for PyQt6 on the way (not entirely tested yet).
+* Several bug fixes.
 
 
 See :doc:`the full changelog <changelog>`
