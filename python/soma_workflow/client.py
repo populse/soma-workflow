@@ -19,6 +19,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import os
+import os.path as osp
 import hashlib
 import stat
 import operator
@@ -93,7 +94,8 @@ class WorkflowController(object):
                  login=None,
                  password=None,
                  config=None,
-                 rsa_key_pass=None):
+                 rsa_key_pass=None,
+                 isolated_light_mode=None):
         '''
         Sets up the connection to the computing resource.
         Looks for a soma-workflow configuration file (if not specified in the
@@ -122,7 +124,28 @@ class WorkflowController(object):
 
         rsa_key_pass: str
             Required if the RSA key is protected with a password.
+
+        isolated_light_mode: None, str, or True
+            if not None, work in a custom soma-workflow directory (database,
+            transfers, temporary files...). If the isolated_light_mode
+            parameter value is True, then generate a temporary directory for
+            that. Otherwise the parameter should be a directory name which will
+            be used instead of the default one.
         '''
+
+        if isolated_light_mode is not None:
+            if isolated_light_mode is True:
+                isolated_dir = tempfile.mkdtemp(prefix='soma_workflow_')
+            else:
+                isolated_dir = isolated_light_mode
+            resource_id = 'localhost'
+            os.environ['SOMA_WORKFLOW_CONFIG'] = osp.join(isolated_dir, 'soma_workflow.cfg')
+            db_file = osp.join(isolated_dir, 'soma-workflow.db')
+            trans_dir = osp.join(isolated_dir, 'transfered_files')
+            config = configuration.Configuration(
+                'localhost', 'light', 'local_basic', db_file, trans_dir)
+            if isolated_light_mode is True:
+                config._temp_config_dir = isolated_dir
 
         if config is None:
             self.config = configuration.Configuration.load_from_file(

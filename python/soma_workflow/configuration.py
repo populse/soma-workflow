@@ -1307,7 +1307,7 @@ class LocalSchedulerCfg(observer.Observable):
         config_parser = configparser.ConfigParser()
         if hasattr(config_path, 'readline'):
             config_parser.readfp(config_path)
-        else:
+        elif config_path is not None:
             config_parser.read(config_path)
 
         if not config_parser.has_section(hostname):

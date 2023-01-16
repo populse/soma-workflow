@@ -13,7 +13,7 @@
 
 
 import sys
-import optparse
+import argparse
 
 #try:
 #  import sip
@@ -23,26 +23,30 @@ import optparse
 #  sip.setapi('QVariant', 2)
 #  sip.setapi('QString', 2)
 
-parser = optparse.OptionParser()
+parser = argparse.ArgumentParser()
 
-parser.add_option('-u', '--user', help="User for logging in to server")
-parser.add_option('-a', '--auto-connect', dest='auto_connect', default=False,
-                  action='store_true', help="Try to connect directly, "
-                  "without displaying connection dialog.")
-parser.add_option('-i', '--interactive', action='store_true',
-                  help='open connection dialog at startup. '
-                  'Incompatible with -a.')
-parser.add_option('-r', '--computing-resource', dest='computing_resource', 
-                  help='computing resource identifier')
-parser.add_option('--database', dest='database',
-                  help='connect localhost with the specified database file')
-parser.add_option('--config', dest='config',
-                  help='use the specified config file')
-parser.add_option('--gui', dest='gui',
-                  help='use the specified Qt GUI type: PyQt4, PyQt5, PySide.'
-                  'Default: guess in the above order.')
+parser.add_argument('-u', '--user', help="User for logging in to server")
+parser.add_argument('-a', '--auto-connect', dest='auto_connect', default=False,
+                    action='store_true', help="Try to connect directly, "
+                    "without displaying connection dialog.")
+parser.add_argument('-i', '--interactive', action='store_true',
+                    help='open connection dialog at startup. '
+                    'Incompatible with -a.')
+parser.add_argument('-r', '--computing-resource', dest='computing_resource',
+                    help='computing resource identifier')
+parser.add_argument('--database', dest='database',
+                    help='connect localhost with the specified database file')
+parser.add_argument('--config', dest='config',
+                    help='use the specified config file')
+parser.add_argument('--isolated',
+                    help='use an isolates soma-workflow directory in light '
+                    'mode. If the associated value is "temp", generate a '
+                    'temporary directory.')
+parser.add_argument('--gui', dest='gui',
+                    help='use the specified Qt GUI type: PyQt4, PyQt5, PySide.'
+                    'Default: guess in the above order.')
 
-options, args = parser.parse_args(sys.argv)
+options = parser.parse_args(sys.argv[1:])
 
 gui = options.gui
 if gui == 'PyQt4':
@@ -64,6 +68,9 @@ if __name__=="__main__":
     #QtCore.pyqtRemoveInputHook()
 
     model = ApplicationModel()
+    isolated_dir = options.isolated
+    if isolated_dir == 'temp':
+        isolated_dir = True
 
     i = 1
 
@@ -77,7 +84,8 @@ if __name__=="__main__":
                                     options.computing_resource,
                                     config_file=options.config,
                                     db_file=options.database,
-                                    interactive=options.interactive)
+                                    interactive=options.interactive,
+                                    isolated_light_mode=isolated_dir)
 
         sw_main_window.show()
 
@@ -88,7 +96,8 @@ if __name__=="__main__":
                                       options.computing_resource,
                                       config_file=options.config,
                                       db_file=options.database,
-                                      interactive=options.interactive)
+                                      interactive=options.interactive,
+                                      isolated_light_mode=isolated_dir)
         sw_widget.show()
 
 
