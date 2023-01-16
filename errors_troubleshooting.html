@@ -1,25 +1,25 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tips, Good Practices and Errors &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Tips, Good Practices and Errors &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="_static/icon_small.ico"/>
+    <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Status list" href="status_list.html" />
-    <link rel="prev" title="MPI workflow runner —beta—" href="MPI_workflow_runner.html" /> 
+    <link rel="prev" title="MPI workflow runner" href="MPI_workflow_runner.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -34,9 +34,9 @@
           <a href="status_list.html" title="Status list"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="MPI_workflow_runner.html" title="MPI workflow runner —beta—"
+          <a href="MPI_workflow_runner.html" title="MPI workflow runner"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Tips, Good Practices and Errors</a></li> 
       </ul>
     </div>  
@@ -46,10 +46,10 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="tips-good-practices-and-errors">
-<span id="good-pratices-troubleshooting"></span><h1>Tips, Good Practices and Errors<a class="headerlink" href="#tips-good-practices-and-errors" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="tips">
-<h2>Tips<a class="headerlink" href="#tips" title="Permalink to this headline">¶</a></h2>
+  <section id="tips-good-practices-and-errors">
+<span id="good-pratices-troubleshooting"></span><h1>Tips, Good Practices and Errors<a class="headerlink" href="#tips-good-practices-and-errors" title="Permalink to this heading">¶</a></h1>
+<section id="tips">
+<h2>Tips<a class="headerlink" href="#tips" title="Permalink to this heading">¶</a></h2>
 <dl>
 <dt><strong>Use job priority</strong></dt><dd><p>Job priority is a new feature in version 2.1. The jobs have a new integer
 attribute named priority (see <a class="reference internal" href="workflow_creation.html#workflow-creation-api"><span class="std std-ref">Workflow creation API</span></a>).</p>
@@ -64,23 +64,27 @@ higher priority are submitted first. Note that the dependencies between jobs
 defined in the workflow are always satisfied.</p>
 <p>Job priorities can be used, for example, to obtain intermediate results more
 quickly in a workflow:</p>
-<div class="figure align-default" id="id1">
+<figure class="align-default" id="id1">
 <a class="reference internal image-reference" href="_images/without_priority.png"><img alt="_images/without_priority.png" src="_images/without_priority.png" style="width: 468.99999999999994px; height: 191.79999999999998px;" /></a>
-<p class="caption"><span class="caption-text"><em>Without job priority: depending on the number of cpu available the
+<figcaption>
+<p><span class="caption-text"><em>Without job priority: depending on the number of cpu available the
 tendency will be to execute all the “brain extraction” jobs, then all
 the “gray/white segmentation” jobs and so on. As a consequence, the result
 of the whole processing of the first subject will be available late in the
 workflow execution.</em></span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</div>
-<div class="figure align-default" id="id2">
+</figcaption>
+</figure>
+<figure class="align-default" id="id2">
 <a class="reference internal image-reference" href="_images/with_priority.png"><img alt="_images/with_priority.png" src="_images/with_priority.png" style="width: 468.99999999999994px; height: 210.0px;" /></a>
-<p class="caption"><span class="caption-text"><em>With job priorities: the “sulci recognition” jobs have higher priority.
+<figcaption>
+<p><span class="caption-text"><em>With job priorities: the “sulci recognition” jobs have higher priority.
 Depending of the number of cpu available, the “sulci recognition” jobs will
 tend to be executed before all the “brain extraction” and
 “gray/white segmentation” jobs end. As a consequence, the result of the
 whole processing of the subject 1 will be available early in the workflow
 execution.</em></span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
-</div>
+</figcaption>
+</figure>
 </dd>
 <dt><strong>Use native specification to access the full range of features of your cluster</strong></dt><dd><p>Some specific option/feature of your cluster might not be usable through the unified
 interface of Soma-workflow. The native specification string makes them available.</p>
@@ -114,9 +118,9 @@ the GUI or worse, in a Python script.</p></li>
 configuration file of Soma-workflow (LOGIN configuration variable). The
 configured login will be used to prefill the GUI.</p></li>
 </ul>
-</div>
-<div class="section" id="good-practices-on-a-cluster">
-<h2>Good Practices on a cluster<a class="headerlink" href="#good-practices-on-a-cluster" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="good-practices-on-a-cluster">
+<h2>Good Practices on a cluster<a class="headerlink" href="#good-practices-on-a-cluster" title="Permalink to this heading">¶</a></h2>
 <dl>
 <dt><strong>Do not forget that computing resources have usually their own rules and are shared with other users</strong></dt><dd><p>Everything you do through Soma-workflow is done with your user id on the
 computing resource.</p>
@@ -159,9 +163,9 @@ more time to get all the jobs running.</p>
 <dt><strong>One database per user.</strong></dt><dd><p>The soma-workflow will start one database when the user connects to the server.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="good-practices-in-general">
-<h2>Good Practices in general<a class="headerlink" href="#good-practices-in-general" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="good-practices-in-general">
+<h2>Good Practices in general<a class="headerlink" href="#good-practices-in-general" title="Permalink to this heading">¶</a></h2>
 <dl class="simple">
 <dt><strong>Do not build workflows with too many short jobs.</strong></dt><dd><p>Depending on the system the time for the jobs to be submitted is variable
 and is usually not instantaneous. To take advantage of running your
@@ -172,70 +176,70 @@ usually.</p>
 on a multiple core machine.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="errors">
-<h2>Errors<a class="headerlink" href="#errors" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="errors">
+<h2>Errors<a class="headerlink" href="#errors" title="Permalink to this heading">¶</a></h2>
 <p>Here is the list of the various errors which can occur when using
 Soma-workflow.</p>
 <dl class="py class">
-<dt id="errors.ConfigurationError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">ConfigurationError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#ConfigurationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.ConfigurationError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.ConfigurationError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">ConfigurationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#ConfigurationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.ConfigurationError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when the configuration is not correct or when configuration
 items are missing.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.ConnectionError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">ConnectionError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#ConnectionError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.ConnectionError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.ConnectionError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">ConnectionError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#ConnectionError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.ConnectionError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when the connection could not be set up with the computing
 resource and/or the database server.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.DRMError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">DRMError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#DRMError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.DRMError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.DRMError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">DRMError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#DRMError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.DRMError" title="Permalink to this definition">¶</a></dt>
 <dd><p>DRMAA session error or DRMS error.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.JobError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">JobError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#JobError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.JobError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.JobError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">JobError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#JobError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.JobError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when an incorrect Job is submitted to soma-workflow.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.WorkflowError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">WorkflowError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#WorkflowError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.WorkflowError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.WorkflowError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">WorkflowError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#WorkflowError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.WorkflowError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when an incorrect Workflow is submitted to soma-workflow.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.TransferError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">TransferError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#TransferError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.TransferError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.TransferError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">TransferError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#TransferError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.TransferError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when an incorrect Transfer is submitted to soma_workflow, or when an error occurs during a file transfer.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.UnknownObjectError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">UnknownObjectError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#UnknownObjectError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.UnknownObjectError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.UnknownObjectError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">UnknownObjectError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#UnknownObjectError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.UnknownObjectError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when an operation is attempted on Jobs, Workflows or Transfers which
 do not exist or do not belong to the user.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.EngineError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">EngineError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#EngineError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.EngineError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.EngineError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">EngineError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#EngineError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.EngineError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised if an error occurs while starting the workflow engine.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="errors.DatabaseError">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">errors.</span></code><code class="sig-name descname"><span class="pre">DatabaseError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#DatabaseError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.DatabaseError" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="errors.DatabaseError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">errors.</span></span><span class="sig-name descname"><span class="pre">DatabaseError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/errors.html#DatabaseError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#errors.DatabaseError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised if an error occurs while reading or writing to the database.</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -247,23 +251,40 @@ do not exist or do not belong to the user.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/logo_white_small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Tips, Good Practices and Errors</a><ul>
 <li><a class="reference internal" href="#tips">Tips</a></li>
 <li><a class="reference internal" href="#good-practices-on-a-cluster">Good Practices on a cluster</a></li>
 <li><a class="reference internal" href="#good-practices-in-general">Good Practices in general</a></li>
-<li><a class="reference internal" href="#errors">Errors</a></li>
+<li><a class="reference internal" href="#errors">Errors</a><ul>
+<li><a class="reference internal" href="#errors.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li><a class="reference internal" href="#errors.ConnectionError"><code class="docutils literal notranslate"><span class="pre">ConnectionError</span></code></a></li>
+<li><a class="reference internal" href="#errors.DRMError"><code class="docutils literal notranslate"><span class="pre">DRMError</span></code></a></li>
+<li><a class="reference internal" href="#errors.JobError"><code class="docutils literal notranslate"><span class="pre">JobError</span></code></a></li>
+<li><a class="reference internal" href="#errors.WorkflowError"><code class="docutils literal notranslate"><span class="pre">WorkflowError</span></code></a></li>
+<li><a class="reference internal" href="#errors.TransferError"><code class="docutils literal notranslate"><span class="pre">TransferError</span></code></a></li>
+<li><a class="reference internal" href="#errors.UnknownObjectError"><code class="docutils literal notranslate"><span class="pre">UnknownObjectError</span></code></a></li>
+<li><a class="reference internal" href="#errors.EngineError"><code class="docutils literal notranslate"><span class="pre">EngineError</span></code></a></li>
+<li><a class="reference internal" href="#errors.DatabaseError"><code class="docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="MPI_workflow_runner.html"
-                        title="previous chapter">MPI workflow runner —<strong>beta</strong>—</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="status_list.html"
-                        title="next chapter">Status list</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="MPI_workflow_runner.html"
+                          title="previous chapter">MPI workflow runner</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="status_list.html"
+                          title="next chapter">Status list</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -275,12 +296,12 @@ do not exist or do not belong to the user.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -298,15 +319,15 @@ do not exist or do not belong to the user.</p>
           <a href="status_list.html" title="Status list"
              >next</a> |</li>
         <li class="right" >
-          <a href="MPI_workflow_runner.html" title="MPI workflow runner —beta—"
+          <a href="MPI_workflow_runner.html" title="MPI workflow runner"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Tips, Good Practices and Errors</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>

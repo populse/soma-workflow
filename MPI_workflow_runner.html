@@ -1,21 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MPI workflow runner —beta— &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>MPI workflow runner &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="_static/icon_small.ico"/>
+    <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tips, Good Practices and Errors" href="errors_troubleshooting.html" />
@@ -36,8 +36,8 @@
         <li class="right" >
           <a href="examples.html" title="Examples"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">MPI workflow runner —<strong>beta</strong>—</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MPI workflow runner</a></li> 
       </ul>
     </div>  
 
@@ -46,48 +46,56 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="mpi-workflow-runner-beta">
-<span id="mpi-workflow-runner"></span><h1>MPI workflow runner —<strong>beta</strong>—<a class="headerlink" href="#mpi-workflow-runner-beta" title="Permalink to this headline">¶</a></h1>
-<dl class="simple">
-<dt>The MPI workflow runner is a second way of executing workflows using a cluster:</dt><dd><ul class="simple">
+  <section id="mpi-workflow-runner">
+<span id="id1"></span><h1>MPI workflow runner<a class="headerlink" href="#mpi-workflow-runner" title="Permalink to this heading">¶</a></h1>
+<p>The MPI workflow runner is a second way of executing workflows using a cluster:</p>
+<ul class="simple">
 <li><p>high throughput mode (using DRMAA for example): 1 job = 1 cluster job</p></li>
 <li><p>low throughput mode with the MPI workflow runner: 1 workflow = 1 cluster job</p></li>
 </ul>
-</dd>
-</dl>
 <a class="reference internal image-reference" href="_images/sw_high_throughput.png"><img alt="_images/sw_high_throughput.png" src="_images/sw_high_throughput.png" style="width: 438.59999999999997px; height: 309.0px;" /></a>
 <a class="reference internal image-reference" href="_images/sw_low_throughput.png"><img alt="_images/sw_low_throughput.png" src="_images/sw_low_throughput.png" style="width: 462.59999999999997px; height: 304.2px;" /></a>
-<dl class="simple">
-<dt>This mode makes it possible:</dt><dd><ul class="simple">
+<p>This mode makes it possible:</p>
+<ul class="simple">
 <li><p>to run workflows on clusters with limited number of job per user.</p></li>
 <li><p>to run workflows on clusters where it is not possible to run a server process.</p></li>
 <li><p>to run workflows if you only have a simple MPI installation.</p></li>
 <li><p>to remove the time interval between jobs execution which is due to the submission of each job to the cluster management system.</p></li>
+<li><p>For this reason, and the fact that parallelization in worker processes avoids overheads due to locks and the python GIL contrarily to the standard threaded local mode, it is much more efficient for large workflows of small jobs.</p></li>
 </ul>
-</dd>
-</dl>
-<p>This mode is for advenced users who know how to use a cluster. In this mode the workflow control (submission, stop and resart) via the python API is disabled. The DRMS commands such as <em>qsub</em> and <em>qdel</em> for PBS for example, must be used instead. However, the monitoring tools (GUI and Python API) remains the same.</p>
-<div class="section" id="requirements">
-<h2>Requirements:<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>This mode is for advanced users who know how to use a cluster. In this mode the workflow control (submission, stop and resart) via the python API is disabled. The DRMS commands such as <em>qsub</em> and <em>qdel</em> for PBS for example, must be used instead. However, the monitoring tools (GUI and Python API) remains the same.</p>
 <ul class="simple">
-<li><p>Python <em>version 2.7 or more</em></p></li>
+<li><p>When to use the MPI mode</p>
+<ul>
+<li><p>On a cluster with limited number of job per user</p></li>
+<li><p>Locally when workflows involve many jobs: as said earlier, this mode is more efficient than the local scheduler</p></li>
+</ul>
+</li>
+<li><p>When <em>not</em> to use the MPI mode</p>
+<ul>
+<li><p>the MPI mode consumes more CPU than the local scheduler, because it removes wait intervals in jobs execution. It will basically consume some CPU even when there are no jobs to process.</p></li>
+</ul>
+</li>
+</ul>
+<section id="requirements">
+<h2>Requirements:<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Python <em>version 3 or more</em></p></li>
 <li><p><a class="reference external" href="https://code.google.com/p/mpi4py">MPI4py</a></p></li>
 </ul>
-</div>
-<div class="section" id="installation">
-<h2>Installation:<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="installation">
+<h2>Installation:<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>This mode use pure Python code, you do not need to compile anything: c.f. <a class="reference external" href="https://brainvisa.info/soma-workflow">Soma-workflow main page</a> for installation.</p>
-</div>
-<div class="section" id="configuration">
-<h2>Configuration:<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="configuration">
+<h2>Configuration:<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
 <p>Required items:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>DATABASE_FILE</p></li>
 <li><p>TRANSFERED_FILES_DIR</p></li>
 <li><p>SCHEDULER_TYPE</p></li>
 </ul>
-</div></blockquote>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><strong>SCHEDULER_TYPE must be set to “mpi”</strong></p>
@@ -118,9 +126,9 @@
 <span class="n">LOGIN</span> <span class="o">=</span> <span class="n">my_login_on_titan</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="mpi-workflow-runner-options">
-<h2>MPI_workflow_runner options:<a class="headerlink" href="#mpi-workflow-runner-options" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="mpi-workflow-runner-options">
+<h2>MPI_workflow_runner options:<a class="headerlink" href="#mpi-workflow-runner-options" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python -m soma_workflow.MPI_workflow_runner --help
 Usage: MPI_workflow_runner.py [options]
 
@@ -134,11 +142,31 @@ Options:
                         A job can be restarted several time if it fails. This
                         option specify the number of attempt per job. By
                         default, the jobs are not restarted.
+  --log_level=LOG_LEVEL
+                        override log level. The default is to use the config
+                        file option ENGINE_LOG_LEVEL. Values are those from
+                        the logging module: 50=CRITICAL, 40=ERROR, 30=WARNING,
+                        20=INFO, 10=DEBUG, 0=NOTSET.
+
+  Alpha options:
+    --deploy_epd=EPD_TO_DEPLOY
+                        EPD tarball which will be inflated on each node using
+                        tar.
+    --untar_dir=UNTAR_DIRECTORY
+                        untar directory
 </pre></div>
 </div>
+</section>
+<section id="example-using-a-local-multicore-machine">
+<h2>Example using a local multicore machine:<a class="headerlink" href="#example-using-a-local-multicore-machine" title="Permalink to this heading">¶</a></h2>
+<p>The following will run the workflow in the file <code class="docutils literal notranslate"><span class="pre">$HOME/my_workflow_file</span></code> using 8 processes (1 master + 7 workers) on the local machine configurd as the <code class="docutils literal notranslate"><span class="pre">local_MPI</span></code> resource.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>time mpirun -n 8 python -m soma_workflow.MPI_workflow_runner local_MPI --workflow $HOME/my_workflow_file
+</pre></div>
 </div>
-<div class="section" id="example-using-pbs">
-<h2>Example using PBS:<a class="headerlink" href="#example-using-pbs" title="Permalink to this headline">¶</a></h2>
+<p>Monitoring can be achieved as in other modes, using the <code class="docutils literal notranslate"><span class="pre">soma_workflow_gui</span></code> graphical tool, or using the client API (<a class="reference internal" href="client_API.html#client-api"><span class="std std-ref">Python API</span></a>).</p>
+</section>
+<section id="example-using-pbs">
+<h2>Example using PBS:<a class="headerlink" href="#example-using-pbs" title="Permalink to this heading">¶</a></h2>
 <p>Create a submission script for PBS (example <em>run_workflow.sh</em>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#!/bin/bash
 #PBS -N my_workflow
@@ -173,17 +201,17 @@ Use the following submission script to restart the workflow:</p>
 </pre></div>
 </div>
 <p>As before, use “qsub” to submit the workflow and possibly “qdel” to stop it.</p>
-</div>
-<div class="section" id="current-limitations">
-<h2>Current limitations:<a class="headerlink" href="#current-limitations" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="current-limitations">
+<h2>Current limitations:<a class="headerlink" href="#current-limitations" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>The workflow must contain jobs using only one CPU</p></li>
 <li><p>It is safer to run only one MPI workflow runner at the same time</p></li>
 <li><p>As in the following example, some workflows might result of a waste of CPU time.</p></li>
 </ul>
 <a class="reference internal image-reference" href="_images/sw_low_throughput_wasted_cpus.png"><img alt="_images/sw_low_throughput_wasted_cpus.png" src="_images/sw_low_throughput_wasted_cpus.png" style="width: 814.8px; height: 304.2px;" /></a>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -195,25 +223,32 @@ Use the following submission script to restart the workflow:</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/logo_white_small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">MPI workflow runner —<strong>beta</strong>—</a><ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">MPI workflow runner</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements:</a></li>
 <li><a class="reference internal" href="#installation">Installation:</a></li>
 <li><a class="reference internal" href="#configuration">Configuration:</a></li>
 <li><a class="reference internal" href="#mpi-workflow-runner-options">MPI_workflow_runner options:</a></li>
+<li><a class="reference internal" href="#example-using-a-local-multicore-machine">Example using a local multicore machine:</a></li>
 <li><a class="reference internal" href="#example-using-pbs">Example using PBS:</a></li>
 <li><a class="reference internal" href="#current-limitations">Current limitations:</a></li>
 </ul>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="examples.html"
-                        title="previous chapter">Examples</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="errors_troubleshooting.html"
-                        title="next chapter">Tips, Good Practices and Errors</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="examples.html"
+                          title="previous chapter">Examples</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="errors_troubleshooting.html"
+                          title="next chapter">Tips, Good Practices and Errors</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -225,12 +260,12 @@ Use the following submission script to restart the workflow:</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -250,13 +285,13 @@ Use the following submission script to restart the workflow:</p>
         <li class="right" >
           <a href="examples.html" title="Examples"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">MPI workflow runner —<strong>beta</strong>—</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MPI workflow runner</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>

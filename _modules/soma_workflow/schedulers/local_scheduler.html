@@ -1,21 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>soma_workflow.schedulers.local_scheduler &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <title>soma_workflow.schedulers.local_scheduler &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="../../../_static/icon_small.ico"/>
+    <link rel="icon" href="../../../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -28,7 +27,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">soma_workflow.schedulers.local_scheduler</a></li> 
       </ul>
@@ -106,7 +105,7 @@
 
 <div class="viewcode-block" id="LocalScheduler"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler">[docs]</a><span class="k">class</span> <span class="nc">LocalScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Allow to submit, kill and get the status of jobs.</span>
 <span class="sd">    Run on one machine without dependencies.</span>
 
@@ -155,7 +154,7 @@
     <span class="n">_lasttime</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_lastidle</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="o">=</span><span class="n">default_cpu_number</span><span class="p">(),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="o">=</span><span class="n">default_cpu_number</span><span class="p">(),</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
                  <span class="n">max_proc_nb</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -176,14 +175,22 @@
 
         <span class="k">def</span> <span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_thread_loop</span><span class="p">:</span>
-                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_iterate</span><span class="p">()</span>
-                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_iterate</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scheduler_loop&quot;</span><span class="p">,</span>
                                       <span class="n">target</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span>
                                       <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">setDaemon</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ended_jobs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_process_loop</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_interval</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;poll_thread&#39;</span><span class="p">,</span>
+                                             <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">poll_processes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
         <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="o">.</span><span class="n">end_scheduler_thread</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -205,71 +212,125 @@
     <span class="k">def</span> <span class="nf">end_scheduler_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stop_thread_loop</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
-            <span class="c1"># print(&quot;Soma scheduler thread ended nicely.&quot;)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stop_process_loop</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="c1"># print(&quot;Soma scheduler thread ended nicely.&quot;)</span>
+
+    <span class="k">def</span> <span class="nf">poll_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_process_loop</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="n">processes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">)</span>
+
+            <span class="n">fire_event</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">process</span> <span class="ow">in</span> <span class="n">processes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">ret_value</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">ret_value</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_ended_jobs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">constants</span><span class="o">.</span><span class="n">FINISHED_REGULARLY</span><span class="p">,</span>
+                            <span class="n">ret_value</span><span class="p">,</span>
+                            <span class="kc">None</span><span class="p">,</span>
+                            <span class="kc">None</span><span class="p">)</span>
+                <span class="n">fire_event</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">fire_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_poll_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_poll_interval</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># Nothing to do if the queue is empty and nothing is running</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">:</span>
-            <span class="k">return</span>
+        <span class="c1">## Nothing to do if the queue is empty and nothing is running</span>
+        <span class="c1">#with self._lock:</span>
+            <span class="c1">#if not self._queue and not self._processes:</span>
+                <span class="c1">#return</span>
         <span class="c1"># print(&quot;#############################&quot;)</span>
         <span class="c1"># Control the running jobs</span>
-        <span class="n">ended_jobs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">process</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">):</span>
-            <span class="n">ret_value</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
-            <span class="c1"># print(&quot;job_id &quot; + repr(job_id) + &quot; ret_value &quot; + repr(ret_value))</span>
-            <span class="k">if</span> <span class="n">ret_value</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">ended_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">FINISHED_REGULARLY</span><span class="p">,</span>
-                                           <span class="n">ret_value</span><span class="p">,</span>
-                                           <span class="kc">None</span><span class="p">,</span>
-                                           <span class="kc">None</span><span class="p">)</span>
 
-        <span class="c1"># update for the ended job</span>
-        <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">ended_jobs</span><span class="p">:</span>
-            <span class="c1"># print(&quot;updated job_id &quot; + repr(job_id) + &quot; status DONE&quot;)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">DONE</span>
-            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
+        <span class="n">fire_event</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">ended_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ended_jobs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ended_jobs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_poll_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+            <span class="c1"># update for the ended job</span>
+            <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">ended_jobs</span><span class="p">:</span>
+                <span class="c1"># print(&quot;updated job_id &quot; + repr(job_id) + &quot; status DONE&quot;)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">DONE</span>
+                <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">job</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">job</span><span class="o">.</span><span class="n">signal_end</span><span class="p">:</span>
+                    <span class="n">fire_event</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">continue</span>  <span class="c1"># deleted by another means</span>
 
         <span class="c1"># run new jobs</span>
         <span class="n">skipped_jobs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="c1"># print(&#39;processing queue:&#39;, len(self._queue), file=sys.stderr)</span>
-        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="p">:</span>
-            <span class="n">job_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
-            <span class="c1"># print(&quot;new job &quot; + repr(job.job_id))</span>
-            <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">is_engine_execution</span><span class="p">:</span>
-                <span class="c1"># barrier jobs are not actually run using Popen:</span>
-                <span class="c1"># they succeed immediately.</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">FINISHED_REGULARLY</span><span class="p">,</span>
-                                                 <span class="mi">0</span><span class="p">,</span>
-                                                 <span class="kc">None</span><span class="p">,</span>
-                                                 <span class="kc">None</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">DONE</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">ncpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpu_for_job</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
-                <span class="c1"># print(&#39;job:&#39;, job.command, &#39;, cpus:&#39;, ncpu, file=sys.stderr)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_can_submit_new_job</span><span class="p">(</span><span class="n">ncpu</span><span class="p">):</span>
-                    <span class="c1"># print(&#39;cannot submit.&#39;, file=sys.stderr)</span>
-                    <span class="n">skipped_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>  <span class="c1"># postponed</span>
-                    <span class="k">if</span> <span class="n">ncpu</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># no other job will be able to run now</span>
-                        <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">continue</span>
-                <span class="c1"># print(&#39;submitting.&#39;, file=sys.stderr)</span>
-                <span class="n">process</span> <span class="o">=</span> <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">create_process</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">process</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="s1">&#39;command process is None:&#39;</span> <span class="o">+</span> <span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">EXIT_ABORTED</span><span class="p">,</span>
-                                                     <span class="kc">None</span><span class="p">,</span>
-                                                     <span class="kc">None</span><span class="p">,</span>
-                                                     <span class="kc">None</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">FAILED</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">while</span> <span class="n">queue</span><span class="p">:</span>
+            <span class="n">job_id</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">job</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c1"># print(&quot;new job &quot; + repr(job.job_id))</span>
+                <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">is_engine_execution</span><span class="p">:</span>
+                    <span class="c1"># barrier jobs are not actually run using Popen:</span>
+                    <span class="c1"># they succeed immediately.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">FINISHED_REGULARLY</span><span class="p">,</span>
+                                                    <span class="mi">0</span><span class="p">,</span>
+                                                    <span class="kc">None</span><span class="p">,</span>
+                                                    <span class="kc">None</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">DONE</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">process</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">RUNNING</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="n">skipped_jobs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span>
+                    <span class="n">ncpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpu_for_job</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+                    <span class="c1"># print(&#39;job:&#39;, job.command, &#39;, cpus:&#39;, ncpu, file=sys.stderr)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_can_submit_new_job</span><span class="p">(</span><span class="n">ncpu</span><span class="p">):</span>
+                        <span class="c1"># print(&#39;cannot submit.&#39;, file=sys.stderr)</span>
+                        <span class="n">skipped_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>  <span class="c1"># postponed</span>
+                        <span class="k">if</span> <span class="n">ncpu</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># no other job will be able to run now</span>
+                            <span class="k">break</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                    <span class="c1"># print(&#39;submitting.&#39;, file=sys.stderr)</span>
+                    <span class="n">process</span> <span class="o">=</span> <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">create_process</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">process</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="s1">&#39;command process is None:&#39;</span> <span class="o">+</span> <span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">EXIT_ABORTED</span><span class="p">,</span>
+                                                        <span class="kc">None</span><span class="p">,</span>
+                                                        <span class="kc">None</span><span class="p">,</span>
+                                                        <span class="kc">None</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">FAILED</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">process</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">job</span><span class="o">.</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">RUNNING</span>
+
+        <span class="c1"># here:</span>
+        <span class="c1"># - skipped_jobs contains jobs that could not be set running for</span>
+        <span class="c1">#   lack of available CPUs</span>
+        <span class="c1"># - queue contains remaining jobs when all CPUs have been loaded</span>
+        <span class="c1">#   (then the rest is not processed)</span>
+        <span class="c1"># - self._queue can have been added new jobs in the meantime</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="n">skipped_jobs</span> <span class="o">+</span> <span class="n">queue</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span>
+
+        <span class="k">if</span> <span class="n">fire_event</span><span class="p">:</span>
+            <span class="c1"># signal that we can process more jobs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">jobs_finished_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_poll_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">)</span>
+        <span class="c1">#time.sleep(1)</span>
 
     <span class="k">def</span> <span class="nf">_cpu_for_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
         <span class="n">parallel_job_info</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">parallel_job_info</span>
@@ -281,7 +342,7 @@
 
     <span class="k">def</span> <span class="nf">_can_submit_new_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="n">n</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_cpu_for_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">])</span>
         <span class="n">n</span> <span class="o">+=</span> <span class="n">ncpu</span>
         <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc_nb</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -325,7 +386,7 @@
 
 <div class="viewcode-block" id="LocalScheduler.create_process"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.create_process">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">create_process</span><span class="p">(</span><span class="n">engine_job</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * engine_job *EngineJob*</span>
 
 <span class="sd">        * returns: *Subprocess process*</span>
@@ -337,19 +398,29 @@
         <span class="n">stdout</span> <span class="o">=</span> <span class="n">engine_job</span><span class="o">.</span><span class="n">plain_stdout</span><span class="p">()</span>
         <span class="n">stdout_file</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">stdout</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">stdout</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">stdout_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s1">&#39;exception while opening command stdout:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">stdout</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;exception:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">stderr</span> <span class="o">=</span> <span class="n">engine_job</span><span class="o">.</span><span class="n">plain_stderr</span><span class="p">()</span>
         <span class="n">stderr_file</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">stderr</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">stderr</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">stderr_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">stdout_file</span><span class="p">:</span>
                     <span class="n">stdout_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s1">&#39;exception while opening command stderr:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">stderr</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;exception:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">stdin</span> <span class="o">=</span> <span class="n">engine_job</span><span class="o">.</span><span class="n">plain_stdin</span><span class="p">()</span>
@@ -368,6 +439,10 @@
                     <span class="n">stderr_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">stdout_file</span><span class="p">:</span>
                     <span class="n">stdout_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s1">&#39;exception while opening command stdin:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">stdin</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+                <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;exception:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">working_directory</span> <span class="o">=</span> <span class="n">engine_job</span><span class="o">.</span><span class="n">plain_working_directory</span><span class="p">()</span>
@@ -391,6 +466,8 @@
                 <span class="n">env</span> <span class="o">=</span> <span class="n">env2</span>
             <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;run command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
             <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;with env:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+            <span class="c1"># ensure all args are strings</span>
+            <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">command</span><span class="p">]</span>
             <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span>
                                        <span class="n">stdin</span><span class="o">=</span><span class="n">stdin_file</span><span class="p">,</span>
                                        <span class="n">stdout</span><span class="o">=</span><span class="n">stdout_file</span><span class="p">,</span>
@@ -405,12 +482,13 @@
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s1">&#39;exception while running command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="s1">&#39;exception while starting command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">stderr</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
                 <span class="n">stderr_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">stdout</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
                 <span class="n">stdout_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">stderr_file</span><span class="p">:</span>
                 <span class="n">stderr_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -420,26 +498,31 @@
 
         <span class="k">return</span> <span class="n">process</span></div>
 
-<div class="viewcode-block" id="LocalScheduler.job_submission"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.job_submission">[docs]</a>    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="LocalScheduler.job_submission"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.job_submission">[docs]</a>    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * job *EngineJob*</span>
 <span class="sd">        * return: *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span> <span class="ow">or</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">LocalSchedulerError</span><span class="p">(</span><span class="s2">&quot;Invalid job: no id&quot;</span><span class="p">)</span>
+        <span class="n">drmaa_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">queues</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span> <span class="ow">or</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">LocalSchedulerError</span><span class="p">(</span><span class="s2">&quot;Invalid job: no id&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-            <span class="c1"># print(&quot;job submission &quot; + repr(job.job_id))</span>
-            <span class="n">drmaa_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">drmaa_id</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">job</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">QUEUED_ACTIVE</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">job_id</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">drmaa_id</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+            <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+                <span class="c1"># print(&quot;job submission &quot; + repr(job.job_id))</span>
+                <span class="n">drmaa_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="n">drmaa_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">drmaa_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">drmaa_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">job</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">drmaa_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">QUEUED_ACTIVE</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">job_id</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
                              <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">drmaa_id</span></div>
+        <span class="k">return</span> <span class="n">drmaa_ids</span></div>
 
 <div class="viewcode-block" id="LocalScheduler.get_job_status"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.get_job_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * scheduler_job_id *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
 <span class="sd">        * return: *string*</span>
@@ -452,7 +535,9 @@
         <span class="k">return</span> <span class="n">status</span></div>
 
 <div class="viewcode-block" id="LocalScheduler.get_job_exit_info"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.get_job_exit_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This function is called only once per job by the engine, thus it also deletes references to the job in internal tables.</span>
+
 <span class="sd">        * scheduler_job_id *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
 <span class="sd">        * return: *tuple*</span>
@@ -462,19 +547,21 @@
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="n">exit_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_info</span><span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span><span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">exit_info</span></div>
 
 <div class="viewcode-block" id="LocalScheduler.kill_job"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.kill_job">[docs]</a>    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * scheduler_job_id *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1"># TBI Errors</span>
 
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">scheduler_job_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">:</span>
+            <span class="n">process</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scheduler_job_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">process</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># print(&quot;    =&gt; kill the process &quot;)</span>
-                <span class="n">process</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">have_psutil</span><span class="p">:</span>
                     <span class="n">kill_process_tree</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
                     <span class="c1"># wait for actual termination, to avoid process writing files after</span>
@@ -490,7 +577,10 @@
                         <span class="c1"># kill process group, to kill children processes as well</span>
                         <span class="c1"># see</span>
                         <span class="c1"># http://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true</span>
-                        <span class="n">os</span><span class="o">.</span><span class="n">killpg</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGKILL</span><span class="p">)</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">os</span><span class="o">.</span><span class="n">killpg</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGKILL</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
+                            <span class="k">pass</span>  <span class="c1"># it certainly finished in the meantime</span>
 
                     <span class="c1"># wait for actual termination, to avoid process writing files after</span>
                     <span class="c1"># we return from here.</span>
@@ -514,7 +604,7 @@
 
 
 <div class="viewcode-block" id="kill_process_tree"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.kill_process_tree">[docs]</a><span class="k">def</span> <span class="nf">kill_process_tree</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Kill a process with its children.</span>
 <span class="sd">    Needs psutil to get children list</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -526,14 +616,14 @@
 
 <div class="viewcode-block" id="ConfiguredLocalScheduler"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.ConfiguredLocalScheduler">[docs]</a><span class="k">class</span> <span class="nc">ConfiguredLocalScheduler</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Local scheduler synchronized with a configuration object.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="n">_config</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * config *LocalSchedulerCfg*</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ConfiguredLocalScheduler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -591,12 +681,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -610,14 +700,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">soma_workflow.schedulers.local_scheduler</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>

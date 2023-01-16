@@ -1,21 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client_types &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <title>client_types &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="../_static/icon_small.ico"/>
+    <link rel="icon" href="../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -28,7 +27,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">client_types</a></li> 
       </ul>
@@ -78,7 +77,7 @@
 
 <div class="viewcode-block" id="Job"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job">[docs]</a><span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Job representation.</span>
 
 <span class="sd">    .. note::</span>
@@ -388,7 +387,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Job.commandline_repl"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job.commandline_repl">[docs]</a>    <span class="k">def</span> <span class="nf">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get &quot;processed&quot; commandline list. Each element in the commandline list</span>
 <span class="sd">        which contains a replacement string in the shame %(var)s is replaced</span>
 <span class="sd">        using the param_dict values.</span>
@@ -473,7 +472,7 @@
                   <span class="n">srp_from_ids</span><span class="p">,</span>
                   <span class="n">tmp_from_ids</span><span class="p">,</span>
                   <span class="n">opt_from_ids</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">         * d *dictionary*</span>
 <span class="sd">         * tr_from_id *id -&gt; FileTransfer*</span>
 <span class="sd">         * srp_from_id *id -&gt; SharedResourcePath*</span>
@@ -553,7 +552,7 @@
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
                 <span class="n">tmp_ids</span><span class="p">,</span>
                 <span class="n">opt_ids</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * id_generator *IdGenerator*</span>
 <span class="sd">        * transfer_ids *dict: client.FileTransfer -&gt; int*</span>
 <span class="sd">            This dictonary will be modified.</span>
@@ -699,7 +698,7 @@
 
 <div class="viewcode-block" id="EngineExecutionJob"><a class="viewcode-back" href="../workflow_creation.html#client_types.EngineExecutionJob">[docs]</a><span class="k">class</span> <span class="nc">EngineExecutionJob</span><span class="p">(</span><span class="n">Job</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    EngineExecutionJob: a lightweight job which will not run as a &quot;real&quot; job,</span>
 <span class="sd">    but as a python function, on the engine server side.</span>
 
@@ -735,7 +734,7 @@
 
 <div class="viewcode-block" id="BarrierJob"><a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob">[docs]</a><span class="k">class</span> <span class="nc">BarrierJob</span><span class="p">(</span><span class="n">EngineExecutionJob</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Barrier job: it is a &quot;fake&quot; job which does nothing (and will not become a</span>
 <span class="sd">    real job on the DRMS) but has dependencies.</span>
 <span class="sd">    It may be used to make a dependencies hub, to avoid too many dependencies</span>
@@ -784,7 +783,7 @@
                   <span class="n">srp_from_ids</span><span class="p">,</span>
                   <span class="n">tmp_from_ids</span><span class="p">,</span>
                   <span class="n">opt_from_ids</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">         * d *dictionary*</span>
 <span class="sd">         * tr_from_id *id -&gt; FileTransfer*</span>
 <span class="sd">         * srp_from_id *id -&gt; SharedResourcePath*</span>
@@ -819,7 +818,7 @@
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
                 <span class="n">tmp_ids</span><span class="p">,</span>
                 <span class="n">opt_ids</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * id_generator *IdGenerator*</span>
 <span class="sd">        * transfer_ids *dict: client.FileTransfer -&gt; int*</span>
 <span class="sd">            This dictonary will be modified.</span>
@@ -870,7 +869,7 @@
 
 <span class="k">class</span> <span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Workflow representation.</span>
 
 <span class="sd">    Attributes</span>
@@ -976,7 +975,7 @@
                  <span class="n">env</span><span class="o">=</span><span class="p">{},</span>
                  <span class="n">env_builder_code</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">param_links</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        In Soma-Workflow 3.1, some &quot;jobs outputs&quot; have been added. This concept</span>
 <span class="sd">        is somewhat contradictory with the commandline execution model, which</span>
 <span class="sd">        basically does not produce outputs other than files. To handle this,</span>
@@ -1063,7 +1062,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">add_dependencies_from_links</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">add_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">as_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Concatenates a workflow into the current one.</span>
 
 <span class="sd">        Parameters</span>
@@ -1101,7 +1100,7 @@
         <span class="k">return</span> <span class="n">group</span>
 
     <span class="k">def</span> <span class="nf">add_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Add additional dependencies in the workflow.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
@@ -1111,7 +1110,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__convert_group_dependencies</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_dependencies_from_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Process parameters links and add missing jobs dependencies accordingly</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">deps</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -1166,7 +1165,7 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">param_links</span>
 
     <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The keys must be string to serialize with JSON.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">id_generator</span> <span class="o">=</span> <span class="n">IdGenerator</span><span class="p">()</span>
@@ -1418,7 +1417,7 @@
         <span class="k">return</span> <span class="n">state_dict</span>
 
     <span class="k">def</span> <span class="nf">__group_hubs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Replace a group with a BarrierJob pair for inputs and ouputs).</span>
 <span class="sd">        All jobs inside the group depends on its input hub, and the output hub</span>
 <span class="sd">        depends on all jobs in the group</span>
@@ -1441,7 +1440,7 @@
         <span class="k">return</span> <span class="n">ghubs</span>
 
     <span class="k">def</span> <span class="nf">__group_hubs_recurs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Replace a group with a BarrierJob pair for inputs and ouputs).</span>
 <span class="sd">        Same as __group_hubs() but also create hubs for sub-groups in group</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1457,7 +1456,7 @@
         <span class="k">return</span> <span class="n">ghubs</span>
 
     <span class="k">def</span> <span class="nf">__make_group_hubs_deps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Build and return intra-group dependencies list</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1477,7 +1476,7 @@
         <span class="k">return</span> <span class="n">dependencies</span>
 
     <span class="k">def</span> <span class="nf">__convert_group_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Converts dependencies using groups into barrier jobs when needed</span>
 
 <span class="sd">        Parameters</span>
@@ -1543,7 +1542,7 @@
 
 <span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Hierarchical structure of a workflow.</span>
 
 <span class="sd">    .. note:</span>
@@ -1569,7 +1568,7 @@
     <span class="n">user_storage</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">user_storage</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        @type  elements: sequence of Job and/or Group</span>
 <span class="sd">        @param elements: the elements belonging to the group</span>
 <span class="sd">        @type  name: string</span>
@@ -1623,7 +1622,7 @@
 
 <span class="k">class</span> <span class="nc">SpecialPath</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Abstract base class for special file or directory path, which needs specific handling in the engine.</span>
 
 <span class="sd">    FileTransfer, TemporaryPath, and SharedResourcePath are SpecialPath.</span>
@@ -1670,10 +1669,19 @@
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
 
 <span class="k">class</span> <span class="nc">FileTransfer</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    File/directory transfer representation</span>
 
 <span class="sd">    .. note::</span>
@@ -1761,7 +1769,7 @@
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">client_paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        is_input: bool</span>
@@ -1893,7 +1901,7 @@
 
 <span class="k">class</span> <span class="nc">SharedResourcePath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Representation of path which is valid on either user&#39;s or computing resource</span>
 <span class="sd">    file system.</span>
 
@@ -2027,7 +2035,7 @@
 
 <span class="k">class</span> <span class="nc">TemporaryPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Temporary file representation. This temporary file will never exist on client</span>
 <span class="sd">    side: its filename will be created on server side, used during the workflow</span>
 <span class="sd">    execution, and removed when not used any longer.</span>
@@ -2157,7 +2165,7 @@
 
 <span class="k">class</span> <span class="nc">OptionPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    File with reading or writing parameters given through a URI (or any</span>
 <span class="sd">    other suffix system). The file can be passed as a string or as a</span>
 <span class="sd">    SpecialPath object.</span>
@@ -2481,12 +2489,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -2500,14 +2508,14 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">client_types</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>

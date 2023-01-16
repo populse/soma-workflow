@@ -1,21 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Status list &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Status list &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="_static/icon_small.ico"/>
+    <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Workflow creation API" href="workflow_creation.html" />
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="errors_troubleshooting.html" title="Tips, Good Practices and Errors"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Status list</a></li> 
       </ul>
     </div>  
@@ -46,13 +46,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="status-list">
-<span id="id1"></span><h1>Status list<a class="headerlink" href="#status-list" title="Permalink to this headline">¶</a></h1>
+  <section id="status-list">
+<span id="id1"></span><h1>Status list<a class="headerlink" href="#status-list" title="Permalink to this heading">¶</a></h1>
 <p>Once submitted to Soma-workflow, the jobs, workflows and file transfers are
 associated to statuses which reflect their states in the system. Here is the
 list of possible statuses for each class of objects.</p>
-<div class="section" id="job-status">
-<span id="id2"></span><h2>Job status<a class="headerlink" href="#job-status" title="Permalink to this headline">¶</a></h2>
+<section id="job-status">
+<span id="id2"></span><h2>Job status<a class="headerlink" href="#job-status" title="Permalink to this heading">¶</a></h2>
 <p>Here is the list of the job statuses and the associated icons displayed in the GUI.</p>
 <blockquote>
 <div><dl class="simple">
@@ -82,9 +82,9 @@ stopped and restarted.</p>
 </dd>
 </dl>
 </div></blockquote>
-</div>
-<div class="section" id="job-exit-status">
-<span id="id3"></span><h2>Job exit status<a class="headerlink" href="#job-exit-status" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="job-exit-status">
+<span id="id3"></span><h2>Job exit status<a class="headerlink" href="#job-exit-status" title="Permalink to this heading">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt><strong>finished_regularly</strong></dt><dd><p>The job finished regularly. The exit value is displayed in the GUI and is
@@ -102,9 +102,9 @@ is available from the python API (depending on DRMAA implementation).</p>
 </dd>
 </dl>
 </div></blockquote>
-</div>
-<div class="section" id="workflow-status">
-<span id="id4"></span><h2>Workflow status<a class="headerlink" href="#workflow-status" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="workflow-status">
+<span id="id4"></span><h2>Workflow status<a class="headerlink" href="#workflow-status" title="Permalink to this heading">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt><a class="reference internal" href="_images/no_status.png"><img alt="no_status" src="_images/no_status.png" style="width: 30.0px; height: 30.0px;" /></a> <strong>worklflow_not_started</strong></dt><dd><p>The workflow was not submitted to Soma-workflow.</p>
@@ -130,9 +130,9 @@ The job which ended with success will not be restarted.</p>
 long jobs, you can check yourself the status of the job(s) on the DRMS and
 choose to stop the jobs from the DRMS or not.</p>
 </div>
-</div>
-<div class="section" id="file-transfer-status">
-<span id="id5"></span><h2>File Transfer status<a class="headerlink" href="#file-transfer-status" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="file-transfer-status">
+<span id="id5"></span><h2>File Transfer status<a class="headerlink" href="#file-transfer-status" title="Permalink to this heading">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt><a class="reference internal" href="_images/transfer_files_dont_exist.png"><img alt="tr_dont_exist" src="_images/transfer_files_dont_exist.png" style="width: 30.0px; height: 30.0px;" /></a> <strong>do not exist</strong></dt><dd><p>The file(s) do not exist. For example: output files at the beginning of a
@@ -152,8 +152,8 @@ A transfer ended.</p>
 </dd>
 </dl>
 </div></blockquote>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -165,8 +165,9 @@ A transfer ended.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/logo_white_small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Status list</a><ul>
 <li><a class="reference internal" href="#job-status">Job status</a></li>
 <li><a class="reference internal" href="#job-exit-status">Job exit status</a></li>
@@ -176,12 +177,17 @@ A transfer ended.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="errors_troubleshooting.html"
-                        title="previous chapter">Tips, Good Practices and Errors</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="workflow_creation.html"
-                        title="next chapter">Workflow creation API</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="errors_troubleshooting.html"
+                          title="previous chapter">Tips, Good Practices and Errors</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="workflow_creation.html"
+                          title="next chapter">Workflow creation API</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -193,12 +199,12 @@ A transfer ended.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -218,13 +224,13 @@ A transfer ended.</p>
         <li class="right" >
           <a href="errors_troubleshooting.html" title="Tips, Good Practices and Errors"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Status list</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>

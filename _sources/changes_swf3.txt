@@ -97,4 +97,3 @@ Ex:
     light_mode = 1
     scheduler_type = local_basic
     allowed_python_versions = 3
-

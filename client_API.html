@@ -1,21 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Python API &#8212; soma-workflow version 3.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Python API &#8212; soma-workflow version 3.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     
-    <link rel="shortcut icon" href="_static/icon_small.ico"/>
+    <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Supporting new computing resources: writing a Scheduler implementation" href="scheduler.html" />
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="workflow_creation.html" title="Workflow creation API"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Python API</a></li> 
       </ul>
     </div>  
@@ -46,14 +46,14 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="python-api">
-<span id="client-api"></span><h1>Python API<a class="headerlink" href="#python-api" title="Permalink to this headline">¶</a></h1>
+  <section id="python-api">
+<span id="client-api"></span><h1>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading">¶</a></h1>
 <p>The submission, monitoring and control of Workflow, Job and FileTransfer can be
 done through the client.WorkflowController interface.</p>
 <p>This page presents the documentation of the client.WorkflowController class.</p>
 <dl class="py class">
-<dt id="client.WorkflowController">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">client.</span></code><code class="sig-name descname"><span class="pre">WorkflowController</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">client.</span></span><span class="sig-name descname"><span class="pre">WorkflowController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController" title="Permalink to this definition">¶</a></dt>
 <dd><p>Submission, control and monitoring of Job, FileTransfer and Workflow
 objects.</p>
 <p>Sets up the connection to the computing resource.
@@ -65,22 +65,27 @@ Looks for a soma-workflow configuration file (if not specified in the
 resource.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Identifier of the computing resource to connect to.
+<li><p><strong>resource_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Identifier of the computing resource to connect to.
 If None, the number of cpu of the current machine is detected and
 the basic scheduler is lauched.</p></li>
-<li><p><strong>login</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the computing resource is remote.</p></li>
-<li><p><strong>password</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the computing resource is remote and not RSA key where
+<li><p><strong>login</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the computing resource is remote.</p></li>
+<li><p><strong>password</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the computing resource is remote and not RSA key where
 configured to log on the remote machine with ssh.</p></li>
 <li><p><strong>config</strong> (<em>configuration.Configuration</em>) – Optional configuration.</p></li>
-<li><p><strong>rsa_key_pass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the RSA key is protected with a password.</p></li>
+<li><p><strong>rsa_key_pass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the RSA key is protected with a password.</p></li>
+<li><p><strong>isolated_light_mode</strong> (<em>None</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a><em>, or </em><em>True</em>) – if not None, work in a custom soma-workflow directory (database,
+transfers, temporary files…). If the isolated_light_mode
+parameter value is True, then generate a temporary directory for
+that. Otherwise the parameter should be a directory name which will
+be used instead of the default one.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<div class="contents local topic" id="workflowcontroller-api">
+<nav class="contents local" id="workflowcontroller-api">
 <p class="topic-title">WorkflowController API</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#setup-the-connection-with-the-computing-resource" id="id4">Setup the connection with the computing resource</a></p></li>
@@ -102,12 +107,12 @@ configured to log on the remote machine with ssh.</p></li>
 </li>
 <li><p><a class="reference internal" href="#helper" id="id15">Helper</a></p></li>
 </ul>
-</div>
-<div class="section" id="setup-the-connection-with-the-computing-resource">
-<h2><a class="toc-backref" href="#id4">Setup the connection with the computing resource</a><a class="headerlink" href="#setup-the-connection-with-the-computing-resource" title="Permalink to this headline">¶</a></h2>
+</nav>
+<section id="setup-the-connection-with-the-computing-resource">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Setup the connection with the computing resource</a><a class="headerlink" href="#setup-the-connection-with-the-computing-resource" title="Permalink to this heading">¶</a></h2>
 <dl class="py method">
-<dt id="client.WorkflowController.__init__">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">__init__</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsa_key_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.__init__" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.__init__">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsa_key_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isolated_light_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets up the connection to the computing resource.
 Looks for a soma-workflow configuration file (if not specified in the
 <em>config</em> argument).</p>
@@ -117,135 +122,137 @@ Looks for a soma-workflow configuration file (if not specified in the
 resource.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Identifier of the computing resource to connect to.
+<li><p><strong>resource_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Identifier of the computing resource to connect to.
 If None, the number of cpu of the current machine is detected and
 the basic scheduler is lauched.</p></li>
-<li><p><strong>login</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the computing resource is remote.</p></li>
-<li><p><strong>password</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the computing resource is remote and not RSA key where
+<li><p><strong>login</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the computing resource is remote.</p></li>
+<li><p><strong>password</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the computing resource is remote and not RSA key where
 configured to log on the remote machine with ssh.</p></li>
 <li><p><strong>config</strong> (<em>configuration.Configuration</em>) – Optional configuration.</p></li>
-<li><p><strong>rsa_key_pass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Required if the RSA key is protected with a password.</p></li>
+<li><p><strong>rsa_key_pass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Required if the RSA key is protected with a password.</p></li>
+<li><p><strong>isolated_light_mode</strong> (<em>None</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a><em>, or </em><em>True</em>) – if not None, work in a custom soma-workflow directory (database,
+transfers, temporary files…). If the isolated_light_mode
+parameter value is True, then generate a temporary directory for
+that. Otherwise the parameter should be a directory name which will
+be used instead of the default one.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="submission-registration">
-<h2><a class="toc-backref" href="#id5">Submission / Registration</a><a class="headerlink" href="#submission-registration" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="submission-registration">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Submission / Registration</a><a class="headerlink" href="#submission-registration" title="Permalink to this heading">¶</a></h2>
 <dl class="py method">
-<dt id="client.WorkflowController.submit_workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">submit_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expiration_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.submit_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.submit_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.submit_workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">submit_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expiration_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.submit_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.submit_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Submits a workflow and returns a workflow identifier.</p>
 <p>Raises <em>WorkflowError</em> or <em>JobError</em> if the workflow is not correct.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow</strong> (<a class="reference internal" href="workflow_creation.html#client.Workflow" title="client.Workflow"><em>client.Workflow</em></a>) – Workflow description.</p></li>
 <li><p><strong>expiration_date</strong> (<em>datetime.datetime</em>) – After this date the workflow will be deleted.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Optional workflow name.</p></li>
-<li><p><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Optional name of the queue where to submit jobs. If it is not
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Optional workflow name.</p></li>
+<li><p><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Optional name of the queue where to submit jobs. If it is not
 specified the jobs will be submitted to the default queue.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Workflow_identifier</strong></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.register_transfer">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">register_transfer</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_transfer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.register_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.register_transfer" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.register_transfer">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">register_transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_transfer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.register_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.register_transfer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a file transfer which is not part of a workflow and returns a
 file transfer identifier.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>file_transfer</strong> (<a class="reference internal" href="workflow_creation.html#client.FileTransfer" title="client.FileTransfer"><em>client.FileTransfer</em></a>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>transfer</strong></p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>EngineTransfer</p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="user-s-workflows-jobs-and-filetransfers-retrieval">
-<h2><a class="toc-backref" href="#id6">User’s Workflows, Jobs, and FileTransfers retrieval</a><a class="headerlink" href="#user-s-workflows-jobs-and-filetransfers-retrieval" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="user-s-workflows-jobs-and-filetransfers-retrieval">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">User’s Workflows, Jobs, and FileTransfers retrieval</a><a class="headerlink" href="#user-s-workflows-jobs-and-filetransfers-retrieval" title="Permalink to this heading">¶</a></h2>
 <dl class="py method">
-<dt id="client.WorkflowController.workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raises <em>UnknownObjectError</em> if the workflow_id is not valid</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>workflow_id</strong> (<em>workflow_identifier</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="workflow_creation.html#client.Workflow" title="client.Workflow">Workflow</a></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="workflow_creation.html#client.Workflow" title="client.Workflow">Workflow</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.workflows">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">workflows</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflows" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.workflows">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">workflows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lists the identifiers and general information about all the workflows
 submitted by the user, or about the workflows specified in the
 <em>workflow_ids</em> argument.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>workflow_ids</strong> (<em>sequence of workflow identifiers</em>) – </p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>workflow_ids</strong> (<em>sequence</em><em> of </em><em>workflow identifiers</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>workflows</strong> – workflow_id -&gt; (workflow_name, expiration_date)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dictionary: workflow identifier -&gt; tuple(date, string)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.jobs">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">jobs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.jobs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.jobs">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.jobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lists the identifiers and general information about all the jobs
 submitted by the user and which are not part of a workflow, or about
 the jobs specified in the <em>job_ids</em> argument.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>job_ids</strong> (<em>sequence of job identifiers</em>) – </p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job_ids</strong> (<em>sequence</em><em> of </em><em>job identifiers</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>jobs</strong> – job_id -&gt; (name, command, submission date)</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dictionary: job identifiers -&gt; tuple(string, string, date)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.transfers">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">transfers</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfers" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.transfers">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">transfers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lists the identifiers and information about all the user’s file
 transfers which are not part of a workflow or about the file transfers
 specified in the <em>transfer_ids</em> argument.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>transfer_ids</strong> (<em>sequence of FileTransfer identifiers</em>) – </p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>transfer_ids</strong> (<em>sequence</em><em> of </em><em>FileTransfer identifiers</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><p><strong>transfers</strong> –</p>
 <dl class="simple">
 <dt>transfer_id -&gt; (</dt><dd><ul class="simple">
@@ -261,54 +268,54 @@ or None)</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dictionary: str -&gt; tuple(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a>, date, <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a> or sequence of str)</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary: str -&gt; tuple(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)">str</a>, date, None or sequence of <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)">str</a>)</p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="monitoring">
-<h2><a class="toc-backref" href="#id7">Monitoring</a><a class="headerlink" href="#monitoring" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="workflows">
-<h3><a class="toc-backref" href="#id8">Workflows</a><a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="monitoring">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Monitoring</a><a class="headerlink" href="#monitoring" title="Permalink to this heading">¶</a></h2>
+<section id="workflows">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Workflows</a><a class="headerlink" href="#workflows" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.workflow_status">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">workflow_status</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow_status" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.workflow_status">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">workflow_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raises <em>UnknownObjectError</em> if the workflow_id is not valid</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>status</strong> – Status of the workflow: see <a class="reference internal" href="status_list.html#workflow-status"><span class="std std-ref">Workflow status</span></a> or the
 constants.WORKFLOW_STATUS list.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a> or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)">str</a> or None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.workflow_elements_status">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">workflow_elements_status</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_drms_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow_elements_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow_elements_status" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.workflow_elements_status">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">workflow_elements_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_drms_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.workflow_elements_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.workflow_elements_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets back the status of all the workflow elements at once, minimizing
 the communication with the server and request to the database.
 TO DO =&gt; make it more user friendly.</p>
 <p>Note: in Soma-Workflow 3.0, the last job info (drmaa_id) has been added
 to job status tuple.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow_identifier</em>) – </p></li>
-<li><p><strong>with_drms_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em> (</em><em>optional</em><em>, </em><em>default=True</em><em>)</em>) – if True the DRMS id (drmaa_id) is also included in the returned
+<li><p><strong>with_drms_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em> (</em><em>optional</em><em>, </em><em>default=True</em><em>)</em>) – if True the DRMS id (drmaa_id) is also included in the returned
 tuple for each job. This info has been added in soma_workflow 3.0
 and is thus optional to avoid breaking compatibility with earlier
 versions.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>status</strong> (<em>tuple:</em>) –</p>
 <ul>
@@ -341,17 +348,17 @@ versions.</p></li>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="jobs">
-<h3><a class="toc-backref" href="#id9">Jobs</a><a class="headerlink" href="#jobs" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="jobs">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Jobs</a><a class="headerlink" href="#jobs" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.job_status">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">job_status</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.job_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.job_status" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.job_status">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">job_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.job_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.job_status" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>job_id</strong> (<em>job identifier</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>status</strong> (<em>str</em>) – Status of the job: see <a class="reference internal" href="status_list.html#job-status"><span class="std std-ref">Job status</span></a> or the list
 constants.JOB_STATUS.</p></li>
@@ -363,14 +370,14 @@ constants.JOB_STATUS.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.job_termination_status">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">job_termination_status</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.job_termination_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.job_termination_status" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.job_termination_status">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">job_termination_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.job_termination_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.job_termination_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Information related to the end of the job.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>job_id</strong> (<em>job identifier</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>status</strong> (<em>tuple(str, int or None, str or None, str) or None</em>) –</p>
 <ul>
@@ -396,34 +403,34 @@ implementation.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.retrieve_job_stdouterr">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">retrieve_job_stdouterr</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdout_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stderr_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.retrieve_job_stdouterr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.retrieve_job_stdouterr" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.retrieve_job_stdouterr">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">retrieve_job_stdouterr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdout_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stderr_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.retrieve_job_stdouterr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.retrieve_job_stdouterr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copies the job standard output and error to specified file.</p>
 <p>Raises <em>UnknownObjectError</em> if the job_id is not valid</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>job_id</strong> (<em>job identifier</em>) – </p></li>
-<li><p><strong>stdout_file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Path of the file where to copy the standard output.</p></li>
-<li><p><strong>stderr_file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Path of the file where to copy the standard error.</p></li>
-<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The file is transfered piece by piece of size buffer_size.</p></li>
+<li><p><strong>stdout_file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Path of the file where to copy the standard output.</p></li>
+<li><p><strong>stderr_file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Path of the file where to copy the standard error.</p></li>
+<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The file is transfered piece by piece of size buffer_size.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="file-transfers">
-<h3><a class="toc-backref" href="#id10">File Transfers</a><a class="headerlink" href="#file-transfers" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="file-transfers">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">File Transfers</a><a class="headerlink" href="#file-transfers" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.transfer_status">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">transfer_status</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfer_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfer_status" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.transfer_status">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">transfer_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfer_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfer_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>File transfer status and information related to the transfer progress.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>transfer_id</strong> (<em>transfer identifier</em>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>status</strong> (<em>tuple(transfer_status or None, tuple or None)</em>) –</p>
 <ul>
@@ -446,46 +453,46 @@ transfer.</p></li>
 </dl>
 </dd></dl>
 
-</div>
-</div>
-<div class="section" id="control">
-<h2><a class="toc-backref" href="#id11">Control</a><a class="headerlink" href="#control" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id1">
-<h3><a class="toc-backref" href="#id12">Workflows</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+</section>
+</section>
+<section id="control">
+<h2><a class="toc-backref" href="#id11" role="doc-backlink">Control</a><a class="headerlink" href="#control" title="Permalink to this heading">¶</a></h2>
+<section id="id1">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Workflows</a><a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.stop_workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">stop_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.stop_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.stop_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.stop_workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">stop_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.stop_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.stop_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stops a workflow.
 The running jobs will be killed.
 The jobs in queues will be removed from queues.
 It will be possible to restart the workflow afterwards.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>success</strong> – returns True if the running jobs were killed and False
 if some jobs are possibly still running on the computing resource
 despite the workflow was stopped.</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.restart_workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">restart_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.restart_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.restart_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.restart_workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">restart_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.restart_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.restart_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Restarts the jobs of the workflow which failed. The jobs will be
 submitted again.
 The workflow status has to be constants.WORKFLOW_DONE.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
-<li><p><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Optional name of the queue where to submit jobs. If it is not
+<li><p><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – Optional name of the queue where to submit jobs. If it is not
 specified the jobs will be submitted to the default queue.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>success</strong> (<em>bool</em>) – True if some jobs were restarted.</p></li>
 <li><p><em>Raises *UnknownObjectError</em> if the workflow_id is not valid*</p></li>
@@ -496,8 +503,8 @@ specified the jobs will be submitted to the default queue.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.delete_workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">delete_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.delete_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.delete_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.delete_workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">delete_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.delete_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.delete_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes the workflow and all its associated elements (FileTransfers and
 Jobs). The worklfow_id will become invalid and can not be used anymore.
 The workflow jobs which are running will be killed.
@@ -507,13 +514,13 @@ properly it is deleted from Soma-workflow database. However, if some
 jobs are still running they are not be killed. In this case the return
 value is False.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow_identifier</em>) – </p></li>
-<li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – </p></li>
+<li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>success</strong> (<em>bool</em>)</p></li>
 <li><p><em>Raises *UnknownObjectError</em> if the workflow_id is not valid*</p></li>
@@ -524,17 +531,17 @@ value is False.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.change_workflow_expiration_date">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">change_workflow_expiration_date</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_expiration_date</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.change_workflow_expiration_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.change_workflow_expiration_date" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.change_workflow_expiration_date">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">change_workflow_expiration_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_expiration_date</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.change_workflow_expiration_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.change_workflow_expiration_date" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets a new expiration date for the workflow.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
-<li><p><strong>new_expiration_date</strong> (<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.9)"><em>datetime.datetime</em></a>) – </p></li>
+<li><p><strong>new_expiration_date</strong> (<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.11)"><em>datetime.datetime</em></a>) – </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>success</strong> (<em>bool</em>) – True if the expiration date was changed.</p></li>
 <li><p><em>Raises *UnknownObjectError</em> if the workflow_id is not valid*</p></li>
@@ -545,34 +552,34 @@ value is False.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.wait_workflow">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">wait_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.wait_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.wait_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.wait_workflow">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">wait_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.wait_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.wait_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Waits for the specified workflow to finish.</p>
 <p>Raises <em>UnknownObjectError</em> if the job_id is not valid</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – Jobs to wait for.</p></li>
-<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The call to wait_job exits before timeout seconds.
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The call to wait_job exits before timeout seconds.
 A negative value means that the method will wait indefinetely.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="id2">
-<h3><a class="toc-backref" href="#id13">Jobs</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">Jobs</a><a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.wait_job">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">wait_job</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.wait_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.wait_job" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.wait_job">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">wait_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.wait_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.wait_job" title="Permalink to this definition">¶</a></dt>
 <dd><p>Waits for all the specified jobs to finish.</p>
 <p>Raises <em>UnknownObjectError</em> if the job_id is not valid</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>job_ids</strong> (<em>sequence of job identifier</em>) – Jobs to wait for.</p></li>
-<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The call to wait_job exits before timeout seconds.
+<li><p><strong>job_ids</strong> (<em>sequence</em><em> of </em><em>job identifier</em>) – Jobs to wait for.</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The call to wait_job exits before timeout seconds.
 A negative value means that the method will wait indefinetely.</p></li>
 </ul>
 </dd>
@@ -580,16 +587,16 @@ A negative value means that the method will wait indefinetely.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.restart_jobs">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">restart_jobs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job_ids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.restart_jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.restart_jobs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.restart_jobs">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">restart_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job_ids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.restart_jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.restart_jobs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</div>
-<div class="section" id="id3">
-<h3><a class="toc-backref" href="#id14">File Transfers</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">File Transfers</a><a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
 <dl class="py method">
-<dt id="client.WorkflowController.transfer_files">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">transfer_files</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfer_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfer_files" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.transfer_files">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">transfer_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.transfer_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.transfer_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfer file(s) associated to the transfer_id.
 If the files are only located on the client side (that is the transfer
 status is constants.FILES_ON_CLIENT) the file(s) will be transfered
@@ -599,15 +606,15 @@ transfer status is constants.FILES_ON_CR or
 constants.FILES_ON_CLIENT_AND_CR)
 the files will be transfered from the computing resource to the client.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>transfer_id</strong> (<em>FileTransfer identifier</em>) – </p></li>
-<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
+<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
 by piece. The size of each piece can be tuned using the buffer_size
 argument.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>success</strong> (<em>bool</em>) – The transfer was done. (TBI right error management)</p></li>
 <li><p><em>Raises *UnknownObjectError</em> if the transfer_id is not valid*</p></li>
@@ -618,8 +625,8 @@ argument.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.WorkflowController.delete_transfer">
-<code class="sig-prename descclassname"><span class="pre">WorkflowController.</span></code><code class="sig-name descname"><span class="pre">delete_transfer</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.delete_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.delete_transfer" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.WorkflowController.delete_transfer">
+<span class="sig-prename descclassname"><span class="pre">WorkflowController.</span></span><span class="sig-name descname"><span class="pre">delete_transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfer_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#WorkflowController.delete_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.WorkflowController.delete_transfer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes the FileTransfer and the associated files and directories on
 the computing resource side. The transfer_id will become invalid and
 can not be used anymore. If some jobs reference the FileTransfer as an
@@ -628,39 +635,39 @@ as soon as these jobs will be deleted.</p>
 <p>Raises <em>UnknownObjectError</em> if the transfer_id is not valid</p>
 </dd></dl>
 
-</div>
-</div>
-<div class="section" id="helper">
-<h2><a class="toc-backref" href="#id15">Helper</a><a class="headerlink" href="#helper" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="helper">
+<h2><a class="toc-backref" href="#id15" role="doc-backlink">Helper</a><a class="headerlink" href="#helper" title="Permalink to this heading">¶</a></h2>
 <dl class="py method">
-<dt id="client.Helper.list_failed_jobs">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">list_failed_jobs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_aborted_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_user_killed_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_statuses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.list_failed_jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.list_failed_jobs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.list_failed_jobs">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">list_failed_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_aborted_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_user_killed_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_statuses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.list_failed_jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.list_failed_jobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>To spot the problematic jobs in a workflow.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
-<li><p><strong>include_aborted_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Include the jobs which exit status is constants.EXIT_ABORTED
+<li><p><strong>include_aborted_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – Include the jobs which exit status is constants.EXIT_ABORTED
 and constants.EXIT_NOTRUN</p></li>
-<li><p><strong>include_user_killed_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Include the jobs which exit status is constants.USER_KILLED</p></li>
-<li><p><strong>include_statuses</strong> (<em>sequence</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><em>None</em></a>) – Get failed jobs with exit status in this list/set. Ignore
+<li><p><strong>include_user_killed_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – Include the jobs which exit status is constants.USER_KILLED</p></li>
+<li><p><strong>include_statuses</strong> (<em>sequence</em><em> or </em><em>None</em>) – Get failed jobs with exit status in this list/set. Ignore
 <code class="docutils literal notranslate"><span class="pre">include_aborted_jobs</span></code> and <code class="docutils literal notranslate"><span class="pre">include_user_killed_jobs</span></code>
 parameters.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>jobs</strong> – Returns the list of id of job which status is constants.FAILED
 or which exit value is not 0.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>list of job identifier</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)">list</a> of job identifier</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.delete_all_workflows">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">delete_all_workflows</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.delete_all_workflows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.delete_all_workflows" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.delete_all_workflows">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">delete_all_workflows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.delete_all_workflows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.delete_all_workflows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete all the workflows.
 If force is set to True: the call will block until the workflows are
 deleted. With force set to True, if a workflow can not be deleted
@@ -668,27 +675,27 @@ properly it is deleted from Soma-workflow database. However, if some
 jobs are still running they will not be killed. In this case the return
 value is False.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>wf_ctrl</strong> (<a class="reference internal" href="#client.WorkflowController" title="client.WorkflowController"><em>client.WorkflowController</em></a>) – </p></li>
-<li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – </p></li>
+<li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>success</strong></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.wait_workflow">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">wait_workflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.wait_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.wait_workflow" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.wait_workflow">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">wait_workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.wait_workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.wait_workflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Waits for workflow execution to end.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
 <li><p><strong>wf_ctrl</strong> (<a class="reference internal" href="#client.WorkflowController" title="client.WorkflowController"><em>client.WorkflowController</em></a>) – </p></li>
@@ -698,15 +705,15 @@ value is False.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.transfer_input_files">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">transfer_input_files</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.transfer_input_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.transfer_input_files" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.transfer_input_files">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">transfer_input_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.transfer_input_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.transfer_input_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfers all the input files of a workflow.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
 <li><p><strong>wf_ctrl</strong> (<a class="reference internal" href="#client.WorkflowController" title="client.WorkflowController"><em>client.WorkflowController</em></a>) – </p></li>
-<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
+<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
 by piece. The size of each piece can be tuned using the buffer_size
 argument.</p></li>
 </ul>
@@ -715,16 +722,16 @@ argument.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.transfer_output_files">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">transfer_output_files</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.transfer_output_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.transfer_output_files" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.transfer_output_files">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">transfer_output_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workflow_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">262144</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.transfer_output_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.transfer_output_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfers all the output files of a workflow which are ready to
 transfer.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>workflow_id</strong> (<em>workflow identifier</em>) – </p></li>
 <li><p><strong>wf_ctrl</strong> (<a class="reference internal" href="#client.WorkflowController" title="client.WorkflowController"><em>client.WorkflowController</em></a>) – </p></li>
-<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
+<li><p><strong>buffer_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Depending on the transfer method, the files can be transfered piece
 by piece. The size of each piece can be tuned using the buffer_size
 argument.</p></li>
 </ul>
@@ -733,15 +740,15 @@ argument.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.serialize">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">serialize</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workflow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.serialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.serialize" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.serialize">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workflow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.serialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.serialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves a workflow to a file.
 Uses JSON format.</p>
 <p>Raises <em>SerializationError</em> in case of failure</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – </p></li>
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – </p></li>
 <li><p><strong>workflow</strong> (<a class="reference internal" href="workflow_creation.html#client.Workflow" title="client.Workflow"><em>client.Workflow</em></a>) – </p></li>
 </ul>
 </dd>
@@ -749,16 +756,16 @@ Uses JSON format.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.unserialize">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">unserialize</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.unserialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.unserialize" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.unserialize">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">unserialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.unserialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.unserialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a workflow from a file.
 Opens JSON format or pickle (see the method:
 Helper.convert_wf_file_for_p2_5).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – </p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>workflow</strong> (<em>client.Workflow</em>)</p></li>
 <li><p><em>Raises *SerializationError</em> in case of failure*</p></li>
@@ -769,15 +776,15 @@ Helper.convert_wf_file_for_p2_5).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="client.Helper.convert_wf_file_for_p2_5">
-<em class="property"><span class="pre">static</span> </em><code class="sig-prename descclassname"><span class="pre">Helper.</span></code><code class="sig-name descname"><span class="pre">convert_wf_file_for_p2_5</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_file_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.convert_wf_file_for_p2_5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.convert_wf_file_for_p2_5" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="client.Helper.convert_wf_file_for_p2_5">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Helper.</span></span><span class="sig-name descname"><span class="pre">convert_wf_file_for_p2_5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_file_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/client.html#Helper.convert_wf_file_for_p2_5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Helper.convert_wf_file_for_p2_5" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method requires Python &gt;= 2.6.
 It converts a workflow file created using Python &gt;= 2.6 to workflow
 file usable in Python 2.5.</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -789,35 +796,92 @@ file usable in Python 2.5.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/logo_white_small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Python API</a><ul>
-<li><a class="reference internal" href="#setup-the-connection-with-the-computing-resource">Setup the connection with the computing resource</a></li>
-<li><a class="reference internal" href="#submission-registration">Submission / Registration</a></li>
-<li><a class="reference internal" href="#user-s-workflows-jobs-and-filetransfers-retrieval">User’s Workflows, Jobs, and FileTransfers retrieval</a></li>
+<li><a class="reference internal" href="#client.WorkflowController"><code class="docutils literal notranslate"><span class="pre">WorkflowController</span></code></a></li>
+<li><a class="reference internal" href="#setup-the-connection-with-the-computing-resource">Setup the connection with the computing resource</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.__init__"><code class="docutils literal notranslate"><span class="pre">WorkflowController.__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#submission-registration">Submission / Registration</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.submit_workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.submit_workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.register_transfer"><code class="docutils literal notranslate"><span class="pre">WorkflowController.register_transfer()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#user-s-workflows-jobs-and-filetransfers-retrieval">User’s Workflows, Jobs, and FileTransfers retrieval</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.workflows"><code class="docutils literal notranslate"><span class="pre">WorkflowController.workflows()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.jobs"><code class="docutils literal notranslate"><span class="pre">WorkflowController.jobs()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.transfers"><code class="docutils literal notranslate"><span class="pre">WorkflowController.transfers()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#monitoring">Monitoring</a><ul>
-<li><a class="reference internal" href="#workflows">Workflows</a></li>
-<li><a class="reference internal" href="#jobs">Jobs</a></li>
-<li><a class="reference internal" href="#file-transfers">File Transfers</a></li>
+<li><a class="reference internal" href="#workflows">Workflows</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.workflow_status"><code class="docutils literal notranslate"><span class="pre">WorkflowController.workflow_status()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.workflow_elements_status"><code class="docutils literal notranslate"><span class="pre">WorkflowController.workflow_elements_status()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jobs">Jobs</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.job_status"><code class="docutils literal notranslate"><span class="pre">WorkflowController.job_status()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.job_termination_status"><code class="docutils literal notranslate"><span class="pre">WorkflowController.job_termination_status()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.retrieve_job_stdouterr"><code class="docutils literal notranslate"><span class="pre">WorkflowController.retrieve_job_stdouterr()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#file-transfers">File Transfers</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.transfer_status"><code class="docutils literal notranslate"><span class="pre">WorkflowController.transfer_status()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#control">Control</a><ul>
-<li><a class="reference internal" href="#id1">Workflows</a></li>
-<li><a class="reference internal" href="#id2">Jobs</a></li>
-<li><a class="reference internal" href="#id3">File Transfers</a></li>
+<li><a class="reference internal" href="#id1">Workflows</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.stop_workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.stop_workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.restart_workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.restart_workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.delete_workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.delete_workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.change_workflow_expiration_date"><code class="docutils literal notranslate"><span class="pre">WorkflowController.change_workflow_expiration_date()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.wait_workflow"><code class="docutils literal notranslate"><span class="pre">WorkflowController.wait_workflow()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#helper">Helper</a></li>
+<li><a class="reference internal" href="#id2">Jobs</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.wait_job"><code class="docutils literal notranslate"><span class="pre">WorkflowController.wait_job()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.restart_jobs"><code class="docutils literal notranslate"><span class="pre">WorkflowController.restart_jobs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id3">File Transfers</a><ul>
+<li><a class="reference internal" href="#client.WorkflowController.transfer_files"><code class="docutils literal notranslate"><span class="pre">WorkflowController.transfer_files()</span></code></a></li>
+<li><a class="reference internal" href="#client.WorkflowController.delete_transfer"><code class="docutils literal notranslate"><span class="pre">WorkflowController.delete_transfer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#helper">Helper</a><ul>
+<li><a class="reference internal" href="#client.Helper.list_failed_jobs"><code class="docutils literal notranslate"><span class="pre">Helper.list_failed_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.delete_all_workflows"><code class="docutils literal notranslate"><span class="pre">Helper.delete_all_workflows()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.wait_workflow"><code class="docutils literal notranslate"><span class="pre">Helper.wait_workflow()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.transfer_input_files"><code class="docutils literal notranslate"><span class="pre">Helper.transfer_input_files()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.transfer_output_files"><code class="docutils literal notranslate"><span class="pre">Helper.transfer_output_files()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.serialize"><code class="docutils literal notranslate"><span class="pre">Helper.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.unserialize"><code class="docutils literal notranslate"><span class="pre">Helper.unserialize()</span></code></a></li>
+<li><a class="reference internal" href="#client.Helper.convert_wf_file_for_p2_5"><code class="docutils literal notranslate"><span class="pre">Helper.convert_wf_file_for_p2_5()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="workflow_creation.html"
-                        title="previous chapter">Workflow creation API</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="scheduler.html"
-                        title="next chapter">Supporting new computing resources: writing a Scheduler implementation</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="workflow_creation.html"
+                          title="previous chapter">Workflow creation API</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="scheduler.html"
+                          title="next chapter">Supporting new computing resources: writing a Scheduler implementation</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -829,12 +893,12 @@ file usable in Python 2.5.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -854,13 +918,13 @@ file usable in Python 2.5.</p>
         <li class="right" >
           <a href="workflow_creation.html" title="Workflow creation API"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">soma-workflow version 3.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Python API</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>
