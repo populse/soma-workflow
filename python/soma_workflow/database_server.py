@@ -965,6 +965,8 @@ class WorkflowDatabaseServer(object):
             todo.append(directory_path)
         while todo:
             directory_path = todo.pop(0)
+            if not os.path.exists(directory_path):
+                continue
             for name in os.listdir(directory_path):
                 engine_path = os.path.join(directory_path, name)
                 # self.logger.debug('test engine path: %s' % engine_path)
