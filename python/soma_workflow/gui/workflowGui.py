@@ -600,13 +600,15 @@ class Controller(object):
                        login,
                        password,
                        rsa_key_pass,
-                       config=None):
+                       config=None,
+                       isolated_light_mode=None):
         print("Lauching workflow controller")
         wf_ctrl = WorkflowController(resource_id=resource_id,
                                      login=login,
                                      password=password,
                                      config=config,
-                                     rsa_key_pass=rsa_key_pass)
+                                     rsa_key_pass=rsa_key_pass,
+                                     isolated_light_mode=isolated_light_mode)
         return wf_ctrl
 
     @staticmethod
@@ -1345,7 +1347,8 @@ class SomaWorkflowWidget(QtGui.QWidget):
                  flags=0,
                  config_file=None,
                  db_file=None,
-                 interactive=False):
+                 interactive=False,
+                 isolated_light_mode=None):
 
         super(SomaWorkflowWidget, self).__init__(parent)
 
@@ -1422,6 +1425,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.connection_dlg.rejected.connect(self.close)
 
         self.db_file = db_file
+        self.isolated_light_mode = isolated_light_mode
 
         # First connection:
         # Try to connect directly:
@@ -1512,11 +1516,13 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     and self.db_file is not None:
                 config._database_file = self.db_file
         try:
-            wf_ctrl = Controller.get_connection(resource_id,
-                                                login,
-                                                password,
-                                                rsa_key_pass,
-                                                config=config)
+            wf_ctrl = Controller.get_connection(
+                resource_id,
+                login,
+                password,
+                rsa_key_pass,
+                config=config,
+                isolated_light_mode=self.isolated_light_mode)
             QtGui.QApplication.restoreOverrideCursor()
         except ConfigurationError as e:
             QtGui.QApplication.restoreOverrideCursor()
@@ -1942,10 +1948,12 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
             QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             try:
-                wf_ctrl = Controller.get_connection(resource_id,
-                                                    login,
-                                                    password,
-                                                    rsa_key_pass)
+                wf_ctrl = Controller.get_connection(
+                    resource_id,
+                    login,
+                    password,
+                    rsa_key_pass,
+                    isolated_light_mode=self.isolated_light_mode)
                 QtGui.QApplication.restoreOverrideCursor()
             except ConfigurationError as e:
                 QtGui.QApplication.restoreOverrideCursor()
@@ -2323,7 +2331,8 @@ class MainWindow(QtGui.QMainWindow):
                  flags=0,
                  config_file=None,
                  db_file=None,
-                 interactive=False):
+                 interactive=False,
+                 isolated_light_mode=None):
         '''
         Parameters
         ----------
@@ -2360,7 +2369,9 @@ class MainWindow(QtGui.QMainWindow):
                                             flags,
                                             config_file=config_file,
                                             db_file=db_file,
-                                            interactive=interactive)
+                                            interactive=interactive,
+                                            isolated_light_mode
+                                                =isolated_light_mode)
 
         if True:
             self.mini_widget = SomaWorkflowMiniWidget(self.model,
