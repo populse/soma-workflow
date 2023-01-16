@@ -2,24 +2,11 @@ sudo: false
 
 matrix:
   include:
-    - os: osx
-      language: generic
-      name: python 3.7
     - os: linux
       language: python
-      name: python 2.7
+      name: python 3.10
       python:
-        - 2.7
-    - os: linux
-      language: python
-      name: python 3.5
-      python:
-        - 3.5
-    - os: linux
-      language: python
-      name: python 3.7
-      python:
-        - 3.7
+        - 3.10
 
 before_install:
     - echo "TRAVIS_PYTHON_VERSION:" "$TRAVIS_PYTHON_VERSION"
@@ -32,18 +19,13 @@ before_install:
     #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="/usr/local/opt/python@3.8/bin:$PATH"; ln -s `which python3` bin/python; ln -s `which pip3` bin/pip; export PATH="$PWD/bin:$PATH"; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ln -s `which python3` bin/python; ln -s `which pip3` bin/pip; export PATH="$PWD/bin:$PATH"; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
-    - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then sudo apt-get install -y pandoc graphviz; pip install sphinx sphinx-gallery pandoc nbsphinx "PyQt5<5.13"; fi
 
 install:
     - pip install "six~=1.13" paramiko zmq
-    - if [ ${TRAVIS_PYTHON_VERSION} == "2.7" ]; then pip install subprocess32; fi
     - pip install codecov
     - python setup.py install
     - export QT_API=pyqt5
     - if [[ $TRAVIS_OS_NAME == linux ]]; then pip install pre-commit; fi
-    # build doc; set .nojekyll otherwise github.io doesn't copy dirs starting
-    # with '_' (such as '_static')
-    - if [[  "$TRAVIS_OS_NAME" = "linux" && "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then cd doc && make html && touch build/html/.nojekyll && cd ..; fi
     - if [[ -n "$GITHUB_ACCESS_TOKEN" ]]; then export PUSH_DOC_TO_GH_PAGES=yes; fi
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cat /proc/cpuinfo && free; fi
 
@@ -56,17 +38,6 @@ script:
 
 after_success:
     - codecov
-
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_ACCESS_TOKEN
-  target-branch: gh-pages
-  local-dir: doc/build/html
-  on:
-    branch: master
-    condition: $PUSH_DOC_TO_GH_PAGES == yes && $TRAVIS_OS_NAME == linux && $TRAVIS_PYTHON_VERSION == 3.5
-
 
 cache:
   directories:
