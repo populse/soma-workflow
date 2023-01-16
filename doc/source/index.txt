@@ -166,6 +166,7 @@ In version 3.2:
 * Optimization for scalability: performance in the engine and database has been much improved, in order to manage very large workflows, especially for workflows of independent jobs (large iterations). Where soma-workflow <= 3.1 used to reach a limit around 5-10000 jobs (with timeouts causing aborts and hangs in the engine), in 3.2 it has now been tested using up to 500000 jobs in local and MPI modes. The MPI mode is by far the most efficient for such large workflows (processing 500000 very small jobs in about 25 minutes on a 8-core laptop). Both Workflow submission, engine management, and scheduling have been much improved, and processing time has dropped by several orders of magnitude. For very large workflows around the limit, however, monitoring (using either soma_workflow_gui or the client API) may involve an overhead which may cause timeouts in the database, which may in turn hang or crash the engine.
 * Docs complements and improvements.
 * Support for PyQt6 on the way (not entirely tested yet).
+* Added an "isolated light mode" mode where all soma-workflow (config, database, temp files and transfers) are in a separate, potentially temporary directory, and will not interfere with other instances of soma-workflow and databases.
 * Several bug fixes.
 
 
