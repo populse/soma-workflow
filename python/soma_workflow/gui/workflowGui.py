@@ -191,6 +191,7 @@ try:
             import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     import matplotlib.pyplot
+    import matplotlib.dates as mdates
 except ImportError as e:
     print("Could not use Matplotlib: %s %s" % (type(e), e))
     MATPLOTLIB = False
@@ -3707,7 +3708,12 @@ class PlotView(QtGui.QWidget):
         if nb_jobs:
             self.axes.set_ylim(0, nb_jobs + 1)
 
-        self.axes.set_xlabel("Time")
+        # self.axes.set_xlabel("Time")
+        # locator = mdates.AutoDateLocator(minticks=3)
+        locator = mdates.MinuteLocator(interval=2)
+        self.axes.xaxis.set_major_locator(locator)
+        self.axes.xaxis.set_major_formatter(mdates.ConciseDateFormatter(
+            locator))
         if self.plot_type == 1:
             self.axes.set_ylabel("CPUs")
         else:
@@ -3792,7 +3798,12 @@ class PlotView(QtGui.QWidget):
         if nb_proc_max != 0:
             self.axes.set_ylim(0, nb_proc_max + 1)
 
-        self.axes.set_xlabel("Time")
+        # self.axes.set_xlabel("Time")
+        locator = mdates.AutoDateLocator(minticks=3)
+        # locator = mdates.MinuteLocator() #interval=10)
+        self.axes.xaxis.set_major_locator(locator)
+        self.axes.xaxis.set_major_formatter(mdates.ConciseDateFormatter(
+            locator))
         if self.plot_type == 3:
             self.axes.set_ylabel("Nb of CPU")
         else:
