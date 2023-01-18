@@ -3670,11 +3670,12 @@ class PlotView(QtGui.QWidget):
                 nb_jobs = nb_jobs + 1
                 if j.execution_date < x_min:
                     x_min = j.execution_date
+                kwargs = {'picker': True, 'pickradius': 2}
                 if j.ending_date:
                     if ncpu == 1:
                         self.axes.plot(
                             [j.execution_date, j.ending_date],
-                            [nb_jobs, nb_jobs], color=col)
+                            [nb_jobs, nb_jobs], color=col, **kwargs)
                         # link to job
                         self.axes.lines[-1].job = j.job_id
                     else:
@@ -3682,7 +3683,7 @@ class PlotView(QtGui.QWidget):
                             [j.execution_date, j.ending_date,
                              j.ending_date, j.execution_date],
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
-                             nb_jobs + ncpu - 1], color=col)
+                             nb_jobs + ncpu - 1], color=col, **kwargs)
                         # link to job
                         self.axes.patches[-1].job = j.job_id
                     if j.ending_date > x_max:
@@ -3691,7 +3692,7 @@ class PlotView(QtGui.QWidget):
                     if ncpu == 1:
                         self.axes.plot(
                             [j.execution_date, datetime.now()],
-                            [nb_jobs, nb_jobs], color=col)
+                            [nb_jobs, nb_jobs], color=col, **kwargs)
                         # link to job
                         self.axes.lines[-1].job = j.job_id
                     else:
@@ -3699,7 +3700,7 @@ class PlotView(QtGui.QWidget):
                         self.axes.fill(
                             [j.execution_date, now, now, j.execution_date],
                             [nb_jobs, nb_jobs, nb_jobs + ncpu - 1,
-                             nb_jobs + ncpu - 1], color=col)
+                             nb_jobs + ncpu - 1], color=col, **kwargs)
                         # link to job
                         self.axes.patches[-1].job = j.job_id
                 nb_jobs += ncpu - 1
@@ -3709,8 +3710,8 @@ class PlotView(QtGui.QWidget):
             self.axes.set_ylim(0, nb_jobs + 1)
 
         # self.axes.set_xlabel("Time")
-        # locator = mdates.AutoDateLocator(minticks=3)
-        locator = mdates.MinuteLocator(interval=2)
+        locator = mdates.AutoDateLocator(minticks=3)
+        # locator = mdates.MinuteLocator(interval=2)
         self.axes.xaxis.set_major_locator(locator)
         self.axes.xaxis.set_major_formatter(mdates.ConciseDateFormatter(
             locator))
@@ -3719,13 +3720,6 @@ class PlotView(QtGui.QWidget):
         else:
             self.axes.set_ylabel("Jobs")
         self.figure.autofmt_xdate(rotation=80)
-
-        # set picker callback and activate interactive objects
-        tolerance = 2.  # could become configurable.
-        # tolerence seems to work only on line artists anyway.
-        for p in self.axes.lines + self.axes.patches:
-            if p is not None:
-                p.set_pickradius(tolerance)
 
         self.canvas.draw()
 
