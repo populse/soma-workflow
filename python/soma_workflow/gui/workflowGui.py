@@ -5286,9 +5286,11 @@ class GuiGroup(GuiWorkflowItem):
                 if item.serial_duration:
                     self.theoretical_serial_time \
                         = self.theoretical_serial_time + item.serial_duration
-                    if item.ending_date > self.last_end_date:
+                    if item.ending_date is not None \
+                            and  item.ending_date > self.last_end_date:
                         self.last_end_date = item.ending_date
-                if item.submission_date and item.submission_date < self.first_sub_date:
+                if item.submission_date \
+                        and item.submission_date < self.first_sub_date:
                     self.first_sub_date = item.submission_date
 
             if isinstance(item, GuiGroup):
