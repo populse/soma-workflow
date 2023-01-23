@@ -4313,8 +4313,12 @@ class ComputingResourcePool(object):
         resource_ids = list(six.iterkeys(self._connections))
         for resource_id in resource_ids:
             self.delete_connection(resource_id)
-        import gc
-        gc.collect()
+        try:
+            import gc
+        except ImportError:
+            gc = None
+        if gc:
+            gc.collect()
 
     def reinit_connection(self, resource_id, workflow_controller):
         with self._connection_locks[resource_id]:
