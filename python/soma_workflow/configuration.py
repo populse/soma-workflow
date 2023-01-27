@@ -426,6 +426,8 @@ class Configuration(observer.Observable):
                 config._transfered_file_dir = transfered_file_dir
 
             if not os.path.isdir(swf_dir):
+                if os.path.islink(swf_dir):
+                    swf_dir = os.readlink(swf_dir)
                 try:
                     os.mkdir(swf_dir)
                 except OSError:
@@ -1134,6 +1136,13 @@ class Configuration(observer.Observable):
         else:
             dir_path = anypath
         if not os.path.isdir(dir_path):
+            swf_dir = os.path.join(self.get_soma_workflow_dir(), '/')
+            if dir_path == swf_dir \
+                    or os.path.abspath(dir_path).startswith(swf_dir):
+                if os.path.islink(swf_dir) and not os.path.exists(swf_dir):
+                    # make ~/.soma-wodkflow as target of the dead link (if any)
+                    swf_dir = os.readlink(swf_dir)
+                    os.makedirs(swf_dir)
             os.makedirs(dir_path)
 
     def mk_config_dirs(self):

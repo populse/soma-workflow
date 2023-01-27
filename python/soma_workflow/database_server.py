@@ -185,6 +185,7 @@ Job server database tables:
 
 def create_database(database_file):
     if not database_file.startswith(':'):
+        database_file = os.path.expandvars(database_file)
         db_dir = os.path.dirname(database_file)
         os.makedirs(db_dir, exist_ok=True)
 
@@ -522,6 +523,7 @@ class WorkflowDatabaseServer(object):
         # remove_orphan_files)
         self._remove_orphan_files = remove_orphan_files
         self._tmp_file_dir_path = tmp_file_dir_path
+        database_file = os.path.expandvars(database_file)
         self._database_file = database_file
         if shared_tmp_dir:
             self._shared_temp_dir = shared_tmp_dir
@@ -667,6 +669,12 @@ class WorkflowDatabaseServer(object):
             cursor.close()
             connection.close()
 
+            swf_dir = os.path.expanduser('~/soma-workflow')
+            if os.path.islink(swf_dir) and not os.path.exists(swf_dir):
+                # make ~/.soma-wodkflow as target of the dead link
+                # (if any)
+                swf_dir = os.readlink(swf_dir)
+                os.mkdir(swf_dir)
             personal_path = self._user_transfer_dir_path(login, user_id)
             if not os.path.isdir(personal_path):
                 try:
