@@ -40,4 +40,14 @@ if __name__ == '__main__':
 
     wfc = WorkflowController(args.resource)
 
-    wfc.submit_workflow(workflow, name = args.name, queue = args.queue)
+    wf_id = wfc.submit_workflow(workflow, name = args.name, queue = args.queue)
+
+    # at this point, processing is running.
+    # For a client/server connection, we can disconnect and exit.
+    # However in "light" mode we need to wait for the workflow to finish,
+    # otherwise the engine will exit immediately.
+
+    if wfc.config.get_mode() == 'light':
+        print('Light mode without server - we need to wait for workflow '
+              'completion')
+        wfc.wait_workflow(wf_id)
