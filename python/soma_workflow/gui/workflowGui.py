@@ -4413,6 +4413,11 @@ class ApplicationModel(QtCore.QObject):
         home_dir = configuration.Configuration.get_home_dir()
 
         self.tmp_stderrout_dir = os.path.join(home_dir, ".soma-workflow")
+        if not os.path.isdir(self.tmp_stderrout_dir) \
+                and os.path.islink(self.tmp_stderrout_dir):
+            # make ~/.soma-wodkflow as target of the dead link (if any)
+            swf_dir = os.readlink(self.tmp_stderrout_dir)
+            os.makedirs(swf_dir)
         if not os.path.isdir(self.tmp_stderrout_dir):
             os.makedirs(self.tmp_stderrout_dir)
 
