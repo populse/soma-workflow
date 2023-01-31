@@ -359,6 +359,14 @@ Configuration items optional on the server side:
 
         singularity exec --bind /data_dir /opt/singularity_images/appropriate_image.simg command_to_run arg1 arg2...
 
+    Moreover Soma-Workflow may set and use two environment variable (in "semi-dynamic" workflows where input parameters of a job are outputs from an upstream one), so the container has to carry these variables when starting, so it would be:
+
+    .. code-block:: bash
+
+        SINGULARITYENV_SOMAWF_INPUT_PARAMS=$SOMAWF_INPUT_PARAMS
+        SINGULARITYENV_SOMAWF_OUTPUT_PARAMS=$SOMAWF_OUTPUT_PARAMS
+        singularity exec --bind /data_dir /opt/singularity_images/appropriate_image.simg command_to_run arg1 arg2...
+
     The **CONTAINER_COMMAND** parameter will allow to build the container-related beginning for jobs commandlines. It is actually a list, given in a python syntax. Shell Environment variables replacement is allowed, and a special pattern, ``{#command}`` allows to replace the actual job commanline at a given location.
 
     This config variable has appeared in Soma-Workflow 2.10.
@@ -373,11 +381,11 @@ Configuration items optional on the server side:
 
         singularity exec --bind /data_dir --bind /software_dir /opt/singularity_images/appropriate_image.simg entrypoint ls /
 
-    Now if we need further customization, for instance to set a library path variable to access a library with custom installation, we will need to run a shell to setup the variable then run the program:
+    Now if we need environment variables (and we do!) or further customization, for instance to set a library path variable to access a library with custom installation, we will need to run a shell to setup the variable then run the program:
 
     .. code-block:: bash
 
-        sh -c 'LD_LIBRARY_PATH=/software_dir/lib:$"LD_LIBRARY_PATH" ls /'
+        sh -c 'SINGULARITYENV_SOMAWF_INPUT_PARAMS=$SOMAWF_INPUT_PARAMS SINGULARITYENV_SOMAWF_OUTPUT_PARAMS=$SOMAWF_OUTPUT_PARAMS LD_LIBRARY_PATH=/software_dir/lib:$"LD_LIBRARY_PATH" ls /'
 
     Here the job command with arguments must be within the ``'`` quotes after ``sh -c`` to run in the shell command. Then the **CONTAINER_COMMAND** variable for Soma-Workflow has to be::
 
@@ -389,12 +397,7 @@ Configuration items optional on the server side:
 
         container_command = ['/home/johndoe/brainvisa/bin/bv']
 
-    See also :ref:`containerized_soma_workflow`.
-
-Logging configuration:
-
-  **SERVER_LOG_FILE**
-    Server log file path.
+    Since BrainVisa 5.1, the environment variables ``SOMAWF_INPUT_PARAMS`` and ``SOMAWF_OUTPUT_PARAMS`` are automatically exported.
 
   **SERVER_LOG_LEVEL**
     Server logging level as defined in the `logging
