@@ -1,8 +1,8 @@
-#!/bin/shell
+#!/bin/sh
 
 PACKNAME=pack-soma-workflow
-FULLVERSION=2.6.0
-SHORTVERSION=2.6
+FULLVERSION=3.2.0
+SHORTVERSION=3.2
 
 # Remove old version
 rm -rf "./$PACKNAME"
@@ -21,7 +21,7 @@ find -name "*.pyc" | xargs rm > /dev/null 2>&1
 find -name "*.pyo" | xargs rm > /dev/null 2>&1
 
 # Copy additional information
-cp README.txt ./$PACKNAME
+cp README.markdown ./$PACKNAME
 cp MANIFEST.in ./$PACKNAME
 cp LICENSE ./$PACKNAME
 
