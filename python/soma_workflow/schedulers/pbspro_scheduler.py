@@ -202,6 +202,10 @@ class PBSProScheduler(Scheduler):
     def qsub_command():
         return PBSProScheduler.out_of_container_command() + ['qsub']
 
+    @staticmethod
+    def qdel_command():
+        return PBSProScheduler.out_of_container_command() + ['qdel']
+
     def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
         '''
         Create a job to test
@@ -473,7 +477,7 @@ class PBSProScheduler(Scheduler):
         try:
             status = self.get_job_status(scheduler_job_id)
             if status not in (constants.DONE, constants.FAILED):
-                cmd = ['qdel', scheduler_job_id]
+                cmd = self.qdel_command() + [scheduler_job_id]
                 subprocess.check_call(cmd)
         except Exception as e:
             self.logger.critical("%s: %s" % (type(e), e))
