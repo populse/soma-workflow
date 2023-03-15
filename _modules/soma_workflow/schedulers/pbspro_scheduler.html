@@ -243,6 +243,10 @@
     <span class="k">def</span> <span class="nf">qsub_command</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">out_of_container_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;qsub&#39;</span><span class="p">]</span>
 
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">qdel_command</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">out_of_container_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;qdel&#39;</span><span class="p">]</span>
+
 <div class="viewcode-block" id="PBSProScheduler.submit_simple_test_job"><a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.submit_simple_test_job">[docs]</a>    <span class="k">def</span> <span class="nf">submit_simple_test_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outstr</span><span class="p">,</span> <span class="n">out_o_file</span><span class="p">,</span> <span class="n">out_e_file</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create a job to test</span>
@@ -514,7 +518,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_job_status</span><span class="p">(</span><span class="n">scheduler_job_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">DONE</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">FAILED</span><span class="p">):</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;qdel&#39;</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">]</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qdel_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">scheduler_job_id</span><span class="p">]</span>
                 <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span></div>
