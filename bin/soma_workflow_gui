@@ -11,17 +11,9 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-
 import sys
 import argparse
 
-#try:
-#  import sip
-#except ImportError, e:
-#  pass
-#else:
-#  sip.setapi('QVariant', 2)
-#  sip.setapi('QString', 2)
 
 parser = argparse.ArgumentParser()
 
