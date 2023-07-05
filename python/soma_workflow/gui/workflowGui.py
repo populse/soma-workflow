@@ -4590,12 +4590,12 @@ class ApplicationModel(QtCore.QObject):
                     self.exception = e
         it = InterruptibleThread()
         it.start()
-        it.wait(msecs=timeout_duration * 1000)
+        it.wait(timeout_duration * 1000)
         if it.isRunning():
             it.terminate()
             raise ConnectionClosedError("Connection time out")
         else:
-            if it.exception != None:
+            if it.exception is not None:
                 raise it.exception
             return it.result
 
