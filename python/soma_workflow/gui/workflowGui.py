@@ -2269,8 +2269,11 @@ class SomaWorkflowWidget(QtGui.QWidget):
         self.ui.list_widget_submitted_wfs.itemSelectionChanged.disconnect(
             self.workflowSelectionChanged)
         self.ui.list_widget_submitted_wfs.clear()
-        wf_id_info = sorted(submitted_wf.items(), key=lambda elem: elem[1],
-                            reverse=True)
+        wf_id_info = sorted(
+            submitted_wf.items(),
+            key=lambda elem: tuple(x if x is not None else '' 
+                                   for x in elem[1]),
+            reverse=True)
 
         for wf_id, wf_info in wf_id_info:
             workflow_name, expiration_date = wf_info
