@@ -54,8 +54,7 @@ AUTHOR_EMAIL = "support@brainvisa.info"
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
 REQUIRES = [
-    "six~=1.12",
-    "argparse",
+    "six",
 ]
 EXTRA_REQUIRES = {
     "plotting": ["matplotlib"],
