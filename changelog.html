@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Changelog &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -42,9 +42,9 @@
           <div class="body" role="main">
             
   <section id="changelog">
-<h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading">¶</a></h1>
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <section id="version-3-2-2023-01-16">
-<h2>Version 3.2 (2023/01/16)<a class="headerlink" href="#version-3-2-2023-01-16" title="Permalink to this heading">¶</a></h2>
+<h2>Version 3.2 (2023/01/16)<a class="headerlink" href="#version-3-2-2023-01-16" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python2 support has been dropped.</p></li>
 <li><p>Optimization for scalability: performance in the engine and database has been much improved, in order to manage very large workflows, especially for workflows of independent jobs (large iterations). Where soma-workflow &lt;= 3.1 used to reach a limit around 5-10000 jobs (with timeouts causing aborts and hangs in the engine), in 3.2 it has now been tested using up to 500000 jobs in local and MPI modes. The MPI mode is by far the most efficient for such large workflows (processing 500000 very small jobs in about 25 minutes on a 8-core laptop). Both Workflow submission, engine management, and scheduling have been much improved, and processing time has dropped by several orders of magnitude. For very large workflows around the limit, however, monitoring (using either soma_workflow_gui or the client API) may involve an overhead which may cause timeouts in the database, which may in turn hang or crash the engine.</p></li>
@@ -55,7 +55,7 @@
 </ul>
 </section>
 <section id="version-3-1-2019-11-15">
-<h2>Version 3.1 (2019/11/15)<a class="headerlink" href="#version-3-1-2019-11-15" title="Permalink to this heading">¶</a></h2>
+<h2>Version 3.1 (2019/11/15)<a class="headerlink" href="#version-3-1-2019-11-15" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>the communication protocol in client / server mode (now based on ZMQ since 3.0) has been modified to handle multi-threaded, asynchronous requests, and avoid deadlocks. Disconnections are detected at several places and both client and server stopped when this occurs.</p></li>
 <li><p>workflows can get an “env” variable, like jobs do, and will apply their environment to all jobs</p></li>
@@ -66,7 +66,7 @@
 </ul>
 </section>
 <section id="version-3-0-2019-02-04">
-<h2>Version 3.0 (2019/02/04)<a class="headerlink" href="#version-3-0-2019-02-04" title="Permalink to this heading">¶</a></h2>
+<h2>Version 3.0 (2019/02/04)<a class="headerlink" href="#version-3-0-2019-02-04" title="Link to this heading">¶</a></h2>
 <ul>
 <li><p>Pyro is gone, Soma-Workflow is now using <a class="reference external" href="http://zeromq.org/">ZMQ</a> and <a class="reference external" href="https://pyzmq.readthedocs.io/en/latest/">PyZmq</a>.</p>
 <p>As a consequence, all the client/server communication layer has been made completely incompatible with soma-workflow 2.10 and earlier. Client and server should always be the same version anyway. The client/server API has not changed fundamentally however.</p>
@@ -78,18 +78,18 @@
 </ul>
 </section>
 <section id="version-2-11-2019-06-05">
-<h2>Version 2.11 (2019/06/05)<a class="headerlink" href="#version-2-11-2019-06-05" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.11 (2019/06/05)<a class="headerlink" href="#version-2-11-2019-06-05" title="Link to this heading">¶</a></h2>
 <p>bug fixes</p>
 </section>
 <section id="version-2-10-2019-02-04">
-<h2>Version 2.10 (2019/02/04)<a class="headerlink" href="#version-2-10-2019-02-04" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.10 (2019/02/04)<a class="headerlink" href="#version-2-10-2019-02-04" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>In Soma-Workflow 2.10, the <strong>“server management” options</strong> have finally been fixed (they have basically never been working earlier). It is now possible to completely install soma-workflow on a remote server and configure it (in a basic way) from the GUI of a client. Only Python is required to be installed on server side, and DRMAA if the server is a cluster using a DRMS.</p></li>
 <li><p>Soma-Workflow allows a new server config option, <a class="reference internal" href="install_config.html#container-command"><span class="std std-ref">CONTAINER_COMMAND</span></a>, which allows to <strong>run jobs through a container</strong> (typically <a class="reference external" href="https://www.docker.com/">Docker</a> or <a class="reference external" href="https://www.sylabs.io/singularity/">Singularity</a>)</p></li>
 </ul>
 </section>
 <section id="version-2-9-sept-2017">
-<h2>Version 2.9 (sept. 2017)<a class="headerlink" href="#version-2-9-sept-2017" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.9 (sept. 2017)<a class="headerlink" href="#version-2-9-sept-2017" title="Link to this heading">¶</a></h2>
 <ul>
 <li><p>Performance optimization</p>
 <p>Some optimization has been done, especially in database queries which have been largely reduced, in jobs dependencies scanning, and in workflow submission (a lot of time was used to create empty stdout/stderr files which were not needed right now). As a consequence the load of jobs management is somewhat ligher, and submitting large workflows is way faster. This also prevents spurious timeouts when the server was too loaded.</p>
@@ -101,7 +101,7 @@
 </ul>
 </section>
 <section id="version-2-8-feb-2016">
-<h2>Version 2.8 (Feb. 2016)<a class="headerlink" href="#version-2-8-feb-2016" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.8 (Feb. 2016)<a class="headerlink" href="#version-2-8-feb-2016" title="Link to this heading">¶</a></h2>
 <ul>
 <li><p>More precise job status:</p>
 <p>Differentiates between jobs which have not run yet, or those which have not run because the workflow was interrupted.</p>
@@ -121,7 +121,7 @@
 </ul>
 </section>
 <section id="version-2-7-may-2015">
-<h2>Version 2.7 (May 2015)<a class="headerlink" href="#version-2-7-may-2015" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.7 (May 2015)<a class="headerlink" href="#version-2-7-may-2015" title="Link to this heading">¶</a></h2>
 <ul>
 <li><p>Temporary files:</p>
 <p>Temporary files are a special file object (like FileTransfer or SharedResourcePath) which are handled on server side: temporary file names are created during the workflow execution by the server, and are never seen on the client.</p>
@@ -137,7 +137,7 @@
 </ul>
 </section>
 <section id="version-2-6-november-2013">
-<h2>Version 2.6 (November 2013)<a class="headerlink" href="#version-2-6-november-2013" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.6 (November 2013)<a class="headerlink" href="#version-2-6-november-2013" title="Link to this heading">¶</a></h2>
 <ul>
 <li><p><strong>No more dependency on SIP</strong>:</p>
 <p>SIP wrapping code has been removed. The ctypes module is used for driving the DRMAA library in remote distributed execution.</p>
@@ -145,7 +145,7 @@
 </ul>
 </section>
 <section id="version-2-5-may-2013">
-<h2>Version 2.5 (May 2013)<a class="headerlink" href="#version-2-5-may-2013" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.5 (May 2013)<a class="headerlink" href="#version-2-5-may-2013" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Replacement of SIP-based wrapping for the C DRMAA library by ctypes wrapping. It removes the need for SIP and a C compiler to benefit from remote distributed execution support using DRMAA.</p></li>
 <li><p>Automatically start the database server on remote execution when it is not running anymore.</p></li>
@@ -153,7 +153,7 @@
 </ul>
 </section>
 <section id="version-2-4-march-2013">
-<h2>Version 2.4 (March 2013)<a class="headerlink" href="#version-2-4-march-2013" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.4 (March 2013)<a class="headerlink" href="#version-2-4-march-2013" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>MPI scheduler Beta</strong>:</p>
 <ul>
@@ -175,7 +175,7 @@
 </ul>
 </section>
 <section id="version-2-3-august-2012">
-<h2>Version 2.3 (August 2012)<a class="headerlink" href="#version-2-3-august-2012" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.3 (August 2012)<a class="headerlink" href="#version-2-3-august-2012" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>The workflows are saved in the <strong>JSON format</strong> for longer term storage.</p></li>
 <li><p>Access the full range of features of your cluster using <strong>native specification</strong> (see <a class="reference internal" href="errors_troubleshooting.html"><span class="doc">Soma-workflow tips</span></a>)</p></li>
@@ -189,14 +189,14 @@
 </ul>
 </section>
 <section id="version-2-2-may-2012">
-<h2>Version 2.2 (May 2012)<a class="headerlink" href="#version-2-2-may-2012" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.2 (May 2012)<a class="headerlink" href="#version-2-2-may-2012" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Gui: <strong>Compatibility with PySide</strong> <a class="reference external" href="http://www.pyside.org">http://www.pyside.org</a> in addition to <a class="reference external" href="http://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a>.</p></li>
 <li><p>More informative error messages.</p></li>
 </ul>
 </section>
 <section id="version-2-1-march-2012">
-<h2>Version 2.1 (March 2012)<a class="headerlink" href="#version-2-1-march-2012" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.1 (March 2012)<a class="headerlink" href="#version-2-1-march-2012" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Intermediate results can be available more quickly defining job priorities</strong> within workflows (see <a class="reference internal" href="errors_troubleshooting.html"><span class="doc">Soma-workflow tips</span></a>)</p></li>
 <li><p>Improvement of the graphical interface (see <a class="reference internal" href="gui.html"><span class="doc">GUI documentation</span></a>):</p>
@@ -214,7 +214,7 @@
 </ul>
 </section>
 <section id="version-2-0-november-2011">
-<h2>Version 2.0 (November 2011)<a class="headerlink" href="#version-2-0-november-2011" title="Permalink to this heading">¶</a></h2>
+<h2>Version 2.0 (November 2011)<a class="headerlink" href="#version-2-0-november-2011" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Soma-workflow can be used directly on a multiple core machine.</strong></p></li>
 <li><p><strong>Soma-workflow is independent of DRMAA</strong> and interaction with other interfaces can be easily implemented.</p></li>
@@ -224,7 +224,7 @@
 </ul>
 </section>
 <section id="first-release-version-1-0-july-2011">
-<h2>First release Version 1.0 (July 2011)<a class="headerlink" href="#first-release-version-1-0-july-2011" title="Permalink to this heading">¶</a></h2>
+<h2>First release Version 1.0 (July 2011)<a class="headerlink" href="#first-release-version-1-0-july-2011" title="Link to this heading">¶</a></h2>
 </section>
 </section>
 
@@ -306,8 +306,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>soma_workflow.client_types &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="../../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -866,7 +866,9 @@
         <span class="k">return</span> <span class="n">job_dict</span>
 
 
-<div class="viewcode-block" id="Workflow"><a class="viewcode-back" href="../../workflow_creation.html#client.Workflow">[docs]</a><span class="k">class</span> <span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Workflow">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Workflow">[docs]</a>
+<span class="k">class</span> <span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Workflow representation.</span>
@@ -1060,7 +1062,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">=</span> <span class="n">param_links</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_dependencies_from_links</span><span class="p">()</span>
 
-<div class="viewcode-block" id="Workflow.add_workflow"><a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">add_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">as_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Workflow.add_workflow">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">as_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Concatenates a workflow into the current one.</span>
 
@@ -1098,7 +1102,10 @@
         <span class="c1"># self.env_builder_code ?</span>
         <span class="k">return</span> <span class="n">group</span></div>
 
-<div class="viewcode-block" id="Workflow.add_dependencies"><a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_dependencies">[docs]</a>    <span class="k">def</span> <span class="nf">add_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Workflow.add_dependencies">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_dependencies">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Add additional dependencies in the workflow.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1108,7 +1115,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__convert_group_dependencies</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Workflow.add_dependencies_from_links"><a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_dependencies_from_links">[docs]</a>    <span class="k">def</span> <span class="nf">add_dependencies_from_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Workflow.add_dependencies_from_links">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_dependencies_from_links">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_dependencies_from_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Process parameters links and add missing jobs dependencies accordingly</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1129,6 +1139,7 @@
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">deps</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">current_deps</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span></div>
+
 
     <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
@@ -1163,7 +1174,9 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_builder_code</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">env_builder_code</span> \
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">param_links</span>
 
-<div class="viewcode-block" id="Workflow.to_dict"><a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Workflow.to_dict">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The keys must be string to serialize with JSON.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1274,6 +1287,7 @@
             <span class="n">wf_dict</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uuid</span>
 
         <span class="k">return</span> <span class="n">wf_dict</span></div>
+
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
@@ -1539,7 +1553,10 @@
                             <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)))</span></div>
 
 
-<div class="viewcode-block" id="Group"><a class="viewcode-back" href="../../workflow_creation.html#client.Group">[docs]</a><span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Group">
+<a class="viewcode-back" href="../../workflow_creation.html#client.Group">[docs]</a>
+<span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Hierarchical structure of a workflow.</span>
@@ -1619,6 +1636,7 @@
         <span class="k">return</span> <span class="n">group</span></div>
 
 
+
 <span class="k">class</span> <span class="nc">SpecialPath</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
@@ -1678,7 +1696,9 @@
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="FileTransfer"><a class="viewcode-back" href="../../workflow_creation.html#client.FileTransfer">[docs]</a><span class="k">class</span> <span class="nc">FileTransfer</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+<div class="viewcode-block" id="FileTransfer">
+<a class="viewcode-back" href="../../workflow_creation.html#client.FileTransfer">[docs]</a>
+<span class="k">class</span> <span class="nc">FileTransfer</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    File/directory transfer representation</span>
@@ -1898,7 +1918,10 @@
         <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span></div>
 
 
-<div class="viewcode-block" id="SharedResourcePath"><a class="viewcode-back" href="../../workflow_creation.html#client.SharedResourcePath">[docs]</a><span class="k">class</span> <span class="nc">SharedResourcePath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+
+<div class="viewcode-block" id="SharedResourcePath">
+<a class="viewcode-back" href="../../workflow_creation.html#client.SharedResourcePath">[docs]</a>
+<span class="k">class</span> <span class="nc">SharedResourcePath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Representation of path which is valid on either user&#39;s or computing resource</span>
@@ -2032,7 +2055,10 @@
                                              <span class="n">ref</span><span class="o">.</span><span class="n">relative_path</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="TemporaryPath"><a class="viewcode-back" href="../../workflow_creation.html#client.TemporaryPath">[docs]</a><span class="k">class</span> <span class="nc">TemporaryPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+
+<div class="viewcode-block" id="TemporaryPath">
+<a class="viewcode-back" href="../../workflow_creation.html#client.TemporaryPath">[docs]</a>
+<span class="k">class</span> <span class="nc">TemporaryPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Temporary file representation. This temporary file will never exist on client</span>
@@ -2160,6 +2186,7 @@
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">OptionPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
@@ -2513,8 +2540,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

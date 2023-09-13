@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>scheduler &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -49,7 +49,9 @@
 <span class="kn">import</span> <span class="nn">threading</span>
 
 
-<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Scheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler">[docs]</a>
+<span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Allow to submit, kill and get the status of jobs.</span>
@@ -89,7 +91,9 @@
     <span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="Scheduler.job_submission"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.job_submission">[docs]</a>    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
+<div class="viewcode-block" id="Scheduler.job_submission">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.job_submission">[docs]</a>
+    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Submit a Soma-Workflow job</span>
 
@@ -108,7 +112,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Scheduler.get_job_status"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Scheduler.get_job_status">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -122,7 +129,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Scheduler.get_job_exit_info"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_exit_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Scheduler.get_job_exit_info">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_exit_info">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The exit info consists of 4 values returned in a tuple:</span>
 <span class="sd">        **exit_status**: string</span>
@@ -154,7 +164,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Scheduler.kill_job"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.kill_job">[docs]</a>    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Scheduler.kill_job">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.kill_job">[docs]</a>
+    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -163,7 +176,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Scheduler.build_scheduler"><a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.build_scheduler">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="Scheduler.build_scheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.build_scheduler">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39; Create a scheduler of the expected type, using configuration to</span>
 <span class="sd">        parameterize it.</span>
@@ -173,10 +189,14 @@
 <span class="sd">        config: Configuration</span>
 <span class="sd">            configuration object instance</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div></div>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Scheduler is an abstract class!&quot;</span><span class="p">)</span></div>
+</div>
 
 
-<div class="viewcode-block" id="get_scheduler_implementation"><a class="viewcode-back" href="../scheduler.html#scheduler.get_scheduler_implementation">[docs]</a><span class="k">def</span> <span class="nf">get_scheduler_implementation</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">):</span>
+
+<div class="viewcode-block" id="get_scheduler_implementation">
+<a class="viewcode-back" href="../scheduler.html#scheduler.get_scheduler_implementation">[docs]</a>
+<span class="k">def</span> <span class="nf">get_scheduler_implementation</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; Get the scheduler class implementation corresponding to the expected</span>
 <span class="sd">        one.</span>
 
@@ -229,7 +249,10 @@
     <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;scheduler type </span><span class="si">%s</span><span class="s1"> is not found&#39;</span> <span class="o">%</span> <span class="n">scheduler_type</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="build_scheduler"><a class="viewcode-back" href="../scheduler.html#scheduler.build_scheduler">[docs]</a><span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+
+<div class="viewcode-block" id="build_scheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.build_scheduler">[docs]</a>
+<span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; Create a scheduler of the expected type, using configuration to</span>
 <span class="sd">    parameterize it.</span>
 
@@ -250,7 +273,10 @@
     <span class="k">return</span> <span class="n">scheduler</span></div>
 
 
-<div class="viewcode-block" id="get_schedulers_list"><a class="viewcode-back" href="../scheduler.html#scheduler.get_schedulers_list">[docs]</a><span class="k">def</span> <span class="nf">get_schedulers_list</span><span class="p">():</span>
+
+<div class="viewcode-block" id="get_schedulers_list">
+<a class="viewcode-back" href="../scheduler.html#scheduler.get_schedulers_list">[docs]</a>
+<span class="k">def</span> <span class="nf">get_schedulers_list</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    List all available installed schedulers</span>
 
@@ -279,6 +305,7 @@
             <span class="n">sched</span> <span class="o">=</span> <span class="n">sched_mod</span><span class="p">[:</span><span class="o">-</span><span class="mi">10</span><span class="p">]</span>
             <span class="n">schedulers</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sched</span><span class="p">,</span> <span class="n">enabled</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">schedulers</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -319,8 +346,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

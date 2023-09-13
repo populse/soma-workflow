@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -106,7 +106,9 @@
 <span class="kn">from</span> <span class="nn">soma_workflow</span> <span class="kn">import</span> <span class="n">scheduler</span>
 
 
-<div class="viewcode-block" id="WorkflowController"><a class="viewcode-back" href="../client_API.html#client.WorkflowController">[docs]</a><span class="k">class</span> <span class="nc">WorkflowController</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController">[docs]</a>
+<span class="k">class</span> <span class="nc">WorkflowController</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Submission, control and monitoring of Job, FileTransfer and Workflow</span>
@@ -129,7 +131,9 @@
 
     <span class="n">scheduler_config</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="WorkflowController.__init__"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="WorkflowController.__init__">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">resource_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">login</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -329,6 +333,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_monitoring</span> <span class="o">=</span> <span class="n">TransferMonitoring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Workflow controller initialised&quot;</span><span class="p">)</span></div>
 
+
     <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;del WorkflowController&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stop_engine</span><span class="p">()</span>
@@ -380,7 +385,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
 
     <span class="c1"># SUBMISSION / REGISTRATION ####################################</span>
-<div class="viewcode-block" id="WorkflowController.submit_workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.submit_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">submit_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="WorkflowController.submit_workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.submit_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">submit_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">workflow</span><span class="p">,</span>
                         <span class="n">expiration_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -428,7 +435,10 @@
                                                    <span class="n">queue</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">wf_id</span></div>
 
-<div class="viewcode-block" id="WorkflowController.register_transfer"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.register_transfer">[docs]</a>    <span class="k">def</span> <span class="nf">register_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_transfer</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.register_transfer">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.register_transfer">[docs]</a>
+    <span class="k">def</span> <span class="nf">register_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_transfer</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Registers a file transfer which is not part of a workflow and returns a</span>
 <span class="sd">        file transfer identifier.</span>
@@ -446,9 +456,12 @@
 
         <span class="k">return</span> <span class="n">engine_transfer</span></div>
 
+
     <span class="c1"># WORKFLOWS, JOBS and FILE TRANSFERS RETRIEVAL ###################</span>
 
-<div class="viewcode-block" id="WorkflowController.workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow">[docs]</a>    <span class="k">def</span> <span class="nf">workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Raises *UnknownObjectError* if the workflow_id is not valid</span>
 
@@ -462,7 +475,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.workflows"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflows">[docs]</a>    <span class="k">def</span> <span class="nf">workflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.workflows">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflows">[docs]</a>
+    <span class="k">def</span> <span class="nf">workflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Lists the identifiers and general information about all the workflows</span>
 <span class="sd">        submitted by the user, or about the workflows specified in the</span>
@@ -479,7 +495,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">workflows</span><span class="p">(</span><span class="n">workflow_ids</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.jobs"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.jobs">[docs]</a>    <span class="k">def</span> <span class="nf">jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.jobs">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.jobs">[docs]</a>
+    <span class="k">def</span> <span class="nf">jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Lists the identifiers and general information about all the jobs</span>
 <span class="sd">        submitted by the user and which are not part of a workflow, or about</span>
@@ -496,7 +515,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">jobs</span><span class="p">(</span><span class="n">job_ids</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.transfers"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfers">[docs]</a>    <span class="k">def</span> <span class="nf">transfers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.transfers">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfers">[docs]</a>
+    <span class="k">def</span> <span class="nf">transfers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Lists the identifiers and information about all the user&#39;s file</span>
 <span class="sd">        transfers which are not part of a workflow or about the file transfers</span>
@@ -520,9 +542,12 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">transfers</span><span class="p">(</span><span class="n">transfer_ids</span><span class="p">)</span></div>
 
+
     <span class="c1"># WORKFLOW MONITORING #########################################</span>
 
-<div class="viewcode-block" id="WorkflowController.workflow_status"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow_status">[docs]</a>    <span class="k">def</span> <span class="nf">workflow_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.workflow_status">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">workflow_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Raises *UnknownObjectError* if the workflow_id is not valid</span>
 
@@ -538,7 +563,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">workflow_status</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.workflow_elements_status"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow_elements_status">[docs]</a>    <span class="k">def</span> <span class="nf">workflow_elements_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">with_drms_id</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.workflow_elements_status">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.workflow_elements_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">workflow_elements_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">with_drms_id</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Gets back the status of all the workflow elements at once, minimizing</span>
 <span class="sd">        the communication with the server and request to the database.</span>
@@ -593,8 +621,11 @@
             <span class="n">wf_status</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">new_wf_status</span></div>
 
+
     <span class="c1"># JOB MONITORING #############################################</span>
-<div class="viewcode-block" id="WorkflowController.job_status"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.job_status">[docs]</a>    <span class="k">def</span> <span class="nf">job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.job_status">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.job_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -609,6 +640,7 @@
 <span class="sd">        Raises *UnknownObjectError* if the job_id is not valid</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">job_status</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span></div>
+
 
     <span class="k">def</span> <span class="nf">get_engine_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">get_engine_job</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
@@ -628,7 +660,9 @@
     <span class="k">def</span> <span class="nf">drms_job_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wf_id</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">drms_job_id</span><span class="p">(</span><span class="n">wf_id</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WorkflowController.job_termination_status"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.job_termination_status">[docs]</a>    <span class="k">def</span> <span class="nf">job_termination_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.job_termination_status">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.job_termination_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">job_termination_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Information related to the end of the job.</span>
 
@@ -656,7 +690,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">job_termination_status</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.retrieve_job_stdouterr"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.retrieve_job_stdouterr">[docs]</a>    <span class="k">def</span> <span class="nf">retrieve_job_stdouterr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="WorkflowController.retrieve_job_stdouterr">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.retrieve_job_stdouterr">[docs]</a>
+    <span class="k">def</span> <span class="nf">retrieve_job_stdouterr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                <span class="n">job_id</span><span class="p">,</span>
                                <span class="n">stdout_file_path</span><span class="p">,</span>
                                <span class="n">stderr_file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -689,8 +726,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_stdouterr</span><span class="o">.</span><span class="n">transfer_from_remote</span><span class="p">(</span><span class="n">engine_stderr_file</span><span class="p">,</span>
                                                       <span class="n">stderr_file_path</span><span class="p">)</span></div>
 
+
     <span class="c1"># FILE TRANSFER MONITORING ###################################</span>
-<div class="viewcode-block" id="WorkflowController.transfer_status"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfer_status">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_id</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.transfer_status">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfer_status">[docs]</a>
+    <span class="k">def</span> <span class="nf">transfer_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        File transfer status and information related to the transfer progress.</span>
 
@@ -731,8 +771,11 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">progression</span><span class="p">)</span></div>
 
+
     <span class="c1"># WORKFLOW CONTROL ############################################</span>
-<div class="viewcode-block" id="WorkflowController.restart_workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.restart_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">restart_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.restart_workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.restart_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">restart_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Restarts the jobs of the workflow which failed. The jobs will be</span>
 <span class="sd">        submitted again.</span>
@@ -762,7 +805,10 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">restart_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">queue</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.delete_workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.delete_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">delete_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.delete_workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.delete_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">delete_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Deletes the workflow and all its associated elements (FileTransfers and</span>
 <span class="sd">        Jobs). The worklfow_id will become invalid and can not be used anymore.</span>
@@ -790,7 +836,10 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">delete_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">force</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.stop_workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.stop_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">stop_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.stop_workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.stop_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">stop_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Stops a workflow.</span>
 <span class="sd">        The running jobs will be killed.</span>
@@ -813,13 +862,19 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">stop_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span></div>
 
+
     <span class="k">def</span> <span class="nf">stop_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">stop_jobs</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WorkflowController.restart_jobs"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.restart_jobs">[docs]</a>    <span class="k">def</span> <span class="nf">restart_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.restart_jobs">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.restart_jobs">[docs]</a>
+    <span class="k">def</span> <span class="nf">restart_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">restart_jobs</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.change_workflow_expiration_date"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.change_workflow_expiration_date">[docs]</a>    <span class="k">def</span> <span class="nf">change_workflow_expiration_date</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span>
+
+<div class="viewcode-block" id="WorkflowController.change_workflow_expiration_date">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.change_workflow_expiration_date">[docs]</a>
+    <span class="k">def</span> <span class="nf">change_workflow_expiration_date</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span>
                                         <span class="n">new_expiration_date</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Sets a new expiration date for the workflow.</span>
@@ -840,8 +895,11 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">change_workflow_expiration_date</span><span class="p">(</span>
             <span class="n">workflow_id</span><span class="p">,</span> <span class="n">new_expiration_date</span><span class="p">)</span></div>
 
+
     <span class="c1"># JOB CONTROL #################################################</span>
-<div class="viewcode-block" id="WorkflowController.wait_job"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.wait_job">[docs]</a>    <span class="k">def</span> <span class="nf">wait_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.wait_job">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.wait_job">[docs]</a>
+    <span class="k">def</span> <span class="nf">wait_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Waits for all the specified jobs to finish.</span>
 
@@ -858,7 +916,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">wait_job</span><span class="p">(</span><span class="n">job_ids</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.wait_workflow"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.wait_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">wait_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.wait_workflow">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.wait_workflow">[docs]</a>
+    <span class="k">def</span> <span class="nf">wait_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Waits for the specified workflow to finish.</span>
 
@@ -874,6 +935,7 @@
 <span class="sd">            A negative value means that the method will wait indefinetely.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">wait_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span></div>
+
 
     <span class="k">def</span> <span class="nf">log_failed_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
@@ -973,7 +1035,9 @@
             <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">failed_jobs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
 
     <span class="c1"># FILE TRANSFER CONTROL #######################################</span>
-<div class="viewcode-block" id="WorkflowController.transfer_files"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfer_files">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_ids</span><span class="p">,</span> <span class="n">buffer_size</span><span class="o">=</span><span class="mi">512</span> <span class="o">**</span> <span class="mi">2</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkflowController.transfer_files">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.transfer_files">[docs]</a>
+    <span class="k">def</span> <span class="nf">transfer_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_ids</span><span class="p">,</span> <span class="n">buffer_size</span><span class="o">=</span><span class="mi">512</span> <span class="o">**</span> <span class="mi">2</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Transfer file(s) associated to the transfer_id.</span>
 <span class="sd">        If the files are only located on the client side (that is the transfer</span>
@@ -1007,7 +1071,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_file</span><span class="p">(</span><span class="n">transfer_ids</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WorkflowController.delete_transfer"><a class="viewcode-back" href="../client_API.html#client.WorkflowController.delete_transfer">[docs]</a>    <span class="k">def</span> <span class="nf">delete_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_id</span><span class="p">):</span>
+
+<div class="viewcode-block" id="WorkflowController.delete_transfer">
+<a class="viewcode-back" href="../client_API.html#client.WorkflowController.delete_transfer">[docs]</a>
+    <span class="k">def</span> <span class="nf">delete_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Deletes the FileTransfer and the associated files and directories on</span>
 <span class="sd">        the computing resource side. The transfer_id will become invalid and</span>
@@ -1018,6 +1085,7 @@
 <span class="sd">        Raises *UnknownObjectError* if the transfer_id is not valid</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_engine_proxy</span><span class="o">.</span><span class="n">delete_transfer</span><span class="p">(</span><span class="n">transfer_id</span><span class="p">)</span></div>
+
 
     <span class="c1"># PRIVATE #############################################</span>
     <span class="k">def</span> <span class="nf">_initialize_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transfer_id</span><span class="p">):</span>
@@ -1249,6 +1317,7 @@
         <span class="k">return</span> <span class="n">progression</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">_embedded_engine_and_server</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Creates the workflow engine and workflow database server in the client</span>
@@ -1355,7 +1424,9 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="Helper.list_failed_jobs"><a class="viewcode-back" href="../client_API.html#client.Helper.list_failed_jobs">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Helper.list_failed_jobs">
+<a class="viewcode-back" href="../client_API.html#client.Helper.list_failed_jobs">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">list_failed_jobs</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span>
                          <span class="n">wf_ctrl</span><span class="p">,</span>
                          <span class="n">include_aborted_jobs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1405,7 +1476,10 @@
                 <span class="n">failed_job_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">failed_job_ids</span></div>
 
-<div class="viewcode-block" id="Helper.delete_all_workflows"><a class="viewcode-back" href="../client_API.html#client.Helper.delete_all_workflows">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.delete_all_workflows">
+<a class="viewcode-back" href="../client_API.html#client.Helper.delete_all_workflows">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">delete_all_workflows</span><span class="p">(</span><span class="n">wf_ctrl</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Delete all the workflows.</span>
@@ -1433,7 +1507,10 @@
                 <span class="n">wf_id</span><span class="p">,</span> <span class="n">force</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">deleted_properly</span></div>
 
-<div class="viewcode-block" id="Helper.wait_workflow"><a class="viewcode-back" href="../client_API.html#client.Helper.wait_workflow">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.wait_workflow">
+<a class="viewcode-back" href="../client_API.html#client.Helper.wait_workflow">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">wait_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span>
                       <span class="n">wf_ctrl</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
@@ -1448,7 +1525,10 @@
 
         <span class="n">wf_ctrl</span><span class="o">.</span><span class="n">wait_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Helper.transfer_input_files"><a class="viewcode-back" href="../client_API.html#client.Helper.transfer_input_files">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.transfer_input_files">
+<a class="viewcode-back" href="../client_API.html#client.Helper.transfer_input_files">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">transfer_input_files</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span>
                              <span class="n">wf_ctrl</span><span class="p">,</span>
                              <span class="n">buffer_size</span><span class="o">=</span><span class="mi">512</span> <span class="o">**</span> <span class="mi">2</span><span class="p">):</span>
@@ -1481,7 +1561,10 @@
 
         <span class="n">wf_ctrl</span><span class="o">.</span><span class="n">transfer_files</span><span class="p">(</span><span class="n">to_transfer</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Helper.transfer_output_files"><a class="viewcode-back" href="../client_API.html#client.Helper.transfer_output_files">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.transfer_output_files">
+<a class="viewcode-back" href="../client_API.html#client.Helper.transfer_output_files">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">transfer_output_files</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span>
                               <span class="n">wf_ctrl</span><span class="p">,</span>
                               <span class="n">buffer_size</span><span class="o">=</span><span class="mi">512</span> <span class="o">**</span> <span class="mi">2</span><span class="p">):</span>
@@ -1514,7 +1597,10 @@
                 <span class="n">to_transfer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">engine_path</span><span class="p">))</span>
         <span class="n">wf_ctrl</span><span class="o">.</span><span class="n">transfer_files</span><span class="p">(</span><span class="n">to_transfer</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Helper.serialize"><a class="viewcode-back" href="../client_API.html#client.Helper.serialize">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.serialize">
+<a class="viewcode-back" href="../client_API.html#client.Helper.serialize">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">workflow</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Saves a workflow to a file.</span>
@@ -1541,7 +1627,10 @@
                         <span class="n">SerializationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)),</span>
                         <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">2</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="Helper.unserialize"><a class="viewcode-back" href="../client_API.html#client.Helper.unserialize">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.unserialize">
+<a class="viewcode-back" href="../client_API.html#client.Helper.unserialize">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">unserialize</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Loads a workflow from a file.</span>
@@ -1594,7 +1683,10 @@
 
         <span class="k">return</span> <span class="n">workflow</span></div>
 
-<div class="viewcode-block" id="Helper.convert_wf_file_for_p2_5"><a class="viewcode-back" href="../client_API.html#client.Helper.convert_wf_file_for_p2_5">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="Helper.convert_wf_file_for_p2_5">
+<a class="viewcode-back" href="../client_API.html#client.Helper.convert_wf_file_for_p2_5">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">convert_wf_file_for_p2_5</span><span class="p">(</span><span class="n">origin_file_path</span><span class="p">,</span> <span class="n">target_file_path</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method requires Python &gt;= 2.6.</span>
@@ -1613,6 +1705,7 @@
             <span class="n">t_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">SerializationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span></div>
+
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">cpu_count</span><span class="p">():</span>
@@ -1660,8 +1753,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client_types &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="../_static/icon_small.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -74,7 +74,9 @@
 <span class="c1">#-------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="Job"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job">[docs]</a><span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Job">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.Job">[docs]</a>
+<span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Job representation.</span>
@@ -385,7 +387,9 @@
     <span class="k">def</span> <span class="nf">get_commandline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Job.commandline_repl"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job.commandline_repl">[docs]</a>    <span class="k">def</span> <span class="nf">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+<div class="viewcode-block" id="Job.commandline_repl">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.Job.commandline_repl">[docs]</a>
+    <span class="k">def</span> <span class="nf">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get &quot;processed&quot; commandline list. Each element in the commandline list</span>
 <span class="sd">        which contains a replacement string in the shame %(var)s is replaced</span>
@@ -424,6 +428,7 @@
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">cmd</span></div>
+
 
     <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># TODO a better solution would be to overload __eq__ and __neq__ operator</span>
@@ -464,7 +469,9 @@
                 <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="Job.from_dict"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Job.from_dict">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.Job.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
                   <span class="n">d</span><span class="p">,</span>
                   <span class="n">tr_from_ids</span><span class="p">,</span>
@@ -545,7 +552,10 @@
 
         <span class="k">return</span> <span class="n">job</span></div>
 
-<div class="viewcode-block" id="Job.to_dict"><a class="viewcode-back" href="../workflow_creation.html#client_types.Job.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="Job.to_dict">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.Job.to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">id_generator</span><span class="p">,</span>
                 <span class="n">transfer_ids</span><span class="p">,</span>
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
@@ -679,6 +689,7 @@
 
         <span class="k">return</span> <span class="n">job_dict</span></div>
 
+
     <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># filter out some instance attributes which should / can not be pickled</span>
         <span class="n">no_picke</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_do_not_pickle&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -695,7 +706,10 @@
         <span class="k">return</span> <span class="n">state_dict</span></div>
 
 
-<div class="viewcode-block" id="EngineExecutionJob"><a class="viewcode-back" href="../workflow_creation.html#client_types.EngineExecutionJob">[docs]</a><span class="k">class</span> <span class="nc">EngineExecutionJob</span><span class="p">(</span><span class="n">Job</span><span class="p">):</span>
+
+<div class="viewcode-block" id="EngineExecutionJob">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.EngineExecutionJob">[docs]</a>
+<span class="k">class</span> <span class="nc">EngineExecutionJob</span><span class="p">(</span><span class="n">Job</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    EngineExecutionJob: a lightweight job which will not run as a &quot;real&quot; job,</span>
@@ -731,7 +745,10 @@
         <span class="k">return</span> <span class="n">output_dict</span></div>
 
 
-<div class="viewcode-block" id="BarrierJob"><a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob">[docs]</a><span class="k">class</span> <span class="nc">BarrierJob</span><span class="p">(</span><span class="n">EngineExecutionJob</span><span class="p">):</span>
+
+<div class="viewcode-block" id="BarrierJob">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob">[docs]</a>
+<span class="k">class</span> <span class="nc">BarrierJob</span><span class="p">(</span><span class="n">EngineExecutionJob</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Barrier job: it is a &quot;fake&quot; job which does nothing (and will not become a</span>
@@ -775,7 +792,9 @@
                                          <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
                                          <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
-<div class="viewcode-block" id="BarrierJob.from_dict"><a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="BarrierJob.from_dict">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
                   <span class="n">d</span><span class="p">,</span>
                   <span class="n">tr_from_ids</span><span class="p">,</span>
@@ -811,7 +830,10 @@
 
         <span class="k">return</span> <span class="n">job</span></div>
 
-<div class="viewcode-block" id="BarrierJob.to_dict"><a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="BarrierJob.to_dict">
+<a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">id_generator</span><span class="p">,</span>
                 <span class="n">transfer_ids</span><span class="p">,</span>
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
@@ -863,7 +885,9 @@
                 <span class="n">opt_ids</span><span class="p">)</span>
             <span class="n">job_dict</span><span class="p">[</span><span class="s1">&#39;referenced_output_files&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ser_ref_out_files</span>
 
-        <span class="k">return</span> <span class="n">job_dict</span></div></div>
+        <span class="k">return</span> <span class="n">job_dict</span></div>
+</div>
+
 
 
 <span class="k">class</span> <span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -2513,8 +2537,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

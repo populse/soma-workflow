@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Graphical User Interface &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=514cf933" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/documentation_options.js?v=3eb8911e"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="_static/icon_small.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -46,10 +46,10 @@
           <div class="body" role="main">
             
   <section id="graphical-user-interface">
-<span id="gui"></span><h1>Graphical User Interface<a class="headerlink" href="#graphical-user-interface" title="Permalink to this heading">¶</a></h1>
+<span id="gui"></span><h1>Graphical User Interface<a class="headerlink" href="#graphical-user-interface" title="Link to this heading">¶</a></h1>
 <p>Soma-Workflow provides a graphical interface program, named <code class="docutils literal notranslate"><span class="pre">soma_workflow_gui</span></code>. It is used to submit, stop, restart, and more generally monitor workflows execution on local or remote computing resources.</p>
 <section id="connection">
-<h2>Connection<a class="headerlink" href="#connection" title="Permalink to this heading">¶</a></h2>
+<h2>Connection<a class="headerlink" href="#connection" title="Link to this heading">¶</a></h2>
 <p>When the GUI is started, you can connect to one of the configured
 computing resources (see <a class="reference internal" href="install_config.html#client-configuration"><span class="std std-ref">Configuration (Created automatically)</span></a>) through a dialog window.
 Without special configuration, you can always choose the current machine you are
@@ -61,13 +61,13 @@ to fill them, the login can be registered in the configuration file, and a
 RSA key can be used (see <a class="reference internal" href="errors_troubleshooting.html#good-pratices-troubleshooting"><span class="std std-ref">Tips, Good Practices and Errors</span></a>).</p>
 </section>
 <section id="main-window">
-<h2>Main Window<a class="headerlink" href="#main-window" title="Permalink to this heading">¶</a></h2>
+<h2>Main Window<a class="headerlink" href="#main-window" title="Link to this heading">¶</a></h2>
 <p>When at least one resource is activated (your multi core machine for example),
 the main application window looks like the following:</p>
 <a class="reference internal image-reference" href="_images/soma_workflow_gui.png"><img alt="_images/soma_workflow_gui.png" src="_images/soma_workflow_gui.png" style="width: 700.0px; height: 515.1999999999999px;" /></a>
 <p>The interface elements are described in the following sections:</p>
 <section id="computing-resources">
-<h3>1. Computing resources<a class="headerlink" href="#computing-resources" title="Permalink to this heading">¶</a></h3>
+<h3>1. Computing resources<a class="headerlink" href="#computing-resources" title="Link to this heading">¶</a></h3>
 <p>This widget displays the list of active computing resources (two in the example)
 and gives at any time their current status (if some workflows are running or
 not).</p>
@@ -88,7 +88,7 @@ any time.</p></li>
 </div></blockquote>
 </section>
 <section id="workflow-selection">
-<h3>2. Workflow selection<a class="headerlink" href="#workflow-selection" title="Permalink to this heading">¶</a></h3>
+<h3>2. Workflow selection<a class="headerlink" href="#workflow-selection" title="Link to this heading">¶</a></h3>
 <p>When a computing resource is selected, this widget display the list of
 workflows previously submitted to the computing resource. These workflows can
 either be done or still running. At any time, a blue icon with a white “r”
@@ -98,7 +98,7 @@ changed in the “Workflow” menu.</p>
 <a class="reference internal image-reference" href="_images/gui_workflow_selection.png"><img alt="_images/gui_workflow_selection.png" src="_images/gui_workflow_selection.png" style="width: 309.6px; height: 156.0px;" /></a>
 </section>
 <section id="workflow-global-information">
-<h3>3. Workflow global information<a class="headerlink" href="#workflow-global-information" title="Permalink to this heading">¶</a></h3>
+<h3>3. Workflow global information<a class="headerlink" href="#workflow-global-information" title="Link to this heading">¶</a></h3>
 <p>This widget displays the main information about the selected workflow.</p>
 <a class="reference internal image-reference" href="_images/gui_workflow_info.png"><img alt="_images/gui_workflow_info.png" src="_images/gui_workflow_info.png" style="width: 308.8px; height: 88.80000000000001px;" /></a>
 <p>The workflow status is updated at a regular time interval (3 seconds).</p>
@@ -109,7 +109,7 @@ workflow will be asked again.</p>
 note that the running workflows are never deleted.</p>
 </section>
 <section id="workflow-view">
-<h3>4. Workflow view<a class="headerlink" href="#workflow-view" title="Permalink to this heading">¶</a></h3>
+<h3>4. Workflow view<a class="headerlink" href="#workflow-view" title="Link to this heading">¶</a></h3>
 <p>The selected workflow is displayed as a tree in the central window. At any time,
 the icons show the state of the workflow elements (see <a class="reference internal" href="status_list.html#status-list"><span class="std std-ref">Status list</span></a>). Gray
 icons mean that the workflow was not submitted yet.</p>
@@ -127,12 +127,12 @@ jobs inside. Among the displayed jobs, some ended with success, one is running,
 one is in the submission queue, and some are waiting to be submitted (no icon).</p>
 </section>
 <section id="job-filter">
-<h3>5. Job filter<a class="headerlink" href="#job-filter" title="Permalink to this heading">¶</a></h3>
+<h3>5. Job filter<a class="headerlink" href="#job-filter" title="Link to this heading">¶</a></h3>
 <p>The widget under the tree can be used to filter the displayed jobs. Enter text
 and/or select job status: the tree will be automatically updated.</p>
 </section>
 <section id="selection-information">
-<h3>6. Selection information<a class="headerlink" href="#selection-information" title="Permalink to this heading">¶</a></h3>
+<h3>6. Selection information<a class="headerlink" href="#selection-information" title="Link to this heading">¶</a></h3>
 <p>This widget display the information about the selected item in the tree.</p>
 <p>When a job is selected, the following widget is displayed:</p>
 <a class="reference internal image-reference" href="_images/gui_job_info_1.png"><img alt="_images/gui_job_info_1.png" src="_images/gui_job_info_1.png" style="width: 452.0px; height: 231.20000000000002px;" /></a>
@@ -140,7 +140,7 @@ and/or select job status: the tree will be automatically updated.</p>
 <a class="reference internal image-reference" href="_images/gui_job_info_3.png"><img alt="_images/gui_job_info_3.png" src="_images/gui_job_info_3.png" style="width: 451.20000000000005px; height: 230.4px;" /></a>
 </section>
 <section id="workflow-control">
-<h3>7. Workflow control<a class="headerlink" href="#workflow-control" title="Permalink to this heading">¶</a></h3>
+<h3>7. Workflow control<a class="headerlink" href="#workflow-control" title="Link to this heading">¶</a></h3>
 <p>Use the “Open” button to load a workflow saved into a file.
 Then press the “Submit” button to submit it to one computing resource.</p>
 <p>If a workflow was submitted outside of the GUI (using the Python API for
@@ -154,7 +154,7 @@ resource. Note that the submission queue can be changed when you restart a
 workflow.</p>
 </section>
 <section id="plots">
-<h3>8. Plots<a class="headerlink" href="#plots" title="Permalink to this heading">¶</a></h3>
+<h3>8. Plots<a class="headerlink" href="#plots" title="Link to this heading">¶</a></h3>
 <p>Several plots can be displayed and refreshed at regular time interval:</p>
 <ul class="simple">
 <li><p>the jobs function of the time.</p></li>
@@ -248,8 +248,8 @@ workflow.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>
