@@ -380,7 +380,7 @@ class Job(object):
                             # m = m[:-1]
                         # WARNING: returns a string, losing
                         # SpecialPath instances
-                        cmd.append(''.join(m))
+                        cmd.append(''.join([str(x) for x in m]))
                     else:
                         cmd.append(m[1])
         return cmd

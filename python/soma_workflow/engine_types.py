@@ -362,6 +362,8 @@ class EngineJob(Job):
                     # commandline elements should be strings
                     item = repr(item)
                 new_command.append(item)
+            if len(new_command) != 0 and new_command[0] == '<join>':
+                new_command = ''.join(new_command[1:])
             if isinstance(command, tuple):
                 new_command = tuple(new_command)
             elif isinstance(command, set):
