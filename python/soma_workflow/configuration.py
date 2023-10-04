@@ -24,6 +24,7 @@ import six.moves.configparser as configparser
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
 from soma_workflow.info import DB_VERSION
+import tempfile
 
 import six
 from six.moves import range
@@ -798,7 +799,13 @@ class Configuration(observer.Observable):
         if self._config_parser is None or \
             not self._config_parser.has_option(self._resource_id,
                                                OCFG_SHARED_TEMPORARY_DIR):
-            return None
+            # fallback to system defaults (using TMP or TMPDIR envars)
+            swf_tmp = tempfile.gettempdir()
+            if swf_tmp is not None:
+                swf_tmp = os.path.join(swf_tmp, 'soma-workflow-tmp')
+                if not os.path.exists(swf_tmp):
+                    os.makedirs(swf_tmp)
+            return swf_tmp
         self._shared_temporary_dir = self._config_parser.get(self._resource_id,
                                                              OCFG_SHARED_TEMPORARY_DIR)
         if not self._shared_temporary_dir:
