@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.5.0
     hooks:
     -   id: check-added-large-files
     -   id: check-case-conflict
@@ -23,7 +23,7 @@ repos:
     #     exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 6.1.0
     hooks:
     -   id: flake8
         name: flake8 under python3
