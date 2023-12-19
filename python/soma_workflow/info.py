@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 version_major = 3
-version_minor = 3
-version_micro = 0
+version_minor = 2
+version_micro = 2
 version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
@@ -17,7 +17,12 @@ CLASSIFIERS = ['Development Status :: 5 - Production/Stable',
                'Intended Audience :: Science/Research',
                'Intended Audience :: Education',
                'Operating System :: OS Independent',
-               'Programming Language :: Python',
+               "Programming Language :: Python :: 3.6",
+               "Programming Language :: Python :: 3.7",
+               "Programming Language :: Python :: 3.8",
+               "Programming Language :: Python :: 3.9",
+               "Programming Language :: Python :: 3.10",
+               "Programming Language :: Python :: 3 :: Only",
                'Topic :: Scientific/Engineering',
                'Topic :: Utilities',
                'Topic :: Software Development :: Libraries',
@@ -39,17 +44,16 @@ SPHINX_MIN_VERSION = '1.0'
 
 # Main setup parameters
 NAME = 'soma-workflow'
-PROJECT = 'soma'
 ORGANISATION = "Populse"
-MAINTAINER = "Populse"
+MAINTAINER = "Populse team"
 MAINTAINER_EMAIL = "support@brainvisa.info"
 DESCRIPTION = description
 LONG_DESCRIPTION = long_description
-URL = "https://brainvisa.info/soma-workflow"
-DOWNLOAD_URL = "https://github.com/neurospin/soma-workflow"
+URL = "https://github.com/populse/soma-workflow"
+DOWNLOAD_URL = "https://github.com/populse/soma-workflow"
 LICENSE = "CeCILL-B"
 CLASSIFIERS = CLASSIFIERS
-AUTHOR = "Soma-Workflow developers"
+AUTHOR = "Populse team"
 AUTHOR_EMAIL = "support@brainvisa.info"
 PLATFORMS = "OS Independent"
 PROVIDES = ["soma-workflow"]
