@@ -1,4 +1,4 @@
-Soma-workflow
+# Soma-workflow
 [//]: [![](https://travis-ci.com/populse/soma-workflow.svg?branch=master)](https://travis-ci.com/populse/soma-workflow)
 [![Build status](https://ci.appveyor.com/api/projects/status/9n7jp4p3eenv1o24/branch/master?svg=true)](https://ci.appveyor.com/project/denisri/soma-workflow-87l7c/branch/master)
 [![](https://codecov.io/github/populse/soma-workflow/coverage.svg?branch=master)](https://codecov.io/github/populse/soma-workflow)
