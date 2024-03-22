@@ -70,10 +70,10 @@
 <h3>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Python <em>version 2.7 or more</em></p></li>
-<li><p><a class="reference external" href="http://zeromq.org">ZeroMQ</a></p></li>
-<li><p><a class="reference external" href="http://www.lag.net/paramiko/">Paramiko</a> <em>version 1.7 or more</em>. Paramiko in
+<li><p><a class="reference external" href="https://zeromq.org">ZeroMQ</a></p></li>
+<li><p><a class="reference external" href="https://www.lag.net/paramiko/">Paramiko</a> <em>version 1.7 or more</em>. Paramiko in
 only required if the computing resource is remote (see config).</p></li>
-<li><p>For the GUI: Qt <em>version 4.6.2 or more</em>, <a class="reference external" href="http://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a> <em>version 4.7.2 or more</em>, or <a class="reference external" href="http://www.pyside.org">PySide</a> <em>version 1.1.1 or more</em> and optionally <a class="reference external" href="http://matplotlib.sourceforge.net/">matplotlib</a> <em>version 0.99 or more</em></p></li>
+<li><p>For the GUI: Qt <em>version 4.6.2 or more</em>, <a class="reference external" href="https://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a> <em>version 4.7.2 or more</em>, or <a class="reference external" href="https://www.pyside.org">PySide</a> <em>version 1.1.1 or more</em> and optionally <a class="reference external" href="https://matplotlib.org/">matplotlib</a> <em>version 0.99 or more</em></p></li>
 </ul>
 </section>
 <section id="installation">
@@ -98,7 +98,7 @@ $ python setup.py install --prefix my_directory
 </section>
 <section id="configuration-created-automatically">
 <span id="client-configuration"></span><h3>Configuration (Created automatically)<a class="headerlink" href="#configuration-created-automatically" title="Link to this heading">¶</a></h3>
-<p>The configuration syntax is the <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. The configuration file is located in “$HOME/.soma-workflow.cfg”. This file will be created automatically once a server has been established (see <a class="reference internal" href="#server-management"><span class="std std-ref">Server installation using “Server Management”</span></a>).</p>
+<p>The configuration syntax is the <a class="reference external" href="https://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. The configuration file is located in “$HOME/.soma-workflow.cfg”. This file will be created automatically once a server has been established (see <a class="reference internal" href="#server-management"><span class="std std-ref">Server installation using “Server Management”</span></a>).</p>
 <p>There is one section for each computing resource (that is for each Soma-workflow database server).</p>
 <p>Only four items are required:</p>
 <blockquote>
@@ -189,10 +189,10 @@ the module zro which is included in the soma_workflow package and is inspired on
 <ul class="simple">
 <li><p>A distributed resource management system (DRMS) such as Grid Engine, Condor,
 Torque/PBS, LSF..</p></li>
-<li><p>A implementation of <a class="reference external" href="http://www.drmaa.org/">DRMAA</a> 1.0 for the DRMS in C if available, unless a specific <a class="reference internal" href="scheduler.html"><span class="doc">scheduler exists</span></a></p></li>
+<li><p>A implementation of <a class="reference external" href="https://www.drmaa.org/">DRMAA</a> 1.0 for the DRMS in C if available, unless a specific <a class="reference internal" href="scheduler.html"><span class="doc">scheduler exists</span></a></p></li>
 <li><p>Python <em>version 2.7 or more</em></p></li>
 <li><p><a class="reference external" href="http:/zeromq.org">zmq</a></p></li>
-<li><p><a class="reference external" href="http://docs.python.org/library/sqlite3.html">SQLite</a> <em>version 3 or more</em></p></li>
+<li><p><a class="reference external" href="https://docs.python.org/library/sqlite3.html">SQLite</a> <em>version 3 or more</em></p></li>
 </ul>
 <p>The implementations of DRMAA tested successfully with Soma-workflow:</p>
 <blockquote>
@@ -204,7 +204,7 @@ Torque/PBS, LSF..</p></li>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>Torque 2.0.0</p></td>
-<td><p><a class="reference external" href="http://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/">PBS DRMAA 1.0.13</a> from <a class="reference external" href="http://apps.man.poznan.pl/trac/pbs-drmaa">http://apps.man.poznan.pl/trac/pbs-drmaa</a></p></td>
+<td><p><a class="reference external" href="https://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/">PBS DRMAA 1.0.13</a> from <a class="reference external" href="https://apps.man.poznan.pl/trac/pbs-drmaa">https://apps.man.poznan.pl/trac/pbs-drmaa</a></p></td>
 </tr>
 <tr class="row-odd"><td><p>LSF 7.0</p></td>
 <td><p>FedStage LSF DRMAA 1.0.3</p></td>
@@ -245,7 +245,7 @@ the below figure. Since the configuration is needed for both sides (client and s
 <a class="reference internal image-reference" href="_images/ServerManagement.png"><img alt="_images/ServerManagement.png" src="_images/ServerManagement.png" style="width: 508.0px; height: 358.0px;" /></a>
 <p>Opening “Add Server” button, we can see a window as shown below:</p>
 <a class="reference internal image-reference" href="_images/ServerManagementAddServer.png"><img alt="_images/ServerManagementAddServer.png" src="_images/ServerManagementAddServer.png" style="width: 489.0px; height: 569.0px;" /></a>
-<p>Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See “<a class="reference external" href="http://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login">http://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login</a>”. Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)</p>
+<p>Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See “<a class="reference external" href="https://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login">https://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login</a>”. Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)</p>
 <p>Since the configuration is needed for both sides (client and server),
 the first button, called “Install on Server and Client”, is used for configuring both sides. Since many clients can connect to one server, “Setup Client without Installation on Server” is used for configurating only client side.</p>
 <p>Since soma-workflow is based on the DRMAA on the server side, to make sure that your LD_LIBRARY_PATH contains libdrmaa.so or export DRMAA_LIBRARY_PATH to the absolute path of libdrmaa.so on your server.</p>
@@ -253,7 +253,7 @@ the first button, called “Install on Server and Client”, is used for configu
 <section id="server-configuration-created-automatically">
 <span id="server-configuration"></span><h3>Server configuration (Created automatically)<a class="headerlink" href="#server-configuration-created-automatically" title="Link to this heading">¶</a></h3>
 <p>This section defines the required and optional configuration items. This file can be found on the both side of client and server with the path “$HOME/.soma-workflow.cfg”.</p>
-<p>The configuration file syntax is the <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. All the configuration items are defined in one section. The name of
+<p>The configuration file syntax is the <a class="reference external" href="https://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. All the configuration items are defined in one section. The name of
 the section is the resource identifier (ex: “Titan”).</p>
 <p>Configuration file example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">Titan</span><span class="p">]</span>
@@ -395,19 +395,19 @@ singularity<span class="w"> </span><span class="nb">exec</span><span class="w"> 
 </div>
 <p>Since BrainVisa 5.1, the environment variables <code class="docutils literal notranslate"><span class="pre">SOMAWF_INPUT_PARAMS</span></code> and <code class="docutils literal notranslate"><span class="pre">SOMAWF_OUTPUT_PARAMS</span></code> are automatically exported.</p>
 </dd>
-<dt><strong>SERVER_LOG_LEVEL</strong></dt><dd><p>Server logging level as defined in the <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module.</p>
+<dt><strong>SERVER_LOG_LEVEL</strong></dt><dd><p>Server logging level as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
 </dd>
-<dt><strong>SERVER_LOG_FORMAT</strong></dt><dd><p>Server logging format as defined in the <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module.</p>
+<dt><strong>SERVER_LOG_FORMAT</strong></dt><dd><p>Server logging format as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
 </dd>
 <dt><strong>ENGINE_LOG_DIR</strong></dt><dd><p>Directory path where to store Workflow Engine log files.</p>
 </dd>
-<dt><strong>ENGINE_LOG_LEVEL</strong></dt><dd><p>Workflow Engine logging level as defined in the <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module.</p>
+<dt><strong>ENGINE_LOG_LEVEL</strong></dt><dd><p>Workflow Engine logging level as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
 </dd>
-<dt><strong>ENGINE_LOG_FORMAT</strong></dt><dd><p>Workflow Engine logging format as defined in the <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module.</p>
+<dt><strong>ENGINE_LOG_FORMAT</strong></dt><dd><p>Workflow Engine logging format as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
 </dd>
 <dt><strong>MPI_LOG_DIR</strong></dt><dd><p>Directory path where to store the MPI workflow runner log files. (only used in MPI mode)</p>
 </dd>
-<dt><strong>MPI_LOG_FORMAT</strong></dt><dd><p>MPI runner logging format as defined in the <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module.</p>
+<dt><strong>MPI_LOG_FORMAT</strong></dt><dd><p>MPI runner logging format as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -440,10 +440,10 @@ access feature, the installation of zmq can be skipped.</p>
 <ul class="simple">
 <li><p>A distributed resource management system (DRMS) such as Grid Engine, Condor,
 Torque/PBS, LSF..</p></li>
-<li><p>A implementation of <a class="reference external" href="http://www.drmaa.org/">DRMAA</a> 1.0 for the DRMS in C if available, unless a specific <a class="reference internal" href="scheduler.html"><span class="doc">scheduler exists</span></a></p></li>
+<li><p>A implementation of <a class="reference external" href="https://www.drmaa.org/">DRMAA</a> 1.0 for the DRMS in C if available, unless a specific <a class="reference internal" href="scheduler.html"><span class="doc">scheduler exists</span></a></p></li>
 <li><p>Python <em>version 2.7 or more</em></p></li>
 <li><p>SQLite <em>version 3 or more</em></p></li>
-<li><p>For the GUI: Qt <em>version 4.6.2 or more</em>, <a class="reference external" href="http://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a> <em>version 4.7.2 or more</em>, or <a class="reference external" href="http://www.pyside.org">PySide</a> <em>version 1.1.1</em> or more, and optionally <a class="reference external" href="http://matplotlib.sourceforge.net/">matplotlib</a> <em>version 0.99 or more</em></p></li>
+<li><p>For the GUI: Qt <em>version 4.6.2 or more</em>, <a class="reference external" href="https://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a> <em>version 4.7.2 or more</em>, or <a class="reference external" href="https://www.pyside.org">PySide</a> <em>version 1.1.1</em> or more, and optionally <a class="reference external" href="httpq://matplotlib.org/">matplotlib</a> <em>version 0.99 or more</em></p></li>
 </ul>
 <p>More details about the implementation of DRMAA can be found in the server
 installation section (see <a class="reference internal" href="#server-requirements"><span class="std std-ref">Requirements</span></a>).</p>
@@ -464,7 +464,7 @@ installation section (see <a class="reference internal" href="#server-requiremen
 <span id="light-mode-configuration"></span><h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h3>
 <p>This section defines the required and optional configuration items for the light
 mode.</p>
-<p>The configuration file syntax is the <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. All the
+<p>The configuration file syntax is the <a class="reference external" href="https://docs.python.org/library/configparser.html">ConfigParser</a>  syntax. All the
 configuration items are defined in one section. The section name corresponds to
 the name you chose for the resource: “Local Titan” in the example.</p>
 <p>Configuration file example:</p>
