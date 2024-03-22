@@ -47,10 +47,10 @@ Main Features
 Documentation
 -------------
 
-  Visit Soma-workflow (http://www.brainvisa.info/soma-workflow/sphinx/) main page!
+  Visit Soma-workflow (https://brainvisa.info/soma-workflow/sphinx/) main page!
 
-  An extensive documentation (http://www.brainvisa.info/doc/soma-workflow/sphinx/index.html) is available,
-  with ready to use examples (http://www.brainvisa.info/doc/soma-workflow/sphinx/examples.html).
+  An extensive documentation (https://brainvisa.info/doc/soma-workflow/sphinx/index.html) is available,
+  with ready to use examples (https://brainvisa.info/doc/soma-workflow/sphinx/examples.html).
   
   The git master branch doc is also updated on github: https://populse.github.io/soma-workflow/
 
@@ -99,11 +99,11 @@ Installation
 
   **Windows (tested on Vista 64 bit for local mode)**
 
-  1) Go to http://www.python.org/download/ to download and install python Windows Installer according to your windows version, for example in C:\Python27.
+  1) Go to https://www.python.org/download/ to download and install python Windows Installer according to your windows version, for example in C:\Python27.
 
-  2) Set environment variable PATH that contains python directory (see http://docs.python.org/2/using/windows.html), for example in C:\Python27.
+  2) Set environment variable PATH that contains python directory (see https://docs.python.org/2/using/windows.html), for example in C:\Python27.
 
-  3) Download and install PyQt4 for python27 in http://www.riverbankcomputing.com/software/pyqt/download
+  3) Download and install PyQt4 for python27 in https://www.riverbankcomputing.com/software/pyqt/download
  
   4) Go to https://pypi.python.org/pypi/soma-workflow to download soma-workflow and extract it into a directory, for example, C:\soma-workflow.
 

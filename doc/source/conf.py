@@ -284,7 +284,7 @@ epub_copyright = u'2021, '
 autoclass_content = "both"
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {'https://docs.python.org/': None}
 
 # versions of our software
 casadistro_version = '3.0'
