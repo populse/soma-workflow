@@ -29,10 +29,10 @@ Requirements
 ------------
 
 * Python *version 2.7 or more*
-* `ZeroMQ <http://zeromq.org>`_
-* `Paramiko <http://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in
+* `ZeroMQ <https://zeromq.org>`_
+* `Paramiko <https://www.lag.net/paramiko/>`_ *version 1.7 or more*. Paramiko in
   only required if the computing resource is remote (see config).
-* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1 or more* and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <https://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <https://www.pyside.org>`_ *version 1.1.1 or more* and optionally `matplotlib <https://matplotlib.org/>`_ *version 0.99 or more*
 
 Installation
 ------------
@@ -64,7 +64,7 @@ Start the GUI with the command *soma_workflow_gui* and/or import the soma_workfl
 Configuration (Created automatically)
 -------------------------------------
 
-The configuration syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. The configuration file is located in "$HOME/.soma-workflow.cfg". This file will be created automatically once a server has been established (see :ref:`server_management`).
+The configuration syntax is the `ConfigParser <https://docs.python.org/library/configparser.html>`_  syntax. The configuration file is located in "$HOME/.soma-workflow.cfg". This file will be created automatically once a server has been established (see :ref:`server_management`).
 
 There is one section for each computing resource (that is for each Soma-workflow database server).
 
@@ -174,17 +174,17 @@ Here is the list of the server dependencies:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* A implementation of `DRMAA <https://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
 * Python *version 2.7 or more*
 * `zmq <http:/zeromq.org>`_ 
-* `SQLite <http://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
+* `SQLite <https://docs.python.org/library/sqlite3.html>`_ *version 3 or more*
 
 The implementations of DRMAA tested successfully with Soma-workflow:
 
   ===================  ===========================================
   DRMS                 DRMAA implementation
   ===================  ===========================================
-  Torque 2.0.0         `PBS DRMAA 1.0.13 <http://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/>`_ from http://apps.man.poznan.pl/trac/pbs-drmaa
+  Torque 2.0.0         `PBS DRMAA 1.0.13 <https://sourceforge.net/projects/pbspro-drmaa/files/pbs-drmaa/1.0/>`_ from https://apps.man.poznan.pl/trac/pbs-drmaa
   LSF 7.0              FedStage LSF DRMAA 1.0.3
   Grid Engine 6.2u5&6  Embeded implementation
   Condor 7.4.0         Embeded implementation
@@ -221,7 +221,7 @@ Opening "Add Server" button, we can see a window as shown below:
 .. image:: images/ServerManagementAddServer.*
   :scale: 100
 
-Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See "http://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login". Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)
+Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See "https://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login". Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)
 
 Since the configuration is needed for both sides (client and server),
 the first button, called "Install on Server and Client", is used for configuring both sides. Since many clients can connect to one server, "Setup Client without Installation on Server" is used for configurating only client side.
@@ -236,7 +236,7 @@ Server configuration (Created automatically)
 
 This section defines the required and optional configuration items. This file can be found on the both side of client and server with the path "$HOME/.soma-workflow.cfg".
 
-The configuration file syntax is the `ConfigParser <http://docs.python.org/library/configparser.html>`_  syntax. All the configuration items are defined in one section. The name of
+The configuration file syntax is the `ConfigParser <https://docs.python.org/library/configparser.html>`_  syntax. All the configuration items are defined in one section. The name of
 the section is the resource identifier (ex: "Titan").
 
 
@@ -401,28 +401,28 @@ Configuration items optional on the server side:
 
   **SERVER_LOG_LEVEL**
     Server logging level as defined in the `logging
-    <http://docs.python.org/library/logging.html>`_ module.
+    <https://docs.python.org/library/logging.html>`_ module.
 
   **SERVER_LOG_FORMAT**
-    Server logging format as defined in the `logging <http://docs.python.org/library/logging.html>`_ module.
+    Server logging format as defined in the `logging <https://docs.python.org/library/logging.html>`_ module.
 
   **ENGINE_LOG_DIR**
     Directory path where to store Workflow Engine log files.
 
   **ENGINE_LOG_LEVEL**
     Workflow Engine logging level as defined in the `logging
-    <http://docs.python.org/library/logging.html>`_ module.
+    <https://docs.python.org/library/logging.html>`_ module.
 
   **ENGINE_LOG_FORMAT**
     Workflow Engine logging format as defined in the `logging
-    <http://docs.python.org/library/logging.html>`_ module.
+    <https://docs.python.org/library/logging.html>`_ module.
 
   **MPI_LOG_DIR**
     Directory path where to store the MPI workflow runner log files. (only used in MPI mode)
 
   **MPI_LOG_FORMAT**
     MPI runner logging format as defined in the `logging
-    <http://docs.python.org/library/logging.html>`_ module.
+    <https://docs.python.org/library/logging.html>`_ module.
 
 Parallel job configuration:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -480,10 +480,10 @@ The requirements are thus:
 
 * A distributed resource management system (DRMS) such as Grid Engine, Condor,
   Torque/PBS, LSF..
-* A implementation of `DRMAA <http://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
+* A implementation of `DRMAA <https://www.drmaa.org/>`_ 1.0 for the DRMS in C if available, unless a specific :doc:`scheduler exists <scheduler>`
 * Python *version 2.7 or more*
 * SQLite *version 3 or more*
-* For the GUI: Qt *version 4.6.2 or more*, `PyQt <http://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <http://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <http://matplotlib.sourceforge.net/>`_ *version 0.99 or more*
+* For the GUI: Qt *version 4.6.2 or more*, `PyQt <https://www.riverbankcomputing.co.uk/software/pyqt/intro>`_ *version 4.7.2 or more*, or `PySide <https://www.pyside.org>`_ *version 1.1.1* or more, and optionally `matplotlib <httpq://matplotlib.org/>`_ *version 0.99 or more*
 
 More details about the implementation of DRMAA can be found in the server
 installation section (see :ref:`server_requirements`).
@@ -511,7 +511,7 @@ This section defines the required and optional configuration items for the light
 mode.
 
 The configuration file syntax is the `ConfigParser
-<http://docs.python.org/library/configparser.html>`_  syntax. All the
+<https://docs.python.org/library/configparser.html>`_  syntax. All the
 configuration items are defined in one section. The section name corresponds to
 the name you chose for the resource: "Local Titan" in the example.
 
