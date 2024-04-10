@@ -805,9 +805,10 @@ class Configuration(observer.Observable):
                 swf_tmp = os.path.join(swf_tmp, 'soma-workflow-tmp')
                 if not os.path.exists(swf_tmp):
                     os.makedirs(swf_tmp)
+                    os.chmod(swf_tmp, 0o777)
             return swf_tmp
-        self._shared_temporary_dir = self._config_parser.get(self._resource_id,
-                                                             OCFG_SHARED_TEMPORARY_DIR)
+        self._shared_temporary_dir = self._config_parser.get(
+            self._resource_id, OCFG_SHARED_TEMPORARY_DIR)
         if not self._shared_temporary_dir:
             # fallback to transfered files dir
             self._shared_temporary_dir = self.get_transfered_file_dir()
