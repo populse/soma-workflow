@@ -11,14 +11,9 @@ organization: PARIETAL, INRIA, Saclay, France
 license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
 
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
-from six.moves import range
 from . import subprocess
 import sys
 import time
-import threading
 import logging
 import os
 import socket
@@ -28,7 +23,7 @@ import tarfile
 import six
 import datetime
 from mpi4py import MPI
-from soma_workflow import scheduler, constants
+from soma_workflow import constants
 from soma_workflow.schedulers.mpi_scheduler import MPIScheduler
 
 
@@ -44,7 +39,7 @@ def slave_loop(communicator,
         logger = logging.getLogger("testMPI.slave")
     commands = {}
 
-    if epd_to_deploy != None:
+    if epd_to_deploy is not None:
         lock_file_path = os.path.join(untar_directory, "sw_deploy_lock")
         if not os.path.isfile(lock_file_path):
             try:
