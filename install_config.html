@@ -7,11 +7,11 @@
 
     <title>Installation and configuration &#8212; soma-workflow version 3.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=514cf933" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
     
     <script src="_static/documentation_options.js?v=7895512d"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="icon" href="_static/icon_small.ico"/>
@@ -184,7 +184,8 @@ database server.</p>
 the module zro which is included in the soma_workflow package and is inspired on <a class="reference external" href="https://pythonhosted.org/Pyro4/">Pyro4</a> syntax and uses the zmq package. In principle object are registered to the zro object server. At registration an uri is produced which can be used by other programs to instanciation proxy objects.A method call on a proxy object will contact the remote object and return its answer. For instance, the Workflow Engines query a proxy object of the database server to call its method.</p>
 <section id="server-requirements">
 <span id="id2"></span><h3>Requirements<a class="headerlink" href="#server-requirements" title="Link to this heading">¶</a></h3>
-<a class="reference internal image-reference" href="_images/third_parties.png"><img alt="_images/third_parties.png" src="_images/third_parties.png" style="width: 584.0px; height: 291.2px;" /></a>
+<a class="reference internal image-reference" href="_images/third_parties.png"><img alt="_images/third_parties.png" src="_images/third_parties.png" style="width: 584.0px; height: 291.2px;" />
+</a>
 <p>Here is the list of the server dependencies:</p>
 <ul class="simple">
 <li><p>A distributed resource management system (DRMS) such as Grid Engine, Condor,
@@ -238,13 +239,16 @@ Torque/PBS, LSF..</p></li>
 <span id="server-management"></span><h3>Server installation using “Server Management”<a class="headerlink" href="#server-installation-using-server-management" title="Link to this heading">¶</a></h3>
 <p>In the menu of soma-workflow, we can see a button called, Server Management.
 See the menu of the below figure, we can find a “Server Management” button</p>
-<a class="reference internal image-reference" href="_images/ServerManagementMenu.png"><img alt="_images/ServerManagementMenu.png" src="_images/ServerManagementMenu.png" style="width: 723.0px; height: 406.0px;" /></a>
+<a class="reference internal image-reference" href="_images/ServerManagementMenu.png"><img alt="_images/ServerManagementMenu.png" src="_images/ServerManagementMenu.png" style="width: 723.0px; height: 406.0px;" />
+</a>
 <p>Opening “Server Management” button, and then we can see three buttons, called:
 Add Server, Remove Server, Remove Server on Client, as shown in
 the below figure. Since the configuration is needed for both sides (client and server), “Remove Server” means that remove the installation on the server and client (BE CAREFULL: it will lose all your soma-workflow data on your server and client, $HOME/.soma-workflow and $HOME/.soma-workflow.cfg). “Remove Server on Client” means that it will remove all the data only on client side, while the server side is still running as usual.</p>
-<a class="reference internal image-reference" href="_images/ServerManagement.png"><img alt="_images/ServerManagement.png" src="_images/ServerManagement.png" style="width: 508.0px; height: 358.0px;" /></a>
+<a class="reference internal image-reference" href="_images/ServerManagement.png"><img alt="_images/ServerManagement.png" src="_images/ServerManagement.png" style="width: 508.0px; height: 358.0px;" />
+</a>
 <p>Opening “Add Server” button, we can see a window as shown below:</p>
-<a class="reference internal image-reference" href="_images/ServerManagementAddServer.png"><img alt="_images/ServerManagementAddServer.png" src="_images/ServerManagementAddServer.png" style="width: 489.0px; height: 569.0px;" /></a>
+<a class="reference internal image-reference" href="_images/ServerManagementAddServer.png"><img alt="_images/ServerManagementAddServer.png" src="_images/ServerManagementAddServer.png" style="width: 489.0px; height: 569.0px;" />
+</a>
 <p>Before the server installation, we strongly recommend to use SSH with authentication key instead of password. See “<a class="reference external" href="https://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login">https://askubuntu.com/questions/46930/how-can-i-set-up-password-less-ssh-login</a>”. Otherwise, you need to input password each time. We should setup the Server Address, SSH Login, while the other items are optional. (password is not mandatory when you are using authentication key)</p>
 <p>Since the configuration is needed for both sides (client and server),
 the first button, called “Install on Server and Client”, is used for configuring both sides. Since many clients can connect to one server, “Setup Client without Installation on Server” is used for configurating only client side.</p>
@@ -408,6 +412,8 @@ singularity<span class="w"> </span><span class="nb">exec</span><span class="w"> 
 <dt><strong>MPI_LOG_DIR</strong></dt><dd><p>Directory path where to store the MPI workflow runner log files. (only used in MPI mode)</p>
 </dd>
 <dt><strong>MPI_LOG_FORMAT</strong></dt><dd><p>MPI runner logging format as defined in the <a class="reference external" href="https://docs.python.org/library/logging.html">logging</a> module.</p>
+</dd>
+<dt><strong>MPI_JOB_TIMEOUT</strong></dt><dd><p>Job execution timeout in the MPI runner mode. The timeout applies to each job.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -707,7 +713,7 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -715,7 +721,7 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
@@ -742,7 +748,7 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
     </div>
   </body>
 </html>

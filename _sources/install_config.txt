@@ -424,6 +424,9 @@ Configuration items optional on the server side:
     MPI runner logging format as defined in the `logging
     <https://docs.python.org/library/logging.html>`_ module.
 
+  **MPI_JOB_TIMEOUT**
+    Job execution timeout in the MPI runner mode. The timeout applies to each job.
+
 Parallel job configuration:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
