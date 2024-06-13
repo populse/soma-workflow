@@ -1553,6 +1553,9 @@ def change_soma_workflow_directory(directory, config_name=None):
             = Configuration.search_config_path
     Configuration.search_config_path \
         = staticmethod(lambda: six.StringIO(swf_conf))
+    from .client import WorkflowController
+    WorkflowController.isolated_light_mode = directory
+
 
 def restore_soma_workflow_directory():
     '''
@@ -1566,3 +1569,5 @@ def restore_soma_workflow_directory():
         else:
             Configuration.search_config_path \
                 = staticmethod(Configuration._old_search_config_path)
+        from .client import WorkflowController
+        WorkflowController.isolated_light_mode = None
