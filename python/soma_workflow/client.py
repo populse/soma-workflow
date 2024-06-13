@@ -89,6 +89,8 @@ class WorkflowController(object):
 
     scheduler_config = None
 
+    isolated_light_mode = None
+
     def __init__(self,
                  resource_id=None,
                  login=None,
@@ -130,16 +132,21 @@ class WorkflowController(object):
             transfers, temporary files...). If the isolated_light_mode
             parameter value is True, then generate a temporary directory for
             that. Otherwise the parameter should be a directory name which will
-            be used instead of the default one.
+            be used instead of the default one. If None, a class-wide variable
+            WorkflowController.isolated_light_mode is used instread, so you can
+            set it on the class to allow isolated mode globally.
         '''
 
+        if isolated_light_mode is None:
+            isolated_light_mode = WorkflowController.isolated_light_mode
         if isolated_light_mode is not None:
             if isolated_light_mode is True:
                 isolated_dir = tempfile.mkdtemp(prefix='soma_workflow_')
             else:
                 isolated_dir = isolated_light_mode
             resource_id = 'localhost'
-            os.environ['SOMA_WORKFLOW_CONFIG'] = osp.join(isolated_dir, 'soma_workflow.cfg')
+            os.environ['SOMA_WORKFLOW_CONFIG'] = osp.join(isolated_dir,
+                                                          'soma_workflow.cfg')
             db_file = osp.join(isolated_dir, 'soma-workflow.db')
             trans_dir = osp.join(isolated_dir, 'transfered_files')
             config = configuration.Configuration(
