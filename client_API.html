@@ -78,7 +78,9 @@ configured to log on the remote machine with ssh.</p></li>
 transfers, temporary files…). If the isolated_light_mode
 parameter value is True, then generate a temporary directory for
 that. Otherwise the parameter should be a directory name which will
-be used instead of the default one.</p></li>
+be used instead of the default one. If None, a class-wide variable
+WorkflowController.isolated_light_mode is used instread, so you can
+set it on the class to allow isolated mode globally.</p></li>
 </ul>
 </dd>
 </dl>
@@ -135,7 +137,9 @@ configured to log on the remote machine with ssh.</p></li>
 transfers, temporary files…). If the isolated_light_mode
 parameter value is True, then generate a temporary directory for
 that. Otherwise the parameter should be a directory name which will
-be used instead of the default one.</p></li>
+be used instead of the default one. If None, a class-wide variable
+WorkflowController.isolated_light_mode is used instread, so you can
+set it on the class to allow isolated mode globally.</p></li>
 </ul>
 </dd>
 </dl>

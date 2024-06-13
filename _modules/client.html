@@ -131,6 +131,8 @@
 
     <span class="n">scheduler_config</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="n">isolated_light_mode</span> <span class="o">=</span> <span class="kc">None</span>
+
 <div class="viewcode-block" id="WorkflowController.__init__">
 <a class="viewcode-back" href="../client_API.html#client.WorkflowController.__init__">[docs]</a>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -174,16 +176,21 @@
 <span class="sd">            transfers, temporary files...). If the isolated_light_mode</span>
 <span class="sd">            parameter value is True, then generate a temporary directory for</span>
 <span class="sd">            that. Otherwise the parameter should be a directory name which will</span>
-<span class="sd">            be used instead of the default one.</span>
+<span class="sd">            be used instead of the default one. If None, a class-wide variable</span>
+<span class="sd">            WorkflowController.isolated_light_mode is used instread, so you can</span>
+<span class="sd">            set it on the class to allow isolated mode globally.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
+        <span class="k">if</span> <span class="n">isolated_light_mode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">isolated_light_mode</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="o">.</span><span class="n">isolated_light_mode</span>
         <span class="k">if</span> <span class="n">isolated_light_mode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">isolated_light_mode</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="n">isolated_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;soma_workflow_&#39;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">isolated_dir</span> <span class="o">=</span> <span class="n">isolated_light_mode</span>
             <span class="n">resource_id</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;SOMA_WORKFLOW_CONFIG&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">isolated_dir</span><span class="p">,</span> <span class="s1">&#39;soma_workflow.cfg&#39;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;SOMA_WORKFLOW_CONFIG&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">isolated_dir</span><span class="p">,</span>
+                                                          <span class="s1">&#39;soma_workflow.cfg&#39;</span><span class="p">)</span>
             <span class="n">db_file</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">isolated_dir</span><span class="p">,</span> <span class="s1">&#39;soma-workflow.db&#39;</span><span class="p">)</span>
             <span class="n">trans_dir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">isolated_dir</span><span class="p">,</span> <span class="s1">&#39;transfered_files&#39;</span><span class="p">)</span>
             <span class="n">config</span> <span class="o">=</span> <span class="n">configuration</span><span class="o">.</span><span class="n">Configuration</span><span class="p">(</span>
