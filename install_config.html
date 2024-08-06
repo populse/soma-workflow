@@ -20,7 +20,7 @@
     <link rel="next" title="Changelog" href="changelog.html" />
     <link rel="prev" title="Supporting new computing resources: writing a Scheduler implementation" href="scheduler.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -167,7 +167,7 @@ Syntax: “queue1 queue2 queue3”</p>
 </pre></div>
 </div>
 <p>If this config option is not set, the <code class="docutils literal notranslate"><span class="pre">python</span></code> command is automatically adjusted to either <code class="docutils literal notranslate"><span class="pre">python2</span></code> or <code class="docutils literal notranslate"><span class="pre">python3</span></code> to match the client python version (they should be the same due to objects formats (“pickles”)).</p>
-<p>But in some cases, including when the soma-workflow servers should run inside a container like <a class="reference external" href="../../casa-distro-3.0/index.html">Casa-Distro</a> Singularity containers, entering the container involves an additional indirection, so we should specify, like:</p>
+<p>But in some cases, including when the soma-workflow servers should run inside a container like <a class="extlink-casadistro reference external" href="../../casa-distro-3.0/index.html">Casa-Distro</a> Singularity containers, entering the container involves an additional indirection, so we should specify, like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PYTHON_COMMAND</span> <span class="o">=</span> <span class="n">bv</span> <span class="n">python</span>
 </pre></div>
 </div>
@@ -393,7 +393,7 @@ singularity<span class="w"> </span><span class="nb">exec</span><span class="w"> 
 </pre></div>
 </div>
 <p>This variable, being set only on server-side, allows to run workflows not aware of any container system on the computing resource, and can be set differently (or not set) on different computing resources.</p>
-<p><strong>BrainVisa containers case (casa-distro releases)</strong>: Starting with <a class="reference external" href="../../web-5.0/index.html">BrainVisa 5.0</a>, BrainVisa is distributed as Singularity virtual containers. The installation setup provides a command <code class="docutils literal notranslate"><span class="pre">bv</span></code>, which takes care of all options to call the container. Thus the <code class="docutils literal notranslate"><span class="pre">CONTAINER_COMMAND</span></code> here could just be:</p>
+<p><strong>BrainVisa containers case (casa-distro releases)</strong>: Starting with <a class="extlink-bv reference external" href="../../web-5.0/index.html">BrainVisa 5.0</a>, BrainVisa is distributed as Singularity virtual containers. The installation setup provides a command <code class="docutils literal notranslate"><span class="pre">bv</span></code>, which takes care of all options to call the container. Thus the <code class="docutils literal notranslate"><span class="pre">CONTAINER_COMMAND</span></code> here could just be:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">container_command</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/home/johndoe/brainvisa/bin/bv&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -523,7 +523,7 @@ database, and file transfers).</p>
 </section>
 <section id="running-servers-and-jobs-in-a-container">
 <span id="containerized-soma-workflow"></span><h2><a class="toc-backref" href="#id20" role="doc-backlink">Running servers and jobs in a container</a><a class="headerlink" href="#running-servers-and-jobs-in-a-container" title="Link to this heading">¶</a></h2>
-<p>When Soma-Workflow is installed as part of the <a class="reference external" href="../../web-5.0/index.html">BrainVISA distribution</a>, it now runs inside a container or a virtual machine. Users thus would need to run the Soma-Workflow servers in such a container, and run jobs also in the container.</p>
+<p>When Soma-Workflow is installed as part of the <a class="extlink-bv reference external" href="../../web-5.0/index.html">BrainVISA distribution</a>, it now runs inside a container or a virtual machine. Users thus would need to run the Soma-Workflow servers in such a container, and run jobs also in the container.</p>
 <p>There are two main use cases:</p>
 <section id="local-execution">
 <h3>Local execution<a class="headerlink" href="#local-execution" title="Link to this heading">¶</a></h3>
@@ -544,7 +544,7 @@ database, and file transfers).</p>
 <ul>
 <li><p>Soma-workflow server needs to be called remotely from the client. When the client connects via <code class="docutils literal notranslate"><span class="pre">ssh</span></code>, it runs the server as Python modules on the cluser front-end. There are 3 ways to make them available:</p>
 <ul class="simple">
-<li><p>run the server inside the container. In this situation the server config files <code class="docutils literal notranslate"><span class="pre">$HOME/.soma-workflow.cfg</span></code> should be in the container home directory. To start it inside the container, the client configuration has to contain the <a class="reference internal" href="#python-command-option"><span class="std std-ref">PYTHON_COMMAND option</span></a>, which will specify how to call it. Typically, if the front-end server (host) machine has been configured to contain the BrainVisa installation <code class="docutils literal notranslate"><span class="pre">bin/</span></code> directory (see <a class="reference external" href="../../web-5.0/download.html">install instructions</a>), calling <code class="docutils literal notranslate"><span class="pre">bv</span> <span class="pre">python</span></code> instead of <code class="docutils literal notranslate"><span class="pre">python</span></code> will be OK. Otherwise using the full path th <code class="docutils literal notranslate"><span class="pre">bv</span></code> is also OK.</p></li>
+<li><p>run the server inside the container. In this situation the server config files <code class="docutils literal notranslate"><span class="pre">$HOME/.soma-workflow.cfg</span></code> should be in the container home directory. To start it inside the container, the client configuration has to contain the <a class="reference internal" href="#python-command-option"><span class="std std-ref">PYTHON_COMMAND option</span></a>, which will specify how to call it. Typically, if the front-end server (host) machine has been configured to contain the BrainVisa installation <code class="docutils literal notranslate"><span class="pre">bin/</span></code> directory (see <a class="extlink-bv reference external" href="../../web-5.0/download.html">install instructions</a>), calling <code class="docutils literal notranslate"><span class="pre">bv</span> <span class="pre">python</span></code> instead of <code class="docutils literal notranslate"><span class="pre">python</span></code> will be OK. Otherwise using the full path th <code class="docutils literal notranslate"><span class="pre">bv</span></code> is also OK.</p></li>
 <li><p>If the cluster front-end (generally a Unix / Linux system) has Python installed, with the required modules (PyZMQ mainly) and can run the server natively: setting the <code class="docutils literal notranslate"><span class="pre">PYTONPATH</span></code> environment variable in a config file (<code class="docutils literal notranslate"><span class="pre">$HOME/.bash_profile</span></code> or <code class="docutils literal notranslate"><span class="pre">$HOME/.bashrc</span></code> if you are using a bash-like shell) to the python directory containing Soma-Workflow should be OK. In a singularity image the files are not seen from the host system, thus a “read-write install” may be required.</p></li>
 <li><p>Like above, running natively on the front-end machine, but using Soma-Workflow sources: clone them from <a class="reference external" href="https://github.com/populse/soma-workflow">https://github.com/populse/soma-workflow</a> and set the <code class="docutils literal notranslate"><span class="pre">PYTONPATH</span></code> environment variable to point to it.</p></li>
 </ul>
@@ -643,10 +643,10 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/logo_white_small.png" alt="Logo"/>
+              <img class="logo" src="_static/logo_white_small.png" alt="Logo of soma-workflow"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -727,7 +727,7 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -748,7 +748,7 @@ This load adjustment allows to use soma-workflow on a shared machine using the l
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2011-2021 CEA, Neurospin, France, CATI, France.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
     </div>
   </body>
 </html>
