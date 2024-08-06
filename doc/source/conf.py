@@ -283,8 +283,12 @@ epub_copyright = u'2021, '
 
 autoclass_content = "both"
 
+pyversion = '%d.%d' % sys.version_info[:2]
+
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/%s' % pyversion, None),
+}
 
 # versions of our software
 casadistro_version = '3.0'
