@@ -894,7 +894,8 @@ class WorkflowController(object):
                           ', value:', element[3][1],
                           file=file)
                     print(
-                        '  =================================================')
+                        '  =================================================',
+                        file=file)
                     print('  commandline:', file=file)
                     print('  ------------:', file=file)
                     print(job[1], file=file)
@@ -934,7 +935,7 @@ class WorkflowController(object):
                     os.unlink(tmp_stderr[1])
                     print(file=file)
             print('---- full host env ----', file=file)
-            print(repr(os.environ))
+            print(repr(os.environ), file=file)
 
         return workflow_status == constants.WORKFLOW_DONE \
             and len(failed_jobs) == 0
