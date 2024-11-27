@@ -1,16 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
-'''
-author: Soizic Laguitton
-
-organization: I2BM, Neurospin, Gif-sur-Yvette, France
-organization: CATI, France
-
-license: `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html>`_
-'''
-
 # TODO:
 # clean() is called way too often (for each workflow / job / file to be
 # removed), and too much power is probably taken in scanning obsolete items and
@@ -21,7 +8,6 @@ license: `CeCILL-B <http://www.cecill.info/licences/Licence_CeCILL_B-en.html>`_
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------
-from six.moves import range
 import sqlite3
 import threading
 import os
@@ -33,7 +19,6 @@ from datetime import timedelta
 from datetime import datetime
 import socket
 import itertools
-import io
 import traceback
 import math
 import glob
@@ -52,6 +37,47 @@ from soma_workflow.engine_types import get_EngineTemporaryPath
 
 import six
 from six.moves import StringIO
+
+#-----------------------------------------------------------------------------
+# The default adapters and converters are deprecated as of Python 3.12. See:
+# https://docs.python.org/3/library/sqlite3.html#default-adapters-and-converters-deprecated
+#
+# Solution taken from here:
+# https://docs.python.org/3/library/sqlite3.html#sqlite3-adapter-converter-recipes
+#-----------------------------------------------------------------------------
+
+if sys.version_info[:2] >= (3, 12):
+    def adapt_date_iso(val):
+        """Adapt datetime.date to ISO 8601 date."""
+        return val.isoformat()
+
+    def adapt_datetime_iso(val):
+        """Adapt datetime.datetime to timezone-naive ISO 8601 date."""
+        return val.isoformat()
+
+    def adapt_datetime_epoch(val):
+        """Adapt datetime.datetime to Unix timestamp."""
+        return int(val.timestamp())
+
+    sqlite3.register_adapter(date, adapt_date_iso)
+    sqlite3.register_adapter(datetime, adapt_datetime_iso)
+    sqlite3.register_adapter(datetime, adapt_datetime_epoch)
+
+    def convert_date(val):
+        """Convert ISO 8601 date to datetime.date object."""
+        return date.fromisoformat(val.decode())
+
+    def convert_datetime(val):
+        """Convert ISO 8601 datetime to datetime.datetime object."""
+        return datetime.fromisoformat(val.decode())
+
+    def convert_timestamp(val):
+        """Convert Unix epoch timestamp to datetime.datetime object."""
+        return datetime.fromtimestamp(int(val))
+
+    sqlite3.register_converter("date", convert_date)
+    sqlite3.register_converter("datetime", convert_datetime)
+    sqlite3.register_converter("timestamp", convert_timestamp)
 
 
 #-----------------------------------------------------------------------------
