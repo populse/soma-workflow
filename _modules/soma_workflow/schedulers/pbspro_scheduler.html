@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>soma_workflow.schedulers.pbspro_scheduler &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     
@@ -40,8 +40,8 @@
   <h1>Source code for soma_workflow.schedulers.pbspro_scheduler</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">with_statement</span><span class="p">,</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_statement</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
 
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">organization: I2BM, Neurospin, Gif-sur-Yvette, France</span>
@@ -49,26 +49,26 @@
 <span class="sd">license:CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
-<span class="kn">from</span> <span class="nn">..scheduler</span> <span class="kn">import</span> <span class="n">Scheduler</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">socket</span>
-<span class="kn">import</span> <span class="nn">six</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">soma_workflow.constants</span> <span class="k">as</span> <span class="nn">constants</span>
-<span class="kn">from</span> <span class="nn">soma_workflow.errors</span> <span class="kn">import</span> <span class="n">DRMError</span><span class="p">,</span> <span class="n">ExitTimeoutException</span>
-<span class="kn">from</span> <span class="nn">soma_workflow</span> <span class="kn">import</span> <span class="n">configuration</span>
-<span class="kn">from</span> <span class="nn">soma_workflow.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
-<span class="kn">import</span> <span class="nn">tempfile</span>
-<span class="kn">from</span> <span class="nn">soma_workflow</span> <span class="kn">import</span> <span class="n">subprocess</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">distutils.spawn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">soma_workflow.constants</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DRMError</span><span class="p">,</span> <span class="n">ExitTimeoutException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">configuration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">Configuration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">distutils.spawn</span>
 
 
-<span class="k">class</span> <span class="nc">JobTemplate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JobTemplate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remoteCommand</span><span class="p">,</span> <span class="n">outputPath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errorPath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remoteCommand</span><span class="p">,</span> <span class="n">outputPath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errorPath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">remoteCommand</span> <span class="o">=</span> <span class="n">remoteCommand</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">outputPath</span> <span class="o">=</span> <span class="n">outputPath</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">errorPath</span> <span class="o">=</span> <span class="n">errorPath</span>
@@ -81,7 +81,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">workingDirectory</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">build_pbs_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_pbs_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">script_file</span><span class="p">:</span>
             <span class="n">script_file_</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
             <span class="n">script_file</span> <span class="o">=</span> <span class="n">script_file_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -133,7 +133,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;build_pbs_script: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">script_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">script_file</span>
 
-    <span class="k">def</span> <span class="nf">qsub_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qsub_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="p">):</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">qsub_command</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">script_file</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputPath</span><span class="p">:</span>
@@ -143,7 +143,7 @@
             <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">script_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cmd</span>
 
-    <span class="k">def</span> <span class="nf">run_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keep_script_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keep_script_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="n">rm_script</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">script_file</span><span class="p">:</span>
             <span class="n">rm_script</span> <span class="o">=</span> <span class="kc">True</span>
@@ -166,7 +166,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler">[docs]</a>
-<span class="k">class</span> <span class="nc">PBSProScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PBSProScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Scheduling using a PBS Pro session.</span>
@@ -185,7 +185,7 @@
     <span class="n">FAKE_JOB</span> <span class="o">=</span> <span class="o">-</span><span class="mi">167</span>
     <span class="n">_out_of_container_command</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">parallel_job_submission_info</span><span class="p">,</span>
                  <span class="n">tmp_file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">configured_native_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -214,13 +214,13 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">tmp_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">tmp_file_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setup_pbs_variant</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clean</span><span class="p">()</span>
 
 <div class="viewcode-block" id="PBSProScheduler.out_of_container_command">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.out_of_container_command">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">out_of_container_command</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">out_of_container_command</span><span class="p">():</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        In case this server is running inside a contaner, qsat/qsub commands</span>
 <span class="sd">        are not available inside the container but are on the host. We need to</span>
@@ -240,20 +240,20 @@
 
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">qstat_command</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qstat_command</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">out_of_container_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;qstat&#39;</span><span class="p">]</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">qsub_command</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qsub_command</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">out_of_container_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;qsub&#39;</span><span class="p">]</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">qdel_command</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">qdel_command</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">PBSProScheduler</span><span class="o">.</span><span class="n">out_of_container_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;qdel&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="PBSProScheduler.submit_simple_test_job">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.submit_simple_test_job">[docs]</a>
-    <span class="k">def</span> <span class="nf">submit_simple_test_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outstr</span><span class="p">,</span> <span class="n">out_o_file</span><span class="p">,</span> <span class="n">out_e_file</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">submit_simple_test_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outstr</span><span class="p">,</span> <span class="n">out_o_file</span><span class="p">,</span> <span class="n">out_e_file</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create a job to test</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -277,7 +277,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.get_pbs_version">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.get_pbs_version">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_pbs_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pbs_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        get PBS implementation and version. May be PBS Pro or Torque/PBS</span>
 
@@ -300,7 +300,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.setup_pbs_variant">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.setup_pbs_variant">[docs]</a>
-    <span class="k">def</span> <span class="nf">setup_pbs_variant</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_pbs_variant</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        determine PBS implementation / version and set internal behaviour accordingly</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -314,7 +314,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;PBS version: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pbs_version</span><span class="p">))</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_setParallelJob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setParallelJob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">job_template</span><span class="p">,</span>
                         <span class="n">parallel_job_info</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
@@ -386,7 +386,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.job_submission">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.job_submission">[docs]</a>
-    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">,</span> <span class="n">signal_end</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">,</span> <span class="n">signal_end</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -409,7 +409,7 @@
         <span class="k">return</span> <span class="n">drmaa_ids</span></div>
 
 
-    <span class="k">def</span> <span class="nf">submit_one_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">submit_one_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_sleeping</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wake</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">is_engine_execution</span><span class="p">:</span>
@@ -521,7 +521,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.kill_job">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.kill_job">[docs]</a>
-    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -545,7 +545,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.get_job_extended_status">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.get_job_extended_status">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_extended_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_extended_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get job full status in a dictionary (from qstat in json format)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -562,7 +562,7 @@
                 <span class="n">super_status</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>  <span class="c1"># torque/pbs</span>
-                <span class="kn">import</span> <span class="nn">xml.etree.cElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">xml.etree.cElementTree</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ET</span>
                 <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qstat_command</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;-x&#39;</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">]</span>
                 <span class="n">xml_str</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
                 <span class="n">super_status</span> <span class="o">=</span> <span class="p">{}</span>
@@ -593,9 +593,9 @@
         <span class="k">return</span> <span class="n">status</span></div>
 
 
-    <span class="k">def</span> <span class="nf">get_pbs_status_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pbs_status_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbs_impl</span> <span class="o">==</span> <span class="s1">&#39;pbspro&#39;</span><span class="p">:</span>
-            <span class="k">class</span> <span class="nc">codes</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <span class="k">class</span><span class="w"> </span><span class="nc">codes</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
                 <span class="n">ARRAY_STARTED</span> <span class="o">=</span> <span class="s1">&#39;B&#39;</span>
                 <span class="n">EXITING</span> <span class="o">=</span> <span class="s1">&#39;E&#39;</span>
                 <span class="n">FINISHED</span> <span class="o">=</span> <span class="s1">&#39;F&#39;</span>
@@ -609,7 +609,7 @@
                 <span class="n">WAITING</span> <span class="o">=</span> <span class="s1">&#39;W&#39;</span>
                 <span class="n">SUBJOB_COMPLETE</span> <span class="o">=</span> <span class="s1">&#39;X&#39;</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># torque/pbs</span>
-            <span class="k">class</span> <span class="nc">codes</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <span class="k">class</span><span class="w"> </span><span class="nc">codes</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
                 <span class="n">ARRAY_STARTED</span> <span class="o">=</span> <span class="s1">&#39;B&#39;</span>  <span class="c1"># unused</span>
                 <span class="n">EXITING</span> <span class="o">=</span> <span class="s1">&#39;E&#39;</span>
                 <span class="n">FINISHED</span> <span class="o">=</span> <span class="s1">&#39;C&#39;</span>
@@ -626,7 +626,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.get_job_status">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.get_job_status">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -682,7 +682,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.get_job_exit_info">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.get_job_exit_info">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The exit info consists of 4 values returned in a tuple:</span>
 <span class="sd">        **exit_status**: string</span>
@@ -789,7 +789,7 @@
 
 <div class="viewcode-block" id="PBSProScheduler.wait_job">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.wait_job">[docs]</a>
-    <span class="k">def</span> <span class="nf">wait_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wait_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Wait for a specific job to be terminated.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -806,7 +806,7 @@
 <div class="viewcode-block" id="PBSProScheduler.build_scheduler">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.pbspro_scheduler.PBSProScheduler.build_scheduler">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Build an instance of PBSProScheduler</span>
 <span class="sd">        &#39;&#39;&#39;</span>

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>scheduler &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     
@@ -40,18 +40,18 @@
   <h1>Source code for scheduler</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
-<span class="kn">import</span> <span class="nn">six</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">import</span> <span class="nn">importlib</span>
-<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
 
 
 <div class="viewcode-block" id="Scheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler">[docs]</a>
-<span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Allow to submit, kill and get the status of jobs.</span>
@@ -77,23 +77,23 @@
 
     <span class="n">jobs_finished_event</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parallel_job_submission_info</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_sleeping</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">jobs_finished_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_sleeping</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_sleeping</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
 <div class="viewcode-block" id="Scheduler.job_submission">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.job_submission">[docs]</a>
-    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Submit a Soma-Workflow job</span>
 
@@ -115,7 +115,7 @@
 
 <div class="viewcode-block" id="Scheduler.get_job_status">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_status">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -132,7 +132,7 @@
 
 <div class="viewcode-block" id="Scheduler.get_job_exit_info">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.get_job_exit_info">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The exit info consists of 4 values returned in a tuple:</span>
 <span class="sd">        **exit_status**: string</span>
@@ -167,7 +167,7 @@
 
 <div class="viewcode-block" id="Scheduler.kill_job">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.kill_job">[docs]</a>
-    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -180,7 +180,7 @@
 <div class="viewcode-block" id="Scheduler.build_scheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler.build_scheduler">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39; Create a scheduler of the expected type, using configuration to</span>
 <span class="sd">        parameterize it.</span>
 
@@ -196,7 +196,7 @@
 
 <div class="viewcode-block" id="get_scheduler_implementation">
 <a class="viewcode-back" href="../scheduler.html#scheduler.get_scheduler_implementation">[docs]</a>
-<span class="k">def</span> <span class="nf">get_scheduler_implementation</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_scheduler_implementation</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; Get the scheduler class implementation corresponding to the expected</span>
 <span class="sd">        one.</span>
 
@@ -210,7 +210,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        scheduler_class: Scheduler subclass</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">schedulers</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">schedulers</span>
     <span class="k">if</span> <span class="n">scheduler_type</span> <span class="o">==</span> <span class="s1">&#39;local_basic&#39;</span><span class="p">:</span>
         <span class="n">scheduler_type</span> <span class="o">=</span> <span class="s1">&#39;local&#39;</span>
     <span class="n">sched_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">schedulers</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
@@ -252,7 +252,7 @@
 
 <div class="viewcode-block" id="build_scheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.build_scheduler">[docs]</a>
-<span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_scheduler</span><span class="p">(</span><span class="n">scheduler_type</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; Create a scheduler of the expected type, using configuration to</span>
 <span class="sd">    parameterize it.</span>
 
@@ -276,7 +276,7 @@
 
 <div class="viewcode-block" id="get_schedulers_list">
 <a class="viewcode-back" href="../scheduler.html#scheduler.get_schedulers_list">[docs]</a>
-<span class="k">def</span> <span class="nf">get_schedulers_list</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_schedulers_list</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    List all available installed schedulers</span>
 
@@ -285,7 +285,7 @@
 <span class="sd">    schedulers: list</span>
 <span class="sd">        schedulers list. Each item is a tuple (name, enabled)</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">schedulers</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">schedulers</span>
     <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">schedulers</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
     <span class="n">sched_files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
     <span class="n">schedulers</span> <span class="o">=</span> <span class="p">[]</span>

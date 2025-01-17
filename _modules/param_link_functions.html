@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>param_link_functions &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     
@@ -40,11 +40,11 @@
   <h1>Source code for param_link_functions</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">traits.api</span> <span class="kn">import</span> <span class="n">Undefined</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">traits.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Undefined</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="c1"># no traits: use None</span>
     <span class="n">Undefined</span> <span class="o">=</span> <span class="kc">None</span>
@@ -52,7 +52,7 @@
 
 <div class="viewcode-block" id="list_to_sequence">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.list_to_sequence">[docs]</a>
-<span class="k">def</span> <span class="nf">list_to_sequence</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_to_sequence</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; item-th element of list value</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">value</span><span class="p">[</span><span class="n">item</span><span class="p">]</span></div>
@@ -61,7 +61,7 @@
 
 <div class="viewcode-block" id="sequence_to_list">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.sequence_to_list">[docs]</a>
-<span class="k">def</span> <span class="nf">sequence_to_list</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sequence_to_list</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; set the value value as item-th element of list dst_value</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">dst_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -75,7 +75,7 @@
 
 <div class="viewcode-block" id="append_to_list">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.append_to_list">[docs]</a>
-<span class="k">def</span> <span class="nf">append_to_list</span><span class="p">(</span><span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">append_to_list</span><span class="p">(</span><span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; appends the value value at the end of list dst_value</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">dst_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -87,7 +87,7 @@
 
 <div class="viewcode-block" id="list_all_but_one">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.list_all_but_one">[docs]</a>
-<span class="k">def</span> <span class="nf">list_all_but_one</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_all_but_one</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; remove item-th element from the input list.</span>
 <span class="sd">    Useful in a leave-one-out pattern</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -97,7 +97,7 @@
 
 <div class="viewcode-block" id="list_cv_train_fold">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.list_cv_train_fold">[docs]</a>
-<span class="k">def</span> <span class="nf">list_cv_train_fold</span><span class="p">(</span><span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_cv_train_fold</span><span class="p">(</span><span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; take all but fold-th division in a list divided into nfold folds.</span>
 <span class="sd">    Useful in a nfolds cross-validation pattern</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -114,7 +114,7 @@
 
 <div class="viewcode-block" id="list_cv_test_fold">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.list_cv_test_fold">[docs]</a>
-<span class="k">def</span> <span class="nf">list_cv_test_fold</span><span class="p">(</span><span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_cv_test_fold</span><span class="p">(</span><span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; take fold-th division in a list divided into nfold folds.</span>
 <span class="sd">    Useful in a nfolds cross-validation pattern</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -131,7 +131,7 @@
 
 <div class="viewcode-block" id="list_cat">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.list_cat">[docs]</a>
-<span class="k">def</span> <span class="nf">list_cat</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_cat</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; concatenates lists: extend value (list) after dst_value</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">dst_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -143,7 +143,7 @@
 
 <div class="viewcode-block" id="sequence_max">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.sequence_max">[docs]</a>
-<span class="k">def</span> <span class="nf">sequence_max</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sequence_max</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; get maximum value from a list</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1">#print(&#39;shift&#39;, shift,</span>
@@ -160,7 +160,7 @@
 
 <div class="viewcode-block" id="sequence_min">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.sequence_min">[docs]</a>
-<span class="k">def</span> <span class="nf">sequence_min</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sequence_min</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; get minimum value from a list</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">dst_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -173,7 +173,7 @@
 
 <div class="viewcode-block" id="sequence_sum">
 <a class="viewcode-back" href="../workflow_creation.html#param_link_functions.sequence_sum">[docs]</a>
-<span class="k">def</span> <span class="nf">sequence_sum</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sequence_sum</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">src_param</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dst_param</span><span class="p">,</span> <span class="n">dst_value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39; sum value from a list</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">dst_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

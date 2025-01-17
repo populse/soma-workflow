@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>soma_workflow.schedulers.local_scheduler &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     
@@ -39,8 +39,8 @@
             
   <h1>Source code for soma_workflow.schedulers.local_scheduler</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">with_statement</span><span class="p">,</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_statement</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
 
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">author: Soizic Laguitton</span>
@@ -51,8 +51,8 @@
 
 <span class="sd">license: CeCILL version 2, http://www.cecill.info/licences/Licence_CeCILL_V2-en.html</span>
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="kn">from</span> <span class="nn">..scheduler</span> <span class="kn">import</span> <span class="n">Scheduler</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="c1"># try:</span>
     <span class="c1"># try:</span>
         <span class="c1"># subprocess32 seems to have its own zmq implementation,</span>
@@ -76,38 +76,38 @@
 <span class="c1"># print(&#39;subprocess32 could not be loaded - processes may hangup&#39;)</span>
     <span class="c1"># import subprocess</span>
 <span class="c1"># import ..subprocess</span>
-<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">subprocess</span>
-<span class="kn">import</span> <span class="nn">threading</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">signal</span>
-<span class="kn">import</span> <span class="nn">ctypes</span>
-<span class="kn">import</span> <span class="nn">atexit</span>
-<span class="kn">import</span> <span class="nn">six</span>
-<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># psutil is used to correctly kill a job with its children processes</span>
-    <span class="kn">import</span> <span class="nn">psutil</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
     <span class="n">have_psutil</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">have_psutil</span> <span class="o">=</span> <span class="kc">False</span>
 
-<span class="kn">import</span> <span class="nn">soma_workflow.constants</span> <span class="k">as</span> <span class="nn">constants</span>
-<span class="kn">from</span> <span class="nn">soma_workflow.configuration</span> <span class="kn">import</span> <span class="n">LocalSchedulerCfg</span>
-<span class="kn">from</span> <span class="nn">soma_workflow.configuration</span> <span class="kn">import</span> <span class="n">default_cpu_number</span><span class="p">,</span> <span class="n">cpu_count</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">soma_workflow.constants</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalSchedulerCfg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_cpu_number</span><span class="p">,</span> <span class="n">cpu_count</span>
 
 
 <div class="viewcode-block" id="LocalSchedulerError">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalSchedulerError">[docs]</a>
-<span class="k">class</span> <span class="nc">LocalSchedulerError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalSchedulerError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="k">pass</span></div>
 
 
 
 <div class="viewcode-block" id="LocalScheduler">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler">[docs]</a>
-<span class="k">class</span> <span class="nc">LocalScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Allow to submit, kill and get the status of jobs.</span>
@@ -158,7 +158,7 @@
     <span class="n">_lasttime</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_lastidle</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="o">=</span><span class="n">default_cpu_number</span><span class="p">(),</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="o">=</span><span class="n">default_cpu_number</span><span class="p">(),</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
                  <span class="n">max_proc_nb</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -177,7 +177,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">stop_thread_loop</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="k">def</span> <span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_thread_loop</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_iterate</span><span class="p">()</span>
 
@@ -201,19 +201,19 @@
         <span class="k">if</span> <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;engine.Scheduler&#39;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">change_proc_nb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_proc_nb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc_nb</span> <span class="o">=</span> <span class="n">proc_nb</span>
 
-    <span class="k">def</span> <span class="nf">change_max_proc_nb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_max_proc_nb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_max_proc_nb</span> <span class="o">=</span> <span class="n">proc_nb</span>
 
-    <span class="k">def</span> <span class="nf">change_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span> <span class="o">=</span> <span class="n">interval</span>
 
-    <span class="k">def</span> <span class="nf">end_scheduler_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">end_scheduler_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stop_thread_loop</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_stop_process_loop</span> <span class="o">=</span> <span class="kc">True</span>
@@ -222,7 +222,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_poll_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
         <span class="c1"># print(&quot;Soma scheduler thread ended nicely.&quot;)</span>
 
-    <span class="k">def</span> <span class="nf">poll_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_process_loop</span><span class="p">:</span>
@@ -249,7 +249,7 @@
 
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_poll_interval</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1">## Nothing to do if the queue is empty and nothing is running</span>
         <span class="c1">#with self._lock:</span>
             <span class="c1">#if not self._queue and not self._processes:</span>
@@ -336,7 +336,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_poll_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">)</span>
         <span class="c1">#time.sleep(1)</span>
 
-    <span class="k">def</span> <span class="nf">_cpu_for_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cpu_for_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">):</span>
         <span class="n">parallel_job_info</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">parallel_job_info</span>
         <span class="k">if</span> <span class="n">parallel_job_info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="mi">1</span>
@@ -344,7 +344,7 @@
             <span class="o">*</span> <span class="n">parallel_job_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cpu_per_node&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ncpu</span>
 
-    <span class="k">def</span> <span class="nf">_can_submit_new_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_can_submit_new_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="n">n</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_cpu_for_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jobs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">])</span>
         <span class="n">n</span> <span class="o">+=</span> <span class="n">ncpu</span>
@@ -361,7 +361,7 @@
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">is_available_cpu</span><span class="p">(</span><span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_available_cpu</span><span class="p">(</span><span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="c1"># OK if there is at least one half CPU left idle</span>
         <span class="k">if</span> <span class="n">have_psutil</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">_lasttime</span> <span class="ow">is</span> <span class="kc">None</span> \
@@ -391,7 +391,7 @@
 <div class="viewcode-block" id="LocalScheduler.create_process">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.create_process">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">create_process</span><span class="p">(</span><span class="n">engine_job</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_process</span><span class="p">(</span><span class="n">engine_job</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * engine_job *EngineJob*</span>
 
@@ -507,7 +507,7 @@
 
 <div class="viewcode-block" id="LocalScheduler.job_submission">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.job_submission">[docs]</a>
-    <span class="k">def</span> <span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">job_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * job *EngineJob*</span>
 <span class="sd">        * return: *string*</span>
@@ -533,7 +533,7 @@
 
 <div class="viewcode-block" id="LocalScheduler.get_job_status">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.get_job_status">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * scheduler_job_id *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
@@ -549,7 +549,7 @@
 
 <div class="viewcode-block" id="LocalScheduler.get_job_exit_info">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.get_job_exit_info">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_job_exit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This function is called only once per job by the engine, thus it also deletes references to the job in internal tables.</span>
 
@@ -569,7 +569,7 @@
 
 <div class="viewcode-block" id="LocalScheduler.kill_job">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.LocalScheduler.kill_job">[docs]</a>
-    <span class="k">def</span> <span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kill_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler_job_id</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * scheduler_job_id *string*</span>
 <span class="sd">            Job id for the scheduling system (DRMAA for example)</span>
@@ -625,7 +625,7 @@
 
 <div class="viewcode-block" id="kill_process_tree">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.kill_process_tree">[docs]</a>
-<span class="k">def</span> <span class="nf">kill_process_tree</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kill_process_tree</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Kill a process with its children.</span>
 <span class="sd">    Needs psutil to get children list</span>
@@ -639,7 +639,7 @@
 
 <div class="viewcode-block" id="ConfiguredLocalScheduler">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.ConfiguredLocalScheduler">[docs]</a>
-<span class="k">class</span> <span class="nc">ConfiguredLocalScheduler</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConfiguredLocalScheduler</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Local scheduler synchronized with a configuration object.</span>
@@ -647,7 +647,7 @@
 
     <span class="n">_config</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * config *LocalSchedulerCfg*</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -663,7 +663,7 @@
                                   <span class="n">LocalSchedulerCfg</span><span class="o">.</span><span class="n">INTERVAL_CHANGED</span><span class="p">,</span>
                                   <span class="n">LocalSchedulerCfg</span><span class="o">.</span><span class="n">MAX_PROC_NB_CHANGED</span><span class="p">,</span> <span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">update_from_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observable</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_from_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observable</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="n">LocalSchedulerCfg</span><span class="o">.</span><span class="n">PROC_NB_CHANGED</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">change_proc_nb</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get_proc_nb</span><span class="p">())</span>
         <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="n">LocalSchedulerCfg</span><span class="o">.</span><span class="n">INTERVAL_CHANGED</span><span class="p">:</span>
@@ -675,7 +675,7 @@
 <div class="viewcode-block" id="ConfiguredLocalScheduler.build_scheduler">
 <a class="viewcode-back" href="../../../scheduler.html#soma_workflow.schedulers.local_scheduler.ConfiguredLocalScheduler.build_scheduler">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_scheduler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
         <span class="n">local_scheduler_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_scheduler_config</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">local_scheduler_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">local_scheduler_cfg_file_path</span> \

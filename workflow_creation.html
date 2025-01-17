@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Workflow creation API &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
     
@@ -1008,7 +1008,7 @@ execution, and removed when not used any longer.</p>
 <li><p>The input parameters dictionary of a job has to be used to re-build its commandline properly after their values have changed. To do so, the commandline arguments of such jobs can contain some substitution strings in the python style <code class="docutils literal notranslate"><span class="pre">&quot;%(param)s&quot;</span></code>, where <code class="docutils literal notranslate"><span class="pre">param</span></code> is a named parameter in the dictionary.</p></li>
 </ul>
 <p>To put things togethr in an example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">soma_workflow.client</span> <span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">WorkflowController</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">WorkflowController</span>
 
 <span class="c1"># workflow definition</span>
 
@@ -1050,10 +1050,10 @@ execution, and removed when not used any longer.</p>
 <p>Now the <code class="docutils literal notranslate"><span class="pre">job1</span></code> commandline program, if written in Python language, could look like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
 
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">shutil</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="c1"># we have to write the output parameters values in this file:</span>
 <span class="n">output_param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SOMAWF_OUTPUT_PARAMS&#39;</span><span class="p">)</span>
@@ -1115,7 +1115,7 @@ execution, and removed when not used any longer.</p>
 <p>In this situation the job must declare it using the <code class="docutils literal notranslate"><span class="pre">use_input_params_file</span></code> variable in Job. Then a temporary file will be created before the job is run. The parameters file is a JSON file containing a dictionary. The first level of this dict currently only contains the key <code class="docutils literal notranslate"><span class="pre">&quot;parameters&quot;</span></code>, but will be able to hold job configuration in the future. The <code class="docutils literal notranslate"><span class="pre">parameters</span></code> sub-dict is the input parameters of the job.</p>
 <p>The input parameters fils location is specified through an environment variable: <code class="docutils literal notranslate"><span class="pre">SOMAWF_INPUT_PARAMS</span></code>, and the job program should read it to get its actual arguments.</p>
 <p>Ex:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">soma_workflow.client</span> <span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">WorkflowController</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">WorkflowController</span>
 
 <span class="c1"># workflow definition</span>
 
@@ -1143,8 +1143,8 @@ execution, and removed when not used any longer.</p>
 <p>Here <code class="docutils literal notranslate"><span class="pre">job3</span></code> must be modified to make it able to read the parameters file. In this example we call a program named <code class="docutils literal notranslate"><span class="pre">my_cat_program</span></code>, which, if written in Python language, could look like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
 
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="c1"># get the input pams file location from env variable</span>
 <span class="n">param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SOMAWF_INPUT_PARAMS&#39;</span><span class="p">)</span>

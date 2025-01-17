@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client_types &#8212; soma-workflow version 3.3 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     
@@ -55,19 +55,19 @@
 <span class="c1"># Imports</span>
 <span class="c1">#-------------------------------------------------------------------------</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
 
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">soma_workflow.constants</span> <span class="k">as</span> <span class="nn">constants</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">soma_workflow.constants</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">constants</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 
 <span class="c1"># python2/3 compatibility</span>
 
-<span class="kn">import</span> <span class="nn">six</span>
-<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">six.moves</span><span class="w"> </span><span class="kn">import</span> <span class="nb">range</span>
 
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="c1"># Classes and functions</span>
@@ -76,7 +76,7 @@
 
 <div class="viewcode-block" id="Job">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.Job">[docs]</a>
-<span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Job</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Job representation.</span>
@@ -290,7 +290,7 @@
     <span class="c1"># dict (config options)</span>
     <span class="n">configuration</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">command</span><span class="p">,</span>
                  <span class="n">referenced_input_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">referenced_output_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -349,7 +349,7 @@
         <span class="c1">#             warnings.warn(&quot;%s contains single quote. It could fail using DRMAA&quot;</span>
         <span class="c1">#                           % command_elem, UserWarning)</span>
 
-    <span class="k">def</span> <span class="nf">_attributes_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">other_element</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_attributes_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">other_element</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">other_element</span><span class="o">.</span><span class="vm">__class__</span><span class="p">:</span>
             <span class="c1"># special case str / unicode</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
@@ -384,12 +384,12 @@
 
         <span class="k">return</span> <span class="n">element</span> <span class="o">==</span> <span class="n">other_element</span>
 
-    <span class="k">def</span> <span class="nf">get_commandline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_commandline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Job.commandline_repl">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.Job.commandline_repl">[docs]</a>
-    <span class="k">def</span> <span class="nf">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">commandline_repl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get &quot;processed&quot; commandline list. Each element in the commandline list</span>
 <span class="sd">        which contains a replacement string in the shame %(var)s is replaced</span>
@@ -430,7 +430,7 @@
         <span class="k">return</span> <span class="n">cmd</span></div>
 
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># TODO a better solution would be to overload __eq__ and __neq__ operator</span>
         <span class="c1"># however these operators are used in soma-workflow to test if</span>
         <span class="c1"># two objects are the same instance. These tests have to be replaced</span>
@@ -472,7 +472,7 @@
 <div class="viewcode-block" id="Job.from_dict">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.Job.from_dict">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
                   <span class="n">d</span><span class="p">,</span>
                   <span class="n">tr_from_ids</span><span class="p">,</span>
                   <span class="n">srp_from_ids</span><span class="p">,</span>
@@ -555,7 +555,7 @@
 
 <div class="viewcode-block" id="Job.to_dict">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.Job.to_dict">[docs]</a>
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">id_generator</span><span class="p">,</span>
                 <span class="n">transfer_ids</span><span class="p">,</span>
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
@@ -690,7 +690,7 @@
         <span class="k">return</span> <span class="n">job_dict</span></div>
 
 
-    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># filter out some instance attributes which should / can not be pickled</span>
         <span class="n">no_picke</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_do_not_pickle&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">state_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
@@ -709,7 +709,7 @@
 
 <div class="viewcode-block" id="EngineExecutionJob">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.EngineExecutionJob">[docs]</a>
-<span class="k">class</span> <span class="nc">EngineExecutionJob</span><span class="p">(</span><span class="n">Job</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EngineExecutionJob</span><span class="p">(</span><span class="n">Job</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    EngineExecutionJob: a lightweight job which will not run as a &quot;real&quot; job,</span>
@@ -740,7 +740,7 @@
 <span class="sd">    See :ref:`engine_execution_job` for more details.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">engine_execution</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">engine_execution</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">):</span>
         <span class="n">output_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dict</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output_dict</span></div>
 
@@ -748,7 +748,7 @@
 
 <div class="viewcode-block" id="BarrierJob">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob">[docs]</a>
-<span class="k">class</span> <span class="nc">BarrierJob</span><span class="p">(</span><span class="n">EngineExecutionJob</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BarrierJob</span><span class="p">(</span><span class="n">EngineExecutionJob</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Barrier job: it is a &quot;fake&quot; job which does nothing (and will not become a</span>
@@ -782,7 +782,7 @@
 <span class="sd">    **name**</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
                  <span class="n">referenced_input_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">referenced_output_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -795,7 +795,7 @@
 <div class="viewcode-block" id="BarrierJob.from_dict">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.from_dict">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
                   <span class="n">d</span><span class="p">,</span>
                   <span class="n">tr_from_ids</span><span class="p">,</span>
                   <span class="n">srp_from_ids</span><span class="p">,</span>
@@ -833,7 +833,7 @@
 
 <div class="viewcode-block" id="BarrierJob.to_dict">
 <a class="viewcode-back" href="../workflow_creation.html#client_types.BarrierJob.to_dict">[docs]</a>
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">id_generator</span><span class="p">,</span>
                 <span class="n">transfer_ids</span><span class="p">,</span>
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
@@ -890,7 +890,7 @@
 
 
 
-<span class="k">class</span> <span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Workflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Workflow representation.</span>
@@ -988,7 +988,7 @@
 
     <span class="n">param_links</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">jobs</span><span class="p">,</span>
                  <span class="n">dependencies</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">root_group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1043,7 +1043,7 @@
 <span class="sd">        param_links</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="kn">import</span> <span class="nn">logging</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Within Workflow constructor&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -1084,7 +1084,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">=</span> <span class="n">param_links</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_dependencies_from_links</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">add_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">as_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">as_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Concatenates a workflow into the current one.</span>
 
@@ -1122,7 +1122,7 @@
         <span class="c1"># self.env_builder_code ?</span>
         <span class="k">return</span> <span class="n">group</span>
 
-    <span class="k">def</span> <span class="nf">add_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Add additional dependencies in the workflow.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1132,7 +1132,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__convert_group_dependencies</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_dependencies_from_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_dependencies_from_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Process parameters links and add missing jobs dependencies accordingly</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1154,7 +1154,7 @@
                 <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">current_deps</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">seq_attributes</span> <span class="o">=</span> <span class="p">[</span>
@@ -1187,7 +1187,7 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_builder_code</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">env_builder_code</span> \
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">param_links</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The keys must be string to serialize with JSON.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1300,7 +1300,7 @@
         <span class="k">return</span> <span class="n">wf_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="n">name</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="c1"># shared resource paths</span>
@@ -1424,7 +1424,7 @@
 
         <span class="k">return</span> <span class="n">workflow</span>
 
-    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># filter out some instance attributes which should / can not be pickled</span>
         <span class="n">no_picke</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_do_not_pickle&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">state_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
@@ -1439,7 +1439,7 @@
                 <span class="k">del</span> <span class="n">state_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">state_dict</span>
 
-    <span class="k">def</span> <span class="nf">__group_hubs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__group_hubs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Replace a group with a BarrierJob pair for inputs and ouputs).</span>
 <span class="sd">        All jobs inside the group depends on its input hub, and the output hub</span>
@@ -1462,7 +1462,7 @@
                             <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)))</span>
         <span class="k">return</span> <span class="n">ghubs</span>
 
-    <span class="k">def</span> <span class="nf">__group_hubs_recurs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__group_hubs_recurs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Replace a group with a BarrierJob pair for inputs and ouputs).</span>
 <span class="sd">        Same as __group_hubs() but also create hubs for sub-groups in group</span>
@@ -1478,7 +1478,7 @@
                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">Group</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">ghubs</span>
 
-    <span class="k">def</span> <span class="nf">__make_group_hubs_deps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__make_group_hubs_deps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_to_hub</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Build and return intra-group dependencies list</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1498,7 +1498,7 @@
                 <span class="n">dependencies</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">item</span><span class="p">,</span> <span class="n">out_hub</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">dependencies</span>
 
-    <span class="k">def</span> <span class="nf">__convert_group_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__convert_group_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Converts dependencies using groups into barrier jobs when needed</span>
 
@@ -1563,7 +1563,7 @@
                             <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)))</span>
 
 
-<span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Hierarchical structure of a workflow.</span>
@@ -1590,7 +1590,7 @@
     <span class="c1"># any small and picklable object needed by the user</span>
     <span class="n">user_storage</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">user_storage</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">user_storage</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        @type  elements: sequence of Job and/or Group</span>
 <span class="sd">        @param elements: the elements belonging to the group</span>
@@ -1600,7 +1600,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="n">elements</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">elements</span><span class="p">):</span>
@@ -1612,7 +1612,7 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_ids</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_ids</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
         <span class="n">group_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">group_dict</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">new_gp_elements</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1627,7 +1627,7 @@
         <span class="k">return</span> <span class="n">group_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">group_from_ids</span><span class="p">,</span> <span class="n">job_from_ids</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">group_from_ids</span><span class="p">,</span> <span class="n">job_from_ids</span><span class="p">):</span>
         <span class="n">id_elements</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;elements&quot;</span><span class="p">]</span>
         <span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">el_id</span> <span class="ow">in</span> <span class="n">id_elements</span><span class="p">:</span>
@@ -1643,7 +1643,7 @@
         <span class="k">return</span> <span class="n">group</span>
 
 
-<span class="k">class</span> <span class="nc">SpecialPath</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SpecialPath</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Abstract base class for special file or directory path, which needs specific handling in the engine.</span>
@@ -1651,7 +1651,7 @@
 <span class="sd">    FileTransfer, TemporaryPath, and SharedResourcePath are SpecialPath.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">pattern</span>
@@ -1660,49 +1660,49 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">referent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">referent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="k">else</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="n">res</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="bp">self</span><span class="p">)</span>
         <span class="n">res</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">+</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
         <span class="n">res</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">res</span>
 
-    <span class="k">def</span> <span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="n">res</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="bp">self</span><span class="p">)</span>
         <span class="n">res</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span>
         <span class="n">res</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">res</span>
 
-    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">+=</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__iadd__</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span> <span class="ow">is</span> <span class="n">other</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">FileTransfer</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileTransfer</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    File/directory transfer representation</span>
@@ -1785,7 +1785,7 @@
     <span class="c1"># string</span>
     <span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">is_input</span><span class="p">,</span>
                  <span class="n">client_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">disposal_timeout</span><span class="o">=</span><span class="mi">168</span><span class="p">,</span>
@@ -1835,46 +1835,46 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_initial_status</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">FILES_DO_NOT_EXIST</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">client_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">client_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_client_path</span>
 
     <span class="nd">@client_path</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">client_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">client_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_client_path</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">client_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">client_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_client_paths</span>
 
     <span class="nd">@client_paths</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">client_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">client_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_client_paths</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">initial_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initial_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_initial_status</span>
 
     <span class="nd">@initial_status</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">initial_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initial_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_initial_status</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span>
 
     <span class="nd">@disposal_timeout</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span>
 
     <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
@@ -1892,7 +1892,7 @@
                 <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">transfer_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;client_path&quot;</span><span class="p">,</span>
@@ -1908,21 +1908,21 @@
         <span class="k">return</span> <span class="n">transfer_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="n">transfer</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                        <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="n">transfer</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">transfer</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">client_path</span>
 
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
 
 
-<span class="k">class</span> <span class="nc">SharedResourcePath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SharedResourcePath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Representation of path which is valid on either user&#39;s or computing resource</span>
@@ -1955,7 +1955,7 @@
 
     <span class="n">_disposal_timeout</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">relative_path</span><span class="p">,</span>
                  <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1977,38 +1977,38 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">disposal_timout</span> <span class="o">=</span> <span class="n">disposal_timeout</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">relative_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">relative_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_relative_path</span>
 
     <span class="nd">@relative_path</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">relative_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">relative_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_relative_path</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_namespace</span>
 
     <span class="nd">@namespace</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_namespace</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_uuid</span>
 
     <span class="nd">@uuid</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span>
 
     <span class="nd">@disposal_timeout</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
@@ -2026,7 +2026,7 @@
                 <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">srp_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;relative_path&quot;</span><span class="p">,</span>
@@ -2042,7 +2042,7 @@
         <span class="k">return</span> <span class="n">srp_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="n">shared_res_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">relative_path</span><span class="o">=</span><span class="s2">&quot;toto&quot;</span><span class="p">,</span>
                               <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;toto&quot;</span><span class="p">,</span>
                               <span class="n">uuid</span><span class="o">=</span><span class="s2">&quot;toto&quot;</span><span class="p">)</span>
@@ -2050,13 +2050,13 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="n">shared_res_path</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">shared_res_path</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
                                              <span class="n">ref</span><span class="o">.</span><span class="n">relative_path</span><span class="p">))</span>
 
 
-<span class="k">class</span> <span class="nc">TemporaryPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TemporaryPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Temporary file representation. This temporary file will never exist on client</span>
@@ -2087,7 +2087,7 @@
     <span class="c1"># string</span>
     <span class="n">_suffix</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">disposal_timeout</span><span class="o">=</span><span class="mi">168</span><span class="p">,</span>
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -2108,38 +2108,38 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_is_directory</span>
 
     <span class="nd">@is_directory</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_is_directory</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span>
 
     <span class="nd">@disposal_timeout</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disposal_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_disposal_timeout</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span>
 
     <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_suffix</span>
 
     <span class="nd">@suffix</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_suffix</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
@@ -2156,7 +2156,7 @@
                 <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">srp_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;is_directory&quot;</span><span class="p">,</span>
@@ -2171,7 +2171,7 @@
         <span class="k">return</span> <span class="n">srp_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="n">is_directory</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_directory&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="n">disposal_timeout</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;disposal_timeout&quot;</span><span class="p">,</span> <span class="mi">168</span><span class="p">)</span>
         <span class="n">suffix</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;suffix&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -2182,11 +2182,11 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="n">temp_file</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">temp_file</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
 
-<span class="k">class</span> <span class="nc">OptionPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OptionPath</span><span class="p">(</span><span class="n">SpecialPath</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    File with reading or writing parameters given through a URI (or any</span>
@@ -2218,7 +2218,7 @@
     <span class="n">_uri</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
     <span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># copy constructor</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent_path</span><span class="p">,</span> <span class="n">OptionPath</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">uri</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2236,7 +2236,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_parent_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parent_path</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">six</span><span class="w"> </span><span class="kn">import</span> <span class="n">iteritems</span>
             <span class="n">build_uri</span> <span class="o">=</span> <span class="s1">&#39;?&#39;</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
                 <span class="n">build_uri</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&amp;&#39;</span>
@@ -2251,15 +2251,15 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">parent_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_parent_type</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">parent_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_parent_path</span>
 
     <span class="nd">@parent_path</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">parent_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">SpecialPath</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_parent_path</span> <span class="o">=</span> <span class="n">value</span>
@@ -2269,22 +2269,22 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_parent_path</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_uri</span>
 
     <span class="nd">@uri</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_uri</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span>
 
     <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">referent</span><span class="p">()</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="k">def</span> <span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attributs_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
@@ -2301,7 +2301,7 @@
                 <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">id_generator</span><span class="p">,</span>
                 <span class="n">transfer_ids</span><span class="p">,</span>
                 <span class="n">shared_res_path_id</span><span class="p">,</span>
@@ -2329,7 +2329,7 @@
         <span class="k">return</span> <span class="n">opt_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span>
                   <span class="n">tr_from_ids</span><span class="p">,</span>
                   <span class="n">srp_from_ids</span><span class="p">,</span>
                   <span class="n">tmp_from_ids</span><span class="p">,</span>
@@ -2350,25 +2350,25 @@
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">temp_file</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">temp_file</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">%</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_path</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
 
 
-<span class="k">class</span> <span class="nc">IdGenerator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IdGenerator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_id</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">generate_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">current_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_id</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">current_id</span>
 
 
-<span class="k">def</span> <span class="nf">to_serializable</span><span class="p">(</span><span class="n">element</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_serializable</span><span class="p">(</span><span class="n">element</span><span class="p">,</span>
                     <span class="n">id_generator</span><span class="p">,</span>
                     <span class="n">transfer_ids</span><span class="p">,</span>
                     <span class="n">shared_res_path_ids</span><span class="p">,</span>
@@ -2428,7 +2428,7 @@
         <span class="k">return</span> <span class="n">element</span>
 
 
-<span class="k">def</span> <span class="nf">from_serializable</span><span class="p">(</span><span class="n">element</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_serializable</span><span class="p">(</span><span class="n">element</span><span class="p">,</span>
                       <span class="n">tr_from_ids</span><span class="p">,</span>
                       <span class="n">srp_from_ids</span><span class="p">,</span>
                       <span class="n">tmp_from_ids</span><span class="p">,</span>
@@ -2465,7 +2465,7 @@
         <span class="k">return</span> <span class="n">element</span>
 
 
-<span class="k">def</span> <span class="nf">list_to_serializable</span><span class="p">(</span><span class="n">list_to_convert</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_to_serializable</span><span class="p">(</span><span class="n">list_to_convert</span><span class="p">,</span>
                          <span class="n">id_generator</span><span class="p">,</span>
                          <span class="n">transfer_ids</span><span class="p">,</span>
                          <span class="n">shared_res_path_ids</span><span class="p">,</span>
@@ -2483,7 +2483,7 @@
     <span class="k">return</span> <span class="n">ser_list</span>
 
 
-<span class="k">def</span> <span class="nf">list_from_serializable</span><span class="p">(</span><span class="n">list_to_convert</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_from_serializable</span><span class="p">(</span><span class="n">list_to_convert</span><span class="p">,</span>
                            <span class="n">tr_from_ids</span><span class="p">,</span>
                            <span class="n">srp_from_ids</span><span class="p">,</span>
                            <span class="n">tmp_from_ids</span><span class="p">,</span>
