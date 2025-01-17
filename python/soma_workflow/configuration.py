@@ -802,10 +802,15 @@ class Configuration(observer.Observable):
             # fallback to system defaults (using TMP or TMPDIR envars)
             swf_tmp = tempfile.gettempdir()
             if swf_tmp is not None:
-                swf_tmp = os.path.join(swf_tmp, 'soma-workflow-tmp')
+                swf_tmp = os.path.join(swf_tmp, 'soma-workflow-shtmp')
                 if not os.path.exists(swf_tmp):
-                    os.makedirs(swf_tmp)
-                    os.chmod(swf_tmp, 0o777)
+                    try:
+                        os.makedirs(swf_tmp)
+                        os.chmod(swf_tmp, 0o777)
+                    except FileExistsError:
+                        # another process seems to have created it just now
+                        # so it's OK.
+                        pass
             return swf_tmp
         self._shared_temporary_dir = self._config_parser.get(
             self._resource_id, OCFG_SHARED_TEMPORARY_DIR)
