@@ -4,9 +4,6 @@
 # Imports
 #-----------------------------------------------------------------------------
 
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 import time
 import threading
 import os
@@ -18,6 +15,7 @@ from soma_workflow import subprocess
 from soma_workflow import connection
 import sys
 import traceback
+import shutil
 # import cProfile
 # import pdb
 
@@ -3931,9 +3929,8 @@ class WorkflowGraphView(QtGui.QWidget):
     def printWorkflow(self):
 
         import tempfile
-        from distutils.spawn import find_executable
         
-        if not find_executable("dot"):
+        if not shutil.which("dot"):
             print("Unable to print workflow because dot executable is not",
                   "available.", file = sys.stderr)
             return None

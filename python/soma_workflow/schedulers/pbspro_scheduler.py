@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 '''
 organization: I2BM, Neurospin, Gif-sur-Yvette, France
 
@@ -14,16 +11,14 @@ import sys
 import logging
 import os
 import socket
-import six
 import json
 import soma_workflow.constants as constants
 from soma_workflow.errors import DRMError, ExitTimeoutException
 from soma_workflow import configuration
-from soma_workflow.configuration import Configuration
 import tempfile
 from soma_workflow import subprocess
 import time
-import distutils.spawn
+import shutil
 
 
 class JobTemplate(object):
@@ -59,7 +54,7 @@ class JobTemplate(object):
                 f.write('#PBS -q %s\n' % self.queue)
             # if self.env:
                 # var = ','.join(['"%s=%s"' % (k, v.replace('"', '\\"'))
-                                # for k, v in six.iteritems(self.env)])
+                                # for k, v in self.env.items()])
                 # f.write('#PBS -v %s\n' % var)
             if self.nativeSpecification:
                 native_spec = self.nativeSpecification
@@ -186,7 +181,7 @@ class PBSProScheduler(Scheduler):
                                 None)
         if out_container is not None:
             return out_container  # cached
-        if distutils.spawn.find_executable('qstat') \
+        if shutil.which('qstat') \
                 or 'CASA_HOST_DIR' not in os.environ:
             out_container = []
         else:
@@ -708,7 +703,7 @@ class PBSProScheduler(Scheduler):
 
             self.logger.info("  ==> res_status=" + repr(res_status))
             res_resourceUsage = u''
-            for k, v in six.iteritems(resource_usage):
+            for k, v in resource_usage.items():
                 res_resourceUsage = res_resourceUsage + \
                     k + u'=' + str(v) + u' '
 
