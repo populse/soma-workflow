@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # TODO:
 # clean() is called way too often (for each workflow / job / file to be
 # removed), and too much power is probably taken in scanning obsolete items and
