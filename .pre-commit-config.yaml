@@ -23,7 +23,7 @@ repos:
     #     exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+    rev: 7.1.2
     hooks:
     -   id: flake8
         name: flake8 under python3
