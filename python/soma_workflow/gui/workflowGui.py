@@ -140,7 +140,7 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesLocal
 from soma_workflow.test.workflow_tests import WorkflowExamplesShared
 from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
-from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError
+from soma_workflow.errors import UnknownObjectError, ConfigurationError, SerializationError, WorkflowError, JobError, ConnectionError, DatabaseError
 import soma_workflow.version as version
 
 import six
@@ -5508,8 +5508,13 @@ class GuiJob(GuiWorkflowItem):
 
     def update_job_command(self, connection):
         if self.job_id != NOT_SUBMITTED_JOB_ID:
-            command = connection.get_job_command(self.job_id)
-            self.command = command
+            try:
+                command = connection.get_job_command(self.job_id)
+                self.command = command
+            except DatabaseError:
+                # if the job / workflow has been deleted in the meantime,
+                # then just do nothoing.
+                pass
 
     def update_job_params(self, connection):
         if self.job_id != NOT_SUBMITTED_JOB_ID:
