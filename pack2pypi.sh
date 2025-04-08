@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PACKNAME=pack-soma-workflow
-FULLVERSION=3.2.2
-SHORTVERSION=3.2
+FULLVERSION=3.3.0
+SHORTVERSION=3.3
 
 # Remove old version
 rm -rf "./$PACKNAME"
