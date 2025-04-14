@@ -1944,7 +1944,7 @@ class WorkflowDatabaseServer(object):
 
                 for job in engine_workflow.job_mapping.values():
                     job.workflow_id = engine_workflow.wf_id
-                #print('adding jobs')
+                # print('adding jobs')
                 jobs = self.add_jobs(
                     user_id,
                     list(engine_workflow.job_mapping.values()),
@@ -1952,7 +1952,7 @@ class WorkflowDatabaseServer(object):
                         * len(engine_workflow.job_mapping),
                     external_cursor=cursor,
                     login=login)
-                #print('add_jobs done')
+                # print('add_jobs done')
                 for job in jobs:
                     engine_workflow.registered_jobs[job.job_id] = job
 
@@ -1979,6 +1979,7 @@ class WorkflowDatabaseServer(object):
                     engine_workflow.param_links)) / nmax))
 
                 sqlinks = []
+                # print('nmax:', nmax)
                 for dest_job, links in engine_workflow.param_links.items():
                     edest_job = engine_workflow.job_mapping[dest_job]
                     for dest_param, linkl in links.items():
@@ -1989,7 +1990,7 @@ class WorkflowDatabaseServer(object):
                                 func = sqlite3.Binary(pickle.dumps(link[2]))
                             sqlinks+= [engine_workflow.wf_id, edest_job.job_id,
                                 dest_param, esrc_job.job_id, link[1], func]
-                            if len(sqlinks) == nmax:
+                            if len(sqlinks) > nmax - nvalues:
                                 cursor.execute(
                                 '''INSERT INTO param_links
                                 (workflow_id,
