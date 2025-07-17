@@ -45,7 +45,7 @@ class JobTemplate(object):
             f.write('#!/bin/sh\n')
             # PBS options
             if self.jobName:
-                special_chars = " ()&:"
+                special_chars = " ()&:.,;/'%[]"
                 job_name = self.jobName
                 for special_char in special_chars:
                     job_name = job_name.replace(special_char, '_')
