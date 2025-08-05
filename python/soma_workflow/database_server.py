@@ -3624,7 +3624,11 @@ class WorkflowDatabaseServer(object):
             try:
                 date = datetime.strptime(strdate, strtime_format)
             except ValueError:
-                date = datetime.strptime(strdate, '%Y-%m-%d')
+                try:
+                    date = datetime.fromisoformat(strdate)
+                except ValueError:
+                    print('date:', strdate, strtime_format)
+                    date = datetime.strptime(strdate, '%Y-%m-%d')
         else:
             date = None
         return date
