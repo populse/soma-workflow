@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 '''
 @author: Soizic Laguitton
 
@@ -11,25 +9,17 @@
 '''
 
 
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-------------------------------------------------------------------------
-
-from __future__ import print_function
-from __future__ import absolute_import
+# -----------------------------------------------------------------------------
 
 import os
 import os.path as osp
-import hashlib
-import stat
-import operator
 import random
 import pickle
-import types
 import sys
 import posixpath
 import logging
-import six
 import tempfile
 
 import json
@@ -38,14 +28,16 @@ import json
 
 
 import soma_workflow.connection as connection
-from soma_workflow.transfer import PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal
+from soma_workflow.transfer import (
+    PortableRemoteTransfer, TransferSCP, TransferRsync, TransferMonitoring, TransferLocal)
 import soma_workflow.constants as constants
 import soma_workflow.configuration as configuration
-from soma_workflow.errors import TransferError, SerializationError, SomaWorkflowError
+from soma_workflow.errors import (
+    TransferError, SerializationError, SomaWorkflowError)
 
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Classes and functions
-#-------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # imports required by the users of soma-workflow API (do not remove):
 from soma_workflow.client_types import Job
@@ -66,7 +58,7 @@ from soma_workflow.client_types import OptionPath
 from soma_workflow import scheduler
 
 
-class WorkflowController(object):
+class WorkflowController:
 
     '''
     Submission, control and monitoring of Job, FileTransfer and Workflow
@@ -90,6 +82,8 @@ class WorkflowController(object):
     scheduler_config = None
 
     isolated_light_mode = None
+
+    logger = None
 
     def __init__(self,
                  resource_id=None,
@@ -173,6 +167,8 @@ class WorkflowController(object):
 
         self._resource_id = resource_id
 
+        self.logger = logging.getLogger('client')
+
         # LOCAL MODE
         if mode == configuration.LOCAL_MODE:
             print("soma-workflow starting in local mode")
@@ -186,10 +182,19 @@ class WorkflowController(object):
                 log_dir = os.path.dirname(logfilepath)
                 if not os.path.exists(log_dir):
                     os.makedirs(log_dir)
-                logging.basicConfig(
-                    filename=logfilepath,
-                    format=engine_log_format,
-                    level=eval("logging." + engine_log_level))
+
+                logger = self.logger
+
+                # Create a file handler that logs even debug messages
+                fh = logging.FileHandler(logfilepath)
+                fh.setLevel(getattr(logging, engine_log_level))
+
+                # Create formatter
+                formatter = logging.Formatter(engine_log_format)
+                fh.setFormatter(formatter)
+
+                # Add the handler to the logger
+                logger.addHandler(fh)
 
             trial = 0
             ok = False
@@ -208,7 +213,7 @@ class WorkflowController(object):
                 except Exception:
                     if trial == 2:
                         raise
-                    logging.info('LocalConnection failed to establish '
+                    self.logger.info('LocalConnection failed to establish '
                                  '- trying again')
                     import time
                     time.sleep(1.)
@@ -254,7 +259,7 @@ class WorkflowController(object):
                 except Exception:
                     if trial == 2:
                         raise
-                    logging.info('RemoteConnection failed to establish '
+                    self.logger.info('RemoteConnection failed to establish '
                                  '- trying again')
                     import time
                     time.sleep(1.)
@@ -969,7 +974,7 @@ class WorkflowController(object):
         Raises *UnknownObjectError* if the transfer_id is not valid
         '''
         # Raises *TransferError*
-        if not isinstance(transfer_ids, six.string_types):
+        if not isinstance(transfer_ids, str):
             for transfer_id in transfer_ids:
                 self._transfer_file(transfer_id, buffer_size)
         else:
@@ -1250,7 +1255,7 @@ def _embedded_engine_and_server(config):
             os.path.abspath(engine_log_dir), "log_light_mode")
         log_config['loggers'] = {
             'engine': {
-                'level': eval("logging." + engine_log_level),
+                'level': getattr(logging, engine_log_level),
                 'handlers': ['engine'],
                 'propagate': False,
             }
@@ -1259,7 +1264,7 @@ def _embedded_engine_and_server(config):
             'engine': {
                 'class': 'logging.FileHandler',
                 'filename': logfilepath,
-                'level': eval("logging." + engine_log_level),
+                'level': getattr(logging, engine_log_level),
                 'formatter': 'engine',
             }
         }
@@ -1274,14 +1279,14 @@ def _embedded_engine_and_server(config):
      server_log_level) = config.get_server_log_info()
     if server_log_file:
         log_config.setdefault('loggers', {})['jobServer'] = {
-            'level': eval("logging." + server_log_level),
+            'level': getattr(logging, server_log_level),
             'handlers': ['jobServer'],
             'propagate': False,
         }
         log_config.setdefault('handlers', {})['jobServer'] = {
             'class': 'logging.FileHandler',
             'filename': server_log_file,
-            'level': eval("logging." + server_log_level),
+            'level': getattr(logging, server_log_level),
             'formatter': 'jobServer',
         }
         log_config.setdefault('formatters', {})['jobServer'] = {
@@ -1318,7 +1323,7 @@ def _embedded_engine_and_server(config):
     return workflow_engine
 
 
-class Helper(object):
+class Helper:
 
     def __init__(self):
         pass
@@ -1505,9 +1510,7 @@ class Helper(object):
             json.dump(utils.to_json(workflow_dict), file, indent=4)
             file.close()
         except Exception as e:
-            six.reraise(SerializationError,
-                        SerializationError("%s: %s" % (type(e), e)),
-                        sys.exc_info()[2])
+            raise SerializationError(f"{type(e)}: {e}").with_traceback(sys.exc_info()[2])
 
     @staticmethod
     def unserialize(file_path):
@@ -1530,9 +1533,9 @@ class Helper(object):
         from soma_workflow import utils
 
         try:
-            file = open(file_path, "r")
+            file = open(file_path)
         except Exception as e:
-            raise SerializationError("%s: %s" % (type(e), e))
+            raise SerializationError(f"{type(e)}: {e}")
 
         workflow = None
         try:
@@ -1544,16 +1547,16 @@ class Helper(object):
 
         if not workflow:
             file.close()
-            file = open(file_path, "r")
+            file = open(file_path)
             try:
                 workflow = pickle.load(file)
             except Exception as e:
-                raise SerializationError("%s: %s" % (type(e), e))
+                raise SerializationError(f"{type(e)}: {e}")
 
         try:
             file.close()
         except Exception as e:
-            raise SerializationError("%s: %s" % (type(e), e))
+            raise SerializationError(f"{type(e)}: {e}")
 
         # compatibility with version 2.2 and previous
         for job in workflow.jobs:
@@ -1572,7 +1575,7 @@ class Helper(object):
         from soma_workflow import utils
 
         try:
-            o_file = open(origin_file_path, "r")
+            o_file = open(origin_file_path)
             dict_from_json = utils.from_json(json.load(o_file))
             workflow = Workflow.from_dict(dict_from_json)
             o_file.close()
@@ -1580,7 +1583,7 @@ class Helper(object):
             pickle.dump(workflow, t_file)
             t_file.close()
         except Exception as e:
-            SerializationError("%s: %s" % (type(e), e))
+            SerializationError(f"{type(e)}: {e}")
 
     @staticmethod
     def cpu_count():

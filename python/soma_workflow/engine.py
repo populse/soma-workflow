@@ -10,7 +10,6 @@ import time
 import logging
 import itertools
 import atexit
-import six
 import weakref
 import sys
 import json
@@ -1202,11 +1201,11 @@ class WorkflowEngine(RemoteFileController):
         '''
         Implementation of soma_workflow.client.WorkflowController API
         '''
-        logging.info("Receiving a workflow to treat: " + repr(workflow))
+        self.logger.info("Receiving a workflow to treat: " + repr(workflow))
         if not expiration_date:
-            logging.debug("No expiration date")
+            self.logger.debug("No expiration date")
             expiration_date = datetime.now() + timedelta(days=7)
-        logging.debug("Going to add a workflow")
+        self.logger.debug("Going to add a workflow")
         try:
             wf_id = self.engine_loop.add_workflow(
                 workflow,
@@ -1214,13 +1213,13 @@ class WorkflowEngine(RemoteFileController):
                 name,
                 queue,
                 container_command=self.container_command)
-        except Exception as e:
-            logging.exception(
+        except Exception:
+            self.logger.exception(
                 "ERROR: in submit_worflow, an exception occurred when calling "
                 "engine_loop.add_workflow")
             raise
 
-        logging.debug("Workflow identifier is: " + str(wf_id))
+        self.logger.debug("Workflow identifier is: " + str(wf_id))
 
         return wf_id
 

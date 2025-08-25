@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 '''
 author: Soizic Laguitton
 
@@ -11,30 +9,22 @@ license: CeCILL version: 2 http://www.cecill.info/licences/Licence_CeCILL_V2-en.
 '''
 
 
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-from __future__ import print_function
-from __future__ import absolute_import
 
-import warnings
 import sys
 import soma_workflow.constants as constants
 import re
 import importlib
 
-# python2/3 compatibility
-
-import six
-from six.moves import range
-
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Classes and functions
-#-------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
-class Job(object):
+class Job:
 
     '''
     Job representation.
@@ -310,7 +300,7 @@ class Job(object):
     def _attributes_equal(self, element, other_element):
         if element.__class__ is not other_element.__class__:
             # special case str / unicode
-            if not isinstance(element, six.string_types) or not isinstance(element, six.string_types):
+            if not isinstance(element, str) or not isinstance(element, str):
                 # print('differ in class:', element.__class__,
                 # other_element.__class__)
                 return False
@@ -334,7 +324,7 @@ class Job(object):
         if isinstance(element, dict):
             if sorted(element.keys()) != sorted(other_element.keys()):
                 return False
-            for key, item in six.iteritems(element):
+            for key, item in element.items():
                 other_item = other_element[key]
                 if not self._attributes_equal(item, other_item):
                     return False
@@ -355,7 +345,7 @@ class Job(object):
         if not self.param_dict:
             return command
         cmd = []
-        r = re.compile('%\((.+)\)[dsf]')
+        r = re.compile(r'%\((.+)\)[dsf]')
         for e in command:
             if isinstance(e, (list, tuple)):
                 cmd.append(self.commandline_repl(e))
@@ -440,7 +430,7 @@ class Job(object):
         '''
         job = cls(command=d["command"],
                   configuration=d.get("configuration", {}))
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             setattr(job, key, value)
 
         new_command = list_from_serializable(job.command,
@@ -497,7 +487,7 @@ class Job(object):
                                                        tmp_from_ids,
                                                        opt_from_ids)
         job.param_dict = {}
-        for k, v in six.iteritems(d.get('param_dict', {})):
+        for k, v in d.get('param_dict', {}).items():
             job.param_dict[k] = from_serializable(v, tr_from_ids,
                                                   srp_from_ids,
                                                   tmp_from_ids,
@@ -536,7 +526,7 @@ class Job(object):
             "uuid",
         ]
 
-        job_dict["class"] = '%s.%s' % (self.__class__.__module__,
+        job_dict["class"] = '{}.{}'.format(self.__class__.__module__,
                                        self.__class__.__name__)
 
         for attr_name in attributes:
@@ -629,7 +619,7 @@ class Job(object):
 
         if self.param_dict:
             param_dict = {}
-            for k, v in six.iteritems(self.param_dict):
+            for k, v in self.param_dict.items():
                 param_dict[k] = to_serializable(v, id_generator,
                                                 transfer_ids,
                                                 shared_res_path_id,
@@ -693,7 +683,7 @@ class EngineExecutionJob(Job):
 
 class BarrierJob(EngineExecutionJob):
 
-    '''
+    r'''
     Barrier job: it is a "fake" job which does nothing (and will not become a
     real job on the DRMS) but has dependencies.
     It may be used to make a dependencies hub, to avoid too many dependencies
@@ -730,7 +720,7 @@ class BarrierJob(EngineExecutionJob):
                  referenced_input_files=None,
                  referenced_output_files=None,
                  name=None):
-        super(BarrierJob, self).__init__(command=[],
+        super().__init__(command=[],
                                          referenced_input_files=referenced_input_files,
                                          referenced_output_files=referenced_output_files,
                                          name=name)
@@ -750,7 +740,7 @@ class BarrierJob(EngineExecutionJob):
          * opt_from_ids *id -> OptionPath*
         '''
         job = cls()
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             setattr(job, key, value)
 
         if job.referenced_input_files:
@@ -800,7 +790,7 @@ class BarrierJob(EngineExecutionJob):
         # stdin, stdout_file, stderr_file and working_directory
         # can contain FileTransfer et SharedResourcePath.
 
-        job_dict["class"] = '%s.%s' % (self.__class__.__module__,
+        job_dict["class"] = '{}.{}'.format(self.__class__.__module__,
                                        self.__class__.__name__)
 
         if self.referenced_input_files:
@@ -826,7 +816,7 @@ class BarrierJob(EngineExecutionJob):
         return job_dict
 
 
-class Workflow(object):
+class Workflow:
 
     '''
     Workflow representation.
@@ -980,7 +970,8 @@ class Workflow(object):
 
         '''
         import logging
-        logging.debug("Within Workflow constructor")
+        logger = logging.getLogger('client')
+        logger.debug("Within Workflow constructor")
 
         self.name = name
         self.jobs = jobs
@@ -1077,8 +1068,8 @@ class Workflow(object):
             current_deps = self.dependencies
         else:
             current_deps = set(self.dependencies)
-        for dest_job, links in six.iteritems(self.param_links):
-            for p, linkl in six.iteritems(links):
+        for dest_job, links in self.param_links.items():
+            for p, linkl in links.items():
                 for link in linkl:
                     deps.add((link[0], dest_job))
         if isinstance(self.dependencies, list):
@@ -1149,10 +1140,10 @@ class Workflow(object):
         wf_dict["dependencies"] = new_dependencies
 
         new_links = {}
-        for dest_job, links in six.iteritems(self.param_links):
+        for dest_job, links in self.param_links.items():
             wdjob = job_ids[dest_job]
             wlinks = {}
-            for dest_par, linkl in six.iteritems(links):
+            for dest_par, linkl in links.items():
                 for link in linkl:
                     wlinks.setdefault(dest_par, []).append(
                         (job_ids[link[0]], ) + link[1:])
@@ -1178,7 +1169,7 @@ class Workflow(object):
         wf_dict["root_group"] = new_root_group
 
         ser_groups = {}
-        for group, group_id in six.iteritems(group_ids):
+        for group, group_id in group_ids.items():
             ser_groups[str(group_id)] = group.to_dict(group_ids, job_ids)
         wf_dict["serialized_groups"] = ser_groups
 
@@ -1188,7 +1179,7 @@ class Workflow(object):
         shared_res_path_ids = {}  # SharedResourcePath -> id
         temporary_ids = {}  # TemporaryPath -> id
         option_ids = {}  # OptionPath -> id
-        for job, job_id in six.iteritems(job_ids):
+        for job, job_id in job_ids.items():
             ser_jobs[str(job_id)] = job.to_dict(id_generator,
                                                 transfer_ids,
                                                 shared_res_path_ids,
@@ -1197,22 +1188,22 @@ class Workflow(object):
         wf_dict["serialized_jobs"] = ser_jobs
 
         ser_transfers = {}
-        for file_transfer, transfer_id in six.iteritems(transfer_ids):
+        for file_transfer, transfer_id in transfer_ids.items():
             ser_transfers[str(transfer_id)] = file_transfer.to_dict()
         wf_dict["serialized_file_transfers"] = ser_transfers
 
         ser_srp = {}
-        for srp, srp_id in six.iteritems(shared_res_path_ids):
+        for srp, srp_id in shared_res_path_ids.items():
             ser_srp[str(srp_id)] = srp.to_dict()
         wf_dict["serialized_shared_res_paths"] = ser_srp
 
         ser_tmp = {}
-        for tmpf, tmp_id in six.iteritems(temporary_ids):
+        for tmpf, tmp_id in temporary_ids.items():
             ser_tmp[str(tmp_id)] = tmpf.to_dict()
         wf_dict["serialized_temporary_paths"] = ser_tmp
 
         ser_opt = {}
-        for optf, opt_id in six.iteritems(option_ids):
+        for optf, opt_id in option_ids.items():
             ser_opt[str(opt_id)] = optf.to_dict(id_generator,
                                                 transfer_ids,
                                                 shared_res_path_ids,
@@ -1242,28 +1233,28 @@ class Workflow(object):
         # shared resource paths
         serialized_srp = d.get("serialized_shared_res_paths", {})
         srp_from_ids = {}
-        for srp_id, srp_d in six.iteritems(serialized_srp):
+        for srp_id, srp_d in serialized_srp.items():
             srp = SharedResourcePath.from_dict(srp_d)
             srp_from_ids[int(srp_id)] = srp
 
         # file transfers
         serialized_tr = d.get("serialized_file_transfers", {})
         tr_from_ids = {}
-        for tr_id, tr_d in six.iteritems(serialized_tr):
+        for tr_id, tr_d in serialized_tr.items():
             file_transfer = FileTransfer.from_dict(tr_d)
             tr_from_ids[int(tr_id)] = file_transfer
 
         # file transfers
         serialized_tmp = d.get("serialized_temporary_paths", {})
         tmp_from_ids = {}
-        for tmp_id, tmp_d in six.iteritems(serialized_tmp):
+        for tmp_id, tmp_d in serialized_tmp.items():
             temp_file = TemporaryPath.from_dict(tmp_d)
             tmp_from_ids[int(tmp_id)] = temp_file
 
         # option paths
         serialized_opt = d.get("serialized_option_paths", {})
         opt_from_ids = {}
-        for opt_id, opt_d in six.iteritems(serialized_opt):
+        for opt_id, opt_d in serialized_opt.items():
             opt_file = OptionPath.from_dict(
                 opt_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             opt_from_ids[int(opt_id)] = opt_file
@@ -1271,7 +1262,7 @@ class Workflow(object):
         # jobs
         serialized_jobs = d.get("serialized_jobs", {})
         job_from_ids = {}
-        for job_id, job_d in six.iteritems(serialized_jobs):
+        for job_id, job_d in serialized_jobs.items():
             cls_name = job_d.get("class", "soma_workflow.client_types.Job")
             cls_mod = cls_name.rsplit('.', 1)
             if len(cls_mod) == 1:
@@ -1287,7 +1278,7 @@ class Workflow(object):
         # obsolete: barriers are now part of jobs definitions, but this helps
         # reloading older workflows.
         serialized_jobs = d.get("serialized_barriers", {})
-        for job_id, job_d in six.iteritems(serialized_jobs):
+        for job_id, job_d in serialized_jobs.items():
             job = BarrierJob.from_dict(
                 job_d, tr_from_ids, srp_from_ids, tmp_from_ids, opt_from_ids)
             job_from_ids[int(job_id)] = job
@@ -1332,10 +1323,10 @@ class Workflow(object):
         # param links
         param_links = {}
         id_links = d.get("param_links", {})
-        for dest_job, links in six.iteritems(id_links):
+        for dest_job, links in id_links.items():
             ddest_job = job_from_ids[int(dest_job)]
             dlinks = {}
-            for lname, linkl in six.iteritems(links):
+            for lname, linkl in links.items():
                 dlinkl = []
                 for link in linkl:
                     dsrc_job = job_from_ids[link[0]]
@@ -1476,7 +1467,7 @@ class Workflow(object):
                 j2 = ghubs[0]  # replace output group with the group input hub
             new_deps_list.append((j1, j2))
         # rebuild intra-group links
-        for group, ghubs in six.iteritems(group_to_hub):
+        for group, ghubs in group_to_hub.items():
             new_deps_list += self.__make_group_hubs_deps(group, group_to_hub)
         if type(self.dependencies) is set:
             self.dependencies.difference_update(deps_to_remove)
@@ -1499,7 +1490,7 @@ class Workflow(object):
                             % repr(type(self.dependencies)))
 
 
-class Group(object):
+class Group:
 
     '''
     Hierarchical structure of a workflow.
@@ -1579,7 +1570,7 @@ class Group(object):
         return group
 
 
-class SpecialPath(object):
+class SpecialPath:
 
     '''
     Abstract base class for special file or directory path, which needs specific handling in the engine.
@@ -1588,12 +1579,12 @@ class SpecialPath(object):
     '''
 
     def __init__(self, path=None):
-        super(SpecialPath, self).__init__()
+        super().__init__()
         if isinstance(path, self.__class__):
             self.pattern = path.pattern
             self.ref = path.referent()
         else:
-            self.pattern = u'%s'
+            self.pattern = '%s'
             self.ref = None
 
     def referent(self):
@@ -1601,24 +1592,24 @@ class SpecialPath(object):
 
     def __add__(self, other):
         res = type(self)(self)
-        res.pattern = self.pattern + six.text_type(other)
+        res.pattern = self.pattern + str(other)
         res.ref = self.referent()
         return res
 
     def __radd__(self, other):
         res = type(self)(self)
-        res.pattern = six.text_type(other) + self.pattern
+        res.pattern = str(other) + self.pattern
         res.ref = self.referent()
         return res
 
     def __iadd__(self, other):
-        self.pattern += six.text_type(other)
-        super(SpecialPath, self).__iadd__(six.text_type(other))
+        self.pattern += str(other)
+        super().__iadd__(str(other))
 
     def __hash__(self):
         if self.ref:
             return self.referent().__hash__()
-        return super(SpecialPath, self).__hash__()
+        return super().__hash__()
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -1748,12 +1739,12 @@ class FileTransfer(SpecialPath):
                     or client_paths is not None:
                 raise TypeError('FileTransfer as copy constructor '
                                 'should have only one argument')
-            super(FileTransfer, self).__init__(is_input)
+            super().__init__(is_input)
             return
         if client_path is None:
             raise TypeError('FileTransfer.__init__ takes at least '
                             '3 arguments')
-        super(FileTransfer, self).__init__()
+        super().__init__()
         if name:
             ft_name = name
         else:
@@ -1847,7 +1838,7 @@ class FileTransfer(SpecialPath):
     def from_dict(cls, d):
         transfer = cls(is_input=True,
                        client_path="foo")
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             setattr(transfer, key, value)
         return transfer
 
@@ -1900,13 +1891,13 @@ class SharedResourcePath(SpecialPath):
             if namespace is not None or uuid is not None:
                 raise TypeError('SharedResourcePath as copy constructor '
                                 'should have only one argument')
-            super(SharedResourcePath, self).__init__(relative_path)
+            super().__init__(relative_path)
             return
 
         if namespace is None or uuid is None:
             raise TypeError('SharedResourcePath.__init__ takes at least '
                             '4 arguments')
-        super(SharedResourcePath, self).__init__()
+        super().__init__()
         self.relative_path = relative_path
         self.namespace = namespace
         self.uuid = uuid
@@ -1982,13 +1973,13 @@ class SharedResourcePath(SpecialPath):
         shared_res_path = cls(relative_path="toto",
                               namespace="toto",
                               uuid="toto")
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             setattr(shared_res_path, key, value)
         return shared_res_path
 
     def __str__(self):
         ref = self.referent()
-        return self.pattern % ("%s:%s:%s" % (ref.namespace, ref.uuid,
+        return self.pattern % ("{}:{}:{}".format(ref.namespace, ref.uuid,
                                              ref.relative_path))
 
 
@@ -2032,9 +2023,9 @@ class TemporaryPath(SpecialPath):
             if name is not None or suffix != '':
                 raise TypeError('TemporaryPath as copy constructor should '
                                 'have only one argument')
-            super(TemporaryPath, self).__init__(is_directory)
+            super().__init__(is_directory)
             return
-        super(TemporaryPath, self).__init__()
+        super().__init__()
         self._is_directory = is_directory
         self._disposal_timeout = disposal_timeout
         self._suffix = suffix
@@ -2114,7 +2105,7 @@ class TemporaryPath(SpecialPath):
         temp_file = cls(is_directory=is_directory,
                         disposal_timeout=disposal_timeout,
                         suffix=suffix)
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             setattr(temp_file, key, value)
         return temp_file
 
@@ -2160,11 +2151,11 @@ class OptionPath(SpecialPath):
             if not uri is None:
                 raise TypeError('OptionPath as copy constructor should '
                                 'have only one argument')
-            super(OptionPath, self).__init__(parent_path)
+            super().__init__(parent_path)
             return
 
         # normal constructor
-        super(OptionPath, self).__init__()
+        super().__init__()
         if isinstance(parent_path, SpecialPath):
             self._parent_path = parent_path
         else:
@@ -2174,7 +2165,7 @@ class OptionPath(SpecialPath):
         if isinstance(uri, dict):
             from six import iteritems
             build_uri = '?'
-            for key, value in iteritems(uri):
+            for key, value in uri.items():
                 build_uri += str(key) + '=' + str(value) + '&'
             build_uri = build_uri[:-1]
             self._uri = build_uri
@@ -2281,19 +2272,19 @@ class OptionPath(SpecialPath):
         uri = d.get("uri", None)
         name = d.get("name", None)
         temp_file = cls(parent_path=parent_path, uri=uri, name=name)
-        for key, value in six.iteritems(d):
+        for key, value in d.items():
             if not key in ("parent_path", "parent_type", "uri", "name"):
                 setattr(temp_file, key, value)
         return temp_file
 
     def __str__(self):
-        return self.pattern % ("%s%s" % (str(self.parent_path), self.uri))
+        return self.pattern % (f"{str(self.parent_path)}{self.uri}")
 
     def __repr__(self):
         return repr(self.__str__())
 
 
-class IdGenerator(object):
+class IdGenerator:
 
     def __init__(self):
         self.current_id = 0
