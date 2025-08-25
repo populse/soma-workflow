@@ -18,7 +18,7 @@ repos:
     -   id: end-of-file-fixer
         exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
     -   id: fix-byte-order-marker
-    -   id: fix-encoding-pragma
+    # -   id: fix-encoding-pragma
     # -   id: trailing-whitespace  # not ready yet
     #     exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
 
@@ -29,3 +29,9 @@ repos:
         name: flake8 under python3
         language_version: python3
         exclude: ^doc/sphinx/sphinxext/
+
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.1
+    hooks:
+    -   id: pyupgrade
+        args: [--py311-plus]

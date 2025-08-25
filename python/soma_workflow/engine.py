@@ -1,20 +1,13 @@
-# -*- coding: utf-8 -*-
-
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-from datetime import date, timedelta, datetime
+from datetime import timedelta, datetime
 import threading
 import getpass
 import os
 import time
 import logging
-import stat
-import hashlib
-import operator
 import itertools
 import atexit
 import six
@@ -26,18 +19,21 @@ import importlib
 # import cProfile
 # import traceback
 
-from soma_workflow.engine_types import EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath, FileTransfer, SpecialPath, TemporaryPath
+from soma_workflow.engine_types import (
+    EngineJob, EngineWorkflow, EngineTransfer, EngineTemporaryPath,
+    FileTransfer, SpecialPath, TemporaryPath)
 import soma_workflow.constants as constants
-from soma_workflow.client import WorkflowController, EngineExecutionJob
-from soma_workflow.errors import JobError, UnknownObjectError, EngineError, DRMError
+from soma_workflow.client import EngineExecutionJob
+from soma_workflow.errors import (
+    JobError, UnknownObjectError, EngineError, DRMError)
 from soma_workflow.transfer import RemoteFileController
 from soma_workflow.configuration import Configuration
 from soma_workflow.param_link_functions import *
 from soma_workflow import utils
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Globals and constants
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 refreshment_interval = 1.  # seconds
 # if the last status update is older than the refreshment_timeout
@@ -80,14 +76,14 @@ def transformed_param_value(func, src_param, value, param, dval):
                 dst_param=param, dst_value=dval)
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Classes and functions
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class EngineLoopThread(threading.Thread):
 
     def __init__(self, engine_loop):
-        super(EngineLoopThread, self).__init__()
+        super().__init__()
         self.engine_loop = engine_loop
         self.time_interval = refreshment_interval
         atexit.register(EngineLoopThread.stop_loop,
@@ -115,7 +111,7 @@ class EngineLoopThread(threading.Thread):
             loop_thread.stop_loop()
 
 
-class WorkflowEngineLoop(object):
+class WorkflowEngineLoop:
 
     # jobs managed by the current engine process instance.
     # The workflows jobs are not duplicated here.
@@ -202,9 +198,9 @@ class WorkflowEngineLoop(object):
             userLogin = getpass.getuser()
         except Exception as e:
             self.logger.critical(
-                "Couldn't identify user %s: %s \n" % (type(e), e))
+                f"Couldn't identify user {type(e)}: {e} \n")
             raise EngineError(
-                "Couldn't identify user %s: %s \n" % (type(e), e))
+                f"Couldn't identify user {type(e)}: {e} \n")
 
         self._user_id = self._database_server.register_user(userLogin)
         self._user_login = userLogin
@@ -239,13 +235,13 @@ class WorkflowEngineLoop(object):
             if not self._running:
                 break
             with self._lock:
-                #print('engine loop 0')
+                # print('engine loop 0')
                 # clear scheduler events
                 self._scheduler.jobs_finished_event.clear()
 
                 ended_jobs = drms_error_jobs  # {}
                 wf_to_inspect = set()  # set of workflow id
-                for job in six.itervalues(drms_error_jobs):
+                for job in drms_error_jobs.values():
                     if job.workflow_id != -1:
                         wf_to_inspect.add(job.workflow_id)
                 drms_error_jobs = {}
@@ -262,7 +258,7 @@ class WorkflowEngineLoop(object):
                 # --- 1. Jobs and workflow deletion and kill ------------------
                 # Get the jobs and workflow with the status DELETE_PENDING
                 # and KILL_PENDING
-                #print('engine loop 1')
+                # print('engine loop 1')
                 jobs_to_delete = []
                 jobs_to_kill = []
                 (jobs_to_delete, jobs_to_kill) \
@@ -280,10 +276,10 @@ class WorkflowEngineLoop(object):
                     job = self._jobs.get(job_id)
                     if job is None:
                         # look in workflows
-                        for wf in six.itervalues(self._workflows):
+                        for wf in self._workflows.values():
                             jobs = [j
                                     for jid, j
-                                    in six.iteritems(wf.registered_jobs)
+                                    in wf.registered_jobs.items()
                                     if jid == job_id]
                             if len(jobs) == 1:
                                 job = jobs[0]
@@ -296,7 +292,7 @@ class WorkflowEngineLoop(object):
                         except DRMError as e:
                             # TBI how to communicate the error ?
                             self.logger.error(
-                                "!!!ERROR!!! stop job %s :%s" % (type(e), e))
+                                f"!!!ERROR!!! stop job {type(e)} :{e}")
                         if job_id in jobs_to_delete and job_id in self._jobs:
                             self.logger.debug("Delete job : " + repr(job_id))
                             self._database_server.delete_job(job_id)
@@ -326,31 +322,32 @@ class WorkflowEngineLoop(object):
                 # --- 2. Update job status from the scheduler -----------------
                 # get back the termination status and terminate the jobs which
                 # ended
-                #print('engine loop 2')
+                # print('engine loop 2')
                 wf_jobs = {}
                 wf_transfers = {}
                 wf_tmp = {}
-                for wf in six.itervalues(self._workflows):
+                for wf in self._workflows.values():
                     # one_wf_processed = True
                     # TBI add a condition on the workflow status
                     wf_jobs.update(wf.registered_jobs)
                     wf_transfers.update(wf.registered_tr)
                     wf_tmp.update(wf.registered_tmp)
 
-                for job in itertools.chain(six.itervalues(self._jobs),
-                                           six.itervalues(wf_jobs)):
+                for job in itertools.chain(self._jobs.values(),
+                                           wf_jobs.values()):
                     if job.exit_status == None and job.drmaa_id != None:
                         try:
                             job.status = self._scheduler.get_job_status(
                                 job.drmaa_id)
                         except DRMError as e:
                             self.logger.info(
-                                "!!!ERROR!!! get_job_status %s: %s" % (type(e), e))
+                                "!!!ERROR!!! get_job_status %s: %s"
+                                % (type(e), e))
                             job.status = constants.FAILED
                             job.exit_status = constants.EXIT_ABORTED
                             stderr_file = open(job.stderr_file, "wa")
                             stderr_file.write(
-                                "Error while requesting the job status %s: %s \nWarning: the job may still be running.\n" % (type(e), e))
+                                f"Error while requesting the job status {type(e)}: {e} \nWarning: the job may still be running.\n")
                             stderr_file.close()
                             drms_error_jobs[job.job_id] = job
                         self.logger.debug(
@@ -410,8 +407,8 @@ class WorkflowEngineLoop(object):
                                 "  => signal " + repr(job.terminating_signal))
 
                 # --- 3. Get back transfered status ---------------------------
-                #print('engine loop 3')
-                for transfer_id, transfer in six.iteritems(wf_transfers):
+                # print('engine loop 3')
+                for transfer_id, transfer in wf_transfers.items():
                     try:
                         status = self._database_server.get_transfer_status(
                             transfer_id,
@@ -419,7 +416,7 @@ class WorkflowEngineLoop(object):
                         transfer.status = status
                     except Exception:
                         self.logger.exception('WorkflowEngineLoop')
-                for tmp_id, tmp in six.iteritems(wf_tmp):
+                for tmp_id, tmp in wf_tmp.items():
                     try:
                         status = self._database_server.get_temporary_status(
                             tmp_id,
@@ -428,14 +425,14 @@ class WorkflowEngineLoop(object):
                     except Exception:
                         logger.exception()
 
-                for wf_id in six.iterkeys(self._workflows):
+                for wf_id in self._workflows.keys():
                     if self._database_server.pop_workflow_ended_transfer(wf_id):
                         self.logger.debug(
                             "ended transfer for the workflow " + repr(wf_id))
                         wf_to_inspect.add(wf_id)
 
                 # --- 4. Inspect workflows ------------------------------------
-                #print('engine loop 4')
+                # print('engine loop 4')
                 self.logger.debug("wf_to_inspect " + repr(wf_to_inspect))
                 for wf_id in wf_to_inspect:
                     (to_run,
@@ -450,18 +447,18 @@ class WorkflowEngineLoop(object):
                     self._pend_for_submission(to_run)
 
                 # --- 5. Check if pending jobs can now be submitted -----------
-                #print('engine loop 5')
+                # print('engine loop 5')
                 self.logger.debug("Check pending jobs")
                 jobs_to_run = self._get_pending_job_to_submit()
                 self.logger.debug("jobs_to_run=" + repr(jobs_to_run))
                 self.logger.debug("len(jobs_to_run)=" + repr(len(jobs_to_run)))
 
                 # --- 6. Submit jobs ------------------------------------------
-                #print('engine loop 6')
+                # print('engine loop 6')
                 drmaa_id_for_db_up = {}
                 # set dynamic paramters from upstream outputs
                 self.update_jobs_parameters(jobs_to_run)
-                #print('engine loop 6.1')
+                # print('engine loop 6.1')
 
                 if jobs_to_run:
                     drmaa_ids = self._scheduler.job_submission(jobs_to_run)
@@ -497,21 +494,21 @@ class WorkflowEngineLoop(object):
                             else:
                                 job.status = constants.UNDETERMINED
 
-                #print('engine loop 6.2')
+                # print('engine loop 6.2')
                 if drmaa_id_for_db_up:
                     self._database_server.set_submission_information(
                         drmaa_id_for_db_up,
                         datetime.now())
 
                 # --- 7. Update the workflow and jobs status to the database_server -
-                #print('engine loop 7')
+                # print('engine loop 7')
                 ended_job_ids = []
                 ended_wf_ids = []
                 self.logger.debug("update job and wf status ~~~~~~~~~~~~~~~ ")
                 job_status_for_db_up = {}
                 new_jobs_status = {}
-                for job_id, job in itertools.chain(six.iteritems(self._jobs),
-                                                   six.iteritems(wf_jobs)):
+                for job_id, job in itertools.chain(self._jobs.items(),
+                                                   wf_jobs.items()):
                     prev_status = prev_jobs_status.get(job_id)
                     if prev_status != job.status:
                         job_status_for_db_up[job_id] = job.status
@@ -525,13 +522,13 @@ class WorkflowEngineLoop(object):
                 prev_jobs_status = new_jobs_status
 
                 if job_status_for_db_up:
-                    #print('update jobs status:', len(job_status_for_db_up))
+                    # print('update jobs status:', len(job_status_for_db_up))
                     self._database_server.set_jobs_status(job_status_for_db_up)
 
                 if len(ended_jobs):
                     self._database_server.set_jobs_exit_info(ended_jobs)
 
-                for wf_id, workflow in six.iteritems(self._workflows):
+                for wf_id, workflow in self._workflows.items():
                     force = False
                     if wf_id in wf_to_kill + wf_to_delete:
                         force = True
@@ -554,9 +551,9 @@ class WorkflowEngineLoop(object):
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
             self._loop_count += 1
-            #print('engine loop 8')
+            # print('engine loop 8')
             self._scheduler.jobs_finished_event.wait(time_interval)
-            #print('engine loop 9')
+            # print('engine loop 9')
 
     def read_job_output_dict(self, job):
         if job.has_outputs:
@@ -570,14 +567,15 @@ class WorkflowEngineLoop(object):
                         with open(job.plain_output_params_file()) as f:
                             output_dict = utils.from_json(json.load(f))
                     except Exception:
-                        self.logger.info('unable to read output parameters '
-                                         'file: %s' % job.plain_output_params_file())
+                        self.logger.info(
+                            'unable to read output parameters file: %s'
+                            % job.plain_output_params_file())
             if not output_dict:
                 return
             self._database_server.set_job_output_params(job.job_id,
                                                         output_dict,
                                                         self._user_id)
-            for param, value in six.iteritems(output_dict):
+            for param, value in output_dict.items():
                 jvalue = job.param_dict.get(param)
                 if jvalue and isinstance(jvalue, FileTransfer):
                     engine_transfer = job.transfer_mapping[jvalue]
@@ -614,7 +612,7 @@ class WorkflowEngineLoop(object):
             # if this is right we may process only the last link ?
             # seems are done many times here...
             if u_param_dict:
-                for param, value_tl in six.iteritems(u_param_dict):
+                for param, value_tl in u_param_dict.items():
                     #print('+' + '-' * 78 + '+')
                     #print('update_job_parameters', param, ':', value_tl)
                     #print('job:', job.name, job)
@@ -752,7 +750,7 @@ class WorkflowEngineLoop(object):
                 raise JobError("Could not create the standard error file "
                                "%s: %s \n" % (type(e), e))
 
-        for transfer in six.itervalues(engine_job.transfer_mapping):
+        for transfer in engine_job.transfer_mapping.values():
             if transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:
@@ -797,7 +795,7 @@ class WorkflowEngineLoop(object):
         @return: the list of job to be submitted
         '''
         to_run = []
-        for queue_name, jobs in six.iteritems(self._pending_queues):
+        for queue_name, jobs in self._pending_queues.items():
             if jobs and queue_name in self._running_jobs_limits:
                 self.logger.debug("queue " + repr(queue_name) + " is limited: " + repr(
                     self._running_jobs_limits[queue_name]))
@@ -862,7 +860,7 @@ class WorkflowEngineLoop(object):
             self._user_id, engine_workflow, login=self._user_login)
         #print('added in DB')
 
-        for job in six.itervalues(engine_workflow.job_mapping):
+        for job in engine_workflow.job_mapping.values():
             try:
                 tmp = open(job.stdout_file, 'w')
                 tmp.close()
@@ -887,7 +885,7 @@ class WorkflowEngineLoop(object):
                                    #"%s %s: %s \n" %
                                    #(repr(job.stderr_file), type(e), e))
 
-        for transfer in six.itervalues(engine_workflow.transfer_mapping):
+        for transfer in engine_workflow.transfer_mapping.values():
             if hasattr(transfer, 'client_paths') and transfer.client_paths \
                     and not os.path.isdir(transfer.engine_path):
                 try:
@@ -929,7 +927,7 @@ class WorkflowEngineLoop(object):
                         self._scheduler.kill_job(job.drmaa_id)
                     except DRMError as e:
                         # TBI how to communicate the error
-                        self.logger.error("!!!ERROR!!! %s:%s" % (type(e), e))
+                        self.logger.error(f"!!!ERROR!!! {type(e)}:{e}")
                 elif job.queue in self._pending_queues and \
                         job in self._pending_queues[job.queue]:
                     self._pending_queues[job.queue].remove(job)
@@ -953,7 +951,7 @@ class WorkflowEngineLoop(object):
         wf = self._workflows[wf_id]
         # self.logger.debug("wf.registered_jobs " + repr(wf.registered_jobs))
         ended_jobs = {}
-        for job_id, job in six.iteritems(wf.registered_jobs):
+        for job_id, job in wf.registered_jobs.items():
             if self._stop_job(job_id, job):
                 ended_jobs[job_id] = job
         # self._database_server.set_workflow_status(wf_id,
@@ -1014,7 +1012,7 @@ class WorkflowEngineLoop(object):
 
         if status != constants.WORKFLOW_DONE:
             self._database_server.set_jobs_status(
-                dict([(job_id, constants.KILL_PENDING) for job_id in job_ids]))
+                {job_id: constants.KILL_PENDING for job_id in job_ids})
 
     def restart_jobs(self, wf_id, job_ids):
         with self._lock:
@@ -1082,7 +1080,7 @@ class WorkflowEngine(RemoteFileController):
             user_login = getpass.getuser()
         except Exception as e:
             raise EngineError(
-                "Couldn't identify user %s: %s \n" % (type(e), e))
+                f"Couldn't identify user {type(e)}: {e} \n")
 
         self.logger.debug("user_login: " + user_login)
         self._user_id = self._database_server.register_user(user_login)
@@ -1365,7 +1363,7 @@ class WorkflowEngine(RemoteFileController):
         param_dict = job.param_dict
         if u_param_dict:
             param_dict = {}
-            for param, value_tl in six.iteritems(u_param_dict):
+            for param, value_tl in u_param_dict.items():
                 dval = job.param_dict.get(param)
                 if isinstance(dval, list):
                     # reset lists
@@ -1665,7 +1663,7 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         '''
         * config *configuration.Configuration*
         '''
-        super(ConfiguredWorkflowEngine, self).__init__(
+        super().__init__(
             database_server,
             scheduler,
             path_translation=config.get_path_translation(),
