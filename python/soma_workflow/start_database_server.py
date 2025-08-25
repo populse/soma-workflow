@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 '''
 @author: Soizic Laguitton
 
@@ -10,8 +8,6 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from __future__ import print_function, with_statement
-from __future__ import absolute_import
 import os
 import signal
 import sys

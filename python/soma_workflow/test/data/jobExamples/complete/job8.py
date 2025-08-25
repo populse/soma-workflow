@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # input: "input" param in json dict
 # output: filename is an output of this job
 
-from __future__ import print_function
 
-from __future__ import absolute_import
 import os
 import sys
 import json

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 @author: Jinpeng LI
 @contact: mr.li.jinpeng@gmail.com
@@ -13,8 +11,6 @@ Licence_CeCILL_V2-en.html>}
 """
 
 # System import
-from __future__ import print_function
-from __future__ import absolute_import
 
 import os
 import logging
@@ -25,7 +21,7 @@ import getpass
 import socket
 from soma_workflow import subprocess
 import shutil
-from six.moves.configparser import SafeConfigParser
+from configparser import SafeConfigParser
 from soma_workflow import configuration as swconf
 
 #
@@ -61,7 +57,7 @@ def SetPathToEnvVar(env_var_name, path):
         the export directive
     """
     os.environ[env_var_name] = path
-    return "export {0}={1}".format(env_var_name, path)
+    return f"export {env_var_name}={path}"
 
 
 def AddPathToEnvVar(env_var_name, path):
@@ -79,9 +75,9 @@ def AddPathToEnvVar(env_var_name, path):
     export: str
         the export directive
     """
-    os.environ[env_var_name] = "{0}{1}{2}".format(env_var_name, os.pathsep,
+    os.environ[env_var_name] = "{}{}{}".format(env_var_name, os.pathsep,
                                                   os.environ.get(path))
-    return "export %s=%s%s${%s}" % (env_var_name, path, os.pathsep,
+    return "export {}={}{}${{{}}}".format(env_var_name, path, os.pathsep,
                                     env_var_name)
 
 
@@ -207,26 +203,26 @@ def SetupConfigurationFileOnServer(userid,
 
     # Create default configuration component name
     if resource_id is None:
-        resource_id = "{0}@{1}".format(userid, socket.gethostname())
+        resource_id = f"{userid}@{socket.gethostname()}"
 
     # Fill the configuration parser if resource id do not exists
     sections = config_parser.sections()
     if not resource_id in sections:
         config_parser.add_section(resource_id)
 
-        db_file = os.path.join(install_prefix, "soma_workflow_{0}.db".format(
+        db_file = os.path.join(install_prefix, "soma_workflow_{}.db".format(
                                resource_id))
         config_parser.set(resource_id, configuration.CFG_DATABASE_FILE,
                           db_file)
         transfer_dir = os.path.join(install_prefix,
-                                    "transfered_files_{0}".format(resource_id))
+                                    f"transfered_files_{resource_id}")
         config_parser.set(resource_id, configuration.CFG_TRANSFERED_FILES_DIR,
                           transfer_dir)
         ensure_is_dir(transfer_dir, clear_dir=True)
         config_parser.set(resource_id, configuration.CFG_SERVER_NAME,
                           "soma_workflow_database_" + userid)
 
-        log_file = os.path.join(install_prefix, "logs_{0}".format(resource_id),
+        log_file = os.path.join(install_prefix, f"logs_{resource_id}",
                                 "log_server")
         config_parser.set(resource_id, configuration.OCFG_SERVER_LOG_FILE,
                           log_file)
@@ -271,7 +267,7 @@ if (cur_version < req_version and
         socket.gethostname() == "gabriel.intra.cea.fr" and
         os.path.exists(path2resources)):
     logging.info("Use nested python to install")
-    cmd = ["{0} '{1}'".format(os.path.join(path2resources, "bin", "python"),
+    cmd = ["{} '{}'".format(os.path.join(path2resources, "bin", "python"),
                               path2somawf_setup_server)]
     cmd.extend(sys.argv[1:])
     os.system(" ".join(cmd))
@@ -280,7 +276,7 @@ if (cur_version < req_version and
 # Raise Exeption otherwise
 if cur_version < req_version or cur_version >= (3, 0):
     raise ImportError("This program requires a python 2 version >= 2.7. "
-                      "Please update your python {0}".format(repr(cur_version)))
+                      "Please update your python {}".format(repr(cur_version)))
     sys.exit(0)
 
 

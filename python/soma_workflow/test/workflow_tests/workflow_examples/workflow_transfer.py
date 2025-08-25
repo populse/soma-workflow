@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
-from __future__ import absolute_import
-
-# -*- coding: utf-8 -*-
 """
 Created on Fri Oct 18 13:58:31 2013
 

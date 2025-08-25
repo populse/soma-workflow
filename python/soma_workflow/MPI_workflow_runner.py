@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 author: Benoit Da Mota
 author: Soizic Laguitton
@@ -49,7 +48,7 @@ def slave_loop(communicator,
                 epd_tar = tarfile.open(epd_to_deploy)
                 epd_tar.extractall(path=untar_directory)
                 # logger.debug('extract %s' %(epd_to_deploy))
-            except IOError as e:
+            except OSError as e:
                 logger.error("Could not deploy epd: %s" % (e))
                 pass
 
@@ -117,7 +116,7 @@ def slave_loop(communicator,
 
             else:
                 raise Exception('Unknown tag')
-        for job_id, command_def in six.iteritems(commands):
+        for job_id, command_def in commands.items():
             command, env = command_def
             if command == None:
                 # ended_jobs_info[job_id] = (constants.FAILED,
@@ -205,7 +204,7 @@ def slave_loop(communicator,
                                                 ret_value, None, None))
 
         if ended_jobs_info:
-            for job_id in six.iterkeys(ended_jobs_info):
+            for job_id in ended_jobs_info.keys():
                 del commands[job_id]
             logger.debug("[host: " + socket.gethostname() + "] "
                          + "Slave " + repr(rank) + " send JOB_RESULT")

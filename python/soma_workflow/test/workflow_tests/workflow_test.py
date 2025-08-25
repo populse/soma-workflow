@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
 '''
 @author: laure.hugo@cea.fr
 @author: Soizic Laguitton
@@ -28,7 +25,6 @@ from soma_workflow.test.workflow_tests import WorkflowExamplesSharedTransfer
 from soma_workflow.test.workflow_tests import WorkflowExamplesTransfer
 
 import six
-from six.moves import map
 
 
 def init_params():
@@ -45,7 +41,7 @@ def init_params():
 cluster_address = localhost
 scheduler_type = local_basic
 server_name = local-server
-soma_workflow_dir = %s
+soma_workflow_dir = {}
 engine_log_level = DEBUG
 server_log_level = DEBUG
 
@@ -54,10 +50,10 @@ cluster_address = localhost
 submitting_machines = localhost
 scheduler_type = local_basic
 server_name = local-server-ssh
-soma_workflow_dir = %s
+soma_workflow_dir = {}
 engine_log_level = DEBUG
 server_log_level = DEBUG
-''' % (tmpdir, tmpdir))
+'''.format(tmpdir, tmpdir))
         #change_soma_workflow_directory(tmpdir, 'swf-test')
         os.environ['SOMA_WORKFLOW_CONFIG'] = os.path.join(
             tmpdir, '.soma-workflow.cfg')
@@ -489,21 +485,21 @@ class WorkflowTest(unittest.TestCase):
     def assertTrue(self, condition, msg=None):
         if not bool(condition) and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
-        return super(WorkflowTest, self).assertTrue(condition, msg)
+        return super().assertTrue(condition, msg)
 
     def assertFalse(self, condition, msg=None):
         if bool(condition) and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
-        return super(WorkflowTest, self).assertFalse(condition, msg)
+        return super().assertFalse(condition, msg)
 
     def assertEqual(self, first, second, msg=None):
         if first != second and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
-        return super(WorkflowTest, self).assertEqual(first, second, msg)
+        return super().assertEqual(first, second, msg)
 
     def assertNonEqual(self, first, second, msg=None):
         if first == second and hasattr(self, 'tested_job'):
             self.print_job_io_info(self.tested_job, msg)
-        return super(WorkflowTest, self).assertNonEqual(first, second, msg)
+        return super().assertNonEqual(first, second, msg)
 
 init_params()

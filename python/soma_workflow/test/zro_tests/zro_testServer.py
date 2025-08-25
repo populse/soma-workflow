@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 @authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
@@ -6,12 +5,10 @@
 
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
 import soma_workflow.zro as zro
 
 
-class TestObject(object):
+class TestObject:
 
     @staticmethod
     def add(a, b):

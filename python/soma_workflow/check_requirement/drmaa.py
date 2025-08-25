@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon May 13 10:48:02 2013
 
@@ -12,8 +11,6 @@ Created on Mon May 13 10:48:02 2013
 
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
 
 
 def test_drmaa():

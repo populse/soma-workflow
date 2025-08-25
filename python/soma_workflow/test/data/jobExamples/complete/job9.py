@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # input: "inputs" param in json dict, list of files
 # output: "output" filename is an intput of this job
 
-from __future__ import print_function
 
-from __future__ import absolute_import
 import os
 import sys
 import json

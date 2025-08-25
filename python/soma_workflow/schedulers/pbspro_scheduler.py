@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 '''
 organization: I2BM, Neurospin, Gif-sur-Yvette, France
 
@@ -21,7 +19,7 @@ import time
 import shutil
 
 
-class JobTemplate(object):
+class JobTemplate:
 
     def __init__(self, remoteCommand, outputPath=None, errorPath=None, **kwargs):
         self.remoteCommand = remoteCommand
@@ -68,7 +66,7 @@ class JobTemplate(object):
             # env variables
             if self.env:
                 for var, value in self.env.items():
-                    f.write('export %s=%s\n' % (var, value))
+                    f.write('export {}={}\n'.format(var, value))
 
             # working directory
             if self.workingDirectory:
@@ -143,7 +141,7 @@ class PBSProScheduler(Scheduler):
                  tmp_file_path=None,
                  configured_native_spec=None):
 
-        super(PBSProScheduler, self).__init__()
+        super().__init__()
 
         self.logger = logging.getLogger('ljp.pbspro_scheduler')
 
@@ -205,9 +203,9 @@ class PBSProScheduler(Scheduler):
         '''
         Create a job to test
         '''
-        outputPath = "%s:%s" % (self.hostname,
+        outputPath = "{}:{}".format(self.hostname,
                                 os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
-        errorPath = "%s:%s" % (self.hostname,
+        errorPath = "{}:{}".format(self.hostname,
                                os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
         jobTemplate = JobTemplate(remoteCommand=['echo', outstr],
                                   outputPath=outputPath, errorPath=errorPath)
@@ -366,9 +364,9 @@ class PBSProScheduler(Scheduler):
         stdin = job.plain_stdin()
 
         try:
-            outputPath = "%s:%s" % (self.hostname, stdout_file)
+            outputPath = "{}:{}".format(self.hostname, stdout_file)
             if stderr_file:
-                errorPath = "%s:%s" % (self.hostname, stderr_file)
+                errorPath = "{}:{}".format(self.hostname, stderr_file)
             else:
                 errorPath = None
             jobTemplate = JobTemplate(remoteCommand=command,
@@ -380,7 +378,7 @@ class PBSProScheduler(Scheduler):
                              + " command[0]=" + repr(command[0])
                              + " command[1:]=" + repr(command[1:]))
             self.logger.info(
-                "hostname and stdout_file= [%s]:%s" % (self.hostname, stdout_file))
+                "hostname and stdout_file= [{}]:{}".format(self.hostname, stdout_file))
             # ensure there is a directory for stdout
             if not os.path.exists(os.path.dirname(stdout_file)):
                 os.makedirs(os.path.dirname(stdout_file))
@@ -447,13 +445,13 @@ class PBSProScheduler(Scheduler):
             self.logger.info('exception in PBS job submission:' + repr(e))
             try:
                 f = open(stderr_file, "wa")
-                f.write("Error in job submission: %s: %s" % (type(e), e))
+                f.write("Error in job submission: {}: {}".format(type(e), e))
                 f.close()
             except Exception:
                 pass
-            self.logger.error("Error in job submission: %s: %s" % (type(e), e),
+            self.logger.error("Error in job submission: {}: {}".format(type(e), e),
                               exc_info=sys.exc_info())
-            raise DRMError("Job submission error: %s: %s" % (type(e), e))
+            raise DRMError("Job submission error: {}: {}".format(type(e), e))
 
         return job_id
 
@@ -475,7 +473,7 @@ class PBSProScheduler(Scheduler):
                 cmd = self.qdel_command() + [scheduler_job_id]
                 subprocess.check_call(cmd)
         except Exception as e:
-            self.logger.critical("%s: %s" % (type(e), e))
+            self.logger.critical("{}: {}".format(type(e), e))
             # raise
 
     def get_job_extended_status(self, scheduler_job_id):
@@ -495,7 +493,7 @@ class PBSProScheduler(Scheduler):
                 super_status = json.loads(json_str)
 
             else:  # torque/pbs
-                import xml.etree.cElementTree as ET
+                import xml.etree.ElementTree as ET
                 cmd = self.qstat_command() + ['-x', scheduler_job_id]
                 xml_str = subprocess.check_output(cmd).decode('utf-8')
                 super_status = {}
@@ -518,7 +516,7 @@ class PBSProScheduler(Scheduler):
                             parent[tag] = current
                     current = None
         except Exception as e:
-            self.logger.critical("%s: %s" % (type(e), e))
+            self.logger.critical("{}: {}".format(type(e), e))
             raise
         status = super_status['Jobs'][scheduler_job_id]
         self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id)
@@ -527,7 +525,7 @@ class PBSProScheduler(Scheduler):
 
     def get_pbs_status_codes(self):
         if self._pbs_impl == 'pbspro':
-            class codes(object):
+            class codes:
                 ARRAY_STARTED = 'B'
                 EXITING = 'E'
                 FINISHED = 'F'
@@ -541,7 +539,7 @@ class PBSProScheduler(Scheduler):
                 WAITING = 'W'
                 SUBJOB_COMPLETE = 'X'
         else:  # torque/pbs
-            class codes(object):
+            class codes:
                 ARRAY_STARTED = 'B'  # unused
                 EXITING = 'E'
                 FINISHED = 'C'
@@ -702,10 +700,10 @@ class PBSProScheduler(Scheduler):
                         res_status = constants.FINISHED_REGULARLY
 
             self.logger.info("  ==> res_status=" + repr(res_status))
-            res_resourceUsage = u''
+            res_resourceUsage = ''
             for k, v in resource_usage.items():
                 res_resourceUsage = res_resourceUsage + \
-                    k + u'=' + str(v) + u' '
+                    k + '=' + str(v) + ' '
 
         except ExitTimeoutException:
             res_status = constants.EXIT_UNDETERMINED

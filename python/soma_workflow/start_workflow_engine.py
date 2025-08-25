@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 '''
 author: Soizic Laguitton
 
@@ -9,8 +7,6 @@ organization: CATI, France
 license: CeCILL version 2 <http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
 if __name__ == "__main__":
 
     import sys
@@ -43,8 +39,8 @@ if __name__ == "__main__":
 
         dump_filename = '/tmp/traceback_%d' % os.getpid()
         with open(dump_filename, 'w') as f:
-            id2name = dict([(th.ident, th.name)
-                            for th in threading.enumerate()])
+            id2name = {th.ident: th.name
+                            for th in threading.enumerate()}
             code = []
             for threadId, stack in sys._current_frames().items():
                 code.append("\n=== Thread: %s(%d) ==="
@@ -64,10 +60,10 @@ if __name__ == "__main__":
     class VersionError(Exception):
 
         def __init__(self, msg, py_ver):
-            super(VersionError, self).__init__(msg)
+            super().__init__(msg)
             self.python_version = py_ver
 
-    class Timeout(object):
+    class Timeout:
 
         """Timeout class using ALARM signal."""
 
@@ -151,8 +147,8 @@ if __name__ == "__main__":
         if logger:
             logger.info('Trying to start database server:' + resource_id)
             logger.debug(
-                "Debug: Starting database server, isPython?: {}".format(sys.executable))
-            logger.debug("Resource_id is: {}".format(resource_id))
+                f"Debug: Starting database server, isPython?: {sys.executable}")
+            logger.debug(f"Resource_id is: {resource_id}")
             logger.info(os.path.basename(sys.executable) + ' -m' +
                         ' soma_workflow.start_database_server ' + resource_id)
         python_interpreter = sys.executable  # os.path.basename(sys.executable)
@@ -179,7 +175,7 @@ if __name__ == "__main__":
         logger.info("DEBUG full file name: " + full_file_name)
         if os.path.exists(full_file_name):
             try:
-                with open(full_file_name, 'r') as f:
+                with open(full_file_name) as f:
                     uri_dict = json.load(f)
                 uri = uri_dict.get('server_uri')
                 logger.debug(uri)

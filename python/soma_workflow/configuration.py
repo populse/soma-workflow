@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 '''
 @author: Soizic Laguitton
 
@@ -19,7 +15,7 @@ from __future__ import absolute_import
 import os
 import sys
 import socket
-import six.moves.configparser as configparser
+import configparser as configparser
 
 from soma_workflow.errors import ConfigurationError
 import soma_workflow.observer as observer
@@ -27,7 +23,6 @@ from soma_workflow.info import DB_VERSION
 import tempfile
 
 import six
-from six.moves import range
 
 
 #-----------------------------------------------------------------------------
@@ -292,7 +287,7 @@ class Configuration(observer.Observable):
 
         '''
 
-        super(Configuration, self).__init__()
+        super().__init__()
 
         self._config_path = None
         self._config_parser = None
@@ -909,8 +904,8 @@ class Configuration(observer.Observable):
                 # logger.info(" -namespace: " + namespace + ", translation
                 # file: " + filename)
                 try:
-                    f = open(filename, "r")
-                except IOError as e:
+                    f = open(filename)
+                except OSError as e:
                     print("Can not read the translation file %s" % (filename),
                           file=sys.stderr)
                     continue
@@ -1236,7 +1231,7 @@ def cpu_count():
     if hasattr(os, "sysconf"):
         if "SC_NPROCESSORS_ONLN" in os.sysconf_names:  # Linux & Unix:
             ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-            if isinstance(ncpus, six.integer_types) and ncpus > 0:
+            if isinstance(ncpus, int) and ncpus > 0:
                 return ncpus
         else:  # OSX:
             from soma_workflow import subprocess
@@ -1299,7 +1294,7 @@ class LocalSchedulerCfg(observer.Observable):
           Update interval in second
         '''
 
-        super(LocalSchedulerCfg, self).__init__()
+        super().__init__()
         self._proc_nb = proc_nb
         self._max_proc_nb = max_proc_nb
         self._interval = interval
@@ -1486,8 +1481,8 @@ def AddLineDefinitions2BashrcFile(lines2add, path2bashrc=""):
     try:
         with open(path2bashrc) as f:
             content = f.readlines()
-    except IOError as e:
-        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+    except OSError as e:
+        print(f"I/O error({e.errno}): {e.strerror}")
         print("%s does not exist, the system will create the new file"
               % (path2bashrc))
     except ValueError:
@@ -1514,8 +1509,8 @@ def AddLineDefinitions2BashrcFile(lines2add, path2bashrc=""):
         with open(path2bashrc, 'w') as f:
             for cline in content:
                 f.write(cline + "\n")
-    except IOError as e:
-        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+    except OSError as e:
+        print(f"I/O error({e.errno}): {e.strerror}")
         print("The system cannot write the file %s. Please make sure it can "
               "be written. " % (path2bashrc))
         raise e
@@ -1531,8 +1526,8 @@ def WriteOutConfiguration(config_parser, config_path):
     try:
         with open(config_path, 'w') as cfgfile:
             config_parser.write(cfgfile)
-    except IOError as e:
-        print("I/O error({0}): {1}".format(e.errno, e.strerror))
+    except OSError as e:
+        print(f"I/O error({e.errno}): {e.strerror}")
         print("The system cannot write the file %s. Please make sure that it "
               "can be written. " % (config_path))
         raise e

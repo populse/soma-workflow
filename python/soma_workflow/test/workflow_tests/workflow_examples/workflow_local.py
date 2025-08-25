@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
-from __future__ import absolute_import
-
-# -*- coding: utf-8 -*-
 """
 Created on Fri Oct 18 12:19:20 2013
 
@@ -15,7 +11,6 @@ Created on Fri Oct 18 12:19:20 2013
 # Imports
 #-----------------------------------------------------------------------------
 
-from six.moves import range
 import os
 import sys
 
@@ -31,7 +26,7 @@ from soma_workflow.client import SpecialPath
 class WorkflowExamplesLocal(WorkflowExamples):
 
     def __init__(self):
-        super(WorkflowExamplesLocal, self).__init__()
+        super().__init__()
 
         self.python = os.path.basename(sys.executable)
 

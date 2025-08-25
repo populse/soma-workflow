@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
-# -*- coding: utf-8 -*-
 """
 Created on Mon Oct 21 14:05:37 2013
 
@@ -13,8 +9,6 @@ Created on Mon Oct 21 14:05:37 2013
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
 
-from six.moves import range
-from six.moves import zip
 import os
 import inspect
 from abc import abstractmethod
@@ -30,7 +24,7 @@ import tempfile
 import warnings
 
 
-class WorkflowExamples(object):
+class WorkflowExamples:
 
     def __init__(self):
         # Define example directories
@@ -46,7 +40,7 @@ class WorkflowExamples(object):
         self.output_dir = tmp
         if (not os.path.isdir(self.examples_dir) or
                 not os.path.isdir(self.output_dir)):
-            raise ConfigurationError("%s or %s does not exist." % (
+            raise ConfigurationError("{} or {} does not exist.".format(
                                      self.examples_dir,
                                      self.output_dir))
 

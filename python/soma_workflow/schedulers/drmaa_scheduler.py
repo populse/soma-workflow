@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 '''
 author: Soizic Laguitton
 
@@ -74,7 +69,7 @@ if DRMAA_LIB_FOUND:
                      tmp_file_path=None,
                      configured_native_spec=None):
 
-            super(DrmaaScheduler, self).__init__()
+            super().__init__()
 
             import somadrmaa
 
@@ -155,9 +150,9 @@ if DRMAA_LIB_FOUND:
                 jobTemplateId = self._drmaa.createJobTemplate()
                 jobTemplateId.remoteCommand = 'echo'
                 jobTemplateId.args = ["%s" % (outstr)]
-                jobTemplateId.outputPath = "%s:%s" % (
+                jobTemplateId.outputPath = "{}:{}".format(
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_o_file)))
-                jobTemplateId.errorPath = "%s:%s" % (
+                jobTemplateId.errorPath = "{}:{}".format(
                     self.hostname, os.path.join(self.tmp_file_path, "%s" % (out_e_file)))
 
                 # print("jobTemplateId="+repr(jobTemplateId))
@@ -302,19 +297,19 @@ if DRMAA_LIB_FOUND:
                 self.logger.info("jobTemplateId=" + repr(jobTemplateId) + " command[0]=" + repr(
                     command[0]) + " command[1:]=" + repr(command[1:]))
                 self.logger.info(
-                    "hostname and stdout_file= [%s]:%s" % (self.hostname, stdout_file))
+                    "hostname and stdout_file= [{}]:{}".format(self.hostname, stdout_file))
                 # ensure there is a directory for stdout
                 if not os.path.exists(os.path.dirname(stdout_file)):
                     os.makedirs(os.path.dirname(stdout_file))
 
-                jobTemplateId.outputPath = "%s:%s" % (
+                jobTemplateId.outputPath = "{}:{}".format(
                     self.hostname, stdout_file)
 
                 if job.join_stderrout:
                     jobTemplateId.joinFiles = "y"
                 else:
                     if stderr_file:
-                        jobTemplateId.errorPath = "%s:%s" % (
+                        jobTemplateId.errorPath = "{}:{}".format(
                             self.hostname, stderr_file)
                         # ensure there is a directory for stderr
                         if not os.path.exists(os.path.dirname(stderr_file)):
@@ -382,7 +377,7 @@ if DRMAA_LIB_FOUND:
                     f = open(stderr_file, "wa")
                     f.write("Error in job submission: %s" % (e))
                     f.close()
-                except IOError as ioe:
+                except OSError as ioe:
                     pass
                 self.logger.error("Error in job submission: %s" % (e))
                 raise DRMError("Job submission error: %s" % (e))
@@ -462,7 +457,7 @@ if DRMAA_LIB_FOUND:
 
                 self.logger.debug("  ==> res_status=" + repr(res_status))
                 res_resourceUsage = b''
-                for k, v in six.iteritems(resource_usage):
+                for k, v in resource_usage.items():
                     res_resourceUsage = res_resourceUsage + k + b'=' + v + b' '
 
             except ExitTimeoutException:

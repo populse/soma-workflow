@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
-from __future__ import absolute_import
 from .. import scheduler
 import threading
 import logging
@@ -50,7 +46,7 @@ class MPIScheduler(scheduler.Scheduler):
     NO_JOB = 16
 
     def __init__(self, communicator, interval=0.01, nb_attempt_per_job=1):
-        super(MPIScheduler, self).__init__()
+        super().__init__()
 
         self._communicator = communicator
         self.parallel_job_submission_info = None
@@ -124,7 +120,7 @@ class MPIScheduler(scheduler.Scheduler):
                 ended_jobs_info = self._communicator.recv(
                     source=s,
                     tag=MPIScheduler.JOB_RESULT)
-                for job_id, end_info in six.iteritems(ended_jobs_info):
+                for job_id, end_info in ended_jobs_info.items():
                     job_status, exit_info = end_info
                     ret_value = exit_info[1]
                     try_new_attempt = False

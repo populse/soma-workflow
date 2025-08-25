@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 version_major = 3
 version_minor = 3
 version_micro = 1
 version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
-__version__ = "%s.%s.%s%s" % (version_major,
+__version__ = "{}.{}.{}{}".format(version_major,
                               version_minor,
                               version_micro,
                               version_extra)

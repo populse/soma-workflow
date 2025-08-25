@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
-
 '''
 @author: Jinpeng LI
 @contact: mr.li.jinpeng@gmail.com

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #  Copyright (C) 2009 StatPro Italia s.r.l.
 #
@@ -22,7 +21,6 @@
 
 """drmaa errors"""
 
-from __future__ import absolute_import
 from ctypes import create_string_buffer
 from somadrmaa.const import ERROR_STRING_BUFFER
 
@@ -144,9 +142,9 @@ def error_check(code):
         return
     else:
         try:
-            raise _ERRORS[code - 1]("code %s: %s" % (code, error_buffer.value))
+            raise _ERRORS[code - 1]("code {}: {}".format(code, error_buffer.value))
         except IndexError:
-            raise DrmaaException("code %s: %s" % (code, error_buffer.value))
+            raise DrmaaException("code {}: {}".format(code, error_buffer.value))
 
 # da vedere: NO_RUSAGE, NO_MORE_ELEMENTS
 _ERRORS = [InternalException,

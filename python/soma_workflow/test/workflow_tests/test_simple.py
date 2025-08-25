@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Thu Oct 24 17:34:55 2013
 
@@ -24,10 +23,7 @@ Workflow test of simple jobs:
           job stdout and stderr
           job output
 """
-from __future__ import with_statement
-from __future__ import print_function
 
-from __future__ import absolute_import
 import tempfile
 import os
 import sys
@@ -162,9 +158,9 @@ class SimpleTest(WorkflowTest):
                 self.wf_examples.lo_out_model_file[out_file_num], out_file)
             self.assertTrue(isSame, msg)
 
-        for job_name, ref_out_params in six.iteritems(test_dyn_files):
+        for job_name, ref_out_params in test_dyn_files.items():
             out_params = dyn_out_params[job_name]
-            for param, file_num in six.iteritems(ref_out_params):
+            for param, file_num in ref_out_params.items():
                 isSame, msg = identical_files(
                     self.wf_examples.lo_out_model_file[file_num],
                     out_params[param])

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #  This software and supporting documentation are distributed by
 #      Institut Federatif de Recherche 49
 #      CEA/NeuroSpin, Batiment 145,
@@ -41,7 +39,6 @@ Import subprocess32 or subprocess API depending on python version and what is
 available on the system.
 '''
 
-from __future__ import absolute_import, print_function
 import sys
 
 # from soma_workflow import swf_override_subprocess

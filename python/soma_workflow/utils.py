@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 @author: Soizic Laguitton
 
@@ -9,10 +8,8 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from __future__ import print_function
 
 
-from __future__ import absolute_import
 import copy
 import os
 from soma_workflow.client import Workflow, Group, Job, Helper
@@ -23,7 +20,7 @@ import six
 try:
     from traits.api import Undefined
 except ImportError:
-    class Undefined(object):
+    class Undefined:
         pass
 
 
@@ -87,7 +84,7 @@ def process_group(group, to_remove, name):
     return Group(new_group, name)
 
 
-class SerialJob(object):
+class SerialJob:
 
     _job_sequence = None
     _input_dep = None
@@ -258,7 +255,7 @@ def to_json(value):
         value = [to_json(x) for x in value]
     elif hasattr(value, 'items'):
         new_value = {}
-        for key, item in six.iteritems(value):
+        for key, item in value.items():
             new_value[key] = to_json(item)
         value = new_value
     elif value is Undefined:
@@ -287,7 +284,7 @@ def from_json(value):
     '''
     if hasattr(value, 'items'):
         new_value = type(value)()
-        for key, item in six.iteritems(value):
+        for key, item in value.items():
             new_value[key] = from_json(item)
         return new_value
     if not isinstance(value, list):
@@ -300,5 +297,5 @@ def from_json(value):
     elif code == '<undefined>':
         return Undefined
     elif code == '<set>':
-        return set([from_json(x) for x in value[1:]])
+        return {from_json(x) for x in value[1:]}
     return [from_json(x) for x in value]

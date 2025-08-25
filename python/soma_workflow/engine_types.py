@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
-from __future__ import absolute_import
-from six.moves import range
-
 '''
 @author: Soizic Laguitton
 
@@ -137,7 +131,7 @@ class EngineJob(Job):
                  container_command=None,
                  wf_env=None):
 
-        super(EngineJob, self).__init__(
+        super().__init__(
             client_job.command,
             client_job.referenced_input_files,
             client_job.referenced_output_files,
@@ -288,7 +282,7 @@ class EngineJob(Job):
                 else:
                     if six.PY3 and isinstance(true_file, bytes):
                         true_file = true_file.decode('utf-8')
-                    if not isinstance(true_file, six.string_types):
+                    if not isinstance(true_file, str):
                         return
                         # raise JobError(
                             #"Wrong argument type in job %s: %s\ncommand:\n%s"
@@ -342,7 +336,7 @@ class EngineJob(Job):
             new_command = command
         elif isinstance(command, tuple) and len(command) == 2 \
                 and isinstance(command[0], SpecialPath) \
-                and isinstance(command[1], (six.string_types, bytes)):
+                and isinstance(command[1], ((str,), bytes)):
             # If the entry si a tuple, we use 'first' to recover the directory
             # and 'second' to get the filename
             c1 = command[1]
@@ -392,7 +386,7 @@ class EngineJob(Job):
             # If the entry is anything else, we return its string
             # representation
             if mode not in ('Command', 'PathOnly'):
-                new_command = six.text_type(command)
+                new_command = str(command)
             else:
                 new_command = command
         return new_command
@@ -460,7 +454,7 @@ class EngineJob(Job):
         if self.use_input_params_file and self.input_params_file:
             params = {}  # dict(self.param_dict)
             param_dict = {'parameters': params}
-            for param, value in six.iteritems(self.param_dict):
+            for param, value in self.param_dict.items():
                 params[param] = self.generate_command(value, mode='PathOnly')
             # include config
             if self.configuration:
@@ -558,7 +552,7 @@ class EngineWorkflow(Workflow):
     logger = None
 
     def to_dict(self):
-        wf_dict = super(EngineWorkflow, self).to_dict()
+        wf_dict = super().to_dict()
 
         # path_translation
         # queue
@@ -592,7 +586,7 @@ class EngineWorkflow(Workflow):
         return cls(client_workflow, path_translation, queue, expiration_date,
                    name, container_command=container_command)
 
-    class WorkflowCache(object):
+    class WorkflowCache:
 
         def __init__(self):
             self.waiting_jobs = set()
@@ -612,7 +606,7 @@ class EngineWorkflow(Workflow):
                  container_command=None):
         logging.debug("Within Engine workflow constructor")
 
-        super(EngineWorkflow, self).__init__(
+        super().__init__(
             client_workflow.jobs,
             client_workflow.dependencies,
             client_workflow.root_group,
@@ -670,9 +664,9 @@ class EngineWorkflow(Workflow):
             t = tempfile.mkstemp(prefix='swf_', suffix='.py')
             try:
                 os.close(t[0])
-                with io.open(t[1], 'w', encoding='utf-8') as f:
+                with open(t[1], 'w', encoding='utf-8') as f:
                     f.write(six.ensure_text(self.env_builder_code))
-                    f.write(u'\n')
+                    f.write('\n')
                 try:
                     env_json = subprocess.check_output([sys.executable,
                                                         t[1]]).decode('utf-8')
@@ -829,8 +823,8 @@ class EngineWorkflow(Workflow):
         if self.cache is None:
             self.cache = EngineWorkflow.WorkflowCache()
             self.cache.waiting_jobs = set(self.jobs)
-            self.cache.dependencies = dict(
-                (k, set(v)) for k, v in six.iteritems(self._dependency_dict))
+            self.cache.dependencies = {
+                k: set(v) for k, v in self._dependency_dict.items()}
             self.cache.has_new_failed_jobs = False
         cache = self.cache
         to_run = set()
@@ -1380,7 +1374,7 @@ class EngineTransfer(FileTransfer):
 
         exist_on_client = \
             client_file_transfer.initial_status == constants.FILES_ON_CLIENT
-        super(EngineTransfer, self).__init__(exist_on_client,
+        super().__init__(exist_on_client,
                                              client_file_transfer.client_path,
                                              client_file_transfer.disposal_timeout,
                                              client_file_transfer.name,
@@ -1429,7 +1423,7 @@ class EngineTransfer(FileTransfer):
         if not out_dir:
             trans = None
             path = None
-            for param, value in six.iteritems(param_dict):
+            for param, value in param_dict.items():
                 if not isinstance(value, FileTransfer) \
                         or not os.path.isabs(value.client_path):
                     continue
@@ -1493,7 +1487,7 @@ class EngineTemporaryPath(TemporaryPath):
     temporary_directory = None
 
     def __init__(self, client_temporary_path):
-        super(EngineTemporaryPath, self).__init__(
+        super().__init__(
             is_directory=client_temporary_path.is_directory,
             disposal_timeout=client_temporary_path.disposal_timeout,
             name=client_temporary_path.name,
@@ -1548,7 +1542,7 @@ class EngineOptionPath(OptionPath):
     engine_parent_path = None
 
     def __init__(self, client_option_path, transfer_mapping=None, path_translation=None):
-        super(EngineOptionPath, self).__init__(
+        super().__init__(
             parent_path=client_option_path.parent_path,
             uri=client_option_path.uri,
             name=client_option_path.name)
@@ -1601,7 +1595,7 @@ class EngineSharedResourcePath(SharedResourcePath):
     path_translation = None
 
     def __init__(self, client_shared_path, path_translation):
-        super(EngineSharedResourcePath, self).__init__(
+        super().__init__(
             relative_path=client_shared_path.relative_path,
             namespace=client_shared_path.namespace,
             uuid=client_shared_path.uuid,

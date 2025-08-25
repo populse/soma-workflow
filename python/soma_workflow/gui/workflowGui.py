@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
@@ -144,7 +142,6 @@ from soma_workflow.errors import UnknownObjectError, ConfigurationError, Seriali
 import soma_workflow.version as version
 
 import six
-from six.moves import range
 
 def utf8(string):
     """Convert a Unicode or utf-8 encoded string to a native Python str.
@@ -160,7 +157,7 @@ def utf8(string):
     if isinstance(string, bytes):
         unicode_string = string.decode('utf-8', errors='replace')
     else:
-        unicode_string = six.text_type(string)  # to handle QString
+        unicode_string = str(string)  # to handle QString
     return six.ensure_str(unicode_string, 'utf-8')
 
 
@@ -191,7 +188,7 @@ try:
     import matplotlib.pyplot
     import matplotlib.dates as mdates
 except ImportError as e:
-    print("Could not use Matplotlib: %s %s" % (type(e), e))
+    print("Could not use Matplotlib: {} {}".format(type(e), e))
     MATPLOTLIB = False
 
 # from soma.utils.sip_compat:
@@ -466,7 +463,7 @@ def setLabelFromTimeDelta(label, value):
         mins = (value.seconds % 3600) // 60
         seconds = (value.seconds % 3600) % 60
         hours = hours + value.days * 24
-        label.setText("%s:%s:%s" % (repr(hours), repr(mins), repr(seconds)))
+        label.setText("{}:{}:{}".format(repr(hours), repr(mins), repr(seconds)))
     else:
         label.setText("")
 
@@ -551,7 +548,7 @@ def detailed_critical_message_box(msg, title, parent):
 #-----------------------------------------------------------------------------
 # Classes and functions
 #-----------------------------------------------------------------------------
-class Controller(object):
+class Controller:
 
     @staticmethod
     def delete_workflow(wf_id,
@@ -659,7 +656,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
     action_show_more_less = None
 
     def __init__(self, model, sw_widget, parent=None):
-        super(SomaWorkflowMiniWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_SWMiniWidget()
         self.ui.setupUi(self)
@@ -710,7 +707,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
             return
         item = selected_items[0]
         if use_qvariant:
-            rid = utf8(six.text_type(
+            rid = utf8(str(
                 item.data(QtCore.Qt.UserRole).toString()))
         else:
             rid = utf8(item.data(QtCore.Qt.UserRole))
@@ -771,7 +768,7 @@ class SomaWorkflowMiniWidget(QtGui.QWidget):
         resources = []
         for item in selected:
             if use_qvariant:
-                rid = utf8(six.text_type(
+                rid = utf8(str(
                     item.data(QtCore.Qt.UserRole).toString()))
             else:
                 rid = utf8(item.data(QtCore.Qt.UserRole))
@@ -875,7 +872,7 @@ class LocalSchedulerConfigController(QtGui.QWidget):
     scheduler_config = None
 
     def __init__(self, scheduler_config, parent=None):
-        super(LocalSchedulerConfigController, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_LocalSchedulerConfigController()
         self.ui.setupUi(self)
@@ -912,7 +909,7 @@ class WorkflowEngineConfigController(QtGui.QWidget):
     running_jobs_limits = None
 
     def __init__(self, engine_config, parent=None):
-        super(WorkflowEngineConfigController, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_WorkflowEngineConfigController()
         self.ui.setupUi(self)
@@ -973,7 +970,7 @@ class RequirePWDialog(QtGui.QDialog):
     strRSAPW = None
 
     def __init__(self,    parent=None):
-        super(RequirePWDialog, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.ui = Ui_RequirePW()
         self.ui.setupUi(self)
         self.ui.pushButton_ok.clicked.connect(self.EventOK)
@@ -995,7 +992,7 @@ class NewServerDialog(QtGui.QDialog):
     is_install = False
 
     def __init__(self,    parent=None):
-        super(NewServerDialog, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.ui = Ui_NewServer()
         self.ui.setupUi(self)
         self.update_schedulers()
@@ -1147,7 +1144,7 @@ class ServerManagementDialog(QtGui.QDialog):
 
     def __init__(self,    parent=None):
 
-        super(ServerManagementDialog, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.ui = Ui_ServerManagement()
         self.ui.setupUi(self)
@@ -1183,7 +1180,7 @@ class ServerManagementDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def update_login(self):
-        resource_id = six.text_type(
+        resource_id = str(
             self.ui.combo_resources.currentText()).encode('utf-8')
         if resource_id == '' or resource_id == None:
             return
@@ -1238,7 +1235,7 @@ class ServerManagementDialog(QtGui.QDialog):
         if reply == QtGui.QMessageBox.No:
             return
 
-        resource_id = six.text_type(
+        resource_id = str(
             self.ui.combo_resources.currentText()).encode('utf-8')
 
         if self.config_file_path != None:
@@ -1262,7 +1259,7 @@ class ServerManagementDialog(QtGui.QDialog):
     def remove_server_on_client(self):
         from soma_workflow.setup_client2server import RemoveResNameOnConfigureFile
 
-        resource_id = six.text_type(
+        resource_id = str(
             self.ui.combo_resources.currentText()).encode('utf-8')
         if resource_id != None:
             RemoveResNameOnConfigureFile(resource_id)
@@ -1279,7 +1276,7 @@ class ConnectionDialog(QtGui.QDialog):
                  editable_resource=True,
                  parent=None):
 
-        super(ConnectionDialog, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.ui = Ui_ConnectionDlg()
         self.ui.setupUi(self)
@@ -1298,7 +1295,7 @@ class ConnectionDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def update_login(self):
-        resource_id = six.text_type(
+        resource_id = str(
             self.ui.combo_resources.currentText())
         resource_id = six.ensure_str(resource_id, 'utf-8')
         login = self.login_list[resource_id]
@@ -1309,10 +1306,10 @@ class ConnectionDialog(QtGui.QDialog):
 
     @QtCore.Slot()
     def kill_servers(self):
-        resource_id = six.text_type(self.ui.combo_resources.currentText())
+        resource_id = str(self.ui.combo_resources.currentText())
         erase_db = self.ui.erase_db_checkbox.isChecked()
-        login = six.text_type(self.ui.lineEdit_login.text())
-        passwd = six.text_type(self.ui.lineEdit_password.text())
+        login = str(self.ui.lineEdit_login.text())
+        passwd = str(self.ui.lineEdit_password.text())
         #rsa_passwd = unicode(self.ui.lineEdit_rsa_password.text())
         print('kill_servers', resource_id, erase_db)
         connection.RemoteConnection.kill_remote_servers(
@@ -1349,7 +1346,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                  interactive=False,
                  isolated_light_mode=None):
 
-        super(SomaWorkflowWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_ResourceWfSelect()
         self.ui.setupUi(self)
@@ -1545,21 +1542,21 @@ class SomaWorkflowWidget(QtGui.QWidget):
 
     @QtCore.Slot()
     def firstConnection(self):
-        resource_id = six.text_type(
+        resource_id = str(
             self.connection_dlg.ui.combo_resources.currentText())
         if self.connection_dlg.ui.lineEdit_login.text():
-            login = six.text_type(
+            login = str(
                 self.connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
         else:
             login = None
         if self.connection_dlg.ui.lineEdit_password.text():
-            password = six.text_type(
+            password = str(
                 self.connection_dlg.ui.lineEdit_password.text()).encode(
                     'utf-8')
         else:
             password = None
         if self.connection_dlg.ui.lineEdit_rsa_password.text():
-            rsa_key_pass = six.text_type(
+            rsa_key_pass = str(
                 self.connection_dlg.ui.lineEdit_rsa_password.text()).encode(
                     'utf-8')
         else:
@@ -1606,7 +1603,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     file_path, self.model.current_workflow().server_workflow)
             except SerializationError as e:
                 QtGui.QMessageBox.warning(
-                    self, "Error", "%s: %s" % (type(e), e))
+                    self, "Error", "{}: {}".format(type(e), e))
 
     @QtCore.Slot()
     def createWorkflowExample(self):
@@ -1882,7 +1879,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
             self.ui.combo_resources.setCurrentIndex(index)
             return
 
-        resource_id = utf8(six.text_type(
+        resource_id = utf8(str(
             self.ui.combo_resources.itemText(index)))
         if resource_id == " ":
             index = self.ui.combo_resources.findText(
@@ -1925,17 +1922,17 @@ class SomaWorkflowWidget(QtGui.QWidget):
             index = connection_dlg.ui.combo_resources.currentIndex()
             resource_id = self.resource_list[index]
             if connection_dlg.ui.lineEdit_login.text():
-                login = six.text_type(
+                login = str(
                     connection_dlg.ui.lineEdit_login.text()).encode('utf-8')
             else:
                 login = None
             if connection_dlg.ui.lineEdit_password.text():
-                password = six.text_type(
+                password = str(
                     connection_dlg.ui.lineEdit_password.text()).encode('utf-8')
             else:
                 password = None
             if connection_dlg.ui.lineEdit_rsa_password.text():
-                rsa_key_pass = six.text_type(
+                rsa_key_pass = str(
                     connection_dlg.ui.lineEdit_rsa_password.text()).encode('utf-8')
             else:
                 rsa_key_pass = None
@@ -2013,7 +2010,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
         if not workflows:
             return
         workflow_names = []
-        for wf_id, (wf_name, exp_date) in six.iteritems(workflows):
+        for wf_id, (wf_name, exp_date) in workflows.items():
             if wf_name:
                 workflow_names.append(wf_name)
             else:
@@ -2341,7 +2338,7 @@ class MainWindow(QtGui.QMainWindow):
         model: ApplicationModel
         '''
 
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -2545,7 +2542,7 @@ class WorkflowInfoWidget(QtGui.QWidget):
                  assigned_wf_id=None,
                  assigned_resource_id=None,
                  parent=None):
-        super(WorkflowInfoWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_WStatusNameDate()
         self.ui.setupUi(self)
@@ -2634,7 +2631,7 @@ class SearchWidget(QtGui.QWidget):
         '''
         * workflow_tree *WorkflowTree*
         '''
-        super(SearchWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.workflow_tree = weakref.ref(workflow_tree)
 
@@ -2691,7 +2688,7 @@ class SearchWidget(QtGui.QWidget):
 class JobFilterProxyModel(QtGui.QSortFilterProxyModel):
 
     def __init__(self, parent=None):
-        super(JobFilterProxyModel, self).__init__(parent)
+        super().__init__(parent)
 
         self.statuses = []
 
@@ -2791,7 +2788,7 @@ class WorkflowTree(QtGui.QWidget):
                  assigned_wf_id=None,
                  assigned_resource_id=None,
                  parent=None):
-        super(WorkflowTree, self).__init__(parent)
+        super().__init__(parent)
 
         self.model = model
         self.item_model = None
@@ -2983,7 +2980,7 @@ class WorkflowTree(QtGui.QWidget):
 class WorkflowGroupInfo(QtGui.QWidget):
 
     def __init__(self, model, parent=None):
-        super(WorkflowGroupInfo, self).__init__(parent)
+        super().__init__(parent)
 
         self.infoWidget = None
         self.vLayout = QtGui.QVBoxLayout(self)
@@ -3030,7 +3027,7 @@ class WorkflowPlot(QtGui.QWidget):
                  assigned_wf_id=None,
                  assigned_resource_id=None,
                  parent=None):
-        super(WorkflowPlot, self).__init__(parent)
+        super().__init__(parent)
 
         self.plotWidget = None
         self.vLayout = QtGui.QVBoxLayout(self)
@@ -3098,7 +3095,7 @@ class WorkflowElementInfo(QtGui.QWidget):
     job_selected = QtCore.Signal(int)
 
     def __init__(self, model, proxy_model=None, parent=None):
-        super(WorkflowElementInfo, self).__init__(parent)
+        super().__init__(parent)
         self.selectionModel = None
         self.infoWidget = None
         self.model = model  # used to update stderr and stdout only
@@ -3184,7 +3181,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                  connection,
                  current_tab_index=0,
                  parent=None):
-        super(JobInfoWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_JobInfo()
         self.ui.setupUi(self)
@@ -3223,7 +3220,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                     engine_wf = False
                     job_mapping = {}
                     for item_id, item \
-                            in six.iteritems(job_item.gui_workflow().items):
+                            in job_item.gui_workflow().items.items():
                         if isinstance(item, GuiJob):
                             job_mapping[item.data] = item.it_id
                 for i, param_name in \
@@ -3240,7 +3237,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                                 job_ids = []
                                 for link in linkl:
                                     linkstr.append(
-                                        '%s.%s' % (link[0].name, link[1]))
+                                        '{}.{}'.format(link[0].name, link[1]))
                                     if engine_wf:
                                         job_ids.append(job_mapping.get(
                                             link[0], link[0]).job_id)
@@ -3418,7 +3415,7 @@ class JobInfoWidget(QtGui.QTabWidget):
         table.clearContents()
         table.setRowCount(len(env))
         row = 0
-        for var, value in six.iteritems(env):
+        for var, value in env.items():
             table.setItem(row, 0, QtGui.QTableWidgetItem(var))
             table.setItem(row, 1, QtGui.QTableWidgetItem(value))
             row += 1
@@ -3430,7 +3427,7 @@ class JobInfoWidget(QtGui.QTabWidget):
             sl = [c if c != '"' else '\\"' for c in s]
             return ''.join(sl)
         env = self.get_envars()
-        txt_env = ' '.join(['%s="%s"' % (k, _repl(v)) for k, v in six.iteritems(env)])
+        txt_env = ' '.join(['{}="{}"'.format(k, _repl(v)) for k, v in env.items()])
         clipboard = QtGui.qApp.clipboard()
         clipboard.setText(txt_env)
 
@@ -3438,7 +3435,7 @@ class JobInfoWidget(QtGui.QTabWidget):
 class TransferInfoWidget(QtGui.QTabWidget):
 
     def __init__(self, transfer_item, parent=None):
-        super(TransferInfoWidget, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_TransferInfo()
         self.ui.setupUi(self)
 
@@ -3471,7 +3468,7 @@ class TransferInfoWidget(QtGui.QTabWidget):
 class GroupInfoWidget(QtGui.QWidget):
 
     def __init__(self, group_item, parent=None):
-        super(GroupInfoWidget, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_GroupInfo()
         self.ui.setupUi(self)
 
@@ -3524,7 +3521,7 @@ class PlotView(QtGui.QWidget):
     job_selected = QtCore.Signal(int)
 
     def __init__(self, group_item, parent=None):
-        super(PlotView, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = Ui_PlotWidget()
         self.ui.setupUi(self)
@@ -3822,7 +3819,7 @@ class PlotView(QtGui.QWidget):
 class WorkflowGraphView(QtGui.QWidget):
 
     def __init__(self, model=None, parent=None):
-        super(WorkflowGraphView, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_GraphWidget()
         self.ui.setupUi(self)
 
@@ -4032,7 +4029,7 @@ class WorkflowGraphView(QtGui.QWidget):
 class WorkflowItemModel(QtCore.QAbstractItemModel):
 
     def __init__(self, gui_workflow, parent=None):
-        super(WorkflowItemModel, self).__init__(parent)
+        super().__init__(parent)
         self.workflow = gui_workflow
 
         self.group_done_icon = QtGui.QIcon(
@@ -4268,7 +4265,7 @@ class WorkflowItemModel(QtCore.QAbstractItemModel):
 #
 
 
-class ComputingResourcePool(object):
+class ComputingResourcePool:
 
     '''
     Holds the instances of soma_workflow.client.WorkflowController associated
@@ -4310,7 +4307,7 @@ class ComputingResourcePool(object):
             del self._connection_locks[resource_id]
 
     def delete_all(self):
-        resource_ids = list(six.iterkeys(self._connections))
+        resource_ids = list(self._connections.keys())
         for resource_id in resource_ids:
             self.delete_connection(resource_id)
         try:
@@ -4334,7 +4331,7 @@ class ComputingResourcePool(object):
         return resource_id in self._connections.keys()
 
     def resource_ids(self):
-        return list(six.iterkeys(self._connections))
+        return list(self._connections.keys())
 
 
 class ApplicationModel(QtCore.QObject):
@@ -4398,7 +4395,7 @@ class ApplicationModel(QtCore.QObject):
     class UpdateThread(QtCore.QThread):
 
         def __init__(self, application_model, parent):
-            super(ApplicationModel.UpdateThread, self).__init__(parent)
+            super().__init__(parent)
             self.application_model = application_model
 
         def run(self):
@@ -4408,7 +4405,7 @@ class ApplicationModel(QtCore.QObject):
         '''
         **resource_pool**: *ComputingResourcePool*
         '''
-        super(ApplicationModel, self).__init__(parent)
+        super().__init__(parent)
 
         home_dir = configuration.Configuration.get_home_dir()
 
@@ -4447,8 +4444,7 @@ class ApplicationModel(QtCore.QObject):
 
         self._lock = threading.RLock()
 
-        for rid, connection_inst in six.iteritems(
-                self.resource_pool._connections):
+        for rid, connection_inst in self.resource_pool._connections.items():
             self.add_connection(rid, connection_inst)
 
         self.update_thread = None
@@ -4579,7 +4575,7 @@ class ApplicationModel(QtCore.QObject):
         class InterruptibleThread(QtCore.QThread):
 
             def __init__(self):
-                super(InterruptibleThread, self).__init__(parent=None)
+                super().__init__(parent=None)
                 self.result = default
                 self.exception = None
 
@@ -4600,10 +4596,10 @@ class ApplicationModel(QtCore.QObject):
             return it.result
 
     def list_workflow_names(self, resource_id):
-        return list(six.itervalues(self._workflow_names[resource_id]))
+        return list(self._workflow_names[resource_id].values())
 
     def list_workflow_status(self, resource_id):
-        return list(six.itervalues(self._workflow_statuses[resource_id]))
+        return list(self._workflow_statuses[resource_id].values())
 
     def get_workflow_status(self, resource_id, workflow_id):
         if workflow_id in self._workflow_statuses[resource_id]:
@@ -4612,7 +4608,7 @@ class ApplicationModel(QtCore.QObject):
             return None
 
     def list_workflow_expiration_dates(self, resource_id):
-        return list(six.itervalues(self._expiration_dates[resource_id]))
+        return list(self._expiration_dates[resource_id].values())
 
     def workflows(self, resource_id):
         result = {}
@@ -4897,7 +4893,7 @@ class ApplicationModel(QtCore.QObject):
         return wf_id in self._workflows[self.current_resource_id].keys()
 
 
-class GuiWorkflow(object):
+class GuiWorkflow:
 
     # id of the workflow in soma-workflow
     wf_id = None
@@ -5170,7 +5166,7 @@ class GuiWorkflow(object):
         return data_changed
 
     def restart(self):
-        for item in six.itervalues(self.items):
+        for item in self.items.values():
             if isinstance(item, GuiJob):
                 item.stdout = ""
                 item.stderr = ""
@@ -5180,7 +5176,7 @@ class GuiWorkflow(object):
                 item.serial_duration = None
 
 
-class GuiWorkflowItem(object):
+class GuiWorkflowItem:
 
     '''
     Abstract class for workflow items.
@@ -5219,7 +5215,7 @@ class GuiGroup(GuiWorkflowItem):
                  data=None,
                  children_nb=0,
                  name="no name"):
-        super(GuiGroup, self).__init__(it_id, parent, row, data, children_nb)
+        super().__init__(it_id, parent, row, data, children_nb)
 
         self.gui_workflow = gui_workflow
 
@@ -5365,7 +5361,7 @@ class GuiJob(GuiWorkflowItem):
                  priority=None,
                  parallel_job_info=None,
                  gui_workflow=None):
-        super(GuiJob, self).__init__(it_id, parent, row, data, children_nb)
+        super().__init__(it_id, parent, row, data, children_nb)
 
         self.status = "not submitted"
         self.exit_info = ("", "", "", "")
@@ -5402,13 +5398,13 @@ class GuiJob(GuiWorkflowItem):
                                " " + command_el.uuid + " " + command_el.relative_path + " >")
             elif isinstance(command_el, TemporaryPath):
                 cmd_seq.append("<TemporaryPath " + command_el.name + " >")
-            elif isinstance(command_el, six.text_type):
+            elif isinstance(command_el, str):
                 cmd_seq.append(command_el)
             elif isinstance(command_el, str):
                 cmd_seq.append(command_el.decode('utf-8'))
             else:
                 cmd_seq.append(repr(command_el))
-        separator = u" "
+        separator = " "
         self.command = separator.join(cmd_seq)
 
     def updateState(self, status, queue, exit_info, date_info, drmaa_id):
@@ -5488,7 +5484,7 @@ class GuiJob(GuiWorkflowItem):
 
             stdout = ""
             if os.path.exists(stdout_path):
-                with open(stdout_path, "rt") as f:
+                with open(stdout_path) as f:
                     line = f.readline()
                     while line:
                         stdout = stdout + line + "\n"
@@ -5498,7 +5494,7 @@ class GuiJob(GuiWorkflowItem):
 
             stderr = ""
             if os.path.exists(stderr_path):
-                with open(stderr_path, "rt") as f:
+                with open(stderr_path) as f:
                     line = f.readline()
                     while line:
                         stderr = stderr + line + "\n"
@@ -5539,7 +5535,7 @@ class GuiTransfer(GuiWorkflowItem):
                  name="no name",
                  engine_path=None,
                  engine_id=None):
-        super(GuiTransfer, self).__init__(
+        super().__init__(
               it_id, parent, row, data, children_nb)
 
         self.transfer_status = " "
@@ -5611,7 +5607,7 @@ class GuiInputTransfer(GuiTransfer):
                  name="no name",
                  engine_path=None,
                  engine_id=None):
-        super(GuiInputTransfer, self).__init__(it_id,
+        super().__init__(it_id,
                                                parent,
                                                row,
                                                data,
@@ -5632,7 +5628,7 @@ class GuiOutputTransfer(GuiTransfer):
                  name="no name",
                  engine_path=None,
                  engine_id=None):
-        super(GuiOutputTransfer, self).__init__(it_id,
+        super().__init__(it_id,
                                                 parent,
                                                 row,
                                                 data,

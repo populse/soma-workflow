@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Oct 28 11:29:54 2013
 
@@ -7,17 +6,15 @@ Created on Mon Oct 28 11:29:54 2013
 @organization: U{IFR 49<http://www.ifr49.org>}
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 """
-from __future__ import absolute_import
 import os
 import sys
 
 from soma_workflow.errors import ConfigurationError
 from soma_workflow.client import Job, FileTransfer
 import soma_workflow.configuration as configuration
-from six.moves import range
 
 
-class JobExamples(object):
+class JobExamples:
 
     '''
     Job submission example.
@@ -43,7 +40,7 @@ class JobExamples(object):
             os.mkdir(self.output_dir)
         if (not os.path.isdir(self.examples_dir) or
                 not os.path.isdir(self.output_dir)):
-            raise ConfigurationError("%s or %s does not exist." % (
+            raise ConfigurationError("{} or {} does not exist.".format(
                                      self.examples_dir,
                                      self.output_dir))
 
