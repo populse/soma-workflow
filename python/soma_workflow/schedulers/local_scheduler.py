@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 '''
 author: Soizic Laguitton
 
@@ -115,7 +111,7 @@ class LocalScheduler(Scheduler):
 
     def __init__(self, proc_nb=default_cpu_number(), interval=0.05,
                  max_proc_nb=0):
-        super(LocalScheduler, self).__init__()
+        super().__init__()
 
         self.parallel_job_submission_info = None
 
@@ -389,10 +385,10 @@ class LocalScheduler(Scheduler):
                 stdin_file = open(stdin, "rb")
             except Exception as e:
                 if stderr:
-                    s = '%s: %s \n' % (type(e), e)
+                    s = '{}: {} \n'.format(type(e), e)
                     stderr_file.write(s)
                 elif stdout:
-                    s = '%s: %s \n' % (type(e), e)
+                    s = '{}: {} \n'.format(type(e), e)
                     stdout_file.write(s)
                 if stderr_file:
                     stderr_file.close()
@@ -419,7 +415,7 @@ class LocalScheduler(Scheduler):
                 if sys.platform.startswith('win') and six.PY2:
                     # windows cannot use unicode strings as env values
                     env2.update([(k.encode('utf-8'), v.encode('utf-8'))
-                                for k, v in six.iteritems(env)])
+                                for k, v in env.items()])
                 else:
                     env2.update(env)
                 env = env2
@@ -444,10 +440,10 @@ class LocalScheduler(Scheduler):
                 'exception while starting command:' + repr(e))
             LocalScheduler.logger.error('command:' + repr(command))
             if stderr:
-                s = ('%s: %s \n' % (type(e), e)).encode()
+                s = ('{}: {} \n'.format(type(e), e)).encode()
                 stderr_file.write(s)
             elif stdout:
-                s = ('%s: %s \n' % (type(e), e)).encode()
+                s = ('{}: {} \n'.format(type(e), e)).encode()
                 stdout_file.write(s)
             if stderr_file:
                 stderr_file.close()
@@ -585,7 +581,7 @@ class ConfiguredLocalScheduler(LocalScheduler):
         '''
         * config *LocalSchedulerCfg*
         '''
-        super(ConfiguredLocalScheduler, self).__init__(
+        super().__init__(
             config.get_proc_nb(),
             config.get_interval(),
             config.get_max_proc_nb())

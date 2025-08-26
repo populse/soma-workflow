@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 @author: Jinpeng LI
 @contact: mr.li.jinpeng@gmail.coms
@@ -11,9 +9,6 @@
 Licence_CeCILL_V2-en.html>}
 """
 
-from __future__ import with_statement
-from __future__ import absolute_import
-from __future__ import print_function
 
 # System import
 import os
@@ -21,7 +16,7 @@ import re
 import sys
 import logging
 from . import subprocess
-from six.moves.configparser import SafeConfigParser
+from configparser import SafeConfigParser
 
 # Soma Workflow import
 from soma_workflow.connection import SSH_exec_cmd, check_if_somawfdb_on_server
@@ -146,7 +141,7 @@ def SetupConfigurationFileOnClient(configuration_item_name,
         home_dir = configuration.Configuration.get_home_dir()
         config_file_path = os.path.join(home_dir, ".soma-workflow.cfg")
         logging.info("No configuration file on the client, "
-                     "we create a new one at {0}".format(config_file_path))
+                     "we create a new one at {}".format(config_file_path))
 
         # Generate client config
         config_parser = ConfiguratePaser(configuration_item_name, userid,
@@ -155,7 +150,7 @@ def SetupConfigurationFileOnClient(configuration_item_name,
 
     # If the configuration already exists
     else:
-        logging.info("Configuration file is found at: {0}".format(
+        logging.info("Configuration file is found at: {}".format(
             config_file_path))
 
         # First read the configuration file
@@ -188,8 +183,8 @@ def read_configuration_file(config_file_path):
     try:
         config_parser.read(config_file_path)
     except Exception:
-        strmsg = "Cannot open {0} \n".format(config_file_path)
-        raise IOError(strmsg)
+        strmsg = f"Cannot open {config_file_path} \n"
+        raise OSError(strmsg)
     return config_parser
 
 
@@ -350,12 +345,12 @@ def InstallSomaWF2Server(userid,
     # Set environ
     script2install = os.path.join(install_swf_path_server, "soma_workflow",
                                   "setup_server.py")
-    command = "python '{0}' -r {1} ".format(script2install,
+    command = "python '{}' -r {} ".format(script2install,
                                             configuration_item_name)
     if config_options:
-        command += ' ' + ' '.join(['%s=\'%s\'' % (n, v)
+        command += ' ' + ' '.join(['{}=\'{}\''.format(n, v)
                                    for n, v in config_options.items()])
-    logging.info("ssh command = {0}".format(command))
+    logging.info(f"ssh command = {command}")
     print('install command:', command)
 
     (std_out_lines, std_err_lines) = SSH_exec_cmd(command, userid,
@@ -365,9 +360,9 @@ def InstallSomaWF2Server(userid,
                                                   isNeedErr=True,
                                                   sshport=sshport)
     if len(std_err_lines) > 0:
-        logging.error("Unable to configure the server: {0}".format(
+        logging.error("Unable to configure the server: {}".format(
                       std_err_lines))
-        raise OSError("Unable to configure the server:  {0}".format(
+        raise OSError("Unable to configure the server:  {}".format(
                       std_err_lines))
 
     # Create a update the configuration file on the client side
@@ -414,11 +409,11 @@ def CopySomaWF2Server(userid,
                                            "soma_workflow_auto_remote_install")
     # Create install directory if necessary
     std_out_lines = SSH_exec_cmd(
-        "mkdir -p '{0}'".format(install_swf_path_server),
+        f"mkdir -p '{install_swf_path_server}'",
         userid, ip_address_or_domain, userpw, sshport=sshport,
         exit_status='raise')
     logging.info("Install soma workflow on server attempt to create server "
-                 "project directory. Command return {0}".format(std_out_lines))
+                 "project directory. Command return {}".format(std_out_lines))
 
     # Get client project paths
     path2somawf = os.path.dirname(os.path.realpath(__file__))
@@ -427,19 +422,19 @@ def CopySomaWF2Server(userid,
     # Sync soma workflow to server
     sshcommand = ("rsync", "-e", "ssh", "-a", "--copy-unsafe-links",
                   "--delete-after", path2somawf,
-                  "{0}@{1}:'{2}'".format(userid, ip_address_or_domain,
+                  "{}@{}:'{}'".format(userid, ip_address_or_domain,
                                          install_swf_path_server))
     logging.info("Attempt to copy soma workflow: sshcommand = "
-                 " {0}".format(sshcommand))
+                 " {}".format(sshcommand))
     subprocess.check_call(sshcommand)
 
     # Sync drmaa patching to server
     sshcommand = ("rsync", "-e", "ssh", "-a", "--copy-unsafe-links",
                   "--delete-after", path2drmaa,
-                  "{0}@{1}:'{2}'".format(userid, ip_address_or_domain,
+                  "{}@{}:'{}'".format(userid, ip_address_or_domain,
                                          install_swf_path_server))
     logging.info("Attempt to copy drmaa patching: sshcommand = "
-                 " {0}".format(sshcommand))
+                 " {}".format(sshcommand))
     subprocess.check_call(sshcommand)
 
     return install_swf_path_server
@@ -548,13 +543,13 @@ def RemoveSomaWF2Server(userid,
     # Execute the clean script on the server side
     clean_script_server = os.path.join(install_swf_path_server,
                                        "soma_workflow", "clean_server.py")
-    command = "python '{0}' -r {1}".format(clean_script_server,
+    command = "python '{}' -r {}".format(clean_script_server,
                                            configuration_item_name)
     SSH_exec_cmd(command, userid, ip_address_or_domain,
                  userpw, wait_output=False, sshport=sshport)
 
     # Remove the source files on the server
-    command = "rm -rf '{0}'".format(install_swf_path_server)
+    command = f"rm -rf '{install_swf_path_server}'"
     SSH_exec_cmd(command, userid, ip_address_or_domain,
                  userpw, wait_output=False, sshport=sshport)
 

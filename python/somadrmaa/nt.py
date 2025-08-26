@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """named tuple implementation"""
 
-from __future__ import print_function
-from __future__ import absolute_import
 from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
@@ -37,7 +33,7 @@ def namedtuple(typename, field_names, verbose=False):
     # Parse and validate the field names.  Validation serves two purposes,
     # generating informative error messages and preventing template injection
     # attacks.
-    if isinstance(field_names, six.string_types):
+    if isinstance(field_names, str):
         field_names = field_names.replace(
             ',', ' ').split()  # names separated by whitespace and/or commas
     field_names = tuple(field_names)
@@ -99,10 +95,9 @@ def namedtuple(typename, field_names, verbose=False):
     # Execute the template string in a temporary namespace
     namespace = dict(itemgetter=_itemgetter)
     try:
-        six.exec_(template, namespace)
+        exec(template, namespace)
     except SyntaxError as e:
-        six.reraise(SyntaxError, SyntaxError(e.message + ':\n' + template),
-                    _sys.exc_info[2])
+        raise SyntaxError(e.message + ':\n' + template).with_traceback(_sys.exc_info[2])
     result = namespace[typename]
 
     # For pickling to work, the __module__ variable needs to be set to the frame

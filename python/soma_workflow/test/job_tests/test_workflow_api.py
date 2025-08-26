@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
 import unittest
 import sys
 
@@ -53,11 +50,11 @@ class WorkflowApiTests(unittest.TestCase):
         # do it again using sets for deps
         workflow3 = wfclient.Workflow(
             [job1, job2, job3],
-            dependencies=set([(job1, job2), (job1, job3)]),
+            dependencies={(job1, job2), (job1, job3)},
             root_group=[group])
         workflow4 = wfclient.Workflow(
             [job4, job5, job6], name='workflow4',
-            dependencies=set([(job4, job6), (job5, job6)]))
+            dependencies={(job4, job6), (job5, job6)})
         group3 = workflow3.add_workflow(workflow4, as_group='group3')
         self.assertTrue(len(workflow3.jobs) == 6)
         self.assertTrue(len(workflow3.root_group) == 2)

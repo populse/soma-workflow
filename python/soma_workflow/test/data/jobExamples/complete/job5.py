@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # calls job1 using params IO as json
 
 # outputs: let's say filePathOut1 is given as input (the filename),
 # and filePathOut2 filename is an output of this job
 
-from __future__ import print_function
 
-from __future__ import absolute_import
 import os
 import json
 import subprocess

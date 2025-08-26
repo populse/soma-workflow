@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 @authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
@@ -6,11 +5,9 @@
 
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 import traceback
@@ -76,7 +73,7 @@ class Respond(threading.Thread):
                     traceback.print_last()  # TODO what is this?
 
 
-class ObjectServer(object):
+class ObjectServer:
 
     '''
     Usage:
@@ -130,7 +127,7 @@ class ObjectServer(object):
             #  Wait for next request from client
 
 
-class Proxy(object):
+class Proxy:
 
     """
     The Proxy object is created with the uri of the object
@@ -152,7 +149,7 @@ class Proxy(object):
         return ProxyMethod(self, method_name)
 
 
-class ProxyMethod(object):
+class ProxyMethod:
 
     def __init__(self, proxy, method):
         self.proxy = proxy

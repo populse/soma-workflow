@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #  Copyright (C) 2009 StatPro Italia s.r.l.
 #
@@ -22,7 +21,6 @@
 
 """DRMAA C library function wrappers"""
 
-from __future__ import absolute_import
 from ctypes import *
 from ctypes.util import find_library
 from somadrmaa.errors import error_check, error_buffer

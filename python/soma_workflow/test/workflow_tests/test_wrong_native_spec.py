@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
+r"""
 Created on Fri Oct 25 09:19:23 2013
 
 @author: laure.hugo@cea.fr
@@ -28,9 +27,6 @@ Workflow test of a wrong native spec of the PBS:
           number of failed jobs (including aborted)
 """
 
-from __future__ import with_statement
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
 from soma_workflow.client import Helper
 from soma_workflow.configuration import LIGHT_MODE

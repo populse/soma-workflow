@@ -1,10 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
-
-from __future__ import absolute_import
 import sys
 import time
-from six.moves import range
 
 if len(sys.argv) < 4 or len(sys.argv) > 5:
     sys.stdout.write("The program takes 3 or 4 arguments! \n")

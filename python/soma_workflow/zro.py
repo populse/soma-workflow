@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
 '''
 @author: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
 @organization: NAO, UNATI, Neurospin, Gif-sur-Yvette, France
 
 '''
-from __future__ import print_function
-from __future__ import absolute_import
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 import traceback
@@ -36,7 +33,7 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-class ReturnException(object):
+class ReturnException:
 
     ''' Fake exception, wraps an exception occuring during server-side
         execution.
@@ -63,7 +60,7 @@ class WorkerThread(threading.Thread):
     """
 
     def __init__(self, worker_id, context, poller):
-        super(WorkerThread, self).__init__()
+        super().__init__()
         self.worker_id = worker_id
         self.lock = threading.RLock()
         self.todo = []
@@ -173,7 +170,7 @@ class WorkerThread(threading.Thread):
         logger.debug('stopping worker: ' + self.worker_id)
 
 
-class ObjectServer(object):
+class ObjectServer:
 
     '''
     ObjectServer runs on server side. It listens to client requests (method
@@ -399,7 +396,7 @@ class ObjectServer(object):
         self.workers = {}
 
 
-class Proxy(object):
+class Proxy:
 
     """
     The Proxy object is created on client side with the uri of the object
@@ -418,7 +415,7 @@ class Proxy(object):
         # To avoid multiple threads using the proxy variables at the same time
         self.lock = threading.RLock()  # FIXME remove this
         # Deux cas: ou uri est un bytes object ou il est du type str
-        if type(uri) == type(b'bytes type'):
+        if type(uri) == bytes:
             uri = uri.decode('utf-8')
 
         (self.classname, self.object_id, self._port) = uri.split(':')
@@ -475,7 +472,7 @@ class Proxy(object):
             self.timeout = timeout
 
 
-class ProxyMethod(object):
+class ProxyMethod:
 
     # per-thread socket
     sockets = {}
@@ -488,16 +485,16 @@ class ProxyMethod(object):
 
     def get_socket(self):
         # garbage-collect sockets (could be done elsewhere, at another time)
-        thread_names = set([thread.name for thread in threading.enumerate()])
+        thread_names = {thread.name for thread in threading.enumerate()}
         with Proxy.class_lock:
-            used_ports = set([p for p, n in Proxy.ports_count.items()
-                              if n > 0])
+            used_ports = {p for p, n in Proxy.ports_count.items()
+                              if n > 0}
         with ProxyMethod.lock:
-            ProxyMethod.sockets = dict(
-                [(thread_port, socket)
-                 for thread_port, socket in six.iteritems(ProxyMethod.sockets)
+            ProxyMethod.sockets = {
+                thread_port: socket
+                 for thread_port, socket in ProxyMethod.sockets.items()
                  if thread_port[0] in thread_names
-                    and thread_port[1] in used_ports])
+                    and thread_port[1] in used_ports}
 
             thread = threading.current_thread().name
             socket = ProxyMethod.sockets.get((thread, self.proxy._port))

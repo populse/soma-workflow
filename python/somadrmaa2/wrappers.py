@@ -1,15 +1,10 @@
-# -*- coding: utf-8 -*-
-
 """DRMAA2 C library function wrappers"""
 
-from __future__ import absolute_import
-from __future__ import print_function
 from ctypes import *
 from ctypes.util import find_library
 from soma_workflow.utils import DetectFindLib
 from somadrmaa.errors import DrmaaException
 import os
-from six.moves import range
 
 
 _drmaa_lib_env_name = 'DRMAA_LIBRARY_PATH'
@@ -30,7 +25,7 @@ def error_check(code):
     if code == 0:
         return
     else:
-        raise DrmaaException("code %s: %s" % (code, drmaa2_lasterror_text()))
+        raise DrmaaException("code {}: {}".format(code, drmaa2_lasterror_text()))
 
 
 drmaa2_list_entryfree = CFUNCTYPE(None, POINTER(c_void_p))

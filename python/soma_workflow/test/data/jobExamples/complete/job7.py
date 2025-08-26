@@ -1,17 +1,12 @@
-# -*- coding: utf-8 -*-
-
 # inputs: as env var SOMAWF_INPUT_PARAMS
 # expect "inputs" parameter: list of filenames
 # outputs: copies of files in intermediate_results/ subdirectory
 
-from __future__ import print_function
 
-from __future__ import absolute_import
 import os
 import json
 import sys
 import shutil
-from six.moves import zip
 
 input_param_file = os.environ.get('SOMAWF_INPUT_PARAMS')
 with open(input_param_file) as f:

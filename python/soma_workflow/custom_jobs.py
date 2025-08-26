@@ -1,15 +1,10 @@
-# -*- coding: utf-8 -*-
-
 '''
 Small library of custom :class:`~client_types.EngineExecutionJob` subclasses.
 
 Provides jobs for map/reduce patterns, cross-validation folding, and lists manipulations.
 '''
 
-from __future__ import absolute_import
 from soma_workflow.client_types import Job, EngineExecutionJob, BarrierJob
-from six.moves import range
-from six.moves import zip
 
 
 class MapJob(EngineExecutionJob):
@@ -57,7 +52,7 @@ class MapJob(EngineExecutionJob):
         for inp in param_dict['input_names']:
             if inp not in param_dict:
                 param_dict[inp] = []
-        super(MapJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,
@@ -123,7 +118,7 @@ class ReduceJob(EngineExecutionJob):
             param_dict['output_names'] = ['outputs']
         if 'lengths' not in param_dict:
             param_dict['lengths'] = [0]
-        super(ReduceJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,
@@ -185,7 +180,7 @@ class LeaveOneOutJob(EngineExecutionJob):
             param_dict['inputs'] = []
         if 'index' not in param_dict:
             param_dict['index'] = 0
-        super(LeaveOneOutJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,
@@ -232,7 +227,7 @@ class CrossValidationFoldJob(EngineExecutionJob):
             param_dict['nfolds'] = 2
         if 'fold' not in param_dict:
             param_dict['fold'] = 0
-        super(CrossValidationFoldJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,
@@ -281,7 +276,7 @@ class ListCatJob(EngineExecutionJob):
             param_dict = {}
         if 'inputs' not in param_dict:
             param_dict['inputs'] = []
-        super(ListCatJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,
@@ -334,7 +329,7 @@ class StrCatJob(EngineExecutionJob):
         for iname in param_dict['input_names']:
             if iname not in param_dict:
                 param_dict[iname] = ''
-        super(StrCatJob, self).__init__(
+        super().__init__(
             command=[],
             referenced_input_files=referenced_input_files,
             referenced_output_files=referenced_output_files,

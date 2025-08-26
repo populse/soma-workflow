@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 '''
 @author: Jinpeng Li
 
@@ -10,8 +7,6 @@
 @license: U{CeCILL version 2<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>}
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
 
 import unittest
 from unittest import TestSuite
@@ -96,12 +91,12 @@ class DrmaaCTypesTest(unittest.TestCase):
         outputfilepath = os.path.join(
             sch.tmp_file_path,
             "soma-workflow-empty-job-patch-torque.o")
-        self.failUnless(os.path.isfile(outputfilepath))
+        self.assertTrue(os.path.isfile(outputfilepath))
         # print("outputfilepath="+outputfilepath)
         outfile = open(outputfilepath)
         line = outfile.readline()
         line = line.strip()
-        self.failUnless(line, "hello jinpeng")
+        self.assertTrue(line, "hello jinpeng")
         outfile.close()
 
 #    def test_ctype_drmaa_session(self):

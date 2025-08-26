@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 import time
-from six.moves import range
 
 # program arguments
 # filepathout1 = sys.argv[0]

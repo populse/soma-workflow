@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from soma_workflow.client import Job, Workflow, WorkflowController, SharedResourcePath, FileTransfer
 
 # SharedResourcePath creation for the input file.

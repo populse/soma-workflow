@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from soma_workflow.client import Job, Workflow, WorkflowController
 
 job_1 = Job(command=["sleep", "60"], name="job 1")

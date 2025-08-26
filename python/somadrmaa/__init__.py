@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #  Copyright (C) 2008 StatPro Italia s.r.l.
 #
@@ -26,7 +25,6 @@ binding specification (http://www.ogf.org/documents/GFD.143.pdf).  See
 http://drmaa-python.googlecode.com for package info and download.
 """
 
-from __future__ import absolute_import
 __docformat__ = "restructuredtext en"
 
 import ctypes as _ct
@@ -78,7 +76,7 @@ JobInfo = _nt.namedtuple("JobInfo",
 #                                      transferErrorStream""")
 
 
-class JobTemplate(object):
+class JobTemplate:
 
     """A job to be submitted to the DRM."""
 
@@ -210,7 +208,7 @@ Stops communication with the DRM.
         return False
 
 
-class Session(object):
+class Session:
 
     """\
 The DRMAA Session.

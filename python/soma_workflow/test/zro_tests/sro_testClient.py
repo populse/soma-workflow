@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 @authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
@@ -6,10 +5,7 @@
 
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
 from . import sro
-from six.moves import input
 
 object_uri = input("Please enter object URI: ")
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # soma-workflow documentation build configuration file, created by
 # sphinx-quickstart on Fri Jan 28 10:45:12 2011.
@@ -11,7 +10,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import absolute_import
 import sys
 import os
 import soma_workflow.version
@@ -65,8 +63,8 @@ source_suffix = '.txt'
 master_doc = 'index'
 
 # General information about the project.
-project = u'soma-workflow'
-copyright = u'2011-2021 CEA, Neurospin, France, CATI, France'
+project = 'soma-workflow'
+copyright = '2011-2021 CEA, Neurospin, France, CATI, France'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -204,8 +202,8 @@ htmlhelp_basename = 'soma-workflowdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ('index', 'soma-workflow.tex', u'soma-workflow Documentation',
-     u'Soizic Laguitton', 'manual'),
+    ('index', 'soma-workflow.tex', 'soma-workflow Documentation',
+     'Soizic Laguitton', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -237,18 +235,18 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'soma-workflow', u'soma-workflow Documentation',
-     [u'Soizic Laguitton'], 1)
+    ('index', 'soma-workflow', 'soma-workflow Documentation',
+     ['Soizic Laguitton'], 1)
 ]
 
 
 # -- Options for Epub output ---------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'soma-workflow'
-epub_author = u'Soizic Laguitton'
-epub_publisher = u'2021 CEA, Neurospin, France, CATI, France'
-epub_copyright = u'2021, '
+epub_title = 'soma-workflow'
+epub_author = 'Soizic Laguitton'
+epub_publisher = '2021 CEA, Neurospin, France, CATI, France'
+epub_copyright = '2021, '
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

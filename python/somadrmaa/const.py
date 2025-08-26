@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #  Copyright (C) 2009 StatPro Italia s.r.l.
 #
@@ -92,7 +91,7 @@ def job_state(code):
     return _JOB_PS[code]
 
 
-class JobState(object):
+class JobState:
     UNDETERMINED = 'undetermined'
     QUEUED_ACTIVE = 'queued_active'
     SYSTEM_ON_HOLD = 'system_on_hold'
@@ -108,7 +107,7 @@ class JobState(object):
 # Job control action
 
 
-class JobControlAction(object):
+class JobControlAction:
     SUSPEND = 'suspend'
     RESUME = 'resume'
     HOLD = 'hold'
@@ -152,7 +151,7 @@ _JOB_PS = {
 # State at submission time
 
 
-class JobSubmissionState(object):
+class JobSubmissionState:
     HOLD_STATE = SUBMISSION_STATE_HOLD
     ACTIVE_STATE = SUBMISSION_STATE_ACTIVE
 

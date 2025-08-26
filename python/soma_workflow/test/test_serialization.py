@@ -1,13 +1,10 @@
-# -*- coding: utf-8 -*-
 '''
 author: laure.hugo@cea.fr
 author: Soizic Laguitton
 organization: IFR 49<http://www.ifr49.org
 license: CeCILL B http://www.cecill.info/licences/Licence_CeCILL_V2-en.html
 '''
-from __future__ import print_function
 
-from __future__ import absolute_import
 import os
 import tempfile
 
@@ -78,7 +75,7 @@ class SerializationTest(unittest.TestCase):
 
             try:
                 os.remove(file_path)
-            except IOError:
+            except OSError:
                 pass
 
 

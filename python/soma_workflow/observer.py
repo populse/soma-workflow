@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
-from __future__ import absolute_import
 import weakref
 
 
-class Observable(object):
+class Observable:
 
     def __init__(self):
         # A WeakKeyDictionary is one where, if the object used as the key
@@ -82,7 +78,7 @@ class Observable(object):
 # a concrete Observer class.  It is not strictly required.
 #
 
-class Observer(object):
+class Observer:
 
     #
     # @param observable The Observable to observe.

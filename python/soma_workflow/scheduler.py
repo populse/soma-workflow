@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
-from __future__ import print_function
 import six
 import os
 import inspect
@@ -9,7 +5,7 @@ import importlib
 import threading
 
 
-class Scheduler(object):
+class Scheduler:
 
     '''
     Allow to submit, kill and get the status of jobs.
@@ -165,7 +161,7 @@ def get_scheduler_implementation(scheduler_type):
         scheduler = getattr(module, '__main_scheduler__', None)
         if scheduler is not None:
             return scheduler
-        for element in six.itervalues(module.__dict__):
+        for element in module.__dict__.values():
             if element in sched_list:
                 continue  # avoid duplicates
             if inspect.isclass(element) and element is not Scheduler \

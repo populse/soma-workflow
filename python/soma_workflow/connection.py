@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import with_statement, print_function
-from __future__ import absolute_import
-
 '''
 author: Soizic Laguitton
 
@@ -34,7 +30,7 @@ import traceback
 from . import subprocess
 
 import six
-import six.moves.socketserver as socketserver
+import socketserver as socketserver
 
 from soma_workflow.errors import ConnectionError
 
@@ -82,7 +78,7 @@ def SSH_exec_cmd(sshcommand,
 
     if wait_output:
         tag = '----xxxx=====start to exec=====xxxxx----'
-        sshcommand = "echo %s && %s" % (tag, sshcommand)
+        sshcommand = "echo {} && {}".format(tag, sshcommand)
 
     # is_limit_stdout = False
     # is_limit_stderr = False
@@ -263,7 +259,7 @@ def check_if_somawfdb_on_server(
     userpw='',
         sshport=22):
 
-    command = "ps -ef | grep 'python. -m soma_workflow\.start_database_server'"\
+    command = r"ps -ef | grep 'python. -m soma_workflow\.start_database_server'"\
         " | grep '%s' | grep -v grep | awk '{print $2}'" % (userid)
 
     std_out_lines = SSH_exec_cmd(
@@ -294,7 +290,7 @@ def search_available_port():
 # Classes and functions
 #-------------------------------------------------------------------------
 
-class RemoteConnection(object):
+class RemoteConnection:
 
     '''
     Remote version of the connection.
@@ -780,7 +776,7 @@ class RemoteConnection(object):
                       'Installation problem on server side?')
 
 
-class LocalConnection(object):
+class LocalConnection:
 
     '''
     Local version of the connection.
@@ -811,7 +807,7 @@ class LocalConnection(object):
                                          # log)
         #(local_dir, python_interpreter) = os.path.split(sys.executable)
         python_interpreter = sys.executable
-        command = python_interpreter + " -m soma_workflow.start_workflow_engine %s %s %s" % (
+        command = python_interpreter + " -m soma_workflow.start_workflow_engine {} {} {}".format(
             resource_id,
             remote_workflow_engine_name,
             log)
@@ -914,8 +910,8 @@ class LocalConnection(object):
             # print("After calling the remote object")
             connection_checker.isConnected()
         except Exception as e:
-            print("-> Communication Failed. %s: %s" % (type(e), e))
-            logging.info("-> Communication Failed. %s: %s" % (type(e), e))
+            print("-> Communication Failed. {}: {}".format(type(e), e))
+            logging.info("-> Communication Failed. {}: {}".format(type(e), e))
         else:
             print("-> Communication with engine OK")
             logging.info("-> Communication with engine OK")
@@ -975,7 +971,7 @@ class LocalConnection(object):
         return self.scheduler_config
 
 
-class ConnectionChecker(object):
+class ConnectionChecker:
 
     ''' ConnectionChecker runs on server side. It runs a thread which listens
         to "life signals" emitted from the client (using a ConnectionHolder
@@ -1233,7 +1229,7 @@ class Tunnel(threading.Thread):
 
     def serve_forever(self):
         try:
-            super(Tunnel, self).serve_forever()
+            super().serve_forever()
         except Exception as e:  # noqa: E722
             print('EXCEPT:', e, file=sys.stderr)
             self.shutdown()
@@ -1262,7 +1258,7 @@ class Tunnel(threading.Thread):
             logging.error('tunnel from local_port %d to port %d stopped !' %
                           (local_port, hostport))
         except Exception as e:
-            logging.error('Tunnel Error. %s: %s' % (type(e), e))
+            logging.error('Tunnel Error. {}: {}'.format(type(e), e))
         logging.warning('Tunnel stopped.')
         self.shutdown()
 

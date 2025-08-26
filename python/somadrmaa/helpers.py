@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #  Copyright (C) 2009 StatPro Italia s.r.l.
 #
@@ -22,7 +21,6 @@
 
 """internal helpers"""
 
-from __future__ import absolute_import
 import ctypes as _ct
 from somadrmaa.wrappers import *
 from somadrmaa.errors import error_buffer
@@ -38,17 +36,13 @@ try:
 except ImportError:  # pre 2.6 behaviour
     from somadrmaa import nt as _nt
 
-if six.PY2:
-    def c_str(s):
-        return s
-else:
-    def c_str(s):
-        if isinstance(s, str):
-            return s.encode()
-        return s
+def c_str(s):
+    if isinstance(s, str):
+        return s.encode()
+    return s
 
 
-class BoolConverter(object):
+class BoolConverter:
 
     """Helper class to convert to/from bool attributes."""
 
@@ -69,7 +63,7 @@ class BoolConverter(object):
             return False
 
 
-class IntConverter(object):
+class IntConverter:
 
     """Helper class to convert to/from float attributes."""
     @staticmethod
@@ -81,7 +75,7 @@ class IntConverter(object):
         return int(value)
 
 
-class StringConverter(object):
+class StringConverter:
 
     """Helper class to convert to/from string attributes."""
     @staticmethod
@@ -93,7 +87,7 @@ class StringConverter(object):
         return value.decode()
 
 
-class SessionStringAttribute(object):
+class SessionStringAttribute:
 
     def __init__(self, drmaa_function):
         self._f = drmaa_function
@@ -104,7 +98,7 @@ class SessionStringAttribute(object):
         return buf.value
 
 Version = _nt.namedtuple("Version", "major minor")
-Version.__str__ = lambda x: "%s.%s" % (x.major, x.minor)
+Version.__str__ = lambda x: "{}.{}".format(x.major, x.minor)
 # Version.__doc__ = """\
 # An object representing the DRMAA version.
 #
@@ -112,7 +106,7 @@ Version.__str__ = lambda x: "%s.%s" % (x.major, x.minor)
 #"""
 
 
-class SessionVersionAttribute(object):
+class SessionVersionAttribute:
 
     """A Version attribute."""
 
@@ -123,7 +117,7 @@ class SessionVersionAttribute(object):
         return Version(major.value, minor.value)
 
 
-class Attribute(object):
+class Attribute:
 
     """A DRMAA attribute, to be managed with scalar C DRMAA attribute management functions."""
 
@@ -160,7 +154,7 @@ Attribute constructor.
             return attr_buffer.value
 
 
-class VectorAttribute(object):
+class VectorAttribute:
 
     """\
 A DRMAA attribute representing a list.
@@ -179,7 +173,7 @@ To be managed with vector C DRMAA attribute management functions."""
             instance, self.name))
 
 
-class DictAttribute(object):
+class DictAttribute:
 
     """\
 A DRMAA attribute representing a python dict.
@@ -190,7 +184,7 @@ To be managed with vector C DRMAA attribute management functions."""
         self.name = c_str(name)
 
     def __set__(self, instance, value):
-        v = [b"%s=%s" % (k, v) for (k, v) in six.iteritems(value)]
+        v = [b"%s=%s" % (k, v) for (k, v) in value.items()]
         c(drmaa_set_vector_attribute, instance, self.name, string_vector(v))
 
     def __get__(self, instance, _):

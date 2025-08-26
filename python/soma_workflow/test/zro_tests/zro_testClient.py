@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 @authors: Manuel Boissenin, Yann Cointepas, Denis Riviere
 
@@ -6,10 +5,7 @@
 
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
 import soma_workflow.zro as zro
-from six.moves import input
 import threading
 
 object_uri = input("Please enter object URI: ")
