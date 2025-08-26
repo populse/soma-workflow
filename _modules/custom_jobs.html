@@ -38,18 +38,13 @@
           <div class="body" role="main">
             
   <h1>Source code for custom_jobs</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-
-<span class="sd">&#39;&#39;&#39;</span>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">Small library of custom :class:`~client_types.EngineExecutionJob` subclasses.</span>
 
 <span class="sd">Provides jobs for map/reduce patterns, cross-validation folding, and lists manipulations.</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.client_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">EngineExecutionJob</span><span class="p">,</span> <span class="n">BarrierJob</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">six.moves</span><span class="w"> </span><span class="kn">import</span> <span class="nb">range</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">six.moves</span><span class="w"> </span><span class="kn">import</span> <span class="nb">zip</span>
 
 
 <div class="viewcode-block" id="MapJob">
@@ -99,7 +94,7 @@
         <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;input_names&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">inp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
                 <span class="n">param_dict</span><span class="p">[</span><span class="n">inp</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">MapJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
@@ -168,7 +163,7 @@
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;output_names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="s1">&#39;lengths&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;lengths&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ReduceJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
@@ -233,7 +228,7 @@
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="s1">&#39;index&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">LeaveOneOutJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
@@ -283,7 +278,7 @@
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;nfolds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="k">if</span> <span class="s1">&#39;fold&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;fold&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">CrossValidationFoldJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
@@ -335,7 +330,7 @@
             <span class="n">param_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="s1">&#39;inputs&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
             <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ListCatJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>
@@ -391,7 +386,7 @@
         <span class="k">for</span> <span class="n">iname</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;input_names&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">iname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="p">:</span>
                 <span class="n">param_dict</span><span class="p">[</span><span class="n">iname</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">StrCatJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">command</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">referenced_input_files</span><span class="p">,</span>
             <span class="n">referenced_output_files</span><span class="o">=</span><span class="n">referenced_output_files</span><span class="p">,</span>

@@ -38,11 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for soma_workflow.schedulers.local_scheduler</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_statement</span><span class="p">,</span> <span class="n">print_function</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
-
-<span class="sd">&#39;&#39;&#39;</span>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">author: Soizic Laguitton</span>
 
 <span class="sd">organization: I2BM, Neurospin, Gif-sur-Yvette, France</span>
@@ -160,7 +156,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proc_nb</span><span class="o">=</span><span class="n">default_cpu_number</span><span class="p">(),</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
                  <span class="n">max_proc_nb</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">LocalScheduler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parallel_job_submission_info</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -436,10 +432,10 @@
                 <span class="n">stdin_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">stderr</span><span class="p">:</span>
-                    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
                     <span class="n">stderr_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">stdout</span><span class="p">:</span>
-                    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
                     <span class="n">stdout_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">stderr_file</span><span class="p">:</span>
                     <span class="n">stderr_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -466,7 +462,7 @@
                 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">six</span><span class="o">.</span><span class="n">PY2</span><span class="p">:</span>
                     <span class="c1"># windows cannot use unicode strings as env values</span>
                     <span class="n">env2</span><span class="o">.</span><span class="n">update</span><span class="p">([(</span><span class="n">k</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span> <span class="n">v</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
-                                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">env</span><span class="p">)])</span>
+                                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">env2</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
                 <span class="n">env</span> <span class="o">=</span> <span class="n">env2</span>
@@ -491,10 +487,10 @@
                 <span class="s1">&#39;exception while starting command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="n">LocalScheduler</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;command:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">stderr</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
                 <span class="n">stderr_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">stdout</span><span class="p">:</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
                 <span class="n">stdout_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">stderr_file</span><span class="p">:</span>
                 <span class="n">stderr_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -651,7 +647,7 @@
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        * config *LocalSchedulerCfg*</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ConfiguredLocalScheduler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">config</span><span class="o">.</span><span class="n">get_proc_nb</span><span class="p">(),</span>
             <span class="n">config</span><span class="o">.</span><span class="n">get_interval</span><span class="p">(),</span>
             <span class="n">config</span><span class="o">.</span><span class="n">get_max_proc_nb</span><span class="p">())</span>

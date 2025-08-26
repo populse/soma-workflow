@@ -38,11 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for scheduler</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -51,7 +47,7 @@
 
 <div class="viewcode-block" id="Scheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.Scheduler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Scheduler</span><span class="p">:</span>
 
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Allow to submit, kill and get the status of jobs.</span>
@@ -225,7 +221,7 @@
         <span class="n">scheduler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s1">&#39;__main_scheduler__&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">scheduler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scheduler</span>
-        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">sched_list</span><span class="p">:</span>
                 <span class="k">continue</span>  <span class="c1"># avoid duplicates</span>
             <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Scheduler</span> \
