@@ -1245,7 +1245,8 @@ def _embedded_engine_and_server(config):
     from soma_workflow.database_server import WorkflowDatabaseServer
 
     # configure logging
-    log_config = {'version': 1}
+    log_config = {'version': 1,
+                  'disable_existing_loggers': False}
 
     (engine_log_dir,
      engine_log_format,
