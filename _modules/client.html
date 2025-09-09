@@ -1354,7 +1354,8 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.database_server</span><span class="w"> </span><span class="kn">import</span> <span class="n">WorkflowDatabaseServer</span>
 
     <span class="c1"># configure logging</span>
-    <span class="n">log_config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">log_config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                  <span class="s1">&#39;disable_existing_loggers&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
 
     <span class="p">(</span><span class="n">engine_log_dir</span><span class="p">,</span>
      <span class="n">engine_log_format</span><span class="p">,</span>
