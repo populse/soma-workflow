@@ -1,0 +1,12 @@
+package:
+  name: soma-workflow
+
+soma-env:
+  publication: neuro-forge
+  components:
+    - soma-workflow
+
+  internal-dependencies:
+    - soma-python
+
+  type: interpreted
