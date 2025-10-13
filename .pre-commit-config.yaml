@@ -31,7 +31,7 @@ repos:
         exclude: ^doc/sphinx/sphinxext/
 
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
     -   id: pyupgrade
         args: [--py311-plus]
