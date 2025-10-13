@@ -385,10 +385,10 @@ class LocalScheduler(Scheduler):
                 stdin_file = open(stdin, "rb")
             except Exception as e:
                 if stderr:
-                    s = '{}: {} \n'.format(type(e), e)
+                    s = f'{type(e)}: {e} \n'
                     stderr_file.write(s)
                 elif stdout:
-                    s = '{}: {} \n'.format(type(e), e)
+                    s = f'{type(e)}: {e} \n'
                     stdout_file.write(s)
                 if stderr_file:
                     stderr_file.close()
@@ -440,10 +440,10 @@ class LocalScheduler(Scheduler):
                 'exception while starting command:' + repr(e))
             LocalScheduler.logger.error('command:' + repr(command))
             if stderr:
-                s = ('{}: {} \n'.format(type(e), e)).encode()
+                s = (f'{type(e)}: {e} \n').encode()
                 stderr_file.write(s)
             elif stdout:
-                s = ('{}: {} \n'.format(type(e), e)).encode()
+                s = (f'{type(e)}: {e} \n').encode()
                 stdout_file.write(s)
             if stderr_file:
                 stderr_file.close()

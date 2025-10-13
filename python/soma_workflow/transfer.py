@@ -224,7 +224,7 @@ class TransferSCP(Transfer):
                                                      hostname,
                                                      remote_path)
             else:
-                scp_cmd = 'scp -qp {} {}'.format(path, remote_path)
+                scp_cmd = f'scp -qp {path} {remote_path}'
             print(scp_cmd)
             os.system(scp_cmd)
 
@@ -247,7 +247,7 @@ class TransferSCP(Transfer):
                                                            hostname,
                                                            remote_path)
                 else:
-                    scp_cmd = 'scp -Cqpr {} {}'.format(path, remote_path)
+                    scp_cmd = f'scp -Cqpr {path} {remote_path}'
             print(scp_cmd)
             os.system(scp_cmd)
 
@@ -272,7 +272,7 @@ class TransferSCP(Transfer):
                                                       remote_path,
                                                       path)
             else:
-                scp_cmd = 'scp -qp {} {} '.format(remote_path, path)
+                scp_cmd = f'scp -qp {remote_path} {path} '
             print(scp_cmd)
             os.system(scp_cmd)
 
@@ -296,7 +296,7 @@ class TransferSCP(Transfer):
                                                             remote_path,
                                                             path)
                 else:
-                    scp_cmd = 'scp -Cqpr {} {} '.format(remote_path, path)
+                    scp_cmd = f'scp -Cqpr {remote_path} {path} '
 
             print(scp_cmd)
             os.system(scp_cmd)
@@ -334,7 +334,7 @@ class TransferRsync(Transfer):
                                                          hostname,
                                                          remote_path)
             else:
-                rsync_cmd = 'rsync -qp {} {}'.format(path, remote_path)
+                rsync_cmd = f'rsync -qp {path} {remote_path}'
             print(rsync_cmd)
             os.system(rsync_cmd)
 
@@ -373,7 +373,7 @@ class TransferRsync(Transfer):
                                                           remote_path,
                                                           path)
             else:
-                rsync_cmd = 'rsync -qp {} {} '.format(remote_path, path)
+                rsync_cmd = f'rsync -qp {remote_path} {path} '
             print(rsync_cmd)
             os.system(rsync_cmd)
 
