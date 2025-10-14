@@ -898,7 +898,7 @@ class WorkflowDatabaseServer:
                 connection.rollback()
                 cursor.close()
                 connection.close()
-                self.logger.error('{}: {} \n'.format(str(type(e)), str(e)))
+                self.logger.error(f'{str(type(e))}: {str(e)} \n')
                 tb = StringIO()
                 traceback.print_exc(file=tb)
                 self.logger.error(tb.getvalue())
@@ -1240,14 +1240,14 @@ class WorkflowDatabaseServer:
                 shutil.rmtree(file_path)
             except Exception as e:
                 self.logger.debug(
-                    "Could not remove directory {}, error {}: {} \n".format(file_path, type(e), e))
+                    f"Could not remove directory {file_path}, error {type(e)}: {e} \n")
 
         elif file_path and os.path.isfile(file_path):
             try:
                 os.remove(file_path)
             except Exception as e:
                 self.logger.debug(
-                    "Could not remove file {}, error {}: {} \n".format(file_path, type(e), e))
+                    f"Could not remove file {file_path}, error {type(e)}: {e} \n")
 
             dirname = os.path.dirname(file_path)
             base = os.path.join(self._tmp_file_dir_path, '')
@@ -2193,8 +2193,8 @@ class WorkflowDatabaseServer:
             date = self._str_to_date_conversion(strdate)
             cursor.close()
             connection.close()
-        self.logger.debug("===> status: {}, date: {}".format(status, strdate))
-        self.logger.debug("===> status: {}, date: {}".format(status, repr(date)))
+        self.logger.debug(f"===> status: {status}, date: {strdate}")
+        self.logger.debug(f"===> status: {status}, date: {repr(date)}")
         return status, date
 
     def get_detailed_workflow_status(self, wf_id, check_status=False,
@@ -2355,7 +2355,7 @@ class WorkflowDatabaseServer:
             cursor.close()
             connection.close()
 
-        self.logger.debug("===> status: {}, queue: {}".format(wf_status, wf_queue))
+        self.logger.debug(f"===> status: {wf_status}, queue: {wf_queue}")
         if check_status and wf_status == constants.WORKFLOW_IN_PROGRESS:
             done = []
             not_done = []

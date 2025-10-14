@@ -297,7 +297,7 @@ if DRMAA_LIB_FOUND:
                 self.logger.info("jobTemplateId=" + repr(jobTemplateId) + " command[0]=" + repr(
                     command[0]) + " command[1:]=" + repr(command[1:]))
                 self.logger.info(
-                    "hostname and stdout_file= [{}]:{}".format(self.hostname, stdout_file))
+                    f"hostname and stdout_file= [{self.hostname}]:{stdout_file}")
                 # ensure there is a directory for stdout
                 if not os.path.exists(os.path.dirname(stdout_file)):
                     os.makedirs(os.path.dirname(stdout_file))
