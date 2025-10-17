@@ -348,7 +348,7 @@ def InstallSomaWF2Server(userid,
     command = "python '{}' -r {} ".format(script2install,
                                             configuration_item_name)
     if config_options:
-        command += ' ' + ' '.join(['{}=\'{}\''.format(n, v)
+        command += ' ' + ' '.join([f'{n}=\'{v}\''
                                    for n, v in config_options.items()])
     logging.info(f"ssh command = {command}")
     print('install command:', command)

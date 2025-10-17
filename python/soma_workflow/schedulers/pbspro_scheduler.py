@@ -66,7 +66,7 @@ class JobTemplate:
             # env variables
             if self.env:
                 for var, value in self.env.items():
-                    f.write('export {}={}\n'.format(var, value))
+                    f.write(f'export {var}={value}\n')
 
             # working directory
             if self.workingDirectory:
@@ -364,9 +364,9 @@ class PBSProScheduler(Scheduler):
         stdin = job.plain_stdin()
 
         try:
-            outputPath = "{}:{}".format(self.hostname, stdout_file)
+            outputPath = f"{self.hostname}:{stdout_file}"
             if stderr_file:
-                errorPath = "{}:{}".format(self.hostname, stderr_file)
+                errorPath = f"{self.hostname}:{stderr_file}"
             else:
                 errorPath = None
             jobTemplate = JobTemplate(remoteCommand=command,
@@ -378,7 +378,7 @@ class PBSProScheduler(Scheduler):
                              + " command[0]=" + repr(command[0])
                              + " command[1:]=" + repr(command[1:]))
             self.logger.info(
-                "hostname and stdout_file= [{}]:{}".format(self.hostname, stdout_file))
+                f"hostname and stdout_file= [{self.hostname}]:{stdout_file}")
             # ensure there is a directory for stdout
             if not os.path.exists(os.path.dirname(stdout_file)):
                 os.makedirs(os.path.dirname(stdout_file))
@@ -445,13 +445,13 @@ class PBSProScheduler(Scheduler):
             self.logger.info('exception in PBS job submission:' + repr(e))
             try:
                 f = open(stderr_file, "wa")
-                f.write("Error in job submission: {}: {}".format(type(e), e))
+                f.write(f"Error in job submission: {type(e)}: {e}")
                 f.close()
             except Exception:
                 pass
-            self.logger.error("Error in job submission: {}: {}".format(type(e), e),
+            self.logger.error(f"Error in job submission: {type(e)}: {e}",
                               exc_info=sys.exc_info())
-            raise DRMError("Job submission error: {}: {}".format(type(e), e))
+            raise DRMError(f"Job submission error: {type(e)}: {e}")
 
         return job_id
 
@@ -473,7 +473,7 @@ class PBSProScheduler(Scheduler):
                 cmd = self.qdel_command() + [scheduler_job_id]
                 subprocess.check_call(cmd)
         except Exception as e:
-            self.logger.critical("{}: {}".format(type(e), e))
+            self.logger.critical(f"{type(e)}: {e}")
             # raise
 
     def get_job_extended_status(self, scheduler_job_id):
@@ -516,7 +516,7 @@ class PBSProScheduler(Scheduler):
                             parent[tag] = current
                     current = None
         except Exception as e:
-            self.logger.critical("{}: {}".format(type(e), e))
+            self.logger.critical(f"{type(e)}: {e}")
             raise
         status = super_status['Jobs'][scheduler_job_id]
         self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id)

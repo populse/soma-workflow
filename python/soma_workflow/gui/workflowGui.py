@@ -188,7 +188,7 @@ try:
     import matplotlib.pyplot
     import matplotlib.dates as mdates
 except ImportError as e:
-    print("Could not use Matplotlib: {} {}".format(type(e), e))
+    print(f"Could not use Matplotlib: {type(e)} {e}")
     MATPLOTLIB = False
 
 # from soma.utils.sip_compat:
@@ -463,7 +463,7 @@ def setLabelFromTimeDelta(label, value):
         mins = (value.seconds % 3600) // 60
         seconds = (value.seconds % 3600) % 60
         hours = hours + value.days * 24
-        label.setText("{}:{}:{}".format(repr(hours), repr(mins), repr(seconds)))
+        label.setText(f"{repr(hours)}:{repr(mins)}:{repr(seconds)}")
     else:
         label.setText("")
 
@@ -1603,7 +1603,7 @@ class SomaWorkflowWidget(QtGui.QWidget):
                     file_path, self.model.current_workflow().server_workflow)
             except SerializationError as e:
                 QtGui.QMessageBox.warning(
-                    self, "Error", "{}: {}".format(type(e), e))
+                    self, "Error", f"{type(e)}: {e}")
 
     @QtCore.Slot()
     def createWorkflowExample(self):
@@ -3237,7 +3237,7 @@ class JobInfoWidget(QtGui.QTabWidget):
                                 job_ids = []
                                 for link in linkl:
                                     linkstr.append(
-                                        '{}.{}'.format(link[0].name, link[1]))
+                                        f'{link[0].name}.{link[1]}')
                                     if engine_wf:
                                         job_ids.append(job_mapping.get(
                                             link[0], link[0]).job_id)
@@ -3427,7 +3427,7 @@ class JobInfoWidget(QtGui.QTabWidget):
             sl = [c if c != '"' else '\\"' for c in s]
             return ''.join(sl)
         env = self.get_envars()
-        txt_env = ' '.join(['{}="{}"'.format(k, _repl(v)) for k, v in env.items()])
+        txt_env = ' '.join([f'{k}="{_repl(v)}"' for k, v in env.items()])
         clipboard = QtGui.qApp.clipboard()
         clipboard.setText(txt_env)
 

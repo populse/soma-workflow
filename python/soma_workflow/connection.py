@@ -78,7 +78,7 @@ def SSH_exec_cmd(sshcommand,
 
     if wait_output:
         tag = '----xxxx=====start to exec=====xxxxx----'
-        sshcommand = "echo {} && {}".format(tag, sshcommand)
+        sshcommand = f"echo {tag} && {sshcommand}"
 
     # is_limit_stdout = False
     # is_limit_stderr = False
@@ -910,8 +910,8 @@ class LocalConnection:
             # print("After calling the remote object")
             connection_checker.isConnected()
         except Exception as e:
-            print("-> Communication Failed. {}: {}".format(type(e), e))
-            logging.info("-> Communication Failed. {}: {}".format(type(e), e))
+            print(f"-> Communication Failed. {type(e)}: {e}")
+            logging.info(f"-> Communication Failed. {type(e)}: {e}")
         else:
             print("-> Communication with engine OK")
             logging.info("-> Communication with engine OK")
@@ -1258,7 +1258,7 @@ class Tunnel(threading.Thread):
             logging.error('tunnel from local_port %d to port %d stopped !' %
                           (local_port, hostport))
         except Exception as e:
-            logging.error('Tunnel Error. {}: {}'.format(type(e), e))
+            logging.error(f'Tunnel Error. {type(e)}: {e}')
         logging.warning('Tunnel stopped.')
         self.shutdown()
 

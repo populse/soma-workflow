@@ -25,7 +25,7 @@ def error_check(code):
     if code == 0:
         return
     else:
-        raise DrmaaException("code {}: {}".format(code, drmaa2_lasterror_text()))
+        raise DrmaaException(f"code {code}: {drmaa2_lasterror_text()}")
 
 
 drmaa2_list_entryfree = CFUNCTYPE(None, POINTER(c_void_p))

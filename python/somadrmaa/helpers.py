@@ -98,7 +98,7 @@ class SessionStringAttribute:
         return buf.value
 
 Version = _nt.namedtuple("Version", "major minor")
-Version.__str__ = lambda x: "{}.{}".format(x.major, x.minor)
+Version.__str__ = lambda x: f"{x.major}.{x.minor}"
 # Version.__doc__ = """\
 # An object representing the DRMAA version.
 #
