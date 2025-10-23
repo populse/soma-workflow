@@ -672,7 +672,9 @@ class Configuration(observer.Observable):
             except configparser.NoOptionError:
                 machines = None
 
-            if (machines is None or local_machine in machines
+            if machines is None:
+                return 'localhost'
+            if (local_machine in machines
                 or 'localhost' in machines) \
                     and (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
                          or (not config_parser.has_option(
@@ -680,7 +682,7 @@ class Configuration(observer.Observable):
                              and not config_parser.has_option(
                              resource_id, CFG_CLUSTER_ADDRESS))):
                 return resource_id
-        return None
+        return 'localhost'
 
     @staticmethod
     def get_logins(config_file_path=None):
