@@ -448,7 +448,8 @@ class SlurmScheduler(Scheduler):
             cmd = self.sacct_command() + [
                 '-j', scheduler_job_id,
                 '-o',
-                'jobid,state,derivedexitcode,totalcpu,maxrss,timelimit,stdout']
+                'jobid,state,derivedexitcode,totalcpu,maxrss,timelimit,stdout,'
+                'ncpus']
             stat_str = subprocess.check_output(cmd).decode('utf-8').split('\n')
             fsize = [len(x) for x in stat_str[1].strip().split(' ')]
             findex = [0]
@@ -472,6 +473,7 @@ class SlurmScheduler(Scheduler):
             'MaxRSS': fields[4],
             'TimeLimit': fields[5],
             'Output_Path': fields[6],
+            'NCPUS': fields[7],
         }
         self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id)
                           + ': ' + repr(status))
@@ -601,6 +603,8 @@ class SlurmScheduler(Scheduler):
             'TotalCPU': 'cput',
             'MaxRSS': 'mem',
             'MaxVMSize': 'vmem',
+            'TimeLimit': 'walltime',
+            'NCPUS': 'ncpus',
         }
 
         try:
@@ -617,8 +621,6 @@ class SlurmScheduler(Scheduler):
             exit_status = exit_value
             resource_usage = {resource_codes[k]: v for k, v in status.items()
                               if k in resource_codes}
-            resource_usage = ' '.join(f'{k}={v}'
-                                      for k, v in resource_usage.items())
             # jid_out, exit_value, signaled, term_sig, coredumped, aborted, exit_status, resource_usage = self._drmaa.wait(
             #     scheduler_job_id, self._drmaa.TIMEOUT_NO_WAIT)
 
