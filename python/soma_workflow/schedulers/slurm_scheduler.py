@@ -447,7 +447,8 @@ class SlurmScheduler(Scheduler):
         try:
             cmd = self.sacct_command() + [
                 '-j', scheduler_job_id,
-                '-o', 'jobid,state,derivedexitcode,totalcpu,maxrss,timelimit']
+                '-o',
+                'jobid,state,derivedexitcode,totalcpu,maxrss,timelimit,stdout']
             stat_str = subprocess.check_output(cmd).decode('utf-8').split('\n')
             fsize = [len(x) for x in stat_str[1].strip().split(' ')]
             findex = [0]
@@ -463,12 +464,15 @@ class SlurmScheduler(Scheduler):
         if state.endswith('+'):
             state = state[:-1]
         status_code = [int(x) for x in fields[2].split(':')]
-        status = {'job_state': state,
-                  'Exit_status': status_code[0],
-                  'Return_code': status_code[1],
-                  'TotalCPU': fields[3],
-                  'MaxRSS': fields[4],
-                  'TimeLimit': fields[5]}
+        status = {
+            'job_state': state,
+            'Exit_status': status_code[0],
+            'Return_code': status_code[1],
+            'TotalCPU': fields[3],
+            'MaxRSS': fields[4],
+            'TimeLimit': fields[5],
+            'Output_Path': fields[6],
+        }
         self.logger.debug('get_job_extended_status: ' + repr(scheduler_job_id)
                           + ': ' + repr(status))
         return status
