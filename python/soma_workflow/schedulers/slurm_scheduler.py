@@ -448,12 +448,12 @@ class SlurmScheduler(Scheduler):
             cmd = self.sacct_command() + [
                 '-j', scheduler_job_id,
                 '-o', 'jobid,state,derivedexitcode,totalcpu,maxrss,timelimit']
-            stat_str = subprocess.check_output(cmd).decode('utf-8').split()
+            stat_str = subprocess.check_output(cmd).decode('utf-8').split('\n')
             fsize = [len(x) for x in stat_str[1].strip().split(' ')]
             findex = [0]
             for x in fsize:
                 findex.append(findex[-1] + x + 1)
-            fields = [stat_str[findex[i]:findex[i+1]].strip()
+            fields = [stat_str[2][findex[i]:findex[i+1]].strip()
                       for i in range(len(fsize))]
 
         except Exception as e:
