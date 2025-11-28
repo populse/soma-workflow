@@ -194,18 +194,14 @@ path name matchings.</p>
 </section>
 <section id="new">
 <h1>New<a class="headerlink" href="#new" title="Link to this heading">¶</a></h1>
-<section id="in-version-3-2">
-<h2>In version 3.2:<a class="headerlink" href="#in-version-3-2" title="Link to this heading">¶</a></h2>
+</section>
+<section id="in-version-3-3">
+<h1>In version 3.3:<a class="headerlink" href="#in-version-3-3" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p>Python2 support has been dropped.</p></li>
-<li><p>Optimization for scalability: performance in the engine and database has been much improved, in order to manage very large workflows, especially for workflows of independent jobs (large iterations). Where soma-workflow &lt;= 3.1 used to reach a limit around 5-10000 jobs (with timeouts causing aborts and hangs in the engine), in 3.2 it has now been tested using up to 500000 jobs in local and MPI modes. The MPI mode is by far the most efficient for such large workflows (processing 500000 very small jobs in about 25 minutes on a 8-core laptop). Both Workflow submission, engine management, and scheduling have been much improved, and processing time has dropped by several orders of magnitude. For very large workflows around the limit, however, monitoring (using either soma_workflow_gui or the client API) may involve an overhead which may cause timeouts in the database, which may in turn hang or crash the engine.</p></li>
-<li><p>Docs complements and improvements.</p></li>
-<li><p>Support for PyQt6 on the way (not entirely tested yet).</p></li>
-<li><p>Added an “isolated light mode” mode where all soma-workflow (config, database, temp files and transfers) are in a separate, potentially temporary directory, and will not interfere with other instances of soma-workflow and databases.</p></li>
-<li><p>Several bug fixes.</p></li>
+<li><p>Experimental support for SLURM DRMS: use <code class="docutils literal notranslate"><span class="pre">scheduler_type</span> <span class="pre">=</span> <span class="pre">slurm</span></code> in your <code class="docutils literal notranslate"><span class="pre">.soma_workglow.cfg</span></code> config file.</p></li>
+<li><p>More bug fixes</p></li>
 </ul>
 <p>See <a class="reference internal" href="changelog.html"><span class="doc">the full changelog</span></a></p>
-</section>
 </section>
 <section id="communications">
 <h1>Communications<a class="headerlink" href="#communications" title="Link to this heading">¶</a></h1>
@@ -268,10 +264,8 @@ path name matchings.</p>
 <li><a class="reference internal" href="#download">Download</a></li>
 <li><a class="reference internal" href="#quick-start-on-a-multiple-core-machine">Quick start on a multiple core machine</a></li>
 <li><a class="reference internal" href="#main-features">Main Features</a></li>
-<li><a class="reference internal" href="#new">New</a><ul>
-<li><a class="reference internal" href="#in-version-3-2">In version 3.2:</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#new">New</a></li>
+<li><a class="reference internal" href="#in-version-3-3">In version 3.3:</a></li>
 <li><a class="reference internal" href="#communications">Communications</a></li>
 <li><a class="reference internal" href="#authors-and-contributors">Authors and contributors</a></li>
 </ul>
