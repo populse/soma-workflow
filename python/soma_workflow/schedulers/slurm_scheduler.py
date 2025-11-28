@@ -299,8 +299,8 @@ class SlurmScheduler(Scheduler):
         for job in jobs:
             try:
                 drmaa_id = self.submit_one_job(job)
-            except:
-                drmaa_id = None
+            except Exception as e:
+                drmaa_id = (e, )
             drmaa_ids.append(drmaa_id)
         return drmaa_ids
 
