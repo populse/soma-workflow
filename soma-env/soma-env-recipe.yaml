@@ -10,3 +10,9 @@ soma-env:
     - soma-python
 
   type: interpreted
+
+requirements:
+  run:
+    - six
+    - pyzmq
+    - paramiko
