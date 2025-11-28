@@ -147,6 +147,8 @@ OCFG_SCDL_MAX_CPU_NB = "MAX_CPU_NB"
 OCFG_SCDL_INTERVAL = "SCHEDULER_INTERVAL"
 OCFG_SWF_DIR = "SOMA_WORKFLOW_DIR"
 
+_available_cpu = None
+
 
 #-------------------------------------------------------------------------------
 # Classes and functions
@@ -672,7 +674,9 @@ class Configuration(observer.Observable):
             except configparser.NoOptionError:
                 machines = None
 
-            if (machines is None or local_machine in machines
+            if machines is None:
+                return 'localhost'
+            if (local_machine in machines
                 or 'localhost' in machines) \
                     and (config_parser.has_option(resource_id, OCFG_LIGHT_MODE)
                          or (not config_parser.has_option(
@@ -680,7 +684,7 @@ class Configuration(observer.Observable):
                              and not config_parser.has_option(
                              resource_id, CFG_CLUSTER_ADDRESS))):
                 return resource_id
-        return None
+        return 'localhost'
 
     @staticmethod
     def get_logins(config_file_path=None):
@@ -1222,28 +1226,60 @@ def cpu_count():
     """
     Detects the number of CPUs on a system.
     """
+    import glob
+    import re
+
+    global _available_cpu
+
+    if _available_cpu is not None:
+        return _available_cpu
+
+    count = None
     try:
         import multiprocessing
-        return multiprocessing.cpu_count()
+        count = multiprocessing.cpu_count()
     except NotImplementedError:
         pass
-    # Linux, Unix and MacOS:
-    if hasattr(os, "sysconf"):
-        if "SC_NPROCESSORS_ONLN" in os.sysconf_names:  # Linux & Unix:
-            ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-            if isinstance(ncpus, int) and ncpus > 0:
-                return ncpus
-        else:  # OSX:
-            from soma_workflow import subprocess
-            return int(subprocess.Popen(
-                ["sysctl", "-n", "hw.ncpu"],
-                stdout=subprocess.PIPE).stdout.read())
-    # Windows:
-    if "NUMBER_OF_PROCESSORS" in os.environ:
-        ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
-        if ncpus > 0:
-            return ncpus
-    return 1  # Default
+
+    if count is None:
+        # Linux, Unix and MacOS:
+        if hasattr(os, "sysconf"):
+            if "SC_NPROCESSORS_ONLN" in os.sysconf_names:  # Linux & Unix:
+                ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
+                if isinstance(ncpus, int) and ncpus > 0:
+                    count = ncpus
+            else:  # OSX:
+                from soma_workflow import subprocess
+                count = int(subprocess.Popen(
+                    ["sysctl", "-n", "hw.ncpu"],
+                    stdout=subprocess.PIPE).stdout.read())
+        # Windows:
+        if "NUMBER_OF_PROCESSORS" in os.environ:
+            ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
+            if ncpus > 0:
+                count = ncpus
+        count = 1  # Default
+
+    # find CPU quotas
+    sysd_files = glob.glob('/etc/systemd/system/user-*.d/*.conf')
+
+    found = False
+    for cfile in sysd_files:
+        with open(cfile) as f:
+            for line in f.readlines():
+                if 'CPUQuota' in line:
+                    r = re.match('CPUQuota=(.*)%', line)
+                    if r:
+                        cpuq = int(int(r.group(1)) / 100)
+                        if cpuq < count:
+                            count = cpuq
+                            found = True
+                            break
+        if found:
+            break
+
+    _available_cpu = count
+    return _available_cpu
 
 
 def default_cpu_number():

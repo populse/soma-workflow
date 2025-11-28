@@ -5447,7 +5447,12 @@ class GuiJob(GuiWorkflowItem):
                 self.serial_duration \
                     = self.ending_date - self.execution_date
                 if "cput" in rud:
-                    tlist = [int(x) for x in rud["cput"].split(':')]
+                    tlist = rud["cput"].split(':')
+                    if len(tlist) >= 1 and '.' in tlist[-1]:
+                        # slurm time format: hh:MM.sss
+                        tlist.append(tlist[-1].split('.')[1])
+                        tlist[-2] = tlist[-2].split('.')[0]
+                    tlist = [int(round(float(x))) for x in tlist]
                     tlist = [0] * (6 - len(tlist)) + tlist + [0, 0, 0]
                     tlist[0] += 2000  # to avoid error about year range
                     t = time.struct_time(tlist)

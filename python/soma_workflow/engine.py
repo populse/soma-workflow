@@ -462,7 +462,13 @@ class WorkflowEngineLoop:
                 if jobs_to_run:
                     drmaa_ids = self._scheduler.job_submission(jobs_to_run)
                     for job, drmaa_id in zip(jobs_to_run, drmaa_ids):
-                        if drmaa_id is None:
+                        if drmaa_id is None or (isinstance(drmaa_id, tuple) 
+                                                and len(drmaa_id) >=1 
+                                                and isinstance(drmaa_id[0], Exception)):
+                            if isinstance(drmaa_id, tuple):
+                                e = drmaa_id[0]
+                            else:
+                                e = '<unspecified error>'
                             # Resubmission ?
                             # if job.queue in self._pending_queues:
                             #  self._pending_queues[job.queue].insert(0, job)
