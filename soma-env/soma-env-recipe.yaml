@@ -16,3 +16,5 @@ requirements:
     - six
     - pyzmq
     - paramiko
+    - pyqt
+    - matplotlib
