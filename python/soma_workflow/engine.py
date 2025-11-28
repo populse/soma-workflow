@@ -475,7 +475,7 @@ class WorkflowEngineLoop:
                             # else:
                             #  self._pending_queues[job.queue] = [job]
                             # job.status = constants.SUBMISSION_PENDING
-                            self.logger.error(
+                            self.logger.debug(
                                 "job %s !!!ERROR!!! %s: %s"
                                 % (repr(job.command),
                                                               type(e), e))
