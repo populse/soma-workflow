@@ -14,7 +14,6 @@ soma-env:
 requirements:
   run:
     - six
-    - configobj
     - pyzmq
     - paramiko
     - pyqt
