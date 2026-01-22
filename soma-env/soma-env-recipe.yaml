@@ -7,7 +7,7 @@ soma-env:
     - soma-workflow
 
   internal-dependencies:
-    - soma-python
+    - soma-base
 
   type: interpreted
 
