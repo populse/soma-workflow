@@ -100,9 +100,13 @@ class JobTemplate:
             cmd = self.sbatch_command(script_file)
             logger = logging.getLogger('ljp.slurm_scheduler')
             logger.debug('run job: %s' % repr(cmd))
-            job_out = subprocess.check_output(
-                cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
-            job_id = job_out.split(' ')[-1]
+            try:
+                job_out = subprocess.check_output(
+                    cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
+                job_id = job_out.split(' ')[-1]
+            except Exception as e:
+                logger.error('job submission failed:' + repr(e))
+                job_id = None
             logger.debug('job_id: ' + repr(job_id))
             return job_id
         finally:
