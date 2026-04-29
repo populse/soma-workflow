@@ -74,10 +74,11 @@ class JobTemplate:
             f.write('srun "' + '" "'.join(escaped_command) + '"' + '\n')
         logger = logging.getLogger('ljp.slurm_scheduler')
         logger.debug('build_slurm_script: %s' % script_file)
-        logger.debug('script:')
-        with open(script_file) as f:
-            script_txt = f.read()
-        logger.debug(script_txt)
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            logger.debug('script:')
+            with open(script_file) as f:
+                script_txt = f.read()
+            logger.debug(script_txt)
         return script_file
 
     def sbatch_command(self, script_file):
