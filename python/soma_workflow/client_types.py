@@ -1031,6 +1031,12 @@ class Workflow:
         self.add_dependencies_from_links()
         self.native_specification = native_specification
 
+        # transfer WF native specs to all jobs which don't overload them
+        if self.native_specification:
+            for job in self.jobs:
+                if not job.native_specification:
+                    job.native_specification = self.native_specification
+
     def add_workflow(self, workflow, as_group=None):
         '''
         Concatenates a workflow into the current one.

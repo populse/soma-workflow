@@ -652,12 +652,6 @@ class EngineWorkflow(Workflow):
         # begin without cache because it also has an overhead
         self.use_cache = False
 
-        # transfer WF native specs to all jobs which don't overload them
-        if self.native_specification:
-            for job in self.jobs:
-                if not job.native_specification:
-                    job.native_specification = self.native_specification
-
     def get_environ(self):
         ''' Get environment variables dict for the workflow. This environment
         is applied to all engine jobs (and can be specialized on a per-job
