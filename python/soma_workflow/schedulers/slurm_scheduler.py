@@ -194,6 +194,10 @@ class SlurmScheduler(Scheduler):
     def sacct_command():
         return SlurmScheduler.out_of_container_command() + ['sacct']
 
+    @staticmethod
+    def scancel_command():
+        return SlurmScheduler.out_of_container_command() + ['scancel']
+
     def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
         '''
         Create a job to test
