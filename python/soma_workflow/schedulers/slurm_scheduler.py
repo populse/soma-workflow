@@ -460,6 +460,18 @@ class SlurmScheduler(Scheduler):
         if scheduler_job_id == self.FAKE_JOB:
             # a barrier job is done as soon as it is started.
             return constants.DONE
+        if scheduler_job_id is None:
+            # job has not started at all
+            status = {
+                'job_state': 'FAILED',
+                'Exit_status': 1,
+                'Return_code': 1,
+                'TotalCPU': '00:00:00',
+                'MaxRSS': None,
+                'TimeLimit': None,
+                'Output_Path': None,
+                'NCPUS': 0,
+            }
         try:
             cmd = self.sacct_command() + [
                 '-j', scheduler_job_id,
@@ -481,6 +493,9 @@ class SlurmScheduler(Scheduler):
         if state.endswith('+'):
             state = state[:-1]
         status_code = [int(x) for x in fields[2].split(':')]
+        if (status_code[0] != 0 or state == 'FAILED') and status_code[1] == 0:
+            status_code[1] = 1
+            state = 'COMPLETED'  # to match earlier sched. statuses
         status = {
             'job_state': state,
             'Exit_status': status_code[0],
@@ -544,7 +559,7 @@ class SlurmScheduler(Scheduler):
             return constants.UNDETERMINED
         if state == codes.RUNNING:
             return constants.RUNNING
-        elif state == codes.FINISHED:
+        elif state in (codes.FINISHED, codes.FAILED):
             exit_value = status.get('Exit_status', -1)
             if exit_value != 0:
                 return constants.FAILED
