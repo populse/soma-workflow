@@ -46,7 +46,10 @@ class JobTemplate:
             if self.nativeSpecification:
                 native_spec = self.nativeSpecification
                 if not isinstance(native_spec, list):
-                    native_spec = [native_spec]
+                    if native_spec.startswith('['):
+                        native_spec = eval(native_spec)
+                    else:
+                        native_spec = [native_spec]
                 for spec in native_spec:
                     f.write('#SBATCH %s\n' % spec)
             # if self.joinFiles:
@@ -71,6 +74,10 @@ class JobTemplate:
             f.write('srun "' + '" "'.join(escaped_command) + '"' + '\n')
         logger = logging.getLogger('ljp.slurm_scheduler')
         logger.debug('build_slurm_script: %s' % script_file)
+        logger.debug('script:')
+        with open(script_file) as f:
+            script_txt = f.read()
+        logger.debug(script_txt)
         return script_file
 
     def sbatch_command(self, script_file):
