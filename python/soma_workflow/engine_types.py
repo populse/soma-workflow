@@ -625,6 +625,7 @@ class EngineWorkflow(Workflow):
         self.queue = queue
         self.expiration_date = expiration_date
         self.name = name
+        self.native_specification = client_workflow.native_specification
 
         self.user_storage = client_workflow.user_storage
         if hasattr(client_workflow, 'uuid'):
@@ -650,6 +651,12 @@ class EngineWorkflow(Workflow):
         self.cache = None
         # begin without cache because it also has an overhead
         self.use_cache = False
+
+        # transfer WF native specs to all jobs which don't overload them
+        if self.native_specification:
+            for job in self.jobs:
+                if not job.native_specification:
+                    job.native_specification = self.native_specification
 
     def get_environ(self):
         ''' Get environment variables dict for the workflow. This environment
