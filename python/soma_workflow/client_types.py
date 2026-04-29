@@ -1363,6 +1363,7 @@ class Workflow:
 
         env = d.get('env', {})
         env_builder_code = d.get('env_builder_code')
+        native_specification = d.get('native_specification')
 
         workflow = cls(jobs,
                        dependencies,
@@ -1371,7 +1372,8 @@ class Workflow:
                        name=name,
                        env=env,
                        env_builder_code=env_builder_code,
-                       param_links=param_links)
+                       param_links=param_links,
+                       native_specification=native_specification)
 
         return workflow
 
