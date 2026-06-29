@@ -235,6 +235,7 @@ class WorkflowEngineLoop:
                 break
             with self._lock:
                 # print('engine loop 0')
+                # self.logger.debug('engine loop 0')
                 # clear scheduler events
                 self._scheduler.jobs_finished_event.clear()
 
@@ -258,6 +259,7 @@ class WorkflowEngineLoop:
                 # Get the jobs and workflow with the status DELETE_PENDING
                 # and KILL_PENDING
                 # print('engine loop 1')
+                # self.logger.debug('engine loop 1')
                 jobs_to_delete = []
                 jobs_to_kill = []
                 (jobs_to_delete, jobs_to_kill) \
@@ -322,6 +324,7 @@ class WorkflowEngineLoop:
                 # get back the termination status and terminate the jobs which
                 # ended
                 # print('engine loop 2')
+                # self.logger.debug('engine loop 2')
                 wf_jobs = {}
                 wf_transfers = {}
                 wf_tmp = {}
@@ -338,7 +341,7 @@ class WorkflowEngineLoop:
                         try:
                             job.status = self._scheduler.get_job_status(
                                 job.drmaa_id)
-                        except DRMError as e:
+                        except Exception as e:
                             self.logger.info(
                                 "!!!ERROR!!! get_job_status %s: %s"
                                 % (type(e), e))
@@ -407,6 +410,7 @@ class WorkflowEngineLoop:
 
                 # --- 3. Get back transfered status ---------------------------
                 # print('engine loop 3')
+                # self.logger.debug('engine loop 3')
                 for transfer_id, transfer in wf_transfers.items():
                     try:
                         status = self._database_server.get_transfer_status(
@@ -548,10 +552,13 @@ class WorkflowEngineLoop:
                         "wf " + repr(wf_id) + " " + repr(workflow.status))
                 self.logger.debug("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ")
 
+                # self.logger.debug(f"ended jobs: {ended_job_ids}")
                 for job_id in ended_job_ids:
                     del self._jobs[job_id]
+                # self.logger.debug(f"ended WF: {ended_wf_ids}")
                 for wf_id in ended_wf_ids:
                     del self._workflows[wf_id]
+                # self.logger.debug(f"engine loop, looping.")
 
             # if len(self._workflows) == 0 and one_wf_processed:
             #  break
@@ -1687,6 +1694,7 @@ class ConfiguredWorkflowEngine(WorkflowEngine):
         # set temp path in EngineTemporaryPath
         EngineTemporaryPath.temporary_directory \
             = config.get_shared_temporary_directory()
+        self.logger.info(f'ConfiguredWorkflowEngine temp dir: {EngineTemporaryPath.temporary_directory}')
         self.logger.debug('ConfiguredWorkflowEngine with container_command: %s'
                           % repr(self.container_command))
 

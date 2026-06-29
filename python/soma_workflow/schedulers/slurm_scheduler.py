@@ -555,7 +555,7 @@ class SlurmScheduler(Scheduler):
             state = status['job_state']
             self.logger.debug(
                 'get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
-        except Exception:
+        except Exception as e:
             return constants.UNDETERMINED
         if state == codes.RUNNING:
             return constants.RUNNING
@@ -700,6 +700,7 @@ class SlurmScheduler(Scheduler):
         Wait for a specific job to be terminated.
         '''
         status = self.get_job_extended_status(job_id)
+        self.logger.debug(f'wait job: {job_id}, status: {status}')
         stime = time.time()
         codes = self.get_slurm_status_codes()
         while not codes.finished(status['job_state']):
