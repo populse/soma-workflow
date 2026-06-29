@@ -2,6 +2,13 @@
 Changelog
 =========
 
+
+Version 6.0.12 (2026/06/30)
+===========================
+
+* Fixed hangup when the engine and the client (gui or client API) are run on the same machine (issue with the non-ssh client-engine connection)
+
+
 Version 6.0.10 (2026/05/21)
 ===========================
 
