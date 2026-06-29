@@ -807,14 +807,17 @@ class LocalConnection:
                                          # log)
         #(local_dir, python_interpreter) = os.path.split(sys.executable)
         python_interpreter = sys.executable
-        command = python_interpreter + " -m soma_workflow.start_workflow_engine {} {} {}".format(
-            resource_id,
-            remote_workflow_engine_name,
-            log)
+        command = [python_interpreter,
+                   "-m",
+                   "soma_workflow.start_workflow_engine",
+                   resource_id,
+                   remote_workflow_engine_name]
+        if log:
+            command.append(log)
 
         print("start engine command: %s" % command, file=sys.stderr)
         engine_process = subprocess.Popen(command,
-                                          shell=True,
+                                          shell=False,
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
 
@@ -826,6 +829,12 @@ class LocalConnection:
             if not line or line.startswith('zmq'):
                 break
         #print('std_out_lines:', std_out_lines, file=sys.stderr)
+
+        # now close the stdout/stderr streams so that bufering will not block the process
+        engine_process.stdout.close()
+        engine_process.stdout = None
+        engine_process.stderr.close()
+        engine_process.stderr = None
 
         workflow_engine_uri = None
         connection_checker_uri = None
@@ -944,7 +953,12 @@ class LocalConnection:
         '''
         For test purpose only !
         '''
-        print('LocalConnection.stop', self, self.workflow_engine._port)
+        engine = getattr(self, 'workflow_engine', None)
+        if engine is not None:
+            port = engine._port
+        else:
+            port = '(no engine)'
+        print('LocalConnection.stop', self, port)
         try:
             self.__connection_holder
         except AttributeError:
