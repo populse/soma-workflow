@@ -347,7 +347,7 @@ class WorkflowEngineLoop:
                                 % (type(e), e))
                             job.status = constants.FAILED
                             job.exit_status = constants.EXIT_ABORTED
-                            stderr_file = open(job.stderr_file, "wa")
+                            stderr_file = open(job.stderr_file, "a")
                             stderr_file.write(
                                 f"Error while requesting the job status {type(e)}: {e} \nWarning: the job may still be running.\n")
                             stderr_file.close()
