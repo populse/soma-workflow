@@ -625,6 +625,7 @@ class EngineWorkflow(Workflow):
         self.queue = queue
         self.expiration_date = expiration_date
         self.name = name
+        self.native_specification = client_workflow.native_specification
 
         self.user_storage = client_workflow.user_storage
         if hasattr(client_workflow, 'uuid'):

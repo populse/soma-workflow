@@ -46,7 +46,10 @@ class JobTemplate:
             if self.nativeSpecification:
                 native_spec = self.nativeSpecification
                 if not isinstance(native_spec, list):
-                    native_spec = [native_spec]
+                    if native_spec.startswith('['):
+                        native_spec = eval(native_spec)
+                    else:
+                        native_spec = [native_spec]
                 for spec in native_spec:
                     f.write('#SBATCH %s\n' % spec)
             # if self.joinFiles:
@@ -71,6 +74,11 @@ class JobTemplate:
             f.write('srun "' + '" "'.join(escaped_command) + '"' + '\n')
         logger = logging.getLogger('ljp.slurm_scheduler')
         logger.debug('build_slurm_script: %s' % script_file)
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            logger.debug('script:')
+            with open(script_file) as f:
+                script_txt = f.read()
+            logger.debug(script_txt)
         return script_file
 
     def sbatch_command(self, script_file):
@@ -92,9 +100,13 @@ class JobTemplate:
             cmd = self.sbatch_command(script_file)
             logger = logging.getLogger('ljp.slurm_scheduler')
             logger.debug('run job: %s' % repr(cmd))
-            job_out = subprocess.check_output(
-                cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
-            job_id = job_out.split(' ')[-1]
+            try:
+                job_out = subprocess.check_output(
+                    cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
+                job_id = job_out.split(' ')[-1]
+            except Exception as e:
+                logger.error('job submission failed:' + repr(e))
+                job_id = None
             logger.debug('job_id: ' + repr(job_id))
             return job_id
         finally:
@@ -185,6 +197,10 @@ class SlurmScheduler(Scheduler):
     @staticmethod
     def sacct_command():
         return SlurmScheduler.out_of_container_command() + ['sacct']
+
+    @staticmethod
+    def scancel_command():
+        return SlurmScheduler.out_of_container_command() + ['scancel']
 
     def submit_simple_test_job(self, outstr, out_o_file, out_e_file):
         '''
@@ -444,6 +460,18 @@ class SlurmScheduler(Scheduler):
         if scheduler_job_id == self.FAKE_JOB:
             # a barrier job is done as soon as it is started.
             return constants.DONE
+        if scheduler_job_id is None:
+            # job has not started at all
+            status = {
+                'job_state': 'FAILED',
+                'Exit_status': 1,
+                'Return_code': 1,
+                'TotalCPU': '00:00:00',
+                'MaxRSS': None,
+                'TimeLimit': None,
+                'Output_Path': None,
+                'NCPUS': 0,
+            }
         try:
             cmd = self.sacct_command() + [
                 '-j', scheduler_job_id,
@@ -465,6 +493,9 @@ class SlurmScheduler(Scheduler):
         if state.endswith('+'):
             state = state[:-1]
         status_code = [int(x) for x in fields[2].split(':')]
+        if (status_code[0] != 0 or state == 'FAILED') and status_code[1] == 0:
+            status_code[1] = 1
+            state = 'COMPLETED'  # to match earlier sched. statuses
         status = {
             'job_state': state,
             'Exit_status': status_code[0],
@@ -524,11 +555,11 @@ class SlurmScheduler(Scheduler):
             state = status['job_state']
             self.logger.debug(
                 'get_job_status for: ' + repr(scheduler_job_id) + ': ', repr(state))
-        except Exception:
+        except Exception as e:
             return constants.UNDETERMINED
         if state == codes.RUNNING:
             return constants.RUNNING
-        elif state == codes.FINISHED:
+        elif state in (codes.FINISHED, codes.FAILED):
             exit_value = status.get('Exit_status', -1)
             if exit_value != 0:
                 return constants.FAILED
@@ -669,6 +700,7 @@ class SlurmScheduler(Scheduler):
         Wait for a specific job to be terminated.
         '''
         status = self.get_job_extended_status(job_id)
+        self.logger.debug(f'wait job: {job_id}, status: {status}')
         stime = time.time()
         codes = self.get_slurm_status_codes()
         while not codes.finished(status['job_state']):

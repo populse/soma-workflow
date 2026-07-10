@@ -102,7 +102,7 @@ class Job:
         Job priority: 0 = low priority. If several Jobs are ready to run at the
         same time the jobs with higher priority will be submitted first.
 
-    native_specification: string
+    native_specification: string or list
         Some specific option/function of the computing resource you want to use
         might not be available among the list of Soma-workflow Job attributes.
         Use the native specification attribute to use these specific functionalities.
@@ -113,6 +113,8 @@ class Job:
 
         * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
         * using a SGE cluster: native_specification="-l h_rt=10:00:00"
+        * using a SLURM cluster:
+            native_specification=["--mem=20g", "-time=2-00:00:00"]
 
     parallel_job_info: dict
         The parallel job information must be set if the Job is parallel (ie. made to
@@ -887,6 +889,20 @@ class Workflow:
 
         See :ref:`params_link_functions` for details.
 
+    native_specification: string or list
+        Some specific option/function of the computing resource you want to use
+        might not be available among the list of Soma-workflow Job attributes.
+        Use the native specification attribute to use these specific functionalities.
+        If a native_specification is defined here, the configured native
+        specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).
+
+        *Example:* Specification of a job walltime and more:
+
+        * using a PBS cluster: native_specification="-l walltime=10:00:00,pmem=16gb"
+        * using a SGE cluster: native_specification="-l h_rt=10:00:00"
+        * using a SLURM cluster:
+            native_specification=["--mem=20g", "-time=2-00:00:00"]
+
     '''
     # string
     name = None
@@ -913,6 +929,7 @@ class Workflow:
     env_builder_code = None
 
     param_links = {}
+    native_specification = None
 
     def __init__(self,
                  jobs,
@@ -923,7 +940,8 @@ class Workflow:
                  name=None,
                  env={},
                  env_builder_code=None,
-                 param_links=None):
+                 param_links=None,
+                 native_specification=None):
         '''
         In Soma-Workflow 3.1, some "jobs outputs" have been added. This concept
         is somewhat contradictory with the commandline execution model, which
@@ -967,6 +985,7 @@ class Workflow:
         env
         env_builder_code
         param_links
+        native_specification
 
         '''
         import logging
@@ -1010,6 +1029,13 @@ class Workflow:
         self.env_builder_code = env_builder_code
         self.param_links = param_links or dict()
         self.add_dependencies_from_links()
+        self.native_specification = native_specification
+
+        # transfer WF native specs to all jobs which don't overload them
+        if self.native_specification:
+            for job in self.jobs:
+                if not job.native_specification:
+                    job.native_specification = self.native_specification
 
     def add_workflow(self, workflow, as_group=None):
         '''
@@ -1088,7 +1114,7 @@ class Workflow:
             "jobs",
             "dependencies",
             "root_group",
-            "groups"
+            "groups",
         ]
         for attr_name in seq_attributes:
             attr = getattr(self, attr_name)
@@ -1112,7 +1138,8 @@ class Workflow:
                     return False
         return self.name == other.name and self.env == other.env \
             and self.env_builder_code == other.env_builder_code \
-            and self.param_links == other.param_links
+            and self.param_links == other.param_links \
+            and self.native_specification == other.native_specification
 
     def to_dict(self):
         '''
@@ -1223,6 +1250,9 @@ class Workflow:
 
         if hasattr(self, 'uuid'):
             wf_dict['uuid'] = self.uuid
+
+        if self.native_specification:
+            wf_dict['native_specification'] = self.native_specification
 
         return wf_dict
 
@@ -1339,6 +1369,7 @@ class Workflow:
 
         env = d.get('env', {})
         env_builder_code = d.get('env_builder_code')
+        native_specification = d.get('native_specification')
 
         workflow = cls(jobs,
                        dependencies,
@@ -1347,7 +1378,8 @@ class Workflow:
                        name=name,
                        env=env,
                        env_builder_code=env_builder_code,
-                       param_links=param_links)
+                       param_links=param_links,
+                       native_specification=native_specification)
 
         return workflow
 
