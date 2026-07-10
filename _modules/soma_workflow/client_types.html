@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
     
-    <script src="../../_static/documentation_options.js?v=256d0b43"></script>
+    <script src="../../_static/documentation_options.js?v=ced19b87"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     
@@ -142,7 +142,7 @@
 <span class="sd">        Job priority: 0 = low priority. If several Jobs are ready to run at the</span>
 <span class="sd">        same time the jobs with higher priority will be submitted first.</span>
 
-<span class="sd">    native_specification: string</span>
+<span class="sd">    native_specification: string or list</span>
 <span class="sd">        Some specific option/function of the computing resource you want to use</span>
 <span class="sd">        might not be available among the list of Soma-workflow Job attributes.</span>
 <span class="sd">        Use the native specification attribute to use these specific functionalities.</span>
@@ -153,6 +153,8 @@
 
 <span class="sd">        * using a PBS cluster: native_specification=&quot;-l walltime=10:00:00,pmem=16gb&quot;</span>
 <span class="sd">        * using a SGE cluster: native_specification=&quot;-l h_rt=10:00:00&quot;</span>
+<span class="sd">        * using a SLURM cluster:</span>
+<span class="sd">            native_specification=[&quot;--mem=20g&quot;, &quot;-time=2-00:00:00&quot;]</span>
 
 <span class="sd">    parallel_job_info: dict</span>
 <span class="sd">        The parallel job information must be set if the Job is parallel (ie. made to</span>
@@ -929,6 +931,20 @@
 
 <span class="sd">        See :ref:`params_link_functions` for details.</span>
 
+<span class="sd">    native_specification: string or list</span>
+<span class="sd">        Some specific option/function of the computing resource you want to use</span>
+<span class="sd">        might not be available among the list of Soma-workflow Job attributes.</span>
+<span class="sd">        Use the native specification attribute to use these specific functionalities.</span>
+<span class="sd">        If a native_specification is defined here, the configured native</span>
+<span class="sd">        specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).</span>
+
+<span class="sd">        *Example:* Specification of a job walltime and more:</span>
+
+<span class="sd">        * using a PBS cluster: native_specification=&quot;-l walltime=10:00:00,pmem=16gb&quot;</span>
+<span class="sd">        * using a SGE cluster: native_specification=&quot;-l h_rt=10:00:00&quot;</span>
+<span class="sd">        * using a SLURM cluster:</span>
+<span class="sd">            native_specification=[&quot;--mem=20g&quot;, &quot;-time=2-00:00:00&quot;]</span>
+
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># string</span>
     <span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
@@ -955,6 +971,7 @@
     <span class="n">env_builder_code</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">param_links</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">native_specification</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">jobs</span><span class="p">,</span>
@@ -965,7 +982,8 @@
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">env</span><span class="o">=</span><span class="p">{},</span>
                  <span class="n">env_builder_code</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">param_links</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                 <span class="n">param_links</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">native_specification</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        In Soma-Workflow 3.1, some &quot;jobs outputs&quot; have been added. This concept</span>
 <span class="sd">        is somewhat contradictory with the commandline execution model, which</span>
@@ -1009,6 +1027,7 @@
 <span class="sd">        env</span>
 <span class="sd">        env_builder_code</span>
 <span class="sd">        param_links</span>
+<span class="sd">        native_specification</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1052,6 +1071,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">env_builder_code</span> <span class="o">=</span> <span class="n">env_builder_code</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">=</span> <span class="n">param_links</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_dependencies_from_links</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span> <span class="o">=</span> <span class="n">native_specification</span>
+
+        <span class="c1"># transfer WF native specs to all jobs which don&#39;t overload them</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">job</span><span class="o">.</span><span class="n">native_specification</span><span class="p">:</span>
+                    <span class="n">job</span><span class="o">.</span><span class="n">native_specification</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span>
 
 <div class="viewcode-block" id="Workflow.add_workflow">
 <a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.add_workflow">[docs]</a>
@@ -1139,7 +1165,7 @@
             <span class="s2">&quot;jobs&quot;</span><span class="p">,</span>
             <span class="s2">&quot;dependencies&quot;</span><span class="p">,</span>
             <span class="s2">&quot;root_group&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;groups&quot;</span>
+            <span class="s2">&quot;groups&quot;</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="n">seq_attributes</span><span class="p">:</span>
             <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
@@ -1163,7 +1189,8 @@
                     <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">env</span> \
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_builder_code</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">env_builder_code</span> \
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">param_links</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_links</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">param_links</span> \
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">native_specification</span>
 
 <div class="viewcode-block" id="Workflow.to_dict">
 <a class="viewcode-back" href="../../workflow_creation.html#client.Workflow.to_dict">[docs]</a>
@@ -1276,6 +1303,9 @@
 
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;uuid&#39;</span><span class="p">):</span>
             <span class="n">wf_dict</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uuid</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span><span class="p">:</span>
+            <span class="n">wf_dict</span><span class="p">[</span><span class="s1">&#39;native_specification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_specification</span>
 
         <span class="k">return</span> <span class="n">wf_dict</span></div>
 
@@ -1393,6 +1423,7 @@
 
         <span class="n">env</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;env&#39;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="n">env_builder_code</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;env_builder_code&#39;</span><span class="p">)</span>
+        <span class="n">native_specification</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;native_specification&#39;</span><span class="p">)</span>
 
         <span class="n">workflow</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span>
                        <span class="n">dependencies</span><span class="p">,</span>
@@ -1401,7 +1432,8 @@
                        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
                        <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
                        <span class="n">env_builder_code</span><span class="o">=</span><span class="n">env_builder_code</span><span class="p">,</span>
-                       <span class="n">param_links</span><span class="o">=</span><span class="n">param_links</span><span class="p">)</span>
+                       <span class="n">param_links</span><span class="o">=</span><span class="n">param_links</span><span class="p">,</span>
+                       <span class="n">native_specification</span><span class="o">=</span><span class="n">native_specification</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">workflow</span>
 

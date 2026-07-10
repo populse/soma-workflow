@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
     
-    <script src="_static/documentation_options.js?v=256d0b43"></script>
+    <script src="_static/documentation_options.js?v=ced19b87"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
@@ -83,7 +83,7 @@ classes.</p>
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Workflow</a><a class="headerlink" href="#workflow" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="client.Workflow">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">client.</span></span><span class="sig-name descname"><span class="pre">Workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependencies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disposal_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">168</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_storage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_builder_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_links</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/soma_workflow/client_types.html#Workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Workflow" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">client.</span></span><span class="sig-name descname"><span class="pre">Workflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependencies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disposal_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">168</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_storage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_builder_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_links</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">native_specification</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/soma_workflow/client_types.html#Workflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#client.Workflow" title="Link to this definition">¶</a></dt>
 <dd><p>Workflow representation.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="client.Workflow.name">
@@ -211,6 +211,31 @@ destination job from a series of values in source jobs.</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="client.Workflow.native_specification">
+<span class="sig-name descname"><span class="pre">native_specification</span></span><a class="headerlink" href="#client.Workflow.native_specification" title="Link to this definition">¶</a></dt>
+<dd><p>Some specific option/function of the computing resource you want to use
+might not be available among the list of Soma-workflow Job attributes.
+Use the native specification attribute to use these specific functionalities.
+If a native_specification is defined here, the configured native
+specification will be ignored (documentation configuration item: NATIVE_SPECIFICATION).</p>
+<p><em>Example:</em> Specification of a job walltime and more:</p>
+<ul class="simple">
+<li><p>using a PBS cluster: native_specification=”-l walltime=10:00:00,pmem=16gb”</p></li>
+<li><p>using a SGE cluster: native_specification=”-l h_rt=10:00:00”</p></li>
+<li><dl class="simple">
+<dt>using a SLURM cluster:</dt><dd><p>native_specification=[”–mem=20g”, “-time=2-00:00:00”]</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string or <a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <p>In Soma-Workflow 3.1, some “jobs outputs” have been added. This concept
 is somewhat contradictory with the commandline execution model, which
 basically does not produce outputs other than files. To handle this,
@@ -249,6 +274,7 @@ destination job from a series of values in source jobs.</p>
 <li><p><strong>env</strong></p></li>
 <li><p><strong>env_builder_code</strong></p></li>
 <li><p><strong>param_links</strong></p></li>
+<li><p><strong>native_specification</strong></p></li>
 </ul>
 </dd>
 </dl>
@@ -494,10 +520,15 @@ specification will be ignored (documentation configuration item: NATIVE_SPECIFIC
 <ul class="simple">
 <li><p>using a PBS cluster: native_specification=”-l walltime=10:00:00,pmem=16gb”</p></li>
 <li><p>using a SGE cluster: native_specification=”-l h_rt=10:00:00”</p></li>
+<li><dl class="simple">
+<dt>using a SLURM cluster:</dt><dd><p>native_specification=[”–mem=20g”, “-time=2-00:00:00”]</p>
+</dd>
+</dl>
+</li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>string</p>
+<dd class="field-odd"><p>string or <a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)">list</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1432,6 +1463,7 @@ Useful in a nfolds cross-validation pattern</p>
 <li><a class="reference internal" href="#client.Workflow.env"><code class="docutils literal notranslate"><span class="pre">Workflow.env</span></code></a></li>
 <li><a class="reference internal" href="#client.Workflow.env_builder_code"><code class="docutils literal notranslate"><span class="pre">Workflow.env_builder_code</span></code></a></li>
 <li><a class="reference internal" href="#client.Workflow.param_links"><code class="docutils literal notranslate"><span class="pre">Workflow.param_links</span></code></a></li>
+<li><a class="reference internal" href="#client.Workflow.native_specification"><code class="docutils literal notranslate"><span class="pre">Workflow.native_specification</span></code></a></li>
 <li><a class="reference internal" href="#client.Workflow.add_dependencies"><code class="docutils literal notranslate"><span class="pre">Workflow.add_dependencies()</span></code></a></li>
 <li><a class="reference internal" href="#client.Workflow.add_dependencies_from_links"><code class="docutils literal notranslate"><span class="pre">Workflow.add_dependencies_from_links()</span></code></a></li>
 <li><a class="reference internal" href="#client.Workflow.add_workflow"><code class="docutils literal notranslate"><span class="pre">Workflow.add_workflow()</span></code></a></li>
