@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
     
-    <script src="_static/documentation_options.js?v=ced19b87"></script>
+    <script src="_static/documentation_options.js?v=6aa91f9e"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
@@ -589,9 +589,9 @@ during the workflow execution. Thus we must be able to know how to
 replace the parameters values in the commandline. To do so, jobs should
 provide commandlines not with builtin values, but with replacement
 strings, and a dict of parameters with names:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cp&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(source)s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(dest)s</span><span class="s1">&#39;</span><span class="p">]</span>
-<span class="n">param_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/file1.txt&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;dest&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/file2.txt&#39;</span><span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'cp'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(source)s</span><span class="s1">'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(dest)s</span><span class="s1">'</span><span class="p">]</span>
+<span class="n">param_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'source'</span><span class="p">:</span> <span class="s1">'/data/file1.txt'</span><span class="p">,</span>
+              <span class="s1">'dest'</span><span class="p">:</span> <span class="s1">'/data/file2.txt'</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>Parameters names can be linked in the workflow to some other jobs
@@ -946,13 +946,13 @@ main file name (client_path) translated to the server location. This is
 more probably what is expected.</p></li>
 <li><p>in any case it is possible to specify the commandline path using a
 tuple as commandline argument:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myfile</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client_path</span><span class="o">=</span><span class="s1">&#39;/home/bubu/plof.nii&#39;</span><span class="p">,</span>
-    <span class="n">client_paths</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;/home/bubu/plof.nii&#39;</span><span class="p">,</span> <span class="s1">&#39;/home/bubu/plof.nii.minf&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myfile</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client_path</span><span class="o">=</span><span class="s1">'/home/bubu/plof.nii'</span><span class="p">,</span>
+    <span class="n">client_paths</span><span class="o">=</span><span class="p">[</span><span class="s1">'/home/bubu/plof.nii'</span><span class="p">,</span> <span class="s1">'/home/bubu/plof.nii.minf'</span><span class="p">])</span>
 <span class="c1"># job1 will work with SWF &gt;= 2.7, not in 2.6</span>
-<span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AimsFileInfo&#39;</span><span class="p">,</span> <span class="n">myfile</span><span class="p">],</span>
+<span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'AimsFileInfo'</span><span class="p">,</span> <span class="n">myfile</span><span class="p">],</span>
     <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">myfile</span><span class="p">])</span>
 <span class="c1"># job2 will use &lt;engine_path&gt;/plof.nii as input</span>
-<span class="n">job2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AimsFileInfo&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">myfile</span><span class="p">,</span> <span class="s1">&#39;plof.nii&#39;</span><span class="p">)],</span>
+<span class="n">job2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'AimsFileInfo'</span><span class="p">,</span> <span class="p">(</span><span class="n">myfile</span><span class="p">,</span> <span class="s1">'plof.nii'</span><span class="p">)],</span>
     <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">myfile</span><span class="p">]))</span>
 </pre></div>
 </div>
@@ -1044,16 +1044,16 @@ execution, and removed when not used any longer.</p>
 <span class="c1"># workflow definition</span>
 
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(in1)s</span><span class="s1">&#39;</span><span class="p">],</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job1:cp&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp/input_file&#39;</span><span class="p">},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(in1)s</span><span class="s1">'</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job1:cp'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="s1">'/tmp/input_file'</span><span class="p">},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">job2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;cat&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(in1)s</span><span class="s1">&#39;</span><span class="p">],</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job2:cat&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="s1">&#39;undefined&#39;</span><span class="p">})</span>
-<span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_workflow&#39;</span><span class="p">,</span>
-                    <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job2</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;out1&#39;</span><span class="p">)]}})</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'cat'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(in1)s</span><span class="s1">'</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job2:cat'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="s1">'undefined'</span><span class="p">})</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'test_workflow'</span><span class="p">,</span>
+                    <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job2</span><span class="p">:</span> <span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'out1'</span><span class="p">)]}})</span>
 
 <span class="c1"># running it is the classical way</span>
 <span class="c1"># (or using soma_workflow_gui)</span>
@@ -1067,12 +1067,12 @@ execution, and removed when not used any longer.</p>
 <p><code class="docutils literal notranslate"><span class="pre">job2</span></code> input parameter <code class="docutils literal notranslate"><span class="pre">in1</span></code> will get its value from <code class="docutils literal notranslate"><span class="pre">job1</span></code> ouput named <code class="docutils literal notranslate"><span class="pre">out1</span></code>. This is specified via the workflow <code class="docutils literal notranslate"><span class="pre">param_links</span></code> which is a dict associating to a destination job a set of parameters values, each coming from another job’s parameter. For instance:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">param_links</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">dest_job1</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;dest_param1&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job1</span><span class="p">,</span> <span class="s1">&#39;src_output_param1&#39;</span><span class="p">)],</span>
-        <span class="s1">&#39;dest_param2&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job2</span><span class="p">,</span> <span class="s1">&#39;src_output_param2&#39;</span><span class="p">)],</span>
+        <span class="s1">'dest_param1'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job1</span><span class="p">,</span> <span class="s1">'src_output_param1'</span><span class="p">)],</span>
+        <span class="s1">'dest_param2'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job2</span><span class="p">,</span> <span class="s1">'src_output_param2'</span><span class="p">)],</span>
     <span class="p">},</span>
     <span class="n">dest_job2</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;dest_param3&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job3</span><span class="p">,</span> <span class="s1">&#39;src_output_param3&#39;</span><span class="p">)],</span>
-        <span class="s1">&#39;dest_param4&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job4</span><span class="p">,</span> <span class="s1">&#39;src_output_param4&#39;</span><span class="p">)],</span>
+        <span class="s1">'dest_param3'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job3</span><span class="p">,</span> <span class="s1">'src_output_param3'</span><span class="p">)],</span>
+        <span class="s1">'dest_param4'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job4</span><span class="p">,</span> <span class="s1">'src_output_param4'</span><span class="p">)],</span>
     <span class="p">},</span>
 <span class="p">}</span>
 </pre></div>
@@ -1087,22 +1087,22 @@ execution, and removed when not used any longer.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="c1"># we have to write the output parameters values in this file:</span>
-<span class="n">output_param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SOMAWF_OUTPUT_PARAMS&#39;</span><span class="p">)</span>
+<span class="n">output_param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'SOMAWF_OUTPUT_PARAMS'</span><span class="p">)</span>
 
-<span class="c1"># we impose a &quot;hard-coded&quot; output path, just because our programs</span>
+<span class="c1"># we impose a "hard-coded" output path, just because our programs</span>
 <span class="c1"># works that way.</span>
-<span class="n">out_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~/bubulle.txt&#39;</span><span class="p">)</span>
+<span class="n">out_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">'~/bubulle.txt'</span><span class="p">)</span>
 
 <span class="n">in_file</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># input given as parameter from the job</span>
-<span class="c1"># let&#39;s say this is the &quot;real&quot; job of my_program</span>
+<span class="c1"># let's say this is the "real" job of my_program</span>
 <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">in_file</span><span class="p">,</span> <span class="n">out_file</span><span class="p">)</span>
 
 <span class="c1"># write output parameters (only one, in our case)</span>
 <span class="k">if</span> <span class="n">output_param_file</span><span class="p">:</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;out1&#39;</span><span class="p">:</span> <span class="n">out_file</span><span class="p">,</span>
+        <span class="s1">'out1'</span><span class="p">:</span> <span class="n">out_file</span><span class="p">,</span>
     <span class="p">}</span>
-    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_param_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">))</span>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_param_file</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>As you can see, in a “classical” workflow, <code class="docutils literal notranslate"><span class="pre">job2</span></code> would not have known which file to print in its <code class="docutils literal notranslate"><span class="pre">cat</span></code> command. Using this “dynamic” parameters structure, it can work.</p>
@@ -1118,25 +1118,25 @@ execution, and removed when not used any longer.</p>
 <li><p>Otherwise Soma-Workflow will try to guess a client directory from other job parameters. This will not work in all situations.</p></li>
 </ul>
 <p>Ex:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">toutp</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;job1_output&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">toutp</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s1">'job1_output'</span><span class="p">)</span>
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(in1)s</span><span class="s1">&#39;</span><span class="p">],</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job1:cp&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp/input_file&#39;</span><span class="p">,</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(in1)s</span><span class="s1">'</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job1:cp'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="s1">'/tmp/input_file'</span><span class="p">,</span>
                 <span class="c1"># this is an output FileTransfer param mathcing the</span>
                 <span class="c1"># job ourput json dict</span>
-                <span class="s1">&#39;out1&#39;</span><span class="p">:</span> <span class="n">toutp</span><span class="p">,</span>
+                <span class="s1">'out1'</span><span class="p">:</span> <span class="n">toutp</span><span class="p">,</span>
                 <span class="c1"># this is a hint to where to write the client output file</span>
-                <span class="s1">&#39;output_directory&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp&#39;</span><span class="p">},</span>
+                <span class="s1">'output_directory'</span><span class="p">:</span> <span class="s1">'/tmp'</span><span class="p">},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">toutp</span><span class="p">])</span>
 <span class="n">job2</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="s1">&#39;job2_run&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(in1)s</span><span class="s1">&#39;</span><span class="p">],</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job2:cat&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="n">toutp</span><span class="p">},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="s1">'job2_run'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(in1)s</span><span class="s1">'</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job2:cat'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="n">toutp</span><span class="p">},</span>
     <span class="n">referenced_input_files</span><span class="o">=</span><span class="n">ref_outp</span><span class="p">)</span>
-<span class="n">workflow</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_out_wf&#39;</span><span class="p">,</span>
-                        <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job2</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;out1&#39;</span><span class="p">)]}})</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'test_out_wf'</span><span class="p">,</span>
+                        <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job2</span><span class="p">:</span> <span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'out1'</span><span class="p">)]}})</span>
 </pre></div>
 </div>
 </section>
@@ -1151,17 +1151,17 @@ execution, and removed when not used any longer.</p>
 <span class="c1"># workflow definition</span>
 
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(in1)s</span><span class="s1">&#39;</span><span class="p">],</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job1:cp&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp/input_file&#39;</span><span class="p">},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(in1)s</span><span class="s1">'</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job1:cp'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="s1">'/tmp/input_file'</span><span class="p">},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">job3</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_cat_program&#39;</span><span class="p">],</span>  <span class="c1"># no parameters on the commandline</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job2:cat&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="s1">&#39;undefined&#39;</span><span class="p">},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_cat_program'</span><span class="p">],</span>  <span class="c1"># no parameters on the commandline</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'job2:cat'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="s1">'undefined'</span><span class="p">},</span>
     <span class="n">use_input_params_file</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># tell SWF to write the params file</span>
-<span class="n">workflow2</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job3</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_workflow&#39;</span><span class="p">,</span>
-                     <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job3</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;in1&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;out1&#39;</span><span class="p">)]}})</span>
+<span class="n">workflow2</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">job3</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'test_workflow'</span><span class="p">,</span>
+                     <span class="n">param_links</span><span class="o">=</span><span class="p">{</span><span class="n">job3</span><span class="p">:</span> <span class="p">{</span><span class="s1">'in1'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'out1'</span><span class="p">)]}})</span>
 
 <span class="c1"># running it is the classical way</span>
 <span class="c1"># (or using soma_workflow_gui)</span>
@@ -1178,12 +1178,12 @@ execution, and removed when not used any longer.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="c1"># get the input pams file location from env variable</span>
-<span class="n">param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SOMAWF_INPUT_PARAMS&#39;</span><span class="p">)</span>
+<span class="n">param_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'SOMAWF_INPUT_PARAMS'</span><span class="p">)</span>
 <span class="c1"># read it</span>
 <span class="n">params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">param_file</span><span class="p">))</span>
 <span class="c1"># now get our specific parameter(s)</span>
-<span class="n">in_file</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;in1&#39;</span><span class="p">]</span>
-<span class="c1"># now the &quot;real&quot; job code just prints the file:</span>
+<span class="n">in_file</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">'parameters'</span><span class="p">][</span><span class="s1">'in1'</span><span class="p">]</span>
+<span class="c1"># now the "real" job code just prints the file:</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">in_file</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -1194,10 +1194,10 @@ execution, and removed when not used any longer.</p>
 <p>Ex:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">param_links</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">dest_job1</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;dest_param1&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job1</span><span class="p">,</span> <span class="s1">&#39;src_output_param1&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;link_module.link_function&#39;</span><span class="p">)],</span>
-        <span class="s1">&#39;dest_param2&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job2</span><span class="p">,</span> <span class="s1">&#39;src_output_param2&#39;</span><span class="p">,</span>
-                        <span class="p">(</span><span class="s1">&#39;link_module.link_function&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">))],</span>
+        <span class="s1">'dest_param1'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job1</span><span class="p">,</span> <span class="s1">'src_output_param1'</span><span class="p">,</span>
+                        <span class="s1">'link_module.link_function'</span><span class="p">)],</span>
+        <span class="s1">'dest_param2'</span><span class="p">:</span> <span class="p">[(</span><span class="n">src_job2</span><span class="p">,</span> <span class="s1">'src_output_param2'</span><span class="p">,</span>
+                        <span class="p">(</span><span class="s1">'link_module.link_function'</span><span class="p">,</span> <span class="mi">3</span><span class="p">))],</span>
     <span class="p">},</span>
 <span class="p">}</span>
 </pre></div>
@@ -1213,26 +1213,26 @@ execution, and removed when not used any longer.</p>
 <p>An alternative to parameters link functions ias also available in Soma-Workflow 3.1 and later: <a class="reference internal" href="#engine-execution-job"><span class="std std-ref">Engine execution jobs</span></a>. They are more convenient to use in some situations, and less in others, so a workflow developer may choose the implementation he prefers.</p>
 </div>
 <p>A cross-validation pattern example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let&#39;s say job1 inputs a list and outputs another list, &#39;outputs&#39;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let's say job1 inputs a list and outputs another list, 'outputs'</span>
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;prepare_inputs&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;file1&#39;</span><span class="p">,</span> <span class="s1">&#39;file2&#39;</span><span class="p">,</span> <span class="s1">&#39;file3&#39;</span><span class="p">,</span> <span class="s1">&#39;file4&#39;</span><span class="p">,</span> <span class="s1">&#39;file5&#39;</span><span class="p">]},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'prepare_inputs'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file1'</span><span class="p">,</span> <span class="s1">'file2'</span><span class="p">,</span> <span class="s1">'file3'</span><span class="p">,</span> <span class="s1">'file4'</span><span class="p">,</span> <span class="s1">'file5'</span><span class="p">]},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="c1"># train_jobs are identical train jobs training folds (we use 3 folds)</span>
-<span class="c1"># they output a single file, &#39;output&#39;</span>
+<span class="c1"># they output a single file, 'output'</span>
 <span class="c1"># test_jobs are identical test jobs testing the test part of each fold</span>
-<span class="c1"># they also output a single file, &#39;output&#39;</span>
+<span class="c1"># they also output a single file, 'output'</span>
 <span class="n">nfolds</span> <span class="o">=</span> <span class="mi">3</span>
 <span class="n">train_jobs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">test_jobs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">job_train</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train_model&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;train_fold</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
-        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'train_model'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'train_fold</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
+        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">train_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_train</span><span class="p">)</span>
     <span class="n">job_test</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;test_model&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_fold</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
-        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'test_model'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'test_fold</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
+        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">test_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_test</span><span class="p">)</span>
 <span class="c1"># building the workflow</span>
 <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">job1</span><span class="p">]</span> <span class="o">+</span> <span class="n">train_jobs</span> <span class="o">+</span> <span class="n">test_jobs</span>
@@ -1241,38 +1241,38 @@ execution, and removed when not used any longer.</p>
 <span class="n">links</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">links</span><span class="p">[</span><span class="n">train_jobs</span><span class="p">[</span><span class="n">fold</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;outputs&#39;</span><span class="p">,</span>
-                   <span class="p">(</span><span class="s1">&#39;list_cv_train_fold&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">))]}</span>
+        <span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'outputs'</span><span class="p">,</span>
+                   <span class="p">(</span><span class="s1">'list_cv_train_fold'</span><span class="p">,</span> <span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">))]}</span>
     <span class="n">links</span><span class="p">[</span><span class="n">test_jobs</span><span class="p">[</span><span class="n">fold</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;outputs&#39;</span><span class="p">,</span>
-                   <span class="p">(</span><span class="s1">&#39;list_cv_test_fold&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">))]}</span>
+        <span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'outputs'</span><span class="p">,</span>
+                   <span class="p">(</span><span class="s1">'list_cv_test_fold'</span><span class="p">,</span> <span class="n">fold</span><span class="p">,</span> <span class="n">nfolds</span><span class="p">))]}</span>
 
 <span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span>
                     <span class="n">dependencies</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;train CV&#39;</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s1">'train CV'</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>A leave-one-out pattern example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let&#39;s say job1 inputs a list and outputs another list, &#39;outputs&#39;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let's say job1 inputs a list and outputs another list, 'outputs'</span>
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;prepare_inputs&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;file1&#39;</span><span class="p">,</span> <span class="s1">&#39;file2&#39;</span><span class="p">,</span> <span class="s1">&#39;file3&#39;</span><span class="p">,</span> <span class="s1">&#39;file4&#39;</span><span class="p">,</span> <span class="s1">&#39;file5&#39;</span><span class="p">]},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'prepare_inputs'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file1'</span><span class="p">,</span> <span class="s1">'file2'</span><span class="p">,</span> <span class="s1">'file3'</span><span class="p">,</span> <span class="s1">'file4'</span><span class="p">,</span> <span class="s1">'file5'</span><span class="p">]},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="c1"># train_jobs are identical train jobs training folds</span>
-<span class="c1"># they output a single file, &#39;output&#39;</span>
+<span class="c1"># they output a single file, 'output'</span>
 <span class="c1"># test_jobs are identical test jobs testing the single leftover file of</span>
-<span class="c1"># each fold. They also output a single file, &#39;output&#39;</span>
-<span class="n">nfolds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">job1</span><span class="o">.</span><span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span>
+<span class="c1"># each fold. They also output a single file, 'output'</span>
+<span class="n">nfolds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">job1</span><span class="o">.</span><span class="n">param_dict</span><span class="p">[</span><span class="s1">'inputs'</span><span class="p">])</span>
 <span class="n">train_jobs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">test_jobs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">job_train</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train_model&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;train_fold</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
-        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'train_model'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'train_fold</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
+        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">,</span> <span class="p">[]},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">train_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_train</span><span class="p">)</span>
     <span class="n">job_test</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;test_model&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(input)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_fold</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
-        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;undefined&#39;</span><span class="p">},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'test_model'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(input)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'test_fold</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
+        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'input'</span><span class="p">,</span> <span class="s1">'undefined'</span><span class="p">},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">test_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_test</span><span class="p">)</span>
 <span class="c1"># building the workflow</span>
 <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">job1</span><span class="p">]</span> <span class="o">+</span> <span class="n">train_jobs</span> <span class="o">+</span> <span class="n">test_jobs</span>
@@ -1281,55 +1281,55 @@ execution, and removed when not used any longer.</p>
 <span class="n">links</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">links</span><span class="p">[</span><span class="n">train_jobs</span><span class="p">[</span><span class="n">fold</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;outputs&#39;</span><span class="p">,</span>
-                   <span class="p">(</span><span class="s1">&#39;list_all_but_one&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
+        <span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'outputs'</span><span class="p">,</span>
+                   <span class="p">(</span><span class="s1">'list_all_but_one'</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
     <span class="n">links</span><span class="p">[</span><span class="n">test_jobs</span><span class="p">[</span><span class="n">fold</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;outputs&#39;</span><span class="p">,</span>
-                   <span class="p">(</span><span class="s1">&#39;list_to_sequence&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
+        <span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'outputs'</span><span class="p">,</span>
+                   <span class="p">(</span><span class="s1">'list_to_sequence'</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
 
 <span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span>
                     <span class="n">dependencies</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;train LOO&#39;</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s1">'train LOO'</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>A map / reduce example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let&#39;s say job1 inputs a list and outputs another list, &#39;outputs&#39;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># let's say job1 inputs a list and outputs another list, 'outputs'</span>
 <span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;prepare_inputs&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;file1&#39;</span><span class="p">,</span> <span class="s1">&#39;file2&#39;</span><span class="p">,</span> <span class="s1">&#39;file3&#39;</span><span class="p">,</span> <span class="s1">&#39;file4&#39;</span><span class="p">,</span> <span class="s1">&#39;file5&#39;</span><span class="p">]},</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'prepare_inputs'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file1'</span><span class="p">,</span> <span class="s1">'file2'</span><span class="p">,</span> <span class="s1">'file3'</span><span class="p">,</span> <span class="s1">'file4'</span><span class="p">,</span> <span class="s1">'file5'</span><span class="p">]},</span>
     <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="c1"># process_jobs are identical train jobs processing one of the input files</span>
-<span class="c1"># they output a single file, &#39;output&#39;</span>
-<span class="n">nfolds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">job1</span><span class="o">.</span><span class="n">param_dict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span>
+<span class="c1"># they output a single file, 'output'</span>
+<span class="n">nfolds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">job1</span><span class="o">.</span><span class="n">param_dict</span><span class="p">[</span><span class="s1">'inputs'</span><span class="p">])</span>
 <span class="n">process_jobs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">job_proc</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;process_data&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(input)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;process_</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
-        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;undefined&#39;</span><span class="p">},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'process_data'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(input)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'process_</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">fold</span><span class="p">,</span>
+        <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'input'</span><span class="p">,</span> <span class="s1">'undefined'</span><span class="p">},</span> <span class="n">has_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">process_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_proc</span><span class="p">)</span>
 <span class="c1"># a reduce node takes outputs of all processing nodes and, for instance,</span>
 <span class="c1"># concatenates them</span>
 <span class="n">reduce_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span>
-    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;cat_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(inputs)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;cat_results&#39;</span><span class="p">,</span>
-    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;outputs&#39;</span><span class="p">:</span> <span class="s1">&#39;file_output&#39;</span><span class="p">})</span>
+    <span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'cat_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(inputs)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'cat_results'</span><span class="p">,</span>
+    <span class="n">param_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">'outputs'</span><span class="p">:</span> <span class="s1">'file_output'</span><span class="p">})</span>
 
 <span class="c1"># building the workflow</span>
-<span class="n">group_1</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;processing&#39;</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">process_jobs</span><span class="p">)</span>
+<span class="n">group_1</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'processing'</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">process_jobs</span><span class="p">)</span>
 <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">job1</span><span class="p">]</span> <span class="o">+</span> <span class="n">process_jobs</span> <span class="o">+</span> <span class="p">[</span><span class="n">reduce_job</span><span class="p">]</span>
 <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">links</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">links</span><span class="p">[</span><span class="n">reduce_job</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+<span class="n">links</span><span class="p">[</span><span class="n">reduce_job</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[]}</span>
 <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfolds</span><span class="p">):</span>
     <span class="n">links</span><span class="p">[</span><span class="n">process_jobs</span><span class="p">[</span><span class="n">fold</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">&#39;outputs&#39;</span><span class="p">,</span>
-                   <span class="p">(</span><span class="s1">&#39;list_to_sequence&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
-    <span class="n">links</span><span class="p">[</span><span class="n">reduce_job</span><span class="p">][</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">process_job</span><span class="p">[</span><span class="n">fold</span><span class="p">],</span> <span class="s1">&#39;output&#39;</span><span class="p">,</span>
-                                        <span class="p">(</span><span class="s1">&#39;sequence_to_list&#39;</span><span class="p">,</span> <span class="n">fold</span><span class="p">)))</span>
+        <span class="s1">'inputs'</span><span class="p">:</span> <span class="p">[(</span><span class="n">job1</span><span class="p">,</span> <span class="s1">'outputs'</span><span class="p">,</span>
+                   <span class="p">(</span><span class="s1">'list_to_sequence'</span><span class="p">,</span> <span class="n">fold</span><span class="p">))]}</span>
+    <span class="n">links</span><span class="p">[</span><span class="n">reduce_job</span><span class="p">][</span><span class="s1">'inputs'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">process_job</span><span class="p">[</span><span class="n">fold</span><span class="p">],</span> <span class="s1">'output'</span><span class="p">,</span>
+                                        <span class="p">(</span><span class="s1">'sequence_to_list'</span><span class="p">,</span> <span class="n">fold</span><span class="p">)))</span>
 
 <span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span>
                     <span class="n">root_group</span><span class="o">=</span><span class="p">[</span><span class="n">job1</span><span class="p">,</span> <span class="n">group_1</span><span class="p">,</span> <span class="n">reduce_job</span><span class="p">],</span>
                     <span class="n">dependencies</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;map-reduce&#39;</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s1">'map-reduce'</span><span class="p">,</span> <span class="n">param_links</span><span class="o">=</span><span class="n">links</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="module-param_link_functions">
@@ -1406,15 +1406,15 @@ Useful in a nfolds cross-validation pattern</p>
 <p>The job configuration is included in the job parameters as in the <a class="reference internal" href="#dynamic-outputs"><span class="std std-ref">dynamic output / input arguments passing system</span></a>. This thus allows 2 ways of passing the config dict to jobs:</p>
 <ul>
 <li><p>as a named job parameter, <cite>configuration_dict</cite>. In this case this named parameter is reserved for configuration. It is used as another named parameter in the job:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%(configuration_dict)s</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job1&#39;</span><span class="p">,</span>
-    <span class="n">configuration</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;conf_var1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">})</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="s1">'</span><span class="si">%(configuration_dict)s</span><span class="s1">'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'job1'</span><span class="p">,</span>
+    <span class="n">configuration</span><span class="o">=</span><span class="p">{</span><span class="s1">'conf_var1'</span><span class="p">:</span> <span class="s1">'value1'</span><span class="p">})</span>
 </pre></div>
 </div>
 <p>The job will receive the configuration as a JSON string parameter</p>
 </li>
 <li><p>as a part of a parameters file. In this case the parameters file will be created before the job is run, even if the job does not use the outputs from another job, and the conficuration will be held in a sub-dictionary of this input JSON file, under the key <code class="docutils literal notranslate"><span class="pre">&quot;configuration_dict&quot;</span></code>, separate from the <code class="docutils literal notranslate"><span class="pre">&quot;params&quot;</span></code> key. Therefore in this shape, <code class="docutils literal notranslate"><span class="pre">configuration_dict</span></code> is not a reserved parameter name:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my_program&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;job1&#39;</span><span class="p">,</span> <span class="n">use_input_params_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">configuration</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;conf_var1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">})</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s1">'my_program'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'job1'</span><span class="p">,</span> <span class="n">use_input_params_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">configuration</span><span class="o">=</span><span class="p">{</span><span class="s1">'conf_var1'</span><span class="p">:</span> <span class="s1">'value1'</span><span class="p">})</span>
 </pre></div>
 </div>
 <p>As in the dynamic parameters system, when the job is run, the environment variable <code class="docutils literal notranslate"><span class="pre">SOMAWF_INPUT_PARAMS</span></code> will hold the path of the input parameters / configuration file.</p>

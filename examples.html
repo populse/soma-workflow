@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
     
-    <script src="_static/documentation_options.js?v=ced19b87"></script>
+    <script src="_static/documentation_options.js?v=6aa91f9e"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
@@ -94,10 +94,10 @@ and writing another file.</p></li>
 
 <span class="c1"># create the workflow:</span>
 
-<span class="n">job_1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 1&quot;</span><span class="p">)</span>
-<span class="n">job_2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 2&quot;</span><span class="p">)</span>
-<span class="n">job_3</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 3&quot;</span><span class="p">)</span>
-<span class="n">job_4</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 4&quot;</span><span class="p">)</span>
+<span class="n">job_1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"60"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 1"</span><span class="p">)</span>
+<span class="n">job_2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"60"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 2"</span><span class="p">)</span>
+<span class="n">job_3</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"60"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 3"</span><span class="p">)</span>
+<span class="n">job_4</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"60"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 4"</span><span class="p">)</span>
 
 <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">job_1</span><span class="p">,</span> <span class="n">job_2</span><span class="p">,</span> <span class="n">job_3</span><span class="p">,</span> <span class="n">job_4</span><span class="p">]</span>
 <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[(</span><span class="n">job_1</span><span class="p">,</span> <span class="n">job_2</span><span class="p">),</span>
@@ -109,7 +109,7 @@ and writing another file.</p></li>
                     <span class="n">dependencies</span><span class="o">=</span><span class="n">dependencies</span><span class="p">)</span>
 
 <span class="c1"># save the workflow into a file</span>
-<span class="n">Helper</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s2">&quot;/tmp/workflow_example&quot;</span><span class="p">,</span> <span class="n">workflow</span><span class="p">)</span>
+<span class="n">Helper</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s2">"/tmp/workflow_example"</span><span class="p">,</span> <span class="n">workflow</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Run the Python script, then open the GUI (command: “soma_workflow_gui”).</p>
@@ -148,14 +148,14 @@ purpose. Groups do not have any impact on the execution of workflows.</p>
 <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">group_elements</span> <span class="o">=</span> <span class="p">[]</span>
 
-<span class="n">first_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;first job&quot;</span><span class="p">)</span>
-<span class="n">last_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;last job&quot;</span><span class="p">)</span>
+<span class="n">first_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"10"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"first job"</span><span class="p">)</span>
+<span class="n">last_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"10"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"last job"</span><span class="p">)</span>
 
 <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first_job</span><span class="p">)</span>
 <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_job</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">):</span>
-  <span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+  <span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="s2">"60"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job "</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 
   <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 
@@ -166,14 +166,14 @@ purpose. Groups do not have any impact on the execution of workflows.</p>
 
 
 <span class="n">thirty_jobs_group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="n">group_elements</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my 30 jobs&quot;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s2">"my 30 jobs"</span><span class="p">)</span>
 
 <span class="n">workflow</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">jobs</span><span class="o">=</span><span class="n">jobs</span><span class="p">,</span>
                     <span class="n">dependencies</span><span class="o">=</span> <span class="n">dependencies</span><span class="p">,</span>
                     <span class="n">root_group</span><span class="o">=</span><span class="p">[</span><span class="n">first_job</span><span class="p">,</span> <span class="n">thirty_jobs_group</span><span class="p">,</span> <span class="n">last_job</span><span class="p">])</span>
 
 <span class="c1"># save the workflow into a file</span>
-<span class="n">Helper</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s2">&quot;/tmp/workflow_example&quot;</span><span class="p">,</span> <span class="n">workflow</span><span class="p">)</span>
+<span class="n">Helper</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s2">"/tmp/workflow_example"</span><span class="p">,</span> <span class="n">workflow</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Run the Python script, then open the GUI (command: “soma_workflow_gui”) to
@@ -203,10 +203,10 @@ script instead of saving the workflow into a file:</p>
 
 <span class="c1"># submit the workflow to computing resource (configured in the client-server mode)</span>
 
-<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">&quot;Titan&quot;</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">"Titan"</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
 
 <span class="n">controller</span><span class="o">.</span><span class="n">submit_workflow</span><span class="p">(</span><span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;simple example&quot;</span><span class="p">)</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s2">"simple example"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>You can now close and open the GUI at any time and even shut down you computer.
@@ -234,17 +234,17 @@ example of file transfer without the gui go to the next section.</p>
 
 <span class="c1"># FileTransfer creation for input files</span>
 <span class="n">myfile</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/tmp/soma_workflow_examples/myfile&quot;</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;myfile&quot;</span><span class="p">)</span>
+                    <span class="n">client_path</span><span class="o">=</span><span class="s2">"/tmp/soma_workflow_examples/myfile"</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">"myfile"</span><span class="p">)</span>
 
 <span class="c1"># FileTransfer creation for output files</span>
 <span class="n">copy_of_myfile</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                              <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/tmp/soma_workflow_examples/copy_of_myfile&quot;</span><span class="p">,</span>
-                              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copy of my file&quot;</span><span class="p">)</span>
+                              <span class="n">client_path</span><span class="o">=</span><span class="s2">"/tmp/soma_workflow_examples/copy_of_myfile"</span><span class="p">,</span>
+                              <span class="n">name</span><span class="o">=</span><span class="s2">"copy of my file"</span><span class="p">)</span>
 
 <span class="c1"># Job and Workflow</span>
-<span class="n">copy_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="n">myfile</span><span class="p">,</span> <span class="n">copy_of_myfile</span><span class="p">],</span>
-              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+<span class="n">copy_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"cp"</span><span class="p">,</span> <span class="n">myfile</span><span class="p">,</span> <span class="n">copy_of_myfile</span><span class="p">],</span>
+              <span class="n">name</span><span class="o">=</span><span class="s2">"copy"</span><span class="p">,</span>
               <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">myfile</span><span class="p">],</span>
               <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">copy_of_myfile</span><span class="p">])</span>
 
@@ -254,10 +254,10 @@ example of file transfer without the gui go to the next section.</p>
 
 
 <span class="c1"># submit the workflow</span>
-<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">&quot;Titan&quot;</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">"Titan"</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
 
 <span class="n">controller</span><span class="o">.</span><span class="n">submit_workflow</span><span class="p">(</span><span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s2">&quot;simple transfer&quot;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s2">"simple transfer"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Run the Python script and open the GUI:</p>
@@ -286,12 +286,12 @@ example of file transfer without the gui go to the next section.</p>
 <p>For this example we use a dummy program that will create a file on the computing resource:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">output_file</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
-        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a very original message: Hello world!&quot;</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"a very original message: Hello world!"</span><span class="p">)</span>
         <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -299,20 +299,20 @@ example of file transfer without the gui go to the next section.</p>
 <p>Here is the program:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">soma_workflow.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">WorkflowController</span><span class="p">,</span> <span class="n">Helper</span><span class="p">,</span> <span class="n">FileTransfer</span>
 
-<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">&quot;Gabriel&quot;</span><span class="p">,</span> <span class="s2">&quot;mb253889&quot;</span><span class="p">)</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">"Gabriel"</span><span class="p">,</span> <span class="s2">"mb253889"</span><span class="p">)</span>
 
 <span class="c1"># FileTransfer creation for input files</span>
 <span class="n">file1</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                     <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/home/mb253889/create_file.py&quot;</span><span class="p">,</span>
-                     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;script&quot;</span><span class="p">)</span>
+                     <span class="n">client_path</span><span class="o">=</span><span class="s2">"/home/mb253889/create_file.py"</span><span class="p">,</span>
+                     <span class="n">name</span><span class="o">=</span><span class="s2">"script"</span><span class="p">)</span>
 
 <span class="n">file2</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                     <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/home/mb253889/output_file&quot;</span><span class="p">,</span>
-                     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;file created on the server&quot;</span><span class="p">)</span>
+                     <span class="n">client_path</span><span class="o">=</span><span class="s2">"/home/mb253889/output_file"</span><span class="p">,</span>
+                     <span class="n">name</span><span class="o">=</span><span class="s2">"file created on the server"</span><span class="p">)</span>
 
 <span class="c1"># Job and Workflow</span>
-<span class="n">run_script</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="n">file1</span><span class="p">,</span> <span class="n">file2</span><span class="p">],</span>
-                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+<span class="n">run_script</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">,</span> <span class="n">file1</span><span class="p">,</span> <span class="n">file2</span><span class="p">],</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s2">"copy"</span><span class="p">,</span>
                  <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">file1</span><span class="p">],</span>
                  <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">file2</span><span class="p">])</span>
 
@@ -320,7 +320,7 @@ example of file transfer without the gui go to the next section.</p>
                     <span class="n">dependencies</span><span class="o">=</span><span class="p">[])</span>
 
 <span class="n">workflow_id</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="n">submit_workflow</span><span class="p">(</span><span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
-                                       <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Simple transfer&quot;</span><span class="p">)</span>
+                                       <span class="n">name</span><span class="o">=</span><span class="s2">"Simple transfer"</span><span class="p">)</span>
 
 <span class="c1"># You may use the gui or manually transfer the files:</span>
 <span class="n">manual</span> <span class="o">=</span> <span class="kc">True</span>
@@ -329,7 +329,7 @@ example of file transfer without the gui go to the next section.</p>
     <span class="n">Helper</span><span class="o">.</span><span class="n">wait_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">controller</span><span class="p">)</span>
     <span class="n">Helper</span><span class="o">.</span><span class="n">transfer_output_files</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">controller</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Finished !!!&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Finished !!!"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Easy, isn’t it?</p>
@@ -345,19 +345,19 @@ The workflow contains 2 jobs which will modify the working directory.</p>
 
 <span class="c1"># Creation of the FileTransfer object to transfer the working directory</span>
 <span class="n">my_working_directory</span> <span class="o">=</span> <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                    <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/tmp/my_working_directory&quot;</span><span class="p">,</span>
-                                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;working directory&quot;</span><span class="p">)</span>
+                                    <span class="n">client_path</span><span class="o">=</span><span class="s2">"/tmp/my_working_directory"</span><span class="p">,</span>
+                                    <span class="n">name</span><span class="o">=</span><span class="s2">"working directory"</span><span class="p">)</span>
 
 <span class="c1"># Jobs and Workflow</span>
 <span class="c1"># Do not forget to set the working_directory argument when creating the jobs</span>
-<span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;myfile1&quot;</span> <span class="p">,</span> <span class="s2">&quot;copy_of_myfile1&quot;</span><span class="p">],</span>
-           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job1&quot;</span><span class="p">,</span>
+<span class="n">job1</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"cp"</span><span class="p">,</span> <span class="s2">"myfile1"</span> <span class="p">,</span> <span class="s2">"copy_of_myfile1"</span><span class="p">],</span>
+           <span class="n">name</span><span class="o">=</span><span class="s2">"job1"</span><span class="p">,</span>
            <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">my_working_directory</span><span class="p">],</span>
            <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">my_working_directory</span><span class="p">],</span>
            <span class="n">working_directory</span><span class="o">=</span><span class="n">my_working_directory</span><span class="p">)</span>
 
-<span class="n">job2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;myfile2&quot;</span> <span class="p">,</span> <span class="s2">&quot;copy_of_myfile2&quot;</span><span class="p">],</span>
-           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job2&quot;</span><span class="p">,</span>
+<span class="n">job2</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"cp"</span><span class="p">,</span> <span class="s2">"myfile2"</span> <span class="p">,</span> <span class="s2">"copy_of_myfile2"</span><span class="p">],</span>
+           <span class="n">name</span><span class="o">=</span><span class="s2">"job2"</span><span class="p">,</span>
            <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[</span><span class="n">my_working_directory</span><span class="p">],</span>
            <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">my_working_directory</span><span class="p">],</span>
            <span class="n">working_directory</span><span class="o">=</span><span class="n">my_working_directory</span><span class="p">)</span>
@@ -367,10 +367,10 @@ The workflow contains 2 jobs which will modify the working directory.</p>
 
 
 <span class="c1"># submit the workflow</span>
-<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">&quot;Titan&quot;</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">"Titan"</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
 
 <span class="n">controller</span><span class="o">.</span><span class="n">submit_workflow</span><span class="p">(</span><span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;working directory transfer example&quot;</span><span class="p">)</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s2">"working directory transfer example"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Run the Python script and monitor the execution of the workflow using
@@ -420,20 +420,20 @@ computing resource file system (see <a class="reference internal" href="concepts
 <span class="c1"># SharedResourcePath creation for the input file.</span>
 <span class="c1"># The input file is read direclty in the data directory located on the</span>
 <span class="c1"># the computing resource side.</span>
-<span class="n">myfile</span> <span class="o">=</span> <span class="n">SharedResourcePath</span><span class="p">(</span><span class="n">relative_path</span><span class="o">=</span><span class="s2">&quot;myfile&quot;</span><span class="p">,</span>
-                            <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;MyApp&quot;</span><span class="p">,</span>
-                            <span class="n">uuid</span><span class="o">=</span><span class="s2">&quot;my_example_dir&quot;</span><span class="p">)</span>
+<span class="n">myfile</span> <span class="o">=</span> <span class="n">SharedResourcePath</span><span class="p">(</span><span class="n">relative_path</span><span class="o">=</span><span class="s2">"myfile"</span><span class="p">,</span>
+                            <span class="n">namespace</span><span class="o">=</span><span class="s2">"MyApp"</span><span class="p">,</span>
+                            <span class="n">uuid</span><span class="o">=</span><span class="s2">"my_example_dir"</span><span class="p">)</span>
 
 <span class="c1"># FileTransfer creation for the output file.</span>
 <span class="c1"># That way the output file will not be written in the data directory</span>
 <span class="c1"># located on the computing resource file system.</span>
 <span class="n">copy_of_myfile</span> <span class="o">=</span>  <span class="n">FileTransfer</span><span class="p">(</span><span class="n">is_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                               <span class="n">client_path</span><span class="o">=</span><span class="s2">&quot;/tmp/soma_workflow_examples/copy_of_myfile&quot;</span><span class="p">,</span>
-                               <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copy of my file&quot;</span><span class="p">)</span>
+                               <span class="n">client_path</span><span class="o">=</span><span class="s2">"/tmp/soma_workflow_examples/copy_of_myfile"</span><span class="p">,</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s2">"copy of my file"</span><span class="p">)</span>
 
 <span class="c1"># Job and Workflow creation</span>
-<span class="n">copy_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="n">myfile</span><span class="p">,</span> <span class="n">copy_of_myfile</span><span class="p">],</span>
-              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+<span class="n">copy_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"cp"</span><span class="p">,</span> <span class="n">myfile</span><span class="p">,</span> <span class="n">copy_of_myfile</span><span class="p">],</span>
+              <span class="n">name</span><span class="o">=</span><span class="s2">"copy"</span><span class="p">,</span>
               <span class="n">referenced_input_files</span><span class="o">=</span><span class="p">[],</span>
               <span class="n">referenced_output_files</span><span class="o">=</span><span class="p">[</span><span class="n">copy_of_myfile</span><span class="p">])</span>
 
@@ -441,10 +441,10 @@ computing resource file system (see <a class="reference internal" href="concepts
                     <span class="n">dependencies</span><span class="o">=</span><span class="p">[])</span>
 
 <span class="c1"># workflow submission</span>
-<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">&quot;DSV_cluster&quot;</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">WorkflowController</span><span class="p">(</span><span class="s2">"DSV_cluster"</span><span class="p">,</span> <span class="n">login</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
 
 <span class="n">controller</span><span class="o">.</span><span class="n">submit_workflow</span><span class="p">(</span><span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;shared resource path example&quot;</span><span class="p">)</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s2">"shared resource path example"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Open the GUI to monitor the workflow. Once the execution is done, transfer back

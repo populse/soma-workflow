@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
     
-    <script src="_static/documentation_options.js?v=ced19b87"></script>
+    <script src="_static/documentation_options.js?v=6aa91f9e"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
@@ -52,9 +52,9 @@
 <dl>
 <dt><strong>Use job priority</strong></dt><dd><p>Job priority is a new feature in version 2.1. The jobs have a new integer
 attribute named priority (see <a class="reference internal" href="workflow_creation.html#workflow-creation-api"><span class="std std-ref">Workflow creation API</span></a>).</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">low_priority_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;program&quot;</span><span class="p">,</span> <span class="s2">&quot;argument&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 1&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">low_priority_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"program"</span><span class="p">,</span> <span class="s2">"argument"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 1"</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-<span class="n">high_priority_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;program&quot;</span><span class="p">,</span> <span class="s2">&quot;argument&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;job 2&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">high_priority_job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"program"</span><span class="p">,</span> <span class="s2">"argument"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"job 2"</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The priority is set to 0 by default. Its value is used by Soma-workflow to
@@ -93,11 +93,11 @@ interface of Soma-workflow. The native specification string makes them available
 a job:</p>
 <blockquote>
 <div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Using a PBS cluster:</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;program&quot;</span><span class="p">,</span> <span class="s2">&quot;argument&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;max one hour job&quot;</span><span class="p">,</span> <span class="n">native_specification</span><span class="o">=</span><span class="s2">&quot;-l walltime=01:00:00&quot;</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"program"</span><span class="p">,</span> <span class="s2">"argument"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"max one hour job"</span><span class="p">,</span> <span class="n">native_specification</span><span class="o">=</span><span class="s2">"-l walltime=01:00:00"</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Using a SGE cluster:</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;program&quot;</span><span class="p">,</span> <span class="s2">&quot;argument&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;max one hour job&quot;</span><span class="p">,</span> <span class="n">native_specification</span><span class="o">=</span><span class="s2">&quot;-l h_rt=01:00:00&quot;</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">Job</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="p">[</span><span class="s2">"program"</span><span class="p">,</span> <span class="s2">"argument"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"max one hour job"</span><span class="p">,</span> <span class="n">native_specification</span><span class="o">=</span><span class="s2">"-l h_rt=01:00:00"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
