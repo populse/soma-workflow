@@ -412,12 +412,7 @@ class LocalScheduler(Scheduler):
                 kwargs = {}
             if env is not None:
                 env2 = dict(os.environ)
-                if sys.platform.startswith('win') and six.PY2:
-                    # windows cannot use unicode strings as env values
-                    env2.update([(k.encode('utf-8'), v.encode('utf-8'))
-                                for k, v in env.items()])
-                else:
-                    env2.update(env)
+                env2.update(env)
                 env = env2
             LocalScheduler.logger.debug('run command:' + repr(command))
             LocalScheduler.logger.debug('with env:' + repr(env))
