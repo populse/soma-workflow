@@ -23,7 +23,7 @@ repos:
     #     exclude: python/soma_workflow/test/data/jobExamples/complete/.*(file|stdin|stdout)
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 7.5.0
+    rev: 7.1.2
     hooks:
     -   id: flake8
         name: flake8 under python3
@@ -31,7 +31,7 @@ repos:
         exclude: ^doc/sphinx/sphinxext/
 
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.22.0
+    rev: v3.19.1
     hooks:
     -   id: pyupgrade
         args: [--py311-plus]

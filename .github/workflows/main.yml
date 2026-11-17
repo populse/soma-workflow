@@ -13,6 +13,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -23,23 +27,28 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - name: "Set up Python"
-        uses: actions/setup-python@v1
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
-      - name: "Install Python dependencies"
+      - name: Install Python dependencies
         run: |
-          pip3 install setuptools
-          pip3 install numpy 'six>=1.13' 'argparse'
+          python -m pip install --upgrade pip setuptools
+          python -m pip install numpy 'six>=1.13' argparse
           # for docs only
-          sudo apt-get install -y pandoc graphviz
-          pip install sphinx sphinx-gallery pandoc nbsphinx
+          python -m pip install sphinx sphinx-gallery pandoc nbsphinx
           # python setup.py install
 
-      - name: "Build Sphinx Doc"
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc graphviz
+
+      - name: Build Sphinx Doc
         run: |
           export PYTHONPATH=$PWD/python
           cd doc
@@ -49,8 +58,8 @@ jobs:
 
       # 3. Déploiement sur les Github Pages
 
-      - name: "Deploy Github Pages"
-        uses: JamesIves/github-pages-deploy-action@4.1.7
+      - name: Deploy Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages     # <- Branche sur laquelle seront commités les fichiers
