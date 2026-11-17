@@ -1,3 +1,6 @@
+default_language_version:
+    python: python3.10
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -27,11 +30,10 @@ repos:
     hooks:
     -   id: flake8
         name: flake8 under python3
-        language_version: python3
         exclude: ^doc/sphinx/sphinxext/
 
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.19.1
     hooks:
     -   id: pyupgrade
-        args: [--py311-plus]
+        args: [--py310-plus]
