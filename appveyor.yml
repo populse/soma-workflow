@@ -1,25 +1,33 @@
+
+# Disable the default automatic build phase
+build: off
+
 environment:
 
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2026
+      PYTHON: "C:\\Python312-x64"
 
-    - PYTHON: "C:\\Python38"
-      PYTHON_VERSION: 3.8
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2404
+      PYTHON: "$HOME/venv3.12"
 
-#matrix:
-  #fast_finish: true
-  
-build: off
+    - APPVEYOR_BUILD_WORKER_IMAGE: macos-sonoma
+      PYTHON: "~/venv3.12"
 
 install:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - "python %PYTHON_OPTS% -m pip install --upgrade pip"
-  - "python %PYTHON_OPTS% -m pip install six>=1.13"
-  - "python %PYTHON_OPTS% setup.py install"
-  #- "SET PYTHONPATH=C:\\projects\\soma-base\\python;%PYTHONPATH%"
+  - cmd: echo "     ** windows build **"
+  - sh: if [[ $(uname -s) == Linux ]]; then echo "     ** linux build **"; fi
+  - sh: if [[ $(uname -s) == Darwin ]]; then echo "     ** macos build **"; fi
+  - cmd: set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  - sh: export PATH=~/venv3.12/bin:~/venv3.12/lib:$PATH
+  - python --version
+  - python -m pip install pip --upgrade
+  - python -m pip install six>=1.13
+  - python -m pip install .
     
 test_script:
-  - "python --version"
-  - "python -m soma_workflow.test"
+
+  - python -m soma_workflow.test
 
 notifications:
   - provider: Email
