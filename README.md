@@ -4,7 +4,7 @@
 [![](https://codecov.io/github/populse/soma-workflow/coverage.svg?branch=master)](https://codecov.io/github/populse/soma-workflow)
 [![](https://img.shields.io/badge/license-CeCILL--B-blue.svg)](https://github.com/populse/soma-workflow/blob/master/LICENSE.en)
 [![](https://img.shields.io/pypi/v/soma-workflow.svg)](https://pypi.python.org/pypi/soma-workflow/)
-[![](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9%2C%203.10%2C%203.11-yellow.svg)](#)
+[![](https://img.shields.io/badge/python-3.10%2C%203.110%2C%203.12-yellow.svg)](#)
 [![](https://img.shields.io/badge/platform-Linux%2C%20OSX%2C%20Windows-orange.svg)](#)
 
 
